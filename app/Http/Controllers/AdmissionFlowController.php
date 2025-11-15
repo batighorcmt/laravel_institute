@@ -1,0 +1,363 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\School;
+use App\Models\AdmissionApplication;
+use App\Models\AdmissionPayment;
+use App\Models\Role;
+use App\Models\SchoolPaymentSetting;
+use App\Services\SSLCommerzClient;
+use Illuminate\Support\Facades\Http;
+use App\Models\User;
+use App\Models\UserSchoolRole;
+use Illuminate\Http\Request;
+use App\Http\Requests\StoreAdmissionApplicationRequest;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\UploadedFile;
+
+class AdmissionFlowController extends Controller
+{
+    protected function schoolByCode($code): School
+    {
+        return School::where('code',$code)->active()->firstOrFail();
+    }
+
+    public function instruction($code)
+    {
+        $school = $this->schoolByCode($code);
+        abort_unless($school->admissions_enabled, 404);
+        return view('admission.instruction', compact('school'));
+    }
+
+    public function index($code)
+    {
+        $school = $this->schoolByCode($code);
+        abort_unless($school->admissions_enabled, 404);
+        return view('admission.index', compact('school'));
+    }
+
+    public function apply($code)
+    {
+        $school = $this->schoolByCode($code);
+        abort_unless($school->admissions_enabled, 404);
+        if (!$school->admission_academic_year_id) {
+            return redirect()->back()->with('error','এই স্কুলে ভর্তি শিক্ষাবর্ষ সেট করা হয়নি');
+        }
+        if (!request()->session()->has('admission_consent_given')) {
+            return redirect()->route('admission.instruction', ['schoolCode' => $code]);
+        }
+        return view('admission.apply', compact('school'));
+    }
+
+    public function submit($code, StoreAdmissionApplicationRequest $request)
+    {
+        $school = $this->schoolByCode($code);
+        abort_unless($school->admissions_enabled, 404);
+        if (!$school->admission_academic_year_id) {
+            return redirect()->back()->with('error','ভর্তি শিক্ষাবর্ষ সেট না থাকায় আবেদন গ্রহণ হয়নি');
+        }
+        $data = $request->validated();
+        DB::beginTransaction();
+        try {
+            $appId = strtoupper(Str::random(8));
+            $photoName = null;
+            if ($request->hasFile('photo')) {
+                $photoName = $appId.'_photo.jpg';
+                $this->processAndStorePhoto($request->file('photo'), $photoName);
+            }
+            $application = AdmissionApplication::create([
+                'school_id' => $school->id,
+                'academic_year_id' => $school->admission_academic_year_id,
+                'app_id' => $appId,
+                'applicant_name' => $data['name_en'],
+                'name_en' => $data['name_en'],
+                'name_bn' => $data['name_bn'],
+                'father_name_en' => $data['father_name_en'],
+                'father_name_bn' => $data['father_name_bn'] ?? null,
+                'mother_name_en' => $data['mother_name_en'],
+                'mother_name_bn' => $data['mother_name_bn'] ?? null,
+                'guardian_name_en' => $data['guardian_name_en'] ?? null,
+                'guardian_name_bn' => $data['guardian_name_bn'] ?? null,
+                'gender' => $data['gender'],
+                'religion' => $data['religion'] ?? null,
+                'dob' => $data['dob'],
+                'mobile' => $data['mobile'],
+                'birth_reg_no' => $data['birth_reg_no'],
+                'present_address' => $request->input('present_address'),
+                'permanent_address' => $request->input('permanent_address'),
+                'class_name' => $data['class_name'] ?? null,
+                'last_school' => $data['last_school'] ?? null,
+                'result' => $data['result'] ?? null,
+                'pass_year' => $data['pass_year'] ?? null,
+                'photo' => $photoName,
+                'payment_status' => 'Unpaid',
+                'status' => 'pending',
+            ]);
+            // Create applicant user
+            $applicantRole = Role::where('name', Role::APPLICANT)->first();
+            $user = User::create([
+                'name' => $application->name_en,
+                'first_name' => $application->name_en,
+                'email' => 'app_'.$appId.'@example.com',
+                'password' => bcrypt(Str::random(12)),
+                'phone' => $application->mobile,
+            ]);
+            UserSchoolRole::create([
+                'user_id' => $user->id,
+                'school_id' => $school->id,
+                'role_id' => $applicantRole->id,
+                'status' => 'active'
+            ]);
+            // Send SMS with password
+            $password = Str::random(8);
+            $user->password = bcrypt($password);
+            $user->save();
+
+            $smsService = new \App\Services\SmsService($school);
+            $message = "Your application submited to {$school->name}. Your Application ID: {$appId}, Password: {$password}.";
+            $smsService->sendSms($application->mobile, $message);
+            DB::commit();
+            return redirect()->route('admission.preview', [$school->code, $application->app_id]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('error','ব্যর্থ: '.$e->getMessage());
+        }
+    }
+
+    public function checkMobile($code, Request $request)
+    {
+        $school = $this->schoolByCode($code);
+        abort_unless($school->admissions_enabled, 404);
+        $mobile = preg_replace('/\D+/', '', (string)$request->query('mobile'));
+        if (!preg_match('/^01\d{9}$/', $mobile)) {
+            return response()->json(['ok' => false, 'exists' => false, 'message' => 'অবৈধ মোবাইল ফরম্যাট']);
+        }
+        $exists = AdmissionApplication::where('school_id', $school->id)
+            ->where('academic_year_id', $school->admission_academic_year_id)
+            ->where('mobile', $mobile)
+            ->exists();
+        return response()->json([
+            'ok' => true,
+            'exists' => $exists,
+            'message' => $exists ? 'এই মোবাইল নম্বর দিয়ে এই শিক্ষাবর্ষে একটি আবেদন আছে' : 'ব্যবহারযোগ্য',
+        ]);
+    }
+
+    /**
+     * Process uploaded photo to a square passport size (300x300),
+     * compress to keep under ~1MB, and save as JPEG.
+     */
+    protected function processAndStorePhoto(UploadedFile $file, string $targetName): void
+    {
+        $imageInfo = getimagesize($file->getPathname());
+        if (!$imageInfo) {
+            // Fallback to raw store if not an image
+            $file->storeAs('public/admission', $targetName);
+            return;
+        }
+        $mime = $imageInfo['mime'] ?? '';
+        switch ($mime) {
+            case 'image/jpeg':
+                $src = imagecreatefromjpeg($file->getPathname());
+                break;
+            case 'image/png':
+                $src = imagecreatefrompng($file->getPathname());
+                break;
+            case 'image/gif':
+                $src = imagecreatefromgif($file->getPathname());
+                break;
+            default:
+                $src = imagecreatefromstring(file_get_contents($file->getPathname()));
+        }
+        if (!$src) {
+            $file->storeAs('public/admission', $targetName);
+            return;
+        }
+        $w = imagesx($src); $h = imagesy($src);
+        // Target passport ratio 35mm x 45mm => aspect = 35/45
+        $targetW = 413; // ~35mm at 300 DPI
+        $targetH = 531; // ~45mm at 300 DPI
+        $targetAspect = $targetW / $targetH; // ~0.777...
+        $srcAspect = $w / $h;
+        // Compute crop box to match target aspect (center-crop)
+        if ($srcAspect > $targetAspect) {
+            // Source too wide: reduce width
+            $cropH = $h;
+            $cropW = (int) round($h * $targetAspect);
+            $sx = (int) (($w - $cropW) / 2);
+            $sy = 0;
+        } else {
+            // Source too tall: reduce height
+            $cropW = $w;
+            $cropH = (int) round($w / $targetAspect);
+            $sx = 0;
+            $sy = (int) (($h - $cropH) / 2);
+        }
+        $dst = imagecreatetruecolor($targetW, $targetH);
+        // High-quality resampling to target size
+        imagecopyresampled($dst, $src, 0, 0, $sx, $sy, $targetW, $targetH, $cropW, $cropH);
+        imagedestroy($src);
+
+        // Compress to <= ~1MB by adjusting quality
+        $quality = 85; // start
+        $minQuality = 60;
+        $data = null;
+        do {
+            ob_start();
+            imagejpeg($dst, null, $quality);
+            $data = ob_get_clean();
+            if (strlen($data) <= 1024 * 1024 || $quality <= $minQuality) break;
+            $quality -= 5;
+        } while (true);
+        imagedestroy($dst);
+
+        // Store to disk
+        $path = storage_path('app/public/admission');
+        if (!is_dir($path)) @mkdir($path, 0775, true);
+        file_put_contents($path . DIRECTORY_SEPARATOR . $targetName, $data);
+    }
+
+    public function preview($code, $appId)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
+        return view('admission.preview', compact('school','application'));
+    }
+
+    public function paymentInitiate($code, Request $request)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$request->get('app_id'))->firstOrFail();
+        $settings = SchoolPaymentSetting::where('school_id',$school->id)->first();
+        if (!$settings || !$settings->active) {
+            return redirect()->back()->with('error','পেমেন্ট সেটিংস সক্রিয় নেই');
+        }
+        $amount = 200; // static fee placeholder
+        $tranId = 'TX'.strtoupper(Str::random(12));
+        $invoice = 'INV'.date('Ymd').Str::upper(Str::random(6));
+        $payment = AdmissionPayment::create([
+            'admission_application_id' => $application->id,
+            'amount' => $amount,
+            'payment_method' => 'SSLCommerz',
+            'tran_id' => $tranId,
+            'invoice_no' => $invoice,
+            'status' => 'Initiated'
+        ]);
+        $client = new SSLCommerzClient();
+        $payload = [
+            'store_id' => $settings->store_id,
+            'store_passwd' => $settings->store_password,
+            'total_amount' => $amount,
+            'currency' => 'BDT',
+            'tran_id' => $tranId,
+            'success_url' => route('admission.payment.success', [$school->code, $application->app_id]),
+            'fail_url' => route('admission.payment.fail', [$school->code, $application->app_id]),
+            'cancel_url' => route('admission.payment.cancel', [$school->code, $application->app_id]),
+            'ipn_url' => route('admission.payment.ipn'),
+            'emi_option' => 0,
+            'cus_name' => $application->name_en,
+            'cus_phone' => $application->mobile,
+            'cus_email' => 'noemail@example.com',
+            'cus_add1' => $application->present_address ?? 'N/A',
+            'cus_city' => 'City',
+            'cus_country' => 'Bangladesh',
+            'shipping_method' => 'NO',
+            'num_of_item' => 1,
+            'product_name' => 'Admission Form',
+            'product_category' => 'Admission',
+            'product_profile' => 'general'
+        ];
+        $gatewayUrl = $client->initiate($payload, (bool)$settings->sandbox);
+        if (!$gatewayUrl) {
+            $payment->update(['status'=>'Failed']);
+            return redirect()->back()->with('error','গেটওয়ে ত্রুটি');
+        }
+        return redirect()->away($gatewayUrl);
+    }
+
+    public function copy($code, $appId)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
+        $payment = $application->payments()->latest()->first();
+        return view('admission.application_copy', compact('school','application','payment'));
+    }
+
+    public function paymentSuccess($code, $appId, Request $request)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
+        $tranId = $request->get('tran_id');
+        $payment = AdmissionPayment::where('tran_id',$tranId)->where('admission_application_id',$application->id)->first();
+        if ($payment) {
+            $payment->update([
+                'status' => 'Completed',
+                'gateway_status' => $request->get('status'),
+                'gateway_response' => $request->all()
+            ]);
+            $application->update(['payment_status'=>'Paid']);
+        }
+        return redirect()->route('admission.copy', [$school->code, $application->app_id])->with('success','পেমেন্ট সফল');
+    }
+
+    public function paymentFail($code, $appId, Request $request)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
+        $tranId = $request->get('tran_id');
+        $payment = AdmissionPayment::where('tran_id',$tranId)->where('admission_application_id',$application->id)->first();
+        if ($payment) {
+            $payment->update([
+                'status' => 'Failed',
+                'gateway_status' => $request->get('status'),
+                'gateway_response' => $request->all()
+            ]);
+        }
+        return redirect()->route('admission.preview', [$school->code, $application->app_id])->with('error','পেমেন্ট ব্যর্থ হয়েছে');
+    }
+
+    public function paymentCancel($code, $appId, Request $request)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
+        $tranId = $request->get('tran_id');
+        $payment = AdmissionPayment::where('tran_id',$tranId)->where('admission_application_id',$application->id)->first();
+        if ($payment) {
+            $payment->update([
+                'status' => 'Failed',
+                'gateway_status' => 'CANCELLED',
+                'gateway_response' => $request->all()
+            ]);
+        }
+        return redirect()->route('admission.preview', [$school->code, $application->app_id])->with('error','পেমেন্ট বাতিল করা হয়েছে');
+    }
+
+    public function paymentIpn(Request $request)
+    {
+        $tranId = $request->get('tran_id');
+        $payment = AdmissionPayment::where('tran_id',$tranId)->first();
+        if ($payment) {
+            $payment->update([
+                'gateway_status' => $request->get('status'),
+                'gateway_response' => $request->all()
+            ]);
+        }
+        return response('OK');
+    }
+
+    public function handleConsent(Request $request, $code)
+    {
+        $school = $this->schoolByCode($code);
+        abort_unless($school->admissions_enabled, 404);
+
+        $request->validate([
+            'consent' => 'required|accepted',
+        ]);
+
+        $request->session()->put('admission_consent_given', true);
+
+        return redirect()->route('admission.apply', ['schoolCode' => $code]);
+    }
+}

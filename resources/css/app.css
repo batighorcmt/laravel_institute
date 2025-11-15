@@ -1,0 +1,109 @@
+/* Vendor imports (must be first for PostCSS) */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+@import 'admin-lte/dist/css/adminlte.min.css';
+@import 'overlayscrollbars/css/OverlayScrollbars.min.css';
+@import 'select2/dist/css/select2.min.css';
+@import 'toastr/build/toastr.min.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Kalpurush Bangla font (place files in public/fonts/kalpurush/) */
+@font-face {
+    font-family: 'Kalpurush';
+    src: local('Kalpurush'),
+         url('/fonts/kalpurush/kalpurush.woff2') format('woff2'),
+         url('/fonts/kalpurush/kalpurush.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+body {
+    font-family: 'Kalpurush', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif;
+}
+
+/* Tailwind v3 config handles content scanning via tailwind.config.js */
+
+/* Modern UI Theme Overrides */
+:root {
+    --brand-50: #eef2ff;
+    --brand-100: #e0e7ff;
+    --brand-200: #c7d2fe;
+    --brand-300: #a5b4fc;
+    --brand-400: #818cf8;
+    --brand-500: #6366f1; /* primary */
+    --brand-600: #4f46e5;
+    --brand-700: #4338ca;
+    --brand-800: #3730a3;
+    --brand-900: #312e81;
+    --bg-soft: #f6f7fb;
+    --card-bg: #ffffff;
+    --text-muted: #6b7280;
+    --ring: rgba(99, 102, 241, 0.35);
+}
+
+/* Page background */
+.content-wrapper { background: var(--bg-soft); }
+.dark-mode .content-wrapper { background: #0f172a; }
+
+/* Navbar modern look */
+.main-header.navbar {
+    border-bottom: 0 !important;
+    background: rgba(255,255,255,0.9) !important;
+    backdrop-filter: saturate(180%) blur(8px);
+    box-shadow: 0 6px 20px rgba(17, 24, 39, 0.08);
+}
+.dark-mode .main-header.navbar {
+    background: rgba(2,6,23,0.75) !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+}
+
+/* Sidebar modern gradient */
+.sidebar-dark-primary { background: linear-gradient(180deg, #0f172a 0%, #111827 100%) !important; }
+.brand-link { border-bottom: 0 !important; }
+
+/* Sidebar links */
+.nav-sidebar .nav-link { border-radius: 10px; margin: 2px 8px; color: #cbd5e1; }
+.nav-sidebar .nav-link:hover { background: rgba(148,163,184,0.15); color: #e2e8f0; }
+.nav-sidebar .nav-link.active {
+    background: linear-gradient(90deg, var(--brand-600), var(--brand-500)) !important;
+    color: #fff !important;
+    box-shadow: 0 6px 16px rgba(99,102,241,0.35);
+}
+
+/* Cards */
+.card { border: 0; border-radius: 16px; background: var(--card-bg); box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08); }
+.card-header { border: 0; background: transparent; font-weight: 600; color: #111827; }
+.dark-mode .card { background: #0b1220; box-shadow: 0 10px 24px rgba(0,0,0,0.5); }
+.dark-mode .card-header { color: #e5e7eb; }
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--brand-600), var(--brand-500));
+    border: 0; box-shadow: 0 8px 18px rgba(79, 70, 229, 0.35);
+}
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-outline-secondary { border-radius: 10px; }
+.btn { border-radius: 12px; }
+
+/* Forms */
+.form-control, .select2-selection { border-radius: 12px !important; border-color: #e5e7eb; }
+.form-control:focus { box-shadow: 0 0 0 4px var(--ring) !important; border-color: var(--brand-500); }
+.select2-container--default .select2-selection--single { height: 38px; padding: 4px 8px; }
+.select2-container--default .select2-selection--single .select2-selection__arrow { height: 36px; }
+
+/* Toastr positioning adjust */
+#toast-container > div { border-radius: 12px; box-shadow: 0 10px 24px rgba(17,24,39,0.12); }
+
+/* Table tweaks */
+.table thead th { border-bottom: 1px solid #e5e7eb; color: #111827; }
+.dark-mode .table thead th { color: #e5e7eb; border-color: #1f2937; }
+.table td, .table th { vertical-align: middle; }
+
+/* Attendance row highlight (rely on existing classes) */
+.att-row-present { background: rgba(16,185,129,0.08); }
+.att-row-absent { background: rgba(239,68,68,0.08); }
+.att-row-late { background: rgba(245,158,11,0.08); }
