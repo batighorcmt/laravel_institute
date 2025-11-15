@@ -7,8 +7,20 @@
         }
         $genderMap = ['male'=>'পুরুষ','female'=>'মহিলা','other'=>'অন্যান্য'];
         $religionMap = ['islam'=>'ইসলাম','hindu'=>'হিন্দু','christian'=>'খ্রিষ্টান','buddhist'=>'বৌদ্ধ'];
-        $classTitle = trim($application->class_name ?: 'শ্রেণি');
-        if (mb_strpos($classTitle, 'শ্রেণি') === false) { $classTitle .= ' শ্রেণি'; }
+        $bnClassMap = [
+            '6' => 'ষষ্ঠ শ্রেণি',
+            '7' => 'সপ্তম শ্রেণি',
+            '8' => 'অষ্টম শ্রেণি',
+            '9' => 'নবম শ্রেণি',
+            '10' => 'দশম শ্রেণি',
+        ];
+        $rawClass = trim((string)($application->class_name ?? ''));
+        if ($rawClass !== '' && array_key_exists($rawClass, $bnClassMap)) {
+            $classTitle = $bnClassMap[$rawClass];
+        } else {
+            $classTitle = $rawClass !== '' ? $rawClass : 'শ্রেণি';
+            if (mb_strpos($classTitle, 'শ্রেণি') === false) { $classTitle .= ' শ্রেণি'; }
+        }
         $yearText = optional(optional($application->academicYear)->start_date)->format('Y') ?? date('Y');
     @endphp
     @push('styles')
