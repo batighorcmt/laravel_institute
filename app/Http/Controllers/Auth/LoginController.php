@@ -17,8 +17,9 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
+        // Allow username or email in the same field
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'email' => 'required|string',
             'password' => 'required',
         ]);
 
@@ -28,9 +29,11 @@ class LoginController extends Controller
                 ->withInput();
         }
 
-        $credentials = $request->only('email', 'password');
+        $login = $request->input('email');
+        $password = $request->input('password');
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        if (Auth::attempt($credentials, $request->filled('remember'))) {
+        if (Auth::attempt([$field => $login, 'password' => $password], $request->filled('remember'))) {
             $request->session()->regenerate();
 
             $user = Auth::user();

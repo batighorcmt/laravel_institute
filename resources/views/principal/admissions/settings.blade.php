@@ -8,8 +8,6 @@
     <a href="{{ route('principal.institute.admissions.applications', $school) }}" class="btn btn-outline-primary">Applications</a>
   </div>
 </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 <div class="card">
   <div class="card-body">
     <form method="POST" action="{{ route('principal.institute.admissions.settings.update', $school) }}">
@@ -38,6 +36,47 @@
       <div class="text-muted">Share this link for public applications.</div>
     @else
       <div class="text-muted">Enable admissions to generate a public link.</div>
+    @endif
+
+    <hr>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="mb-0">Per-Class Admission Settings</h5>
+      <a href="{{ route('principal.institute.admissions.class-settings.index', $school) }}" class="btn btn-sm btn-outline-secondary">Manage</a>
+    </div>
+    @if(isset($classSettings) && $classSettings->count())
+      <div class="table-responsive mb-3">
+        <table class="table table-sm table-bordered mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th style="width:80px">Class</th>
+              <th style="width:80px">Fee (৳)</th>
+              <th style="width:140px">Deadline</th>
+              <th style="width:110px">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach($classSettings as $cs)
+              @php($deadline = $cs->deadline)
+              <tr>
+                <td class="align-middle">{{ $cs->class_code }}</td>
+                <td class="align-middle">{{ (int)$cs->fee_amount }}</td>
+                <td class="align-middle">{{ $deadline ? $deadline->format('d-m-Y') : '—' }}</td>
+                <td class="align-middle">
+                  @if($cs->active && (!$deadline || $deadline->isFuture()))
+                    <span class="badge badge-success">Open</span>
+                  @elseif($cs->active && $deadline && $deadline->isPast())
+                    <span class="badge badge-warning text-dark">Expired</span>
+                  @else
+                    <span class="badge badge-secondary">Inactive</span>
+                  @endif
+                </td>
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+    @else
+      <div class="text-muted">কোনো শ্রেণির ফি ও সময়সীমা এখনো সেট করা হয়নি। <a href="{{ route('principal.institute.admissions.class-settings.index', $school) }}">Manage</a></div>
     @endif
   </div>
 </div>

@@ -2,7 +2,6 @@
 @section('content')
 <div class="p-6">
     <h1 class="text-xl font-semibold mb-4">আবেদন বিস্তারিত</h1>
-    @if(session('success'))<div class="bg-green-100 text-green-700 px-4 py-2 rounded mb-4">{{ session('success') }}</div>@endif
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm bg-white p-4 border rounded">
         <div><strong>ID:</strong> {{ $application->app_id }}</div>
         <div><strong>নাম (EN):</strong> {{ $application->name_en }}</div>

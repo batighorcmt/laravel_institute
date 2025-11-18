@@ -5,8 +5,6 @@
   <h1 class="m-0">শিক্ষাবর্ষ - {{ $school->name }}</h1>
   <a href="{{ route('principal.institute.academic-years.create',$school) }}" class="btn btn-success"><i class="fas fa-plus mr-1"></i> নতুন শিক্ষাবর্ষ</a>
 </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 <div class="card"><div class="card-body p-0">
   <div class="table-responsive">
     <table class="table table-striped mb-0">

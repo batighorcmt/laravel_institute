@@ -44,12 +44,6 @@
     <div class="print-actions no-print">
         <button type="button" class="btn btn-success" onclick="window.print()"><i class="fas fa-print"></i> প্রিন্ট</button>
     </div>
-    @if(session('success'))
-        <div class="alert alert-success no-print">{{ session('success') }}</div>
-    @endif
-    @if(session('error'))
-        <div class="alert alert-danger no-print">{{ session('error') }}</div>
-    @endif
 
     <div class="row">
         <div class="col-md-6">

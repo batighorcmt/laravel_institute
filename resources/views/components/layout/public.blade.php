@@ -26,6 +26,25 @@
                 {{ $slot }}
             </div>
         </div>
+        @php($flash = session()->get('success') ?? session()->get('status') ?? null)
+        @if($flash)
+            @push('scripts')
+            <script>
+                window.addEventListener('DOMContentLoaded', function(){
+                    if (window.toastr) { toastr.success(@json($flash)); }
+                });
+            </script>
+            @endpush
+        @endif
+        @if(session('error'))
+            @push('scripts')
+            <script>
+                window.addEventListener('DOMContentLoaded', function(){
+                    if (window.toastr) { toastr.error(@json(session('error'))); }
+                });
+            </script>
+            @endpush
+        @endif
         @stack('scripts')
     </body>
 </html>

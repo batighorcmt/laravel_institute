@@ -4,8 +4,6 @@
 <div class="d-flex justify-content-between mb-3">
   <h1 class="m-0">Class Attendance</h1>
 </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 
 <div class="row">
     <div class="col-md-12">

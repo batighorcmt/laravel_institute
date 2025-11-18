@@ -71,6 +71,9 @@
                     <form action="{{ route('admission.apply.submit', $school->code) }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
                         @csrf
                         <div class="card-body p-4">
+                            <div class="mb-3">
+                                <div class="alert alert-info py-2 mb-0" id="selectedClassInfo" style="display:none;"></div>
+                            </div>
                             <!-- Personal Information Section -->
                             <div class="form-section mb-4">
                                 <div class="section-header bg-light p-2 mb-3 rounded">
@@ -80,17 +83,28 @@
                                 <div class="row g-3">
                                     <!-- Class and Session -->
                                     <div class="col-md-6">
+                                        @php($bnClasses = ['6'=>'ষষ্ঠ শ্রেণি','7'=>'সপ্তম শ্রেণি','8'=>'অষ্টম শ্রেণি','9'=>'নবম শ্রেণি','10'=>'দশম শ্রেণি'])
                                         <div class="form-floating">
-                                            <select class="form-select @error('class_name') is-invalid @enderror" id="class" name="class_name" required>
+                                            <select class="form-select @error('class_name') is-invalid @enderror" id="class" name="class_name" required {{ (isset($classSettings) && $classSettings->count()===0)?'disabled':'' }}>
                                                 <option value="">-- নির্বাচন করুন --</option>
-                                                <option value="6" {{ old('class_name') == '6' ? 'selected' : '' }}>ষষ্ঠ শ্রেণি</option>
-                                                <option value="7" {{ old('class_name') == '7' ? 'selected' : '' }}>সপ্তম শ্রেণি</option>
-                                                <option value="8" {{ old('class_name') == '8' ? 'selected' : '' }}>অষ্টম শ্রেণি</option>
-                                                <option value="9" {{ old('class_name') == '9' ? 'selected' : '' }}>নবম শ্রেণি</option>
+                                                @isset($classSettings)
+                                                    @forelse($classSettings as $cs)
+                                                        <option value="{{ $cs->class_code }}" {{ old('class_name') == $cs->class_code ? 'selected' : '' }} data-fee="{{ $cs->fee_amount }}" data-deadline="{{ $cs->deadline? $cs->deadline->format('d-m-Y'):'' }}">
+                                                            {{ $bnClasses[$cs->class_code] ?? $cs->class_code }} (ফি: {{ (int)$cs->fee_amount }}৳{{ $cs->deadline? ', শেষ তারিখ: '.$cs->deadline->format('d-m-Y'):'' }})
+                                                        </option>
+                                                    @empty
+                                                    @endforelse
+                                                @endisset
                                             </select>
                                             <label for="class">ভর্তি ইচ্ছুক শ্রেণি <span class="text-danger">*</span></label>
                                             <div class="invalid-feedback">@error('class_name') {{ $message }} @else দয়া করে শ্রেণি নির্বাচন করুন @enderror</div>
                                         </div>
+                                        <div id="classMeta" class="small mt-2 text-muted"></div>
+                                        @isset($classSettings)
+                                            @if($classSettings->count()===0)
+                                                <div class="alert alert-warning mt-2 mb-0 p-2">বর্তমানে কোনো শ্রেণির ভর্তি আবেদন গ্রহণ করা হচ্ছে না।</div>
+                                            @endif
+                                        @endisset
                                     </div>
                                     
                                     <div class="col-md-6">
@@ -153,23 +167,7 @@
                                         </div>
                                     </div>
                                     
-                                    <!-- Guardian's Name + Relation -->
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            <input type="text" class="form-control @error('guardian_name_bn') is-invalid @enderror" id="guardian_name_bn" name="guardian_name_bn" placeholder="অভিভাবকের নাম (বাংলায়)" value="{{ old('guardian_name_bn') }}">
-                                            <label for="guardian_name_bn">অভিভাবকের নাম (বাংলায়)</label>
-                                            <div class="invalid-feedback">@error('guardian_name_bn') {{ $message }} @else অভিভাবকের বাংলা নাম সঠিক নয় @enderror</div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <div class="form-floating">
-                                            <input type="text" class="form-control @error('guardian_name_en') is-invalid @enderror" id="guardian_name_en" name="guardian_name_en" placeholder="Guardian's Name (English)" value="{{ old('guardian_name_en') }}">
-                                            <label for="guardian_name_en">অভিভাবকের নাম (ইংরেজিতে)</label>
-                                            <div class="invalid-feedback">@error('guardian_name_en') {{ $message }} @else অভিভাবকের ইংরেজি নাম সঠিক নয় @enderror</div>
-                                        </div>
-                                    </div>
-
+                                    <!-- Guardian relation before names -->
                                     <div class="col-md-6">
                                         <div class="form-floating">
                                             <select class="form-select @error('guardian_relation') is-invalid @enderror" id="guardian_relation" name="guardian_relation" required>
@@ -184,6 +182,22 @@
                                             </select>
                                             <label for="guardian_relation">অভিভাবকের সম্পর্ক <span class="text-danger">*</span></label>
                                             <div class="invalid-feedback">@error('guardian_relation') {{ $message }} @else দয়া করে সম্পর্ক নির্বাচন করুন @enderror</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control @error('guardian_name_bn') is-invalid @enderror" id="guardian_name_bn" name="guardian_name_bn" placeholder="অভিভাবকের নাম (বাংলায়)" value="{{ old('guardian_name_bn') }}">
+                                            <label for="guardian_name_bn">অভিভাবকের নাম (বাংলায়)</label>
+                                            <div class="invalid-feedback">@error('guardian_name_bn') {{ $message }} @else অভিভাবকের বাংলা নাম সঠিক নয় @enderror</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control @error('guardian_name_en') is-invalid @enderror" id="guardian_name_en" name="guardian_name_en" placeholder="Guardian's Name (English)" value="{{ old('guardian_name_en') }}">
+                                            <label for="guardian_name_en">অভিভাবকের নাম (ইংরেজিতে)</label>
+                                            <div class="invalid-feedback">@error('guardian_name_en') {{ $message }} @else অভিভাবকের ইংরেজি নাম সঠিক নয় @enderror</div>
                                         </div>
                                     </div>
                                     
@@ -243,11 +257,11 @@
                                                         <div class="form-floating">
                                                             <select class="form-select @error('religion') is-invalid @enderror" id="religion" name="religion" required>
                                                                 <option value="">-- নির্বাচন করুন --</option>
-                                                                <option value="islam" {{ old('religion') == 'islam' ? 'selected' : '' }}>ইসলাম</option>
-                                                                <option value="hindu" {{ old('religion') == 'hindu' ? 'selected' : '' }}>হিন্দু</option>
-                                                                <option value="christian" {{ old('religion') == 'christian' ? 'selected' : '' }}>খ্রিষ্টান</option>
-                                                                <option value="buddhist" {{ old('religion') == 'buddhist' ? 'selected' : '' }}>বৌদ্ধ</option>
-                                                                <option value="other" {{ old('religion') == 'other' ? 'selected' : '' }}>অন্যান্য</option>
+                                                                <option value="islam" {{ old('religion') == 'Islam' ? 'selected' : '' }}>ইসলাম</option>
+                                                                <option value="hindu" {{ old('religion') == 'Hindu' ? 'selected' : '' }}>হিন্দু</option>
+                                                                <option value="christian" {{ old('religion') == 'Christian' ? 'selected' : '' }}>খ্রিষ্টান</option>
+                                                                <option value="buddhist" {{ old('religion') == 'Buddhist' ? 'selected' : '' }}>বৌদ্ধ</option>
+                                                                <option value="other" {{ old('religion') == 'Other' ? 'selected' : '' }}>অন্যান্য</option>
                                                             </select>
                                                             <label for="religion">ধর্ম <span class="text-danger">*</span></label>
                                                             <div class="invalid-feedback">@error('religion') {{ $message }} @else দয়া করে ধর্ম নির্বাচন করুন @enderror</div>
@@ -394,7 +408,9 @@
                                         <div class="form-floating">
                                             <select class="form-select @error('pass_year') is-invalid @enderror" id="pass_year" name="pass_year" required>
                                                 <option value="">-- নির্বাচন করুন --</option>
-                                                @for($y = date('Y') - 1; $y >= 2010; $y--)
+                                                @php $currentYear = (int) date('Y'); @endphp
+                                                @for($i = 0; $i <= 10; $i++)
+                                                    @php $y = $currentYear - $i; @endphp
                                                     <option value="{{ $y }}" {{ old('pass_year') == $y ? 'selected' : '' }}>{{ $y }}</option>
                                                 @endfor
                                             </select>
@@ -550,6 +566,29 @@
                 maxDate: "today",
                 locale: "bn"
             });
+            // Dynamic class fee & deadline display
+            const classSelect = document.getElementById('class');
+            const classMeta = document.getElementById('classMeta');
+            const selectedInfo = document.getElementById('selectedClassInfo');
+            function updateClassMeta(){
+                if(!classSelect) return;
+                const opt = classSelect.options[classSelect.selectedIndex];
+                if(!opt || !opt.value){
+                    if(classMeta) classMeta.textContent='';
+                    if(selectedInfo){ selectedInfo.style.display='none'; selectedInfo.textContent=''; }
+                    return;
+                }
+                const fee = opt.getAttribute('data-fee');
+                const deadline = opt.getAttribute('data-deadline');
+                if(classMeta){
+                    classMeta.textContent = 'নির্বাচিত ফি: ' + (fee? fee+'৳':'অজানা') + (deadline? ' | শেষ তারিখ: '+deadline:'');
+                }
+                if(selectedInfo){
+                    selectedInfo.textContent = 'আপনি '+ opt.textContent + ' নির্বাচন করেছেন';
+                    selectedInfo.style.display='block';
+                }
+            }
+            if(classSelect){ classSelect.addEventListener('change', updateClassMeta); updateClassMeta(); }
             
             // Real-time validation
             const bnRegex = /^[\u0980-\u09FF .\-]+$/;
@@ -663,7 +702,9 @@
 
             // Submit guard combining browser + custom checks
             const form = document.querySelector('form.needs-validation');
+            let submitting = false;
             form.addEventListener('submit', function(event){
+                if (submitting) { event.preventDefault(); event.stopPropagation(); return false; }
                 let ok = true;
                 mappings.forEach(([_, fn])=>{ if (!fn()) ok = false; });
                 if (!validateRequiredSelect('class','ভর্তি ইচ্ছুক শ্রেণি')) ok = false;
@@ -680,6 +721,12 @@
                     event.stopPropagation();
                 }
                 form.classList.add('was-validated');
+                if (ok && form.checkValidity()) {
+                    // Disable submit to prevent double submission
+                    submitting = true;
+                    const btn = form.querySelector('button[type="submit"]');
+                    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> জমা হচ্ছে...'; }
+                }
             });
 
             // Initialize behaviors

@@ -64,15 +64,9 @@
                       </form>
                   @endif
                     @if($app->status !== 'cancelled')
-                      <form action="{{ route('principal.institute.admissions.applications.cancel', [$school->id, $app->id]) }}" method="post" class="ml-1" style="min-width:180px">
-                        @csrf
-                        <div class="input-group input-group-sm">
-                          <input type="text" name="cancellation_reason" class="form-control" placeholder="বাতিলের কারণ" required>
-                          <div class="input-group-append">
-                            <button class="btn btn-outline-danger" title="Cancel" onclick="return confirm('বাতিল নিশ্চিত?')"><i class="fas fa-times"></i></button>
-                          </div>
-                        </div>
-                      </form>
+                      <button type="button" class="btn btn-outline-danger" title="Cancel" data-toggle="modal" data-target="#cancelModal" data-app-id="{{ $app->id }}" data-app-name="{{ $app->applicant_name }}" data-cancel-url="{{ route('principal.institute.admissions.applications.cancel', [$school->id, $app->id]) }}">
+                        <i class="fas fa-times"></i>
+                      </button>
                     @endif
                   @if($app->accepted_at)
                       <a href="{{ route('principal.institute.admissions.applications.admit_card', [$school->id, $app->id]) }}" class="btn btn-outline-success" title="Admit Card"><i class="fas fa-id-card"></i></a>
@@ -90,4 +84,52 @@
   </div>
   <div class="card-footer">{{ $apps->links() }}</div>
 </div>
+  <!-- Cancellation Modal -->
+  <div class="modal fade" id="cancelModal" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white py-2">
+          <h5 class="modal-title" id="cancelModalLabel"><i class="fas fa-ban mr-1"></i> আবেদন বাতিল</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form id="cancelForm" method="post" action="#" class="m-0">
+          @csrf
+          <div class="modal-body">
+            <p class="mb-2 small text-muted">আবেদন আইডি: <span id="cancelAppId" class="font-weight-bold"></span></p>
+            <p class="mb-2 small text-muted">আবেদনকারীর নাম: <span id="cancelAppName" class="font-weight-bold"></span></p>
+            <p class="mb-3 small">বাতিলের তারিখ (স্বয়ংক্রিয়): <span class="font-weight-bold">{{ now()->format('d-m-Y H:i') }}</span></p>
+            <div class="form-group mb-2">
+              <label class="font-weight-semibold">বাতিলের কারণ <span class="text-danger">*</span></label>
+              <textarea name="cancellation_reason" id="cancellationReason" class="form-control" rows="3" placeholder="কারণ লিখুন" required></textarea>
+            </div>
+            <div class="alert alert-warning py-2 mb-2 small">একবার বাতিল করলে পুনরায় গ্রহণ করতে চাইলে পৃথক অনুমোদন প্রয়োজন হতে পারে।</div>
+          </div>
+          <div class="modal-footer py-2">
+            <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">বন্ধ</button>
+            <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-check mr-1"></i> নিশ্চিত বাতিল</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var cancelModal = document.getElementById('cancelModal');
+  $('#cancelModal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);
+    var appId = button.data('app-id');
+    var appName = button.data('app-name');
+    var url = button.data('cancel-url');
+    $('#cancelForm').attr('action', url);
+    $('#cancelAppId').text(appId);
+    $('#cancelAppName').text(appName);
+    $('#cancellationReason').val('').focus();
+  });
+});
+</script>
+@endpush

@@ -21,8 +21,6 @@
     <a href="{{ route('principal.institute.students.edit',[$school,$student]) }}" class="btn btn-primary"><i class="fas fa-edit mr-1"></i> সম্পাদনা</a>
   </div>
 </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 <div class="row">
   <!-- Left column: Profile & Contacts -->
   <div class="col-lg-4">

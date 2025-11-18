@@ -5,8 +5,6 @@
   <h1 class="m-0">{{ $class->name }} ({{ $class->numeric_value }}) এর বিষয়সমূহ</h1>
   <a href="{{ route('principal.institute.classes.index',$school) }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> ক্লাস তালিকা</a>
 </div>
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 <div class="row">
   <div class="col-md-5">
     <div class="card">

@@ -4,8 +4,6 @@
 <div class="d-flex justify-content-between mb-3">
   <h1 class="m-0">টিম / গ্রুপ হাজিরা</h1>
 </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 
 <div class="card">
   <div class="card-header"><h3 class="card-title">ফিল্টার</h3></div>

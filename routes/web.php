@@ -95,6 +95,8 @@ Route::middleware(['auth'])->group(function () {
         // School CRUD - only super admin
         Route::middleware([EnsureSuperAdmin::class])->group(function () {
             Route::resource('schools', SchoolController::class)->except(['show']);
+            // Added explicit show route for viewing full school + principal details
+            Route::get('schools/{school}', [SchoolController::class, 'show'])->name('schools.show');
             Route::get('schools/{school}/manage', [SchoolController::class, 'manage'])->name('schools.manage');
         });
     });
@@ -145,6 +147,11 @@ Route::middleware(['auth'])->group(function () {
             Route::prefix('admissions')->name('admissions.')->group(function(){
                 Route::get('/settings', [PrincipalAdmissionController::class,'settings'])->name('settings');
                 Route::post('/settings', [PrincipalAdmissionController::class,'updateSettings'])->name('settings.update');
+                // Per-class admission settings
+                Route::get('/class-settings', [\App\Http\Controllers\Principal\AdmissionClassSettingController::class,'index'])->name('class-settings.index');
+                Route::post('/class-settings', [\App\Http\Controllers\Principal\AdmissionClassSettingController::class,'store'])->name('class-settings.store');
+                Route::put('/class-settings/{setting}', [\App\Http\Controllers\Principal\AdmissionClassSettingController::class,'update'])->name('class-settings.update');
+                Route::delete('/class-settings/{setting}', [\App\Http\Controllers\Principal\AdmissionClassSettingController::class,'destroy'])->name('class-settings.destroy');
                 Route::get('/applications', [PrincipalAdmissionController::class,'applications'])->name('applications');
                 Route::get('/applications/{application}', [PrincipalAdmissionController::class,'show'])->name('applications.show');
                 Route::post('/applications/{application}/accept', [PrincipalAdmissionController::class,'accept'])->name('applications.accept');

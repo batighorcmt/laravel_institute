@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserSchoolRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class TeacherController extends Controller
 {
@@ -21,7 +22,11 @@ class TeacherController extends Controller
             ->orderByRaw('COALESCE(serial_number, 999999)')
             ->orderBy('id')
             ->get();
-        return view('principal.teachers.index', compact('school','teachers'));
+        $principalUserIds = UserSchoolRole::forSchool($school->id)
+            ->withRole(Role::PRINCIPAL)
+            ->pluck('user_id')
+            ->all();
+        return view('principal.teachers.index', compact('school','teachers','principalUserIds'));
     }
 
     public function store(Request $request, School $school)
@@ -62,6 +67,23 @@ class TeacherController extends Controller
 
     public function update(Request $request, School $school, UserSchoolRole $teacher)
     {
+        // Allow principal to edit own info; others blocked unless super admin
+        $current = Auth::user();
+        $hasSuperAdmin = false;
+        if ($current) {
+            $hasSuperAdmin = \App\Models\UserSchoolRole::where('user_id',$current->id)
+                ->where('status','active')
+                ->whereHas('role', function($q){ $q->where('name', Role::SUPER_ADMIN); })
+                ->exists();
+        }
+        if ($teacher->user && $teacher->user->isPrincipal($school->id)) {
+            if (!$current) {
+                return redirect()->back()->with('error','অননুমোদিত অ্যাকশন');
+            }
+            if (!$hasSuperAdmin && $current->id !== $teacher->user_id) {
+                return redirect()->back()->with('error','প্রধান শিক্ষকের তথ্য কেবল নিজে বা সুপার অ্যাডমিন সম্পাদনা করতে পারবেন');
+            }
+        }
         $data = $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name' => 'nullable|string|max:100',
@@ -92,6 +114,17 @@ class TeacherController extends Controller
     public function destroy(School $school, UserSchoolRole $teacher)
     {
         try {
+            $current = Auth::user();
+            $hasSuperAdmin = false;
+            if ($current) {
+                $hasSuperAdmin = \App\Models\UserSchoolRole::where('user_id',$current->id)
+                    ->where('status','active')
+                    ->whereHas('role', function($q){ $q->where('name', Role::SUPER_ADMIN); })
+                    ->exists();
+            }
+            if ($teacher->user && $teacher->user->isPrincipal($school->id) && (!$current || !$hasSuperAdmin)) {
+                return redirect()->back()->with('error','প্রধান শিক্ষকের তথ্য কেবল সুপার অ্যাডমিন মুছতে পারবেন');
+            }
             $teacher->delete();
             return redirect()->back()->with('success','শিক্ষক মুছে ফেলা হয়েছে');
         } catch (\Throwable $e) {

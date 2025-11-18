@@ -5,8 +5,6 @@
   <h1 class="m-0">শিক্ষার্থী তালিকা - {{ $school->name }}</h1>
   <a href="{{ route('principal.institute.students.create',$school) }}" class="btn btn-success"><i class="fas fa-user-plus mr-1"></i> নতুন শিক্ষার্থী</a>
 </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 <form class="form-inline mb-3" method="get">
   <input type="text" name="q" value="{{ $q }}" class="form-control mr-2" placeholder="নাম / আইডি সার্চ...">
   <button class="btn btn-outline-secondary">সার্চ</button>

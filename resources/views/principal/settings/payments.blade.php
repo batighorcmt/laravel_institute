@@ -8,7 +8,6 @@
     <a href="https://developer.sslcommerz.com/" target="_blank" class="btn btn-outline-secondary">Docs</a>
   </div>
 </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 <div class="card">
   <div class="card-body">
     <form method="POST" action="{{ route('principal.institute.payments.save', $school) }}">

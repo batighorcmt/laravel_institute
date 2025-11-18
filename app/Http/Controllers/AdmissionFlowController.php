@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\StoreAdmissionApplicationRequest;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\UploadedFile;
 
 class AdmissionFlowController extends Controller
@@ -48,7 +49,19 @@ class AdmissionFlowController extends Controller
         if (!request()->session()->has('admission_consent_given')) {
             return redirect()->route('admission.instruction', ['schoolCode' => $code]);
         }
-        return view('admission.apply', compact('school'));
+        // Fetch active & not expired class settings for this school & academic year (safe if migration not run)
+        $classSettings = collect();
+        if (Schema::hasTable('admission_class_settings')) {
+            $classSettings = \App\Models\AdmissionClassSetting::forSchoolYear(
+                    $school->id,
+                    $school->admission_academic_year_id
+                )
+                ->active()
+                ->notExpired()
+                ->orderBy('class_code')
+                ->get();
+        }
+        return view('admission.apply', compact('school','classSettings'));
     }
 
     public function submit($code, StoreAdmissionApplicationRequest $request)
@@ -59,9 +72,35 @@ class AdmissionFlowController extends Controller
             return redirect()->back()->with('error','ভর্তি শিক্ষাবর্ষ সেট না থাকায় আবেদন গ্রহণ হয়নি');
         }
         $data = $request->validated();
+        // Validate chosen class against active & not expired settings
+        if (!empty($data['class_name'])) {
+            $validSetting = \App\Models\AdmissionClassSetting::forSchoolYear(
+                    $school->id,
+                    $school->admission_academic_year_id
+                )
+                ->active()
+                ->notExpired()
+                ->where('class_code', $data['class_name'])
+                ->first();
+            if (!$validSetting) {
+                return redirect()->back()->withInput()->with('error','নির্বাচিত শ্রেণির জন্য বর্তমানে আবেদন গ্রহণ করা হচ্ছে না বা সময়সীমা পেরিয়েছে');
+            }
+        } else {
+            return redirect()->back()->withInput()->with('error','একটি শ্রেণি নির্বাচন করুন');
+        }
         DB::beginTransaction();
         try {
-            $appId = strtoupper(Str::random(8));
+            // Deterministic formatted APP ID: <SCHOOLCODE>_ADD<4-digit serial per academic year>
+            $prefix = strtoupper($school->code).'_ADD';
+            $serial = (int) (\App\Models\AdmissionApplication::where('school_id',$school->id)
+                ->where('academic_year_id', $school->admission_academic_year_id)
+                ->count()) + 1;
+            $appId = $prefix . str_pad((string)$serial, 4, '0', STR_PAD_LEFT);
+            // Ensure uniqueness defensively
+            while (\App\Models\AdmissionApplication::where('app_id',$appId)->exists()) {
+                $serial++;
+                $appId = $prefix . str_pad((string)$serial, 4, '0', STR_PAD_LEFT);
+            }
             $photoName = null;
             if ($request->hasFile('photo')) {
                 $photoName = $appId.'_photo.jpg';
@@ -92,6 +131,9 @@ class AdmissionFlowController extends Controller
                 'result' => $data['result'] ?? null,
                 'pass_year' => $data['pass_year'] ?? null,
                 'photo' => $photoName,
+                'data' => [
+                    'guardian_relation' => $data['guardian_relation'] ?? null,
+                ],
                 'payment_status' => 'Unpaid',
                 'status' => 'pending',
             ]);
@@ -99,6 +141,7 @@ class AdmissionFlowController extends Controller
             $applicantRole = Role::where('name', Role::APPLICANT)->first();
             $user = User::create([
                 'name' => $application->name_en,
+                'username' => $appId,
                 'first_name' => $application->name_en,
                 'email' => 'app_'.$appId.'@example.com',
                 'password' => bcrypt(Str::random(12)),
@@ -116,7 +159,7 @@ class AdmissionFlowController extends Controller
             $user->save();
 
             $smsService = new \App\Services\SmsService($school);
-            $message = "Your application submited to {$school->name}. Your Application ID: {$appId}, Password: {$password}.";
+            $message = "Your application submitted to {$school->name}. Username: {$appId}, Password: {$password}.";
             $smsService->sendSms($application->mobile, $message);
             DB::commit();
             return redirect()->route('admission.preview', [$school->code, $application->app_id]);
@@ -223,7 +266,14 @@ class AdmissionFlowController extends Controller
     {
         $school = $this->schoolByCode($code);
         $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
-        return view('admission.preview', compact('school','application'));
+        $fee = null;
+        if (\Illuminate\Support\Facades\Schema::hasTable('admission_class_settings') && $school->admission_academic_year_id) {
+            $setting = \App\Models\AdmissionClassSetting::forSchoolYear($school->id, $school->admission_academic_year_id)
+                ->where('class_code', $application->class_name)
+                ->first();
+            if ($setting) { $fee = (float) $setting->fee_amount; }
+        }
+        return view('admission.preview', compact('school','application','fee'));
     }
 
     public function paymentInitiate($code, Request $request)
@@ -234,7 +284,17 @@ class AdmissionFlowController extends Controller
         if (!$settings || !$settings->active) {
             return redirect()->back()->with('error','পেমেন্ট সেটিংস সক্রিয় নেই');
         }
-        $amount = 200; // static fee placeholder
+        // Dynamic fee based on class settings
+        $classSetting = \App\Models\AdmissionClassSetting::forSchoolYear(
+                $school->id,
+                $school->admission_academic_year_id
+            )
+            ->where('class_code',$application->class_name)
+            ->first();
+        if (!$classSetting) {
+            return redirect()->back()->with('error','এই শ্রেণির জন্য কোনো ফি সেট করা নেই');
+        }
+        $amount = (float) $classSetting->fee_amount;
         $tranId = 'TX'.strtoupper(Str::random(12));
         $invoice = 'INV'.date('Ymd').Str::upper(Str::random(6));
         $payment = AdmissionPayment::create([

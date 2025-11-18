@@ -36,16 +36,6 @@
     <div class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-9">
-                @if (session('error'))
-                    <div class="alert alert-danger mb-3" role="alert">
-                        {{ session('error') }}
-                    </div>
-                @endif
-                @if (session('success'))
-                    <div class="alert alert-success mb-3" role="alert">
-                        {{ session('success') }}
-                    </div>
-                @endif
                 <div class="card instruction-card shadow-lg border-0">
                     <div class="card-header bg-primary text-white py-3">
                         <h4 class="mb-0 text-center"><i class="fas fa-info-circle me-2"></i> ভর্তি নির্দেশনা - {{ $school->name }}</h4>

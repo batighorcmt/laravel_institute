@@ -25,8 +25,6 @@
     <a class="btn btn-outline-primary" href="{{ route('principal.institute.sms.index',$school) }}"><i class="fas fa-cog mr-1"></i> সেটিংস</a>
   </div>
   </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 
 {{-- Balance & Capacity Info --}}
 <div class="row mb-3 sms-balance-row">

@@ -5,8 +5,6 @@
   <h1 class="m-0">দলে শিক্ষার্থী যুক্ত করুন - {{ $team->name }}</h1>
   <a href="{{ route('principal.institute.teams.index',$school) }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> ফিরে যান</a>
 </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 
 <div class="card mb-3">
   <div class="card-header"><h5 class="m-0">ফিল্টার</h5></div>

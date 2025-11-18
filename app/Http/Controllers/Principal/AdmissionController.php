@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Principal;
 use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\AdmissionApplication;
+use App\Models\AdmissionClassSetting;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 
@@ -13,7 +14,13 @@ class AdmissionController extends Controller
     public function settings(School $school)
     {
         $academicYears = \App\Models\AcademicYear::where('school_id',$school->id)->orderByDesc('start_date')->get();
-        return view('principal.admissions.settings', compact('school','academicYears'));
+        $classSettings = collect();
+        if ($school->admission_academic_year_id) {
+            $classSettings = AdmissionClassSetting::forSchoolYear($school->id, $school->admission_academic_year_id)
+                ->orderBy('class_code')
+                ->get();
+        }
+        return view('principal.admissions.settings', compact('school','academicYears','classSettings'));
     }
 
     public function updateSettings(Request $request, School $school)

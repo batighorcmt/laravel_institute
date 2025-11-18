@@ -5,7 +5,6 @@
   <h1 class="m-0">বিশেষ দল / গ্রুপ তালিকা - {{ $school->name }}</h1>
   <a href="{{ route('principal.institute.teams.create',$school) }}" class="btn btn-success"><i class="fas fa-plus mr-1"></i> নতুন দল</a>
 </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 <form class="form-inline mb-3" method="get">
   <input type="text" name="q" value="{{ $q }}" class="form-control mr-2" placeholder="নাম সার্চ...">
   <button class="btn btn-outline-secondary">সার্চ</button>

@@ -8,8 +8,6 @@
     <a href="{{ route('principal.institute.sms.index',$school) }}" class="btn btn-outline-secondary"><i class="fas fa-cog mr-1"></i> সেটিংস</a>
   </div>
 </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 
 <div class="card mb-3">
   <div class="card-header"><strong>ফিল্টার</strong></div>

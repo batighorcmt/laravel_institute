@@ -5,7 +5,6 @@
   <h1 class="m-0">ম্যাপিং সম্পাদনা: {{ $mapping->subject->name }}</h1>
   <a href="{{ route('principal.institute.classes.subjects.index',[$school,$class]) }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> ফিরে যান</a>
 </div>
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 @if($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
 <div class="card">
   <div class="card-body">

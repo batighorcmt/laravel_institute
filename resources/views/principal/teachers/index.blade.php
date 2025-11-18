@@ -6,12 +6,6 @@
   <h1 class="m-0"><i class="fas fa-user-tie mr-1"></i> শিক্ষক ব্যবস্থাপনা</h1>
 </div>
 
-@if(session('success'))
-  <div class="alert alert-success">{{ session('success') }}</div>
-@endif
-@if(session('error'))
-  <div class="alert alert-danger">{{ session('error') }}</div>
-@endif
 
 <div class="row">
   <div class="col-md-5">
@@ -69,11 +63,20 @@
                   <td>{{ $t->user->phone }}</td>
                   <td>{{ $t->designation }}</td>
                   <td>
-                    <button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#editTeacher{{ $t->id }}">সম্পাদনা</button>
-                    <form action="{{ route('principal.institute.teachers.destroy', [$school, $t->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('মুছতে নিশ্চিত?');">
-                      @csrf @method('DELETE')
-                      <button class="btn btn-sm btn-outline-danger">মুছুন</button>
-                    </form>
+                    @php($isPrincipalUser = isset($principalUserIds) && in_array($t->user_id, $principalUserIds))
+                    @if($isPrincipalUser)
+                      @php($currentUser = Auth::user())
+                      @if($currentUser && $currentUser->id === $t->user_id)
+                        <button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#editTeacher{{ $t->id }}">সম্পাদনা</button>
+                      @endif
+                      <span class="badge badge-info">Principal</span>
+                    @else
+                      <button class="btn btn-sm btn-outline-secondary" data-toggle="modal" data-target="#editTeacher{{ $t->id }}">সম্পাদনা</button>
+                      <form action="{{ route('principal.institute.teachers.destroy', [$school, $t->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('মুছতে নিশ্চিত?');">
+                        @csrf @method('DELETE')
+                        <button class="btn btn-sm btn-outline-danger">মুছুন</button>
+                      </form>
+                    @endif
                   </td>
                 </tr>
                 <!-- Edit Modal -->

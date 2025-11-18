@@ -13,16 +13,16 @@
         .kv { display:flex; align-items:center; gap:.5rem; }
         .kv .k { color:#6c757d; min-width: 8rem; }
         .kv .v { font-weight:600; }
+        .applicant-name { font-weight: 800; font-size: 1.35rem; line-height: 1.25; }
+        .apply-class { font-weight: 700; font-size: 1.1rem; color: #0d6efd; }
+        @media (min-width:768px){ .applicant-name{ font-size:1.5rem; } .apply-class{ font-size:1.2rem; } }
+        .fee-highlight { font-size:1.4rem; font-weight:800; color:#0d6efd; }
+        .ssl-wide { width: 100vw; max-width: 100vw; height: auto; display:block; margin-left: 50%; transform: translateX(-50%); }
     </style>
     @endpush
 
     <div class="container my-4 preview-root">
-        @if(session('success'))
-            <div class="alert alert-success mb-3"><i class="fa-solid fa-circle-check me-1"></i> {{ session('success') }}</div>
-        @endif
-        @if(session('error'))
-            <div class="alert alert-danger mb-3"><i class="fa-solid fa-triangle-exclamation me-1"></i> {{ session('error') }}</div>
-        @endif
+        
 
         <div class="card hero-card border-0">
             <div class="hero-banner p-4 p-md-5">
@@ -38,8 +38,11 @@
                         </div>
                     </div>
                     <div class="text-end mt-3 mt-md-0">
-                        <div class="badge app-badge rounded-pill px-3 py-2">Application ID: <strong class="ms-1">{{ $application->app_id }}</strong></div>
-                        <div class="mt-2">
+                        <div>
+                            <span class="badge app-badge rounded-pill px-3 py-2 me-2 mb-2">Application ID: <strong class="ms-1">{{ $application->app_id }}</strong></span>
+                            <span class="badge app-badge rounded-pill px-3 py-2 mb-2">Username: <strong class="ms-1">{{ $application->app_id }}</strong></span>
+                        </div>
+                        <div class="mt-1">
                             @php $paid = $application->payment_status==='Paid'; @endphp
                             <span class="badge {{ $paid ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill stat-badge">
                                 <i class="fa-solid {{ $paid ? 'fa-circle-check' : 'fa-hourglass-half' }} me-1"></i> {{ $application->payment_status }}
@@ -54,19 +57,17 @@
 
             <div class="card-body p-4 p-md-5">
                 <div class="row g-3">
-                    <div class="col-md-4 text-center">
+                    <div class="col-md-4 text-center d-flex flex-column align-items-center justify-content-start">
                         <img class="avatar mb-3" src="{{ $application->photo ? asset('storage/admission/'.$application->photo) : asset('images/default-avatar.png') }}" alt="Applicant Photo">
-                        <div class="fw-semibold">{{ $application->name_bn }}</div>
+                        <div class="applicant-name text-center">{{ $application->name_bn ?: $application->name_en }}</div>
                         <div class="text-muted">{{ $application->name_en }}</div>
-                        <div class="mt-3">
-                            <span class="badge bg-primary"><i class="fa-solid fa-user-graduate me-1"></i> শ্রেণি: {{ $application->class_name ?? '—' }}</span>
-                        </div>
+                        <div class="apply-class mt-1 text-center">ভর্তিচ্ছুক শ্রেণি: {{ $application->class_name ?? '—' }}</div>
                     </div>
                     <div class="col-md-8">
                         <div class="mb-2 section-title"><i class="fa-solid fa-id-card-clip me-2 text-primary"></i>ব্যক্তিগত তথ্য</div>
                         <div class="row g-2">
                             <div class="col-sm-6">
-                                <div class="kv"><span class="list-icon"><i class="fa-regular fa-calendar"></i></span><div class="k">জন্ম তারিখ</div><div class="v">{{ $application->dob }}</div></div>
+                                <div class="kv"><span class="list-icon"><i class="fa-regular fa-calendar"></i></span><div class="k">জন্ম তারিখ</div><div class="v">{{ optional($application->dob)->format('Y-m-d') }}</div></div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="kv"><span class="list-icon"><i class="fa-solid fa-venus-mars"></i></span><div class="k">লিঙ্গ</div><div class="v">{{ $application->gender }}</div></div>
@@ -88,7 +89,15 @@
                                 <div class="kv"><span class="list-icon"><i class="fa-solid fa-person-dress me-1"></i></span><div class="k">মাতা</div><div class="v">{{ $application->mother_name_en }} <span class="text-secondary">/ {{ $application->mother_name_bn }}</span></div></div>
                             </div>
                             <div class="col-sm-6">
-                                <div class="kv"><span class="list-icon"><i class="fa-solid fa-user-shield me-1"></i></span><div class="k">অভিভাবক</div><div class="v">{{ $application->guardian_name_en ?? '—' }} <span class="text-secondary">/ {{ $application->guardian_name_bn ?? '—' }}</span></div></div>
+                                @php
+                                    $relMap = [
+                                        'father' => 'পিতা', 'mother' => 'মাতা', 'uncle' => 'চাচা/মামা', 'aunt' => 'চাচী/খালা',
+                                        'brother' => 'ভাই', 'sister' => 'বোন', 'other' => 'অন্যান্য'
+                                    ];
+                                    $relKey = data_get($application->data, 'guardian_relation');
+                                    $relBn = $relKey ? ($relMap[$relKey] ?? $relKey) : null;
+                                @endphp
+                                <div class="kv"><span class="list-icon"><i class="fa-solid fa-user-shield me-1"></i></span><div class="k">অভিভাবক</div><div class="v">{{ $application->guardian_name_en ?? '—' }} <span class="text-secondary">/ {{ $application->guardian_name_bn ?? '—' }}</span>@if($relBn) <span class="badge bg-secondary ms-2">{{ $relBn }}</span>@endif</div></div>
                             </div>
                         </div>
 
@@ -125,20 +134,29 @@
             </div>
 
             <div class="card-footer bg-light p-4">
-                <div class="text-center">
-                    @if($application->payment_status!=='Paid')
-                        <form action="{{ route('admission.payment', $school->code) }}" method="post" class="d-inline-block">
-                            @csrf
-                            <input type="hidden" name="app_id" value="{{ $application->app_id }}">
-                            <button type="submit" class="btn btn-primary btn-lg px-5"><i class="fa-solid fa-wallet me-2"></i> পেমেন্ট করুন</button>
-                        </form>
-                        <div class="mt-3">
-                            <img src="https://developer.sslcommerz.com/wp-content/uploads/2021/04/SSLCommerz-Pay-With-logo-All-Size-03.png" alt="Pay with SSLCommerz" style="max-height:44px; width:auto;">
+                @if($application->payment_status!=='Paid')
+                    <div class="d-flex flex-column flex-md-row align-items-center justify-content-between">
+                        <div class="mb-3 mb-md-0">
+                            @if(isset($fee))
+                                <span class="fee-highlight">ফি: ৳ {{ number_format($fee, 0) }}</span>
+                            @endif
                         </div>
-                    @else
+                        <div>
+                            <form action="{{ route('admission.payment', $school->code) }}" method="post" class="d-inline-block">
+                                @csrf
+                                <input type="hidden" name="app_id" value="{{ $application->app_id }}">
+                                <button type="submit" class="btn btn-primary btn-lg px-5"><i class="fa-solid fa-wallet me-2"></i> পেমেন্ট করুন</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <img class="ssl-wide" src="{{ asset('images/sslcommerz.png') }}" alt="Pay with SSLCommerz" onerror="this.onerror=null;this.src='https://developer.sslcommerz.com/wp-content/uploads/2019/11/sslcommerz-banner.png';">
+                    </div>
+                @else
+                    <div class="text-center">
                         <a href="{{ route('admission.copy', [$school->code, $application->app_id]) }}" class="btn btn-success btn-lg"><i class="fa-solid fa-file-lines me-2"></i> আবেদন কপি</a>
-                    @endif
-                </div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>

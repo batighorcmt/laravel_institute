@@ -8,7 +8,6 @@
     <button onclick="window.print()" class="btn btn-primary ml-1"><i class="fas fa-print mr-1"></i> প্রিন্ট</button>
   </div>
 </div>
-@if(session('success'))<div class="alert alert-success no-print">{{ session('success') }}</div>@endif
 
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">

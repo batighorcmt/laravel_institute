@@ -5,8 +5,6 @@
   <h1 class="m-0"><i class="fas fa-sms mr-1"></i> SMS সেটিংস</h1>
   <button onclick="window.print()" class="btn btn-outline-primary d-none d-md-inline"><i class="fas fa-print mr-1"></i> প্রিন্ট</button>
 </div>
-@if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-@if(session('error'))<div class="alert alert-danger">{{ session('error') }}</div>@endif
 
 <ul class="nav nav-tabs mb-3" id="smsTab" role="tablist">
   <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#api" role="tab">API Settings</a></li>
