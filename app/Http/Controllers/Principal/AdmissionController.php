@@ -8,6 +8,7 @@ use App\Models\AdmissionApplication;
 use App\Models\AdmissionClassSetting;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AdmissionController extends Controller
 {
@@ -62,9 +63,19 @@ class AdmissionController extends Controller
                 ->with('error','বাতিলকৃত আবেদন গ্রহণযোগ্য নয়');
         }
         if (!$application->accepted_at) {
-            $application->accepted_at = now();
-            $application->status = 'accepted';
-            $application->save();
+            DB::transaction(function () use ($school, $application) {
+                if (!$application->admission_roll_no) {
+                    $q = AdmissionApplication::where('school_id', $school->id);
+                    if ($application->academic_year_id) {
+                        $q->where('academic_year_id', $application->academic_year_id);
+                    }
+                    $max = (int) ($q->lockForUpdate()->max('admission_roll_no') ?? 0);
+                    $application->admission_roll_no = $max + 1; // store as int; render padded
+                }
+                $application->accepted_at = now();
+                $application->status = 'accepted';
+                $application->save();
+            });
         }
         return redirect()->route('principal.institute.admissions.applications.show', [$school->id, $application->id])
             ->with('success','আবেদন গ্রহণ করা হয়েছে');

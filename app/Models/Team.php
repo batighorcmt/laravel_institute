@@ -6,6 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+/**
+ * @property int $id
+ * @property int $school_id
+ * @property string $name
+ * @property string|null $type
+ * @property string|null $description
+ * @property string $status
+ *
+ * @method static \Illuminate\Database\Eloquent\Builder forSchool(int $schoolId)
+ * @method static \Illuminate\Database\Eloquent\Builder active()
+ */
 class Team extends Model
 {
     protected $fillable = [
@@ -15,6 +26,11 @@ class Team extends Model
     protected $casts = [
         'status' => 'string'
     ];
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+    }
 
     public function school(): BelongsTo { return $this->belongsTo(School::class); }
 

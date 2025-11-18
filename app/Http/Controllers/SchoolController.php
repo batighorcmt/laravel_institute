@@ -275,4 +275,33 @@ class SchoolController extends Controller
     {
         return view('superadmin.schools.manage', compact('school'));
     }
+
+    /**
+     * Reset the school's principal password and show the new password once.
+     */
+    public function resetPassword(School $school)
+    {
+        $principalPivot = UserSchoolRole::forSchool($school->id)->withRole(Role::PRINCIPAL)->first();
+        if (!$principalPivot) {
+            return redirect()->route('superadmin.schools.index')
+                ->with('error', __('প্রধান শিক্ষক/অধ্যক্ষ ইউজার পাওয়া যায়নি।'));
+        }
+        $user = User::find($principalPivot->user_id);
+        if (!$user) {
+            return redirect()->route('superadmin.schools.index')
+                ->with('error', __('ইউজার পাওয়া যায়নি।'));
+        }
+
+        $newPassword = Str::password(10);
+        $user->update(['password' => \Illuminate\Support\Facades\Hash::make($newPassword)]);
+
+        return redirect()->route('superadmin.schools.index')
+            ->with('success', __('পাসওয়ার্ড রিসেট করা হয়েছে।'))
+            ->with('default_admin', [
+                'email' => $user->email,
+                'password' => $newPassword,
+                'school_id' => $school->id,
+                'school_name' => $school->name,
+            ]);
+    }
 }

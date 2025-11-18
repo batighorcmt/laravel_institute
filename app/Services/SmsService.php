@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 class SmsService
 {
+    /** @var School */
     protected $school;
     protected $apiUrl;
     protected $apiKey;

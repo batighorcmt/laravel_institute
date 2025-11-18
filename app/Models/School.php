@@ -5,6 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string|null $name
+ * @property string|null $name_bn
+ * @property string|null $code
+ * @property string|null $address
+ * @property string|null $address_bn
+ * @property string|null $phone
+ * @property string|null $email
+ * @property string|null $website
+ * @property string|null $logo
+ * @property int|null $admission_academic_year_id
+ */
 class School extends Model
 {
     protected $fillable = [

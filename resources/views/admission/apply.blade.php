@@ -408,10 +408,8 @@
                                         <div class="form-floating">
                                             <select class="form-select @error('pass_year') is-invalid @enderror" id="pass_year" name="pass_year" required>
                                                 <option value="">-- নির্বাচন করুন --</option>
-                                                @php $currentYear = (int) date('Y'); @endphp
-                                                @for($i = 0; $i <= 10; $i++)
-                                                    @php $y = $currentYear - $i; @endphp
-                                                    <option value="{{ $y }}" {{ old('pass_year') == $y ? 'selected' : '' }}>{{ $y }}</option>
+                                                @for ($i = 0; $i <= 10; $i++)
+                                                    <option value="{{ now()->year - $i }}" {{ old('pass_year') == (now()->year - $i) ? 'selected' : '' }}>{{ now()->year - $i }}</option>
                                                 @endfor
                                             </select>
                                             <label for="pass_year">পাশের বছর <span class="text-danger">*</span></label>

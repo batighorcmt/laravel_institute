@@ -53,6 +53,7 @@
                             <th>কোড</th>
                             <th>ফোন</th>
                             <th>ইমেইল</th>
+                            <th>পাসওয়ার্ড</th>
                             <th>স্ট্যাটাস</th>
                             <th class="text-right">অ্যাকশন</th>
                         </tr>
@@ -74,6 +75,12 @@
                                 <td>{{ $school->code }}</td>
                                 <td>{{ $school->phone }}</td>
                                 <td>{{ $school->email }}</td>
+                                <td>
+                                    <form action="{{ route('superadmin.schools.reset-password', $school) }}" method="post" onsubmit="return confirm('এই স্কুলের প্রিন্সিপালের পাসওয়ার্ড রিসেট করবেন? নতুন পাসওয়ার্ডটি স্ক্রিনে দেখানো হবে।');">
+                                        @csrf
+                                        <button class="btn btn-sm btn-outline-danger">রিসেট ও দেখাও</button>
+                                    </form>
+                                </td>
                                 <td>
                                     <span class="badge badge-{{ $school->status === 'active' ? 'success' : 'secondary' }}">{{ $school->status }}</span>
                                 </td>

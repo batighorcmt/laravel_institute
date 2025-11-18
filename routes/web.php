@@ -98,6 +98,8 @@ Route::middleware(['auth'])->group(function () {
             // Added explicit show route for viewing full school + principal details
             Route::get('schools/{school}', [SchoolController::class, 'show'])->name('schools.show');
             Route::get('schools/{school}/manage', [SchoolController::class, 'manage'])->name('schools.manage');
+            // Reset principal password and show once to superadmin
+            Route::post('schools/{school}/reset-password', [SchoolController::class, 'resetPassword'])->name('schools.reset-password');
         });
     });
 
