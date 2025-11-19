@@ -39,9 +39,37 @@ class AdmissionController extends Controller
 
     public function applications(School $school)
     {
-        $apps = AdmissionApplication::where('school_id',$school->id)
-            ->orderByDesc('id')->paginate(20);
-        return view('principal.admissions.index', compact('school','apps'));
+        $query = AdmissionApplication::where('school_id',$school->id);
+        $apps = $query->orderByDesc('id')->paginate(20);
+
+        // Statistics
+        $totalApps = (clone $query)->count();
+        $acceptedApps = (clone $query)->whereNotNull('accepted_at')->count();
+        $cancelledApps = (clone $query)->where('status','cancelled')->count();
+        $paidApps = (clone $query)->where('payment_status','Paid')->count();
+
+        // Total paid amount (sum of successful payments for applications of this school)
+        $totalPaidAmount = \App\Models\AdmissionPayment::whereHas('application', function($q) use ($school){
+            $q->where('school_id',$school->id);
+        })->where('status','Completed')->sum('amount');
+
+        // Expected total fees based on class settings (match by class_code == application->class_name)
+        $expectedTotalFees = 0;
+        $settings = [];
+        if ($school->admission_academic_year_id) {
+            $settings = \App\Models\AdmissionClassSetting::forSchoolYear($school->id, $school->admission_academic_year_id)
+                ->get()->keyBy('class_code');
+        }
+        foreach ((clone $query)->get(['class_name']) as $appRow) {
+            if ($appRow->class_name && isset($settings[$appRow->class_name])) {
+                $expectedTotalFees += (float) $settings[$appRow->class_name]->fee_amount;
+            }
+        }
+        $unpaidAmount = max($expectedTotalFees - (float)$totalPaidAmount, 0);
+
+        return view('principal.admissions.index', compact(
+            'school','apps','totalApps','acceptedApps','cancelledApps','paidApps','totalPaidAmount','expectedTotalFees','unpaidAmount'
+        ));
     }
 
     public function payments(School $school)
@@ -76,6 +104,15 @@ class AdmissionController extends Controller
                 $application->status = 'accepted';
                 $application->save();
             });
+            // Send acceptance SMS
+            $rollDisplay = str_pad((string)$application->admission_roll_no, 4, '0', STR_PAD_LEFT);
+            $smsService = new \App\Services\SmsService($school);
+            $message = "আপনার ভর্তি আবেদন গ্রহণ করা হয়েছে। ভর্তি রোল নং-{$rollDisplay}.-JSS";
+            $smsService->sendSms($application->mobile, $message, 'admission_accept', [
+                'recipient_type' => 'applicant',
+                'recipient_id' => $application->id,
+                'recipient_name' => $application->name_en,
+            ]);
         }
         return redirect()->route('principal.institute.admissions.applications.show', [$school->id, $application->id])
             ->with('success','আবেদন গ্রহণ করা হয়েছে');
@@ -110,6 +147,14 @@ class AdmissionController extends Controller
         $application->status = 'cancelled';
         $application->cancellation_reason = $data['cancellation_reason'];
         $application->save();
+        // Send rejection SMS
+        $smsService = new \App\Services\SmsService($school);
+        $message = "আপনার ভর্তি আবেদন বাতিল করা হয়েছে। সঠিক তথ্য দিয়ে পুনারায় আবেদন করুন-JSS";
+        $smsService->sendSms($application->mobile, $message, 'admission_reject', [
+            'recipient_type' => 'applicant',
+            'recipient_id' => $application->id,
+            'recipient_name' => $application->name_en,
+        ]);
         return redirect()->route('principal.institute.admissions.applications.show', [$school->id,$application->id])
             ->with('success','আবেদন বাতিল করা হয়েছে');
     }

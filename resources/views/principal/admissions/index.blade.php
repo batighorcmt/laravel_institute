@@ -3,34 +3,87 @@
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="m-0"><i class="fas fa-list mr-1"></i> Applications</h1>
+  <h1 class="m-0"><i class="fas fa-list mr-1"></i> Admission Applications</h1>
   <div>
     <a href="{{ route('principal.institute.admissions.settings', $school) }}" class="btn btn-outline-secondary">Settings</a>
   </div>
 </div>
+
+<div class="row mb-3">
+  <div class="col-md-2 col-6 mb-2">
+    <div class="border rounded p-2 text-center bg-light">
+      <div class="small text-muted">Total</div>
+      <div class="h5 mb-0">{{ $totalApps }}</div>
+    </div>
+  </div>
+  <div class="col-md-2 col-6 mb-2">
+    <div class="border rounded p-2 text-center bg-light">
+      <div class="small text-muted">Accepted</div>
+      <div class="h5 mb-0 text-success">{{ $acceptedApps }}</div>
+    </div>
+  </div>
+  <div class="col-md-2 col-6 mb-2">
+    <div class="border rounded p-2 text-center bg-light">
+      <div class="small text-muted">Cancelled</div>
+      <div class="h5 mb-0 text-danger">{{ $cancelledApps }}</div>
+    </div>
+  </div>
+  <div class="col-md-2 col-6 mb-2">
+    <div class="border rounded p-2 text-center bg-light">
+      <div class="small text-muted">Paid Apps</div>
+      <div class="h5 mb-0 text-primary">{{ $paidApps }}</div>
+    </div>
+  </div>
+  <div class="col-md-2 col-6 mb-2">
+    <div class="border rounded p-2 text-center bg-light">
+      <div class="small text-muted">Total Paid Fees</div>
+      <div class="h6 mb-0">৳ {{ number_format($totalPaidAmount,2) }}</div>
+    </div>
+  </div>
+  <div class="col-md-2 col-6 mb-2">
+    <div class="border rounded p-2 text-center bg-light">
+      <div class="small text-muted">Unpaid Fees</div>
+      <div class="h6 mb-0 text-warning">৳ {{ number_format($unpaidAmount,2) }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="form-inline">
+      <label for="appSearch" class="mr-2 mb-0 font-weight-semibold">Search:</label>
+      <input type="text" id="appSearch" class="form-control form-control-sm w-50" placeholder="Type to filter...">
+    </div>
+  </div>
+</div>
+
 <div class="card">
   <div class="card-body p-0">
     <div class="table-responsive">
-      <table class="table table-striped mb-0">
+      <table class="table table-striped mb-0" id="applicationsTable">
         <thead>
           <tr>
             <th style="width:70px">#</th>
-            <th>Applicant</th>
-            <th>Phone</th>
             <th>Class</th>
+            <th>Applicant Name</th>
+            <th>Father's Name</th>
+            <th>Mobile No</th>
+            <th>Village</th>
             <th>Status</th>
             <th>Payment</th>
-            <th style="width:160px">Actions</th>
+            <th style="width:180px">Actions</th>
             <th>Submitted</th>
           </tr>
         </thead>
         <tbody>
           @forelse($apps as $app)
             <tr>
-              <td>{{ $app->id }}</td>
-              <td>{{ $app->applicant_name }}</td>
-              <td>{{ $app->phone }}</td>
+              <td>{{ ($loop->iteration + ($apps->currentPage()-1)*$apps->perPage()) }}</td>
               <td>{{ $app->class_name }}</td>
+              <td>{{ $app->name_en ?? $app->applicant_name }}</td>
+              <td>{{ $app->father_name_en }}</td>
+              <td>{{ $app->mobile }}</td>
+              <td>{{ $app->present_address }}</td>
               <td>
                   @if($app->accepted_at)
                       <span class="badge badge-success">Accepted</span>
@@ -51,23 +104,23 @@
                 <div class="btn-group btn-group-sm" role="group">
                   <a href="{{ route('principal.institute.admissions.applications.show', [$school->id, $app->id]) }}" class="btn btn-outline-primary" title="View"><i class="fas fa-eye"></i></a>
                   <a href="{{ route('principal.institute.admissions.applications.edit', [$school->id, $app->id]) }}" class="btn btn-outline-secondary" title="Edit"><i class="fas fa-edit"></i></a>
-                    @if($app->app_id)
+                  @if($app->app_id)
                       <a href="{{ route('admission.copy', [$school->code, $app->app_id]) }}" target="_blank" class="btn btn-outline-info" title="Print Copy"><i class="fas fa-print"></i></a>
-                    @else
+                  @else
                       <button class="btn btn-outline-info" title="Missing App ID" disabled><i class="fas fa-print"></i></button>
-                    @endif
+                  @endif
                   <a href="{{ route('principal.institute.admissions.applications.payments.details', [$school->id, $app->id]) }}" class="btn btn-outline-dark" title="Payments"><i class="fas fa-receipt"></i></a>
-                    @if(!$app->accepted_at && $app->status !== 'cancelled' && $app->payment_status==='Paid')
-                      <form action="{{ route('principal.institute.admissions.applications.accept', [$school->id, $app->id]) }}" method="post" onsubmit="return confirm('গ্রহণ নিশ্চিত?')">
+                  @if(!$app->accepted_at && $app->status !== 'cancelled' && $app->payment_status==='Paid')
+                      <form action="{{ route('principal.institute.admissions.applications.accept', [$school->id, $app->id]) }}" method="post" onsubmit="return confirm('Confirm accept?')">
                           @csrf
                           <button class="btn btn-outline-success" title="Accept"><i class="fas fa-check"></i></button>
                       </form>
                   @endif
-                    @if($app->status !== 'cancelled')
-                      <button type="button" class="btn btn-outline-danger" title="Cancel" data-toggle="modal" data-target="#cancelModal" data-app-id="{{ $app->id }}" data-app-name="{{ $app->applicant_name }}" data-cancel-url="{{ route('principal.institute.admissions.applications.cancel', [$school->id, $app->id]) }}">
+                  @if($app->status !== 'cancelled')
+                      <button type="button" class="btn btn-outline-danger" title="Cancel" data-toggle="modal" data-target="#cancelModal" data-app-id="{{ $app->id }}" data-app-name="{{ $app->name_en ?? $app->applicant_name }}" data-cancel-url="{{ route('principal.institute.admissions.applications.cancel', [$school->id, $app->id]) }}">
                         <i class="fas fa-times"></i>
                       </button>
-                    @endif
+                  @endif
                   @if($app->accepted_at)
                       <a href="{{ route('principal.institute.admissions.applications.admit_card', [$school->id, $app->id]) }}" class="btn btn-outline-success" title="Admit Card"><i class="fas fa-id-card"></i></a>
                   @endif
@@ -76,7 +129,7 @@
               <td>{{ $app->created_at->format('Y-m-d H:i') }}</td>
             </tr>
           @empty
-            <tr><td colspan="8" class="text-center text-muted">No applications yet.</td></tr>
+            <tr><td colspan="10" class="text-center text-muted">No applications yet.</td></tr>
           @endforelse
         </tbody>
       </table>
@@ -89,7 +142,7 @@
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header bg-danger text-white py-2">
-          <h5 class="modal-title" id="cancelModalLabel"><i class="fas fa-ban mr-1"></i> আবেদন বাতিল</h5>
+          <h5 class="modal-title" id="cancelModalLabel"><i class="fas fa-ban mr-1"></i> Cancel Application</h5>
           <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
@@ -97,18 +150,18 @@
         <form id="cancelForm" method="post" action="#" class="m-0">
           @csrf
           <div class="modal-body">
-            <p class="mb-2 small text-muted">আবেদন আইডি: <span id="cancelAppId" class="font-weight-bold"></span></p>
-            <p class="mb-2 small text-muted">আবেদনকারীর নাম: <span id="cancelAppName" class="font-weight-bold"></span></p>
-            <p class="mb-3 small">বাতিলের তারিখ (স্বয়ংক্রিয়): <span class="font-weight-bold">{{ now()->format('d-m-Y H:i') }}</span></p>
+            <p class="mb-2 small text-muted">Application ID: <span id="cancelAppId" class="font-weight-bold"></span></p>
+            <p class="mb-2 small text-muted">Applicant Name: <span id="cancelAppName" class="font-weight-bold"></span></p>
+            <p class="mb-3 small">Cancellation Time (auto): <span class="font-weight-bold">{{ now()->format('d-m-Y H:i') }}</span></p>
             <div class="form-group mb-2">
-              <label class="font-weight-semibold">বাতিলের কারণ <span class="text-danger">*</span></label>
-              <textarea name="cancellation_reason" id="cancellationReason" class="form-control" rows="3" placeholder="কারণ লিখুন" required></textarea>
+              <label class="font-weight-semibold">Reason <span class="text-danger">*</span></label>
+              <textarea name="cancellation_reason" id="cancellationReason" class="form-control" rows="3" placeholder="Write reason" required></textarea>
             </div>
-            <div class="alert alert-warning py-2 mb-2 small">একবার বাতিল করলে পুনরায় গ্রহণ করতে চাইলে পৃথক অনুমোদন প্রয়োজন হতে পারে।</div>
+            <div class="alert alert-warning py-2 mb-2 small">Once cancelled, re-accept may require additional approval.</div>
           </div>
           <div class="modal-footer py-2">
-            <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">বন্ধ</button>
-            <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-check mr-1"></i> নিশ্চিত বাতিল</button>
+            <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-check mr-1"></i> Confirm Cancel</button>
           </div>
         </form>
       </div>
@@ -119,7 +172,6 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function(){
-  var cancelModal = document.getElementById('cancelModal');
   $('#cancelModal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);
     var appId = button.data('app-id');
@@ -129,6 +181,16 @@ document.addEventListener('DOMContentLoaded', function(){
     $('#cancelAppId').text(appId);
     $('#cancelAppName').text(appName);
     $('#cancellationReason').val('').focus();
+  });
+  // Live search filter
+  const input = document.getElementById('appSearch');
+  const rows = document.querySelectorAll('#applicationsTable tbody tr');
+  input.addEventListener('input', function(){
+    const term = this.value.toLowerCase();
+    rows.forEach(r => {
+      const txt = r.textContent.toLowerCase();
+      r.style.display = txt.indexOf(term) !== -1 ? '' : 'none';
+    });
   });
 });
 </script>

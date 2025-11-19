@@ -25,7 +25,14 @@ class SmsService
         $this->senderId = $settings->get('sms_sender_id');
     }
 
-    public function sendSms($recipient, $message)
+    /**
+     * Send an SMS and persist log with optional message type meta.
+     * @param string $recipient Mobile number
+     * @param string $message Text content
+     * @param string|null $messageType e.g. admission_accept|admission_reject
+     * @param array $extra Additional log fields (whitelisted)
+     */
+    public function sendSms($recipient, $message, $messageType = null, array $extra = [])
     {
         if (!$this->apiUrl || !$this->apiKey || !$this->senderId) {
             Log::error("SMS settings are not configured for school ID: {$this->school->id}");
@@ -40,24 +47,26 @@ class SmsService
                 'message' => $message,
             ]);
 
-            SmsLog::create([
+            SmsLog::create(array_filter([
                 'school_id' => $this->school->id,
                 'recipient_number' => $recipient,
                 'message' => $message,
                 'status' => $response->successful() ? 'success' : 'failed',
                 'response' => $response->body(),
-            ]);
+                'message_type' => $messageType,
+            ]) + $extra);
 
             return $response->successful();
         } catch (\Exception $e) {
             Log::error("SMS sending failed for school ID: {$this->school->id}. Error: " . $e->getMessage());
-            SmsLog::create([
+            SmsLog::create(array_filter([
                 'school_id' => $this->school->id,
                 'recipient_number' => $recipient,
                 'message' => $message,
                 'status' => 'failed',
                 'response' => $e->getMessage(),
-            ]);
+                'message_type' => $messageType,
+            ]) + $extra);
             return false;
         }
     }
