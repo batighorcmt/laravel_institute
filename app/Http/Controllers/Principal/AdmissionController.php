@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\AdmissionApplication;
 use App\Models\AdmissionClassSetting;
 use Illuminate\Support\Carbon;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -21,19 +22,65 @@ class AdmissionController extends Controller
                 ->orderBy('class_code')
                 ->get();
         }
-        return view('principal.admissions.settings', compact('school','academicYears','classSettings'));
+        // Admission exam settings (datetime + venues)
+        $raw = Setting::forSchool($school->id)
+            ->whereIn('key', [
+                'admission_exam_datetime','admission_exam_venues'
+            ])
+            ->pluck('value','key');
+        $examDatetime = $raw->get('admission_exam_datetime');
+        $venues = [];
+        if ($raw->get('admission_exam_venues')) {
+            $v = json_decode($raw->get('admission_exam_venues'), true);
+            if (is_array($v)) { $venues = $v; }
+        }
+        return view('principal.admissions.settings', compact('school','academicYears','classSettings','examDatetime','venues'));
     }
 
     public function updateSettings(Request $request, School $school)
     {
         $data = $request->validate([
             'admissions_enabled' => 'nullable|boolean',
-            'admission_academic_year_id' => 'required|exists:academic_years,id'
+            'admission_academic_year_id' => 'required|exists:academic_years,id',
+            'exam_datetime' => 'nullable|date',
+            'venues_name' => 'array',
+            'venues_name.*' => 'nullable|string|max:191',
+            'venues_address' => 'array',
+            'venues_address.*' => 'nullable|string|max:500',
         ]);
         $school->update([
             'admissions_enabled' => (bool)($data['admissions_enabled'] ?? false),
             'admission_academic_year_id' => $data['admission_academic_year_id']
         ]);
+        // Save exam datetime
+        $examDt = $data['exam_datetime'] ?? null;
+        if ($examDt) {
+            Setting::updateOrCreate(
+                ['school_id'=>$school->id,'key'=>'admission_exam_datetime'],
+                ['value'=> (string)Carbon::parse($examDt)->toDateTimeString()]
+            );
+        } else {
+            // allow clearing
+            Setting::where('school_id',$school->id)->where('key','admission_exam_datetime')->delete();
+        }
+        // Save venues as JSON array
+        $names = $request->input('venues_name', []);
+        $addresses = $request->input('venues_address', []);
+        $out = [];
+        $count = max(count($names), count($addresses));
+        for ($i=0; $i<$count; $i++) {
+            $n = trim((string)($names[$i] ?? ''));
+            $a = trim((string)($addresses[$i] ?? ''));
+            if ($n || $a) { $out[] = ['name'=>$n, 'address'=>$a]; }
+        }
+        if (!empty($out)) {
+            Setting::updateOrCreate(
+                ['school_id'=>$school->id,'key'=>'admission_exam_venues'],
+                ['value'=> json_encode($out, JSON_UNESCAPED_UNICODE)]
+            );
+        } else {
+            Setting::where('school_id',$school->id)->where('key','admission_exam_venues')->delete();
+        }
         return redirect()->back()->with('success','Admission সেটিংস আপডেট হয়েছে');
     }
 
@@ -128,7 +175,16 @@ class AdmissionController extends Controller
     {
         abort_if($application->school_id !== $school->id, 404);
         abort_unless((bool)$application->accepted_at, 403, 'এখনো গ্রহণ হয়নি');
-        return view('principal.admissions.admit_card', compact('school','application'));
+        $settings = Setting::forSchool($school->id)
+            ->whereIn('key', ['admission_exam_datetime','admission_exam_venues'])
+            ->pluck('value','key');
+        $examDatetime = $settings->get('admission_exam_datetime');
+        $venues = [];
+        if ($settings->get('admission_exam_venues')) {
+            $v = json_decode($settings->get('admission_exam_venues'), true);
+            if (is_array($v)) { $venues = $v; }
+        }
+        return view('principal.admissions.admit_card', compact('school','application','examDatetime','venues'));
     }
 
     public function cancel(School $school, AdmissionApplication $application)

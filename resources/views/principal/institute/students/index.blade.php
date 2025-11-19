@@ -3,7 +3,10 @@
 @section('content')
 <div class="d-flex justify-content-between mb-3">
   <h1 class="m-0">শিক্ষার্থী তালিকা - {{ $school->name }}</h1>
-  <a href="{{ route('principal.institute.students.create',$school) }}" class="btn btn-success"><i class="fas fa-user-plus mr-1"></i> নতুন শিক্ষার্থী</a>
+  <div>
+    <a href="{{ route('principal.institute.students.create',$school) }}" class="btn btn-success"><i class="fas fa-user-plus mr-1"></i> নতুন শিক্ষার্থী</a>
+    <a href="{{ route('principal.institute.students.bulk',$school) }}" class="btn btn-outline-primary ml-2"><i class="fas fa-file-import mr-1"></i> Bulk student add</a>
+  </div>
 </div>
 <form class="form-inline mb-3" method="get">
   <input type="text" name="q" value="{{ $q }}" class="form-control mr-2" placeholder="নাম / আইডি সার্চ...">

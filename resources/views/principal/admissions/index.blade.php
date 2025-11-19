@@ -65,6 +65,8 @@
           <tr>
             <th style="width:70px">#</th>
             <th>Class</th>
+            <th>Application ID</th>
+            <th>Roll No</th>
             <th>Applicant Name</th>
             <th>Father's Name</th>
             <th>Mobile No</th>
@@ -80,6 +82,8 @@
             <tr>
               <td>{{ ($loop->iteration + ($apps->currentPage()-1)*$apps->perPage()) }}</td>
               <td>{{ $app->class_name }}</td>
+              <td>{{ $app->app_id ?: '—' }}</td>
+              <td>{{ $app->admission_roll_no ? str_pad($app->admission_roll_no,3,'0',STR_PAD_LEFT) : '—' }}</td>
               <td>{{ $app->name_en ?? $app->applicant_name }}</td>
               <td>{{ $app->father_name_en }}</td>
               <td>{{ $app->mobile }}</td>
@@ -129,7 +133,7 @@
               <td>{{ $app->created_at->format('Y-m-d H:i') }}</td>
             </tr>
           @empty
-            <tr><td colspan="10" class="text-center text-muted">No applications yet.</td></tr>
+            <tr><td colspan="12" class="text-center text-muted">No applications yet.</td></tr>
           @endforelse
         </tbody>
       </table>

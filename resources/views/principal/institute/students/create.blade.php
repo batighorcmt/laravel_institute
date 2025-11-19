@@ -9,219 +9,258 @@
 
 <div class="card shadow-lg">
   <div class="card-body">
-    <!-- Progress Bar -->
-    <div class="progress mb-4" style="height: 8px;">
-      <div class="progress-bar bg-success" role="progressbar" style="width: 25%" id="formProgress"></div>
-    </div>
-
     <form method="post" action="{{ route('principal.institute.students.store',$school) }}" enctype="multipart/form-data" id="studentForm">@csrf
 
-      <!-- Tabs Navigation -->
-      <ul class="nav nav-tabs nav-justified mb-4" id="formTabs" role="tablist">
-        <li class="nav-item">
-          <a class="nav-link active" id="enrollment-tab" data-toggle="tab" href="#enrollment" role="tab">
-            <i class="fas fa-graduation-cap mr-2"></i>ভর্তি তথ্য
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="personal-tab" data-toggle="tab" href="#personal" role="tab">
-            <i class="fas fa-user mr-2"></i>ব্যক্তিগত তথ্য
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="guardian-tab" data-toggle="tab" href="#guardian" role="tab">
-            <i class="fas fa-users mr-2"></i>অভিভাবকের তথ্য
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="official-tab" data-toggle="tab" href="#official" role="tab">
-            <i class="fas fa-file-alt mr-2"></i>অফিসিয়াল
-          </a>
-        </li>
-      </ul>
-
-      <!-- Tab Content -->
-      <div class="tab-content" id="formTabsContent">
-        <!-- Enrollment Tab -->
-        <div class="tab-pane fade show active" id="enrollment" role="tabpanel">
-          <div class="row">
-            <div class="col-md-12">
-              <div class="alert alert-info">
-                <i class="fas fa-info-circle mr-2"></i>Enrollment তথ্য দিলে সংরক্ষণ শেষে আপনাকে বিষয় নির্বাচন পাতায় নিয়ে যাবে।
-              </div>
+      <div class="mb-4">
+        <h5 class="mb-2"><i class="fas fa-graduation-cap mr-2"></i>ভর্তি তথ্য</h5>
+        <div class="row">
+          <div class="col-md-3">
+            <div class="form-group">
+              <label><i class="fas fa-calendar-alt mr-1"></i>শিক্ষাবর্ষ</label>
+              <select name="enroll_academic_year" class="form-control">
+                <option value="">-- নির্বাচন --</option>
+                @php($cyVal = $currentYear ? (is_numeric($currentYear->name) ? $currentYear->name : ($currentYear->start_date?->format('Y'))) : '')
+                @if($currentYear && $cyVal)
+                  <option value="{{ $cyVal }}" selected>{{ $currentYear->name }}</option>
+                @endif
+              </select>
             </div>
           </div>
-          <div class="row">
-            <div class="col-md-3">
-              <div class="form-group">
-                <label><i class="fas fa-calendar-alt mr-1"></i>শিক্ষাবর্ষ</label>
-                <select name="enroll_academic_year" class="form-control">
-                  <option value="">-- নির্বাচন --</option>
-                  @php($cyVal = $currentYear ? (is_numeric($currentYear->name) ? $currentYear->name : ($currentYear->start_date?->format('Y'))) : '')
-                  @if($currentYear && $cyVal)
-                    <option value="{{ $cyVal }}" selected>{{ $currentYear->name }}</option>
-                  @endif
-                </select>
-              </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label><i class="fas fa-school mr-1"></i>শ্রেণি</label>
+              <select name="enroll_class_id" id="enroll_class_id" class="form-control">
+                <option value="">-- নির্বাচন --</option>
+                @foreach(\App\Models\SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get() as $c)
+                  <option value="{{ $c->id }}" {{ old('enroll_class_id')==$c->id?'selected':'' }}>{{ $c->name }}</option>
+                @endforeach
+              </select>
             </div>
-            <div class="col-md-3">
-              <div class="form-group">
-                <label><i class="fas fa-school mr-1"></i>শ্রেণি</label>
-                <select name="enroll_class_id" id="enroll_class_id" class="form-control">
-                  <option value="">-- নির্বাচন --</option>
-                  @foreach(\App\Models\SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get() as $c)
-                    <option value="{{ $c->id }}" {{ old('enroll_class_id')==$c->id?'selected':'' }}>{{ $c->name }}</option>
-                  @endforeach
-                </select>
-              </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label><i class="fas fa-code-branch mr-1"></i>শাখা</label>
+              <select name="enroll_section_id" id="enroll_section_id" class="form-control">
+                <option value="">--</option>
+              </select>
             </div>
-            <div class="col-md-2">
-              <div class="form-group">
-                <label><i class="fas fa-code-branch mr-1"></i>শাখা</label>
-                <select name="enroll_section_id" id="enroll_section_id" class="form-control">
-                  <option value="">--</option>
-                </select>
-              </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label><i class="fas fa-users mr-1"></i>গ্রুপ</label>
+              <select name="enroll_group_id" id="enroll_group_id" class="form-control">
+                <option value="">--</option>
+              </select>
             </div>
-            <div class="col-md-2">
-              <div class="form-group">
-                <label><i class="fas fa-users mr-1"></i>গ্রুপ</label>
-                <select name="enroll_group_id" id="enroll_group_id" class="form-control">
-                  <option value="">--</option>
-                </select>
-              </div>
-            </div>
-            <div class="col-md-2">
-              <div class="form-group">
-                <label><i class="fas fa-hashtag mr-1"></i>রোল</label>
-                <input type="number" name="enroll_roll_no" id="enroll_roll_no" class="form-control" value="{{ old('enroll_roll_no') }}" min="1">
-                <small id="roll-hint" class="form-text text-muted"></small>
-              </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-group">
+              <label><i class="fas fa-hashtag mr-1"></i>রোল</label>
+              <input type="number" name="enroll_roll_no" id="enroll_roll_no" class="form-control" value="{{ old('enroll_roll_no') }}" min="1">
+              <small id="roll-hint" class="form-text text-muted"></small>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Personal Tab -->
-        <div class="tab-pane fade" id="personal" role="tabpanel">
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><i class="fas fa-user-edit mr-1"></i>নাম (English)</label>
-                <input type="text" name="student_name_en" class="form-control" value="{{ old('student_name_en') }}">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><i class="fas fa-user-edit mr-1"></i>নাম (বাংলা) *</label>
-                <input type="text" name="student_name_bn" class="form-control" required value="{{ old('student_name_bn') }}">
-              </div>
+      <div class="mb-4">
+        <h5 class="mb-2"><i class="fas fa-user mr-2"></i>ব্যক্তিগত তথ্য</h5>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><i class="fas fa-user-edit mr-1"></i>নাম (English)</label>
+              <input type="text" name="student_name_en" class="form-control" value="{{ old('student_name_en') }}">
             </div>
           </div>
-          <div class="row">
-            <div class="col-md-4">
-              <div class="form-group">
-                <label><i class="fas fa-birthday-cake mr-1"></i>জন্ম তারিখ *</label>
-                <input type="date" name="date_of_birth" class="form-control" required value="{{ old('date_of_birth') }}">
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="form-group">
-                <label><i class="fas fa-venus-mars mr-1"></i>লিঙ্গ *</label>
-                <select name="gender" class="form-control" required>
-                  <option value="male" {{ old('gender')=='male'?'selected':'' }}>ছেলে</option>
-                  <option value="female" {{ old('gender')=='female'?'selected':'' }}>মেয়ে</option>
-                </select>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="form-group">
-                <label><i class="fas fa-tint mr-1"></i>রক্তের গ্রুপ</label>
-                <select name="blood_group" class="form-control">
-                  <option value="">-- নির্বাচন --</option>
-                  @foreach(['A+','A-','B+','B-','AB+','AB-','O+','O-'] as $bg)
-                    <option value="{{ $bg }}" {{ old('blood_group')==$bg?'selected':'' }}>{{ $bg }}</option>
-                  @endforeach
-                </select>
-              </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><i class="fas fa-user-edit mr-1"></i>নাম (বাংলা) *</label>
+              <input type="text" name="student_name_bn" class="form-control" required value="{{ old('student_name_bn') }}">
             </div>
           </div>
         </div>
-
-        <!-- Guardian Tab -->
-        <div class="tab-pane fade" id="guardian" role="tabpanel">
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><i class="fas fa-male mr-1"></i>পিতার নাম (English) *</label>
-                <input type="text" name="father_name" class="form-control" required value="{{ old('father_name') }}">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><i class="fas fa-male mr-1"></i>পিতার নাম (বাংলা) *</label>
-                <input type="text" name="father_name_bn" class="form-control" required value="{{ old('father_name_bn') }}">
-              </div>
+        <div class="row">
+          <div class="col-md-4">
+            <div class="form-group">
+              <label><i class="fas fa-birthday-cake mr-1"></i>জন্ম তারিখ *</label>
+              <input type="date" name="date_of_birth" class="form-control" required value="{{ old('date_of_birth') }}">
             </div>
           </div>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><i class="fas fa-female mr-1"></i>মাতার নাম (English) *</label>
-                <input type="text" name="mother_name" class="form-control" required value="{{ old('mother_name') }}">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><i class="fas fa-female mr-1"></i>মাতার নাম (বাংলা) *</label>
-                <input type="text" name="mother_name_bn" class="form-control" required value="{{ old('mother_name_bn') }}">
-              </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label><i class="fas fa-venus-mars mr-1"></i>লিঙ্গ *</label>
+              <select name="gender" class="form-control" required>
+                <option value="male" {{ old('gender')=='male'?'selected':'' }}>ছেলে</option>
+                <option value="female" {{ old('gender')=='female'?'selected':'' }}>মেয়ে</option>
+              </select>
             </div>
           </div>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><i class="fas fa-phone mr-1"></i>অভিভাবকের ফোন *</label>
-                <input type="text" name="guardian_phone" class="form-control" required value="{{ old('guardian_phone') }}">
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><i class="fas fa-map-marker-alt mr-1"></i>ঠিকানা *</label>
-                <textarea name="address" rows="3" class="form-control" required>{{ old('address') }}</textarea>
-              </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label><i class="fas fa-tint mr-1"></i>রক্তের গ্রুপ</label>
+              <select name="blood_group" class="form-control">
+                <option value="">-- নির্বাচন --</option>
+                @foreach(['A+','A-','B+','B-','AB+','AB-','O+','O-'] as $bg)
+                  <option value="{{ $bg }}" {{ old('blood_group')==$bg?'selected':'' }}>{{ $bg }}</option>
+                @endforeach
+              </select>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Official Tab -->
-        <div class="tab-pane fade" id="official" role="tabpanel">
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><i class="fas fa-calendar-check mr-1"></i>ভর্তি তারিখ *</label>
-                <input type="date" name="admission_date" class="form-control" required value="{{ old('admission_date') }}">
-              </div>
+      <div class="mb-4">
+        <h5 class="mb-2"><i class="fas fa-users mr-2"></i>অভিভাবকের তথ্য</h5>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><i class="fas fa-male mr-1"></i>পিতার নাম (English) *</label>
+              <input type="text" name="father_name" class="form-control" required value="{{ old('father_name') }}">
             </div>
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><i class="fas fa-toggle-on mr-1"></i>স্ট্যাটাস *</label>
-                <select name="status" class="form-control" required>
-                  <option value="active" {{ old('status')=='active'?'selected':'' }}>Active</option>
-                  <option value="inactive" {{ old('status')=='inactive'?'selected':'' }}>Inactive</option>
-                  <option value="graduated" {{ old('status')=='graduated'?'selected':'' }}>Graduated</option>
-                  <option value="transferred" {{ old('status')=='transferred'?'selected':'' }}>Transferred</option>
-                </select>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><i class="fas fa-male mr-1"></i>পিতার নাম (বাংলা) *</label>
+              <input type="text" name="father_name_bn" class="form-control" required value="{{ old('father_name_bn') }}">
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><i class="fas fa-female mr-1"></i>মাতার নাম (English) *</label>
+              <input type="text" name="mother_name" class="form-control" required value="{{ old('mother_name') }}">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><i class="fas fa-female mr-1"></i>মাতার নাম (বাংলা) *</label>
+              <input type="text" name="mother_name_bn" class="form-control" required value="{{ old('mother_name_bn') }}">
+            </div>
+          </div>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><i class="fas fa-phone mr-1"></i>অভিভাবকের ফোন *</label>
+              <input type="text" name="guardian_phone" class="form-control" required value="{{ old('guardian_phone') }}">
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Guardian Relation</label>
+              <select id="guardian_relation" name="guardian_relation" class="form-control">
+                <option value="">-- নির্বাচন --</option>
+                <option value="father" {{ old('guardian_relation')=='father'?'selected':'' }}>Father</option>
+                <option value="mother" {{ old('guardian_relation')=='mother'?'selected':'' }}>Mother</option>
+                <option value="other" {{ old('guardian_relation')=='other'?'selected':'' }}>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Guardian Name (English)</label>
+              <input id="guardian_name_en" name="guardian_name_en" class="form-control" value="{{ old('guardian_name_en') }}">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Guardian Name (Bangla)</label>
+              <input id="guardian_name_bn" name="guardian_name_bn" class="form-control" value="{{ old('guardian_name_bn') }}">
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="form-group">
+              <!-- Detailed present/permanent address fields (composed into hidden address fields) -->
+              <div class="row g-2">
+                <div class="col-12"><strong>Present Address</strong></div>
+                <div class="col-md-6"><input id="present_village" class="form-control" placeholder="গ্রাম/আলেকশন" /></div>
+                <div class="col-md-6"><input id="present_para_moholla" class="form-control" placeholder="পাড়া/মহল্লা" /></div>
+                <div class="col-md-4 mt-2"><input id="present_post_office" class="form-control" placeholder="পোস্ট অফিস" /></div>
+                <div class="col-md-4 mt-2"><input id="present_upazilla" class="form-control" placeholder="উপজেলা" /></div>
+                <div class="col-md-4 mt-2"><input id="present_district" class="form-control" placeholder="জেলা" /></div>
+
+                <div class="col-12 mt-3"><strong>Permanent Address</strong></div>
+                <div class="col-12 mb-2 form-check">
+                  <input type="checkbox" id="same_as_present" class="form-check-input" />
+                  <label class="form-check-label" for="same_as_present">Present ঠিকানাটি Permanent-এর সাথে কপি করুন</label>
+                </div>
+                <div class="col-md-6"><input id="permanent_village" class="form-control" placeholder="গ্রাম/আলেকশন" /></div>
+                <div class="col-md-6"><input id="permanent_para_moholla" class="form-control" placeholder="পাড়া/মহল্লা" /></div>
+                <div class="col-md-4 mt-2"><input id="permanent_post_office" class="form-control" placeholder="পোস্ট অফিস" /></div>
+                <div class="col-md-4 mt-2"><input id="permanent_upazilla" class="form-control" placeholder="উপজেলা" /></div>
+                <div class="col-md-4 mt-2"><input id="permanent_district" class="form-control" placeholder="জেলা" /></div>
+                <input type="hidden" id="present_address" name="present_address" value="{{ old('present_address') }}">
+                <input type="hidden" id="permanent_address" name="permanent_address" value="{{ old('permanent_address') }}">
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Navigation Buttons -->
-      <div class="d-flex justify-content-between mt-4">
-        <button type="button" class="btn btn-secondary" id="prevBtn" disabled><i class="fas fa-arrow-left mr-1"></i> পূর্ববর্তী</button>
-        <button type="button" class="btn btn-primary" id="nextBtn"><i class="fas fa-arrow-right mr-1"></i> পরবর্তী</button>
-        <button type="submit" class="btn btn-success d-none" id="submitBtn"><i class="fas fa-save mr-1"></i> সংরক্ষণ</button>
+      <!-- Photo + Previous Education -->
+      <div class="mb-4">
+        <h5 class="mb-2"><i class="fas fa-image mr-2"></i>ছবি ও পূর্ববর্তী শিক্ষা</h5>
+        <div class="row">
+          <div class="col-md-4 text-center">
+            <div class="photo-preview-wrapper mb-2" style="width:160px;height:160px;margin:0 auto;border:2px dashed #ddd;display:flex;align-items:center;justify-content:center;">
+              <img id="photoPreview" src="{{ asset('images/default-avatar.png') }}" alt="photo" style="width:100%;height:100%;object-fit:cover;">
+            </div>
+            <input type="file" name="photo" id="photoInput" class="form-control-file" accept="image/*" onchange="previewImage(event)">
+            <div class="small text-muted mt-2">35x45mm (~413x531px), ≤1MB</div>
+          </div>
+          <div class="col-md-8">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <label>Previous School</label>
+                <input type="text" name="previous_school" class="form-control" value="{{ old('previous_school') }}">
+              </div>
+              <div class="col-md-3">
+                <label>Passing Year</label>
+                <input type="text" name="pass_year" id="pass_year" class="form-control" value="{{ old('pass_year') }}">
+              </div>
+              <div class="col-md-3">
+                <label>Result / Grade</label>
+                <input type="text" name="previous_result" class="form-control" value="{{ old('previous_result') }}">
+              </div>
+              <div class="col-12 mt-2">
+                <label>Remarks</label>
+                <textarea name="previous_remarks" class="form-control">{{ old('previous_remarks') }}</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <h5 class="mb-2"><i class="fas fa-file-alt mr-2"></i>অফিসিয়াল</h5>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><i class="fas fa-calendar-check mr-1"></i>ভর্তি তারিখ *</label>
+              <input type="date" name="admission_date" class="form-control" required value="{{ old('admission_date') }}">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><i class="fas fa-toggle-on mr-1"></i>স্ট্যাটাস *</label>
+              <select name="status" class="form-control" required>
+                <option value="active" {{ old('status')=='active'?'selected':'' }}>Active</option>
+                <option value="inactive" {{ old('status')=='inactive'?'selected':'' }}>Inactive</option>
+                <option value="graduated" {{ old('status')=='graduated'?'selected':'' }}>Graduated</option>
+                <option value="transferred" {{ old('status')=='transferred'?'selected':'' }}>Transferred</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-success"><i class="fas fa-save mr-1"></i> সংরক্ষণ</button>
       </div>
     </form>
   </div>
@@ -239,43 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const rollInput = document.getElementById('enroll_roll_no');
   const rollHint = document.getElementById('roll-hint');
 
-  const tabs = ['enrollment', 'personal', 'guardian', 'official'];
-  let currentTab = 0;
-  const progressBar = document.getElementById('formProgress');
-  const prevBtn = document.getElementById('prevBtn');
-  const nextBtn = document.getElementById('nextBtn');
-  const submitBtn = document.getElementById('submitBtn');
-
-  function updateProgress() {
-    const progress = ((currentTab + 1) / tabs.length) * 100;
-    progressBar.style.width = progress + '%';
-  }
-
-  function showTab(tabIndex) {
-    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('show', 'active'));
-    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-    document.getElementById(tabs[tabIndex]).classList.add('show', 'active');
-    document.getElementById(tabs[tabIndex] + '-tab').classList.add('active');
-    prevBtn.disabled = tabIndex === 0;
-    nextBtn.style.display = tabIndex === tabs.length - 1 ? 'none' : 'inline-block';
-    submitBtn.classList.toggle('d-none', tabIndex !== tabs.length - 1);
-    updateProgress();
-  }
-
-  nextBtn.addEventListener('click', function() {
-    if (currentTab < tabs.length - 1) {
-      currentTab++;
-      showTab(currentTab);
-    }
-  });
-
-  prevBtn.addEventListener('click', function() {
-    if (currentTab > 0) {
-      currentTab--;
-      showTab(currentTab);
-    }
-  });
-
   function fetchJSON(url, params, cb){
     const usp = new URLSearchParams(params);
     fetch(url + '?' + usp.toString(), {headers:{'X-Requested-With':'XMLHttpRequest'}})
@@ -285,6 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function loadSections(){
+    if(!sectionSel) return;
     sectionSel.innerHTML = '<option value="">--</option>';
     const cid = classSel.value;
     if(!cid) return;
@@ -295,6 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   function loadGroups(){
+    if(!groupSel) return;
     groupSel.innerHTML = '<option value="">--</option>';
     const cid = classSel.value;
     if(!cid) return;
@@ -305,10 +309,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   function loadNextRoll(){
-    const year = yearInput.value;
-    const cid = classSel.value;
+    if(!rollHint || !rollInput) return;
+    const year = yearInput ? yearInput.value : '';
+    const cid = classSel ? classSel.value : '';
     if(!year || !cid) { rollHint.textContent=''; return; }
-    fetchJSON("{{ route('principal.institute.meta.next-roll',$school) }}", {year: year, class_id: cid, section_id: sectionSel.value, group_id: groupSel.value}, data => {
+    fetchJSON("{{ route('principal.institute.meta.next-roll',$school) }}", {year: year, class_id: cid, section_id: sectionSel ? sectionSel.value : '', group_id: groupSel ? groupSel.value : ''}, data => {
       if(data && data.next){
         rollHint.textContent = 'পরবর্তী রোল: ' + data.next;
         if(!rollInput.value){ rollInput.value = data.next; }
@@ -316,10 +321,148 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  classSel.addEventListener('change', ()=>{ loadSections(); loadGroups(); setTimeout(loadNextRoll,300); });
-  sectionSel.addEventListener('change', loadNextRoll);
-  groupSel.addEventListener('change', loadNextRoll);
-  yearInput.addEventListener('input', loadNextRoll);
+  if(classSel){ classSel.addEventListener('change', ()=>{ loadSections(); loadGroups(); setTimeout(loadNextRoll,300); }); }
+  if(sectionSel){ sectionSel.addEventListener('change', loadNextRoll); }
+  if(groupSel){ groupSel.addEventListener('change', loadNextRoll); }
+  if(yearInput){ yearInput.addEventListener('input', loadNextRoll); }
+});
+</script>
+@endpush
+
+@push('scripts')
+<script>
+// Image preview and client-side processing (based on admission apply page)
+function loadImageBitmap(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+async function processPassportPhoto(file, targetW, targetH, maxBytes) {
+  const img = await loadImageBitmap(file);
+  const srcW = img.naturalWidth || img.width;
+  const srcH = img.naturalHeight || img.height;
+  const targetAspect = targetW / targetH;
+  const srcAspect = srcW / srcH;
+  let sx, sy, sw, sh;
+  if (srcAspect > targetAspect) {
+    sh = srcH; sw = Math.round(srcH * targetAspect);
+    sx = Math.round((srcW - sw) / 2); sy = 0;
+  } else {
+    sw = srcW; sh = Math.round(srcW / targetAspect);
+    sx = 0; sy = Math.round((srcH - sh) / 2);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = targetW; canvas.height = targetH;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
+
+  let quality = 0.85;
+  let blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality));
+  while (blob && blob.size > maxBytes && quality > 0.6) {
+    quality -= 0.05;
+    blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality));
+  }
+  if (!blob) throw new Error('Failed to compress image');
+  return new File([blob], file.name || 'photo.jpg', { type: 'image/jpeg' });
+}
+
+async function previewImage(event) {
+  const input = event.target;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  try {
+    const processed = await processPassportPhoto(file, 413, 531, 1024 * 1024);
+    const dt = new DataTransfer(); dt.items.add(processed); input.files = dt.files;
+    const reader = new FileReader(); reader.onload = e => document.getElementById('photoPreview').src = e.target.result; reader.readAsDataURL(processed);
+  } catch (e) { console.error('Photo process failed', e); }
+}
+
+// Address composition helpers
+function buildAddress(prefix) {
+  const parts = [
+    document.getElementById(prefix + '_village')?.value?.trim(),
+    document.getElementById(prefix + '_para_moholla')?.value?.trim(),
+    document.getElementById(prefix + '_post_office')?.value?.trim(),
+    document.getElementById(prefix + '_upazilla')?.value?.trim(),
+    document.getElementById(prefix + '_district')?.value?.trim(),
+  ].filter(Boolean);
+  return parts.join(', ');
+}
+
+function updateAddresses() {
+  const present = buildAddress('present');
+  const permanent = buildAddress('permanent');
+  const presentHidden = document.getElementById('present_address');
+  const permanentHidden = document.getElementById('permanent_address');
+  if (presentHidden) presentHidden.value = present;
+  if (permanentHidden) permanentHidden.value = permanent;
+}
+
+function copyPresentAddress() {
+  const checked = document.getElementById('same_as_present')?.checked;
+  const fields = ['district','upazilla','post_office','village','para_moholla'];
+  fields.forEach(function(f){
+    const src = document.getElementById('present_' + f);
+    const dst = document.getElementById('permanent_' + f);
+    if (src && dst) {
+      if (checked) dst.value = src.value; else dst.value = '';
+      dst.readOnly = !!checked;
+      if (checked) dst.classList.add('bg-light'); else dst.classList.remove('bg-light');
+    }
+  });
+  updateAddresses();
+}
+
+// Guardian relation behavior and validations
+function applyGuardianBehavior() {
+  const rel = document.getElementById('guardian_relation')?.value;
+  const gEn = document.getElementById('guardian_name_en');
+  const gBn = document.getElementById('guardian_name_bn');
+  const fEn = document.querySelector('[name="father_name"]');
+  const fBn = document.querySelector('[name="father_name_bn"]');
+  const mEn = document.querySelector('[name="mother_name"]');
+  const mBn = document.querySelector('[name="mother_name_bn"]');
+  if (rel === 'father') {
+    if (gEn && fEn) gEn.value = fEn.value; if (gBn && fBn) gBn.value = fBn.value;
+    if (gEn) gEn.readOnly = true; if (gBn) gBn.readOnly = true;
+  } else if (rel === 'mother') {
+    if (gEn && mEn) gEn.value = mEn.value; if (gBn && mBn) gBn.value = mBn.value;
+    if (gEn) gEn.readOnly = true; if (gBn) gBn.readOnly = true;
+  } else {
+    if (gEn) gEn.readOnly = false; if (gBn) gBn.readOnly = false;
+  }
+}
+
+// Wire up new inputs
+document.addEventListener('DOMContentLoaded', function() {
+  ['present','permanent'].forEach(function(prefix){
+    ['district','upazilla','post_office','village','para_moholla'].forEach(function(f){
+      const el = document.getElementById(prefix + '_' + f);
+      if (el) {
+        el.addEventListener('input', function(){ if (prefix === 'present' && document.getElementById('same_as_present')?.checked) {
+            const dst = document.getElementById('permanent_' + f); if (dst) dst.value = el.value; }
+          updateAddresses();
+        });
+        el.addEventListener('change', function(){ if (prefix === 'present' && document.getElementById('same_as_present')?.checked) {
+            const dst = document.getElementById('permanent_' + f); if (dst) dst.value = el.value; }
+          updateAddresses();
+        });
+      }
+    });
+  });
+  document.getElementById('same_as_present')?.addEventListener('change', copyPresentAddress);
+  copyPresentAddress();
+
+  // Wire guardian relation change to behavior
+  document.getElementById('guardian_relation')?.addEventListener('change', applyGuardianBehavior);
+  // Apply initial guardian behavior (in case old values exist)
+  applyGuardianBehavior();
 });
 </script>
 @endpush

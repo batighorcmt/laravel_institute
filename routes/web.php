@@ -126,7 +126,9 @@ Route::middleware(['auth'])->group(function () {
             // Teachers management
             Route::prefix('teachers')->name('teachers.')->group(function(){
                 Route::get('/', [PrincipalTeacherController::class,'index'])->name('index');
+                Route::get('/create', [PrincipalTeacherController::class,'create'])->name('create');
                 Route::post('/', [PrincipalTeacherController::class,'store'])->name('store');
+                Route::get('/{teacher}/edit', [PrincipalTeacherController::class,'edit'])->name('edit');
                 Route::put('/{teacher}', [PrincipalTeacherController::class,'update'])->name('update');
                 Route::delete('/{teacher}', [PrincipalTeacherController::class,'destroy'])->name('destroy');
             });
@@ -197,6 +199,13 @@ Route::middleware(['auth'])->group(function () {
             Route::resource('academic-years', \App\Http\Controllers\Principal\AcademicYearController::class)->except(['show']);
             Route::patch('academic-years/{academic_year}/current', [\App\Http\Controllers\Principal\AcademicYearController::class,'setCurrent'])->name('academic-years.set-current');
             Route::resource('students', \App\Http\Controllers\Principal\StudentController::class);
+            // Bulk student import (CSV)
+            Route::get('students/bulk', [\App\Http\Controllers\Principal\StudentController::class,'bulkForm'])->name('students.bulk');
+            Route::post('students/bulk', [\App\Http\Controllers\Principal\StudentController::class,'bulkImport'])->name('students.bulk.import');
+            // Queue-based bulk import endpoints
+            Route::post('students/bulk/queue', [\App\Http\Controllers\Principal\StudentController::class,'bulkEnqueue'])->name('students.bulk.queue');
+            Route::get('students/bulk/status/{id}', [\App\Http\Controllers\Principal\StudentController::class,'bulkStatus'])->name('students.bulk.status');
+            Route::get('students/bulk/report/{id}', [\App\Http\Controllers\Principal\StudentController::class,'bulkReport'])->name('students.bulk.report');
             Route::patch('students/{student}/status', [\App\Http\Controllers\Principal\StudentController::class,'toggleStatus'])->name('students.toggle-status');
             Route::post('students/{student}/enrollments', [\App\Http\Controllers\Principal\StudentController::class,'addEnrollment'])->name('students.enrollments.add');
             Route::delete('students/{student}/enrollments/{enrollment}', [\App\Http\Controllers\Principal\StudentController::class,'removeEnrollment'])->name('students.enrollments.remove');

@@ -26,7 +26,34 @@
         </select>
         <small class="text-muted">এ শিক্ষাবর্ষের জন্য আবেদন গ্রহণ করা হবে।</small>
       </div>
-      <button class="btn btn-primary">Save</button>
+      <div class="form-row mt-3">
+        <div class="form-group col-md-4">
+          <label class="font-weight-semibold">Exam Date & Time</label>
+          @php($dtVal = isset($examDatetime) && $examDatetime ? \Carbon\Carbon::parse($examDatetime)->format('Y-m-d\TH:i') : '')
+          <input type="datetime-local" name="exam_datetime" class="form-control" value="{{ $dtVal }}">
+          <small class="text-muted">পরীক্ষার তারিখ ও সময় নির্ধারণ করুন</small>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <label class="mb-0 font-weight-semibold">Exam Venues (multiple)</label>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addVenueRow()">Add Venue</button>
+        </div>
+        <div id="venuesWrap">
+          @php($vv = isset($venues) && is_array($venues) ? $venues : [])
+          @if(empty($vv))
+            @php($vv = [["name"=>"","address"=>""]])
+          @endif
+          @foreach($vv as $i => $v)
+            <div class="form-row align-items-center venue-row mb-2">
+              <div class="col-md-4 mb-1"><input type="text" name="venues_name[]" value="{{ $v['name'] ?? '' }}" class="form-control" placeholder="Venue name"></div>
+              <div class="col-md-6 mb-1"><input type="text" name="venues_address[]" value="{{ $v['address'] ?? '' }}" class="form-control" placeholder="Address"></div>
+              <div class="col-md-2 mb-1"><button type="button" class="btn btn-outline-danger btn-block" onclick="this.closest('.venue-row').remove()">Remove</button></div>
+            </div>
+          @endforeach
+        </div>
+      </div>
+      <button class="btn btn-primary mt-2">Save</button>
     </form>
 
     <hr>
@@ -81,3 +108,18 @@
   </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+  function addVenueRow(){
+    var w = document.getElementById('venuesWrap');
+    if(!w) return;
+    var row = document.createElement('div');
+    row.className = 'form-row align-items-center venue-row mb-2';
+    row.innerHTML = '<div class="col-md-4 mb-1"><input type="text" name="venues_name[]" class="form-control" placeholder="Venue name"></div>'+
+                    '<div class="col-md-6 mb-1"><input type="text" name="venues_address[]" class="form-control" placeholder="Address"></div>'+
+                    '<div class="col-md-2 mb-1"><button type="button" class="btn btn-outline-danger btn-block" onclick="this.closest(\' .venue-row \' ).remove()">Remove</button></div>';
+    w.appendChild(row);
+  }
+</script>
+@endpush

@@ -10,6 +10,7 @@ use App\Models\UserSchoolRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class TeacherController extends Controller
 {
@@ -29,26 +30,74 @@ class TeacherController extends Controller
         return view('principal.teachers.index', compact('school','teachers','principalUserIds'));
     }
 
+    public function create(School $school)
+    {
+        // empty teacherRole for the form partial
+        return view('principal.teachers.create', compact('school'));
+    }
+
+    public function edit(School $school, UserSchoolRole $teacher)
+    {
+        // authorize that this is a teacher for this school
+        if ($teacher->school_id !== $school->id) abort(404);
+        return view('principal.teachers.edit', ['school'=>$school, 'teacherRole'=>$teacher]);
+    }
+
     public function store(Request $request, School $school)
     {
         $teacherRole = Role::where('name', Role::TEACHER)->firstOrFail();
         $data = $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name' => 'nullable|string|max:100',
+            'first_name_bn' => 'nullable|string|max:191',
+            'last_name_bn' => 'nullable|string|max:191',
+            'father_name_bn' => 'nullable|string|max:191',
+            'father_name_en' => 'nullable|string|max:191',
+            'mother_name_bn' => 'nullable|string|max:191',
+            'mother_name_en' => 'nullable|string|max:191',
+            'date_of_birth' => 'nullable|date',
+            'joining_date' => 'nullable|date',
+            'academic_info' => 'nullable|string',
+            'qualification' => 'nullable|string',
             'phone' => 'nullable|string|max:32',
+            'email' => 'nullable|email|max:191',
             'designation' => 'nullable|string|max:100',
             'serial_number' => 'nullable|integer|min:1',
+            'photo' => 'nullable|image|max:2048',
+            'signature' => 'nullable|image|max:2048',
         ]);
         DB::beginTransaction();
         try {
-            $user = User::create([
+            $email = $data['email'] ?? (uniqid('t_').'@example.com');
+            $userData = [
                 'name' => trim(($data['first_name']??'').' '.($data['last_name']??'')) ?: $data['first_name'],
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'] ?? null,
+                'first_name_bn' => $data['first_name_bn'] ?? null,
+                'last_name_bn' => $data['last_name_bn'] ?? null,
+                'father_name_bn' => $data['father_name_bn'] ?? null,
+                'father_name_en' => $data['father_name_en'] ?? null,
+                'mother_name_bn' => $data['mother_name_bn'] ?? null,
+                'mother_name_en' => $data['mother_name_en'] ?? null,
+                'date_of_birth' => $data['date_of_birth'] ?? null,
+                'joining_date' => $data['joining_date'] ?? null,
+                'academic_info' => $data['academic_info'] ?? null,
+                'qualification' => $data['qualification'] ?? null,
                 'phone' => $data['phone'] ?? null,
-                'email' => uniqid('t_').'@example.com', // placeholder
-                'password' => bcrypt('password'), // default password, should force reset later
-            ]);
+                'email' => $email,
+                'password' => bcrypt(Str::random(12)),
+            ];
+
+            $user = User::create($userData);
+            // handle uploads
+            if ($request->hasFile('photo')) {
+                $path = $request->file('photo')->store('teachers/photos','public');
+                $user->photo = $path; $user->save();
+            }
+            if ($request->hasFile('signature')) {
+                $path = $request->file('signature')->store('teachers/signatures','public');
+                $user->signature = $path; $user->save();
+            }
             $pivot = UserSchoolRole::create([
                 'user_id' => $user->id,
                 'school_id' => $school->id,
@@ -87,18 +136,51 @@ class TeacherController extends Controller
         $data = $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name' => 'nullable|string|max:100',
+            'first_name_bn' => 'nullable|string|max:191',
+            'last_name_bn' => 'nullable|string|max:191',
+            'father_name_bn' => 'nullable|string|max:191',
+            'father_name_en' => 'nullable|string|max:191',
+            'mother_name_bn' => 'nullable|string|max:191',
+            'mother_name_en' => 'nullable|string|max:191',
+            'date_of_birth' => 'nullable|date',
+            'joining_date' => 'nullable|date',
+            'academic_info' => 'nullable|string',
+            'qualification' => 'nullable|string',
             'phone' => 'nullable|string|max:32',
+            'email' => 'nullable|email|max:191',
             'designation' => 'nullable|string|max:100',
             'serial_number' => 'nullable|integer|min:1',
+            'photo' => 'nullable|image|max:2048',
+            'signature' => 'nullable|image|max:2048',
         ]);
         DB::beginTransaction();
         try {
-            $teacher->user->update([
+            $userUpdates = [
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'] ?? null,
-                'name' => trim(($data['first_name']??'').' '.($data['last_name']??'')) ?: $data['first_name'],
+                'first_name_bn' => $data['first_name_bn'] ?? null,
+                'last_name_bn' => $data['last_name_bn'] ?? null,
+                'father_name_bn' => $data['father_name_bn'] ?? null,
+                'father_name_en' => $data['father_name_en'] ?? null,
+                'mother_name_bn' => $data['mother_name_bn'] ?? null,
+                'mother_name_en' => $data['mother_name_en'] ?? null,
+                'date_of_birth' => $data['date_of_birth'] ?? null,
+                'joining_date' => $data['joining_date'] ?? null,
+                'academic_info' => $data['academic_info'] ?? null,
+                'qualification' => $data['qualification'] ?? null,
                 'phone' => $data['phone'] ?? null,
-            ]);
+                'email' => $data['email'] ?? $teacher->user->email,
+                'name' => trim(($data['first_name']??'').' '.($data['last_name']??'')) ?: $data['first_name'],
+            ];
+            $teacher->user->update($userUpdates);
+            if ($request->hasFile('photo')) {
+                $path = $request->file('photo')->store('teachers/photos','public');
+                $teacher->user->photo = $path; $teacher->user->save();
+            }
+            if ($request->hasFile('signature')) {
+                $path = $request->file('signature')->store('teachers/signatures','public');
+                $teacher->user->signature = $path; $teacher->user->save();
+            }
             $teacher->update([
                 'designation' => $data['designation'] ?? null,
                 'serial_number' => $data['serial_number'] ?? null,
