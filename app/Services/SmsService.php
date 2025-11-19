@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\SmsLog;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class SmsService
 {
@@ -47,26 +48,34 @@ class SmsService
                 'message' => $message,
             ]);
 
-            SmsLog::create(array_filter([
+            $payload = array_filter([
                 'school_id' => $this->school->id,
                 'recipient_number' => $recipient,
                 'message' => $message,
                 'status' => $response->successful() ? 'success' : 'failed',
                 'response' => $response->body(),
                 'message_type' => $messageType,
-            ]) + $extra);
+            ]) + $extra;
+            if (!Schema::hasColumn('sms_logs','message_type')) {
+                unset($payload['message_type']); // fallback if migration not yet run
+            }
+            SmsLog::create($payload);
 
             return $response->successful();
         } catch (\Exception $e) {
             Log::error("SMS sending failed for school ID: {$this->school->id}. Error: " . $e->getMessage());
-            SmsLog::create(array_filter([
+            $payload = array_filter([
                 'school_id' => $this->school->id,
                 'recipient_number' => $recipient,
                 'message' => $message,
                 'status' => 'failed',
                 'response' => $e->getMessage(),
                 'message_type' => $messageType,
-            ]) + $extra);
+            ]) + $extra;
+            if (!Schema::hasColumn('sms_logs','message_type')) {
+                unset($payload['message_type']);
+            }
+            SmsLog::create($payload);
             return false;
         }
     }
