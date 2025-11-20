@@ -305,35 +305,35 @@
                                         <div class="row g-2">
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="present_district" placeholder="জেলা" required>
+                                                    <input type="text" class="form-control" id="present_district" name="present_district" placeholder="জেলা" required>
                                                     <label for="present_district">জেলা</label>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="present_upazilla" placeholder="উপজেলা" required>
+                                                    <input type="text" class="form-control" id="present_upazilla" name="present_upazilla" placeholder="উপজেলা" required>
                                                     <label for="present_upazilla">উপজেলা</label>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="present_post_office" placeholder="ডাকঘর" required>
+                                                    <input type="text" class="form-control" id="present_post_office" name="present_post_office" placeholder="ডাকঘর" required>
                                                     <label for="present_post_office">ডাকঘর</label>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="present_village" placeholder="গ্রাম" required>
+                                                    <input type="text" class="form-control" id="present_village" name="present_village" placeholder="গ্রাম" required>
                                                     <label for="present_village">গ্রাম</label>
                                                 </div>
                                             </div>
                                             <div class="col-12">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="present_para_moholla" placeholder="পাড়া/মহল্লা">
+                                                    <input type="text" class="form-control" id="present_para_moholla" name="present_para_moholla" placeholder="পাড়া/মহল্লা">
                                                     <label for="present_para_moholla">পাড়া/মহল্লা</label>
                                                 </div>
                                             </div>
-                                            <input type="hidden" id="present_address" name="present_address" value="{{ old('present_address') }}">
+                                            
                                         </div>
                                     </div>
                                     
@@ -347,35 +347,35 @@
                                         <div class="row g-2">
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="permanent_district" placeholder="জেলা" required>
+                                                    <input type="text" class="form-control" id="permanent_district" name="permanent_district" placeholder="জেলা" required>
                                                     <label for="permanent_district">জেলা</label>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="permanent_upazilla" placeholder="উপজেলা" required>
+                                                    <input type="text" class="form-control" id="permanent_upazilla" name="permanent_upazilla" placeholder="উপজেলা" required>
                                                     <label for="permanent_upazilla">উপজেলা</label>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="permanent_post_office" placeholder="ডাকঘর" required>
+                                                    <input type="text" class="form-control" id="permanent_post_office" name="permanent_post_office" placeholder="ডাকঘর" required>
                                                     <label for="permanent_post_office">ডাকঘর</label>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="permanent_village" placeholder="গ্রাম" required>
+                                                    <input type="text" class="form-control" id="permanent_village" name="permanent_village" placeholder="গ্রাম" required>
                                                     <label for="permanent_village">গ্রাম</label>
                                                 </div>
                                             </div>
                                             <div class="col-12">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="permanent_para_moholla" placeholder="পাড়া/মহল্লা">
+                                                    <input type="text" class="form-control" id="permanent_para_moholla" name="permanent_para_moholla" placeholder="পাড়া/মহল্লা">
                                                     <label for="permanent_para_moholla">পাড়া/মহল্লা</label>
                                                 </div>
                                             </div>
-                                            <input type="hidden" id="permanent_address" name="permanent_address" value="{{ old('permanent_address') }}">
+                                            
                                         </div>
                                     </div>
                                 </div>
@@ -515,25 +515,16 @@
             return new File([blob], 'photo.jpg', { type: 'image/jpeg' });
         }
         
-        // Build a single-line address from detailed fields
-        function buildAddress(prefix) {
-            const parts = [
-                document.getElementById(prefix + '_village')?.value?.trim(),
-                document.getElementById(prefix + '_para_moholla')?.value?.trim(),
-                document.getElementById(prefix + '_post_office')?.value?.trim(),
-                document.getElementById(prefix + '_upazilla')?.value?.trim(),
-                document.getElementById(prefix + '_district')?.value?.trim(),
-            ].filter(Boolean);
-            return parts.join(', ');
+        // Helper: check whether present address components are filled
+        function hasPresentComponents() {
+            const ids = ['present_district','present_upazilla','present_post_office','present_village','present_para_moholla'];
+            return ids.some(id => (document.getElementById(id)?.value || '').trim());
         }
 
-        function updateAddresses() {
-            const present = buildAddress('present');
-            const permanent = buildAddress('permanent');
-            const presentHidden = document.getElementById('present_address');
-            const permanentHidden = document.getElementById('permanent_address');
-            if (presentHidden) presentHidden.value = present;
-            if (permanentHidden) permanentHidden.value = permanent;
+        // Helper: check whether permanent address components are filled
+        function hasPermanentComponents() {
+            const ids = ['permanent_district','permanent_upazilla','permanent_post_office','permanent_village','permanent_para_moholla'];
+            return ids.some(id => (document.getElementById(id)?.value || '').trim());
         }
 
         // Copy Present Address detailed fields to Permanent and toggle read-only
@@ -554,7 +545,7 @@
                     }
                 }
             });
-            updateAddresses();
+            // no aggregated hidden-field composition required — components posted directly
         }
         
         document.addEventListener('DOMContentLoaded', function() {
@@ -709,11 +700,9 @@
                 if (!validateRequiredSelect('gender','লিঙ্গ')) ok = false;
                 if (!validateRequiredSelect('religion','ধর্ম')) ok = false;
                 if (!validateRequiredSelect('pass_year','পাশের বছর')) ok = false;
-                updateAddresses();
-                const pa = document.getElementById('present_address')?.value?.trim();
-                const pea = document.getElementById('permanent_address')?.value?.trim();
-                if (!pa) ok = false;
-                if (!pea) ok = false;
+                // Ensure at least some address components are present for present and permanent addresses
+                if (!hasPresentComponents()) ok = false;
+                if (!hasPermanentComponents()) ok = false;
                 if (!ok || !form.checkValidity()) {
                     event.preventDefault();
                     event.stopPropagation();
@@ -746,20 +735,20 @@
                                 const dst = document.getElementById('permanent_' + f);
                                 if (dst) dst.value = el.value;
                             }
-                            updateAddresses();
+                            // components updated directly; no aggregated hidden-field update
                         });
                         el.addEventListener('change', function(){
                             if (prefix === 'present' && document.getElementById('same_as_present').checked) {
                                 const dst = document.getElementById('permanent_' + f);
                                 if (dst) dst.value = el.value;
                             }
-                            updateAddresses();
+                            // components updated directly; no aggregated hidden-field update
                         });
                     }
                 });
             });
             // Initialize read-only state if already checked and build composed addresses
-            copyPresentAddress();
+            copyPresentAddress(); // components copied; no aggregated field update needed
 
             // AJAX mobile uniqueness validation (debounced)
             const mobileEl = document.getElementById('mobile');

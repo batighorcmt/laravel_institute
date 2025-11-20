@@ -39,7 +39,7 @@
       <div class="form-group">
         <button class="btn btn-primary" id="bulkSubmit">ফাইল আপলোড ও ইমপোর্ট</button>
         <button class="btn btn-success" id="bulkQueue">ফাইল আপলোড ও কিউতে পাঠান</button>
-        <a id="download-sample" class="btn btn-outline-secondary">ডাউনলোড নমুনা CSV</a>
+        <a href="{{ route('principal.institute.students.bulk.template', $school) }}" class="btn btn-outline-secondary">নমুনা টেমপ্লেট ডাউনলোড</a>
       </div>
     </form>
     <div id="bulkResult" class="mt-3" style="display:none"></div>
@@ -68,19 +68,7 @@
 
 @push('scripts')
 <script>
-document.getElementById('download-sample').addEventListener('click', function(e){
-  e.preventDefault();
-  const sample = [
-    ['student_name_bn','student_name_en','date_of_birth','gender','father_name','mother_name','guardian_phone','address','admission_date','status','enroll_academic_year','enroll_class_id','enroll_section_id','enroll_group_id','enroll_roll_no'],
-    ['রশিদ','Rashid','2010-05-13','male','আব্বা','আম্মা','01700000000','Dhaka','2023-01-15','active','2023','1','1','','10']
-  ];
-  const csv = sample.map(r=> r.map(c=> '"'+(c?c.replace(/"/g,'""'):'')+'"').join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'students-sample.csv'; document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-});
+// Sample template now served by backend route; inline generator removed.
 
 // AJAX submit with simple progress animation
 ;(function(){
@@ -157,8 +145,9 @@ document.getElementById('download-sample').addEventListener('click', function(e)
         if (!jobId) throw new Error('No job id returned from server');
 
         // poll status endpoint
-        const statusUrlBase = ('{{ url("principal/institute/".$school->id."/students/bulk/status/") }}');
-        const reportUrlBase = ('{{ url("principal/institute/".$school->id."/students/bulk/report/") }}');
+        // Laravel url() helper strips trailing slash; ensure manual slash for concatenation
+        const statusUrlBase = ('{{ url("principal/institute/".$school->id."/students/bulk/status") }}/');
+        const reportUrlBase = ('{{ url("principal/institute/".$school->id."/students/bulk/report") }}/');
 
         let finished = false;
         let pollCount = 0;

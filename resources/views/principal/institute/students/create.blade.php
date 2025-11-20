@@ -177,24 +177,22 @@
               <!-- Detailed present/permanent address fields (composed into hidden address fields) -->
               <div class="row g-2">
                 <div class="col-12"><strong>Present Address</strong></div>
-                <div class="col-md-6"><input id="present_village" class="form-control" placeholder="গ্রাম/আলেকশন" /></div>
-                <div class="col-md-6"><input id="present_para_moholla" class="form-control" placeholder="পাড়া/মহল্লা" /></div>
-                <div class="col-md-4 mt-2"><input id="present_post_office" class="form-control" placeholder="পোস্ট অফিস" /></div>
-                <div class="col-md-4 mt-2"><input id="present_upazilla" class="form-control" placeholder="উপজেলা" /></div>
-                <div class="col-md-4 mt-2"><input id="present_district" class="form-control" placeholder="জেলা" /></div>
+                <div class="col-md-6"><input id="present_village" name="present_village" class="form-control" placeholder="গ্রাম/এলাকা" value="{{ old('present_village') }}" /></div>
+                <div class="col-md-6"><input id="present_para_moholla" name="present_para_moholla" class="form-control" placeholder="পাড়া/মহল্লা" value="{{ old('present_para_moholla') }}" /></div>
+                <div class="col-md-4 mt-2"><input id="present_post_office" name="present_post_office" class="form-control" placeholder="পোস্ট অফিস" value="{{ old('present_post_office') }}" /></div>
+                <div class="col-md-4 mt-2"><input id="present_upazilla" name="present_upazilla" class="form-control" placeholder="উপজেলা" value="{{ old('present_upazilla') }}" /></div>
+                <div class="col-md-4 mt-2"><input id="present_district" name="present_district" class="form-control" placeholder="জেলা" value="{{ old('present_district') }}" /></div>
 
                 <div class="col-12 mt-3"><strong>Permanent Address</strong></div>
                 <div class="col-12 mb-2 form-check">
                   <input type="checkbox" id="same_as_present" class="form-check-input" />
                   <label class="form-check-label" for="same_as_present">Present ঠিকানাটি Permanent-এর সাথে কপি করুন</label>
                 </div>
-                <div class="col-md-6"><input id="permanent_village" class="form-control" placeholder="গ্রাম/আলেকশন" /></div>
-                <div class="col-md-6"><input id="permanent_para_moholla" class="form-control" placeholder="পাড়া/মহল্লা" /></div>
-                <div class="col-md-4 mt-2"><input id="permanent_post_office" class="form-control" placeholder="পোস্ট অফিস" /></div>
-                <div class="col-md-4 mt-2"><input id="permanent_upazilla" class="form-control" placeholder="উপজেলা" /></div>
-                <div class="col-md-4 mt-2"><input id="permanent_district" class="form-control" placeholder="জেলা" /></div>
-                <input type="hidden" id="present_address" name="present_address" value="{{ old('present_address') }}">
-                <input type="hidden" id="permanent_address" name="permanent_address" value="{{ old('permanent_address') }}">
+                <div class="col-md-6"><input id="permanent_village" name="permanent_village" class="form-control" placeholder="গ্রাম/এলাকা" value="{{ old('permanent_village') }}" /></div>
+                <div class="col-md-6"><input id="permanent_para_moholla" name="permanent_para_moholla" class="form-control" placeholder="পাড়া/মহল্লা" value="{{ old('permanent_para_moholla') }}" /></div>
+                <div class="col-md-4 mt-2"><input id="permanent_post_office" name="permanent_post_office" class="form-control" placeholder="পোস্ট অফিস" value="{{ old('permanent_post_office') }}" /></div>
+                <div class="col-md-4 mt-2"><input id="permanent_upazilla" name="permanent_upazilla" class="form-control" placeholder="উপজেলা" value="{{ old('permanent_upazilla') }}" /></div>
+                <div class="col-md-4 mt-2"><input id="permanent_district" name="permanent_district" class="form-control" placeholder="জেলা" value="{{ old('permanent_district') }}" /></div>
               </div>
             </div>
           </div>
@@ -226,9 +224,9 @@
                 <label>Result / Grade</label>
                 <input type="text" name="previous_result" class="form-control" value="{{ old('previous_result') }}">
               </div>
-              <div class="col-12 mt-2">
-                <label>Remarks</label>
-                <textarea name="previous_remarks" class="form-control">{{ old('previous_remarks') }}</textarea>
+              <div class="col-12 mt-3">
+                <label>সংযুক্ত ঠিকানা (Legacy Address Field) (ঐচ্ছিক)</label>
+                <textarea name="address" rows="1" class="form-control">{{ old('address') }}</textarea>
               </div>
             </div>
           </div>

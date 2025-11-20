@@ -44,7 +44,10 @@ class AdmissionApplication extends Model
         'school_id','academic_year_id','app_id','applicant_name','phone','class_name','data','status',
         'name_en','name_bn','father_name_en','father_name_bn','mother_name_en','mother_name_bn',
         'guardian_name_en','guardian_name_bn','gender','religion','blood_group','dob','birth_reg_no','photo',
-        'mobile','present_address','permanent_address','last_school','result','pass_year','achievement','payment_status',
+        'mobile','present_address','permanent_address',
+        'present_village','present_para_moholla','present_post_office','present_upazilla','present_district',
+        'permanent_village','permanent_para_moholla','permanent_post_office','permanent_upazilla','permanent_district',
+        'last_school','result','pass_year','achievement','payment_status',
         'cancellation_reason'
     ];
 
