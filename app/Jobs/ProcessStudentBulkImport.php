@@ -89,16 +89,13 @@ class ProcessStudentBulkImport implements ShouldQueue
                 $assoc[$colName] = isset($cols[$i]) ? trim((string)$cols[$i]) : null;
             }
 
-            // basic validation
+            // Minimal required fields per new spec
             $errors = [];
-            if (empty($assoc['student_name_bn'])) $errors[] = 'student_name_bn required';
-            if (empty($assoc['date_of_birth'])) $errors[] = 'date_of_birth required';
-            if (empty($assoc['gender']) || !in_array($assoc['gender'], ['male','female'])) $errors[] = 'gender invalid';
-            if (empty($assoc['father_name'])) $errors[] = 'father_name required';
-            if (empty($assoc['mother_name'])) $errors[] = 'mother_name required';
-            if (empty($assoc['guardian_phone'])) $errors[] = 'guardian_phone required';
-            if (empty($assoc['address'])) $errors[] = 'address required';
-            if (empty($assoc['admission_date'])) $errors[] = 'admission_date required';
+            if (empty($assoc['student_name_en'])) $errors[] = 'student_name_en required';
+            if (empty($assoc['enroll_academic_year'])) $errors[] = 'enroll_academic_year required';
+            if (empty($assoc['enroll_roll_no'])) $errors[] = 'enroll_roll_no required';
+            if (empty($assoc['enroll_class_id']) && empty($assoc['enroll_class_name'])) $errors[] = 'enroll_class_id or enroll_class_name required';
+            // status optional; default active
 
             if (!empty($errors)) {
                 $failures[] = array_merge($assoc, ['__error' => implode('; ', $errors)]);
@@ -108,21 +105,33 @@ class ProcessStudentBulkImport implements ShouldQueue
             }
 
             // Parse dates
-            try { $dob = Carbon::parse($assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { try { $dob = Carbon::createFromFormat('d/m/Y', $assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { $failures[] = array_merge($assoc, ['__error'=>'invalid date_of_birth']); Cache::put($reportKey, ['success'=> $success, 'errors'=>$failures], 3600); Cache::put($cacheKey, ['status' => 'running', 'processed' => $rowNo-1, 'total' => $total], 3600); continue; } }
-            try { $admission_date = Carbon::parse($assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { try { $admission_date = Carbon::createFromFormat('d/m/Y', $assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { $failures[] = array_merge($assoc, ['__error'=>'invalid admission_date']); Cache::put($reportKey, ['success'=> $success, 'errors'=>$failures], 3600); Cache::put($cacheKey, ['status' => 'running', 'processed' => $rowNo-1, 'total' => $total], 3600); continue; } }
+            // Parse optional dates if provided
+            $dob = null; if (!empty($assoc['date_of_birth'])) { try { $dob = Carbon::parse($assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { try { $dob = Carbon::createFromFormat('d/m/Y', $assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { /* ignore invalid */ } } }
+            $admission_date = null; if (!empty($assoc['admission_date'])) { try { $admission_date = Carbon::parse($assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { try { $admission_date = Carbon::createFromFormat('d/m/Y', $assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { /* ignore invalid */ } } }
 
             $studentData = [
                 'student_name_en' => $assoc['student_name_en'] ?? null,
-                'student_name_bn' => $assoc['student_name_bn'],
+                'student_name_bn' => $assoc['student_name_bn'] ?? null,
                 'date_of_birth' => $dob,
-                'gender' => $assoc['gender'],
-                'father_name' => $assoc['father_name'],
-                'mother_name' => $assoc['mother_name'],
-                'father_name_bn' => $assoc['father_name_bn'] ?? $assoc['father_name'],
-                'mother_name_bn' => $assoc['mother_name_bn'] ?? $assoc['mother_name'],
-                'guardian_phone' => $assoc['guardian_phone'],
-                'address' => $assoc['address'],
+                'gender' => $assoc['gender'] ?? null,
                 'blood_group' => $assoc['blood_group'] ?? null,
+                'father_name' => $assoc['father_name'] ?? null,
+                'mother_name' => $assoc['mother_name'] ?? null,
+                'father_name_bn' => $assoc['father_name_bn'] ?? ($assoc['father_name'] ?? null),
+                'mother_name_bn' => $assoc['mother_name_bn'] ?? ($assoc['mother_name'] ?? null),
+                'guardian_phone' => $assoc['guardian_phone'] ?? null,
+                'guardian_relation' => $assoc['guardian_relation'] ?? null,
+                'guardian_name_en' => $assoc['guardian_name_en'] ?? null,
+                'guardian_name_bn' => $assoc['guardian_name_bn'] ?? null,
+                // address: legacy 'address' fallback to present_address if supplied
+                'address' => $assoc['address'] ?? ($assoc['present_address'] ?? null),
+                'present_address' => $assoc['present_address'] ?? null,
+                'permanent_address' => $assoc['permanent_address'] ?? null,
+                // previous education
+                'previous_school' => $assoc['previous_school'] ?? null,
+                'pass_year' => $assoc['pass_year'] ?? null,
+                'previous_result' => $assoc['previous_result'] ?? null,
+                'previous_remarks' => $assoc['previous_remarks'] ?? null,
                 'admission_date' => $admission_date,
                 'status' => $assoc['status'] ?? 'active',
                 'school_id' => $this->schoolId,
@@ -148,6 +157,17 @@ class ProcessStudentBulkImport implements ShouldQueue
             if (!empty($assoc['enroll_group_id']) && is_numeric($assoc['enroll_group_id'])) { $enGroup = intval($assoc['enroll_group_id']); }
             if (empty($enGroup) && !empty($assoc['enroll_group_name'])) { $enGroup = $this->findBestMatch($groups, $assoc['enroll_group_name']); }
             if (!empty($assoc['enroll_roll_no']) && is_numeric($assoc['enroll_roll_no'])) { $enRoll = intval($assoc['enroll_roll_no']); }
+
+            // Validate existence of section/group IDs for this school, else null them (foreign key safety)
+            if ($enSection && !array_key_exists($enSection, $sections)) { $enSection = null; }
+            if ($enGroup && !array_key_exists($enGroup, $groups)) { $enGroup = null; }
+
+            // If mandatory enrollment fields missing or class name not resolved -> log failure
+            if ($enYear && !$enClass) {
+                $failures[] = array_merge($assoc, ['__error'=>'class name/id not resolved']);
+                Cache::put($reportKey, ['success'=> $success, 'errors'=>$failures], 3600);
+                Cache::put($cacheKey, ['status' => 'running', 'processed' => $rowNo-1, 'total' => $total], 3600);
+            }
 
             if ($enYear && $enClass && $enRoll) {
                 $class = SchoolClass::find($enClass);

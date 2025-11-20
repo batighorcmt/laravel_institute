@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Jobs\ProcessStudentBulkImport;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\StudentBulkTemplateExport;
 
 class StudentController extends Controller
 {
@@ -90,14 +92,48 @@ class StudentController extends Controller
             'father_name_bn'=>['required','string','max:150'],
             'mother_name_bn'=>['required','string','max:150'],
             'guardian_phone'=>['required','string','max:20'],
-            'address'=>['required','string'],
+            // Legacy address now optional (will derive from components if blank)
+            'address'=>['nullable','string'],
+            // New component fields (all optional)
+            'present_village'=>['nullable','string','max:120'],
+            'present_para_moholla'=>['nullable','string','max:120'],
+            'present_post_office'=>['nullable','string','max:120'],
+            'present_upazilla'=>['nullable','string','max:120'],
+            'present_district'=>['nullable','string','max:120'],
+            'permanent_village'=>['nullable','string','max:120'],
+            'permanent_para_moholla'=>['nullable','string','max:120'],
+            'permanent_post_office'=>['nullable','string','max:120'],
+            'permanent_upazilla'=>['nullable','string','max:120'],
+            'permanent_district'=>['nullable','string','max:120'],
             'blood_group'=>['nullable','in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
             'admission_date'=>['required','date'],
             'status'=>['required','in:active,inactive,graduated,transferred'],
+            'photo'=>['nullable','image','max:1024'],
         ]);
+        // If legacy address empty, compose from present components
+        if (empty($data['address'])) {
+            $parts = array_filter([
+                $data['present_village'] ?? null,
+                $data['present_para_moholla'] ?? null,
+                $data['present_post_office'] ?? null,
+                $data['present_upazilla'] ?? null,
+                $data['present_district'] ?? null,
+            ]);
+            $data['address'] = $parts ? implode(', ', $parts) : null;
+        }
         $data['school_id']=$school->id;
         // keep class_id null; enrollments drive class/year history
         $data['class_id']=null;
+        // Handle photo upload (store on public disk under students/)
+        if ($request->hasFile('photo')) {
+            try {
+                $photoPath = $request->file('photo')->store('students','public');
+                $data['photo'] = $photoPath;
+            } catch (\Throwable $e) {
+                Log::warning('Photo upload failed: '.$e->getMessage());
+            }
+        }
+
         $student = Student::create($data);
 
         // Inline enrollment (optional)
@@ -224,12 +260,47 @@ class StudentController extends Controller
             'father_name_bn'=>['required','string','max:150'],
             'mother_name_bn'=>['required','string','max:150'],
             'guardian_phone'=>['required','string','max:20'],
-            'address'=>['required','string'],
+            'address'=>['nullable','string'],
+            'present_village'=>['nullable','string','max:120'],
+            'present_para_moholla'=>['nullable','string','max:120'],
+            'present_post_office'=>['nullable','string','max:120'],
+            'present_upazilla'=>['nullable','string','max:120'],
+            'present_district'=>['nullable','string','max:120'],
+            'permanent_village'=>['nullable','string','max:120'],
+            'permanent_para_moholla'=>['nullable','string','max:120'],
+            'permanent_post_office'=>['nullable','string','max:120'],
+            'permanent_upazilla'=>['nullable','string','max:120'],
+            'permanent_district'=>['nullable','string','max:120'],
             'blood_group'=>['nullable','in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
-            'admission_date'=>['required','date'],
-            'status'=>['required','in:active,inactive,graduated,transferred'],
+                            'admission_date'=>['required','date'],
+                            'status'=>['required','in:active,inactive,graduated,transferred'],
+                            'photo'=>['nullable','image','max:1024'],
         ]);
-    $student->update($data);
+        if (empty($data['address'])) {
+            $parts = array_filter([
+                $data['present_village'] ?? null,
+                $data['present_para_moholla'] ?? null,
+                $data['present_post_office'] ?? null,
+                $data['present_upazilla'] ?? null,
+                $data['present_district'] ?? null,
+            ]);
+            $data['address'] = $parts ? implode(', ', $parts) : $student->address;
+        }
+            // Handle photo upload on update: store new and remove old if present
+            if ($request->hasFile('photo')) {
+                try {
+                    $photoPath = $request->file('photo')->store('students','public');
+                    // remove old photo from public disk if exists
+                    if (!empty($student->photo)) {
+                        try { Storage::disk('public')->delete($student->photo); } catch (\Throwable $e) { /* ignore */ }
+                    }
+                    $data['photo'] = $photoPath;
+                } catch (\Throwable $e) {
+                    Log::warning('Photo upload failed (update): '.$e->getMessage());
+                }
+            }
+
+            $student->update($data);
         return redirect()->route('principal.institute.students.show',[$school,$student])->with('success','শিক্ষার্থী আপডেট হয়েছে');
     }
 
@@ -371,16 +442,11 @@ class StudentController extends Controller
                 $assoc[$colName] = isset($cols[$i]) ? trim((string)$cols[$i]) : null;
             }
 
-            // map fields expected: student_name_bn, student_name_en, date_of_birth, gender, father_name, mother_name, guardian_phone, address, admission_date, enroll_academic_year, enroll_class_id, enroll_section_id, enroll_group_id, enroll_roll_no, status
+            // Minimal required fields now: student_name_en, enroll_academic_year, enroll_roll_no, class (id or name), status optional
             $validator = \Illuminate\Support\Facades\Validator::make($assoc, [
-                'student_name_bn' => ['required','string','max:150'],
-                'date_of_birth' => ['required'],
-                'gender' => ['required','in:male,female'],
-                'father_name' => ['required','string','max:120'],
-                'mother_name' => ['required','string','max:120'],
-                'guardian_phone' => ['required','string','max:20'],
-                'address' => ['required','string'],
-                'admission_date' => ['required'],
+                'student_name_en' => ['required','string','max:150'],
+                'enroll_academic_year' => ['required','numeric'],
+                'enroll_roll_no' => ['required','numeric'],
                 'status' => ['nullable','in:active,inactive,graduated,transferred'],
             ]);
 
@@ -389,30 +455,21 @@ class StudentController extends Controller
                 continue;
             }
 
-            // parse dates
-            try {
-                $dob = Carbon::parse($assoc['date_of_birth'])->toDateString();
-            } catch (\Throwable $e) {
-                // try d/m/Y
-                try { $dob = Carbon::createFromFormat('d/m/Y', $assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { $errors[] = "Row {$rowNo}: invalid date_of_birth"; continue; }
-            }
-            try {
-                $admission_date = Carbon::parse($assoc['admission_date'])->toDateString();
-            } catch (\Throwable $e) {
-                try { $admission_date = Carbon::createFromFormat('d/m/Y', $assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { $errors[] = "Row {$rowNo}: invalid admission_date"; continue; }
-            }
+            // Optional date parsing (ignore if invalid or empty)
+            $dob = null; if (!empty($assoc['date_of_birth'])) { try { $dob = Carbon::parse($assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { try { $dob = Carbon::createFromFormat('d/m/Y', $assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { $dob = null; } } }
+            $admission_date = null; if (!empty($assoc['admission_date'])) { try { $admission_date = Carbon::parse($assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { try { $admission_date = Carbon::createFromFormat('d/m/Y', $assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { $admission_date = null; } } }
 
             $studentData = [
-                'student_name_en' => $assoc['student_name_en'] ?? null,
-                'student_name_bn' => $assoc['student_name_bn'],
+                'student_name_en' => $assoc['student_name_en'],
+                'student_name_bn' => $assoc['student_name_bn'] ?? null,
                 'date_of_birth' => $dob,
-                'gender' => $assoc['gender'],
-                'father_name' => $assoc['father_name'],
-                'mother_name' => $assoc['mother_name'],
-                'father_name_bn' => $assoc['father_name_bn'] ?? $assoc['father_name'],
-                'mother_name_bn' => $assoc['mother_name_bn'] ?? $assoc['mother_name'],
-                'guardian_phone' => $assoc['guardian_phone'],
-                'address' => $assoc['address'],
+                'gender' => $assoc['gender'] ?? null,
+                'father_name' => $assoc['father_name'] ?? null,
+                'mother_name' => $assoc['mother_name'] ?? null,
+                'father_name_bn' => $assoc['father_name_bn'] ?? ($assoc['father_name'] ?? null),
+                'mother_name_bn' => $assoc['mother_name_bn'] ?? ($assoc['mother_name'] ?? null),
+                'guardian_phone' => $assoc['guardian_phone'] ?? null,
+                'address' => $assoc['address'] ?? null,
                 'blood_group' => $assoc['blood_group'] ?? null,
                 'admission_date' => $admission_date,
                 'status' => $assoc['status'] ?? 'active',
@@ -517,6 +574,29 @@ class StudentController extends Controller
     }
 
     /**
+     * Download Excel/CSV template for bulk student import
+     */
+    public function bulkTemplate(School $school)
+    {
+        $this->authorizePrincipal($school);
+        // Prefer Excel download if package available, else fallback CSV stream
+        if (class_exists('Maatwebsite\\Excel\\Facades\\Excel')) {
+            return Excel::download(new StudentBulkTemplateExport(), 'students-template.xlsx');
+        }
+        $rows = [
+            ['student_name_bn','student_name_en','date_of_birth','gender','father_name','mother_name','guardian_phone','address','admission_date','status','enroll_academic_year','enroll_class_id','enroll_section_id','enroll_group_id','enroll_roll_no'],
+            ['রশিদ','Rashid','2010-05-13','male','আব্বা','আম্মা','01700000000','Dhaka','2023-01-15','active','2023','1','1','','10']
+        ];
+        $fh = fopen('php://temp','w');
+        foreach($rows as $r){ fputcsv($fh,$r); }
+        rewind($fh); $csv = stream_get_contents($fh); fclose($fh);
+        return response($csv,200,[
+            'Content-Type'=>'text/csv; charset=UTF-8',
+            'Content-Disposition'=>'attachment; filename="students-template.csv"'
+        ]);
+    }
+
+    /**
      * Return job status/progress from cache
      */
     public function bulkStatus(School $school, $id)
@@ -526,7 +606,20 @@ class StudentController extends Controller
         $reportKey = "bulk_import:{$id}:report";
         $status = Cache::get($statusKey);
         $report = Cache::get($reportKey);
-        return response()->json(['status'=>$status ?? null, 'report'=>$report ?? null]);
+        $processed = $status['processed'] ?? 0;
+        $total = max(1, $status['total'] ?? 1); // avoid div by zero
+        $progressPct = $total ? round(($processed / $total) * 100, 2) : 0;
+        $finished = ($status['status'] ?? null) === 'finished';
+        return response()->json([
+            'status' => $status['status'] ?? null,
+            'processed' => $processed,
+            'total' => $status['total'] ?? 0,
+            'progress' => $progressPct,
+            'success' => $report['success'] ?? 0,
+            'errors' => $report['errors'] ?? [],
+            'report_available' => !empty($report['report_path']),
+            'finished' => $finished,
+        ]);
     }
 
     /**

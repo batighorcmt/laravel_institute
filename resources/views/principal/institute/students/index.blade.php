@@ -29,6 +29,7 @@
         <th>গ্রুপ</th>
         <th>মোবাইল নং</th>
         <th>স্ট্যাটাস</th>
+        <th style="width:80px">ছবি</th>
         <th>বিষয়সমূহ ({{ $yearLabel }})</th>
         <th style="width:120px">অ্যাকশন</th>
       </tr>
@@ -71,6 +72,9 @@
         <td>
           @php($st = $stu->status)
           <span class="badge badge-{{ $st==='active'?'success':($st==='inactive'?'secondary':($st==='graduated'?'info':'warning')) }}">{{ $st }}</span>
+        </td>
+        <td class="text-center">
+          <img src="{{ $stu->photo_url }}" alt="photo" style="width:40px;height:40px;object-fit:cover;border-radius:50%;">
         </td>
         <td class="small">{!! $subsHtml ?: '-' !!}</td>
         <td class="text-nowrap">

@@ -198,14 +198,16 @@ Route::middleware(['auth'])->group(function () {
             Route::resource('subjects', \App\Http\Controllers\Principal\SubjectController::class)->except(['show']);
             Route::resource('academic-years', \App\Http\Controllers\Principal\AcademicYearController::class)->except(['show']);
             Route::patch('academic-years/{academic_year}/current', [\App\Http\Controllers\Principal\AcademicYearController::class,'setCurrent'])->name('academic-years.set-current');
-            Route::resource('students', \App\Http\Controllers\Principal\StudentController::class);
-            // Bulk student import (CSV)
+            // Bulk student import routes should be defined before the resource route
+            // to avoid the 'bulk' segment being interpreted as a student ID.
             Route::get('students/bulk', [\App\Http\Controllers\Principal\StudentController::class,'bulkForm'])->name('students.bulk');
             Route::post('students/bulk', [\App\Http\Controllers\Principal\StudentController::class,'bulkImport'])->name('students.bulk.import');
-            // Queue-based bulk import endpoints
+            Route::get('students/bulk/template', [\App\Http\Controllers\Principal\StudentController::class,'bulkTemplate'])->name('students.bulk.template');
             Route::post('students/bulk/queue', [\App\Http\Controllers\Principal\StudentController::class,'bulkEnqueue'])->name('students.bulk.queue');
             Route::get('students/bulk/status/{id}', [\App\Http\Controllers\Principal\StudentController::class,'bulkStatus'])->name('students.bulk.status');
             Route::get('students/bulk/report/{id}', [\App\Http\Controllers\Principal\StudentController::class,'bulkReport'])->name('students.bulk.report');
+
+            Route::resource('students', \App\Http\Controllers\Principal\StudentController::class);
             Route::patch('students/{student}/status', [\App\Http\Controllers\Principal\StudentController::class,'toggleStatus'])->name('students.toggle-status');
             Route::post('students/{student}/enrollments', [\App\Http\Controllers\Principal\StudentController::class,'addEnrollment'])->name('students.enrollments.add');
             Route::delete('students/{student}/enrollments/{enrollment}', [\App\Http\Controllers\Principal\StudentController::class,'removeEnrollment'])->name('students.enrollments.remove');
