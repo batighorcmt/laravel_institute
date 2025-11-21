@@ -71,17 +71,19 @@
             </div>
         </div>
         <div class="form-title"> {{ $classTitle }} ভর্তি আবেদন - {{ bnDigits($yearText) }} </div>
+         @if($application->status==='cancelled')
+            <div class="cancel-note mb-2">বাতিলের কারণ: {{ $application->cancellation_reason }}</div>
+        @endif
         <table class="form-table">
-            <tr class="section-head"><th style="width:25%">আবেদন আইডি</th><th style="width:25%">আবেদনের তারিখ</th><th style="width:25%">জমার তারিখ</th><th style="width:25%">ভর্তি রোল নং</th></tr>
+            <tr class="section-head"><th class="text-center" style="width:25%">আবেদন আইডি</th><th class="text-center" style="width:25%">আবেদনের তারিখ</th><th class="text-center" style="width:25%">জমার তারিখ</th><th class="text-center" style="width:25%">ভর্তি রোল নং</th></tr>
             <tr>
-                <td>{{ ($application->app_id) }}</td>
-                <td>{{ bnDigits(optional($application->created_at)->format('d-m-Y')) }}</td>
-                <td>
-                    {{ $application->accepted_at ? bnDigits(optional($application->accepted_at)->format('d-m-Y')) : '' }}
+                <td class="text-center">{{ ($application->app_id) }}</td>
+                <td class="text-center">{{ bnDigits(optional($application->created_at)->format('d-m-Y')) }}</td>
+                <td class="text-center">
+                    {{ $application->accepted_at ? bnDigits(optional($application->accepted_at)->format('d-m-Y')) : '—' }}
                 </td>
-                <td>
-                    @php $admissionRoll = data_get($application->data, 'admission_roll'); @endphp
-                    {{ $application->accepted_at && $admissionRoll ? bnDigits($admissionRoll) : '' }}
+                <td class="text-center">
+                    {{ $application->admission_roll_no ? bnDigits(str_pad($application->admission_roll_no, 3, '0', STR_PAD_LEFT)) : '—' }}
                 </td>
             </tr>
         </table>
@@ -173,9 +175,6 @@
                 <td colspan="3" style="width:40%"><strong>সাফল্যসমূহ:</strong> {{ $application->achievement ?? '—' }}</td>
             </tr>
         </table>
-        @if($application->status==='cancelled')
-            <div class="cancel-note mb-2">বাতিলের কারণ: {{ $application->cancellation_reason }}</div>
-        @endif
         <table class="form-table">
             <tr class="section-head"><th colspan="4">পেমেন্ট তথ্য</th></tr>
             <tr>
