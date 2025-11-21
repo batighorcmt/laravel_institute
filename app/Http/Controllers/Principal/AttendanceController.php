@@ -31,10 +31,8 @@ class AttendanceController extends Controller
         // Parse month into numeric parts
         [$yearNum,$monthNum] = explode('-', $month) + [date('Y'), date('m')];
         $yearNum = (int)$yearNum; $monthNum = (int)$monthNum;
-    $currentYear = AcademicYear::forSchool($school->id)->current()->first();
-    $yearVal = null;
-    if ($currentYear && is_numeric($currentYear->name)) { $yearVal = (int)$currentYear->name; }
-    if (!$yearVal) { $yearVal = (int)date('Y'); }
+        $currentYear = AcademicYear::forSchool($school->id)->current()->first();
+        $yearVal = $currentYear?->id;
 
         // মাসের প্রথম ও শেষ দিন
         $startDate = $month.'-01';
@@ -89,7 +87,7 @@ class AttendanceController extends Controller
             ->leftJoin('sections','sections.id','=','student_enrollments.section_id')
             ->where('student_enrollments.school_id',$school->id)
             ->where('student_enrollments.status','active')
-            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year',$yearVal))
+            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id',$yearVal))
             ->when($classId, fn($q)=>$q->where('student_enrollments.class_id',$classId))
             ->when($sectionId, fn($q)=>$q->where('student_enrollments.section_id',$sectionId));
 
@@ -144,16 +142,14 @@ class AttendanceController extends Controller
     {
         $date = $request->query('date', now()->toDateString());
 
-        // Current year numeric value used by enrollments
+        // Current academic year (use ID foreign key)
         $currentYear = AcademicYear::forSchool($school->id)->current()->first();
-        $yearVal = null;
-        if ($currentYear && is_numeric($currentYear->name)) { $yearVal = (int)$currentYear->name; }
-        if (!$yearVal) { $yearVal = (int)date('Y'); }
+        $yearVal = $currentYear?->id;
 
         // Total active students (current year)
         $totalStudents = StudentEnrollment::where('school_id', $school->id)
             ->where('status', 'active')
-            ->when($yearVal, fn($q)=>$q->where('academic_year', $yearVal))
+            ->when($yearVal, fn($q)=>$q->where('academic_year_id', $yearVal))
             ->count();
 
         // Today's attendance counts
@@ -192,7 +188,7 @@ class AttendanceController extends Controller
             ->where('student_enrollments.school_id', $school->id)
             ->where('student_enrollments.status','active')
             ->where('sections.status','active')
-            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year', $yearVal))
+            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
             ->groupBy('classes.id','classes.name','classes.numeric_value','sections.id','sections.name')
             ->get();
 
@@ -355,7 +351,7 @@ class AttendanceController extends Controller
             ->leftJoin('classes','classes.id','=','student_enrollments.class_id')
             ->leftJoin('sections','sections.id','=','student_enrollments.section_id')
             ->where('student_enrollments.school_id', $school->id)
-            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year', $yearVal))
+            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
             ->where('attendance.date', $date)
             ->where('attendance.status','absent')
             ->orderBy('classes.numeric_value')
@@ -427,19 +423,14 @@ class AttendanceController extends Controller
         $schoolClass = SchoolClass::find($classId);
         $section = Section::find($sectionId);
         $currentYear = AcademicYear::forSchool($school->id)->current()->first();
-        // Derive numeric academic year value used in student_enrollments.academic_year
-        $yearVal = null;
-        if ($currentYear && is_numeric($currentYear->name)) {
-            $yearVal = (int) $currentYear->name;
-        }
-        if (!$yearVal) { $yearVal = (int) date('Y'); }
+        $yearVal = $currentYear?->id;
 
         // Get enrolled students for this class and section (current year only)
         $enrollments = StudentEnrollment::with('student')
             ->where('class_id', $classId)
             ->where('section_id', $sectionId)
             ->where('status', 'active')
-            ->when($yearVal, function($q) use ($yearVal){ $q->where('academic_year', $yearVal); })
+            ->when($yearVal, function($q) use ($yearVal){ $q->where('academic_year_id', $yearVal); })
             ->orderBy('roll_no')
             ->get();
 
@@ -486,14 +477,12 @@ class AttendanceController extends Controller
 
         // Build expected enrollment list (server-side completeness check like legacy script)
         $currentYear = AcademicYear::forSchool($school->id)->current()->first();
-        $yearVal = null;
-        if ($currentYear && is_numeric($currentYear->name)) { $yearVal = (int)$currentYear->name; }
-        if (!$yearVal) { $yearVal = (int)date('Y'); }
+        $yearVal = $currentYear?->id;
 
         $enrollments = StudentEnrollment::where('class_id', $classId)
             ->where('section_id', $sectionId)
             ->where('status', 'active')
-            ->when($yearVal, fn($q)=>$q->where('academic_year', $yearVal))
+            ->when($yearVal, fn($q)=>$q->where('academic_year_id', $yearVal))
             ->orderBy('roll_no')
             ->pluck('student_id')
             ->toArray();

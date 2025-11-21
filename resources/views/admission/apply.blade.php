@@ -305,32 +305,37 @@
                                         <div class="row g-2">
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="present_district" name="present_district" placeholder="জেলা" required>
-                                                    <label for="present_district">জেলা</label>
+                                                    <input type="text" class="form-control @error('present_district') is-invalid @enderror" id="present_district" name="present_district" placeholder="জেলা" value="{{ old('present_district') }}" required>
+                                                    <label for="present_district">জেলা <span class="text-danger">*</span></label>
+                                                    <div class="invalid-feedback">@error('present_district') {{ $message }} @else দয়া করে জেলা লিখুন @enderror</div>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="present_upazilla" name="present_upazilla" placeholder="উপজেলা" required>
-                                                    <label for="present_upazilla">উপজেলা</label>
+                                                    <input type="text" class="form-control @error('present_upazilla') is-invalid @enderror" id="present_upazilla" name="present_upazilla" placeholder="উপজেলা" value="{{ old('present_upazilla') }}" required>
+                                                    <label for="present_upazilla">উপজেলা <span class="text-danger">*</span></label>
+                                                    <div class="invalid-feedback">@error('present_upazilla') {{ $message }} @else দয়া করে উপজেলা লিখুন @enderror</div>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="present_post_office" name="present_post_office" placeholder="ডাকঘর" required>
-                                                    <label for="present_post_office">ডাকঘর</label>
+                                                    <input type="text" class="form-control @error('present_post_office') is-invalid @enderror" id="present_post_office" name="present_post_office" placeholder="ডাকঘর" value="{{ old('present_post_office') }}" required>
+                                                    <label for="present_post_office">ডাকঘর <span class="text-danger">*</span></label>
+                                                    <div class="invalid-feedback">@error('present_post_office') {{ $message }} @else দয়া করে ডাকঘর লিখুন @enderror</div>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="present_village" name="present_village" placeholder="গ্রাম" required>
-                                                    <label for="present_village">গ্রাম</label>
+                                                    <input type="text" class="form-control @error('present_village') is-invalid @enderror" id="present_village" name="present_village" placeholder="গ্রাম" value="{{ old('present_village') }}" required>
+                                                    <label for="present_village">গ্রাম <span class="text-danger">*</span></label>
+                                                    <div class="invalid-feedback">@error('present_village') {{ $message }} @else দয়া করে গ্রাম লিখুন @enderror</div>
                                                 </div>
                                             </div>
                                             <div class="col-12">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="present_para_moholla" name="present_para_moholla" placeholder="পাড়া/মহল্লা">
-                                                    <label for="present_para_moholla">পাড়া/মহল্লা</label>
+                                                    <input type="text" class="form-control @error('present_para_moholla') is-invalid @enderror" id="present_para_moholla" name="present_para_moholla" placeholder="পাড়া/মহল্লা" value="{{ old('present_para_moholla') }}">
+                                                    <label for="present_para_moholla">পাড়া/মহল্লা</label>
+                                                    <div class="invalid-feedback">@error('present_para_moholla') {{ $message }} @enderror</div>
                                                 </div>
                                             </div>
                                             
@@ -347,32 +352,37 @@
                                         <div class="row g-2">
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="permanent_district" name="permanent_district" placeholder="জেলা" required>
-                                                    <label for="permanent_district">জেলা</label>
+                                                    <input type="text" class="form-control @error('permanent_district') is-invalid @enderror" id="permanent_district" name="permanent_district" placeholder="জেলা" value="{{ old('permanent_district') }}" required>
+                                                    <label for="permanent_district">জেলা <span class="text-danger">*</span></label>
+                                                    <div class="invalid-feedback">@error('permanent_district') {{ $message }} @else দয়া করে জেলা লিখুন @enderror</div>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="permanent_upazilla" name="permanent_upazilla" placeholder="উপজেলা" required>
-                                                    <label for="permanent_upazilla">উপজেলা</label>
+                                                    <input type="text" class="form-control @error('permanent_upazilla') is-invalid @enderror" id="permanent_upazilla" name="permanent_upazilla" placeholder="উপজেলা" value="{{ old('permanent_upazilla') }}" required>
+                                                    <label for="permanent_upazilla">উপজেলা <span class="text-danger">*</span></label>
+                                                    <div class="invalid-feedback">@error('permanent_upazilla') {{ $message }} @else দয়া করে উপজেলা লিখুন @enderror</div>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="permanent_post_office" name="permanent_post_office" placeholder="ডাকঘর" required>
-                                                    <label for="permanent_post_office">ডাকঘর</label>
+                                                    <input type="text" class="form-control @error('permanent_post_office') is-invalid @enderror" id="permanent_post_office" name="permanent_post_office" placeholder="ডাকঘর" value="{{ old('permanent_post_office') }}" required>
+                                                    <label for="permanent_post_office">ডাকঘর <span class="text-danger">*</span></label>
+                                                    <div class="invalid-feedback">@error('permanent_post_office') {{ $message }} @else দয়া করে ডাকঘর লিখুন @enderror</div>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="permanent_village" name="permanent_village" placeholder="গ্রাম" required>
-                                                    <label for="permanent_village">গ্রাম</label>
+                                                    <input type="text" class="form-control @error('permanent_village') is-invalid @enderror" id="permanent_village" name="permanent_village" placeholder="গ্রাম" value="{{ old('permanent_village') }}" required>
+                                                    <label for="permanent_village">গ্রাম <span class="text-danger">*</span></label>
+                                                    <div class="invalid-feedback">@error('permanent_village') {{ $message }} @else দয়া করে গ্রাম লিখুন @enderror</div>
                                                 </div>
                                             </div>
                                             <div class="col-12">
                                                 <div class="form-floating">
-                                                    <input type="text" class="form-control" id="permanent_para_moholla" name="permanent_para_moholla" placeholder="পাড়া/মহল্লা">
-                                                    <label for="permanent_para_moholla">পাড়া/মহল্লা</label>
+                                                    <input type="text" class="form-control @error('permanent_para_moholla') is-invalid @enderror" id="permanent_para_moholla" name="permanent_para_moholla" placeholder="পাড়া/মহল্লা" value="{{ old('permanent_para_moholla') }}">
+                                                    <label for="permanent_para_moholla">পাড়া/মহল্লা</label>
+                                                    <div class="invalid-feedback">@error('permanent_para_moholla') {{ $message }} @enderror</div>
                                                 </div>
                                             </div>
                                             
@@ -515,16 +525,22 @@
             return new File([blob], 'photo.jpg', { type: 'image/jpeg' });
         }
         
-        // Helper: check whether present address components are filled
+        // Helper: check whether present address required components are filled
         function hasPresentComponents() {
-            const ids = ['present_district','present_upazilla','present_post_office','present_village','present_para_moholla'];
-            return ids.some(id => (document.getElementById(id)?.value || '').trim());
+            const requiredIds = ['present_district','present_upazilla','present_post_office','present_village'];
+            return requiredIds.every(id => {
+                const el = document.getElementById(id);
+                return el && el.value && el.value.trim().length > 0;
+            });
         }
 
-        // Helper: check whether permanent address components are filled
+        // Helper: check whether permanent address required components are filled
         function hasPermanentComponents() {
-            const ids = ['permanent_district','permanent_upazilla','permanent_post_office','permanent_village','permanent_para_moholla'];
-            return ids.some(id => (document.getElementById(id)?.value || '').trim());
+            const requiredIds = ['permanent_district','permanent_upazilla','permanent_post_office','permanent_village'];
+            return requiredIds.every(id => {
+                const el = document.getElementById(id);
+                return el && el.value && el.value.trim().length > 0;
+            });
         }
 
         // Copy Present Address detailed fields to Permanent and toggle read-only
@@ -700,9 +716,27 @@
                 if (!validateRequiredSelect('gender','লিঙ্গ')) ok = false;
                 if (!validateRequiredSelect('religion','ধর্ম')) ok = false;
                 if (!validateRequiredSelect('pass_year','পাশের বছর')) ok = false;
-                // Ensure at least some address components are present for present and permanent addresses
-                if (!hasPresentComponents()) ok = false;
-                if (!hasPermanentComponents()) ok = false;
+                // Ensure all required address components are filled
+                if (!hasPresentComponents()) {
+                    ok = false;
+                    // Highlight missing present address fields
+                    ['present_district','present_upazilla','present_post_office','present_village'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el && !el.value.trim()) {
+                            el.classList.add('is-invalid');
+                        }
+                    });
+                }
+                if (!hasPermanentComponents()) {
+                    ok = false;
+                    // Highlight missing permanent address fields
+                    ['permanent_district','permanent_upazilla','permanent_post_office','permanent_village'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el && !el.value.trim()) {
+                            el.classList.add('is-invalid');
+                        }
+                    });
+                }
                 if (!ok || !form.checkValidity()) {
                     event.preventDefault();
                     event.stopPropagation();

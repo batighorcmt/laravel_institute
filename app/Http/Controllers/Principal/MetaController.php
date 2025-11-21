@@ -46,13 +46,28 @@ class MetaController extends Controller
     public function nextRoll(School $school, Request $request)
     {
         $this->authorizePrincipal($school);
-        $year = (int) $request->query('year');
+        $yearId = (int) $request->query('year_id');
+        // backward compatibility: if numeric 'year' provided, map to AcademicYear
+        if (!$yearId && $request->has('year')) {
+            $yearNumber = (int)$request->query('year');
+            if ($yearNumber) {
+                $yearModel = AcademicYear::firstOrCreate([
+                    'school_id'=>$school->id,
+                    'name'=>(string)$yearNumber,
+                ],[
+                    'start_date'=>now()->setDate($yearNumber,1,1),
+                    'end_date'=>now()->setDate($yearNumber,12,31),
+                    'is_current'=>false,
+                ]);
+                $yearId = $yearModel->id;
+            }
+        }
         $classId = (int) $request->query('class_id');
         $sectionId = $request->query('section_id');
         $groupId = $request->query('group_id');
 
         $q = StudentEnrollment::where('school_id',$school->id)
-            ->where('academic_year',$year)
+            ->where('academic_year_id',$yearId)
             ->where('class_id',$classId);
         if (!empty($sectionId)) $q->where('section_id',$sectionId);
         if (!empty($groupId)) $q->where('group_id',$groupId);
@@ -68,7 +83,8 @@ class MetaController extends Controller
         $qText = trim((string)$request->query('q', ''));
 
         $currentYear = AcademicYear::forSchool($school->id)->current()->first();
-        $yearVal = $currentYear && is_numeric($currentYear->name) ? (int)$currentYear->name : (int)date('Y');
+        $yearId = (int) $request->query('year_id');
+        if (!$yearId && $currentYear) { $yearId = $currentYear->id; }
 
         $q = StudentEnrollment::select(
             'student_enrollments.student_id', 'student_enrollments.roll_no',
@@ -79,7 +95,7 @@ class MetaController extends Controller
         ->join('classes','classes.id','=','student_enrollments.class_id')
         ->leftJoin('sections','sections.id','=','student_enrollments.section_id')
         ->where('student_enrollments.school_id',$school->id)
-        ->where('student_enrollments.academic_year',$yearVal)
+        ->where('student_enrollments.academic_year_id',$yearId)
         ->when($classId, fn($qq)=>$qq->where('student_enrollments.class_id',(int)$classId))
         ->when($sectionId, fn($qq)=>$qq->where('student_enrollments.section_id',(int)$sectionId))
         ->when($qText !== '', function($qq) use ($qText){

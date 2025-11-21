@@ -1,0 +1,94 @@
+@extends('layouts.admin')
+@section('title','ভর্তি পরীক্ষা সম্পাদনা')
+@section('content')
+<h4 class="mb-3">পরীক্ষা আপডেট: {{ $exam->name }}</h4>
+<form method="POST" action="{{ route('principal.institute.admissions.exams.update',[$school,$exam]) }}" id="examForm">
+    @csrf @method('PUT')
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>পরীক্ষার নাম *</label>
+                    <input type="text" name="name" class="form-control" required value="{{ old('name',$exam->name) }}">
+                </div>
+                <div class="form-group col-md-3">
+                    <label>পরীক্ষার ধরন *</label>
+                    <select name="type" class="form-control" id="examType" required>
+                        <option value="subject" {{ old('type',$exam->type)==='subject'?'selected':'' }}>প্রতি বিষয়ে মূল্যায়ন</option>
+                        <option value="overall" {{ old('type',$exam->type)==='overall'?'selected':'' }}>সামগ্রীক মূল্যায়ন</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-3 overall-only d-none">
+                    <label>সামগ্রীক পাস নম্বর *</label>
+                    <input type="number" name="overall_pass_mark" class="form-control" min="0" value="{{ old('overall_pass_mark',$exam->overall_pass_mark) }}">
+                </div>
+                <div class="form-group col-md-2">
+                    <label>স্ট্যাটাস</label>
+                    <select name="status" class="form-control">
+                        @foreach(['draft'=>'Draft','scheduled'=>'Scheduled','completed'=>'Completed'] as $k=>$v)
+                            <option value="{{ $k }}" {{ old('status',$exam->status)===$k?'selected':'' }}>{{ $v }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="form-group col-md-3">
+                    <label>পরীক্ষার তারিখ</label>
+                    <input type="date" name="exam_date" class="form-control" value="{{ old('exam_date', optional($exam->exam_date)->format('Y-m-d')) }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3" id="subjectsCard">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>বিষয়সমূহ</strong>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addSubjectRow()">বিষয় যোগ</button>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-sm mb-0" id="subjectsTable">
+                <thead>
+                    <tr>
+                        <th style="width:30%">বিষয়ের নাম *</th>
+                        <th style="width:15%">পূর্ণ নম্বর *</th>
+                        <th style="width:15%" class="subject-only">পাস নম্বর *</th>
+                        <th style="width:10%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($exam->subjects as $s)
+                        <tr>
+                            <td><input name="subject_name[]" class="form-control form-control-sm" required value="{{ $s->subject_name }}"></td>
+                            <td><input type="number" min="1" name="full_mark[]" class="form-control form-control-sm" required value="{{ $s->full_mark }}"></td>
+                            <td class="subject-only"><input type="number" min="0" name="pass_mark[]" class="form-control form-control-sm" value="{{ $s->pass_mark }}"></td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">X</button></td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button class="btn btn-success">আপডেট</button>
+    <a href="{{ route('principal.institute.admissions.exams.index',$school) }}" class="btn btn-secondary">ফিরে যান</a>
+</form>
+<script>
+function addSubjectRow(name='', full='', pass=''){
+    const tbody = document.querySelector('#subjectsTable tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td><input name="subject_name[]" class="form-control form-control-sm" required value="${name}"></td>
+        <td><input type="number" min="1" name="full_mark[]" class="form-control form-control-sm" required value="${full}"></td>
+        <td class="subject-only"><input type="number" min="0" name="pass_mark[]" class="form-control form-control-sm" value="${pass}"></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">X</button></td>`;
+    tbody.appendChild(tr);
+}
+document.addEventListener('DOMContentLoaded', function(){
+    const typeSelect = document.getElementById('examType');
+    function adjustType(){
+        const isOverall = typeSelect.value==='overall';
+        document.querySelectorAll('.subject-only').forEach(el=>{ el.style.display = isOverall? 'none':'table-cell'; });
+        document.querySelectorAll('.overall-only').forEach(el=>{ el.classList.toggle('d-none', !isOverall); });
+    }
+    typeSelect.addEventListener('change', adjustType); adjustType();
+});
+</script>
+@endsection

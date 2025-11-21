@@ -8,6 +8,7 @@ use App\Models\StudentEnrollment;
 use App\Models\SchoolClass;
 use App\Models\Section;
 use App\Models\Group;
+use App\Models\AcademicYear;
 use Carbon\Carbon;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Bus\Queueable;
@@ -109,6 +110,17 @@ class ProcessStudentBulkImport implements ShouldQueue
             $dob = null; if (!empty($assoc['date_of_birth'])) { try { $dob = Carbon::parse($assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { try { $dob = Carbon::createFromFormat('d/m/Y', $assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { /* ignore invalid */ } } }
             $admission_date = null; if (!empty($assoc['admission_date'])) { try { $admission_date = Carbon::parse($assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { try { $admission_date = Carbon::createFromFormat('d/m/Y', $assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { /* ignore invalid */ } } }
 
+            // Resolve class for student_id generation
+            $enClass = null;
+            if (!empty($assoc['enroll_class_id']) && is_numeric($assoc['enroll_class_id'])) { 
+                $enClass = intval($assoc['enroll_class_id']); 
+            }
+            if (empty($enClass) && !empty($assoc['enroll_class_name'])) { 
+                $enClass = $this->findBestMatch($classes, $assoc['enroll_class_name']); 
+            }
+            $classModel = $enClass ? SchoolClass::find($enClass) : null;
+            $classNumeric = $classModel ? $classModel->numeric_value : 1;
+
             $studentData = [
                 'student_name_en' => $assoc['student_name_en'] ?? null,
                 'student_name_bn' => $assoc['student_name_bn'] ?? null,
@@ -123,10 +135,17 @@ class ProcessStudentBulkImport implements ShouldQueue
                 'guardian_relation' => $assoc['guardian_relation'] ?? null,
                 'guardian_name_en' => $assoc['guardian_name_en'] ?? null,
                 'guardian_name_bn' => $assoc['guardian_name_bn'] ?? null,
-                // address: legacy 'address' fallback to present_address if supplied
-                'address' => $assoc['address'] ?? ($assoc['present_address'] ?? null),
-                'present_address' => $assoc['present_address'] ?? null,
-                'permanent_address' => $assoc['permanent_address'] ?? null,
+                // Address components
+                'present_village' => $assoc['present_village'] ?? null,
+                'present_para_moholla' => $assoc['present_para_moholla'] ?? null,
+                'present_post_office' => $assoc['present_post_office'] ?? null,
+                'present_upazilla' => $assoc['present_upazilla'] ?? null,
+                'present_district' => $assoc['present_district'] ?? null,
+                'permanent_village' => $assoc['permanent_village'] ?? null,
+                'permanent_para_moholla' => $assoc['permanent_para_moholla'] ?? null,
+                'permanent_post_office' => $assoc['permanent_post_office'] ?? null,
+                'permanent_upazilla' => $assoc['permanent_upazilla'] ?? null,
+                'permanent_district' => $assoc['permanent_district'] ?? null,
                 // previous education
                 'previous_school' => $assoc['previous_school'] ?? null,
                 'pass_year' => $assoc['pass_year'] ?? null,
@@ -136,6 +155,7 @@ class ProcessStudentBulkImport implements ShouldQueue
                 'status' => $assoc['status'] ?? 'active',
                 'school_id' => $this->schoolId,
                 'class_id' => null,
+                'student_id' => Student::generateStudentId($this->schoolId, $classNumeric),
             ];
 
             try {
@@ -173,7 +193,17 @@ class ProcessStudentBulkImport implements ShouldQueue
                 $class = SchoolClass::find($enClass);
                 if ($class && !$class->usesGroups()) { $enGroup = null; }
                 // duplicate check
-                $dupQuery = StudentEnrollment::where('school_id',$this->schoolId)->where('academic_year', intval($enYear))->where('class_id', $enClass);
+                // Resolve academic_year_id
+                $yearNumber = intval($enYear);
+                $yearModel = AcademicYear::firstOrCreate([
+                    'school_id'=>$this->schoolId,
+                    'name'=>(string)$yearNumber,
+                ],[
+                    'start_date'=>Carbon::create($yearNumber,1,1),
+                    'end_date'=>Carbon::create($yearNumber,12,31),
+                    'is_current'=>false,
+                ]);
+                $dupQuery = StudentEnrollment::where('school_id',$this->schoolId)->where('academic_year_id', $yearModel->id)->where('class_id', $enClass);
                 if ($enSection) { $dupQuery->where('section_id', $enSection); } else { $dupQuery->whereNull('section_id'); }
                 if ($enGroup) { $dupQuery->where('group_id', $enGroup); } else { $dupQuery->whereNull('group_id'); }
                 $dupQuery->where('roll_no', $enRoll);
@@ -186,7 +216,7 @@ class ProcessStudentBulkImport implements ShouldQueue
                         StudentEnrollment::create([
                             'student_id' => $student->id,
                             'school_id' => $this->schoolId,
-                            'academic_year' => intval($enYear),
+                            'academic_year_id' => $yearModel->id,
                             'class_id' => $enClass,
                             'section_id' => $enSection ?: null,
                             'group_id' => $enGroup ?: null,

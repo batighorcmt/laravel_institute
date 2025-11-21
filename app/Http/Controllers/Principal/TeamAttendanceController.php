@@ -56,9 +56,7 @@ class TeamAttendanceController extends Controller
         $date = $request->date ?: now()->toDateString();
 
         $currentYear = AcademicYear::forSchool($school->id)->current()->first();
-        $yearVal = null;
-        if ($currentYear && is_numeric($currentYear->name)) { $yearVal = (int)$currentYear->name; }
-        if (!$yearVal) { $yearVal = (int)date('Y'); }
+        $yearVal = $currentYear?->id;
 
         // Base query: students who are in the team
         $enrollments = StudentEnrollment::with(['student'])
@@ -66,7 +64,7 @@ class TeamAttendanceController extends Controller
             ->where('team_student.team_id',$teamId)
             ->where('student_enrollments.school_id',$school->id)
             ->where('student_enrollments.status','active')
-            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year',$yearVal))
+            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id',$yearVal))
             ->when($classId, fn($q)=>$q->where('student_enrollments.class_id',$classId))
             ->when($sectionId, fn($q)=>$q->where('student_enrollments.section_id',$sectionId))
             ->orderBy('student_enrollments.roll_no')
@@ -112,16 +110,14 @@ class TeamAttendanceController extends Controller
         $date = $request->date;
 
         $currentYear = AcademicYear::forSchool($school->id)->current()->first();
-        $yearVal = null;
-        if ($currentYear && is_numeric($currentYear->name)) { $yearVal = (int)$currentYear->name; }
-        if (!$yearVal) { $yearVal = (int)date('Y'); }
+        $yearVal = $currentYear?->id;
 
         // Determine expected student IDs (for completeness validation)
         $expectedIds = StudentEnrollment::join('team_student','team_student.student_id','=','student_enrollments.student_id')
             ->where('team_student.team_id',$teamId)
             ->where('student_enrollments.school_id',$school->id)
             ->where('student_enrollments.status','active')
-            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year',$yearVal))
+            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id',$yearVal))
             ->when($classId, fn($q)=>$q->where('student_enrollments.class_id',$classId))
             ->when($sectionId, fn($q)=>$q->where('student_enrollments.section_id',$sectionId))
             ->orderBy('student_enrollments.roll_no')

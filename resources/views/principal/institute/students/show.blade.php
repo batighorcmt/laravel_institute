@@ -104,7 +104,13 @@
       <div class="collapse border-bottom p-3" id="enrollForm">
         <form method="post" action="{{ route('principal.institute.students.enrollments.add',[$school,$student]) }}" class="small">@csrf
           <div class="form-row">
-            <div class="form-group col-md-2"><label class="mb-0">বর্ষ *</label><input type="number" name="academic_year" class="form-control form-control-sm" required value="{{ date('Y') }}"></div>
+            <div class="form-group col-md-2"><label class="mb-0">বর্ষ *</label>
+              <select name="academic_year_id" class="form-control form-control-sm" required>
+                @foreach($years as $y)
+                  <option value="{{ $y->id }}" {{ $currentYear && $currentYear->id===$y->id?'selected':'' }}>{{ $y->name }}</option>
+                @endforeach
+              </select>
+            </div>
             <div class="form-group col-md-2"><label class="mb-0">ক্লাস *</label>
               <select name="class_id" class="form-control form-control-sm" required>
                 @foreach(\App\Models\SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get() as $c)
@@ -143,7 +149,7 @@
               return '<span class="badge badge-'.($ss->is_optional?'primary':'secondary').' mr-1">'.e($code).($ss->is_optional?' (ঐচ্ছিক)':'').'</span>';
             })->filter()->implode(' '))
             <tr class="{{ $activeEnrollment && $activeEnrollment->id === $en->id ? 'table-info' : '' }}">
-              <td>{{ $en->academic_year }}</td>
+              <td>{{ $en->academicYear?->name }}</td>
               <td>{{ $en->class?->name }}</td>
               <td>{{ $en->section?->name ?: '—' }}</td>
               <td>{{ $en->group?->name ?: '—' }}</td>

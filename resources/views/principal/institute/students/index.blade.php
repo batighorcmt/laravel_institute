@@ -1,6 +1,13 @@
 @extends('layouts.admin')
 @section('title','শিক্ষার্থী তালিকা')
 @section('content')
+@php
+  $years = $years ?? collect();
+  $currentYear = $currentYear ?? null;
+  $selectedYear = $selectedYear ?? null;
+  $selectedYearId = $selectedYearId ?? 0;
+  $yearLabel = $selectedYear ? $selectedYear->name : ($currentYear ? $currentYear->name : 'বর্ষ নির্ধারিত নয়');
+@endphp
 <div class="d-flex justify-content-between mb-3">
   <h1 class="m-0">শিক্ষার্থী তালিকা - {{ $school->name }}</h1>
   <div>
@@ -10,11 +17,14 @@
 </div>
 <form class="form-inline mb-3" method="get">
   <input type="text" name="q" value="{{ $q }}" class="form-control mr-2" placeholder="নাম / আইডি সার্চ...">
-  <button class="btn btn-outline-secondary">সার্চ</button>
+  <select name="year_id" class="form-control mr-2">
+    <option value="">-- বছর নির্বাচন --</option>
+    @foreach(($years ?? []) as $y)
+      <option value="{{ $y->id }}" {{ (int)($selectedYearId ?? 0)===$y->id?'selected':'' }}>{{ $y->name }}</option>
+    @endforeach
+  </select>
+  <button class="btn btn-outline-secondary">ফিল্টার</button>
 </form>
-@php
-  $yearLabel = $currentYear? $currentYear->name : 'বর্তমান বর্ষ নির্ধারিত হয়নি';
-@endphp
 <div class="table-responsive" style="overflow: visible;">
   <table class="table table-bordered table-sm">
     <thead class="thead-light">

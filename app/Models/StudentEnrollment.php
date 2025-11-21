@@ -1,4 +1,17 @@
 <?php
+/**
+ * App\Models\StudentEnrollment
+ *
+ * @property int $id
+ * @property int $student_id
+ * @property int $school_id
+ * @property int $academic_year
+ * @property int $class_id
+ * @property int|null $section_id
+ * @property int|null $group_id
+ * @property int $roll_no
+ * @property string $status
+ */
 
 namespace App\Models;
 
@@ -8,17 +21,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StudentEnrollment extends Model
 {
     protected $fillable = [
-        'student_id','school_id','academic_year','class_id','section_id','group_id','roll_no','status'
+        'student_id','school_id','academic_year_id','class_id','section_id','group_id','roll_no','status'
     ];
 
     protected $casts = [
-        'academic_year' => 'integer',
         'roll_no' => 'integer'
     ];
 
     public function student(): BelongsTo { return $this->belongsTo(Student::class); }
     public function school(): BelongsTo { return $this->belongsTo(School::class); }
-    public function academicYear(): BelongsTo { return $this->belongsTo(AcademicYear::class, 'academic_year'); }
+    public function academicYear(): BelongsTo { return $this->belongsTo(AcademicYear::class, 'academic_year_id'); }
     public function class(): BelongsTo { return $this->belongsTo(SchoolClass::class,'class_id'); }
     public function section(): BelongsTo { return $this->belongsTo(Section::class); }
     public function group(): BelongsTo { return $this->belongsTo(Group::class); }

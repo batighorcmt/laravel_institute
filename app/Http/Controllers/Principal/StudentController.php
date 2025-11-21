@@ -35,11 +35,10 @@ class StudentController extends Controller
     {
         $this->authorizePrincipal($school);
         $q = $request->get('q');
-        $currentYear = \App\Models\AcademicYear::forSchool($school->id)->current()->first();
-        $cyValue = null;
-        if ($currentYear) {
-            $cyValue = is_numeric($currentYear->name) ? (int)$currentYear->name : (int)optional($currentYear->start_date)->format('Y');
-        }
+        $years = AcademicYear::forSchool($school->id)->orderByDesc('start_date')->get();
+        $currentYear = AcademicYear::forSchool($school->id)->current()->first();
+        $selectedYearId = (int)($request->query('year_id') ?: ($currentYear->id ?? 0));
+        $selectedYear = $years->firstWhere('id', $selectedYearId);
 
         $students = Student::forSchool($school->id)
             ->when($q, function($x) use ($q){
@@ -49,16 +48,13 @@ class StudentController extends Controller
                           ->orWhere('student_id','like',"%$q%");
                 });
             })
-            // only students with enrollment in current academic year
-            ->whereHas('enrollments', function($en) use ($cyValue){
-                if ($cyValue) { $en->where('academic_year', $cyValue); }
+            ->whereHas('enrollments', function($en) use ($selectedYearId){
+                if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
                 else { $en->whereRaw('1=0'); }
             })
-            ->with(['enrollments' => function($en) use ($cyValue){
-                if ($cyValue) {
-                    $en->where('academic_year', $cyValue);
-                }
-                $en->with(['class','section','group','subjects.subject']);
+            ->with(['enrollments' => function($en) use ($selectedYearId){
+                if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
+                $en->with(['class','section','group','subjects.subject','academicYear']);
             }])
             ->orderBy('id','desc')->paginate(20)->withQueryString();
 
@@ -66,8 +62,10 @@ class StudentController extends Controller
             'school'=>$school,
             'students'=>$students,
             'q'=>$q,
+            'years'=>$years,
             'currentYear'=>$currentYear,
-            'cyValue'=>$cyValue,
+            'selectedYear'=>$selectedYear,
+            'selectedYearId'=>$selectedYearId,
         ]);
     }
 
@@ -92,9 +90,7 @@ class StudentController extends Controller
             'father_name_bn'=>['required','string','max:150'],
             'mother_name_bn'=>['required','string','max:150'],
             'guardian_phone'=>['required','string','max:20'],
-            // Legacy address now optional (will derive from components if blank)
-            'address'=>['nullable','string'],
-            // New component fields (all optional)
+            // Address component fields
             'present_village'=>['nullable','string','max:120'],
             'present_para_moholla'=>['nullable','string','max:120'],
             'present_post_office'=>['nullable','string','max:120'],
@@ -106,21 +102,11 @@ class StudentController extends Controller
             'permanent_upazilla'=>['nullable','string','max:120'],
             'permanent_district'=>['nullable','string','max:120'],
             'blood_group'=>['nullable','in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
+            'religion'=>['nullable','in:islam,hindu,buddhist,christian,other'],
             'admission_date'=>['required','date'],
             'status'=>['required','in:active,inactive,graduated,transferred'],
             'photo'=>['nullable','image','max:1024'],
         ]);
-        // If legacy address empty, compose from present components
-        if (empty($data['address'])) {
-            $parts = array_filter([
-                $data['present_village'] ?? null,
-                $data['present_para_moholla'] ?? null,
-                $data['present_post_office'] ?? null,
-                $data['present_upazilla'] ?? null,
-                $data['present_district'] ?? null,
-            ]);
-            $data['address'] = $parts ? implode(', ', $parts) : null;
-        }
         $data['school_id']=$school->id;
         // keep class_id null; enrollments drive class/year history
         $data['class_id']=null;
@@ -134,11 +120,17 @@ class StudentController extends Controller
             }
         }
 
+        // Generate student_id with class info from enrollment
+        $enrollClassId = $request->input('enroll_class_id');
+        $enrollClass = $enrollClassId ? SchoolClass::find($enrollClassId) : null;
+        $classNumeric = $enrollClass ? $enrollClass->numeric_value : 1;
+        $data['student_id'] = Student::generateStudentId($school->id, $classNumeric);
+
         $student = Student::create($data);
 
         // Inline enrollment (optional)
         $enrollData = $request->validate([
-            'enroll_academic_year'=>['nullable','integer','min:2000','max:2100'],
+            'enroll_academic_year_id'=>['nullable', Rule::exists('academic_years','id')->where(fn($q)=>$q->where('school_id',$school->id))],
             'enroll_class_id'=>['nullable', Rule::exists('classes','id')->where(fn($q)=>$q->where('school_id',$school->id))],
             'enroll_section_id'=>['nullable', Rule::exists('sections','id')->where(fn($q)=>$q->where('school_id',$school->id))],
             'enroll_group_id'=>['nullable', Rule::exists('groups','id')->where(fn($q)=>$q->where('school_id',$school->id))],
@@ -146,7 +138,7 @@ class StudentController extends Controller
         ]);
 
         $createdEnrollment = null;
-        if (!empty($enrollData['enroll_academic_year']) && !empty($enrollData['enroll_class_id']) && !empty($enrollData['enroll_roll_no'])) {
+        if (!empty($enrollData['enroll_academic_year_id']) && !empty($enrollData['enroll_class_id']) && !empty($enrollData['enroll_roll_no'])) {
             $class = SchoolClass::find($enrollData['enroll_class_id']);
             if ($class && !$class->usesGroups()) {
                 $enrollData['enroll_group_id'] = null;
@@ -155,7 +147,7 @@ class StudentController extends Controller
                 $createdEnrollment = StudentEnrollment::create([
                     'student_id'=>$student->id,
                     'school_id'=>$school->id,
-                    'academic_year'=>$enrollData['enroll_academic_year'],
+                    'academic_year_id'=>$enrollData['enroll_academic_year_id'],
                     'class_id'=>$enrollData['enroll_class_id'],
                     'section_id'=>$enrollData['enroll_section_id'] ?? null,
                     'group_id'=>$enrollData['enroll_group_id'] ?? null,
@@ -181,18 +173,18 @@ class StudentController extends Controller
     {
         $this->authorizePrincipal($school);
         abort_unless($student->school_id===$school->id,404);
-    $currentYear = AcademicYear::forSchool($school->id)->current()->first();
+        $currentYear = AcademicYear::forSchool($school->id)->current()->first();
+        $years = AcademicYear::forSchool($school->id)->orderByDesc('start_date')->get();
         $enrollments = $student->enrollments()
-            ->with(['class','section','group','subjects.subject'])
-            ->orderByDesc('academic_year')->get();
+            ->with(['class','section','group','subjects.subject','academicYear'])
+            ->orderByDesc('academic_year_id')->get();
         // Student's own team memberships (not all teams)
     $memberships = $student->teams()->withPivot('joined_at','status','created_at')->orderBy('name')->get();
     $allTeams = Team::forSchool($school->id)->orderBy('name')->get();
 
         // Metrics
-    $totalYears = $enrollments->count();
-    $currentYearAcademic = $currentYear && is_numeric($currentYear->name) ? (int)$currentYear->name : null;
-    $activeEnrollment = $currentYearAcademic ? $enrollments->firstWhere('academic_year', $currentYearAcademic) : null;
+        $totalYears = $enrollments->count();
+        $activeEnrollment = $currentYear ? $enrollments->firstWhere('academic_year_id', $currentYear->id) : null;
         $currentSubjects = $activeEnrollment ? $activeEnrollment->subjects->map(function($ss){
             return [
                 'code'=>optional($ss->subject)->code,
@@ -213,11 +205,13 @@ class StudentController extends Controller
             ]);
         }
         foreach ($enrollments as $en) {
-            $enDate = $en->created_at ?: Carbon::create($en->academic_year,1,1);
+            $yearName = $en->academicYear?->name;
+            $yearNumeric = is_numeric($yearName ?? '') ? (int)$yearName : (int)($en->created_at?->format('Y'));
+            $enDate = $en->created_at ?: Carbon::create($yearNumeric,1,1);
             $timeline->push([
                 'date'=>$enDate->format('Y-m-d'),
                 'type'=>'enrollment',
-                'label'=>'ভর্তি ('.$en->academic_year.')',
+                'label'=>'ভর্তি ('.$yearName.')',
                 'detail'=>'ক্লাস: '.($en->class?->name).' রোল: '.$en->roll_no
             ]);
         }
@@ -235,7 +229,7 @@ class StudentController extends Controller
         $timeline = $timeline->filter(fn($e)=>!empty($e['date']))->sortByDesc('date')->values();
 
         return view('principal.institute.students.show',compact(
-            'school','student','enrollments','memberships','allTeams','currentYear','activeEnrollment','currentSubjects','totalYears','timeline'
+            'school','student','enrollments','memberships','allTeams','currentYear','activeEnrollment','currentSubjects','totalYears','timeline','years'
         ));
     }
 
@@ -260,7 +254,6 @@ class StudentController extends Controller
             'father_name_bn'=>['required','string','max:150'],
             'mother_name_bn'=>['required','string','max:150'],
             'guardian_phone'=>['required','string','max:20'],
-            'address'=>['nullable','string'],
             'present_village'=>['nullable','string','max:120'],
             'present_para_moholla'=>['nullable','string','max:120'],
             'present_post_office'=>['nullable','string','max:120'],
@@ -272,22 +265,13 @@ class StudentController extends Controller
             'permanent_upazilla'=>['nullable','string','max:120'],
             'permanent_district'=>['nullable','string','max:120'],
             'blood_group'=>['nullable','in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
+            'religion'=>['nullable','in:islam,hindu,buddhist,christian,other'],
                             'admission_date'=>['required','date'],
                             'status'=>['required','in:active,inactive,graduated,transferred'],
                             'photo'=>['nullable','image','max:1024'],
         ]);
-        if (empty($data['address'])) {
-            $parts = array_filter([
-                $data['present_village'] ?? null,
-                $data['present_para_moholla'] ?? null,
-                $data['present_post_office'] ?? null,
-                $data['present_upazilla'] ?? null,
-                $data['present_district'] ?? null,
-            ]);
-            $data['address'] = $parts ? implode(', ', $parts) : $student->address;
-        }
-            // Handle photo upload on update: store new and remove old if present
-            if ($request->hasFile('photo')) {
+        // Handle photo upload on update: store new and remove old if present
+        if ($request->hasFile('photo')) {
                 try {
                     $photoPath = $request->file('photo')->store('students','public');
                     // remove old photo from public disk if exists
@@ -310,7 +294,7 @@ class StudentController extends Controller
         $this->authorizePrincipal($school);
         abort_unless($student->school_id===$school->id,404);
         $data = $request->validate([
-            'academic_year'=>['required','integer','min:2000','max:2100'],
+            'academic_year_id'=>['required', Rule::exists('academic_years','id')->where(fn($q)=>$q->where('school_id',$school->id))],
             'class_id'=>['required', Rule::exists('classes','id')->where(fn($q)=>$q->where('school_id',$school->id))],
             'section_id'=>['nullable', Rule::exists('sections','id')->where(fn($q)=>$q->where('school_id',$school->id))],
             'group_id'=>['nullable', Rule::exists('groups','id')->where(fn($q)=>$q->where('school_id',$school->id))],
@@ -471,6 +455,7 @@ class StudentController extends Controller
                 'guardian_phone' => $assoc['guardian_phone'] ?? null,
                 'address' => $assoc['address'] ?? null,
                 'blood_group' => $assoc['blood_group'] ?? null,
+                'religion' => $assoc['religion'] ?? null,
                 'admission_date' => $admission_date,
                 'status' => $assoc['status'] ?? 'active',
                 'school_id' => $school->id,
@@ -511,9 +496,19 @@ class StudentController extends Controller
             if ($enYear && $enClass && $enRoll) {
                 $class = SchoolClass::find($enClass);
                 if ($class && !$class->usesGroups()) { $enGroup = null; }
-                // check duplicate roll for same school/class/academic_year/section/group
+                // Map numeric year to AcademicYear model
+                $yearNumber = intval($enYear);
+                $yearModel = AcademicYear::firstOrCreate([
+                    'school_id'=>$school->id,
+                    'name'=>(string)$yearNumber,
+                ],[
+                    'start_date'=>Carbon::create($yearNumber,1,1),
+                    'end_date'=>Carbon::create($yearNumber,12,31),
+                    'is_current'=>false,
+                ]);
+                // check duplicate roll for same school/class/year/section/group
                 $dupQuery = StudentEnrollment::where('school_id',$school->id)
-                    ->where('academic_year', intval($enYear))
+                    ->where('academic_year_id', $yearModel->id)
                     ->where('class_id', $enClass);
                 if ($enSection) { $dupQuery->where('section_id', $enSection); } else { $dupQuery->whereNull('section_id'); }
                 if ($enGroup) { $dupQuery->where('group_id', $enGroup); } else { $dupQuery->whereNull('group_id'); }
@@ -525,7 +520,7 @@ class StudentController extends Controller
                         StudentEnrollment::create([
                             'student_id' => $student->id,
                             'school_id' => $school->id,
-                            'academic_year' => intval($enYear),
+                            'academic_year_id' => $yearModel->id,
                             'class_id' => $enClass,
                             'section_id' => $enSection ?: null,
                             'group_id' => $enGroup ?: null,

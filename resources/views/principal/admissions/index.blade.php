@@ -70,7 +70,8 @@
             <th>Applicant Name</th>
             <th>Father's Name</th>
             <th>Mobile No</th>
-            <th>Village</th>
+            <th>Photo</th>
+            <th>Present Address</th>
             <th>Status</th>
             <th>Payment</th>
             <th style="width:180px">Actions</th>
@@ -87,10 +88,29 @@
               <td>{{ $app->name_en ?? $app->applicant_name }}</td>
               <td>{{ $app->father_name_en }}</td>
               <td>{{ $app->mobile }}</td>
-              <td>{{ $app->present_address }}</td>
+              <td>
+                <img src="{{ $app->photo ? asset('storage/admission/'.$app->photo) : asset('images/default-avatar.png') }}" alt="Photo" style="width:55px;height:70px;object-fit:cover" class="rounded border">
+              </td>
+              <td>
+                @php
+                  $parts = [];
+                  if($app->present_village){
+                      $v = $app->present_village;
+                      if($app->present_para_moholla){ $v .= ' ('.$app->present_para_moholla.')'; }
+                      $parts[] = $v;
+                  }
+                  if($app->present_post_office){ $parts[] = $app->present_post_office; }
+                  if($app->present_upazilla){ $parts[] = $app->present_upazilla; }
+                  if($app->present_district){ $parts[] = $app->present_district; }
+                  echo e(implode(', ', $parts) ?: '—');
+                @endphp
+              </td>
               <td>
                   @if($app->accepted_at)
                       <span class="badge badge-success">Accepted</span>
+                      @if($app->student_id)
+                        <span class="badge badge-info ml-1" title="Enrolled"><i class="fas fa-user-check"></i> Enrolled</span>
+                      @endif
                   @elseif($app->status === 'cancelled')
                       <span class="badge badge-danger">Cancelled</span>
                   @else
@@ -107,7 +127,11 @@
               <td>
                 <div class="btn-group btn-group-sm" role="group">
                   <a href="{{ route('principal.institute.admissions.applications.show', [$school->id, $app->id]) }}" class="btn btn-outline-primary" title="View"><i class="fas fa-eye"></i></a>
-                  <a href="{{ route('principal.institute.admissions.applications.edit', [$school->id, $app->id]) }}" class="btn btn-outline-secondary" title="Edit"><i class="fas fa-edit"></i></a>
+                  @if(!$app->student_id)
+                    <a href="{{ route('principal.institute.admissions.applications.edit', [$school->id, $app->id]) }}" class="btn btn-outline-secondary" title="Edit"><i class="fas fa-edit"></i></a>
+                  @else
+                    <button class="btn btn-outline-secondary" title="Already Enrolled" disabled><i class="fas fa-edit"></i></button>
+                  @endif
                   @if($app->app_id)
                       <a href="{{ route('admission.copy', [$school->code, $app->app_id]) }}" target="_blank" class="btn btn-outline-info" title="Print Copy"><i class="fas fa-print"></i></a>
                   @else
@@ -120,7 +144,7 @@
                           <button class="btn btn-outline-success" title="Accept"><i class="fas fa-check"></i></button>
                       </form>
                   @endif
-                  @if($app->status !== 'cancelled')
+                  @if($app->status !== 'cancelled' && !$app->student_id)
                       <button type="button" class="btn btn-outline-danger" title="Cancel" data-toggle="modal" data-target="#cancelModal" data-app-id="{{ $app->id }}" data-app-name="{{ $app->name_en ?? $app->applicant_name }}" data-cancel-url="{{ route('principal.institute.admissions.applications.cancel', [$school->id, $app->id]) }}">
                         <i class="fas fa-times"></i>
                       </button>

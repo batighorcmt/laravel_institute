@@ -117,7 +117,10 @@ class StudentSubjectController extends Controller
             );
         }
 
+        // Save optional subject ID to student record for easy calculation
+        $enrollment->student->update(['optional_subject_id' => $selectedOptional]);
+
         return redirect()->route('principal.institute.students.show', [$school, $enrollment->student_id])
-            ->with('success','বিষয় সমূহ সংরক্ষিত হয়েছে');
+            ->with('success','বিষয় সমূহ সংরক্ষিত হয়েছে');
     }
 }

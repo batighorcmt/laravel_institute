@@ -17,12 +17,11 @@
           <div class="col-md-3">
             <div class="form-group">
               <label><i class="fas fa-calendar-alt mr-1"></i>শিক্ষাবর্ষ</label>
-              <select name="enroll_academic_year" class="form-control">
+              <select name="enroll_academic_year_id" class="form-control">
                 <option value="">-- নির্বাচন --</option>
-                @php($cyVal = $currentYear ? (is_numeric($currentYear->name) ? $currentYear->name : ($currentYear->start_date?->format('Y'))) : '')
-                @if($currentYear && $cyVal)
-                  <option value="{{ $cyVal }}" selected>{{ $currentYear->name }}</option>
-                @endif
+                @foreach($years as $y)
+                  <option value="{{ $y->id }}" {{ ($currentYear && $currentYear->id===$y->id)?'selected':'' }}>{{ $y->name }}</option>
+                @endforeach
               </select>
             </div>
           </div>
@@ -80,13 +79,13 @@
           </div>
         </div>
         <div class="row">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <div class="form-group">
               <label><i class="fas fa-birthday-cake mr-1"></i>জন্ম তারিখ *</label>
               <input type="date" name="date_of_birth" class="form-control" required value="{{ old('date_of_birth') }}">
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <div class="form-group">
               <label><i class="fas fa-venus-mars mr-1"></i>লিঙ্গ *</label>
               <select name="gender" class="form-control" required>
@@ -95,7 +94,19 @@
               </select>
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
+            <div class="form-group">
+              <label><i class="fas fa-praying-hands mr-1"></i>ধর্ম</label>
+              <select name="religion" class="form-control">
+                <option value="">-- নির্বাচন --</option>
+                @php($religions=['Islam'=>'ইসলাম','Hindu'=>'হিন্দু','Buddhist'=>'বৌদ্ধ','Christian'=>'খ্রিস্টান','Other'=>'অন্যান্য'])
+                @foreach($religions as $val=>$label)
+                  <option value="{{ $val }}" {{ old('religion')==$val?'selected':'' }}>{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+          </div>
+          <div class="col-md-3">
             <div class="form-group">
               <label><i class="fas fa-tint mr-1"></i>রক্তের গ্রুপ</label>
               <select name="blood_group" class="form-control">

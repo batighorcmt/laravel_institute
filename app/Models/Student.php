@@ -1,4 +1,42 @@
 <?php
+/**
+ * App\Models\Student
+ *
+ * @property int $id
+ * @property int $school_id
+ * @property int|null $class_id
+ * @property string|null $student_id
+ * @property string|null $student_name_en
+ * @property string $student_name_bn
+ * @property string $date_of_birth
+ * @property string $gender
+ * @property string $father_name
+ * @property string $mother_name
+ * @property string $father_name_bn
+ * @property string $mother_name_bn
+ * @property string $guardian_phone
+ * @property string|null $address
+ * @property string|null $present_address
+ * @property string|null $permanent_address
+ * @property string|null $present_village
+ * @property string|null $present_para_moholla
+ * @property string|null $present_post_office
+ * @property string|null $present_upazilla
+ * @property string|null $present_district
+ * @property string|null $permanent_village
+ * @property string|null $permanent_para_moholla
+ * @property string|null $permanent_post_office
+ * @property string|null $permanent_upazilla
+ * @property string|null $permanent_district
+ * @property string|null $blood_group
+ * @property string|null $photo
+ * @property string $admission_date
+ * @property string $status
+ * @property string|null $previous_school
+ * @property string|null $pass_year
+ * @property string|null $previous_result
+ * @property string|null $previous_remarks
+ */
 
 namespace App\Models;
 
@@ -9,10 +47,9 @@ use Illuminate\Support\Facades\Storage;
 class Student extends Model
 {
     protected $fillable = [
-        'school_id', 'class_id', 'student_id', 'student_name_en','student_name_bn',
-        'date_of_birth', 'gender', 'father_name', 'mother_name','father_name_bn','mother_name_bn', 'guardian_phone',
+        'school_id', 'class_id', 'optional_subject_id', 'admission_id', 'student_id', 'student_name_en','student_name_bn',
+        'date_of_birth', 'gender', 'religion', 'father_name', 'mother_name','father_name_bn','mother_name_bn', 'guardian_phone',
         'guardian_relation','guardian_name_en','guardian_name_bn',
-        'address','present_address','permanent_address',
         'present_village','present_para_moholla','present_post_office','present_upazilla','present_district',
         'permanent_village','permanent_para_moholla','permanent_post_office','permanent_upazilla','permanent_district',
         'blood_group', 'photo', 'admission_date', 'status',
@@ -34,6 +71,11 @@ class Student extends Model
     public function class(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function optionalSubject(): BelongsTo
+    {
+        return $this->belongsTo(Subject::class, 'optional_subject_id');
     }
 
     // Scopes
@@ -63,18 +105,6 @@ class Student extends Model
         return $this->date_of_birth->age ?? 0;
     }
 
-    // Boot method to generate student ID
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($student) {
-            if (empty($student->student_id)) {
-                $student->student_id = static::generateStudentId($student->school_id);
-            }
-        });
-    }
-
     public function enrollments()
     {
         return $this->hasMany(StudentEnrollment::class);
@@ -85,15 +115,36 @@ class Student extends Model
         return $this->belongsToMany(Team::class,'team_student')->withTimestamps()->withPivot(['joined_at','status']);
     }
 
-    public static function generateStudentId($schoolId): string
+    /**
+     * Generate unique student ID
+     * Format: <school_code><class_numeric_2digits><sequential_4digits>
+     * Example: JSS060001, JSS100002
+     * 
+     * @param int $schoolId
+     * @param int $classNumericValue
+     * @return string
+     */
+    public static function generateStudentId($schoolId, $classNumericValue): string
     {
         $school = School::find($schoolId);
-        $year = date('Y');
-        $count = static::where('school_id', $schoolId)
-            ->whereYear('created_at', $year)
-            ->count() + 1;
+        $schoolCode = $school ? ($school->code ?? 'SCH') : 'SCH';
         
-        return $school->code . $year . str_pad($count, 4, '0', STR_PAD_LEFT);
+        // Pad class numeric to 2 digits
+        $classPadded = str_pad($classNumericValue, 2, '0', STR_PAD_LEFT);
+        
+        // Find last student ID with this school code and class prefix
+        $prefix = $schoolCode . $classPadded;
+        $lastStudent = self::where('school_id', $schoolId)
+            ->where('student_id', 'LIKE', $prefix . '%')
+            ->orderByRaw('CAST(SUBSTRING(student_id, ' . (strlen($prefix) + 1) . ') AS UNSIGNED) DESC')
+            ->first();
+        
+        $serial = 1;
+        if ($lastStudent && preg_match('/^' . preg_quote($prefix, '/') . '(\d{4})$/', $lastStudent->student_id, $matches)) {
+            $serial = intval($matches[1]) + 1;
+        }
+        
+        return $prefix . str_pad($serial, 4, '0', STR_PAD_LEFT);
     }
 
     // Return a URL for the student's photo, trying common storage locations.
@@ -103,22 +154,28 @@ class Student extends Model
             return asset('images/default-avatar.svg');
         }
 
-        // 1) If stored directly in public path (rare)
+        // 1) Check in students folder (primary location for enrolled students)
+        $studentsPath = 'students/' . $this->photo;
+        if (Storage::disk('public')->exists($studentsPath)) {
+            return asset('storage/' . $studentsPath);
+        }
+
+        // 2) If stored directly in public path (rare)
         if (file_exists(public_path($this->photo))) {
             return asset($this->photo);
         }
 
-        // 2) If stored in storage/app/public (accessible via /storage/... when storage:link exists)
+        // 3) If stored in storage/app/public (accessible via /storage/... when storage:link exists)
         if (file_exists(storage_path('app/public/' . $this->photo))) {
             return asset('storage/' . ltrim($this->photo, '/'));
         }
 
-        // 3) If stored in storage/app (not public) but present, try to serve via storage URL (may require storage:link)
+        // 4) If stored in storage/app (not public) but present, try to serve via storage URL (may require storage:link)
         if (file_exists(storage_path('app/' . $this->photo))) {
             return asset('storage/' . ltrim($this->photo, '/'));
         }
 
-        // 4) As a last resort, if the default filesystem can generate a URL
+        // 5) As a last resort, if the default filesystem can generate a URL
         try {
             if (Storage::exists($this->photo)) {
                 return Storage::url($this->photo);
@@ -130,3 +187,4 @@ class Student extends Model
         return asset('images/default-avatar.svg');
     }
 }
+

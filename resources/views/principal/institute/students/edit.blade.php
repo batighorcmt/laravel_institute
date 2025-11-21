@@ -27,13 +27,13 @@
           </div>
         </div>
         <div class="row">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <div class="form-group">
               <label>জন্ম তারিখ *</label>
               <input type="date" name="date_of_birth" class="form-control" required value="{{ old('date_of_birth',optional($student->date_of_birth)->toDateString()) }}">
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <div class="form-group">
               <label>লিঙ্গ *</label>
               <select name="gender" class="form-control" required>
@@ -42,7 +42,19 @@
               </select>
             </div>
           </div>
-            <div class="col-md-4">
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>ধর্ম</label>
+              <select name="religion" class="form-control">
+                <option value="">-- নির্বাচন --</option>
+                @php($religions=['Islam'=>'ইসলাম','Hindu'=>'হিন্দু','Buddhist'=>'বৌদ্ধ','Christian'=>'খ্রিস্টান','Other'=>'অন্যান্য'])
+                @foreach($religions as $val=>$label)
+                  <option value="{{ $val }}" {{ old('religion',$student->religion)==$val?'selected':'' }}>{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+          </div>
+            <div class="col-md-3">
               <div class="form-group">
                 <label>রক্তের গ্রুপ</label>
                 <select name="blood_group" class="form-control">

@@ -165,6 +165,50 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/applications/{application}/update', [PrincipalAdmissionController::class,'update'])->name('applications.update');
                 Route::get('/applications/{application}/payments', [PrincipalAdmissionController::class,'applicationPayments'])->name('applications.payments.details');
                 Route::get('/payments', [PrincipalAdmissionController::class,'payments'])->name('payments');
+
+                // Admission Enrollment - Convert passed students to enrolled students
+                Route::get('/enrollment', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'index'])->name('enrollment.index');
+                Route::get('/enrollment/{admission_application}/data', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'create'])->name('enrollment.create');
+                Route::post('/enrollment', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'store'])->name('enrollment.store');
+                Route::get('/enrollment/{student}/subjects', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'subjects'])->name('enrollment.subjects');
+                Route::post('/enrollment/{student}/subjects', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'storeSubjects'])->name('enrollment.subjects.store');
+
+                // Admission Exam management
+                Route::prefix('exams')->name('exams.')->group(function(){
+                    Route::get('/', [\App\Http\Controllers\Principal\AdmissionExamController::class,'index'])->name('index');
+                    Route::get('/create', [\App\Http\Controllers\Principal\AdmissionExamController::class,'create'])->name('create');
+                    Route::post('/', [\App\Http\Controllers\Principal\AdmissionExamController::class,'store'])->name('store');
+                    Route::get('/{exam}/edit', [\App\Http\Controllers\Principal\AdmissionExamController::class,'edit'])->name('edit');
+                    Route::put('/{exam}', [\App\Http\Controllers\Principal\AdmissionExamController::class,'update'])->name('update');
+                    Route::delete('/{exam}', [\App\Http\Controllers\Principal\AdmissionExamController::class,'destroy'])->name('destroy');
+                    // Marks entry
+                    Route::get('/{exam}/marks', [\App\Http\Controllers\Principal\AdmissionExamController::class,'marks'])->name('marks');
+                    Route::post('/{exam}/marks', [\App\Http\Controllers\Principal\AdmissionExamController::class,'marksStore'])->name('marks.store');
+                    Route::get('/{exam}/results', [\App\Http\Controllers\Principal\AdmissionExamController::class,'results'])->name('results');
+                    Route::get('/{exam}/results/print', [\App\Http\Controllers\Principal\AdmissionExamController::class,'resultsPrint'])->name('results.print');
+                    Route::post('/{exam}/results/send-sms', [\App\Http\Controllers\Principal\AdmissionExamController::class,'sendResultsSms'])->name('results.send-sms');
+                });
+
+                // Admission Seat Plans
+                Route::prefix('seat-plans')->name('seat-plans.')->group(function(){
+                    Route::get('/', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'index'])->name('index');
+                    Route::get('/create', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'create'])->name('create');
+                    Route::post('/', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'store'])->name('store');
+                    Route::get('/{seatPlan}/edit', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'edit'])->name('edit');
+                    Route::put('/{seatPlan}', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'update'])->name('update');
+                    Route::delete('/{seatPlan}', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'destroy'])->name('destroy');
+                    // Room management & allocation stubs (future expansion)
+                    Route::get('/{seatPlan}/rooms', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'rooms'])->name('rooms');
+                    Route::post('/{seatPlan}/rooms', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'storeRoom'])->name('rooms.store');
+                    Route::delete('/rooms/{room}', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'deleteRoom'])->name('rooms.delete');
+                    Route::get('/rooms/{room}/edit', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'editRoom'])->name('rooms.edit');
+                    Route::put('/rooms/{room}', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'updateRoom'])->name('rooms.update');
+                    // Per-room allocation routes
+                    Route::get('/{seatPlan}/rooms/{room}/allocate', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'allocateRoom'])->name('rooms.allocate');
+                    Route::post('/{seatPlan}/rooms/{room}/allocate', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'storeRoomAllocation'])->name('rooms.allocate.store');
+                    Route::delete('/{seatPlan}/rooms/{room}/allocations/{allocation}', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'deleteRoomAllocation'])->name('rooms.allocations.delete');
+                    Route::get('/{seatPlan}/rooms/{room}/print', [\App\Http\Controllers\Principal\AdmissionSeatPlanController::class,'printRoom'])->name('rooms.print');
+                });
             });
 
             // Holiday management (per school)

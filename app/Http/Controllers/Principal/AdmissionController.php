@@ -190,6 +190,11 @@ class AdmissionController extends Controller
     public function cancel(School $school, AdmissionApplication $application)
     {
         abort_if($application->school_id !== $school->id, 404);
+        // Prevent cancelling if already enrolled
+        if ($application->student_id) {
+            return redirect()->route('principal.institute.admissions.applications.show', [$school->id,$application->id])
+                ->with('error','শিক্ষার্থী ভর্তি সম্পন্ন হয়েছে, আবেদন বাতিল করা যাবে না');
+        }
         if ($application->status === 'cancelled') {
             return redirect()->route('principal.institute.admissions.applications.show', [$school->id,$application->id])
                 ->with('error','ইতোমধ্যে আবেদন বাতিল করা হয়েছে');
@@ -218,12 +223,20 @@ class AdmissionController extends Controller
     public function edit(School $school, AdmissionApplication $application)
     {
         abort_if($application->school_id !== $school->id, 404);
+        if ($application->student_id) {
+            return redirect()->route('principal.institute.admissions.applications.show', [$school->id,$application->id])
+                ->with('error','ভর্তি সম্পন্ন হওয়ায় আবেদন সম্পাদনা সম্ভব নয়');
+        }
         return view('principal.admissions.edit', compact('school','application'));
     }
 
     public function update(School $school, AdmissionApplication $application)
     {
         abort_if($application->school_id !== $school->id, 404);
+        if ($application->student_id) {
+            return redirect()->route('principal.institute.admissions.applications.show', [$school->id,$application->id])
+                ->with('error','ভর্তি সম্পন্ন হওয়ায় আবেদন তথ্য পরিবর্তন করা যাবে না');
+        }
         $data = request()->validate([
             'name_en' => 'required|string|max:191',
             'name_bn' => 'required|string|max:191',

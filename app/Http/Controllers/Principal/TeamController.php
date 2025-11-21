@@ -82,11 +82,9 @@ class TeamController extends Controller
         // Students already in team (for pre-check + possible removal)
         $existingIds = $team->students()->pluck('students.id')->all();
 
-        // Current academic year numeric value
+        // Current academic year (foreign key id)
         $currentYear = \App\Models\AcademicYear::forSchool($school->id)->current()->first();
-        $yearVal = null;
-        if ($currentYear && is_numeric($currentYear->name)) { $yearVal = (int)$currentYear->name; }
-        if (!$yearVal) { $yearVal = (int)date('Y'); }
+        $yearVal = $currentYear?->id;
 
         // Build filtered active enrollments (include all; mark existing separately)
         $enrollQuery = \App\Models\StudentEnrollment::select(
@@ -99,7 +97,7 @@ class TeamController extends Controller
             ->leftJoin('sections','sections.id','=','student_enrollments.section_id')
             ->where('student_enrollments.school_id',$school->id)
             ->where('student_enrollments.status','active')
-            ->when($yearVal, fn($qq)=>$qq->where('student_enrollments.academic_year',$yearVal))
+            ->when($yearVal, fn($qq)=>$qq->where('student_enrollments.academic_year_id',$yearVal))
             ->when($classId, fn($qq)=>$qq->where('student_enrollments.class_id',$classId))
             ->when($sectionId, fn($qq)=>$qq->where('student_enrollments.section_id',$sectionId))
             ->when($q, fn($qq)=>$qq->where(function($sub) use ($q){
@@ -158,9 +156,7 @@ class TeamController extends Controller
         abort_unless($team->school_id === $school->id, 404);
         // Load members with enrollment context (current academic year if any)
         $currentYear = \App\Models\AcademicYear::forSchool($school->id)->current()->first();
-        $yearVal = null;
-        if ($currentYear && is_numeric($currentYear->name)) { $yearVal = (int)$currentYear->name; }
-        if (!$yearVal) { $yearVal = (int)date('Y'); }
+        $yearVal = $currentYear?->id;
 
         $members = \App\Models\StudentEnrollment::select(
                 'student_enrollments.student_id','student_enrollments.roll_no','student_enrollments.class_id','student_enrollments.section_id',
@@ -172,7 +168,7 @@ class TeamController extends Controller
             ->leftJoin('sections','sections.id','=','student_enrollments.section_id')
             ->where('student_enrollments.school_id',$school->id)
             ->where('student_enrollments.status','active')
-            ->when($yearVal, fn($qq)=>$qq->where('student_enrollments.academic_year',$yearVal))
+            ->when($yearVal, fn($qq)=>$qq->where('student_enrollments.academic_year_id',$yearVal))
             ->whereIn('student_enrollments.student_id', $team->students()->pluck('students.id'))
             ->orderBy('classes.numeric_value')
             ->orderBy('student_enrollments.roll_no')

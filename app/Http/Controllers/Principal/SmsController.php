@@ -192,7 +192,7 @@ class SmsController extends Controller
 
             // Students
             $currentYear = AcademicYear::forSchool($school->id)->current()->first();
-            $yearVal = $currentYear && is_numeric($currentYear->name) ? (int)$currentYear->name : (int)date('Y');
+            $yearVal = $currentYear?->id;
             if ($target === 'student_one' && !empty($data['student_id'])) {
                 $row = StudentEnrollment::select('student_enrollments.*','students.student_name_bn','students.student_name_en','students.guardian_phone','classes.name as class_name','sections.name as section_name')
                     ->join('students','students.id','=','student_enrollments.student_id')
@@ -200,7 +200,7 @@ class SmsController extends Controller
                     ->leftJoin('sections','sections.id','=','student_enrollments.section_id')
                     ->where('student_enrollments.school_id',$school->id)
                     ->where('student_enrollments.student_id',(int)$data['student_id'])
-                    ->where('student_enrollments.academic_year',$yearVal)
+                    ->where('student_enrollments.academic_year_id',$yearVal)
                     ->first();
                 if ($row && $row->guardian_phone) {
                     $num = preg_replace('/[^0-9]/','', (string)$row->guardian_phone);
@@ -217,7 +217,7 @@ class SmsController extends Controller
                     ->join('classes','classes.id','=','student_enrollments.class_id')
                     ->leftJoin('sections','sections.id','=','student_enrollments.section_id')
                     ->where('student_enrollments.school_id',$school->id)
-                    ->where('student_enrollments.academic_year',$yearVal)
+                    ->where('student_enrollments.academic_year_id',$yearVal)
                     ->where('student_enrollments.class_id',(int)$data['class_id']);
                 if (!empty($data['section_id'])) { $q->where('student_enrollments.section_id',(int)$data['section_id']); }
                 foreach ($q->get() as $row) {
@@ -237,7 +237,7 @@ class SmsController extends Controller
                     ->join('classes','classes.id','=','student_enrollments.class_id')
                     ->leftJoin('sections','sections.id','=','student_enrollments.section_id')
                     ->where('student_enrollments.school_id',$school->id)
-                    ->where('student_enrollments.academic_year',$yearVal)
+                    ->where('student_enrollments.academic_year_id',$yearVal)
                     ->whereIn('student_enrollments.student_id',$data['student_ids'])
                     ->get();
                 foreach ($rows as $row) {
@@ -261,7 +261,8 @@ class SmsController extends Controller
     $sentBy = \Illuminate\Support\Facades\Auth::id();
         $success = 0; $failed = 0;
         foreach ($recipients as $to => $meta) {
-            $ok = SmsSender::send($school->id, $to, $message);
+            $result = SmsSender::send($school->id, $to, $message);
+            $ok = $result['success'];
             SmsLog::create([
                 'school_id' => $school->id,
                 'sent_by_user_id' => $sentBy,
@@ -275,7 +276,8 @@ class SmsController extends Controller
                 'section_name' => $meta['section_name'] ?? null,
                 'recipient_number' => $to,
                 'message' => $message,
-                'status' => $ok ? 'success' : 'failed',
+                'status' => $ok ? 'sent' : 'failed',
+                'response' => $result['message'] . (isset($result['response']) ? ' | ' . substr($result['response'], 0, 200) : ''),
             ]);
             if ($ok) $success++; else $failed++;
         }

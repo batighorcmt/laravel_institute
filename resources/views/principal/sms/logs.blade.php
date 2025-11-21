@@ -72,7 +72,7 @@
           @forelse($logs as $log)
             <tr>
               <td>{{ $log->created_at }}</td>
-              <td>{!! $log->status === 'success' ? '<span class="badge badge-success">সফল</span>' : '<span class="badge badge-danger">বিফল</span>' !!}</td>
+              <td>{!! in_array($log->status, ['success', 'sent']) ? '<span class="badge badge-success">সফল</span>' : '<span class="badge badge-danger">বিফল</span>' !!}</td>
               <td>{{ $log->recipient_type }}</td>
               <td>{{ $log->recipient_category }}</td>
               <td>{{ $log->recipient_name }}</td>
