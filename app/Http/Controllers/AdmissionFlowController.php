@@ -138,6 +138,7 @@ class AdmissionFlowController extends Controller
                 'permanent_district' => $data['permanent_district'] ?? null,
                 'blood_group' => $data['blood_group'] ?? null,
                 'achievement' => $data['achievement'] ?? null,
+                'guardian_relation' => $data['guardian_relation'] ?? null,
                 'class_name' => $data['class_name'] ?? null,
                 'last_school' => $data['last_school'] ?? null,
                 'result' => $data['result'] ?? null,

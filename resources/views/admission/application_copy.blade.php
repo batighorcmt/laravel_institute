@@ -1,5 +1,10 @@
 <x-layout.public :school="$school" :title="'ভর্তি আবেদন কপি — ' . ($school->name ?? '')">
     @php
+        // Check if payment is done - if not, redirect or show error
+        if (!$application || strtolower($application->payment_status) !== 'paid') {
+            abort(403, 'ফিস পরিশোধ না করা আবেদনের কপি পাওয়া যাবে না।');
+        }
+        
         // Simple English digit to Bangla digit converter
         function bnDigits($value){
             $map = ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯'];
@@ -101,9 +106,6 @@
                 <td colspan="4"><strong>মাতার নাম:</strong> {{ $application->mother_name_en }} {{ $application->mother_name_bn ? '(' . $application->mother_name_bn . ')' : '' }}</td>
             </tr>
             <tr>
-                <td colspan="4"><strong>অভিভাবক:</strong> {{ $application->guardian_name_en ?? '—' }} {{ $application->guardian_name_bn ? '(' . $application->guardian_name_bn . ')' : '' }}</td>
-            </tr>
-            <tr>
                 <td colspan="4"><strong>জন্ম নিবন্ধন নং:</strong> {{ bnDigits($application->birth_reg_no ?? '—') }}</td>
             </tr>
             <tr>
@@ -116,15 +118,48 @@
         <table class="form-table">
             <tr class="section-head"><th style="width:50%">বর্তমান ঠিকানা</th><th style="width:50%">স্থায়ী ঠিকানা</th></tr>
             <tr>
-                <td>{{ $application->present_address }}</td>
-                <td>{{ $application->permanent_address }}</td>
+                <td>
+                    গ্রাম: {{ $application->present_village ?? '—' }}
+                    @if($application->present_para_moholla)
+                        ({{ $application->present_para_moholla }}),
+                    @endif
+                    ডাকঘর: {{ $application->present_post_office ?? '—' }},
+                    উপজেলা: {{ $application->present_upazilla ?? '—' }},
+                    জেলা: {{ $application->present_district ?? '—' }}
+                </td>
+                <td>
+                    গ্রাম: {{ $application->permanent_village ?? '—' }}
+                    @if($application->permanent_para_moholla)
+                        ({{ $application->permanent_para_moholla }}),
+                    @endif
+                    <br>
+                    ডাকঘর: {{ $application->permanent_post_office ?? '—' }},
+                    উপজেলা: {{ $application->permanent_upazilla ?? '—' }},
+                    জেলা: {{ $application->permanent_district ?? '—' }}
+                </td>
             </tr>
         </table>
         <table class="form-table">
-            <tr class="section-head"><th style="width:50%">যোগাযোগ</th><th style="width:50%">শ্রেণি তথ্য</th></tr>
+            <tr class="section-head"><th style="width:50%">যোগাযোগ</th><th style="width:50%">অভিভাবক</th></tr>
             <tr>
                 <td><strong>মোবাইল:</strong> {{ bnDigits($application->mobile) }}</td>
-                <td><strong>শ্রেণি:</strong> {{ $application->class_name ?? '—' }}</td>
+                <td>
+                    <strong>সম্পর্ক:</strong> 
+                    @php
+                        $relationMap = [
+                            'father' => 'পিতা',
+                            'mother' => 'মাতা',
+                            'uncle' => 'চাচা/মামা',
+                            'aunt' => 'চাচী/খালা',
+                            'brother' => 'ভাই',
+                            'sister' => 'বোন',
+                            'other' => 'অন্যান্য'
+                        ];
+                    @endphp
+                    {{ $relationMap[$application->guardian_relation ?? ''] ?? '—' }} 
+                    <br>
+                    <strong>নাম:</strong> {{ $application->guardian_name_bn ?? $application->guardian_name_en ?? '—' }} ({{ $application->guardian_name_en ?? '—' }})
+                </td>
             </tr>
         </table>
         <table class="form-table">
@@ -133,6 +168,9 @@
                 <td style="width:40%"><strong>সর্বশেষ বিদ্যালয়:</strong> {{ $application->last_school ?? '—' }}</td>
                 <td style="width:30%"><strong>ফলাফল:</strong> {{ $application->result ?? '—' }}</td>
                 <td style="width:30%"><strong>পাশের বছর:</strong> {{ bnDigits($application->pass_year ?? '—') }}</td>
+            </tr>
+            <tr>
+                <td colspan="3" style="width:40%"><strong>সাফল্যসমূহ:</strong> {{ $application->achievement ?? '—' }}</td>
             </tr>
         </table>
         @if($application->status==='cancelled')
