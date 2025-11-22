@@ -57,6 +57,16 @@ class School extends Model
         return $this->belongsTo(AcademicYear::class, 'admission_academic_year_id');
     }
 
+    public function holidays(): HasMany
+    {
+        return $this->hasMany(Holiday::class);
+    }
+
+    public function weeklyHolidays(): HasMany
+    {
+        return $this->hasMany(WeeklyHoliday::class);
+    }
+
     // Scopes
     public function scopeActive($query)
     {

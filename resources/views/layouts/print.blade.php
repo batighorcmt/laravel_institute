@@ -14,22 +14,23 @@
     </style>
     <style>
         :root{ --print-accent:#222; --print-border:#444; }
-        @page{ size:A4; margin:10mm; }
+        /* Default page setup - can be overridden in @push('print_head') */
+        @page{ size:A4 portrait; margin:10mm; }
         *{ box-sizing:border-box; }
-        body{ font-family:'Kalpurush', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; margin:0; color:#000; font-size:12px; }
+        body{ font-family:'Kalpurush', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; margin:0; color:#000; font-size:14px; line-height:1.4; }
         /* Wrapper simplified to avoid forcing extra blank print page */
         .print-wrapper{display:block;}
         .print-main{padding:4px 0 0;}
         /* Provide minimal bottom padding; large content will naturally flow onto next page */
         .print-main{padding-bottom:30px;}
-        .print-header{ display:flex; align-items:center; gap:12px; border-bottom:2px solid var(--print-accent); padding:6px 0 10px; margin-bottom:10px; }
+        .print-header{ display:flex; align-items:center; gap:12px; border-bottom:2px solid var(--print-accent); padding:6px 0 10px; margin-bottom:12px; }
         .print-header .logo img{ width:100px; height:100px; object-fit:contain; }
         .print-header .logo{ flex:0 0 70px; text-align:left; margin-left:60px; }
         .print-header .center{ flex:1; text-align:center; }
-        .school-name{ font-size:26px; font-weight:800; margin:0; line-height:1.05; }
-        .school-address{ font-size:13px; margin:3px 0 4px; }
-        .page-title{ font-size:18px; font-weight:700; margin:4px 0 2px; }
-        .page-subtitle{ font-size:14px; font-weight:600; margin:0 0 4px; }
+        .school-name{ font-size:28px; font-weight:800; margin:0; line-height:1.1; }
+        .school-address{ font-size:14px; margin:4px 0 5px; font-weight:500; }
+        .page-title{ font-size:20px; font-weight:700; margin:5px 0 3px; }
+        .page-subtitle{ font-size:15px; font-weight:600; margin:0 0 5px; }
         /* Fixed highlighted footer style (screen + print) */
         .fixed-footer{position:fixed;left:0;right:0;bottom:0;text-align:center;font-size:12px;font-weight:800;background:#fff7a8;color:#000;padding:8px 10px;border-top:2px solid #333;z-index:9999;}
         .fixed-footer .line{display:block;}

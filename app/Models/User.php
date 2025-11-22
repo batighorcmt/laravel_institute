@@ -119,4 +119,12 @@ class User extends Authenticatable
         $pivot = $this->activeSchoolRoles()->with('school')->first();
         return $pivot?->school;
     }
+
+    /**
+     * Teacher attendance records
+     */
+    public function teacherAttendances()
+    {
+        return $this->hasMany(TeacherAttendance::class);
+    }
 }

@@ -12,14 +12,14 @@ return new class extends Migration {
                 $table->id();
                 $table->foreignId('student_id')->constrained()->onDelete('cascade');
                 $table->foreignId('school_id')->constrained()->onDelete('cascade');
-                $table->unsignedInteger('academic_year'); // e.g. 2025
+                $table->unsignedBigInteger('academic_year_id')->nullable(); // FK added in later migration after academic_years table exists
                 $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
                 $table->foreignId('section_id')->nullable()->constrained()->onDelete('set null');
                 $table->foreignId('group_id')->nullable()->constrained()->onDelete('set null');
                 $table->unsignedInteger('roll_no');
                 $table->enum('status',['active','promoted','transferred','withdrawn'])->default('active');
                 $table->timestamps();
-                $table->unique(['school_id','academic_year','class_id','section_id','group_id','roll_no'],'uniq_roll_per_scope');
+                $table->unique(['school_id','academic_year_id','class_id','section_id','group_id','roll_no'],'uniq_roll_per_scope_new');
             });
         }
     }

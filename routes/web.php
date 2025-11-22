@@ -147,6 +147,20 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/team/store', [App\Http\Controllers\Principal\TeamAttendanceController::class, 'store'])->name('team.store');
             });
 
+            // Teacher Attendance Settings
+            Route::prefix('teacher-attendance')->name('teacher-attendance.')->group(function () {
+                Route::prefix('settings')->name('settings.')->group(function () {
+                    Route::get('/', [App\Http\Controllers\Principal\Institute\TeacherAttendanceSettingsController::class, 'index'])->name('index');
+                    Route::post('/', [App\Http\Controllers\Principal\Institute\TeacherAttendanceSettingsController::class, 'store'])->name('store');
+                });
+                Route::prefix('reports')->name('reports.')->group(function () {
+                    Route::get('/daily', [App\Http\Controllers\Principal\Institute\TeacherAttendanceReportController::class, 'dailyReport'])->name('daily');
+                    Route::get('/daily/print', [App\Http\Controllers\Principal\Institute\TeacherAttendanceReportController::class, 'dailyReportPrint'])->name('daily.print');
+                    Route::get('/monthly', [App\Http\Controllers\Principal\Institute\TeacherAttendanceReportController::class, 'monthlyReport'])->name('monthly');
+                    Route::get('/monthly/print', [App\Http\Controllers\Principal\Institute\TeacherAttendanceReportController::class, 'monthlyReportPrint'])->name('monthly.print');
+                });
+            });
+
             // Admission settings and applications
             Route::prefix('admissions')->name('admissions.')->group(function(){
                 Route::get('/settings', [PrincipalAdmissionController::class,'settings'])->name('settings');
@@ -242,6 +256,28 @@ Route::middleware(['auth'])->group(function () {
             Route::resource('subjects', \App\Http\Controllers\Principal\SubjectController::class)->except(['show']);
             Route::resource('academic-years', \App\Http\Controllers\Principal\AcademicYearController::class)->except(['show']);
             Route::patch('academic-years/{academic_year}/current', [\App\Http\Controllers\Principal\AcademicYearController::class,'setCurrent'])->name('academic-years.set-current');
+            
+            // Extra Classes routes
+            Route::prefix('extra-classes')->name('extra-classes.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Principal\ExtraClassController::class, 'index'])->name('index');
+                Route::get('/create', [\App\Http\Controllers\Principal\ExtraClassController::class, 'create'])->name('create');
+                Route::post('/', [\App\Http\Controllers\Principal\ExtraClassController::class, 'store'])->name('store');
+                Route::get('/{extraClass}/edit', [\App\Http\Controllers\Principal\ExtraClassController::class, 'edit'])->name('edit');
+                Route::put('/{extraClass}', [\App\Http\Controllers\Principal\ExtraClassController::class, 'update'])->name('update');
+                Route::delete('/{extraClass}', [\App\Http\Controllers\Principal\ExtraClassController::class, 'destroy'])->name('destroy');
+                Route::get('/{extraClass}/students', [\App\Http\Controllers\Principal\ExtraClassController::class, 'manageStudents'])->name('students');
+                Route::post('/{extraClass}/students', [\App\Http\Controllers\Principal\ExtraClassController::class, 'storeStudents'])->name('students.store');
+                
+                // Extra Class Attendance routes
+                Route::prefix('attendance')->name('attendance.')->group(function () {
+                    Route::get('/', [\App\Http\Controllers\Principal\ExtraClassAttendanceController::class, 'index'])->name('index');
+                    Route::get('/take', [\App\Http\Controllers\Principal\ExtraClassAttendanceController::class, 'take'])->name('take');
+                    Route::post('/store', [\App\Http\Controllers\Principal\ExtraClassAttendanceController::class, 'store'])->name('store');
+                    Route::get('/daily-report', [\App\Http\Controllers\Principal\ExtraClassAttendanceController::class, 'dailyReport'])->name('daily-report');
+                    Route::get('/monthly-report', [\App\Http\Controllers\Principal\ExtraClassAttendanceController::class, 'monthlyReport'])->name('monthly-report');
+                });
+            });
+            
             // Bulk student import routes should be defined before the resource route
             // to avoid the 'bulk' segment being interpreted as a student ID.
             Route::get('students/bulk', [\App\Http\Controllers\Principal\StudentController::class,'bulkForm'])->name('students.bulk');
@@ -288,6 +324,14 @@ Route::middleware(['auth'])->group(function () {
     // Teacher Routes
     Route::prefix('teacher')->name('teacher.')->group(function () {
         Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
+        
+        // Teacher Attendance
+        Route::prefix('attendance')->name('attendance.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Teacher\AttendanceController::class, 'index'])->name('index');
+            Route::post('/check-in', [App\Http\Controllers\Teacher\AttendanceController::class, 'checkIn'])->name('check-in');
+            Route::post('/check-out', [App\Http\Controllers\Teacher\AttendanceController::class, 'checkOut'])->name('check-out');
+            Route::get('/my-attendance', [App\Http\Controllers\Teacher\AttendanceController::class, 'myAttendance'])->name('my-attendance');
+        });
     });
 
     // Parent Routes

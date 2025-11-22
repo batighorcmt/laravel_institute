@@ -180,13 +180,8 @@ class TeamAttendanceController extends Controller
                 TeamAttendance::insert($bulk);
                 $message = 'টিম হাজিরা সফলভাবে রেকর্ড হয়েছে!';
             }
-            return redirect()->route('principal.institute.attendance.team.take', [
-                $school,
-                'team_id' => $teamId,
-                'class_id' => $classId,
-                'section_id' => $sectionId,
-                'date' => $date,
-            ])->with('success',$message);
+            return redirect()->route('principal.institute.attendance.team.index', $school)
+                ->with('success',$message);
         } catch (\Exception $e) {
             return back()->with('error','টিম হাজিরা সংরক্ষণে সমস্যা: '.$e->getMessage());
         }
