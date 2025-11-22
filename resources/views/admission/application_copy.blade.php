@@ -121,7 +121,7 @@
             <tr class="section-head"><th style="width:50%">বর্তমান ঠিকানা</th><th style="width:50%">স্থায়ী ঠিকানা</th></tr>
             <tr>
                 <td>
-                    গ্রাম: {{ $application->present_village ?? '—' }}
+                    গ্রাম: {{ $application->present_village ?? '—' }},
                     @if($application->present_para_moholla)
                         ({{ $application->present_para_moholla }}),
                     @endif
@@ -130,7 +130,7 @@
                     জেলা: {{ $application->present_district ?? '—' }}
                 </td>
                 <td>
-                    গ্রাম: {{ $application->permanent_village ?? '—' }}
+                    গ্রাম: {{ $application->permanent_village ?? '—' }},
                     @if($application->permanent_para_moholla)
                         ({{ $application->permanent_para_moholla }}),
                     @endif
