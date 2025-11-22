@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Principal\Institute;
 
 use App\Http\Controllers\Controller;
 use App\Models\School;
+use App\Models\Teacher;
 use App\Models\TeacherAttendance;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -16,16 +16,14 @@ class TeacherAttendanceReportController extends Controller
         $date = $request->input('date', Carbon::today()->format('Y-m-d'));
         
         // Get all teachers for this school
-        $teachers = User::whereHas('schoolRoles', function($query) use ($school) {
-            $query->where('school_id', $school->id)
-                  ->whereIn('role_id', function($q) {
-                      $q->select('id')
-                        ->from('roles')
-                        ->whereIn('name', ['teacher', 'principal']);
-                  });
-        })->with(['teacherAttendances' => function($query) use ($date) {
-            $query->where('date', $date);
-        }])->orderBy('first_name')->get();
+        $teachers = Teacher::where('school_id', $school->id)
+            ->where('status', 'active')
+            ->with(['user', 'teacherAttendances' => function($query) use ($date, $school) {
+                $query->where('date', $date)
+                      ->where('school_id', $school->id);
+            }])
+            ->orderBy('first_name')
+            ->get();
         
         return view('principal.institute.teacher-attendance.daily-report', compact('school', 'teachers', 'date'));
     }
@@ -37,18 +35,15 @@ class TeacherAttendanceReportController extends Controller
         $endDate = Carbon::parse($month)->endOfMonth();
         
         // Get all teachers for this school with their attendances
-        $teachers = User::whereHas('schoolRoles', function($query) use ($school) {
-            $query->where('school_id', $school->id)
-                  ->whereIn('role_id', function($q) {
-                      $q->select('id')
-                        ->from('roles')
-                        ->whereIn('name', ['teacher', 'principal']);
-                  });
-        })->with(['teacherAttendances' => function($query) use ($startDate, $endDate, $school) {
-            $query->where('school_id', $school->id)
-                  ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
-                  ->orderBy('date');
-        }])->orderBy('first_name')->get();
+        $teachers = Teacher::where('school_id', $school->id)
+            ->where('status', 'active')
+            ->with(['user', 'teacherAttendances' => function($query) use ($startDate, $endDate, $school) {
+                $query->where('school_id', $school->id)
+                      ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                      ->orderBy('date');
+            }])
+            ->orderBy('first_name')
+            ->get();
         
         // Get all dates in the month
         $dates = [];
@@ -66,16 +61,14 @@ class TeacherAttendanceReportController extends Controller
         $date = $request->input('date', Carbon::today()->format('Y-m-d'));
         
         // Get all teachers for this school
-        $teachers = User::whereHas('schoolRoles', function($query) use ($school) {
-            $query->where('school_id', $school->id)
-                  ->whereIn('role_id', function($q) {
-                      $q->select('id')
-                        ->from('roles')
-                        ->whereIn('name', ['teacher', 'principal']);
-                  });
-        })->with(['teacherAttendances' => function($query) use ($date) {
-            $query->where('date', $date);
-        }])->orderBy('first_name')->get();
+        $teachers = Teacher::where('school_id', $school->id)
+            ->where('status', 'active')
+            ->with(['user', 'teacherAttendances' => function($query) use ($date, $school) {
+                $query->where('date', $date)
+                      ->where('school_id', $school->id);
+            }])
+            ->orderBy('first_name')
+            ->get();
         
         return view('principal.institute.teacher-attendance.daily-report-print', compact('school', 'teachers', 'date'));
     }
@@ -87,18 +80,15 @@ class TeacherAttendanceReportController extends Controller
         $endDate = Carbon::parse($month)->endOfMonth();
         
         // Get all teachers for this school with their attendances
-        $teachers = User::whereHas('schoolRoles', function($query) use ($school) {
-            $query->where('school_id', $school->id)
-                  ->whereIn('role_id', function($q) {
-                      $q->select('id')
-                        ->from('roles')
-                        ->whereIn('name', ['teacher', 'principal']);
-                  });
-        })->with(['teacherAttendances' => function($query) use ($startDate, $endDate, $school) {
-            $query->where('school_id', $school->id)
-                  ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
-                  ->orderBy('date');
-        }])->orderBy('first_name')->get();
+        $teachers = Teacher::where('school_id', $school->id)
+            ->where('status', 'active')
+            ->with(['user', 'teacherAttendances' => function($query) use ($startDate, $endDate, $school) {
+                $query->where('school_id', $school->id)
+                      ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                      ->orderBy('date');
+            }])
+            ->orderBy('first_name')
+            ->get();
         
         // Get all dates in the month
         $dates = [];

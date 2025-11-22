@@ -165,8 +165,7 @@ class TeacherController extends Controller
         ]);
         DB::beginTransaction();
         try {
-            // Update teacher profile
-            $teacherUpdates = [
+            $userUpdates = [
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'] ?? null,
                 'first_name_bn' => $data['first_name_bn'] ?? null,
@@ -180,26 +179,21 @@ class TeacherController extends Controller
                 'academic_info' => $data['academic_info'] ?? null,
                 'qualification' => $data['qualification'] ?? null,
                 'phone' => $data['phone'] ?? null,
-                'designation' => $data['designation'] ?? null,
-                'serial_number' => $data['serial_number'] ?? null,
-            ];
-            
-            // Handle photo upload
-            if ($request->hasFile('photo')) {
-                $teacherUpdates['photo'] = $request->file('photo')->store('teachers/photos','public');
-            }
-            
-            // Handle signature upload
-            if ($request->hasFile('signature')) {
-                $teacherUpdates['signature'] = $request->file('signature')->store('teachers/signatures','public');
-            }
-            
-            $teacher->update($teacherUpdates);
-            
-            // Update user email and name
-            $teacher->user->update([
                 'email' => $data['email'] ?? $teacher->user->email,
                 'name' => trim(($data['first_name']??'').' '.($data['last_name']??'')) ?: $data['first_name'],
+            ];
+            $teacher->user->update($userUpdates);
+            if ($request->hasFile('photo')) {
+                $path = $request->file('photo')->store('teachers/photos','public');
+                $teacher->user->photo = $path; $teacher->user->save();
+            }
+            if ($request->hasFile('signature')) {
+                $path = $request->file('signature')->store('teachers/signatures','public');
+                $teacher->user->signature = $path; $teacher->user->save();
+            }
+            $teacher->update([
+                'designation' => $data['designation'] ?? null,
+                'serial_number' => $data['serial_number'] ?? null,
             ]);
             DB::commit();
             return redirect()->back()->with('success','আপডেট সফল');
@@ -209,7 +203,7 @@ class TeacherController extends Controller
         }
     }
 
-    public function destroy(School $school, Teacher $teacher)
+    public function destroy(School $school, UserSchoolRole $teacher)
     {
         try {
             $current = Auth::user();
@@ -223,9 +217,8 @@ class TeacherController extends Controller
             if ($teacher->user && $teacher->user->isPrincipal($school->id) && (!$current || !$hasSuperAdmin)) {
                 return redirect()->back()->with('error','প্রধান শিক্ষকের তথ্য কেবল সুপার অ্যাডমিন মুছতে পারবেন');
             }
-            // Delete teacher (cascade will delete user and user_school_roles)
             $teacher->delete();
-            return redirect()->back()->with('success','শিক্ষক মুছে ফেলা হয়েছে');
+            return redirect()->back()->with('success','শিক্ষক মুছে ফেলা হয়েছে');
         } catch (\Throwable $e) {
             return redirect()->back()->with('error','মুছতে ব্যর্থ: '.$e->getMessage());
         }

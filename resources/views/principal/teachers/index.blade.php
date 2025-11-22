@@ -19,9 +19,11 @@
       <table class="table table-hover mb-0">
             <thead>
               <tr>
-                <th style="width:80px">সিরিয়াল</th>
+                <th style="width:80px">সিরিয়াল</th>
                 <th>নাম</th>
                 <th>মোবাইল</th>
+                <th>ইউজারনেম</th>
+                <th>পাসওয়ার্ড</th>
                 <th>পদবী</th>
                 <th style="width:140px">কার্য</th>
               </tr>
@@ -30,8 +32,22 @@
               @forelse($teachers as $t)
                 <tr>
                   <td>{{ $t->serial_number }}</td>
-                  <td>{{ $t->user->first_name }} {{ $t->user->last_name }}</td>
-                  <td>{{ $t->user->phone }}</td>
+                  <td>{{ $t->first_name }} {{ $t->last_name }}</td>
+                  <td>{{ $t->phone }}</td>
+                  <td>
+                    @if($t->user && $t->user->username)
+                      <code>{{ $t->user->username }}</code>
+                    @else
+                      <span class="text-muted">-</span>
+                    @endif
+                  </td>
+                  <td>
+                    @if($t->plain_password)
+                      <code class="text-danger">{{ $t->plain_password }}</code>
+                    @else
+                      <span class="text-muted">-</span>
+                    @endif
+                  </td>
                   <td>{{ $t->designation }}</td>
                   <td>
                     @php($isPrincipalUser = isset($principalUserIds) && in_array($t->user_id, $principalUserIds))
@@ -51,7 +67,7 @@
                   </td>
                 </tr>
               @empty
-                <tr><td colspan="5" class="text-center text-muted">কোনো শিক্ষক পাওয়া যায়নি</td></tr>
+                <tr><td colspan="7" class="text-center text-muted">কোনো শিক্ষক পাওয়া যায়নি</td></tr>
               @endforelse
             </tbody>
           </table>

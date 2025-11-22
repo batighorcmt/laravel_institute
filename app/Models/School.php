@@ -67,6 +67,11 @@ class School extends Model
         return $this->hasMany(WeeklyHoliday::class);
     }
 
+    public function teachers(): HasMany
+    {
+        return $this->hasMany(Teacher::class);
+    }
+
     // Scopes
     public function scopeActive($query)
     {
