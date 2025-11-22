@@ -134,7 +134,6 @@
                     @if($application->permanent_para_moholla)
                         ({{ $application->permanent_para_moholla }}),
                     @endif
-                    <br>
                     ডাকঘর: {{ $application->permanent_post_office ?? '—' }},
                     উপজেলা: {{ $application->permanent_upazilla ?? '—' }},
                     জেলা: {{ $application->permanent_district ?? '—' }}
