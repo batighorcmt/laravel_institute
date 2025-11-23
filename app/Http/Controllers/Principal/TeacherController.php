@@ -69,17 +69,69 @@ class TeacherController extends Controller
         ]);
         DB::beginTransaction();
         try {
-            // Generate username: <school_code>T<3digit_serial>
-            $serialNumber = $data['serial_number'] ?? 1;
-            $username = $school->code . 'T' . str_pad($serialNumber, 3, '0', STR_PAD_LEFT);
+            // Find next available username
+            $schoolCode = $school->code;
+            $counter = 1;
+            
+            // Find the highest existing username number for this school
+            $existingUsernames = User::where('username', 'LIKE', $schoolCode . 'T%')
+                ->whereNotNull('username')
+                ->pluck('username')
+                ->map(function($username) use ($schoolCode) {
+                    $num = str_replace($schoolCode . 'T', '', $username);
+                    return is_numeric($num) ? (int)$num : 0;
+                })
+                ->filter()
+                ->toArray();
+            
+            if (!empty($existingUsernames)) {
+                $counter = max($existingUsernames) + 1;
+            }
+            
+            // Generate unique username
+            $username = $schoolCode . 'T' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+            
+            // Double check uniqueness (safety)
+            while (User::where('username', $username)->exists()) {
+                $counter++;
+                $username = $schoolCode . 'T' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+            }
             
             // Generate 6-digit random password
             $plainPassword = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
             
             $email = $data['email'] ?? (uniqid('t_').'@example.com');
-            $userData = [
+            
+            // Step 1: Create User (authentication only)
+            $user = User::create([
                 'name' => trim(($data['first_name']??'').' '.($data['last_name']??'')) ?: $data['first_name'],
                 'username' => $username,
+                'email' => $email,
+                'password' => bcrypt($plainPassword),
+            ]);
+            
+            // Step 2: Create UserSchoolRole (role assignment)
+            UserSchoolRole::create([
+                'user_id' => $user->id,
+                'school_id' => $school->id,
+                'role_id' => $teacherRole->id,
+                'status' => 'active',
+            ]);
+            
+            // Step 3: Handle file uploads
+            $photoPath = null;
+            $signaturePath = null;
+            if ($request->hasFile('photo')) {
+                $photoPath = $request->file('photo')->store('teachers/photos','public');
+            }
+            if ($request->hasFile('signature')) {
+                $signaturePath = $request->file('signature')->store('teachers/signatures','public');
+            }
+            
+            // Step 4: Create Teacher (all profile data)
+            Teacher::create([
+                'user_id' => $user->id,
+                'school_id' => $school->id,
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'] ?? null,
                 'first_name_bn' => $data['first_name_bn'] ?? null,
@@ -88,34 +140,19 @@ class TeacherController extends Controller
                 'father_name_en' => $data['father_name_en'] ?? null,
                 'mother_name_bn' => $data['mother_name_bn'] ?? null,
                 'mother_name_en' => $data['mother_name_en'] ?? null,
+                'phone' => $data['phone'] ?? null,
+                'plain_password' => $plainPassword,
+                'designation' => $data['designation'] ?? null,
+                'serial_number' => $data['serial_number'] ?? $counter,
                 'date_of_birth' => $data['date_of_birth'] ?? null,
                 'joining_date' => $data['joining_date'] ?? null,
                 'academic_info' => $data['academic_info'] ?? null,
                 'qualification' => $data['qualification'] ?? null,
-                'phone' => $data['phone'] ?? null,
-                'email' => $email,
-                'password' => bcrypt($plainPassword),
-                'plain_password' => $plainPassword,
-            ];
-
-            $user = User::create($userData);
-            // handle uploads
-            if ($request->hasFile('photo')) {
-                $path = $request->file('photo')->store('teachers/photos','public');
-                $user->photo = $path; $user->save();
-            }
-            if ($request->hasFile('signature')) {
-                $path = $request->file('signature')->store('teachers/signatures','public');
-                $user->signature = $path; $user->save();
-            }
-            $pivot = UserSchoolRole::create([
-                'user_id' => $user->id,
-                'school_id' => $school->id,
-                'role_id' => $teacherRole->id,
+                'photo' => $photoPath,
+                'signature' => $signaturePath,
                 'status' => 'active',
-                'designation' => $data['designation'] ?? null,
-                'serial_number' => $data['serial_number'] ?? null,
             ]);
+            
             DB::commit();
             return redirect()->back()->with('success','শিক্ষক যুক্ত হয়েছে');
         } catch (\Throwable $e) {

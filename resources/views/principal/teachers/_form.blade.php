@@ -29,8 +29,11 @@
   @endif
   <div class="form-row">
     <div class="form-group col-md-6">
-      <label>First Name (English)</label>
+      <label>First Name (English) <span class="text-danger">*</span></label>
       <input name="first_name" class="form-control" required value="{{ old('first_name', $teacher->first_name ?? '') }}">
+      @error('first_name')
+        <small class="text-danger">{{ $message }}</small>
+      @enderror
     </div>
     <div class="form-group col-md-6">
       <label>Last Name (English)</label>
@@ -126,8 +129,20 @@
     </div>
   </div>
 
-  <div class="form-group">
-    <button class="btn btn-primary">{{ $editing ? 'Update' : 'Create' }}</button>
-    <a href="{{ route('principal.institute.teachers.index', $school) }}" class="btn btn-secondary">Cancel</a>
+  <div class="form-group mt-4">
+    <button type="submit" class="btn btn-primary btn-lg">
+      <i class="fas fa-save"></i> {{ $editing ? 'আপডেট করুন' : 'শিক্ষক যুক্ত করুন' }}
+    </button>
+    <a href="{{ route('principal.institute.teachers.index', $school) }}" class="btn btn-secondary btn-lg">
+      <i class="fas fa-times"></i> বাতিল
+    </a>
+  </div>
+  
+  <div class="alert alert-info mt-3">
+    <i class="fas fa-info-circle"></i> 
+    <strong>নোট:</strong> 
+    <span class="text-danger">*</span> চিহ্নিত ফিল্ডগুলি বাধ্যতামূলক। 
+    Username এবং Password স্বয়ংক্রিয়ভাবে তৈরি হবে।
+  </div>
   </div>
 </form>
