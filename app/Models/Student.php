@@ -62,6 +62,8 @@ class Student extends Model
         'status' => 'string',
     ];
 
+    protected $appends = ['roll'];
+
     // Relationships
     public function school(): BelongsTo
     {
@@ -105,9 +107,19 @@ class Student extends Model
         return $this->date_of_birth->age ?? 0;
     }
 
+    public function getRollAttribute()
+    {
+        return $this->currentEnrollment ? $this->currentEnrollment->roll_no : null;
+    }
+
     public function enrollments()
     {
         return $this->hasMany(StudentEnrollment::class);
+    }
+
+    public function currentEnrollment()
+    {
+        return $this->hasOne(StudentEnrollment::class)->where('status', 'active')->latest();
     }
 
     public function teams()

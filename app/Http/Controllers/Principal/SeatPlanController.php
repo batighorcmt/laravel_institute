@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Principal;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicYear;
 use App\Models\SeatPlan;
 use App\Models\SeatPlanRoom;
 use App\Models\SeatPlanAllocation;
@@ -147,6 +148,8 @@ class SeatPlanController extends Controller
         $validated = $request->validate([
             'room_no' => 'required|string|max:50',
             'title' => 'nullable|string|max:255',
+            'building' => 'nullable|string|max:255',
+            'floor' => 'nullable|string|max:255',
             'columns_count' => 'required|integer|in:1,2,3',
             'col1_benches' => 'required|integer|min:0',
             'col2_benches' => 'required|integer|min:0',
@@ -158,7 +161,7 @@ class SeatPlanController extends Controller
         SeatPlanRoom::create($validated);
 
         return redirect()
-            ->route('principal.institute.seat-plans.rooms', [$school, $seatPlan])
+            ->route('principal.institute.seat-plans.show', [$school, $seatPlan])
             ->with('success', 'রুম সফলভাবে যুক্ত করা হয়েছে');
     }
 
@@ -167,6 +170,8 @@ class SeatPlanController extends Controller
         $validated = $request->validate([
             'room_no' => 'required|string|max:50',
             'title' => 'nullable|string|max:255',
+            'building' => 'nullable|string|max:255',
+            'floor' => 'nullable|string|max:255',
             'columns_count' => 'required|integer|in:1,2,3',
             'col1_benches' => 'required|integer|min:0',
             'col2_benches' => 'required|integer|min:0',
@@ -176,8 +181,13 @@ class SeatPlanController extends Controller
         $room->update($validated);
 
         return redirect()
-            ->route('principal.institute.seat-plans.rooms', [$school, $seatPlan])
+            ->route('principal.institute.seat-plans.show', [$school, $seatPlan])
             ->with('success', 'রুম সফলভাবে আপডেট করা হয়েছে');
+    }
+
+    public function editRoom(School $school, SeatPlan $seatPlan, SeatPlanRoom $room)
+    {
+        return response()->json($room);
     }
 
     public function destroyRoom(School $school, SeatPlan $seatPlan, SeatPlanRoom $room)
@@ -190,15 +200,42 @@ class SeatPlanController extends Controller
     }
 
     // Seat Allocation
-    public function allocateSeats(School $school, SeatPlan $seatPlan)
+    public function allocateSeats(Request $request, School $school, SeatPlan $seatPlan)
     {
-        $rooms = $seatPlan->rooms()->with('allocations.student')->get();
+        $rooms = $seatPlan->rooms()->with(['allocations.student.currentEnrollment', 'allocations.student.class'])->get();
+        $room = null;
+        $allocations = collect();
+        
+        if ($request->has('room_id')) {
+            $room = $rooms->firstWhere('id', $request->room_id);
+            if ($room) {
+                $allocations = $room->allocations;
+            }
+        }
+        
+        $classes = SchoolClass::forSchool($school->id)
+            ->whereIn('id', $seatPlan->seatPlanClasses()->pluck('class_id'))
+            ->orderBy('numeric_value')
+            ->get();
+            
+        // Get current academic year
+        $currentAcademicYear = AcademicYear::where('school_id', $school->id)
+            ->where('is_current', true)
+            ->first();
+            
+        // Get students with active enrollment in current academic year
         $students = Student::forSchool($school->id)
-            ->whereIn('class_id', $seatPlan->seatPlanClasses()->pluck('class_id'))
+            ->with('currentEnrollment')
+            ->where('status', 'active')
+            ->whereHas('enrollments', function($q) use ($currentAcademicYear, $seatPlan) {
+                $q->where('status', 'active')
+                    ->where('academic_year_id', $currentAcademicYear->id)
+                    ->whereIn('class_id', $seatPlan->seatPlanClasses()->pluck('class_id'));
+            })
             ->orderBy('student_id')
             ->get();
 
-        return view('principal.seat-plans.allocate', compact('school', 'seatPlan', 'rooms', 'students'));
+        return view('principal.seat-plans.allocate', compact('school', 'seatPlan', 'rooms', 'room', 'allocations', 'classes', 'students'));
     }
 
     public function storeAllocation(Request $request, School $school, SeatPlan $seatPlan)
@@ -228,14 +265,14 @@ class SeatPlanController extends Controller
     // Print Seat Plan
     public function printRoom(School $school, SeatPlan $seatPlan, SeatPlanRoom $room)
     {
-        $room->load('allocations.student');
+        $room->load(['allocations.student.currentEnrollment', 'allocations.student.class']);
 
         return view('principal.seat-plans.print-room', compact('school', 'seatPlan', 'room'));
     }
 
     public function printAll(School $school, SeatPlan $seatPlan)
     {
-        $rooms = $seatPlan->rooms()->with('allocations.student')->get();
+        $rooms = $seatPlan->rooms()->with(['allocations.student.currentEnrollment', 'allocations.student.class'])->get();
 
         return view('principal.seat-plans.print-all', compact('school', 'seatPlan', 'rooms'));
     }
@@ -243,17 +280,53 @@ class SeatPlanController extends Controller
     // Search student for allocation
     public function searchStudents(Request $request, School $school, SeatPlan $seatPlan)
     {
-        $search = $request->get('q');
+        $classId = $request->get('class_id');
+        $search = $request->get('search', '');
 
-        $students = Student::forSchool($school->id)
-            ->whereIn('class_id', $seatPlan->seatPlanClasses()->pluck('class_id'))
-            ->where(function ($query) use ($search) {
-                $query->where('student_name_en', 'like', "%{$search}%")
+        // Get current academic year
+        $currentAcademicYear = AcademicYear::where('school_id', $school->id)
+            ->where('is_current', true)
+            ->first();
+
+        // If no current academic year, return empty
+        if (!$currentAcademicYear) {
+            return response()->json([]);
+        }
+
+        // Get already allocated student IDs for this seat plan
+        $allocatedStudentIds = SeatPlanAllocation::where('seat_plan_id', $seatPlan->id)
+            ->pluck('student_id')
+            ->toArray();
+
+        $query = Student::forSchool($school->id)
+            ->whereNotIn('id', $allocatedStudentIds)
+            ->where('status', 'active')
+            ->whereHas('enrollments', function($q) use ($currentAcademicYear, $seatPlan, $classId) {
+                $q->where('status', 'active')
+                    ->where('academic_year_id', $currentAcademicYear->id);
+                if ($classId) {
+                    $q->where('class_id', $classId);
+                } else {
+                    $q->whereIn('class_id', $seatPlan->seatPlanClasses()->pluck('class_id'));
+                }
+            });
+
+        if ($search) {
+            $query->where(function ($q) use ($search, $currentAcademicYear) {
+                $q->where('student_name_en', 'like', "%{$search}%")
                     ->orWhere('student_name_bn', 'like', "%{$search}%")
-                    ->orWhere('student_id', 'like', "%{$search}%");
-            })
-            ->limit(20)
-            ->get(['id', 'student_id', 'student_name_en', 'student_name_bn', 'class_id']);
+                    ->orWhere('student_id', 'like', "%{$search}%")
+                    ->orWhereHas('enrollments', function($subQ) use ($search, $currentAcademicYear) {
+                        $subQ->where('academic_year_id', $currentAcademicYear->id)
+                            ->where('roll_no', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $students = $query->with(['currentEnrollment', 'class'])
+            ->orderBy('student_id')
+            ->limit(100)
+            ->get();
 
         return response()->json($students);
     }

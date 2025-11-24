@@ -15,6 +15,8 @@ class SeatPlanRoom extends Model
         'seat_plan_id',
         'room_no',
         'title',
+        'building',
+        'floor',
         'columns_count',
         'col1_benches',
         'col2_benches',

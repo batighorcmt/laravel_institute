@@ -265,6 +265,7 @@ Route::middleware(['auth'])->group(function () {
                 // Room Management
                 Route::get('/{seatPlan}/rooms', [App\Http\Controllers\Principal\SeatPlanController::class,'manageRooms'])->name('rooms');
                 Route::post('/{seatPlan}/rooms', [App\Http\Controllers\Principal\SeatPlanController::class,'storeRoom'])->name('rooms.store');
+                Route::get('/{seatPlan}/rooms/{room}/edit', [App\Http\Controllers\Principal\SeatPlanController::class,'editRoom'])->name('rooms.edit');
                 Route::put('/{seatPlan}/rooms/{room}', [App\Http\Controllers\Principal\SeatPlanController::class,'updateRoom'])->name('rooms.update');
                 Route::delete('/{seatPlan}/rooms/{room}', [App\Http\Controllers\Principal\SeatPlanController::class,'destroyRoom'])->name('rooms.destroy');
                 

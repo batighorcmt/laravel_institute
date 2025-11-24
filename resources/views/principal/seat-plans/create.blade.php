@@ -56,8 +56,8 @@
                                 <label for="shift">শিফট <span class="text-danger">*</span></label>
                                 <select name="shift" id="shift" class="form-control @error('shift') is-invalid @enderror" required>
                                     <option value="">-- নির্বাচন করুন --</option>
-                                    <option value="morning" {{ old('shift') == 'morning' ? 'selected' : '' }}>সকাল</option>
-                                    <option value="day" {{ old('shift') == 'day' ? 'selected' : '' }}>দিন</option>
+                                    <option value="Morning" {{ old('shift') == 'Morning' ? 'selected' : '' }}>Morning (সকাল)</option>
+                                    <option value="Afternoon" {{ old('shift') == 'Afternoon' ? 'selected' : '' }}>Afternoon (বিকাল)</option>
                                 </select>
                                 @error('shift')
                                     <span class="invalid-feedback">{{ $message }}</span>

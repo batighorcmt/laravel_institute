@@ -1,18 +1,18 @@
 @extends('layouts.admin')
 
-@section('title', 'সিট প্ল্যান তালিকা')
+@section('title', 'Seat Plan Management')
 
 @section('content')
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0">সিট প্ল্যান তালিকা</h1>
+                <h1 class="m-0">Seat Plan Management</h1>
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="{{ route('principal.dashboard') }}">ড্যাশবোর্ড</a></li>
-                    <li class="breadcrumb-item active">সিট প্ল্যান</li>
+                    <li class="breadcrumb-item"><a href="{{ route('principal.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Seat Plans</li>
                 </ol>
             </div>
         </div>
@@ -57,28 +57,39 @@
                                 <tr>
                                     <td>{{ $loop->iteration + ($seatPlans->currentPage() - 1) * $seatPlans->perPage() }}</td>
                                     <td><strong>{{ $seatPlan->name }}</strong></td>
-                                    <td>{{ $seatPlan->shift ?? 'N/A' }}</td>
+                                    <td>
+                                        @if($seatPlan->shift === 'Morning')
+                                            Morning (সকাল)
+                                        @elseif($seatPlan->shift === 'Afternoon')
+                                            Afternoon (বিকাল)
+                                        @else
+                                            {{ $seatPlan->shift ?? 'N/A' }}
+                                        @endif
+                                    </td>
                                     <td>{{ $seatPlan->rooms->count() }}</td>
                                     <td>
                                         @if($seatPlan->status == 'active')
-                                            <span class="badge badge-success">সক্রিয়</span>
+                                            <span class="badge badge-success">Active</span>
                                         @elseif($seatPlan->status == 'completed')
-                                            <span class="badge badge-info">সম্পন্ন</span>
+                                            <span class="badge badge-info">Completed</span>
                                         @else
-                                            <span class="badge badge-secondary">খসড়া</span>
+                                            <span class="badge badge-secondary">Draft</span>
                                         @endif
                                     </td>
                                     <td>
-                                        <a href="{{ route('principal.institute.seat-plans.show', [$school, $seatPlan]) }}" class="btn btn-sm btn-info" title="বিস্তারিত">
+                                        <a href="{{ route('principal.institute.seat-plans.show', [$school, $seatPlan]) }}" class="btn btn-sm btn-info" title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="{{ route('principal.institute.seat-plans.rooms', [$school, $seatPlan]) }}" class="btn btn-sm btn-warning" title="রুম ব্যবস্থাপনা">
+                                        <a href="{{ route('principal.institute.seat-plans.edit', [$school, $seatPlan]) }}" class="btn btn-sm btn-warning" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ route('principal.institute.seat-plans.rooms', [$school, $seatPlan]) }}" class="btn btn-sm btn-secondary" title="Room Management">
                                             <i class="fas fa-door-open"></i>
                                         </a>
-                                        <a href="{{ route('principal.institute.seat-plans.allocate', [$school, $seatPlan]) }}" class="btn btn-sm btn-primary" title="সিট বরাদ্দ করুন">
+                                        <a href="{{ route('principal.institute.seat-plans.allocate', [$school, $seatPlan]) }}" class="btn btn-sm btn-primary" title="Allocate Seats">
                                             <i class="fas fa-chair"></i>
                                         </a>
-                                        <a href="{{ route('principal.institute.seat-plans.print-all', [$school, $seatPlan]) }}" class="btn btn-sm btn-success" target="_blank" title="প্রিন্ট করুন">
+                                        <a href="{{ route('principal.institute.seat-plans.print-all', [$school, $seatPlan]) }}" class="btn btn-sm btn-success" target="_blank" title="Print All">
                                             <i class="fas fa-print"></i>
                                         </a>
                                         <form action="{{ route('principal.institute.seat-plans.destroy', [$school, $seatPlan]) }}" method="POST" class="d-inline" onsubmit="return confirm('আপনি কি নিশ্চিত?')">

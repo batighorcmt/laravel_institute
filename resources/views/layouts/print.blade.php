@@ -23,14 +23,14 @@
         .print-main{padding:4px 0 0;}
         /* Provide minimal bottom padding; large content will naturally flow onto next page */
         .print-main{padding-bottom:30px;}
-        .print-header{ display:flex; align-items:center; gap:12px; border-bottom:2px solid var(--print-accent); padding:6px 0 10px; margin-bottom:12px; }
-        .print-header .logo img{ width:100px; height:100px; object-fit:contain; }
-        .print-header .logo{ flex:0 0 70px; text-align:left; margin-left:60px; }
-        .print-header .center{ flex:1; text-align:center; }
-        .school-name{ font-size:28px; font-weight:800; margin:0; line-height:1.1; }
-        .school-address{ font-size:14px; margin:4px 0 5px; font-weight:500; }
-        .page-title{ font-size:20px; font-weight:700; margin:5px 0 3px; }
-        .page-subtitle{ font-size:15px; font-weight:600; margin:0 0 5px; }
+        .print-header{ display:flex; align-items:center; gap:12px; border-bottom:2px solid var(--print-accent); padding:0 0 8px; margin-bottom:4px; position:relative; }
+        .print-header .logo img{ width:70px; height:70px; object-fit:contain; }
+        .print-header .logo{ position:absolute; left:6px; top:10px; width:0; height:0; overflow:visible; z-index:10; }
+        .print-header .center{ flex:1; text-align:center; position:relative; padding-top:0; }
+        .school-name{ font-size:28px; font-weight:800; margin:5px 0 0 0; line-height:0.95; }
+        .school-address{ font-size:14px; margin:0; font-weight:500; line-height:1; }
+        .page-title{ font-size:20px; font-weight:700; margin:0; line-height:1; }
+        .page-subtitle{ font-size:15px; font-weight:600; margin:0; line-height:1; }
         /* Fixed highlighted footer style (screen + print) */
         .fixed-footer{position:fixed;left:0;right:0;bottom:0;text-align:center;font-size:12px;font-weight:800;background:#fff7a8;color:#000;padding:8px 10px;border-top:2px solid #333;z-index:9999;}
         .fixed-footer .line{display:block;}
@@ -69,7 +69,7 @@
         }
     ?>
     <div class="print-header">
-        <div class="logo"><img src="{{ $logoUrl }}" alt="logo"></div>
+        <div class="logo">@if($logoUrl)<img src="{{ $logoUrl }}" alt="logo">@endif</div>
         <div class="center">
             <h1 class="school-name">{{ $lang==='bn' ? ($school->name_bn ?? $school->name) : ($school->name ?? $school->name_bn) }}</h1>
             @php $addr = $lang==='bn' ? ($school->address_bn ?? $school->address) : ($school->address ?? $school->address_bn); @endphp
@@ -78,8 +78,8 @@
             @endif
             @isset($printTitle)<div class="page-title">{{ $printTitle }}</div>@endisset
             @isset($printSubtitle)<div class="page-subtitle">{{ $printSubtitle }}</div>@endisset
+            @yield('print_header_right')
         </div>
-        <div class="right">@yield('print_header_right')</div>
     </div>
     @if($logoUrl)
         <div class="logo-overlay"><img src="{{ $logoUrl }}" alt="logo watermark"></div>
