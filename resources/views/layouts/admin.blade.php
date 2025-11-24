@@ -196,6 +196,30 @@
                                 </a>
                             </li>
 
+                            {{-- Manage Exam --}}
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.exams.*') || request()->routeIs('principal.institute.seat-plans.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.exams.*') || request()->routeIs('principal.institute.seat-plans.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-file-alt"></i>
+                                    <p>Manage Exam <i class="right fas fa-angle-left"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item"><a href="{{ route('principal.institute.exams.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.exams.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>পরীক্ষা তালিকা</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.seat-plans.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.seat-plans.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>সিট প্ল্যান</p></a></li>
+                                </ul>
+                            </li>
+
+                            {{-- Manage Results --}}
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.results.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.results.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-chart-line"></i>
+                                    <p>Manage Results <i class="right fas fa-angle-left"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item"><a href="{{ route('principal.institute.results.marksheet', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.results.marksheet') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>মার্কশিট</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.marks.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.marks.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>নম্বর Entry</p></a></li>
+                                </ul>
+                            </li>
+
                             {{-- Students (top-level) --}}
                             <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.students.*') ? 'menu-open' : '' }}">
                                 <a href="#" class="nav-link {{ request()->routeIs('principal.institute.students.*') ? 'active' : '' }}">

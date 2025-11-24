@@ -225,6 +225,83 @@ Route::middleware(['auth'])->group(function () {
                 });
             });
 
+            // Exam Management Routes
+            Route::prefix('exams')->name('exams.')->group(function(){
+                Route::get('/', [App\Http\Controllers\Principal\ExamController::class,'index'])->name('index');
+                Route::get('/create', [App\Http\Controllers\Principal\ExamController::class,'create'])->name('create');
+                Route::post('/', [App\Http\Controllers\Principal\ExamController::class,'store'])->name('store');
+                Route::get('/{exam}', [App\Http\Controllers\Principal\ExamController::class,'show'])->name('show');
+                Route::get('/{exam}/edit', [App\Http\Controllers\Principal\ExamController::class,'edit'])->name('edit');
+                Route::put('/{exam}', [App\Http\Controllers\Principal\ExamController::class,'update'])->name('update');
+                Route::delete('/{exam}', [App\Http\Controllers\Principal\ExamController::class,'destroy'])->name('destroy');
+                
+                // Exam Subjects
+                Route::post('/{exam}/subjects', [App\Http\Controllers\Principal\ExamController::class,'addSubject'])->name('subjects.add');
+                Route::put('/{exam}/subjects/{examSubject}', [App\Http\Controllers\Principal\ExamController::class,'updateSubject'])->name('subjects.update');
+                Route::delete('/{exam}/subjects/{examSubject}', [App\Http\Controllers\Principal\ExamController::class,'removeSubject'])->name('subjects.remove');
+            });
+
+            // Mark Entry Routes
+            Route::prefix('marks')->name('marks.')->group(function(){
+                Route::get('/', [App\Http\Controllers\Principal\MarkEntryController::class,'index'])->name('index');
+                Route::get('/{exam}', [App\Http\Controllers\Principal\MarkEntryController::class,'show'])->name('show');
+                Route::get('/{exam}/subjects/{examSubject}/entry', [App\Http\Controllers\Principal\MarkEntryController::class,'entryForm'])->name('entry');
+                Route::post('/{exam}/subjects/{examSubject}/save', [App\Http\Controllers\Principal\MarkEntryController::class,'saveMark'])->name('save');
+                Route::get('/{exam}/subjects/{examSubject}/print-blank', [App\Http\Controllers\Principal\MarkEntryController::class,'printBlank'])->name('print-blank');
+                Route::get('/{exam}/subjects/{examSubject}/print-filled', [App\Http\Controllers\Principal\MarkEntryController::class,'printFilled'])->name('print-filled');
+                Route::post('/{exam}/calculate-results', [App\Http\Controllers\Principal\MarkEntryController::class,'calculateResults'])->name('calculate-results');
+            });
+
+            // Seat Plan Routes
+            Route::prefix('seat-plans')->name('seat-plans.')->group(function(){
+                Route::get('/', [App\Http\Controllers\Principal\SeatPlanController::class,'index'])->name('index');
+                Route::get('/create', [App\Http\Controllers\Principal\SeatPlanController::class,'create'])->name('create');
+                Route::post('/', [App\Http\Controllers\Principal\SeatPlanController::class,'store'])->name('store');
+                Route::get('/{seatPlan}', [App\Http\Controllers\Principal\SeatPlanController::class,'show'])->name('show');
+                Route::get('/{seatPlan}/edit', [App\Http\Controllers\Principal\SeatPlanController::class,'edit'])->name('edit');
+                Route::put('/{seatPlan}', [App\Http\Controllers\Principal\SeatPlanController::class,'update'])->name('update');
+                Route::delete('/{seatPlan}', [App\Http\Controllers\Principal\SeatPlanController::class,'destroy'])->name('destroy');
+                
+                // Room Management
+                Route::get('/{seatPlan}/rooms', [App\Http\Controllers\Principal\SeatPlanController::class,'manageRooms'])->name('rooms');
+                Route::post('/{seatPlan}/rooms', [App\Http\Controllers\Principal\SeatPlanController::class,'storeRoom'])->name('rooms.store');
+                Route::put('/{seatPlan}/rooms/{room}', [App\Http\Controllers\Principal\SeatPlanController::class,'updateRoom'])->name('rooms.update');
+                Route::delete('/{seatPlan}/rooms/{room}', [App\Http\Controllers\Principal\SeatPlanController::class,'destroyRoom'])->name('rooms.destroy');
+                
+                // Seat Allocation
+                Route::get('/{seatPlan}/allocate', [App\Http\Controllers\Principal\SeatPlanController::class,'allocateSeats'])->name('allocate');
+                Route::post('/{seatPlan}/allocate', [App\Http\Controllers\Principal\SeatPlanController::class,'storeAllocation'])->name('allocate.store');
+                Route::delete('/{seatPlan}/allocations/{allocation}', [App\Http\Controllers\Principal\SeatPlanController::class,'removeAllocation'])->name('allocations.remove');
+                Route::get('/{seatPlan}/search-students', [App\Http\Controllers\Principal\SeatPlanController::class,'searchStudents'])->name('search-students');
+                Route::get('/{seatPlan}/find-student', [App\Http\Controllers\Principal\SeatPlanController::class,'findStudent'])->name('find-student');
+                
+                // Print
+                Route::get('/{seatPlan}/rooms/{room}/print', [App\Http\Controllers\Principal\SeatPlanController::class,'printRoom'])->name('rooms.print');
+                Route::get('/{seatPlan}/print-all', [App\Http\Controllers\Principal\SeatPlanController::class,'printAll'])->name('print-all');
+            });
+
+            // Result Management Routes
+            Route::prefix('results')->name('results.')->group(function(){
+                // Marksheet
+                Route::get('/marksheet', [App\Http\Controllers\Principal\ResultController::class,'marksheet'])->name('marksheet');
+                Route::get('/marksheet/{exam}/{student}/print', [App\Http\Controllers\Principal\ResultController::class,'printMarksheet'])->name('marksheet.print');
+                
+                // Merit List
+                Route::get('/merit-list', [App\Http\Controllers\Principal\ResultController::class,'meritList'])->name('merit-list');
+                Route::get('/merit-list/{exam}/{classId}/print', [App\Http\Controllers\Principal\ResultController::class,'printMeritList'])->name('merit-list.print');
+                
+                // Tabulation Sheet
+                Route::get('/tabulation', [App\Http\Controllers\Principal\ResultController::class,'tabulation'])->name('tabulation');
+                Route::get('/tabulation/{exam}/{classId}/print', [App\Http\Controllers\Principal\ResultController::class,'printTabulation'])->name('tabulation.print');
+                
+                // Statistics
+                Route::get('/statistics', [App\Http\Controllers\Principal\ResultController::class,'statistics'])->name('statistics');
+                
+                // Publish/Unpublish
+                Route::post('/{exam}/publish', [App\Http\Controllers\Principal\ResultController::class,'publishResults'])->name('publish');
+                Route::post('/{exam}/unpublish', [App\Http\Controllers\Principal\ResultController::class,'unpublishResults'])->name('unpublish');
+            });
+
             // Holiday management (per school)
             Route::prefix('settings')->group(function(){
                 Route::get('holidays', [\App\Http\Controllers\Principal\HolidayController::class,'index'])->name('holidays.index');

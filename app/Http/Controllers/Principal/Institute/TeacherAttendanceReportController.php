@@ -22,7 +22,7 @@ class TeacherAttendanceReportController extends Controller
                 $query->where('date', $date)
                       ->where('school_id', $school->id);
             }])
-            ->orderBy('first_name')
+            ->orderBy('serial_number')
             ->get();
         
         return view('principal.institute.teacher-attendance.daily-report', compact('school', 'teachers', 'date'));
@@ -42,7 +42,7 @@ class TeacherAttendanceReportController extends Controller
                       ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
                       ->orderBy('date');
             }])
-            ->orderBy('first_name')
+            ->orderBy('serial_number')
             ->get();
         
         // Get all dates in the month
@@ -67,7 +67,7 @@ class TeacherAttendanceReportController extends Controller
                 $query->where('date', $date)
                       ->where('school_id', $school->id);
             }])
-            ->orderBy('first_name')
+            ->orderBy('serial_number')
             ->get();
         
         return view('principal.institute.teacher-attendance.daily-report-print', compact('school', 'teachers', 'date'));
@@ -87,7 +87,7 @@ class TeacherAttendanceReportController extends Controller
                       ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
                       ->orderBy('date');
             }])
-            ->orderBy('first_name')
+            ->orderBy('serial_number')
             ->get();
         
         // Get all dates in the month
