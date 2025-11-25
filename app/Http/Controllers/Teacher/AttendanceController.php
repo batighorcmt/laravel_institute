@@ -13,6 +13,9 @@ class AttendanceController extends Controller
 {
     public function index()
     {
+        // Ensure timezone is set
+        date_default_timezone_set(config('app.timezone', 'Asia/Dhaka'));
+        
         $user = auth()->user();
         $today = Carbon::today();
         
@@ -37,6 +40,9 @@ class AttendanceController extends Controller
 
     public function checkIn(Request $request)
     {
+        // Ensure timezone is set
+        date_default_timezone_set(config('app.timezone', 'Asia/Dhaka'));
+        
         $user = auth()->user();
         $today = Carbon::today();
         $now = Carbon::now();
@@ -114,6 +120,9 @@ class AttendanceController extends Controller
 
     public function checkOut(Request $request)
     {
+        // Ensure timezone is set
+        date_default_timezone_set(config('app.timezone', 'Asia/Dhaka'));
+        
         $user = auth()->user();
         $today = Carbon::today();
         $now = Carbon::now();
@@ -178,6 +187,9 @@ class AttendanceController extends Controller
 
     public function myAttendance()
     {
+        // Ensure timezone is set
+        date_default_timezone_set(config('app.timezone', 'Asia/Dhaka'));
+        
         $user = auth()->user();
         
         // Get school_id (works for both teachers and principals)
