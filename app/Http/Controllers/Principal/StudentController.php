@@ -90,6 +90,9 @@ class StudentController extends Controller
             'father_name_bn'=>['required','string','max:150'],
             'mother_name_bn'=>['required','string','max:150'],
             'guardian_phone'=>['required','string','max:20'],
+            'guardian_relation'=>['nullable','in:father,mother,other'],
+            'guardian_name_en'=>['nullable','string','max:120'],
+            'guardian_name_bn'=>['nullable','string','max:150'],
             // Address component fields
             'present_village'=>['nullable','string','max:120'],
             'present_para_moholla'=>['nullable','string','max:120'],
@@ -102,7 +105,11 @@ class StudentController extends Controller
             'permanent_upazilla'=>['nullable','string','max:120'],
             'permanent_district'=>['nullable','string','max:120'],
             'blood_group'=>['nullable','in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
-            'religion'=>['nullable','in:islam,hindu,buddhist,christian,other'],
+            'religion'=>['nullable','in:Islam,Hindu,Buddhist,Christian,Other,islam,hindu,buddhist,christian,other'],
+            'previous_school'=>['nullable','string','max:200'],
+            'pass_year'=>['nullable','string','max:10'],
+            'previous_result'=>['nullable','string','max:50'],
+            'previous_remarks'=>['nullable','string','max:500'],
             'admission_date'=>['required','date'],
             'status'=>['required','in:active,inactive,graduated,transferred'],
             'photo'=>['nullable','image','max:1024'],
@@ -124,18 +131,47 @@ class StudentController extends Controller
         $enrollClassId = $request->input('enroll_class_id');
         $enrollClass = $enrollClassId ? SchoolClass::find($enrollClassId) : null;
         $classNumeric = $enrollClass ? $enrollClass->numeric_value : 1;
-        $data['student_id'] = Student::generateStudentId($school->id, $classNumeric);
+        
+        // Try to create student with retry mechanism for unique student_id
+        $maxRetries = 5;
+        $student = null;
+        for ($i = 0; $i < $maxRetries; $i++) {
+            try {
+                $data['student_id'] = Student::generateStudentId($school->id, $classNumeric);
+                $student = Student::create($data);
+                break; // Success, exit loop
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Check if it's a duplicate key error
+                if ($e->errorInfo[1] == 1062 && $i < $maxRetries - 1) {
+                    // Duplicate entry, retry with a small delay
+                    usleep(100000); // 100ms delay
+                    continue;
+                }
+                // If not duplicate or max retries reached, throw error
+                throw $e;
+            }
+        }
+        
+        if (!$student) {
+            return back()->withInput()->withErrors(['error' => 'শিক্ষার্থী তৈরি করতে ব্যর্থ। আবার চেষ্টা করুন।']);
+        }
 
-        $student = Student::create($data);
-
-        // Inline enrollment (optional)
+        // Inline enrollment (optional but if provided, validate properly)
         $enrollData = $request->validate([
             'enroll_academic_year_id'=>['nullable', Rule::exists('academic_years','id')->where(fn($q)=>$q->where('school_id',$school->id))],
             'enroll_class_id'=>['nullable', Rule::exists('classes','id')->where(fn($q)=>$q->where('school_id',$school->id))],
-            'enroll_section_id'=>['nullable', Rule::exists('sections','id')->where(fn($q)=>$q->where('school_id',$school->id))],
+            'enroll_section_id'=>['required_with:enroll_class_id', Rule::exists('sections','id')->where(fn($q)=>$q->where('school_id',$school->id))],
             'enroll_group_id'=>['nullable', Rule::exists('groups','id')->where(fn($q)=>$q->where('school_id',$school->id))],
             'enroll_roll_no'=>['nullable','integer','min:1']
         ]);
+        
+        // Validate group for class 9 and 10
+        if (!empty($enrollData['enroll_class_id'])) {
+            $class = SchoolClass::find($enrollData['enroll_class_id']);
+            if ($class && $class->usesGroups() && empty($enrollData['enroll_group_id'])) {
+                return back()->withInput()->withErrors(['enroll_group_id' => 'ক্লাস ৯ম ও ১০ম এর জন্য গ্রুপ নির্বাচন বাধ্যতামূলক']);
+            }
+        }
 
         $createdEnrollment = null;
         if (!empty($enrollData['enroll_academic_year_id']) && !empty($enrollData['enroll_class_id']) && !empty($enrollData['enroll_roll_no'])) {
@@ -237,7 +273,13 @@ class StudentController extends Controller
     {
         $this->authorizePrincipal($school);
         abort_unless($student->school_id===$school->id,404);
-        return view('principal.institute.students.edit',compact('school','student'));
+        
+        // Get current year and active enrollment for editing
+        $currentYear = AcademicYear::forSchool($school->id)->current()->first();
+        $activeEnrollment = $currentYear ? $student->enrollments()->where('academic_year_id', $currentYear->id)->first() : null;
+        $years = AcademicYear::forSchool($school->id)->orderByDesc('start_date')->get();
+        
+        return view('principal.institute.students.edit',compact('school','student','currentYear','activeEnrollment','years'));
     }
 
     public function update(School $school, Student $student, Request $request)
@@ -254,6 +296,9 @@ class StudentController extends Controller
             'father_name_bn'=>['required','string','max:150'],
             'mother_name_bn'=>['required','string','max:150'],
             'guardian_phone'=>['required','string','max:20'],
+            'guardian_relation'=>['nullable','in:father,mother,other'],
+            'guardian_name_en'=>['nullable','string','max:120'],
+            'guardian_name_bn'=>['nullable','string','max:150'],
             'present_village'=>['nullable','string','max:120'],
             'present_para_moholla'=>['nullable','string','max:120'],
             'present_post_office'=>['nullable','string','max:120'],
@@ -265,10 +310,14 @@ class StudentController extends Controller
             'permanent_upazilla'=>['nullable','string','max:120'],
             'permanent_district'=>['nullable','string','max:120'],
             'blood_group'=>['nullable','in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
-            'religion'=>['nullable','in:islam,hindu,buddhist,christian,other'],
-                            'admission_date'=>['required','date'],
-                            'status'=>['required','in:active,inactive,graduated,transferred'],
-                            'photo'=>['nullable','image','max:1024'],
+            'religion'=>['nullable','in:Islam,Hindu,Buddhist,Christian,Other,islam,hindu,buddhist,christian,other'],
+            'previous_school'=>['nullable','string','max:200'],
+            'pass_year'=>['nullable','string','max:10'],
+            'previous_result'=>['nullable','string','max:50'],
+            'previous_remarks'=>['nullable','string','max:500'],
+            'admission_date'=>['required','date'],
+            'status'=>['required','in:active,inactive,graduated,transferred'],
+            'photo'=>['nullable','image','max:1024'],
         ]);
         // Handle photo upload on update: store new and remove old if present
         if ($request->hasFile('photo')) {
@@ -285,7 +334,54 @@ class StudentController extends Controller
             }
 
             $student->update($data);
-        return redirect()->route('principal.institute.students.show',[$school,$student])->with('success','শিক্ষার্থী আপডেট হয়েছে');
+            
+        // Handle enrollment update if provided
+        $enrollData = $request->validate([
+            'enroll_academic_year_id'=>['nullable', Rule::exists('academic_years','id')->where(fn($q)=>$q->where('school_id',$school->id))],
+            'enroll_class_id'=>['nullable', Rule::exists('classes','id')->where(fn($q)=>$q->where('school_id',$school->id))],
+            'enroll_section_id'=>['required_with:enroll_class_id', Rule::exists('sections','id')->where(fn($q)=>$q->where('school_id',$school->id))],
+            'enroll_group_id'=>['nullable', Rule::exists('groups','id')->where(fn($q)=>$q->where('school_id',$school->id))],
+            'enroll_roll_no'=>['nullable','integer','min:1']
+        ]);
+        
+        if (!empty($enrollData['enroll_academic_year_id']) && !empty($enrollData['enroll_class_id']) && !empty($enrollData['enroll_roll_no'])) {
+            // Check if enrollment exists for this year
+            $enrollment = $student->enrollments()->where('academic_year_id', $enrollData['enroll_academic_year_id'])->first();
+            
+            // Validate group for class 9 and 10
+            $class = SchoolClass::find($enrollData['enroll_class_id']);
+            if ($class && $class->usesGroups() && empty($enrollData['enroll_group_id'])) {
+                return back()->withInput()->withErrors(['enroll_group_id' => 'ক্লাস ৯ম ও ১০ম এর জন্য গ্রুপ নির্বাচন বাধ্যতামূলক']);
+            }
+            
+            if ($class && !$class->usesGroups()) {
+                $enrollData['enroll_group_id'] = null;
+            }
+            
+            if ($enrollment) {
+                // Update existing enrollment
+                $enrollment->update([
+                    'class_id' => $enrollData['enroll_class_id'],
+                    'section_id' => $enrollData['enroll_section_id'] ?? null,
+                    'group_id' => $enrollData['enroll_group_id'] ?? null,
+                    'roll_no' => $enrollData['enroll_roll_no'],
+                ]);
+            } else {
+                // Create new enrollment
+                StudentEnrollment::create([
+                    'student_id' => $student->id,
+                    'school_id' => $school->id,
+                    'academic_year_id' => $enrollData['enroll_academic_year_id'],
+                    'class_id' => $enrollData['enroll_class_id'],
+                    'section_id' => $enrollData['enroll_section_id'] ?? null,
+                    'group_id' => $enrollData['enroll_group_id'] ?? null,
+                    'roll_no' => $enrollData['enroll_roll_no'],
+                    'status' => 'active'
+                ]);
+            }
+        }
+            
+        return redirect()->route('principal.institute.students.show',[$school,$student])->with('success','শিক্ষার্থী আপডেট হয়েছে');
     }
 
     // Enrollment operations
@@ -415,6 +511,7 @@ class StudentController extends Controller
         $rowNo = 1;
         $success = 0;
         $errors = [];
+        $importedStudents = [];
 
         foreach ($rows as $cols) {
             $rowNo++;
@@ -426,12 +523,14 @@ class StudentController extends Controller
                 $assoc[$colName] = isset($cols[$i]) ? trim((string)$cols[$i]) : null;
             }
 
-            // Minimal required fields now: student_name_en, enroll_academic_year, enroll_roll_no, class (id or name), status optional
+            // Only required: student_name_en, enroll_academic_year, enroll_roll_no, class_name, section_name
             $validator = \Illuminate\Support\Facades\Validator::make($assoc, [
                 'student_name_en' => ['required','string','max:150'],
                 'enroll_academic_year' => ['required','numeric'],
                 'enroll_roll_no' => ['required','numeric'],
-                'status' => ['nullable','in:active,inactive,graduated,transferred'],
+                // Only class/section names required (not IDs)
+                'enroll_class_name' => ['required','string'],
+                'enroll_section_name' => ['required','string'],
             ]);
 
             if ($validator->fails()) {
@@ -443,7 +542,19 @@ class StudentController extends Controller
             $dob = null; if (!empty($assoc['date_of_birth'])) { try { $dob = Carbon::parse($assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { try { $dob = Carbon::createFromFormat('d/m/Y', $assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { $dob = null; } } }
             $admission_date = null; if (!empty($assoc['admission_date'])) { try { $admission_date = Carbon::parse($assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { try { $admission_date = Carbon::createFromFormat('d/m/Y', $assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { $admission_date = null; } } }
 
+            // Get class first to generate proper student_id
+            $cname = trim($assoc['enroll_class_name']);
+            $foundClass = SchoolClass::where('school_id',$school->id)->where('name','like',"%{$cname}%")->first();
+            if (!$foundClass) {
+                $errors[] = "Row {$rowNo}: Class not found - {$cname}";
+                continue;
+            }
+            
+            // Generate student_id with proper format: {school_code}{class_2digits}{4digit_counter}
+            $studentId = Student::generateStudentId($school->id, $foundClass->numeric_value);
+            
             $studentData = [
+                'student_id' => $studentId,
                 'student_name_en' => $assoc['student_name_en'],
                 'student_name_bn' => $assoc['student_name_bn'] ?? null,
                 'date_of_birth' => $dob,
@@ -464,36 +575,47 @@ class StudentController extends Controller
 
             try {
                 $student = Student::create($studentData);
+                
+                // Add to imported students list
+                $importedStudents[] = [
+                    'roll' => $assoc['enroll_roll_no'] ?? null,
+                    'name_en' => $assoc['student_name_en'],
+                    'name_bn' => $assoc['student_name_bn'] ?? null,
+                    'class' => $assoc['enroll_class_name'] ?? $assoc['enroll_class_id'] ?? null,
+                    'section' => $assoc['enroll_section_name'] ?? $assoc['enroll_section_id'] ?? null,
+                    'year' => $assoc['enroll_academic_year'] ?? null,
+                    'dob' => $dob,
+                    'gender' => $assoc['gender'] ?? null,
+                    'religion' => $assoc['religion'] ?? null,
+                ];
             } catch (\Throwable $e) {
                 $errors[] = "Row {$rowNo}: failed to create student - {$e->getMessage()}";
                 continue;
             }
 
-            // optional enrollment
-            $enYear = $assoc['enroll_academic_year'] ?? null;
-            // support ID or name for class/section/group
-            $enClass = null; $enSection = null; $enGroup = null; $enRoll = null;
-            if (!empty($assoc['enroll_class_id']) && is_numeric($assoc['enroll_class_id'])) { $enClass = intval($assoc['enroll_class_id']); }
-            if (empty($enClass) && !empty($assoc['enroll_class_name'])) {
-                $cname = trim($assoc['enroll_class_name']);
-                $foundClass = SchoolClass::where('school_id',$school->id)->where('name','like',"%{$cname}%")->first();
-                if ($foundClass) { $enClass = $foundClass->id; }
+            // Enrollment is now required since validation passed
+            $enYear = $assoc['enroll_academic_year'];
+            $enClass = $foundClass->id; // Already found above
+            $enSection = null; $enGroup = null; $enRoll = intval($assoc['enroll_roll_no']);
+            
+            // Get section by name (required)
+            $sname = trim($assoc['enroll_section_name']);
+            $foundSection = Section::where('school_id',$school->id)->where('name','like',"%{$sname}%")->first();
+            if ($foundSection) { 
+                $enSection = $foundSection->id; 
+            } else {
+                $errors[] = "Row {$rowNo}: Section not found - {$sname}";
+                continue;
             }
-            if (!empty($assoc['enroll_section_id']) && is_numeric($assoc['enroll_section_id'])) { $enSection = intval($assoc['enroll_section_id']); }
-            if (empty($enSection) && !empty($assoc['enroll_section_name'])) {
-                $sname = trim($assoc['enroll_section_name']);
-                $foundSection = Section::where('school_id',$school->id)->where('name','like',"%{$sname}%")->first();
-                if ($foundSection) { $enSection = $foundSection->id; }
-            }
-            if (!empty($assoc['enroll_group_id']) && is_numeric($assoc['enroll_group_id'])) { $enGroup = intval($assoc['enroll_group_id']); }
-            if (empty($enGroup) && !empty($assoc['enroll_group_name'])) {
+            
+            // Get group by name (optional)
+            if (!empty($assoc['enroll_group_name'])) {
                 $gname = trim($assoc['enroll_group_name']);
                 $foundGroup = Group::where('school_id',$school->id)->where('name','like',"%{$gname}%")->first();
                 if ($foundGroup) { $enGroup = $foundGroup->id; }
             }
-            if (!empty($assoc['enroll_roll_no']) && is_numeric($assoc['enroll_roll_no'])) { $enRoll = intval($assoc['enroll_roll_no']); }
 
-            if ($enYear && $enClass && $enRoll) {
+            if ($enYear && $enClass && $enSection && $enRoll) {
                 $class = SchoolClass::find($enClass);
                 if ($class && !$class->usesGroups()) { $enGroup = null; }
                 // Map numeric year to AcademicYear model
@@ -509,8 +631,8 @@ class StudentController extends Controller
                 // check duplicate roll for same school/class/year/section/group
                 $dupQuery = StudentEnrollment::where('school_id',$school->id)
                     ->where('academic_year_id', $yearModel->id)
-                    ->where('class_id', $enClass);
-                if ($enSection) { $dupQuery->where('section_id', $enSection); } else { $dupQuery->whereNull('section_id'); }
+                    ->where('class_id', $enClass)
+                    ->where('section_id', $enSection);
                 if ($enGroup) { $dupQuery->where('group_id', $enGroup); } else { $dupQuery->whereNull('group_id'); }
                 $dupQuery->where('roll_no', $enRoll);
                 if ($dupQuery->exists()) {
@@ -522,7 +644,7 @@ class StudentController extends Controller
                             'school_id' => $school->id,
                             'academic_year_id' => $yearModel->id,
                             'class_id' => $enClass,
-                            'section_id' => $enSection ?: null,
+                            'section_id' => $enSection,
                             'group_id' => $enGroup ?: null,
                             'roll_no' => $enRoll,
                             'status' => 'active'
@@ -531,12 +653,14 @@ class StudentController extends Controller
                         $errors[] = "Row {$rowNo}: enrollment failed - {$e->getMessage()}";
                     }
                 }
+            } else {
+                $errors[] = "Row {$rowNo}: Missing required enrollment data (year/class/section/roll)";
             }
 
             $success++;
         }
 
-        $report = ['success'=>$success, 'errors'=>$errors];
+        $report = ['success'=>$success, 'errors'=>$errors, 'imported_students'=>$importedStudents];
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json($report);
         }

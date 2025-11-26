@@ -269,7 +269,7 @@
 
       <!-- Submit -->
       <div class="d-flex justify-content-end mt-4">
-        <button type="submit" class="btn btn-success"><i class="fas fa-save mr-1"></i> সংরক্ষণ</button>
+        <button type="submit" class="btn btn-success" id="submitBtn"><i class="fas fa-save mr-1"></i> সংরক্ষণ</button>
       </div>
     </form>
   </div>
@@ -278,6 +278,19 @@
 
 @push('scripts')
 <script>
+// Prevent double submit
+let formSubmitted = false;
+document.getElementById('studentForm').addEventListener('submit', function(e) {
+  if (formSubmitted) {
+    e.preventDefault();
+    return false;
+  }
+  formSubmitted = true;
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> সংরক্ষণ হচ্ছে...';
+});
+
 document.addEventListener('DOMContentLoaded', function() {
   const schoolId = {{ $school->id }};
   const classSel = document.getElementById('enroll_class_id');

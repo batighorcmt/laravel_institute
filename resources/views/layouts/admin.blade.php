@@ -8,6 +8,100 @@
     @vite(['resources/css/app.css','resources/js/app.js'])
     <style>
         .navbar-search { min-width: 220px; }
+        
+        /* Sidebar Hierarchical Styling */
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link {
+            font-weight: 500;
+            padding: 0.7rem 1rem;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
+            background-color: rgba(255,255,255,.1) !important;
+            border-left-color: #007bff;
+        }
+        
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover {
+            background-color: rgba(255,255,255,.05);
+        }
+        
+        /* First level submenu (nav-treeview) */
+        .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link {
+            padding-left: 2.5rem;
+            font-size: 0.9rem;
+            color: rgba(255,255,255,.7);
+        }
+        
+        .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link:hover {
+            background-color: rgba(255,255,255,.05);
+            color: #fff;
+        }
+        
+        .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link.active {
+            background-color: rgba(255,255,255,.08);
+            color: #fff;
+        }
+        
+        /* Second level submenu (nested nav-treeview) */
+        .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link {
+            padding-left: 3.5rem;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,.6);
+        }
+        
+        .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link:hover {
+            background-color: rgba(255,255,255,.04);
+            color: #fff;
+        }
+        
+        .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link.active {
+            background-color: rgba(255,255,255,.06);
+            color: #fff;
+        }
+        
+        /* Third level submenu */
+        .sidebar-dark-primary .nav-treeview .nav-treeview .nav-treeview > .nav-item > .nav-link {
+            padding-left: 4.5rem;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,.5);
+        }
+        
+        /* Icons for submenu items */
+        .nav-treeview .nav-icon {
+            font-size: 0.7rem;
+            margin-left: 0.25rem;
+            margin-right: 0.5rem;
+        }
+        
+        /* Parent menu item with treeview */
+        .sidebar-dark-primary .nav-item.has-treeview > .nav-link .right {
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar-dark-primary .nav-item.has-treeview.menu-open > .nav-link .right {
+            transform: rotate(90deg);
+        }
+        
+        /* Add spacing between major menu groups */
+        .nav-sidebar > .nav-item {
+            margin-bottom: 0.2rem;
+        }
+        
+        /* Submenu background */
+        .nav-treeview {
+            background-color: rgba(0,0,0,.1);
+            padding-top: 0.3rem;
+            padding-bottom: 0.3rem;
+        }
+        
+        /* Nested submenu darker background */
+        .nav-treeview .nav-treeview {
+            background-color: rgba(0,0,0,.15);
+        }
+        
+        .nav-treeview .nav-treeview .nav-treeview {
+            background-color: rgba(0,0,0,.2);
+        }
     </style>
     @stack('styles')
 </head>
@@ -301,6 +395,32 @@
                                 <p>হাজিরার রেকর্ড</p>
                             </a>
                         </li>
+
+                        {{-- Lesson Evaluation --}}
+                        @if($u->primarySchool())
+                        <li class="nav-item">
+                            <a href="{{ route('teacher.institute.lesson-evaluation.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.lesson-evaluation.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-clipboard-check"></i>
+                                <p>লেসন ইভেলুয়েশন</p>
+                            </a>
+                        </li>
+
+                        {{-- Student Attendance --}}
+                        <li class="nav-item">
+                            <a href="{{ route('teacher.institute.attendance.class.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.attendance.class.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-user-check"></i>
+                                <p>ছাত্র-ছাত্রী হাজিরা</p>
+                            </a>
+                        </li>
+
+                        {{-- Homework --}}
+                        <li class="nav-item">
+                            <a href="{{ route('teacher.institute.homework.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.homework.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-book-reader"></i>
+                                <p>হোমওয়ার্ক</p>
+                            </a>
+                        </li>
+                        @endif
                     @else
                         <li class="nav-item">
                             <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
@@ -332,12 +452,35 @@
 </div>
 
 <!-- Scripts bundled via Vite for AdminLTE v3.2 -->
-@php($flash = session()->get('success') ?? session()->get('status') ?? null)
-@if($flash)
+@if(session('success'))
     @push('scripts')
     <script>
         window.addEventListener('DOMContentLoaded', function(){
-            if (window.toastr) { toastr.success(@json($flash)); }
+            if (window.toastr) { 
+                toastr.success(@json(session('success')));
+            }
+        });
+    </script>
+    @endpush
+@endif
+@if(session('status'))
+    @push('scripts')
+    <script>
+        window.addEventListener('DOMContentLoaded', function(){
+            if (window.toastr) { 
+                toastr.success(@json(session('status')));
+            }
+        });
+    </script>
+    @endpush
+@endif
+@if(session('info'))
+    @push('scripts')
+    <script>
+        window.addEventListener('DOMContentLoaded', function(){
+            if (window.toastr) { 
+                toastr.info(@json(session('info')));
+            }
         });
     </script>
     @endpush
@@ -346,7 +489,9 @@
     @push('scripts')
     <script>
         window.addEventListener('DOMContentLoaded', function(){
-            if (window.toastr) { toastr.error(@json(session('error'))); }
+            if (window.toastr) { 
+                toastr.error(@json(session('error')));
+            }
         });
     </script>
     @endpush

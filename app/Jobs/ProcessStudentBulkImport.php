@@ -79,7 +79,15 @@ class ProcessStudentBulkImport implements ShouldQueue
 
         // Preload class/section/group lists for fuzzy matching
         $classes = SchoolClass::where('school_id', $this->schoolId)->get()->mapWithKeys(fn($c)=>[$c->id=>$c->name])->toArray();
-        $sections = Section::where('school_id', $this->schoolId)->get()->mapWithKeys(fn($s)=>[$s->id=>$s->name])->toArray();
+        
+        // Load sections grouped by class_id: [class_id => [section_id => section_name]]
+        $sectionsByClass = Section::where('school_id', $this->schoolId)
+            ->get()
+            ->groupBy('class_id')
+            ->map(fn($sections) => $sections->mapWithKeys(fn($s) => [$s->id => $s->name])->toArray())
+            ->toArray();
+        
+        // Load groups: groups are shared across all classes (no class_id in groups table)
         $groups = Group::where('school_id', $this->schoolId)->get()->mapWithKeys(fn($g)=>[$g->id=>$g->name])->toArray();
 
         $rowNo = 1;
@@ -127,6 +135,7 @@ class ProcessStudentBulkImport implements ShouldQueue
                 'date_of_birth' => $dob,
                 'gender' => $assoc['gender'] ?? null,
                 'blood_group' => $assoc['blood_group'] ?? null,
+                'religion' => $assoc['religion'] ?? null,
                 'father_name' => $assoc['father_name'] ?? null,
                 'mother_name' => $assoc['mother_name'] ?? null,
                 'father_name_bn' => $assoc['father_name_bn'] ?? ($assoc['father_name'] ?? null),
@@ -135,7 +144,7 @@ class ProcessStudentBulkImport implements ShouldQueue
                 'guardian_relation' => $assoc['guardian_relation'] ?? null,
                 'guardian_name_en' => $assoc['guardian_name_en'] ?? null,
                 'guardian_name_bn' => $assoc['guardian_name_bn'] ?? null,
-                // Address components
+                // Address components - prefer component fields, fallback to composed address
                 'present_village' => $assoc['present_village'] ?? null,
                 'present_para_moholla' => $assoc['present_para_moholla'] ?? null,
                 'present_post_office' => $assoc['present_post_office'] ?? null,
@@ -172,14 +181,18 @@ class ProcessStudentBulkImport implements ShouldQueue
             $enClass = null; $enSection = null; $enGroup = null; $enRoll = null;
             if (!empty($assoc['enroll_class_id']) && is_numeric($assoc['enroll_class_id'])) { $enClass = intval($assoc['enroll_class_id']); }
             if (empty($enClass) && !empty($assoc['enroll_class_name'])) { $enClass = $this->findBestMatch($classes, $assoc['enroll_class_name']); }
+            
+            // Get sections for this specific class (sections are class-specific)
+            $sectionsForClass = $enClass && isset($sectionsByClass[$enClass]) ? $sectionsByClass[$enClass] : [];
+            
             if (!empty($assoc['enroll_section_id']) && is_numeric($assoc['enroll_section_id'])) { $enSection = intval($assoc['enroll_section_id']); }
-            if (empty($enSection) && !empty($assoc['enroll_section_name'])) { $enSection = $this->findBestMatch($sections, $assoc['enroll_section_name']); }
+            if (empty($enSection) && !empty($assoc['enroll_section_name'])) { $enSection = $this->findBestMatch($sectionsForClass, $assoc['enroll_section_name']); }
             if (!empty($assoc['enroll_group_id']) && is_numeric($assoc['enroll_group_id'])) { $enGroup = intval($assoc['enroll_group_id']); }
             if (empty($enGroup) && !empty($assoc['enroll_group_name'])) { $enGroup = $this->findBestMatch($groups, $assoc['enroll_group_name']); }
             if (!empty($assoc['enroll_roll_no']) && is_numeric($assoc['enroll_roll_no'])) { $enRoll = intval($assoc['enroll_roll_no']); }
 
-            // Validate existence of section/group IDs for this school, else null them (foreign key safety)
-            if ($enSection && !array_key_exists($enSection, $sections)) { $enSection = null; }
+            // Validate existence of section/group IDs for this class, else null them (foreign key safety)
+            if ($enSection && !array_key_exists($enSection, $sectionsForClass)) { $enSection = null; }
             if ($enGroup && !array_key_exists($enGroup, $groups)) { $enGroup = null; }
 
             // If mandatory enrollment fields missing or class name not resolved -> log failure

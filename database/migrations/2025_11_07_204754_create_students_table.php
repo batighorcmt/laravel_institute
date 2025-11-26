@@ -16,20 +16,20 @@ return new class extends Migration
             $table->foreignId('school_id')->constrained()->onDelete('cascade');
             $table->foreignId('class_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('student_id')->unique(); // Generated student ID
-            $table->string('first_name'); // English/Latin script
-            $table->string('last_name');
-            $table->string('student_name_bn')->nullable(); // Full Bengali name
-            $table->date('date_of_birth');
-            $table->enum('gender', ['male', 'female']);
-            $table->string('father_name'); // English/Latin script
-            $table->string('mother_name');
+            $table->string('student_name_en'); // English name
+            $table->string('student_name_bn')->nullable(); // Bengali name
+            $table->date('date_of_birth')->nullable();
+            $table->enum('gender', ['male', 'female'])->nullable();
+            $table->string('father_name')->nullable(); // English/Latin script
+            $table->string('mother_name')->nullable();
             $table->string('father_name_bn')->nullable(); // Bengali
             $table->string('mother_name_bn')->nullable(); // Bengali
-            $table->string('guardian_phone');
-            $table->text('address');
+            $table->string('guardian_phone')->nullable();
+            $table->text('address')->nullable();
             $table->string('blood_group')->nullable();
+            $table->string('religion')->nullable();
             $table->string('photo')->nullable();
-            $table->date('admission_date');
+            $table->date('admission_date')->nullable();
             $table->enum('status', ['active', 'inactive', 'graduated', 'transferred'])->default('active');
             $table->timestamps();
         });

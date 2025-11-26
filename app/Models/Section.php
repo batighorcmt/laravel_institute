@@ -7,16 +7,26 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Section extends Model
 {
-    protected $fillable = ['school_id','class_id','name','class_teacher_name','status'];
+    protected $fillable = ['school_id','class_id','name','class_teacher_id','class_teacher_name','status'];
 
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
 
+    public function schoolClass(): BelongsTo
+    {
+        return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
     public function class(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function classTeacher(): BelongsTo
+    {
+        return $this->belongsTo(Teacher::class, 'class_teacher_id');
     }
 
     public function scopeForSchool($q, $schoolId)

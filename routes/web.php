@@ -410,6 +410,33 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/check-out', [App\Http\Controllers\Teacher\AttendanceController::class, 'checkOut'])->name('check-out');
             Route::get('/my-attendance', [App\Http\Controllers\Teacher\AttendanceController::class, 'myAttendance'])->name('my-attendance');
         });
+
+        // School-specific teacher routes
+        Route::prefix('institute/{school}')->name('institute.')->group(function () {
+            // Student Attendance (Class/Section based)
+            Route::prefix('attendance/class')->name('attendance.class.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Teacher\StudentAttendanceController::class, 'index'])->name('index');
+                Route::get('/take', [App\Http\Controllers\Teacher\StudentAttendanceController::class, 'take'])->name('take');
+                Route::post('/store', [App\Http\Controllers\Teacher\StudentAttendanceController::class, 'store'])->name('store');
+            });
+
+            // Lesson Evaluation
+            Route::prefix('lesson-evaluation')->name('lesson-evaluation.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Teacher\LessonEvaluationController::class, 'index'])->name('index');
+                Route::get('/create', [App\Http\Controllers\Teacher\LessonEvaluationController::class, 'create'])->name('create');
+                Route::post('/', [App\Http\Controllers\Teacher\LessonEvaluationController::class, 'store'])->name('store');
+                Route::get('/{lessonEvaluation}', [App\Http\Controllers\Teacher\LessonEvaluationController::class, 'show'])->name('show');
+            });
+
+            // Homework
+            Route::prefix('homework')->name('homework.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Teacher\HomeworkController::class, 'index'])->name('index');
+                Route::get('/create', [App\Http\Controllers\Teacher\HomeworkController::class, 'create'])->name('create');
+                Route::post('/', [App\Http\Controllers\Teacher\HomeworkController::class, 'store'])->name('store');
+                Route::get('/{homework}', [App\Http\Controllers\Teacher\HomeworkController::class, 'show'])->name('show');
+                Route::delete('/{homework}', [App\Http\Controllers\Teacher\HomeworkController::class, 'destroy'])->name('destroy');
+            });
+        });
     });
 
     // Parent Routes

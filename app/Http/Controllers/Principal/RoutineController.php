@@ -11,6 +11,7 @@ use App\Models\RoutineEntry;
 use App\Models\ClassPeriod;
 use App\Models\ClassSubject;
 use App\Models\Role;
+use App\Models\Teacher;
 use App\Models\UserSchoolRole;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -143,12 +144,21 @@ class RoutineController extends Controller
         // Validate subject belongs to class
         $chk = ClassSubject::where('school_id',$school->id)->where('class_id',$data['class_id'])->where('subject_id',$data['subject_id'])->exists();
         if(!$chk) return response()->json(['success'=>false,'error'=>'Subject not assigned to class']);
-        // Basic teacher validation scope
+        
+        // Validate teacher and get actual teacher record ID
+        $teacherUserId = $data['teacher_id']; // This is actually user_id from frontend
         $teacherOk = UserSchoolRole::where('school_id',$school->id)
-            ->where('user_id',$data['teacher_id'])
+            ->where('user_id', $teacherUserId)
             ->whereHas('role', fn($q)=>$q->where('name', Role::TEACHER))
             ->exists();
         if(!$teacherOk) return response()->json(['success'=>false,'error'=>'Invalid teacher']);
+        
+        // Get the actual teacher record ID (not user_id)
+        $teacher = Teacher::where('user_id', $teacherUserId)
+            ->where('school_id', $school->id)
+            ->first();
+        if(!$teacher) return response()->json(['success'=>false,'error'=>'Teacher record not found']);
+        
         $payload = [
             'school_id'=>$school->id,
             'class_id'=>$data['class_id'],
@@ -156,7 +166,7 @@ class RoutineController extends Controller
             'day_of_week'=>$data['day_of_week'],
             'period_number'=>$data['period_number'],
             'subject_id'=>$data['subject_id'],
-            'teacher_id'=>$data['teacher_id'],
+            'teacher_id'=>$teacher->id, // Use teacher record ID, not user_id
             'start_time'=>$data['start_time'] ?? null,
             'end_time'=>$data['end_time'] ?? null,
             'room'=>$data['room'] ?? null,

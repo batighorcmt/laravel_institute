@@ -1,190 +1,629 @@
 @extends('layouts.admin')
 @section('title','শিক্ষার্থী প্রোফাইল')
+
+@push('styles')
+<style>
+.profile-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px; 
+    padding: 30px;
+    color: white;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 5px solid rgba(255,255,255,0.3);
+    object-fit: cover;
+    background: white;
+}
+.profile-info-card {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.profile-info-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+}
+.info-label {
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+.info-value {
+    color: #2d3748;
+    font-weight: 600;
+    font-size: 1rem;
+}
+.stats-card {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 12px;
+    padding: 20px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+}
+.stats-card.blue {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+.stats-card.green {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+.stats-card.orange {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+.stats-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+.stats-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+.guardian-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 20px;
+    color: white;
+    margin-bottom: 15px;
+}
+.attendance-calendar {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.calendar-day {
+    width: 35px;
+    height: 35px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    margin: 2px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.day-present { background: #10b981; color: white; }
+.day-absent { background: #ef4444; color: white; }
+.day-late { background: #f59e0b; color: white; }
+.day-leave { background: #3b82f6; color: white; }
+.day-holiday { background: #f3f4f6; color: #9ca3af; }
+.fee-status {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.fee-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+.badge-modern {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.notice-card {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-left: 4px solid #f59e0b;
+}
+.event-card {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-left: 4px solid #667eea;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    height: 100%;
+}
+</style>
+@endpush
+
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h1 class="m-0">{{ $student->full_name }} <small class="text-muted">({{ $student->student_id }})</small></h1>
-    <div class="mt-1">
-      @php($st=$student->status)
-      <span class="badge badge-{{ $st==='active'?'success':($st==='inactive'?'secondary':($st==='graduated'?'info':'warning')) }}">{{ ucfirst($st) }}</span>
-      @if($currentYear)
-        <span class="badge badge-primary">বর্তমান বছর: {{ $currentYear->name }}</span>
-      @endif
-      <span class="badge badge-dark">মোট ভর্তি বর্ষ: {{ $totalYears }}</span>
-      @if($activeEnrollment)
-        <span class="badge badge-info">বর্তমান ক্লাস: {{ $activeEnrollment->class?->name }} @if($activeEnrollment->section) ({{ $activeEnrollment->section->name }}) @endif</span>
-      @endif
-    </div>
-  </div>
-  <div class="text-right">
-    <a href="{{ route('principal.institute.students.index',$school) }}" class="btn btn-secondary mr-1"><i class="fas fa-arrow-left mr-1"></i> তালিকা</a>
-    <a href="{{ route('principal.institute.students.edit',[$school,$student]) }}" class="btn btn-primary"><i class="fas fa-edit mr-1"></i> সম্পাদনা</a>
-  </div>
-</div>
-<div class="row">
-  <!-- Left column: Profile & Contacts -->
-  <div class="col-lg-4">
-    <div class="card mb-3 shadow-sm">
-      <div class="card-header"><strong>মৌলিক তথ্য</strong></div>
-      <div class="card-body small">
-        <table class="table table-sm mb-0">
-          <tbody>
-          <tr><th class="w-25">বাংলা নাম</th><td>{{ $student->student_name_bn }}</td></tr>
-          <tr><th>ইংরেজি নাম</th><td>{{ $student->student_name_en ?: '—' }}</td></tr>
-          <tr><th>পিতা</th><td>{{ $student->father_name_bn ?? $student->father_name }}</td></tr>
-          <tr><th>মাতা</th><td>{{ $student->mother_name_bn ?? $student->mother_name }}</td></tr>
-          <tr><th>জন্ম তারিখ</th><td>{{ \Carbon\Carbon::parse($student->date_of_birth)->format('d-m-Y') }}</td></tr>
-          <tr><th>লিঙ্গ</th><td>{{ $student->gender=='male'?'ছেলে':'মেয়ে' }}</td></tr>
-          <tr><th>রক্তের গ্রুপ</th><td>{{ $student->blood_group ?: '—' }}</td></tr>
-          <tr><th>ভর্তি তারিখ</th><td>{{ \Carbon\Carbon::parse($student->admission_date)->format('d-m-Y') }}</td></tr>
-          <tr><th>ফোন</th><td>{{ $student->guardian_phone }}</td></tr>
-          <tr><th>ঠিকানা</th><td>{{ $student->address }}</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card mb-3 shadow-sm">
-      <div class="card-header d-flex justify-content-between align-items-center"><strong>দল / কার্যক্রম</strong>
-        <button class="btn btn-sm btn-outline-success" data-toggle="collapse" data-target="#teamAttachForm"><i class="fas fa-plus"></i></button>
-      </div>
-      <div class="collapse p-2" id="teamAttachForm">
-        <form class="form-inline" method="post" action="{{ route('principal.institute.students.teams.attach',[$school,$student]) }}">@csrf
-          <select name="team_id" class="form-control form-control-sm mr-2">
-            @foreach($allTeams as $t)<option value="{{ $t->id }}">{{ $t->name }}</option>@endforeach
-          </select>
-          <input type="date" name="joined_at" class="form-control form-control-sm mr-2" value="{{ now()->toDateString() }}">
-          <button class="btn btn-sm btn-success"><i class="fas fa-check"></i></button>
-        </form>
-      </div>
-      <ul class="list-group list-group-flush small">
-        @forelse($memberships as $t)
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>{{ $t->name }} <small class="text-muted">{{ $t->pivot->joined_at ?: '' }}</small></span>
-            <form method="post" action="{{ route('principal.institute.students.teams.detach',[$school,$student,$t]) }}" onsubmit="return confirm('সরিয়ে ফেলবেন?');">@csrf @method('DELETE')
-              <button class="btn btn-sm btn-outline-danger"><i class="fas fa-times"></i></button>
-            </form>
-          </li>
-        @empty
-          <li class="list-group-item text-muted">কোনো দলে নেই</li>
-        @endforelse
-      </ul>
-    </div>
-
-    <div class="card shadow-sm">
-      <div class="card-header"><strong>কার্যক্রম টাইমলাইন</strong></div>
-      <div class="card-body p-2">
-        <ul class="timeline list-unstyled mb-0 small">
-          @forelse($timeline as $e)
-            <li class="mb-2">
-              <div class="d-flex">
-                <div class="text-muted" style="width:85px">{{ \Carbon\Carbon::parse($e['date'])->format('d-m-Y') }}</div>
-                <div>
-                  <span class="font-weight-bold">{{ $e['label'] }}</span><br>
-                  <span class="text-muted">{{ $e['detail'] }}</span>
+<div class="container-fluid">
+    <!-- Profile Header -->
+    <div class="profile-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                @if($student->photo)
+                    <img src="{{ asset('storage/'.$student->photo) }}" alt="Profile" class="profile-avatar">
+                @else
+                    <div class="profile-avatar d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.2);">
+                        <i class="fas fa-user fa-3x"></i>
+                    </div>
+                @endif
+            </div>
+            <div class="col">
+                <h2 class="mb-2 font-weight-bold">{{ $student->student_name_bn ?? $student->student_name_en }}</h2>
+                <div class="mb-2">
+                    <span class="badge badge-light badge-modern mr-2">
+                        <i class="fas fa-id-card mr-1"></i> {{ $student->student_id }}
+                    </span>
+                    @if($activeEnrollment)
+                        <span class="badge badge-light badge-modern mr-2">
+                            <i class="fas fa-graduation-cap mr-1"></i> শ্রেণি: {{ $activeEnrollment->class?->name }} - {{ $activeEnrollment->section?->name }}
+                        </span>
+                        <span class="badge badge-light badge-modern">
+                            <i class="fas fa-hashtag mr-1"></i> রোল: {{ $activeEnrollment->roll_no }}
+                        </span>
+                    @endif
                 </div>
-              </div>
-              <hr class="my-1">
-            </li>
-          @empty
-            <li class="text-muted">কোনো ইভেন্ট নেই</li>
-          @endforelse
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- Right column: Academic History & Subjects -->
-  <div class="col-lg-8">
-    <div class="card mb-3 shadow-sm">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <strong>একাডেমিক ইতিহাস</strong>
-        <button class="btn btn-sm btn-outline-primary" data-toggle="collapse" data-target="#enrollForm"><i class="fas fa-plus"></i> নতুন ভর্তি</button>
-      </div>
-      <div class="collapse border-bottom p-3" id="enrollForm">
-        <form method="post" action="{{ route('principal.institute.students.enrollments.add',[$school,$student]) }}" class="small">@csrf
-          <div class="form-row">
-            <div class="form-group col-md-2"><label class="mb-0">বর্ষ *</label>
-              <select name="academic_year_id" class="form-control form-control-sm" required>
-                @foreach($years as $y)
-                  <option value="{{ $y->id }}" {{ $currentYear && $currentYear->id===$y->id?'selected':'' }}>{{ $y->name }}</option>
-                @endforeach
-              </select>
+                <p class="mb-0 small" style="opacity: 0.9;">
+                    <i class="fas fa-calendar-alt mr-1"></i> সেশন: {{ $currentYear->name ?? 'N/A' }}
+                </p>
             </div>
-            <div class="form-group col-md-2"><label class="mb-0">ক্লাস *</label>
-              <select name="class_id" class="form-control form-control-sm" required>
-                @foreach(\App\Models\SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get() as $c)
-                  <option value="{{ $c->id }}">{{ $c->name }}</option>
-                @endforeach
-              </select>
+            <div class="col-auto text-right">
+                <a href="{{ route('principal.institute.students.edit',[$school,$student]) }}" class="btn btn-light btn-sm mr-2">
+                    <i class="fas fa-edit mr-1"></i> সম্পাদনা
+                </a>
+                <a href="{{ route('principal.institute.students.index',$school) }}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-arrow-left mr-1"></i> তালিকা
+                </a>
             </div>
-            <div class="form-group col-md-2"><label class="mb-0">সেকশন</label>
-              <select name="section_id" class="form-control form-control-sm">
-                <option value="">—</option>
-                @foreach(\App\Models\Section::forSchool($school->id)->orderBy('name')->get() as $s)
-                  <option value="{{ $s->id }}">{{ $s->name }}</option>
-                @endforeach
-              </select>
-            </div>
-            <div class="form-group col-md-2"><label class="mb-0">গ্রুপ</label>
-              <select name="group_id" class="form-control form-control-sm">
-                <option value="">—</option>
-                @foreach(\App\Models\Group::forSchool($school->id)->orderBy('name')->get() as $g)
-                  <option value="{{ $g->id }}">{{ $g->name }}</option>
-                @endforeach
-              </select>
-            </div>
-            <div class="form-group col-md-2"><label class="mb-0">রোল *</label><input type="number" name="roll_no" class="form-control form-control-sm" required min="1"></div>
-            <div class="form-group col-md-2 d-flex align-items-end"><button class="btn btn-sm btn-primary w-100"><i class="fas fa-check mr-1"></i> সংযুক্ত</button></div>
-          </div>
-        </form>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead class="thead-light"><tr><th>বর্ষ</th><th>ক্লাস</th><th>সেকশন</th><th>গ্রুপ</th><th>রোল</th><th>বিষয়সমূহ</th><th></th></tr></thead>
-          <tbody>
-          @forelse($enrollments as $en)
-            @php($subjectBadges = $en->subjects->map(function($ss){
-              $code = optional($ss->subject)->code; if(!$code) return null;
-              return '<span class="badge badge-'.($ss->is_optional?'primary':'secondary').' mr-1">'.e($code).($ss->is_optional?' (ঐচ্ছিক)':'').'</span>';
-            })->filter()->implode(' '))
-            <tr class="{{ $activeEnrollment && $activeEnrollment->id === $en->id ? 'table-info' : '' }}">
-              <td>{{ $en->academicYear?->name }}</td>
-              <td>{{ $en->class?->name }}</td>
-              <td>{{ $en->section?->name ?: '—' }}</td>
-              <td>{{ $en->group?->name ?: '—' }}</td>
-              <td>{{ $en->roll_no }}</td>
-              <td class="small">{!! $subjectBadges ?: '<span class="text-muted">নির্ধারিত নয়</span>' !!}</td>
-              <td class="text-nowrap">
-                <a href="{{ route('principal.institute.enrollments.subjects.edit',[$school,$en]) }}" class="btn btn-sm btn-outline-dark"><i class="fas fa-book"></i></a>
-                <form method="post" action="{{ route('principal.institute.students.enrollments.remove',[$school,$student,$en]) }}" class="d-inline" onsubmit="return confirm('মুছে ফেলবেন?');">@csrf @method('DELETE')
-                  <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                </form>
-              </td>
-            </tr>
-          @empty
-            <tr><td colspan="7" class="text-center text-muted">কোনো ভর্তি তথ্য নেই</td></tr>
-          @endforelse
-          </tbody>
-        </table>
-      </div>
+        </div>
     </div>
 
-    @if($activeEnrollment)
-    <div class="card shadow-sm">
-      <div class="card-header"><strong>বর্তমান বর্ষের বিষয়সমূহ</strong></div>
-      <div class="card-body">
-        @php($curr = $currentSubjects->filter(fn($s)=>$s['code']))
-        @if($curr->isEmpty())
-          <div class="text-muted">কোনো বিষয় নির্বাচন করা হয়নি</div>
-        @else
-          @foreach($curr as $s)
-            <span class="badge badge-{{ $s['optional']?'primary':'secondary' }} mr-1 mb-1">{{ $s['code'] }}{{ $s['optional']?' (ঐচ্ছিক)':'' }}</span>
-          @endforeach
-        @endif
-      </div>
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-4">
+            <!-- Class Teacher Card -->
+            @if($activeEnrollment && $activeEnrollment->section && $activeEnrollment->section->class_teacher_name)
+                <div class="guardian-card">
+                    <h6 class="mb-3"><i class="fas fa-chalkboard-teacher mr-2"></i> শ্রেণি শিক্ষক</h6>
+                    <div class="d-flex align-items-center">
+                        <div class="mr-3">
+                            <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-user-tie fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ $activeEnrollment->section->class_teacher_name }}</h6>
+                            <p class="mb-0 small" style="opacity: 0.9;">
+                                <i class="fas fa-phone mr-1"></i> {{ $activeEnrollment->section->class_teacher_phone ?? 'N/A' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Guardian Info -->
+            <div class="profile-info-card">
+                <h6 class="mb-3 font-weight-bold text-primary">
+                    <i class="fas fa-user-friends mr-2"></i> অভিভাবকের তথ্য
+                </h6>
+                <div class="mb-3">
+                    <div class="info-label"><i class="fas fa-male mr-1"></i> পিতার নাম</div>
+                    <div class="info-value">{{ $student->father_name_bn ?? $student->father_name ?? '—' }}</div>
+                </div>
+                <div class="mb-3">
+                    <div class="info-label"><i class="fas fa-female mr-1"></i> মাতার নাম</div>
+                    <div class="info-value">{{ $student->mother_name_bn ?? $student->mother_name ?? '—' }}</div>
+                </div>
+                @if($student->guardian_name_en || $student->guardian_name_bn)
+                    <div class="mb-3">
+                        <div class="info-label"><i class="fas fa-user-shield mr-1"></i> অভিভাবক</div>
+                        <div class="info-value">{{ $student->guardian_name_bn ?? $student->guardian_name_en }}</div>
+                        <small class="text-muted">{{ $student->guardian_relation ?? '' }}</small>
+                    </div>
+                @endif
+                <div class="mb-3">
+                    <div class="info-label"><i class="fas fa-phone mr-1"></i> মোবাইল</div>
+                    <div class="info-value">{{ $student->guardian_phone ?? '—' }}</div>
+                </div>
+                <div class="mb-0">
+                    <div class="info-label"><i class="fas fa-map-marker-alt mr-1"></i> ঠিকানা</div>
+                    <div class="info-value small">
+                        {{ $student->present_village ? $student->present_village.', ' : '' }}
+                        {{ $student->present_upazilla ? $student->present_upazilla.', ' : '' }}
+                        {{ $student->present_district ?? '' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Info -->
+            <div class="profile-info-card">
+                <h6 class="mb-3 font-weight-bold text-success">
+                    <i class="fas fa-info-circle mr-2"></i> ব্যক্তিগত তথ্য
+                </h6>
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <div class="info-label"><i class="fas fa-birthday-cake mr-1"></i> জন্ম তারিখ</div>
+                        <div class="info-value small">{{ $student->date_of_birth ? \Carbon\Carbon::parse($student->date_of_birth)->format('d/m/Y') : '—' }}</div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="info-label"><i class="fas fa-venus-mars mr-1"></i> লিঙ্গ</div>
+                        <div class="info-value">{{ $student->gender == 'male' ? 'ছেলে' : 'মেয়ে' }}</div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="info-label"><i class="fas fa-tint mr-1"></i> রক্তের গ্রুপ</div>
+                        <div class="info-value">{{ $student->blood_group ?? '—' }}</div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="info-label"><i class="fas fa-praying-hands mr-1"></i> ধর্ম</div>
+                        <div class="info-value">{{ $student->religion ? ucfirst($student->religion) : '—' }}</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="info-label"><i class="fas fa-calendar-check mr-1"></i> ভর্তির তারিখ</div>
+                        <div class="info-value small">{{ $student->admission_date ? \Carbon\Carbon::parse($student->admission_date)->format('d/m/Y') : '—' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previous School Info -->
+            @if($student->previous_school)
+                <div class="profile-info-card">
+                    <h6 class="mb-3 font-weight-bold text-info">
+                        <i class="fas fa-school mr-2"></i> পূর্ববর্তী বিদ্যালয়
+                    </h6>
+                    <div class="mb-2">
+                        <div class="info-label">বিদ্যালয়ের নাম</div>
+                        <div class="info-value small">{{ $student->previous_school }}</div>
+                    </div>
+                    @if($student->pass_year)
+                        <div class="mb-2">
+                            <div class="info-label">পাশের বছর</div>
+                            <div class="info-value">{{ $student->pass_year }}</div>
+                        </div>
+                    @endif
+                    @if($student->previous_result)
+                        <div>
+                            <div class="info-label">ফলাফল</div>
+                            <div class="info-value">{{ $student->previous_result }}</div>
+                        </div>
+                    @endif
+                </div>
+            @endif
+        </div>
+
+        <!-- Middle Column -->
+        <div class="col-lg-5">
+            <!-- Stats Cards -->
+            <div class="row mb-3">
+                <div class="col-6 col-md-3 mb-3">
+                    <div class="stats-card">
+                        <div class="stats-number">16</div>
+                        <div class="stats-label">Working<br>Days</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-3">
+                    <div class="stats-card green">
+                        <div class="stats-number">10</div>
+                        <div class="stats-label">Present<br>(63%)</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-3">
+                    <div class="stats-card orange">
+                        <div class="stats-number">6</div>
+                        <div class="stats-label">Absent<br>(38%)</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3 mb-3">
+                    <div class="stats-card blue">
+                        <div class="stats-number">0</div>
+                        <div class="stats-label">Leave<br>(0%)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Calendar -->
+            <div class="attendance-calendar mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-calendar-alt mr-2 text-primary"></i> Attendance
+                    </h6>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span class="mx-3 font-weight-bold">October 2024</span>
+                        <button class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button class="btn btn-sm btn-primary ml-2">View All</button>
+                    </div>
+                </div>
+                
+                <div class="mb-2">
+                    <div class="row text-center small font-weight-bold text-muted">
+                        <div class="col">Sun</div>
+                        <div class="col">Mon</div>
+                        <div class="col">Tue</div>
+                        <div class="col">Wed</div>
+                        <div class="col">Thu</div>
+                        <div class="col">Fri</div>
+                        <div class="col">Sat</div>
+                    </div>
+                </div>
+                
+                <div>
+                    @php
+                        $calendar = [
+                            ['', '', '', '', '', '', 1],
+                            [2, 3, 4, 5, 6, 7, 8],
+                            [9, 10, 11, 12, 13, 14, 15],
+                            [16, 17, 18, 19, 20, 21, 22],
+                            [23, 24, 25, 26, 27, 28, 29],
+                            [30, 31, '', '', '', '', '']
+                        ];
+                        $statuses = [
+                            1 => 'present', 2 => 'present', 3 => 'absent', 4 => 'holiday', 5 => 'holiday',
+                            6 => 'present', 7 => 'present', 8 => 'present', 9 => 'late', 10 => 'present',
+                            11 => 'holiday', 12 => 'holiday', 13 => 'present', 14 => 'present', 15 => 'leave',
+                            16 => 'present', 17 => 'present', 18 => 'holiday', 19 => 'holiday', 20 => 'present',
+                            21 => 'present', 22 => 'present', 23 => 'present', 24 => 'absent', 25 => 'holiday',
+                            26 => 'holiday', 27 => 'present', 28 => 'present', 29 => 'present', 30 => 'present', 31 => 'absent'
+                        ];
+                    @endphp
+                    @foreach($calendar as $week)
+                        <div class="row text-center mb-1">
+                            @foreach($week as $day)
+                                <div class="col p-1">
+                                    @if($day)
+                                        @php $status = $statuses[$day] ?? 'present'; @endphp
+                                        <div class="calendar-day day-{{ $status }}">{{ $day }}</div>
+                                    @else
+                                        <div style="height: 35px;"></div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="mt-3 d-flex justify-content-center flex-wrap small">
+                    <span class="mr-3"><span class="badge day-present" style="width: 15px; height: 15px; display: inline-block;"></span> Present</span>
+                    <span class="mr-3"><span class="badge day-absent" style="width: 15px; height: 15px; display: inline-block;"></span> Absent</span>
+                    <span class="mr-3"><span class="badge day-late" style="width: 15px; height: 15px; display: inline-block;"></span> Late</span>
+                    <span class="mr-3"><span class="badge day-leave" style="width: 15px; height: 15px; display: inline-block;"></span> Leave</span>
+                    <span><span class="badge day-holiday" style="width: 15px; height: 15px; display: inline-block;"></span> Holiday</span>
+                </div>
+            </div>
+
+            <!-- Pie Chart -->
+            <div class="chart-container mb-3">
+                <h6 class="mb-3 font-weight-bold">
+                    <i class="fas fa-chart-pie mr-2 text-success"></i> Attendance Statistics
+                </h6>
+                <canvas id="attendanceChart" height="180"></canvas>
+            </div>
+
+            <!-- Enrollment History -->
+            @if(isset($enrollments) && count($enrollments) > 0)
+                <div class="profile-info-card">
+                    <h6 class="mb-3 font-weight-bold text-primary">
+                        <i class="fas fa-history mr-2"></i> ভর্তির ইতিহাস
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>শিক্ষাবর্ষ</th>
+                                    <th>শ্রেণি</th>
+                                    <th>শাখা</th>
+                                    <th>রোল</th>
+                                    <th>গ্রুপ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($enrollments as $enroll)
+                                    <tr class="{{ isset($activeEnrollment) && $enroll->id == $activeEnrollment->id ? 'table-success' : '' }}">
+                                        <td>{{ $enroll->academicYear?->name ?? '—' }}</td>
+                                        <td>{{ $enroll->class?->name ?? '—' }}</td>
+                                        <td>{{ $enroll->section?->name ?? '—' }}</td>
+                                        <td><strong>{{ $enroll->roll_no }}</strong></td>
+                                        <td>{{ $enroll->group?->name ?? '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-lg-3">
+            <!-- Notice/Events -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-bell mr-2 text-warning"></i> Notice/Events
+                    </h6>
+                    <a href="#" class="text-primary small font-weight-bold">View All</a>
+                </div>
+                
+                <div class="notice-card">
+                    <div class="d-flex align-items-start">
+                        <div class="mr-3">
+                            <div class="badge badge-warning" style="width: 45px; padding: 8px 0; text-align: center;">
+                                <div style="font-size: 0.7rem;">NOV</div>
+                                <div style="font-size: 1.2rem; font-weight: 700; line-height: 1;">10</div>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 font-weight-bold small">বার্ষিক ক্রীড়া প্রতিযোগিতা</h6>
+                            <p class="mb-0 small text-muted">
+                                <i class="fas fa-calendar mr-1"></i> Published on 01.11.2024
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="event-card">
+                    <div class="d-flex align-items-start">
+                        <div class="mr-3">
+                            <div class="badge badge-primary" style="width: 45px; padding: 8px 0; text-align: center;">
+                                <div style="font-size: 0.7rem;">NOV</div>
+                                <div style="font-size: 1.2rem; font-weight: 700; line-height: 1;">05</div>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 font-weight-bold small">৯ম শিক্ষার্থীর প্রাক-নির্বাচন পরীক্ষার সময়সূচী</h6>
+                            <p class="mb-0 small text-muted">
+                                <i class="fas fa-calendar mr-1"></i> Published on 01.11.2024
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dues/Fees -->
+            <div class="fee-status mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 font-weight-bold">
+                        <i class="fas fa-money-bill-wave mr-2 text-danger"></i> Dues
+                    </h6>
+                    <button class="btn btn-sm btn-danger">
+                        <i class="fas fa-hand-holding-usd mr-1"></i> Pay Now
+                    </button>
+                </div>
+
+                <div class="fee-item">
+                    <div>
+                        <div class="font-weight-bold small">No.</div>
+                        <div class="text-muted small">1</div>
+                    </div>
+                    <div>
+                        <div class="font-weight-bold small">Account</div>
+                        <div class="text-muted small">Tuition Fee</div>
+                    </div>
+                    <div>
+                        <div class="font-weight-bold small">Details</div>
+                        <div class="text-muted small">Dec 2024</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-weight-bold small">Due</div>
+                        <div class="text-danger font-weight-bold">1,800</div>
+                    </div>
+                </div>
+
+                <div class="fee-item">
+                    <div>
+                        <div class="font-weight-bold small">No.</div>
+                        <div class="text-muted small">2</div>
+                    </div>
+                    <div>
+                        <div class="font-weight-bold small">Account</div>
+                        <div class="text-muted small">3rd Terminal</div>
+                    </div>
+                    <div>
+                        <div class="font-weight-bold small">Details</div>
+                        <div class="text-muted small">2024</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-weight-bold small">Due</div>
+                        <div class="text-danger font-weight-bold">700</div>
+                    </div>
+                </div>
+
+                <div class="fee-item border-0 pt-3">
+                    <div class="col"></div>
+                    <div class="col"></div>
+                    <div class="col text-right">
+                        <div class="font-weight-bold text-danger h6 mb-0">Total</div>
+                    </div>
+                    <div class="col text-right">
+                        <div class="text-danger font-weight-bold h5 mb-0">2,500</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teams/Activities -->
+            @if(isset($memberships) && count($memberships) > 0)
+                <div class="profile-info-card">
+                    <h6 class="mb-3 font-weight-bold text-success">
+                        <i class="fas fa-users mr-2"></i> দল ও কার্যক্রম
+                    </h6>
+                    @foreach($memberships as $team)
+                        <div class="d-flex align-items-center mb-2 p-2" style="background: #f8f9fa; border-radius: 8px;">
+                            <div class="mr-2">
+                                <i class="fas fa-user-friends text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="font-weight-bold small">{{ $team->name }}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">
+                                    Joined: {{ $team->pivot->joined_at ? \Carbon\Carbon::parse($team->pivot->joined_at)->format('d/m/Y') : 'N/A' }}
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
     </div>
-    @endif
-  </div>
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Attendance Pie Chart
+    const ctx = document.getElementById('attendanceChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Present', 'Absent', 'Late', 'Leave'],
+                datasets: [{
+                    data: [63, 38, 0, 0],
+                    backgroundColor: [
+                        '#10b981',
+                        '#ef4444',
+                        '#f59e0b',
+                        '#3b82f6'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            },
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+@endpush
 @endsection

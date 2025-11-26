@@ -222,202 +222,233 @@
 
 @push('scripts')
 <script>
-let currentSeat = null;
-let currentAllocationId = null;
-let selectedClassId = null;
+console.log('Script loaded');
+console.log('jQuery available?', typeof window.$);
+console.log('Select2 available?', typeof window.$.fn?.select2);
 
-$(document).ready(function() {
-    // Room selection change
-    $('#room_select').on('change', function() {
-        const roomId = $(this).val();
-        if (roomId) {
-            window.location.href = "{{ route('principal.institute.seat-plans.allocate', [$school, $seatPlan]) }}?room_id=" + roomId;
+(function() {
+    let currentSeat = null;
+    let currentAllocationId = null;
+    let selectedClassId = null;
+    let jQueryReady = false;
+
+    // Helper function to wait for jQuery
+    function waitForjQuery(callback) {
+        if (jQueryReady || (typeof window.$ !== 'undefined' && typeof window.$.fn !== 'undefined' && typeof window.$.fn.select2 !== 'undefined')) {
+            jQueryReady = true;
+            callback();
+        } else {
+            setTimeout(function() { waitForjQuery(callback); }, 50);
         }
+    }
+
+    // Initialize room selection on load
+    waitForjQuery(function() {
+        console.log('jQuery loaded successfully');
+        $('#room_select').on('change', function() {
+            const roomId = $(this).val();
+            if (roomId) {
+                window.location.href = "{{ route('principal.institute.seat-plans.allocate', [$school, $seatPlan]) }}?room_id=" + roomId;
+            }
+        });
     });
-});
 
-function openSeatModal(seatElement) {
-    currentSeat = seatElement;
-    currentAllocationId = $(seatElement).data('allocation-id');
-    
-    const col = $(seatElement).data('col');
-    const bench = $(seatElement).data('bench');
-    const position = $(seatElement).data('position');
-    
-    $('#modalSeatInfo').text(`Column ${col}, Bench ${bench}, ${position === 'Left' ? 'Left' : 'Right'}`);
-    
-    // Reset modal state
-    resetClassSelection();
-    $('#currentAllocation').hide();
-    
-    // If seat is occupied, show remove option
-    if (currentAllocationId) {
-        const studentRoll = $(seatElement).data('student-roll');
-        const studentName = $(seatElement).data('student-name');
-        const studentClass = $(seatElement).data('student-class');
-        const studentPhoto = $(seatElement).data('student-photo');
-        
-        $('#currentStudentClass').text(studentClass);
-        $('#currentStudentRoll').text(studentRoll);
-        $('#currentStudentName').text(studentName);
-        $('#currentStudentPhoto').attr('src', studentPhoto);
-        $('#currentAllocation').show();
-        $('#classButtonsDiv').hide();
-    } else {
-        $('#classButtonsDiv').show();
-    }
-    
-    $('#seatModal').modal('show');
-}
+    // Make functions globally accessible
+    window.openSeatModal = function(seatElement) {
+        console.log('openSeatModal called', seatElement);
+        waitForjQuery(function() {
+            currentSeat = seatElement;
+            currentAllocationId = $(seatElement).data('allocation-id');
+            
+            const col = $(seatElement).data('col');
+            const bench = $(seatElement).data('bench');
+            const position = $(seatElement).data('position');
+            
+            $('#modalSeatInfo').text(`Column ${col}, Bench ${bench}, ${position === 'Left' ? 'Left' : 'Right'}`);
+            
+            // Reset modal state
+            window.resetClassSelection();
+            $('#currentAllocation').hide();
+            
+            // If seat is occupied, show remove option
+            if (currentAllocationId) {
+                const studentRoll = $(seatElement).data('student-roll');
+                const studentName = $(seatElement).data('student-name');
+                const studentClass = $(seatElement).data('student-class');
+                const studentPhoto = $(seatElement).data('student-photo');
+                
+                $('#currentStudentClass').text(studentClass);
+                $('#currentStudentRoll').text(studentRoll);
+                $('#currentStudentName').text(studentName);
+                $('#currentStudentPhoto').attr('src', studentPhoto);
+                $('#currentAllocation').show();
+                $('#classButtonsDiv').hide();
+            } else {
+                $('#classButtonsDiv').show();
+            }
+            
+            $('#seatModal').modal('show');
+        });
+    };
 
-function selectClass(classId, className) {
-    selectedClassId = classId;
-    $('#selectedClassName').text(className);
-    $('#classButtonsDiv').hide();
-    $('#studentSelectionDiv').show();
-    
-    // Load students for selected class
-    loadStudentsForClass(classId);
-}
+    window.selectClass = function(classId, className) {
+        console.log('selectClass called', classId, className);
+        waitForjQuery(function() {
+            selectedClassId = classId;
+            $('#selectedClassName').text(className);
+            $('#classButtonsDiv').hide();
+            $('#studentSelectionDiv').show();
+            loadStudentsForClass(classId);
+        });
+    };
 
-function resetClassSelection() {
-    selectedClassId = null;
-    $('#classButtonsDiv').show();
-    $('#studentSelectionDiv').hide();
-    $('#studentSelect').empty().append('<option value="">-- শিক্ষার্থী খুঁজুন --</option>');
-}
+    window.resetClassSelection = function() {
+        waitForjQuery(function() {
+            selectedClassId = null;
+            $('#classButtonsDiv').show();
+            $('#studentSelectionDiv').hide();
+            $('#studentSelect').empty().append('<option value="">-- শিক্ষার্থী খুঁজুন --</option>');
+        });
+    };
 
-function loadStudentsForClass(classId) {
-    // Destroy existing select2 if any
-    if ($('#studentSelect').data('select2')) {
-        $('#studentSelect').select2('destroy');
-    }
-    
-    // Clear and reset select
-    $('#studentSelect').empty().append('<option value="">-- শিক্ষার্থী খুঁজুন --</option>');
-    
-    // Initialize select2 with AJAX search
-    $('#studentSelect').select2({
-        dropdownParent: $('#seatModal'),
-        placeholder: 'নাম বা রোল নং লিখে খুঁজুন',
-        allowClear: true,
-        width: '100%',
-        ajax: {
-            url: "{{ route('principal.institute.seat-plans.search-students', [$school, $seatPlan]) }}",
-            dataType: 'json',
-            delay: 250,
-            data: function (params) {
-                return {
-                    search: params.term || '',
-                    class_id: classId,
-                    seat_plan_id: {{ $seatPlan->id }}
-                };
-            },
-            processResults: function (students) {
-                console.log('Students loaded:', students.length);
-                if (students.length === 0) {
-                    return {
-                        results: [{
-                            id: '',
-                            text: 'কোনো শিক্ষার্থী পাওয়া যায়নি',
-                            disabled: true
-                        }]
-                    };
+    window.removeCurrentAllocation = function() {
+        waitForjQuery(function() {
+            if (!currentAllocationId) return;
+            
+            if (!confirm('Do you want to remove this seat allocation?')) return;
+            
+            $.ajax({
+                url: "{{ route('principal.institute.seat-plans.allocations.remove', [$school, $seatPlan, '__ALLOCATION__']) }}".replace('__ALLOCATION__', currentAllocationId),
+                method: 'DELETE',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#seatModal').modal('hide');
+                        location.reload();
+                    } else {
+                        alert('Failed to remove seat allocation');
+                    }
+                },
+                error: function() {
+                    alert('Failed to remove seat allocation');
                 }
-                return {
-                    results: students.map(function(student) {
+            });
+        });
+    };
+
+    function loadStudentsForClass(classId) {
+        // Destroy existing select2 if any
+        if ($('#studentSelect').data('select2')) {
+            $('#studentSelect').select2('destroy');
+        }
+        
+        // Clear and reset select
+        $('#studentSelect').empty().append('<option value="">-- শিক্ষার্থী খুঁজুন --</option>');
+        
+        // Initialize select2 with AJAX search
+        $('#studentSelect').select2({
+            dropdownParent: $('#seatModal'),
+            placeholder: 'নাম বা রোল নং লিখে খুঁজুন',
+            allowClear: true,
+            width: '100%',
+            ajax: {
+                url: "{{ route('principal.institute.seat-plans.search-students', [$school, $seatPlan]) }}",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        search: params.term || '',
+                        class_id: classId,
+                        seat_plan_id: {{ $seatPlan->id }}
+                    };
+                },
+                processResults: function (students) {
+                    if (!students || students.length === 0) {
                         return {
-                            id: student.id,
-                            text: (student.roll || student.student_id) + ' - ' + student.student_name_en
+                            results: [{
+                                id: '',
+                                text: 'কোনো শিক্ষার্থী পাওয়া যায়নি',
+                                disabled: true
+                            }]
                         };
-                    })
-                };
+                    }
+                    return {
+                        results: students.map(function(student) {
+                            return {
+                                id: student.id,
+                                text: (student.roll || student.student_id) + ' - ' + student.student_name_en,
+                                student: student
+                            };
+                        })
+                    };
+                },
+                cache: true
             },
-            cache: true
-        },
-        minimumInputLength: 0,
-        language: {
-            searching: function() {
-                return 'খুঁজছি...';
-            },
-            noResults: function() {
-                return 'কোনো শিক্ষার্থী পাওয়া যায়নি';
+            minimumInputLength: 0,
+            language: {
+                searching: function() {
+                    return 'খুঁজছি...';
+                },
+                noResults: function() {
+                    return 'কোনো শিক্ষার্থী পাওয়া যায়নি';
+                }
             }
-        }
-    });
-    
-    // Auto-allocate when student is selected
-    $('#studentSelect').off('select2:select').on('select2:select', function (e) {
-        const studentId = e.params.data.id;
-        if (studentId) {
-            allocateSeatWithStudent(studentId);
-        }
-    });
-    
-    // Open dropdown automatically
-    setTimeout(function() {
+        });
+        
+        // Trigger initial load
         $('#studentSelect').select2('open');
-    }, 200);
-}
-
-function allocateSeatWithStudent(studentId) {
-    if (!studentId) {
-        return;
+        $('#studentSelect').select2('close');
+        
+        // Auto-allocate when student is selected
+        $('#studentSelect').off('select2:select').on('select2:select', function (e) {
+            const studentId = e.params.data.id;
+            if (studentId) {
+                allocateSeatWithStudent(studentId);
+            }
+        });
+        
+        // Open dropdown automatically
+        setTimeout(function() {
+            $('#studentSelect').select2('open');
+        }, 200);
     }
-    
-    const col = $(currentSeat).data('col');
-    const bench = $(currentSeat).data('bench');
-    const position = $(currentSeat).data('position');
-    
-    $.ajax({
-        url: "{{ route('principal.institute.seat-plans.allocate.store', [$school, $seatPlan]) }}",
-        method: 'POST',
-        data: {
-            _token: '{{ csrf_token() }}',
-            student_id: studentId,
-            room_id: $('#room_select').val(),
-            col_no: col,
-            bench_no: bench,
-            position: position
-        },
-        success: function(response) {
-            if (response.success) {
-                $('#seatModal').modal('hide');
-                location.reload();
-            } else {
-                alert(response.message || 'Failed to allocate seat');
-            }
-        },
-        error: function(xhr) {
-            alert(xhr.responseJSON?.message || 'Failed to allocate seat');
-        }
-    });
-}
 
-function removeCurrentAllocation() {
-    if (!currentAllocationId) return;
-    
-    if (!confirm('Do you want to remove this seat allocation?')) return;
-    
-    $.ajax({
-        url: "{{ route('principal.institute.seat-plans.allocations.remove', [$school, $seatPlan, '__ALLOCATION__']) }}".replace('__ALLOCATION__', currentAllocationId),
-        method: 'DELETE',
-        data: {
-            _token: '{{ csrf_token() }}'
-        },
-        success: function(response) {
-            if (response.success) {
-                $('#seatModal').modal('hide');
-                location.reload();
-            } else {
-                alert('Failed to remove seat allocation');
-            }
-        },
-        error: function() {
-            alert('Failed to remove seat allocation');
+    function allocateSeatWithStudent(studentId) {
+        if (!studentId) {
+            return;
         }
-    });
-}
+        
+        const col = $(currentSeat).data('col');
+        const bench = $(currentSeat).data('bench');
+        const position = $(currentSeat).data('position');
+        
+        $.ajax({
+            url: "{{ route('principal.institute.seat-plans.allocate.store', [$school, $seatPlan]) }}",
+            method: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}',
+                student_id: studentId,
+                room_id: $('#room_select').val(),
+                col_no: col,
+                bench_no: bench,
+                position: position
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#seatModal').modal('hide');
+                    location.reload();
+                } else {
+                    alert(response.message || 'Failed to allocate seat');
+                }
+            },
+            error: function(xhr) {
+                alert(xhr.responseJSON?.message || 'Failed to allocate seat');
+            }
+        });
+    }
+})();
 </script>
 @endpush
 @endsection

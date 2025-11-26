@@ -12,6 +12,7 @@ use App\Models\Setting;
 use App\Models\SmsLog;
 use App\Models\SmsTemplate;
 use App\Models\StudentEnrollment;
+use App\Models\Teacher;
 use App\Models\User;
 use App\Models\UserSchoolRole;
 use App\Services\SmsSender;
@@ -28,11 +29,16 @@ class SmsController extends Controller
         $sections = Section::forSchool($school->id)->orderBy('name')->get(['id','name','class_id']);
         $templates = SmsTemplate::forSchool($school->id)->orderByDesc('id')->get(['id','title','content']);
 
-        // Teachers for select
+        // Teachers for select - join with teachers table to get phone
         $teacherUserIds = UserSchoolRole::where('school_id',$school->id)
             ->whereHas('role', fn($q)=>$q->where('name', Role::TEACHER))
             ->pluck('user_id');
-        $teachers = User::whereIn('id',$teacherUserIds)->orderBy('name')->get(['id','name','phone']);
+        
+        $teachers = User::whereIn('users.id', $teacherUserIds)
+            ->leftJoin('teachers', 'teachers.user_id', '=', 'users.id')
+            ->orderBy('users.name')
+            ->select('users.id', 'users.name', 'teachers.phone')
+            ->get();
 
         // SMS Balance & Capacity (cached best-effort)
         $apiKey = Setting::forSchool($school->id)->where('key','sms_api_key')->value('value');
@@ -153,7 +159,10 @@ class SmsController extends Controller
                 }
             }
             if ($target === 'teacher_one' && !empty($data['teacher_id'])) {
-                $t = User::find((int)$data['teacher_id']);
+                $t = User::leftJoin('teachers', 'teachers.user_id', '=', 'users.id')
+                    ->where('users.id', (int)$data['teacher_id'])
+                    ->select('users.id', 'users.name', 'teachers.phone')
+                    ->first();
                 if ($t && $t->phone) {
                     $num = preg_replace('/[^0-9]/','', (string)$t->phone);
                     if (strlen($num) === 13 && str_starts_with($num,'880')) { $num = '0'.substr($num,3); }
@@ -163,7 +172,10 @@ class SmsController extends Controller
                 }
             }
             if ($target === 'teachers_selected' && !empty($data['teacher_ids'])) {
-                $ts = User::whereIn('id',$data['teacher_ids'])->get();
+                $ts = User::leftJoin('teachers', 'teachers.user_id', '=', 'users.id')
+                    ->whereIn('users.id', $data['teacher_ids'])
+                    ->select('users.id', 'users.name', 'teachers.phone')
+                    ->get();
                 foreach ($ts as $t) {
                     if ($t->phone) {
                         $num = preg_replace('/[^0-9]/','', (string)$t->phone);
@@ -178,7 +190,10 @@ class SmsController extends Controller
                 $teacherUserIds = UserSchoolRole::where('school_id',$school->id)
                     ->whereHas('role', fn($q)=>$q->where('name', Role::TEACHER))
                     ->pluck('user_id');
-                $ts = User::whereIn('id',$teacherUserIds)->get();
+                $ts = User::leftJoin('teachers', 'teachers.user_id', '=', 'users.id')
+                    ->whereIn('users.id', $teacherUserIds)
+                    ->select('users.id', 'users.name', 'teachers.phone')
+                    ->get();
                 foreach ($ts as $t) {
                     if ($t->phone) {
                         $num = preg_replace('/[^0-9]/','', (string)$t->phone);
