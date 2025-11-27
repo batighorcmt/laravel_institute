@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/auth/auth_repository.dart';
 import '../../routes/app_router.dart';
 import '../../state/auth_state.dart';
+import '../../../core/config/env.dart';
 
 final authRepoProvider = Provider<AuthRepository>((ref) => AuthRepository());
 
@@ -53,6 +54,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 validator: (v) => v == null || v.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 24),
+              // Debug: show current API base URL to quickly verify config
+              Text(
+                'API: ${Env.apiBaseUrl}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
               if (_error != null)
                 Text(_error!, style: const TextStyle(color: Colors.red)),
               ElevatedButton(

@@ -19,9 +19,9 @@ class _PrincipalDashboardPageState extends State<PrincipalDashboardPage> {
     super.initState();
     _dio = DioClient().dio;
     _attendanceSummaryFuture = _fetchJson(
-      '/principal/reports/attendance-summary',
+      'principal/reports/attendance-summary',
     );
-    _examSummaryFuture = _fetchJson('/principal/reports/exam-results-summary');
+    _examSummaryFuture = _fetchJson('principal/reports/exam-results-summary');
   }
 
   Future<Map<String, dynamic>> _fetchJson(String path) async {

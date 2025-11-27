@@ -18,8 +18,8 @@ class _ParentDashboardPageState extends State<ParentDashboardPage> {
   void initState() {
     super.initState();
     _dio = DioClient().dio;
-    _childrenFuture = _fetchList('/parent/children');
-    _homeworkFuture = _fetchList('/parent/homework');
+    _childrenFuture = _fetchList('parent/children');
+    _homeworkFuture = _fetchList('parent/homework');
   }
 
   Future<List<dynamic>> _fetchList(String path) async {

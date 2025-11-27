@@ -17,7 +17,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
   void initState() {
     super.initState();
     _dio = DioClient().dio;
-    _attendanceFuture = _fetchList('/teacher/attendance');
+    _attendanceFuture = _fetchList('teacher/attendance');
   }
 
   Future<List<dynamic>> _fetchList(String path) async {

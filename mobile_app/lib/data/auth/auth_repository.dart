@@ -13,11 +13,11 @@ class AuthRepository {
   }) async {
     try {
       developer.log(
-        'Login request -> POST /auth/login | baseUrl=${_dio.options.baseUrl} | username=${_mask(username)} | pwdLen=${password.length}',
+        'Login request -> POST auth/login | baseUrl=${_dio.options.baseUrl} | username=${_mask(username)} | pwdLen=${password.length}',
         name: 'AuthRepository',
       );
       final resp = await _dio.post(
-        '/auth/login',
+        'auth/login',
         data: {
           'username': username,
           'password': password,
@@ -53,10 +53,10 @@ class AuthRepository {
   Future<void> logout() async {
     try {
       developer.log(
-        'Logout request -> POST /auth/logout',
+        'Logout request -> POST auth/logout',
         name: 'AuthRepository',
       );
-      final resp = await _dio.post('/auth/logout');
+      final resp = await _dio.post('auth/logout');
       developer.log(
         'Logout response <- status=${resp.statusCode}',
         name: 'AuthRepository',
@@ -70,8 +70,8 @@ class AuthRepository {
   }
 
   Future<Map<String, dynamic>> me() async {
-    developer.log('Me request -> GET /me', name: 'AuthRepository');
-    final resp = await _dio.get('/me');
+    developer.log('Me request -> GET me', name: 'AuthRepository');
+    final resp = await _dio.get('me');
     developer.log(
       'Me response <- status=${resp.statusCode}',
       name: 'AuthRepository',
