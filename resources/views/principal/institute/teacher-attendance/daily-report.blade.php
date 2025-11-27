@@ -89,6 +89,7 @@
                                         @foreach($teachers as $index => $teacher)
                                             @php
                                                 $attendance = $teacher->teacherAttendances->first();
+                                                $onLeave = !$attendance && isset($teacher->teacherLeaves) && $teacher->teacherLeaves->count() > 0;
                                             @endphp
                                             <tr>
                                                 <td>{{ $index + 1 }}</td>
@@ -132,6 +133,8 @@
                                                         @else
                                                             <span class="badge badge-info">হাফ ডে</span>
                                                         @endif
+                                                    @elseif($onLeave)
+                                                        <span class="badge badge-primary">ছুটি</span>
                                                     @else
                                                         <span class="badge badge-secondary">নেই</span>
                                                     @endif
@@ -177,9 +180,16 @@
                                         <tr>
                                             <td colspan="5" class="text-right"><strong>সারসংক্ষেপ:</strong></td>
                                             <td colspan="3">
-                                                <strong>উপস্থিত:</strong> {{ $teachers->filter(fn($t) => $t->teacherAttendances->first()?->status === 'present')->count() }} |
-                                                <strong>বিলম্ব:</strong> {{ $teachers->filter(fn($t) => $t->teacherAttendances->first()?->status === 'late')->count() }} |
-                                                <strong>অনুপস্থিত:</strong> {{ $teachers->filter(fn($t) => !$t->teacherAttendances->first())->count() }}
+                                                @php
+                                                    $presentC = $teachers->filter(fn($t) => $t->teacherAttendances->first()?->status === 'present')->count();
+                                                    $lateC = $teachers->filter(fn($t) => $t->teacherAttendances->first()?->status === 'late')->count();
+                                                    $leaveC = $teachers->filter(fn($t) => !$t->teacherAttendances->first() && $t->teacherLeaves && $t->teacherLeaves->count() > 0)->count();
+                                                    $absentC = $teachers->count() - ($presentC + $lateC + $leaveC);
+                                                @endphp
+                                                <strong>উপস্থিত:</strong> {{ $presentC }} |
+                                                <strong>বিলম্ব:</strong> {{ $lateC }} |
+                                                <strong>ছুটি:</strong> {{ $leaveC }} |
+                                                <strong>অনুপস্থিত:</strong> {{ $absentC }}
                                             </td>
                                         </tr>
                                     </tfoot>

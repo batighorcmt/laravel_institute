@@ -112,6 +112,7 @@
                                 <span class="badge badge-warning ml-2">L = বিলম্ব</span>
                                 <span class="badge badge-danger ml-2">A = অনুপস্থিত</span>
                                 <span class="badge badge-info ml-2">H = হাফ ডে</span>
+                                <span class="badge badge-primary ml-2">LV = ছুটি</span>
                             </div>
                             
                             <div class="table-responsive">
@@ -142,6 +143,7 @@
                                                     $presentCount = 0;
                                                     $lateCount = 0;
                                                     $absentCount = 0;
+                                                    $leaveCount = 0;
                                                 @endphp
                                                 @foreach($dates as $date)
                                                     @php
@@ -149,14 +151,20 @@
                                                         $attendance = $teacher->teacherAttendances->first(function($att) use ($dateStr) {
                                                             return \Carbon\Carbon::parse($att->date)->format('Y-m-d') === $dateStr;
                                                         });
-                                                        if ($attendance) {
-                                                            if ($attendance->status === 'present') {
-                                                                $presentCount++;
-                                                            } elseif ($attendance->status === 'late') {
-                                                                $lateCount++;
+                                                        $onLeave = false;
+                                                        if (!$attendance && isset($teacher->teacherLeaves)) {
+                                                            foreach ($teacher->teacherLeaves as $lv) {
+                                                                if ($lv->status === 'approved') {
+                                                                    $onLeave = (\Carbon\Carbon::parse($lv->start_date)->format('Y-m-d') <= $dateStr) && ($dateStr <= \Carbon\Carbon::parse($lv->end_date)->format('Y-m-d'));
+                                                                    if ($onLeave) break;
+                                                                }
                                                             }
+                                                        }
+                                                        if ($attendance) {
+                                                            if ($attendance->status === 'present') { $presentCount++; }
+                                                            elseif ($attendance->status === 'late') { $lateCount++; }
                                                         } else {
-                                                            $absentCount++;
+                                                            if ($onLeave) { $leaveCount++; } else { $absentCount++; }
                                                         }
                                                     @endphp
                                                     <td class="text-center"
@@ -168,10 +176,12 @@
                                                             @elseif($attendance->status === 'absent')
                                                                 style="background-color: #f8d7da;"
                                                             @endif
+                                                        @elseif($onLeave)
+                                                            style="background-color: #cfe2ff;"
                                                         @else
                                                             style="background-color: #e2e3e5;"
                                                         @endif
-                                                        title="@if($attendance) {{ ucfirst($attendance->status) }} @else Absent @endif">
+                                                        title="@if($attendance) {{ ucfirst($attendance->status) }} @elseif($onLeave) Leave @else Absent @endif">
                                                         @if($attendance)
                                                             @if($attendance->status === 'present')
                                                                 <span class="text-success"><strong>P</strong></span>
@@ -182,6 +192,8 @@
                                                             @else
                                                                 <span class="text-info"><strong>H</strong></span>
                                                             @endif
+                                                        @elseif($onLeave)
+                                                            <span class="text-primary"><strong>LV</strong></span>
                                                         @else
                                                             <span class="text-muted">-</span>
                                                         @endif
@@ -191,6 +203,7 @@
                                                     <small>
                                                         <span class="text-success">P:{{ $presentCount }}</span> |
                                                         <span class="text-warning">L:{{ $lateCount }}</span> |
+                                                        <span class="text-primary">LV:{{ $leaveCount }}</span> |
                                                         <span class="text-danger">A:{{ $absentCount }}</span>
                                                     </small>
                                                 </td>

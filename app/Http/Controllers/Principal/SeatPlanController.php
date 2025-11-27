@@ -240,19 +240,59 @@ class SeatPlanController extends Controller
 
     public function storeAllocation(Request $request, School $school, SeatPlan $seatPlan)
     {
+        // Handle DELETE via POST (for AJAX)
+        if ($request->has('_method') && $request->input('_method') === 'DELETE') {
+            return $this->removeAllocationBySeat($request, $school, $seatPlan);
+        }
+
         $validated = $request->validate([
             'room_id' => 'required|exists:seat_plan_rooms,id',
             'student_id' => 'required|exists:students,id',
             'col_no' => 'required|integer',
             'bench_no' => 'required|integer',
-            'position' => 'required|in:Left,Right',
+            'position' => 'required|in:Left,Right,L,R',
         ]);
 
+        // Normalize position to Left/Right
+        $position = in_array($validated['position'], ['L', 'Left']) ? 'Left' : 'Right';
+        $validated['position'] = $position;
+
+        // Check if student already assigned in this plan
+        $existing = SeatPlanAllocation::where('seat_plan_id', $seatPlan->id)
+            ->where('student_id', $validated['student_id'])
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'This student is already assigned in this plan'
+            ], 422);
+        }
+
+        // Delete any existing allocation at this seat
+        SeatPlanAllocation::where('room_id', $validated['room_id'])
+            ->where('col_no', $validated['col_no'])
+            ->where('bench_no', $validated['bench_no'])
+            ->where('position', $validated['position'])
+            ->delete();
+
+        // Create new allocation
         $validated['seat_plan_id'] = $seatPlan->id;
+        $allocation = SeatPlanAllocation::create($validated);
 
-        SeatPlanAllocation::create($validated);
+        // Load student with class info
+        $allocation->load('student.class');
 
-        return response()->json(['success' => true, 'message' => 'Seat allocated successfully']);
+        return response()->json([
+            'success' => true, 
+            'message' => 'Seat assigned successfully',
+            'data' => [
+                'roll' => $allocation->student->roll,
+                'student_id' => $allocation->student->student_id,
+                'student_name_en' => $allocation->student->student_name_en,
+                'class_name' => $allocation->student->class->name ?? 'N/A',
+            ]
+        ]);
     }
 
     public function removeAllocation(School $school, SeatPlan $seatPlan, SeatPlanAllocation $allocation)
@@ -260,6 +300,28 @@ class SeatPlanController extends Controller
         $allocation->delete();
 
         return response()->json(['success' => true, 'message' => 'Allocation removed successfully']);
+    }
+
+    // Alternative remove by seat position
+    public function removeAllocationBySeat(Request $request, School $school, SeatPlan $seatPlan)
+    {
+        $validated = $request->validate([
+            'room_id' => 'required|exists:seat_plan_rooms,id',
+            'col_no' => 'required|integer',
+            'bench_no' => 'required|integer',
+            'position' => 'required|in:Left,Right,L,R',
+        ]);
+
+        // Normalize position
+        $position = in_array($validated['position'], ['L', 'Left']) ? 'Left' : 'Right';
+
+        SeatPlanAllocation::where('room_id', $validated['room_id'])
+            ->where('col_no', $validated['col_no'])
+            ->where('bench_no', $validated['bench_no'])
+            ->where('position', $position)
+            ->delete();
+
+        return response()->json(['success' => true, 'message' => 'Seat cleared successfully']);
     }
 
     // Print Seat Plan

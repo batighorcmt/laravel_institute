@@ -6,19 +6,6 @@
   <h1 class="m-0"><i class="fas fa-user-tie mr-1"></i> শিক্ষক ব্যবস্থাপনা</h1>
 </div>
 
-@if(session('success'))
-  <div class="alert alert-success alert-dismissible fade show">
-    <button type="button" class="close" data-dismiss="alert">&times;</button>
-    <i class="fas fa-check-circle"></i> {{ session('success') }}
-  </div>
-@endif
-
-@if(session('error'))
-  <div class="alert alert-danger alert-dismissible fade show">
-    <button type="button" class="close" data-dismiss="alert">&times;</button>
-    <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
-  </div>
-@endif
 
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
@@ -72,6 +59,10 @@
                       <span class="badge badge-info">Principal</span>
                     @else
                       <a class="btn btn-sm btn-outline-secondary" href="{{ route('principal.institute.teachers.edit', [$school, $t->id]) }}">সম্পাদনা</a>
+                      <form action="{{ route('principal.institute.teachers.reset-password', [$school, $t->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('পাসওয়ার্ড রিসেট করতে নিশ্চিত?');">
+                        @csrf
+                        <button class="btn btn-sm btn-outline-warning"><i class="fas fa-key"></i> রিসেট</button>
+                      </form>
                       <form action="{{ route('principal.institute.teachers.destroy', [$school, $t->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('মুছতে নিশ্চিত?');">
                         @csrf @method('DELETE')
                         <button class="btn btn-sm btn-outline-danger">মুছুন</button>

@@ -9,24 +9,11 @@
   </div>
 </div>
 
-@if(session('success'))
-  <div class="alert alert-success alert-dismissible fade show">
-    <button type="button" class="close" data-dismiss="alert">&times;</button>
-    <i class="fas fa-check-circle"></i> {{ session('success') }}
-  </div>
-@endif
-
-@if(session('error'))
-  <div class="alert alert-danger alert-dismissible fade show">
-    <button type="button" class="close" data-dismiss="alert">&times;</button>
-    <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
-  </div>
-@endif
+@php /* Inline session alerts removed; toastr popup will display messages */ @endphp
 
 @if($errors->any())
   <div class="alert alert-danger alert-dismissible fade show">
     <button type="button" class="close" data-dismiss="alert">&times;</button>
-    <strong>দয়া করে নিম্নলিখিত ত্রুটি সংশোধন করুন:</strong>
     <ul class="mb-0 mt-2">
       @foreach($errors->all() as $error)
         <li>{{ $error }}</li>

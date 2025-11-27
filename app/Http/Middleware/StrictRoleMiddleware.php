@@ -7,10 +7,10 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
 
-class RoleMiddleware
+class StrictRoleMiddleware
 {
     /**
-     * Handle an incoming request.
+     * Enforce the exact role (no super admin bypass), optionally scoped to a school.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      * @param  string  $role
@@ -23,26 +23,18 @@ class RoleMiddleware
         }
 
         $user = Auth::user();
-        
-        // For super admin, allow access to everything
-        if ($user->isSuperAdmin()) {
-            return $next($request);
-        }
 
-        // Check if user has the required role
         $schoolId = null;
         if ($schoolRequired) {
             $schoolParam = $request->route('school');
             if ($schoolParam) {
                 if (is_object($schoolParam)) {
-                    // Support Route Model Binding objects
                     if (method_exists($schoolParam, 'getKey')) {
                         $schoolId = $schoolParam->getKey();
                     } elseif (property_exists($schoolParam, 'id')) {
                         $schoolId = $schoolParam->id;
                     }
                 } else {
-                    // Scalar route parameter
                     $schoolId = $schoolParam;
                 }
             }
@@ -52,7 +44,6 @@ class RoleMiddleware
             abort(403, 'Insufficient permissions.');
         }
 
-        // Store current school context for the request
         if ($schoolId) {
             $request->attributes->set('current_school_id', $schoolId);
         }

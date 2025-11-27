@@ -267,4 +267,25 @@ class TeacherController extends Controller
             return redirect()->back()->with('error','মুছতে ব্যর্থ: '.$e->getMessage());
         }
     }
+
+    public function resetPassword(School $school, Teacher $teacher)
+    {
+        if ($teacher->school_id !== $school->id) abort(404);
+        try {
+            // Generate new 6-digit password
+            $plainPassword = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            // Update user hashed password
+            if ($teacher->user) {
+                $teacher->user->password = bcrypt($plainPassword);
+                $teacher->user->password_changed_at = now();
+                $teacher->user->save();
+            }
+            // Store plain password on teacher profile for principal visibility
+            $teacher->plain_password = $plainPassword;
+            $teacher->save();
+            return redirect()->back()->with('success','পাসওয়ার্ড রিসেট হয়েছে');
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error','রিসেট ব্যর্থ: '.$e->getMessage());
+        }
+    }
 }

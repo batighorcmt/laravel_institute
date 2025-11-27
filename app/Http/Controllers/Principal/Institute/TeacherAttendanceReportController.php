@@ -18,10 +18,18 @@ class TeacherAttendanceReportController extends Controller
         // Get all teachers for this school
         $teachers = Teacher::where('school_id', $school->id)
             ->where('status', 'active')
-            ->with(['user', 'teacherAttendances' => function($query) use ($date, $school) {
+            ->with([
+                'user',
+                'teacherAttendances' => function($query) use ($date, $school) {
                 $query->where('date', $date)
                       ->where('school_id', $school->id);
-            }])
+                },
+                'teacherLeaves' => function($q) use ($date) {
+                    $q->where('status','approved')
+                      ->whereDate('start_date','<=',$date)
+                      ->whereDate('end_date','>=',$date);
+                }
+            ])
             ->orderBy('serial_number')
             ->get();
         
@@ -34,14 +42,27 @@ class TeacherAttendanceReportController extends Controller
         $startDate = Carbon::parse($month)->startOfMonth();
         $endDate = Carbon::parse($month)->endOfMonth();
         
-        // Get all teachers for this school with their attendances
+        // Get all teachers for this school with their attendances and approved leaves for the month
         $teachers = Teacher::where('school_id', $school->id)
             ->where('status', 'active')
-            ->with(['user', 'teacherAttendances' => function($query) use ($startDate, $endDate, $school) {
-                $query->where('school_id', $school->id)
-                      ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
-                      ->orderBy('date');
-            }])
+            ->with([
+                'user',
+                'teacherAttendances' => function($query) use ($startDate, $endDate, $school) {
+                    $query->where('school_id', $school->id)
+                          ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                          ->orderBy('date');
+                },
+                'teacherLeaves' => function($q) use ($startDate, $endDate) {
+                    $q->where('status','approved')
+                      ->where(function($w) use ($startDate,$endDate){
+                          $w->whereBetween('start_date', [$startDate, $endDate])
+                            ->orWhereBetween('end_date', [$startDate, $endDate])
+                            ->orWhere(function($x) use ($startDate,$endDate){
+                                $x->where('start_date','<=',$startDate)->where('end_date','>=',$endDate);
+                            });
+                      });
+                }
+            ])
             ->orderBy('serial_number')
             ->get();
         
@@ -63,10 +84,18 @@ class TeacherAttendanceReportController extends Controller
         // Get all teachers for this school
         $teachers = Teacher::where('school_id', $school->id)
             ->where('status', 'active')
-            ->with(['user', 'teacherAttendances' => function($query) use ($date, $school) {
-                $query->where('date', $date)
-                      ->where('school_id', $school->id);
-            }])
+            ->with([
+                'user',
+                'teacherAttendances' => function($query) use ($date, $school) {
+                    $query->where('date', $date)
+                          ->where('school_id', $school->id);
+                },
+                'teacherLeaves' => function($q) use ($date) {
+                    $q->where('status','approved')
+                      ->whereDate('start_date','<=',$date)
+                      ->whereDate('end_date','>=',$date);
+                }
+            ])
             ->orderBy('serial_number')
             ->get();
         
@@ -79,14 +108,27 @@ class TeacherAttendanceReportController extends Controller
         $startDate = Carbon::parse($month)->startOfMonth();
         $endDate = Carbon::parse($month)->endOfMonth();
         
-        // Get all teachers for this school with their attendances
+        // Get all teachers for this school with their attendances and approved leaves for the month
         $teachers = Teacher::where('school_id', $school->id)
             ->where('status', 'active')
-            ->with(['user', 'teacherAttendances' => function($query) use ($startDate, $endDate, $school) {
-                $query->where('school_id', $school->id)
-                      ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
-                      ->orderBy('date');
-            }])
+            ->with([
+                'user',
+                'teacherAttendances' => function($query) use ($startDate, $endDate, $school) {
+                    $query->where('school_id', $school->id)
+                          ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                          ->orderBy('date');
+                },
+                'teacherLeaves' => function($q) use ($startDate, $endDate) {
+                    $q->where('status','approved')
+                      ->where(function($w) use ($startDate,$endDate){
+                          $w->whereBetween('start_date', [$startDate, $endDate])
+                            ->orWhereBetween('end_date', [$startDate, $endDate])
+                            ->orWhere(function($x) use ($startDate,$endDate){
+                                $x->where('start_date','<=',$startDate)->where('end_date','>=',$endDate);
+                            });
+                      });
+                }
+            ])
             ->orderBy('serial_number')
             ->get();
         

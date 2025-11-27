@@ -1,16 +1,16 @@
 @extends('layouts.admin')
 
-@section('title', 'হোমওয়ার্ক')
+@section('title', 'Homework')
 
 @section('content')
 <div class="d-flex justify-content-between mb-3">
-    <h1 class="m-0">হোমওয়ার্ক</h1>
+    <h1 class="m-0">Homework</h1>
     <div>
         <a href="{{ route('teacher.institute.homework.create', $school) }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> নতুন হোমওয়ার্ক
+            <i class="fas fa-plus"></i> New Homework
         </a>
         <a href="{{ route('teacher.dashboard') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> ড্যাশবোর্ড
+            <i class="fas fa-arrow-left"></i> Dashboard
         </a>
     </div>
 </div>
@@ -29,7 +29,7 @@
             <div class="row">
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label>তারিখ</label>
+                        <label>Date</label>
                         <input type="date" name="date" class="form-control" value="{{ $date }}">
                     </div>
                 </div>
@@ -37,7 +37,7 @@
                     <div class="form-group">
                         <label>&nbsp;</label>
                         <button type="submit" class="btn btn-primary btn-block">
-                            <i class="fas fa-search"></i> সার্চ করুন
+                            <i class="fas fa-search"></i> Search
                         </button>
                     </div>
                 </div>
@@ -50,7 +50,7 @@
 <div class="card">
     <div class="card-header bg-primary text-white">
         <h3 class="card-title mb-0">
-            <i class="fas fa-book"></i> হোমওয়ার্ক তালিকা ({{ \Carbon\Carbon::parse($date)->format('d/m/Y') }})
+            <i class="fas fa-book"></i> Homework List ({{ \Carbon\Carbon::parse($date)->format('d/m/Y') }})
         </h3>
     </div>
     <div class="card-body">
@@ -60,11 +60,11 @@
                     <thead>
                         <tr>
                             <th width="50">#</th>
-                            <th>শ্রেণি/শাখা</th>
-                            <th>বিষয়</th>
-                            <th>শিরোনাম</th>
-                            <th>জমা দেওয়ার তারিখ</th>
-                            <th width="150">অ্যাকশন</th>
+                            <th>Class/Section</th>
+                            <th>Subject</th>
+                            <th>Title</th>
+                            <th>Submission Date</th>
+                            <th width="150">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -74,15 +74,15 @@
                                 <td>{{ $homework->schoolClass->name }} - {{ $homework->section->name }}</td>
                                 <td>{{ $homework->subject->name }}</td>
                                 <td>{{ $homework->title }}</td>
-                                <td>{{ $homework->submission_date ? $homework->submission_date->format('d/m/Y') : 'নির্ধারিত নয়' }}</td>
+                                <td>{{ $homework->submission_date ? $homework->submission_date->format('d/m/Y') : 'Not set' }}</td>
                                 <td>
-                                    <a href="{{ route('teacher.institute.homework.show', [$school, $homework]) }}" class="btn btn-sm btn-info" title="বিস্তারিত">
+                                    <a href="{{ route('teacher.institute.homework.show', [$school, $homework]) }}" class="btn btn-sm btn-info" title="Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <form action="{{ route('teacher.institute.homework.destroy', [$school, $homework]) }}" method="POST" class="d-inline" onsubmit="return confirm('আপনি কি নিশ্চিত?')">
+                                    <form action="{{ route('teacher.institute.homework.destroy', [$school, $homework]) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" title="মুছুন">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
@@ -94,7 +94,7 @@
             </div>
         @else
             <div class="alert alert-info text-center">
-                <i class="fas fa-info-circle"></i> এই তারিখে কোনো হোমওয়ার্ক নেই।
+                <i class="fas fa-info-circle"></i> No homework on this date.
             </div>
         @endif
     </div>

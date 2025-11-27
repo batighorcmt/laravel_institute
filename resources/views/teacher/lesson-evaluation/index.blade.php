@@ -1,18 +1,18 @@
 @extends('layouts.admin')
 
-@section('title', 'লেসন ইভেলুয়েশন')
+@section('title', 'Lesson Evaluation')
 
 @section('content')
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0">লেসন ইভেলুয়েশন</h1>
+                <h1 class="m-0">Lesson Evaluation</h1>
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="{{ route('teacher.dashboard') }}">ড্যাশবোর্ড</a></li>
-                    <li class="breadcrumb-item active">লেসন ইভেলুয়েশন</li>
+                    <li class="breadcrumb-item"><a href="{{ route('teacher.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Lesson Evaluation</li>
                 </ol>
             </div>
         </div>
@@ -25,27 +25,27 @@
             <div class="card-header bg-primary">
                 <h3 class="card-title">
                     <i class="fas fa-calendar-day mr-2"></i>
-                    আজকের ক্লাস তালিকা ({{ $today->format('d/m/Y') }})
+                    Today's Classes ({{ \Carbon\Carbon::parse($today)->format('d/m/Y') }})
                 </h3>
             </div>
             <div class="card-body">
                 @if($routineEntries->isEmpty())
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle mr-2"></i>
-                        আজ আপনার কোন ক্লাস নেই।
+                        You have no classes today.
                     </div>
                 @else
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
                             <thead class="thead-light">
                                 <tr>
-                                    <th width="10%">পিরিয়ড</th>
-                                    <th width="15%">সময়</th>
-                                    <th width="15%">শ্রেণি</th>
-                                    <th width="10%">শাখা</th>
-                                    <th width="20%">বিষয়</th>
-                                    <th width="15%">অবস্থা</th>
-                                    <th width="15%" class="text-center">কার্যক্রম</th>
+                                    <th width="10%">Period</th>
+                                    <th width="15%">Time</th>
+                                    <th width="15%">Class</th>
+                                    <th width="10%">Section</th>
+                                    <th width="20%">Subject</th>
+                                    <th width="15%">Status</th>
+                                    <th width="15%" class="text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -55,7 +55,7 @@
                                     @endphp
                                     <tr class="{{ $isEvaluated ? 'table-success' : '' }}">
                                         <td>
-                                            <span class="badge badge-secondary">পিরিয়ড {{ $entry->period_number }}</span>
+                                            <span class="badge badge-secondary">Period {{ $entry->period_number }}</span>
                                         </td>
                                         <td>
                                             @if($entry->start_time && $entry->end_time)
@@ -65,7 +65,7 @@
                                                     {{ Carbon\Carbon::parse($entry->end_time)->format('h:i A') }}
                                                 </small>
                                             @else
-                                                <small class="text-muted">সময় নির্ধারিত নয়</small>
+                                                <small class="text-muted">Time not set</small>
                                             @endif
                                         </td>
                                         <td>
@@ -81,12 +81,12 @@
                                             @if($isEvaluated)
                                                 <span class="badge badge-success">
                                                     <i class="fas fa-check-circle mr-1"></i>
-                                                    মূল্যায়ন সম্পন্ন
+                                                    Evaluated
                                                 </span>
                                             @else
                                                 <span class="badge badge-warning">
                                                     <i class="fas fa-clock mr-1"></i>
-                                                    মূল্যায়ন বাকি
+                                                    Pending
                                                 </span>
                                             @endif
                                         </td>
@@ -95,13 +95,13 @@
                                                 <a href="{{ route('teacher.institute.lesson-evaluation.create', ['school' => $school->id, 'routine_entry' => $entry->id]) }}" 
                                                    class="btn btn-sm btn-info">
                                                     <i class="fas fa-eye mr-1"></i>
-                                                    দেখুন/আপডেট
+                                                    View/Update
                                                 </a>
                                             @else
                                                 <a href="{{ route('teacher.institute.lesson-evaluation.create', ['school' => $school->id, 'routine_entry' => $entry->id]) }}" 
                                                    class="btn btn-sm btn-primary">
                                                     <i class="fas fa-clipboard-check mr-1"></i>
-                                                    মূল্যায়ন করুন
+                                                    Evaluate
                                                 </a>
                                             @endif
                                         </td>
@@ -117,7 +117,7 @@
                                 <div class="info-box">
                                     <span class="info-box-icon bg-info"><i class="fas fa-chalkboard-teacher"></i></span>
                                     <div class="info-box-content">
-                                        <span class="info-box-text">মোট ক্লাস</span>
+                                        <span class="info-box-text">Total Classes</span>
                                         <span class="info-box-number">{{ $routineEntries->count() }}</span>
                                     </div>
                                 </div>
@@ -126,7 +126,7 @@
                                 <div class="info-box">
                                     <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
                                     <div class="info-box-content">
-                                        <span class="info-box-text">মূল্যায়ন সম্পন্ন</span>
+                                        <span class="info-box-text">Evaluated</span>
                                         <span class="info-box-number">{{ count($evaluatedIds) }}</span>
                                     </div>
                                 </div>
@@ -135,7 +135,7 @@
                                 <div class="info-box">
                                     <span class="info-box-icon bg-warning"><i class="fas fa-clock"></i></span>
                                     <div class="info-box-content">
-                                        <span class="info-box-text">মূল্যায়ন বাকি</span>
+                                        <span class="info-box-text">Pending</span>
                                         <span class="info-box-number">{{ $routineEntries->count() - count($evaluatedIds) }}</span>
                                     </div>
                                 </div>

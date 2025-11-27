@@ -1,10 +1,12 @@
 // AdminLTE 3.2 setup (jQuery + Bootstrap 4 + Popper + OverlayScrollbars)
 import $ from 'jquery';
-import 'popper.js';
-import 'bootstrap';
-import 'overlayscrollbars/js/jquery.overlayScrollbars.min.js';
-import 'admin-lte';
-import 'select2';
+// Load plugins after exposing jQuery globally to ensure they attach to the same instance
+const pluginsReady = Promise.all([
+    import('popper.js'),
+    import('bootstrap'),
+    import('admin-lte'),
+    import('select2/dist/js/select2.full')
+]);
 import toastr from 'toastr';
 import { Chart } from 'chart.js/auto';
 
@@ -14,9 +16,12 @@ window.toastr = toastr;
 window.Chart = Chart;
 
 // Expose jQuery globally (AdminLTE plugins expect window.$)
+pluginsReady.then(() => {
 $(function () {
-    // Bootstrap 4 tooltip init
-    $('[data-toggle="tooltip"]').tooltip();
+    // Bootstrap 4 tooltip init (guard if plugin present)
+    if ($.fn && $.fn.tooltip) {
+        $('[data-toggle="tooltip"]').tooltip();
+    }
 
     // Initialize Select2 on any .select2 elements
     if ($.fn.select2) {
@@ -39,4 +44,5 @@ $(function () {
         localStorage.setItem('theme', current);
         applyTheme(current);
     });
+});
 });

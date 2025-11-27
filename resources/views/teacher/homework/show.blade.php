@@ -1,12 +1,12 @@
 @extends('layouts.admin')
 
-@section('title', 'হোমওয়ার্ক বিস্তারিত')
+@section('title', 'Homework Details')
 
 @section('content')
 <div class="d-flex justify-content-between mb-3">
-    <h1 class="m-0">হোমওয়ার্ক বিস্তারিত</h1>
+    <h1 class="m-0">Homework Details</h1>
     <a href="{{ route('teacher.institute.homework.index', $school) }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> ফিরে যান
+        <i class="fas fa-arrow-left"></i> Back
     </a>
 </div>
 
@@ -21,15 +21,15 @@
             <div class="col-md-6">
                 <table class="table table-bordered">
                     <tr>
-                        <th width="40%">শ্রেণি</th>
+                        <th width="40%">Class</th>
                         <td>{{ $homework->schoolClass->name }}</td>
                     </tr>
                     <tr>
-                        <th>শাখা</th>
+                        <th>Section</th>
                         <td>{{ $homework->section->name }}</td>
                     </tr>
                     <tr>
-                        <th>বিষয়</th>
+                        <th>Subject</th>
                         <td>{{ $homework->subject->name }}</td>
                     </tr>
                 </table>
@@ -37,15 +37,15 @@
             <div class="col-md-6">
                 <table class="table table-bordered">
                     <tr>
-                        <th width="40%">দেওয়ার তারিখ</th>
+                        <th width="40%">Assigned Date</th>
                         <td>{{ $homework->homework_date->format('d/m/Y') }}</td>
                     </tr>
                     <tr>
-                        <th>জমা দেওয়ার তারিখ</th>
+                        <th>Submission Date</th>
                         <td>{{ $homework->submission_date ? $homework->submission_date->format('d/m/Y') : 'নির্ধারিত নয়' }}</td>
                     </tr>
                     <tr>
-                        <th>শিক্ষক</th>
+                        <th>Teacher</th>
                         <td>{{ $homework->teacher->first_name_bn ?? $homework->teacher->first_name }}</td>
                     </tr>
                 </table>
@@ -53,7 +53,7 @@
         </div>
 
         <div class="mt-4">
-            <h4>বিস্তারিত:</h4>
+            <h4>Details:</h4>
             <div class="border p-3 bg-light">
                 {!! nl2br(e($homework->description)) !!}
             </div>
@@ -61,9 +61,9 @@
 
         @if($homework->attachment)
             <div class="mt-4">
-                <h4>সংযুক্তি:</h4>
+                <h4>Attachment:</h4>
                 <a href="{{ asset('storage/' . $homework->attachment) }}" target="_blank" class="btn btn-info">
-                    <i class="fas fa-download"></i> ফাইল ডাউনলোড করুন
+                    <i class="fas fa-download"></i> Download File
                 </a>
             </div>
         @endif

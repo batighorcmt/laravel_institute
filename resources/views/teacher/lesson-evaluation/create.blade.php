@@ -1,28 +1,28 @@
 @extends('layouts.admin')
 
-@section('title', 'লেসন মূল্যায়ন করুন')
+@section('title', 'Lesson Evaluation')
 
 @section('content')
 <div class="d-flex justify-content-between mb-3">
     <h1 class="m-0">
         @if($lessonEvaluation)
-            লেসন মূল্যায়ন আপডেট করুন
+            Update Lesson Evaluation
         @else
-            লেসন মূল্যায়ন করুন
+            Perform Lesson Evaluation
         @endif
         @if($routineEntry)
             - {{ $routineEntry->class->name }} {{ $routineEntry->section->name }}
         @endif
     </h1>
     <a href="{{ route('teacher.institute.lesson-evaluation.index', $school) }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left mr-1"></i> ফিরে যান
+        <i class="fas fa-arrow-left mr-1"></i> Back
     </a>
 </div>
 
 @if($students->count() > 0)
     @if($lessonEvaluation)
         <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i> আপনি এই ক্লাসের মূল্যায়ন পূর্বে সম্পন্ন করেছেন। নিচের ফর্মে পরিবর্তন করে আপডেট করতে পারবেন।
+            <i class="fas fa-info-circle"></i> You already evaluated this class. You can update below.
         </div>
     @endif
 
@@ -39,21 +39,21 @@
         <!-- Class Information Card -->
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-info-circle mr-2"></i>ক্লাসের তথ্য</h5>
+                <h5 class="mb-0"><i class="fas fa-info-circle mr-2"></i>Class Information</h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-3">
-                        <strong>শ্রেণি:</strong> {{ $routineEntry->class->name ?? 'N/A' }}
+                        <strong>Class:</strong> {{ $routineEntry->class->name ?? 'N/A' }}
                     </div>
                     <div class="col-md-3">
-                        <strong>শাখা:</strong> {{ $routineEntry->section->name ?? 'N/A' }}
+                        <strong>Section:</strong> {{ $routineEntry->section->name ?? 'N/A' }}
                     </div>
                     <div class="col-md-3">
-                        <strong>বিষয়:</strong> {{ $routineEntry->subject->name ?? 'N/A' }}
+                        <strong>Subject:</strong> {{ $routineEntry->subject->name ?? 'N/A' }}
                     </div>
                     <div class="col-md-3">
-                        <strong>পিরিয়ড:</strong> {{ $routineEntry->period_number ?? 'N/A' }}
+                        <strong>Period:</strong> {{ $routineEntry->period_number ?? 'N/A' }}
                         @if($routineEntry->start_time && $routineEntry->end_time)
                             <br><small class="text-muted">({{ \Carbon\Carbon::parse($routineEntry->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($routineEntry->end_time)->format('h:i A') }})</small>
                         @endif
@@ -61,9 +61,9 @@
                 </div>
                 <div class="row mt-2">
                     <div class="col-md-12">
-                        <strong>মন্তব্য/নোট:</strong>
+                        <strong>Notes:</strong>
                         <textarea name="notes" class="form-control mt-1 @error('notes') is-invalid @enderror" rows="2" 
-                                  placeholder="পাঠের বিষয়বস্তু বা অন্যান্য মন্তব্য লিখুন...">{{ old('notes', $lessonEvaluation->notes ?? '') }}</textarea>
+                                  placeholder="Write lesson notes or comments...">{{ old('notes', $lessonEvaluation->notes ?? '') }}</textarea>
                         @error('notes')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -75,11 +75,11 @@
         <!-- Top Submit Button -->
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4>
-                শিক্ষার্থী তালিকা
+                Students
                 <small class="text-muted">({{ now()->format('d/m/Y') }})</small>
             </h4>
             <button type="submit" class="btn btn-success">
-                <i class="fas fa-save"></i> {{ $lessonEvaluation ? 'আপডেট করুন' : 'সংরক্ষণ করুন' }}
+                <i class="fas fa-save"></i> {{ $lessonEvaluation ? 'Update' : 'Save' }}
             </button>
         </div>
 
@@ -89,27 +89,27 @@
                     <table class="table table-bordered table-striped evaluation-table">
                         <thead>
                             <tr>
-                                <th width="60">রোল</th>
-                                <th>শিক্ষার্থীর নাম</th>
+                                <th width="60">Roll</th>
+                                <th>Student Name</th>
                                 <!-- Evaluation Header Buttons -->
                                 <th class="radio-cell">
                                     <button type="button" class="btn btn-evaluation-header" data-status="completed" id="select-all-completed">
-                                        <i class="fas fa-check-circle"></i><br>পড়া হয়েছে
+                                        <i class="fas fa-check-circle"></i><br>Completed
                                     </button>
                                 </th>
                                 <th class="radio-cell">
                                     <button type="button" class="btn btn-evaluation-header" data-status="partial" id="select-all-partial">
-                                        <i class="fas fa-adjust"></i><br>আংশিক
+                                        <i class="fas fa-adjust"></i><br>Partial
                                     </button>
                                 </th>
                                 <th class="radio-cell">
                                     <button type="button" class="btn btn-evaluation-header" data-status="not_done" id="select-all-not_done">
-                                        <i class="fas fa-times-circle"></i><br>পড়া হয়নি
+                                        <i class="fas fa-times-circle"></i><br>Not Done
                                     </button>
                                 </th>
                                 <th class="radio-cell">
                                     <button type="button" class="btn btn-evaluation-header" data-status="absent" id="select-all-absent">
-                                        <i class="fas fa-user-slash"></i><br>অনুপস্থিত
+                                        <i class="fas fa-user-slash"></i><br>Absent
                                     </button>
                                 </th>
                             </tr>
@@ -169,13 +169,13 @@
         <!-- Bottom Submit Button -->
         <div class="sticky-submit text-right mt-2">
             <button type="submit" class="btn btn-success btn-lg">
-                <i class="fas fa-save"></i> {{ $lessonEvaluation ? 'আপডেট করুন' : 'সংরক্ষণ করুন' }}
+                <i class="fas fa-save"></i> {{ $lessonEvaluation ? 'Update' : 'Save' }}
             </button>
         </div>
     </form>
 @else
     <div class="alert alert-info text-center">
-        <i class="fas fa-info-circle"></i> এই ক্লাস এবং শাখায় কোনো শিক্ষার্থী নেই।
+        <i class="fas fa-info-circle"></i> No students in this class/section.
     </div>
 @endif
 
@@ -386,7 +386,7 @@ tbody tr.eval-row-absent { background-color:#e9ecef; }
             updateRowStyles();
             if (!allOk) {
                 e.preventDefault();
-                alert('সকল শিক্ষার্থীর জন্য মূল্যায়ন নির্বাচন বাধ্যতামূলক।');
+                alert('Selection is required for all students.');
             }
         });
     }

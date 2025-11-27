@@ -1,24 +1,18 @@
 @extends('layouts.admin')
 
-@section('title', 'আমার হাজিরার রেকর্ড')
+@section('title', 'My Attendance Records')
 
 @section('content')
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0">আমার হাজিরার রেকর্ড</h1>
+                <h1 class="m-0">My Attendance Records</h1>
             </div>
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    @if(auth()->user()->isPrincipal())
-                        <li class="breadcrumb-item"><a href="{{ route('principal.dashboard') }}">ড্যাশবোর্ড</a></li>
-                    @else
-                        <li class="breadcrumb-item"><a href="{{ route('teacher.dashboard') }}">ড্যাশবোর্ড</a></li>
-                    @endif
-                    <li class="breadcrumb-item"><a href="{{ route('teacher.attendance.index') }}">হাজিরা</a></li>
-                    <li class="breadcrumb-item active">রেকর্ড</li>
-                </ol>
+            <div class="col-sm-6 text-right">
+                <a href="{{ route('teacher.attendance.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-angle-left"></i> Back to Attendance
+                </a>
             </div>
         </div>
     </div>
@@ -30,7 +24,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">চলতি মাসের হাজিরা - {{ \Carbon\Carbon::now()->format('F Y') }}</h3>
+                        <h3 class="card-title">This Month's Attendance - {{ \Carbon\Carbon::now()->format('F Y') }}</h3>
                     </div>
                     <div class="card-body">
                         @if ($attendances->count() > 0)
@@ -38,12 +32,12 @@
                                 <table class="table table-bordered table-striped">
                                     <thead>
                                         <tr>
-                                            <th>তারিখ</th>
-                                            <th>চেক-ইন</th>
-                                            <th>চেক-আউট</th>
-                                            <th>মোট সময়</th>
-                                            <th>স্ট্যাটাস</th>
-                                            <th>ছবি</th>
+                                            <th>Date</th>
+                                            <th>Check-in</th>
+                                            <th>Check-out</th>
+                                            <th>Total Time</th>
+                                            <th>Status</th>
+                                            <th>Photos</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -73,35 +67,35 @@
                                                             $checkOut = \Carbon\Carbon::parse($attendance->check_out_time);
                                                             $diff = $checkIn->diff($checkOut);
                                                         @endphp
-                                                        {{ $diff->h }} ঘণ্টা {{ $diff->i }} মিনিট
+                                                        {{ $diff->h }}h {{ $diff->i }}m
                                                     @else
                                                         <span class="text-muted">-</span>
                                                     @endif
                                                 </td>
                                                 <td>
                                                     @if ($attendance->status === 'present')
-                                                        <span class="badge badge-success">উপস্থিত</span>
+                                                        <span class="badge badge-success">Present</span>
                                                     @elseif ($attendance->status === 'late')
-                                                        <span class="badge badge-warning">বিলম্ব</span>
+                                                        <span class="badge badge-warning">Late</span>
                                                     @elseif ($attendance->status === 'absent')
-                                                        <span class="badge badge-danger">অনুপস্থিত</span>
+                                                        <span class="badge badge-danger">Absent</span>
                                                     @else
-                                                        <span class="badge badge-info">হাফ ডে</span>
+                                                        <span class="badge badge-info">Half Day</span>
                                                     @endif
                                                 </td>
                                                 <td>
                                                     @if ($attendance->check_in_photo)
                                                         <button class="btn btn-xs btn-info view-photo" 
                                                                 data-photo="{{ asset('storage/' . $attendance->check_in_photo) }}"
-                                                                data-title="চেক-ইন ছবি">
-                                                            <i class="fas fa-image"></i> চেক-ইন
+                                                                data-title="Check-in Photo">
+                                                            <i class="fas fa-image"></i> Check-in
                                                         </button>
                                                     @endif
                                                     @if ($attendance->check_out_photo)
                                                         <button class="btn btn-xs btn-warning view-photo" 
                                                                 data-photo="{{ asset('storage/' . $attendance->check_out_photo) }}"
-                                                                data-title="চেক-আউট ছবি">
-                                                            <i class="fas fa-image"></i> চেক-আউট
+                                                                data-title="Check-out Photo">
+                                                            <i class="fas fa-image"></i> Check-out
                                                         </button>
                                                     @endif
                                                 </td>
@@ -116,7 +110,7 @@
                                 <div class="col-md-3">
                                     <div class="info-box bg-success">
                                         <div class="info-box-content">
-                                            <span class="info-box-text">মোট উপস্থিত</span>
+                                            <span class="info-box-text">Total Present</span>
                                             <span class="info-box-number">{{ $attendances->where('status', 'present')->count() }}</span>
                                         </div>
                                     </div>
@@ -124,7 +118,7 @@
                                 <div class="col-md-3">
                                     <div class="info-box bg-warning">
                                         <div class="info-box-content">
-                                            <span class="info-box-text">মোট বিলম্ব</span>
+                                            <span class="info-box-text">Total Late</span>
                                             <span class="info-box-number">{{ $attendances->where('status', 'late')->count() }}</span>
                                         </div>
                                     </div>
@@ -132,7 +126,7 @@
                                 <div class="col-md-3">
                                     <div class="info-box bg-danger">
                                         <div class="info-box-content">
-                                            <span class="info-box-text">মোট অনুপস্থিত</span>
+                                            <span class="info-box-text">Total Absent</span>
                                             <span class="info-box-number">{{ $attendances->where('status', 'absent')->count() }}</span>
                                         </div>
                                     </div>
@@ -140,7 +134,7 @@
                                 <div class="col-md-3">
                                     <div class="info-box bg-info">
                                         <div class="info-box-content">
-                                            <span class="info-box-text">মোট হাফ ডে</span>
+                                            <span class="info-box-text">Total Half Day</span>
                                             <span class="info-box-number">{{ $attendances->where('status', 'half_day')->count() }}</span>
                                         </div>
                                     </div>
@@ -148,7 +142,7 @@
                             </div>
                         @else
                             <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> এই মাসে কোনো হাজিরা রেকর্ড নেই।
+                                <i class="fas fa-info-circle"></i> No attendance records this month.
                             </div>
                         @endif
                     </div>

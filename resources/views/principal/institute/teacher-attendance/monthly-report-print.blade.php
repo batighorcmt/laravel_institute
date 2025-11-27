@@ -119,6 +119,13 @@
         print-color-adjust: exact; 
         font-weight: 600; 
     }
+    .att-leave {
+        background-color: #cfe2ff !important;
+        color: #084298;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-weight: 600;
+    }
     .att-holiday { 
         background-color: #ffe4b5 !important; 
         color: #cd853f; 
@@ -250,6 +257,10 @@
         <span class="legend-box att-holiday"></span>
         <span><strong>{{ $lang === 'bn' ? 'ছুটির দিন' : 'Holiday' }}</strong> ({{ $lang === 'bn' ? 'সাপ্তাহিক/বিশেষ' : 'weekly/special' }})</span>
     </div>
+    <div class="legend-item">
+        <span class="legend-box att-leave"></span>
+        <span><strong>{{ $lang === 'bn' ? 'অনুমোদিত ছুটি' : 'Approved Leave' }}</strong></span>
+    </div>
 </div>
 
 @if($teachers->count() > 0)
@@ -280,6 +291,7 @@
                     $presentCount = 0;
                     $lateCount = 0;
                     $absentCount = 0;
+                    $leaveCount = 0;
                     $teacherName = $lang === 'bn' 
                         ? trim(($teacher->first_name_bn ?? '') . ' ' . ($teacher->last_name_bn ?? '')) ?: $teacher->full_name
                         : $teacher->full_name;
@@ -318,8 +330,22 @@
                                     $cellClass = 'att-half';
                                 }
                             } else {
+                                // Check approved leave window for this teacher
+                                $onLeave = false;
+                                if (isset($teacher->teacherLeaves)) {
+                                    foreach ($teacher->teacherLeaves as $lv) {
+                                        if ($lv->status === 'approved') {
+                                            $onLeave = (\Carbon\Carbon::parse($lv->start_date)->format('Y-m-d') <= $dateStr)
+                                                && ($dateStr <= \Carbon\Carbon::parse($lv->end_date)->format('Y-m-d'));
+                                            if ($onLeave) break;
+                                        }
+                                    }
+                                }
                                 if ($isHoliday) {
                                     $cellClass = 'att-holiday';
+                                } elseif ($onLeave) {
+                                    $cellClass = 'att-leave';
+                                    $leaveCount++;
                                 } else {
                                     $cellClass = 'att-none';
                                     $absentCount++;
@@ -353,6 +379,8 @@
                             @else
                                 @if($isHoliday)
                                     <span style="font-size: {{ $pageSize === 'legal' ? '8px' : '7px' }}; font-weight: 600;">{{ $lang === 'bn' ? 'ছুটি' : 'Holiday' }}</span>
+                                @elseif(isset($onLeave) && $onLeave)
+                                    <span style="font-size: {{ $pageSize === 'legal' ? '8px' : '7px' }}; font-weight: 600;">{{ $lang === 'bn' ? 'ছুটি' : 'Leave' }}</span>
                                 @else
                                     <span style="color: #999;">-</span>
                                 @endif
@@ -363,6 +391,7 @@
                         <small>
                             <span style="color: #155724;">{{ $lang === 'bn' ? 'উ:' : 'P:' }}{{ $lang === 'bn' ? toBengaliNumber($presentCount) : $presentCount }}</span> | 
                             <span style="color: #856404;">{{ $lang === 'bn' ? 'বি:' : 'L:' }}{{ $lang === 'bn' ? toBengaliNumber($lateCount) : $lateCount }}</span> | 
+                            <span style="color: #084298;">{{ $lang === 'bn' ? 'ছু:' : 'LV:' }}{{ $lang === 'bn' ? toBengaliNumber($leaveCount ?? 0) : ($leaveCount ?? 0) }}</span> | 
                             <span style="color: #721c24;">{{ $lang === 'bn' ? 'অ:' : 'A:' }}{{ $lang === 'bn' ? toBengaliNumber($absentCount) : $absentCount }}</span>
                         </small>
                     </td>

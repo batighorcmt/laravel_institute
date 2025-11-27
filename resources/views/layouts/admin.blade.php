@@ -131,7 +131,7 @@
 
             <ul class="navbar-nav ml-auto align-items-center">
                 <li class="nav-item mr-2">
-                    <button id="themeToggle" class="btn btn-outline-secondary" title="ডার্ক/লাইট" data-toggle="tooltip">
+                    <button id="themeToggle" class="btn btn-outline-secondary" title="Dark/Light" data-toggle="tooltip">
                         <i class="fas fa-adjust"></i>
                     </button>
                 </li>
@@ -149,6 +149,10 @@
                         <i class="far fa-user"></i> {{ auth()->user()->name ?? 'User' }}
                     </a>
                     <div class="dropdown-menu dropdown-menu-right">
+                        <a href="{{ route('profile.show') }}" class="dropdown-item">
+                            <i class="fas fa-id-card mr-2"></i> Profile
+                        </a>
+                        <div class="dropdown-divider"></div>
                         <form method="POST" action="{{ route('logout') }}" class="px-3 py-2">
                             @csrf
                             <button type="submit" class="btn btn-outline-danger w-100">
@@ -163,9 +167,9 @@
 
     <!-- Sidebar -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
-        <a href="{{ route('superadmin.dashboard') }}" class="brand-link">
+        <a href="#" class="brand-link">
             <img src="{{ asset('images/logo.svg') }}" alt="Logo" class="brand-image img-circle elevation-3" width="33" height="33" style="opacity:.9">
-            <span class="brand-text font-weight-light">School Management</span>
+            <span class="brand-text font-weight-light">Batighor EIMS</span>
         </a>
         <div class="sidebar">
             <nav class="mt-2">
@@ -226,8 +230,10 @@
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item"><a href="{{ route('teacher.attendance.index') }}" class="nav-link {{ request()->routeIs('teacher.attendance.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>আমার হাজিরা</p></a></li>
                                     <li class="nav-item"><a href="{{ route('teacher.attendance.my-attendance') }}" class="nav-link {{ request()->routeIs('teacher.attendance.my-attendance') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>হাজিরার রেকর্ড</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('teacher.leave.index') }}" class="nav-link {{ request()->routeIs('teacher.leave.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>আমার ছুটি</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.teacher-attendance.reports.daily', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teacher-attendance.reports.daily') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>দৈনিক রিপোর্ট</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.teacher-attendance.reports.monthly', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teacher-attendance.reports.monthly') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>মাসিক রিপোর্ট</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.teacher-leaves.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teacher-leaves.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Teacher Leaves</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.teacher-attendance.settings.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teacher-attendance.settings.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Settings</p></a></li>
                                 </ul>
                             </li>
@@ -380,44 +386,55 @@
                             </a>
                         </li>
 
-                        {{-- Teacher Attendance --}}
+                        {{-- My Attendance History (records only) --}}
                         <li class="nav-item">
                             <a href="{{ route('teacher.attendance.index') }}" class="nav-link {{ request()->routeIs('teacher.attendance.index') ? 'active' : '' }}">
-                                <i class="nav-icon fas fa-user-check"></i>
-                                <p>আমার হাজিরা</p>
-                            </a>
-                        </li>
-
-                        {{-- My Attendance History --}}
-                        <li class="nav-item">
-                            <a href="{{ route('teacher.attendance.my-attendance') }}" class="nav-link {{ request()->routeIs('teacher.attendance.my-attendance') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-history"></i>
-                                <p>হাজিরার রেকর্ড</p>
+                                <p>My Attendance</p>
                             </a>
                         </li>
 
-                        {{-- Lesson Evaluation --}}
-                        @if($u->primarySchool())
+                        {{-- Teacher Leave --}}
                         <li class="nav-item">
-                            <a href="{{ route('teacher.institute.lesson-evaluation.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.lesson-evaluation.*') ? 'active' : '' }}">
-                                <i class="nav-icon fas fa-clipboard-check"></i>
-                                <p>লেসন ইভেলুয়েশন</p>
+                            <a href="{{ route('teacher.leave.index') }}" class="nav-link {{ request()->routeIs('teacher.leave.index') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-plane-departure"></i>
+                                <p>My Leaves</p>
                             </a>
                         </li>
 
                         {{-- Student Attendance --}}
+                        @if($u->primarySchool())
                         <li class="nav-item">
                             <a href="{{ route('teacher.institute.attendance.class.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.attendance.class.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-user-check"></i>
-                                <p>ছাত্র-ছাত্রী হাজিরা</p>
+                                <p>Student Attendance</p>
                             </a>
                         </li>
-
-                        {{-- Homework --}}
                         <li class="nav-item">
                             <a href="{{ route('teacher.institute.homework.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.homework.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-book-reader"></i>
-                                <p>হোমওয়ার্ক</p>
+                                <p>Homework</p>
+                            </a>
+                        </li>
+                        {{-- Lesson Evaluation --}}
+                        <li class="nav-item">
+                            <a href="{{ route('teacher.institute.lesson-evaluation.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.lesson-evaluation.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-clipboard-check"></i>
+                                <p>Lesson Evaluation</p>
+                            </a>
+                        </li>
+
+                        {{-- Directories --}}
+                        <li class="nav-item">
+                            <a href="{{ route('teacher.institute.directory.students', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.directory.students*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-users"></i>
+                                <p>Students</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('teacher.institute.directory.teachers', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.directory.teachers') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-chalkboard-teacher"></i>
+                                <p>Teachers</p>
                             </a>
                         </li>
                         @endif

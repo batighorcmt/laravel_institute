@@ -54,6 +54,11 @@ class Teacher extends Model
         return $this->hasMany(TeacherAttendance::class, 'user_id', 'user_id');
     }
 
+    public function teacherLeaves(): HasMany
+    {
+        return $this->hasMany(TeacherLeave::class);
+    }
+
     // Accessor for full name
     public function getFullNameAttribute(): string
     {

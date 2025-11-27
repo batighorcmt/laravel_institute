@@ -1,12 +1,12 @@
 @extends('layouts.admin')
 
-@section('title', 'নতুন হোমওয়ার্ক')
+@section('title', 'New Homework')
 
 @section('content')
 <div class="d-flex justify-content-between mb-3">
-    <h1 class="m-0">নতুন হোমওয়ার্ক যুক্ত করুন</h1>
+    <h1 class="m-0">Add New Homework</h1>
     <a href="{{ route('teacher.institute.homework.index', $school) }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> ফিরে যান
+        <i class="fas fa-arrow-left"></i> Back
     </a>
 </div>
 
@@ -23,7 +23,7 @@
 <div class="card">
     <div class="card-header bg-primary text-white">
         <h3 class="card-title mb-0">
-            <i class="fas fa-book"></i> হোমওয়ার্ক তথ্য
+            <i class="fas fa-book"></i> Homework Information
         </h3>
     </div>
     <div class="card-body">
@@ -33,9 +33,9 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label>ক্লাস রুটিন থেকে নির্বাচন করুন <span class="text-danger">*</span></label>
+                        <label>Select from Class Routine <span class="text-danger">*</span></label>
                         <select name="routine_entry" id="routine_entry" class="form-control" required>
-                            <option value="">-- নির্বাচন করুন --</option>
+                            <option value="">-- Select --</option>
                             @foreach($routineEntries as $entry)
                                 <option value="{{ $entry->id }}" 
                                     data-class="{{ $entry->class_id }}"
@@ -51,14 +51,14 @@
 
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label>হোমওয়ার্ক দেওয়ার তারিখ <span class="text-danger">*</span></label>
+                        <label>Homework Date <span class="text-danger">*</span></label>
                         <input type="date" name="homework_date" class="form-control" value="{{ old('homework_date', \Carbon\Carbon::today()->format('Y-m-d')) }}" required readonly style="background-color: #e9ecef;">
                     </div>
                 </div>
 
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label>জমা দেওয়ার তারিখ</label>
+                        <label>Submission Date</label>
                         <input type="date" name="submission_date" class="form-control" value="{{ old('submission_date') }}" min="{{ \Carbon\Carbon::tomorrow()->format('Y-m-d') }}">
                     </div>
                 </div>
@@ -69,24 +69,24 @@
             <input type="hidden" name="subject_id" id="subject_id" value="{{ $routineEntry->subject_id ?? old('subject_id') }}">
 
             <div class="form-group">
-                <label>শিরোনাম <span class="text-danger">*</span></label>
-                <input type="text" name="title" class="form-control" value="{{ old('title') }}" placeholder="যেমন: গণিত বই পৃষ্ঠা ৫৬ অনুশীলনী ৩.১" required>
+                <label>Title <span class="text-danger">*</span></label>
+                <input type="text" name="title" class="form-control" value="{{ old('title') }}" placeholder="e.g., Math Book p.56 Exercise 3.1" required>
             </div>
 
             <div class="form-group">
-                <label>বিস্তারিত <span class="text-danger">*</span></label>
-                <textarea name="description" class="form-control" rows="5" placeholder="হোমওয়ার্কের বিস্তারিত লিখুন..." required>{{ old('description') }}</textarea>
+                <label>Description <span class="text-danger">*</span></label>
+                <textarea name="description" class="form-control" rows="5" placeholder="Write homework details..." required>{{ old('description') }}</textarea>
             </div>
 
             <div class="form-group">
-                <label>ফাইল সংযুক্ত করুন</label>
+                <label>Attach File</label>
                 <input type="file" name="attachment" class="form-control-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-                <small class="form-text text-muted">সর্বোচ্চ ৫MB (PDF, DOC, DOCX, JPG, PNG)</small>
+                <small class="form-text text-muted">Max 5MB (PDF, DOC, DOCX, JPG, PNG)</small>
             </div>
 
             <div class="text-right">
                 <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="fas fa-save"></i> সংরক্ষণ করুন
+                    <i class="fas fa-save"></i> Save
                 </button>
             </div>
         </form>

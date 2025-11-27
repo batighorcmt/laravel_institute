@@ -89,6 +89,7 @@
             @foreach($teachers as $index => $teacher)
                 @php
                     $attendance = $teacher->teacherAttendances->first();
+                    $onLeave = !$attendance && isset($teacher->teacherLeaves) && $teacher->teacherLeaves->count() > 0;
                 @endphp
                 @php
                     $teacherName = $lang === 'bn' 
@@ -145,6 +146,8 @@
                             @else
                                 <span class="badge badge-secondary">{{ $lang === 'bn' ? 'হাফ ডে' : 'Half Day' }}</span>
                             @endif
+                        @elseif($onLeave)
+                            <span class="badge" style="background-color:#cfe2ff;color:#084298;border:1px solid #b6d4fe;">{{ $lang === 'bn' ? 'ছুটি' : 'Leave' }}</span>
                         @else
                             <span class="badge badge-secondary">{{ $lang === 'bn' ? 'নেই' : 'None' }}</span>
                         @endif
@@ -157,12 +160,14 @@
                 @php
                     $presentCount = $teachers->filter(fn($t) => $t->teacherAttendances->first()?->status === 'present')->count();
                     $lateCount = $teachers->filter(fn($t) => $t->teacherAttendances->first()?->status === 'late')->count();
-                    $absentCount = $teachers->filter(fn($t) => !$t->teacherAttendances->first())->count();
+                    $leaveCount = $teachers->filter(fn($t) => !$t->teacherAttendances->first() && $t->teacherLeaves && $t->teacherLeaves->count() > 0)->count();
+                    $absentCount = $teachers->count() - ($presentCount + $lateCount + $leaveCount);
                 @endphp
                 <td colspan="5" style="text-align: right; padding-right: 15px;">{{ $lang === 'bn' ? 'সারসংক্ষেপ:' : 'Summary:' }}</td>
                 <td class="text-center">
                     <strong>{{ $lang === 'bn' ? 'উপস্থিত:' : 'Present:' }}</strong> {{ $lang === 'bn' ? toBengaliNumber($presentCount) : $presentCount }} |
                     <strong>{{ $lang === 'bn' ? 'বিলম্ব:' : 'Late:' }}</strong> {{ $lang === 'bn' ? toBengaliNumber($lateCount) : $lateCount }} |
+                    <strong>{{ $lang === 'bn' ? 'ছুটি:' : 'Leave:' }}</strong> {{ $lang === 'bn' ? toBengaliNumber($leaveCount) : $leaveCount }} |
                     <strong>{{ $lang === 'bn' ? 'অনুপস্থিত:' : 'Absent:' }}</strong> {{ $lang === 'bn' ? toBengaliNumber($absentCount) : $absentCount }}
                 </td>
             </tr>

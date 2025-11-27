@@ -97,6 +97,13 @@
     </div>
   </div>
 
+  @if($editing && isset($teacher->user) && $teacher->user->password_changed_at)
+    <div class="alert alert-warning mt-2">
+      <i class="fas fa-key mr-1"></i>
+      Password last changed: {{ $teacher->user->password_changed_at->format('d/m/Y h:i A') }}
+    </div>
+  @endif
+
   <div class="form-row">
     <div class="form-group col-md-6">
       <label>Academic Info</label>

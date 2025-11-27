@@ -11,7 +11,10 @@ use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\ParentController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Middleware\EnsureSuperAdmin;
+use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\StrictRoleMiddleware;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Principal\ShiftController as PrincipalShiftController;
 use App\Http\Controllers\Principal\SectionController as PrincipalSectionController;
 use App\Http\Controllers\Principal\GroupController as PrincipalGroupController;
@@ -88,30 +91,33 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
-    // Super Admin Routes
-    Route::prefix('superadmin')->name('superadmin.')->group(function () {
+    // User Profile
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+
+    // Super Admin Routes (fully protected)
+    Route::prefix('superadmin')->name('superadmin.')->middleware([EnsureSuperAdmin::class])->group(function () {
         Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
 
         // School CRUD - only super admin
-        Route::middleware([EnsureSuperAdmin::class])->group(function () {
             Route::resource('schools', SchoolController::class)->except(['show']);
             // Added explicit show route for viewing full school + principal details
             Route::get('schools/{school}', [SchoolController::class, 'show'])->name('schools.show');
             Route::get('schools/{school}/manage', [SchoolController::class, 'manage'])->name('schools.manage');
             // Reset principal password and show once to superadmin
             Route::post('schools/{school}/reset-password', [SchoolController::class, 'resetPassword'])->name('schools.reset-password');
-        });
     });
 
-    // Principal Routes
-    Route::prefix('principal')->name('principal.')->group(function () {
+    // Principal Routes (role-protected)
+    Route::prefix('principal')->name('principal.')->middleware(['role:principal'])->group(function () {
         Route::get('/dashboard', [PrincipalController::class, 'dashboard'])->name('dashboard');
         // Institute management for Principal
         Route::get('/institute', [PrincipalController::class, 'institute'])->name('institute');
         Route::get('/institute/{school}/manage', [PrincipalController::class, 'manageSchool'])->name('institute.manage');
 
         // Nested resources under a specific school
-        Route::prefix('institute/{school}')->name('institute.')->group(function () {
+        Route::prefix('institute/{school}')->name('institute.')->middleware(['role:principal,school'])->group(function () {
             // Class Routine
             Route::prefix('routine')->name('routine.')->group(function(){
                 Route::get('/', [PrincipalRoutineController::class,'panel'])->name('panel');
@@ -131,6 +137,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/{teacher}/edit', [PrincipalTeacherController::class,'edit'])->name('edit');
                 Route::put('/{teacher}', [PrincipalTeacherController::class,'update'])->name('update');
                 Route::delete('/{teacher}', [PrincipalTeacherController::class,'destroy'])->name('destroy');
+                Route::post('/{teacher}/reset-password', [PrincipalTeacherController::class,'resetPassword'])->name('reset-password');
             });
             // Attendance routes
             Route::prefix('attendance')->name('attendance.')->group(function () {
@@ -159,6 +166,13 @@ Route::middleware(['auth'])->group(function () {
                     Route::get('/monthly', [App\Http\Controllers\Principal\Institute\TeacherAttendanceReportController::class, 'monthlyReport'])->name('monthly');
                     Route::get('/monthly/print', [App\Http\Controllers\Principal\Institute\TeacherAttendanceReportController::class, 'monthlyReportPrint'])->name('monthly.print');
                 });
+            });
+
+            // Teacher Leaves (review by principal only; no super admin bypass)
+            Route::prefix('teacher-leaves')->name('teacher-leaves.')->middleware(['strict_role:principal,school'])->group(function () {
+                Route::get('/', [App\Http\Controllers\Principal\Institute\TeacherLeaveController::class, 'index'])->name('index');
+                Route::post('/{leave}/approve', [App\Http\Controllers\Principal\Institute\TeacherLeaveController::class, 'approve'])->name('approve');
+                Route::post('/{leave}/reject', [App\Http\Controllers\Principal\Institute\TeacherLeaveController::class, 'reject'])->name('reject');
             });
 
             // Admission settings and applications
@@ -399,8 +413,8 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    // Teacher Routes
-    Route::prefix('teacher')->name('teacher.')->group(function () {
+    // Teacher Routes (role-protected)
+    Route::prefix('teacher')->name('teacher.')->middleware(['role:teacher'])->group(function () {
         Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
         
         // Teacher Attendance
@@ -411,8 +425,15 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/my-attendance', [App\Http\Controllers\Teacher\AttendanceController::class, 'myAttendance'])->name('my-attendance');
         });
 
+        // Teacher Leaves
+        Route::prefix('leave')->name('leave.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Teacher\LeaveController::class, 'index'])->name('index');
+            Route::get('/apply', [App\Http\Controllers\Teacher\LeaveController::class, 'create'])->name('create');
+            Route::post('/apply', [App\Http\Controllers\Teacher\LeaveController::class, 'store'])->name('store');
+        });
+
         // School-specific teacher routes
-        Route::prefix('institute/{school}')->name('institute.')->group(function () {
+        Route::prefix('institute/{school}')->name('institute.')->middleware(['role:teacher,school'])->group(function () {
             // Student Attendance (Class/Section based)
             Route::prefix('attendance/class')->name('attendance.class.')->group(function () {
                 Route::get('/', [App\Http\Controllers\Teacher\StudentAttendanceController::class, 'index'])->name('index');
@@ -436,11 +457,18 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/{homework}', [App\Http\Controllers\Teacher\HomeworkController::class, 'show'])->name('show');
                 Route::delete('/{homework}', [App\Http\Controllers\Teacher\HomeworkController::class, 'destroy'])->name('destroy');
             });
+
+            // Directories (Students and Teachers)
+            Route::prefix('directory')->name('directory.')->group(function(){
+                Route::get('/students', [App\Http\Controllers\Teacher\DirectoryController::class, 'students'])->name('students');
+                Route::get('/students/{student}', [App\Http\Controllers\Teacher\DirectoryController::class, 'studentShow'])->name('students.show');
+                Route::get('/teachers', [App\Http\Controllers\Teacher\DirectoryController::class, 'teachers'])->name('teachers');
+            });
         });
     });
 
-    // Parent Routes
-    Route::prefix('parent')->name('parent.')->group(function () {
+    // Parent Routes (role-protected)
+    Route::prefix('parent')->name('parent.')->middleware(['role:parent'])->group(function () {
         Route::get('/dashboard', [ParentController::class, 'dashboard'])->name('dashboard');
     });
 });
