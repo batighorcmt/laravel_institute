@@ -64,4 +64,37 @@ class TeacherAttendanceController extends Controller
         return (new TeacherAttendanceResource($attendance))
             ->additional(['message' => 'Check-in saved']);
     }
+
+    public function checkout(Request $request)
+    {
+        $validated = $request->validate([
+            'lat' => ['nullable','numeric','between:-90,90'],
+            'lng' => ['nullable','numeric','between:-180,180'],
+            'photo' => ['nullable','image','max:2048'],
+            'remarks' => ['nullable','string','max:255'],
+        ]);
+        $user = $request->user();
+        $today = now()->toDateString();
+        $attendance = TeacherAttendance::where('user_id',$user->id)->where('date',$today)->first();
+        if (! $attendance) {
+            return response()->json(['message' => 'আজ কোনো check-in নেই'], 404);
+        }
+        if ($attendance->check_out_time) {
+            return (new TeacherAttendanceResource($attendance))
+                ->additional(['message' => 'ইতিমধ্যে check-out সম্পন্ন']);
+        }
+        $photoPath = null;
+        if ($request->hasFile('photo')) {
+            $photoPath = $request->file('photo')->store('teacher_attendance', 'public');
+        }
+        $attendance->update([
+            'check_out_time' => now()->toDateTimeString(),
+            'check_out_photo' => $photoPath,
+            'check_out_latitude' => $validated['lat'] ?? null,
+            'check_out_longitude' => $validated['lng'] ?? null,
+            'remarks' => $validated['remarks'] ?? $attendance->remarks,
+        ]);
+        return (new TeacherAttendanceResource($attendance))
+            ->additional(['message' => 'Check-out saved']);
+    }
 }
