@@ -135,4 +135,14 @@ class User extends Authenticatable
     {
         return $this->hasOne(Teacher::class);
     }
+
+    /**
+     * Return first active school id where user has 'teacher' role.
+     */
+    public function firstTeacherSchoolId(): ?int
+    {
+        return $this->activeSchoolRoles()
+            ->whereHas('role', function ($q) { $q->where('name','teacher'); })
+            ->value('school_id');
+    }
 }

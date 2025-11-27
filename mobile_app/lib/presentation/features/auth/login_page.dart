@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../data/auth/auth_repository.dart';
-import '../../routes/app_router.dart';
 import '../../state/auth_state.dart';
 import '../../../core/config/env.dart';
 
@@ -32,6 +32,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           key: _formKey,
           child: Column(
             children: [
+              // Note removed: all roles can log in now
+              const SizedBox(height: 8),
               TextFormField(
                 controller: _username,
                 decoration: const InputDecoration(labelText: 'Username/Email'),
@@ -85,7 +87,34 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       final ok = await ref
           .read(authProvider.notifier)
           .login(_username.text.trim(), _password.text);
-      if (ok && mounted) appRouter.go('/');
+      if (ok && mounted) {
+        // Optional: visual confirmation
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Login successful')));
+        // Route by role when available, else go to home
+        final profile = ref.read(authProvider).asData?.value;
+        final roles =
+            profile?.roles.map((r) => r.role.toLowerCase()).toList() ?? [];
+        if (roles.contains('teacher')) {
+          context.go('/teacher');
+        } else if (roles.contains('principal')) {
+          context.go('/principal');
+        } else if (roles.contains('parent')) {
+          context.go('/parent');
+        } else {
+          context.go('/');
+        }
+      } else if (!ok && mounted) {
+        final authValue = ref.read(authProvider);
+        final msg = authValue.hasError
+            ? authValue.error.toString()
+            : 'Login failed. Please check your credentials or network.';
+        setState(() => _error = msg);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
+      }
     } catch (e) {
       final msg = e.toString();
       setState(() => _error = msg);

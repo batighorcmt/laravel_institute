@@ -8,6 +8,10 @@ class DioClient {
   factory DioClient() => _instance;
   DioClient._internal();
 
+  // Ensure baseUrl always ends with a trailing slash for safe concatenation
+  String get _normalizedBaseUrl =>
+      Env.apiBaseUrl.endsWith('/') ? Env.apiBaseUrl : '${Env.apiBaseUrl}/';
+
   final Dio dio = Dio(
     BaseOptions(
       baseUrl: Env.apiBaseUrl,
@@ -18,8 +22,10 @@ class DioClient {
   );
 
   Future<void> init() async {
+    // Update dio's baseUrl in case the dart-define or default lacked a slash
+    dio.options.baseUrl = _normalizedBaseUrl;
     developer.log(
-      'Initializing Dio | baseUrl=${Env.apiBaseUrl}',
+      'Initializing Dio | baseUrl=${dio.options.baseUrl}',
       name: 'DioClient',
     );
     dio.interceptors.add(

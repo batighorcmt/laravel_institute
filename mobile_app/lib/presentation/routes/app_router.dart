@@ -5,6 +5,7 @@ import '../features/home/home_page.dart';
 import '../state/auth_state.dart';
 import '../features/principal/principal_dashboard_page.dart';
 import '../features/teacher/teacher_dashboard_page.dart';
+import '../features/teacher/self_attendance_page.dart';
 import '../features/parent/parent_dashboard_page.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -28,6 +29,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/teacher',
       builder: (context, state) => const TeacherDashboardPage(),
+    ),
+    GoRoute(
+      path: '/teacher/self-attendance',
+      builder: (context, state) => const SelfAttendancePage(),
     ),
     GoRoute(
       path: '/parent',

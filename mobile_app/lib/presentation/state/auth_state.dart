@@ -22,7 +22,8 @@ class AuthNotifier extends AsyncNotifier<UserProfile?> {
         deviceName: 'flutter-app',
       );
       final data = await AuthRepository().me();
-      state = AsyncData(UserProfile.fromJson(data));
+      final profile = UserProfile.fromJson(data);
+      state = AsyncData(profile);
       return true;
     } catch (e) {
       state = AsyncError(e, StackTrace.current);
