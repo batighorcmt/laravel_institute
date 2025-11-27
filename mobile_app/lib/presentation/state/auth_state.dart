@@ -7,7 +7,7 @@ class AuthNotifier extends AsyncNotifier<UserProfile?> {
   Future<UserProfile?> build() async {
     try {
       final data = await AuthRepository().me();
-      return UserProfile.fromJson(data);
+      return UserProfile.fromDynamic(data);
     } catch (_) {
       return null;
     }
@@ -16,13 +16,19 @@ class AuthNotifier extends AsyncNotifier<UserProfile?> {
   Future<bool> login(String username, String password) async {
     state = const AsyncLoading();
     try {
-      await AuthRepository().login(
+      final loginData = await AuthRepository().login(
         username: username,
         password: password,
         deviceName: 'flutter-app',
       );
-      final data = await AuthRepository().me();
-      final profile = UserProfile.fromJson(data);
+      dynamic rawUser = loginData['user'];
+      UserProfile profile;
+      if (rawUser != null) {
+        profile = UserProfile.fromDynamic(rawUser);
+      } else {
+        final data = await AuthRepository().me();
+        profile = UserProfile.fromDynamic(data);
+      }
       state = AsyncData(profile);
       return true;
     } catch (e) {

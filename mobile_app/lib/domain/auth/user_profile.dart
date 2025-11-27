@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:developer' as developer;
+
 class UserProfile {
   final int id;
   final String name;
@@ -5,16 +8,64 @@ class UserProfile {
 
   UserProfile({required this.id, required this.name, required this.roles});
 
+  /// Robust factory accepting potentially malformed structures.
   factory UserProfile.fromJson(Map<String, dynamic> json) {
-    final rolesJson = (json['roles'] as List?) ?? [];
-    final roles = rolesJson
-        .map((e) => UserRole.fromJson(e as Map<String, dynamic>))
+    final rawRoles = json['roles'];
+    developer.log(
+      'UserProfile.fromJson rawRolesType=${rawRoles.runtimeType} value=$rawRoles',
+      name: 'UserProfile',
+    );
+    List<dynamic> rolesList;
+    if (rawRoles is List) {
+      rolesList = rawRoles;
+    } else if (rawRoles is Map) {
+      // Some APIs may return roles keyed; collect map values.
+      rolesList = rawRoles.values.toList();
+    } else if (rawRoles is String) {
+      try {
+        final decoded = jsonDecode(rawRoles);
+        if (decoded is List) {
+          rolesList = decoded;
+        } else {
+          rolesList = [];
+        }
+      } catch (_) {
+        rolesList = [];
+      }
+    } else {
+      rolesList = [];
+    }
+    developer.log(
+      'Normalized rolesList length=${rolesList.length} elementTypes=${rolesList.map((e) => e.runtimeType).join(',')}',
+      name: 'UserProfile',
+    );
+    final roles = rolesList
+        .where((e) => e is Map || e is String)
+        .map((e) => UserRole.fromAny(e))
         .toList();
     return UserProfile(
       id: (json['id'] as num).toInt(),
-      name: json['name'] as String,
+      name: (json['name'] ?? '').toString(),
       roles: roles,
     );
+  }
+
+  static UserProfile fromDynamic(dynamic raw) {
+    if (raw is Map<String, dynamic>) return UserProfile.fromJson(raw);
+    if (raw is Map) return UserProfile.fromJson(Map<String, dynamic>.from(raw));
+    if (raw is String) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map<String, dynamic>) {
+          return UserProfile.fromJson(decoded);
+        }
+        if (decoded is Map) {
+          return UserProfile.fromJson(Map<String, dynamic>.from(decoded));
+        }
+      } catch (_) {}
+    }
+    // Fallback empty profile (id 0) to avoid crash
+    return UserProfile(id: 0, name: '', roles: []);
   }
 }
 
@@ -26,8 +77,21 @@ class UserRole {
   UserRole({required this.role, this.schoolId, this.schoolName});
 
   factory UserRole.fromJson(Map<String, dynamic> json) => UserRole(
-    role: json['role'] as String,
-    schoolId: (json['school_id'] as num?)?.toInt(),
-    schoolName: json['school_name'] as String?,
+    role: (json['role'] ?? '').toString(),
+    schoolId: (json['school_id'] is String)
+        ? int.tryParse(json['school_id'])
+        : (json['school_id'] as num?)?.toInt(),
+    schoolName: (json['school_name'] ?? '') == ''
+        ? null
+        : json['school_name'].toString(),
   );
+
+  static UserRole fromAny(dynamic raw) {
+    if (raw is Map<String, dynamic>) return UserRole.fromJson(raw);
+    if (raw is Map) return UserRole.fromJson(Map<String, dynamic>.from(raw));
+    if (raw is String) {
+      return UserRole(role: raw, schoolId: null, schoolName: null);
+    }
+    return UserRole(role: '', schoolId: null, schoolName: null);
+  }
 }

@@ -1,3 +1,6 @@
+// AuthRepository.dart (Final Fixed Version)
+
+import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,84 +16,117 @@ class AuthRepository {
   }) async {
     try {
       developer.log(
-        'Login request -> POST auth/login | baseUrl=${_dio.options.baseUrl} | username=${_mask(username)} | pwdLen=${password.length}',
-        name: 'AuthRepository',
+        'LOGIN <-- username:${_mask(username)}',
+        name: "AuthRepository",
       );
-      final resp = await _dio.post(
-        'auth/login',
+
+      final response = await _dio.post(
+        "auth/login",
         data: {
-          'username': username,
-          'password': password,
-          'device_name': deviceName,
+          "username": username,
+          "password": password,
+          "device_name": deviceName,
         },
       );
-      final data = resp.data as Map<String, dynamic>;
+
       developer.log(
-        'Login response <- status=${resp.statusCode} | hasToken=${data['token'] != null}',
-        name: 'AuthRepository',
+        "RAW RESPONSE TYPE = ${response.data.runtimeType}",
+        name: "AuthRepository",
       );
-      final token = data['token'] as String?;
-      if (token != null) {
-        final sp = await SharedPreferences.getInstance();
-        await sp.setString('auth_token', token);
+      developer.log(
+        "RAW RESPONSE DATA = ${response.data}",
+        name: "AuthRepository",
+      );
+
+      // 🔥 MAIN FIX --- Safe parsing for all cases
+      Map<String, dynamic> data;
+
+      if (response.data is Map<String, dynamic>) {
+        data = response.data;
+      } else if (response.data is String) {
+        final String s = response.data;
+        // Trim any non-JSON prefix (e.g., BOM or text before '{'/'[')
+        final int iBrace = s.indexOf('{');
+        final int iBracket = s.indexOf('[');
+        int start = -1;
+        if (iBrace >= 0 && iBracket >= 0) {
+          start = iBrace < iBracket ? iBrace : iBracket;
+        } else if (iBrace >= 0) {
+          start = iBrace;
+        } else if (iBracket >= 0) {
+          start = iBracket;
+        }
+        final String trimmed = start >= 0 ? s.substring(start) : s;
+        data = jsonDecode(trimmed);
+      } else if (response.data is List) {
+        throw Exception("❌ API returned LIST — expected MAP JSON object.");
+      } else {
+        throw Exception(
+          "❌ Invalid API Structure — must return JSON Map e.g. {status:true}",
+        );
       }
+
+      // Token Save
+      if (data["token"] != null) {
+        final sp = await SharedPreferences.getInstance();
+        await sp.setString("auth_token", data["token"]);
+      }
+
       return data;
-    } on DioException catch (e) {
-      // Surface server message if available
+    }
+    // ⛔ Error Handler
+    on DioException catch (e) {
       final serverMsg = (e.response?.data is Map<String, dynamic>)
-          ? (e.response!.data['message'] as String?)
-          : null;
-      developer.log(
-        'Login error !! type=${e.type} status=${e.response?.statusCode} message=${serverMsg ?? e.message} data=${e.response?.data}',
-        name: 'AuthRepository',
-        error: e,
-        stackTrace: e.stackTrace,
-      );
-      throw Exception(serverMsg ?? 'Network error: ${e.message}');
+          ? e.response?.data["message"]
+          : e.response?.data.toString();
+
+      developer.log("LOGIN ERROR: $serverMsg", name: "AuthRepository");
+
+      throw Exception(serverMsg ?? "Network Error");
     }
   }
 
   Future<void> logout() async {
     try {
-      developer.log(
-        'Logout request -> POST auth/logout',
-        name: 'AuthRepository',
-      );
-      final resp = await _dio.post('auth/logout');
-      developer.log(
-        'Logout response <- status=${resp.statusCode}',
-        name: 'AuthRepository',
-      );
+      await _dio.post("auth/logout");
     } catch (_) {
-      // ignore network errors on logout
     } finally {
       final sp = await SharedPreferences.getInstance();
-      await sp.remove('auth_token');
+      sp.remove("auth_token");
     }
   }
 
   Future<Map<String, dynamic>> me() async {
-    developer.log('Me request -> GET me', name: 'AuthRepository');
-    final resp = await _dio.get('me');
-    developer.log(
-      'Me response <- status=${resp.statusCode}',
-      name: 'AuthRepository',
-    );
-    return resp.data as Map<String, dynamic>;
+    final resp = await _dio.get("me");
+    if (resp.data is Map<String, dynamic>) return resp.data;
+    if (resp.data is Map) return Map<String, dynamic>.from(resp.data);
+    if (resp.data is String) {
+      final String s = resp.data;
+      final int iBrace = s.indexOf('{');
+      final int iBracket = s.indexOf('[');
+      int start = -1;
+      if (iBrace >= 0 && iBracket >= 0) {
+        start = iBrace < iBracket ? iBrace : iBracket;
+      } else if (iBrace >= 0) {
+        start = iBrace;
+      } else if (iBracket >= 0) {
+        start = iBracket;
+      }
+      final String trimmed = start >= 0 ? s.substring(start) : s;
+      final decoded = jsonDecode(trimmed);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    }
+    return {};
   }
 
-  // Redact sensitive text for logs
+  // mask email
   String _mask(String input) {
-    if (input.isEmpty) return '';
-    if (input.contains('@')) {
-      final parts = input.split('@');
-      final name = parts[0];
-      if (name.length <= 2) return '*' * name.length + '@' + parts[1];
-      final masked =
-          name[0] + ('*' * (name.length - 2)) + name[name.length - 1];
-      return '$masked@${parts[1]}';
+    if (input.length < 3) return "***";
+    if (input.contains("@")) {
+      final p = input.split("@");
+      return "${p[0][0]}***${p[0].substring(p[0].length - 1)}@${p[1]}";
     }
-    if (input.length <= 2) return '*' * input.length;
-    return input[0] + ('*' * (input.length - 2)) + input[input.length - 1];
+    return "${input[0]}***${input[input.length - 1]}";
   }
 }

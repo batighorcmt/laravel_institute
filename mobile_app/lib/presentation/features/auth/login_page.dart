@@ -87,6 +87,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       final ok = await ref
           .read(authProvider.notifier)
           .login(_username.text.trim(), _password.text);
+      // Debug inspect profile structure
+      final rawProfile = ref.read(authProvider).asData?.value;
+      if (rawProfile != null) {
+        final rolesDebug = rawProfile.roles
+            .map((r) => '{role:${r.role},school:${r.schoolId}}')
+            .join(',');
+        // Store minimal debug to console
+        // ignore: avoid_print
+        print(
+          'DEBUG PROFILE id=${rawProfile.id} name=${rawProfile.name} roles=[$rolesDebug]',
+        );
+      }
       if (ok && mounted) {
         // Optional: visual confirmation
         ScaffoldMessenger.of(
@@ -115,9 +127,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           context,
         ).showSnackBar(SnackBar(content: Text(msg)));
       }
-    } catch (e) {
+    } catch (e, st) {
       final msg = e.toString();
       setState(() => _error = msg);
+      // ignore: avoid_print
+      print('LOGIN EXCEPTION: $msg\n$st');
       if (mounted) {
         ScaffoldMessenger.of(
           context,

@@ -342,7 +342,9 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
       );
       setState(() {
         _position = pos;
@@ -375,11 +377,12 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       await _fetchTodayRecord();
       await _showSuccessModal('চেক ইন সফল (অভিনন্দন)');
     } finally {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _busy = false;
           _fetchingLocation = false;
         });
+      }
     }
   }
 
@@ -402,11 +405,12 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       await _fetchTodayRecord();
       await _showSuccessModal('চেক আউট সফল (অভিনন্দন)');
     } finally {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _busy = false;
           _fetchingLocation = false;
         });
+      }
     }
   }
 
@@ -684,7 +688,34 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
 
   void _successSnack(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    final translated = _translateMessage(msg);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(translated)));
+  }
+
+  String _translateMessage(String msg) {
+    final lower = msg.toLowerCase();
+    // Map common English backend/fallback messages to Bengali.
+    if (lower.contains('check-in saved') || lower.contains('check in saved')) {
+      return 'উপস্থিতি সফলভাবে নথিভুক্ত হয়েছে';
+    }
+    if (lower.contains('check-out saved') ||
+        lower.contains('check out saved')) {
+      return 'প্রস্থান সফলভাবে নথিভুক্ত হয়েছে';
+    }
+    if (lower.contains('offline queue flushed')) {
+      return 'অফলাইন কিউ সম্পূর্ণ পাঠানো হয়েছে';
+    }
+    if (lower.contains('saved offline')) {
+      return 'অফলাইনে সংরক্ষণ করা হয়েছে, পরে পাঠানো হবে';
+    }
+    if (lower.contains('school') &&
+        lower.contains('not') &&
+        lower.contains('found')) {
+      return 'স্কুল তথ্য পাওয়া যায়নি';
+    }
+    return msg; // default keep original
   }
 
   void _handleDioError(DioException e) {
