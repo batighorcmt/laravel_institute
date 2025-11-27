@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/env.dart';
+import 'dart:developer' as developer;
 
 class DioClient {
   static final DioClient _instance = DioClient._internal();
@@ -17,6 +18,10 @@ class DioClient {
   );
 
   Future<void> init() async {
+    developer.log(
+      'Initializing Dio | baseUrl=${Env.apiBaseUrl}',
+      name: 'DioClient',
+    );
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -25,6 +30,10 @@ class DioClient {
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+          developer.log(
+            'HTTP ${options.method} ${options.path}',
+            name: 'DioClient',
+          );
           handler.next(options);
         },
       ),

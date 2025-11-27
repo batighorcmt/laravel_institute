@@ -80,10 +80,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           .login(_username.text.trim(), _password.text);
       if (ok && mounted) appRouter.go('/');
     } catch (e) {
-      setState(
-        () =>
-            _error = 'Login failed. Please verify credentials and server URL.',
-      );
+      final msg = e.toString();
+      setState(() => _error = msg);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(msg)));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }

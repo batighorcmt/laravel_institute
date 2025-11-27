@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'presentation/routes/app_router.dart';
 import 'core/network/dio_client.dart';
+import 'core/config/env.dart';
+import 'dart:developer' as developer;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +15,10 @@ Future<void> main() async {
     // No firebase options configured; skip for now.
   }
   await DioClient().init();
+  developer.log(
+    'App starting with API_BASE_URL=${Env.apiBaseUrl}',
+    name: 'Main',
+  );
   runApp(const ProviderScope(child: MyApp()));
 }
 
