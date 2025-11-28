@@ -8,7 +8,8 @@ use App\Models\Student;
 use App\Models\Homework;
 use App\Models\Attendance;
 use App\Models\Result;
-use App\Models\TeacherLeave; // reused for leave placeholder until student leave exists
+use App\Models\TeacherLeave; // legacy teacher leave
+use App\Models\StudentLeave; // new student leave
 use App\Http\Resources\StudentResource;
 use App\Http\Resources\HomeworkResource;
 use App\Http\Resources\StudentAttendanceResource;
@@ -97,30 +98,50 @@ class ParentController extends Controller
 
     public function leavesIndex(Request $request)
     {
-        // Placeholder: আসল স্টুডেন্ট ছুটির মডেল না থাকায় শিক্ষক ছুটি রিটার্ন
         $schoolId = $request->attributes->get('current_school_id');
-        $query = TeacherLeave::query();
-        if ($schoolId) { $query->where('school_id', $schoolId); }
-        $leaves = $query->orderByDesc('start_date')->limit(50)->get();
-        return TeacherLeaveResource::collection($leaves)->additional([
-            'message' => 'ছুটি আবেদন (প্লেসহোল্ডার)',
+        $children = $this->resolveChildren($request);
+        $studentIds = $children->pluck('id');
+
+        $query = StudentLeave::query()->whereIn('student_id', $studentIds);
+        if ($schoolId) { $query->forSchool($schoolId); }
+        if ($request->filled('status')) { $query->where('status', $request->get('status')); }
+        $leaves = $query->orderByDesc('start_date')->limit(100)->get();
+
+        return \App\Http\Resources\StudentLeaveResource::collection($leaves)->additional([
+            'children' => $children->count(),
+            'message' => 'ছুটি আবেদন তালিকা',
         ]);
     }
 
     public function leavesStore(Request $request)
     {
-        // Placeholder: বাস্তব স্টুডেন্ট লিভ মডেল না থাকায় শুধু ভ্যালিডেশন রিটার্ন
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id');
+
+        $children = $this->resolveChildren($request);
+        $allowedIds = $children->pluck('id')->toArray();
+
         $validated = $request->validate([
+            'student_id' => ['required','integer', function($attr,$value,$fail) use ($allowedIds){ if (!in_array((int)$value, $allowedIds, true)) { $fail('অবৈধ শিক্ষার্থী'); } }],
             'reason' => ['required','string','max:255'],
             'start_date' => ['required','date'],
             'end_date' => ['required','date','after_or_equal:start_date'],
             'type' => ['nullable','string','max:50'],
         ]);
-        return response()->json([
-            'saved' => false,
-            'data' => $validated,
-            'message' => 'স্টুডেন্ট লিভ মডেল অনুপস্থিত; আগে মডেল তৈরি করুন',
-        ], 501);
+
+        $leave = StudentLeave::create([
+            'school_id' => $schoolId,
+            'student_id' => (int)$validated['student_id'],
+            'type' => $validated['type'] ?? null,
+            'reason' => $validated['reason'],
+            'start_date' => $validated['start_date'],
+            'end_date' => $validated['end_date'],
+            'status' => 'pending',
+        ]);
+
+        return (new \App\Http\Resources\StudentLeaveResource($leave))->additional([
+            'message' => 'ছুটি আবেদন জমা হয়েছে',
+        ]);
     }
 
     /* Utility: resolve parent children set */
