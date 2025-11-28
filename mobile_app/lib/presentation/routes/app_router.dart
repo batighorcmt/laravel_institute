@@ -10,6 +10,7 @@ import '../features/teacher/students_attendance_menu_page.dart';
 import '../features/teacher/class_sections_list_page.dart';
 import '../features/teacher/extra_classes_list_page.dart';
 import '../features/teacher/teams_list_page.dart';
+import '../features/teacher/extra_class_mark_attendance_page.dart';
 import '../features/teacher/mark_attendance_page.dart';
 import '../features/parent/parent_dashboard_page.dart';
 
@@ -67,6 +68,19 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/teacher/students-attendance/extra',
       builder: (context, state) => const ExtraClassesListPage(),
+      routes: [
+        GoRoute(
+          path: 'classes/:extraClassId/mark',
+          name: 'teacher-extra-class-mark',
+          builder: (context, state) {
+            final id =
+                int.tryParse(state.pathParameters['extraClassId'] ?? '0') ?? 0;
+            final title =
+                state.uri.queryParameters['title'] ?? 'Extra Class Attendance';
+            return ExtraClassMarkAttendancePage(extraClassId: id, title: title);
+          },
+        ),
+      ],
     ),
     GoRoute(
       path: '/teacher/students-attendance/team',

@@ -404,11 +404,17 @@
 
                         {{-- Student Attendance --}}
                         @if($u->primarySchool())
-                        <li class="nav-item">
-                            <a href="{{ route('teacher.institute.attendance.class.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.attendance.class.*') ? 'active' : '' }}">
+                        {{-- Student Attendance (Class, Extra Class, Team) --}}
+                        <li class="nav-item has-treeview {{ request()->routeIs('teacher.institute.attendance.class.*') || request()->routeIs('teacher.institute.attendance.extra-classes.*') || request()->routeIs('teacher.institute.attendance.team.*') ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->routeIs('teacher.institute.attendance.class.*') || request()->routeIs('teacher.institute.attendance.extra-classes.*') || request()->routeIs('teacher.institute.attendance.team.*') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-user-check"></i>
-                                <p>Student Attendance</p>
+                                <p>Student Attendance <i class="right fas fa-angle-left"></i></p>
                             </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item"><a href="{{ route('teacher.institute.attendance.class.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.attendance.class.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Class Attendance</p></a></li>
+                                <li class="nav-item"><a href="{{ route('teacher.institute.attendance.extra-classes.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.attendance.extra-classes.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Extra Class Attendance</p></a></li>
+                                <li class="nav-item"><a href="{{ route('teacher.institute.attendance.team.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.attendance.team.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Team Attendance</p></a></li>
+                            </ul>
                         </li>
                         <li class="nav-item">
                             <a href="{{ route('teacher.institute.homework.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.homework.*') ? 'active' : '' }}">

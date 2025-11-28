@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/network/dio_client.dart';
 
 class ExtraClassesListPage extends StatefulWidget {
@@ -48,15 +49,24 @@ class _ExtraClassesListPageState extends State<ExtraClassesListPage> {
               itemCount: _items.length,
               itemBuilder: (ctx, i) {
                 final m = _items[i] as Map<String, dynamic>? ?? {};
+                final title =
+                    (m['name'] ?? m['subject_name'] ?? 'Extra Class') as String;
                 return ListTile(
-                  title: Text(m['name'] ?? m['subject_name'] ?? 'Extra Class'),
+                  title: Text(title),
                   subtitle: Text(
                     '${m['class_name'] ?? ''} ${m['section_name'] ?? ''}'
                         .trim(),
                   ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    /* navigate later */
+                    final id = (m['id'] as num?)?.toInt() ?? 0;
+                    if (id > 0) {
+                      context.pushNamed(
+                        'teacher-extra-class-mark',
+                        pathParameters: {'extraClassId': id.toString()},
+                        queryParameters: {'title': title},
+                      );
+                    }
                   },
                 );
               },

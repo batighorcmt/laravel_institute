@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Section;
 use App\Models\SchoolClass;
 use App\Models\ExtraClass;
+use App\Models\ExtraClassEnrollment;
+use App\Models\ExtraClassAttendance;
 use App\Models\Team;
 use App\Models\Teacher;
 use App\Models\StudentEnrollment;
@@ -166,6 +168,10 @@ class TeacherStudentAttendanceController extends Controller
         ]);
 
         $date = $data['date'];
+        // Only allow submissions for today (parity with web & extra-class)
+        if ($date !== now()->toDateString()) {
+            return response()->json(['message' => 'শুধুমাত্র আজকের তারিখের হাজিরা জমা দেওয়া যাবে'], 422);
+        }
         $items = collect($data['items']);
 
         // Fetch active students for the section to validate completeness
@@ -199,6 +205,102 @@ class TeacherStudentAttendanceController extends Controller
                         'recorded_by' => $user->id,
                     ]
                 );
+            }
+        });
+
+        return response()->json(['message' => 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে']);
+    }
+
+    public function extraClassStudents(Request $request, ExtraClass $extraClass)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user, $extraClass->school_id);
+        if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
+
+        if ((int)$extraClass->teacher_id !== (int)$user->id || $extraClass->status !== 'active') {
+            return response()->json(['message' => 'আপনি এই এক্সট্রা ক্লাসের দায়িত্বপ্রাপ্ত নন'], 403);
+        }
+
+        $date = $request->query('date', now()->toDateString());
+
+        $enrollments = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
+            ->where('status','active')
+            ->with(['student.currentEnrollment'])
+            ->orderByDesc('id')
+            ->get();
+
+        $existing = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
+            ->whereDate('date', $date)
+            ->pluck('status','student_id');
+
+        $students = $enrollments->map(function($en) use ($existing) {
+            $st = $en->student;
+            return [
+                'id' => $st?->id,
+                'name' => $st?->full_name,
+                'roll' => (int)($st?->currentEnrollment?->roll_no ?? 0),
+                'photo_url' => $st?->photo_url,
+                'status' => $existing[$st?->id] ?? null,
+            ];
+        })->sortBy('roll')->values();
+
+        return response()->json([
+            'date' => $date,
+            'extra_class' => [
+                'id' => $extraClass->id,
+                'name' => $extraClass->name,
+            ],
+            'students' => $students,
+        ]);
+    }
+
+    public function extraClassSubmit(Request $request, ExtraClass $extraClass)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user, $extraClass->school_id);
+        if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
+
+        if ((int)$extraClass->teacher_id !== (int)$user->id || $extraClass->status !== 'active') {
+            return response()->json(['message' => 'আপনি এই এক্সট্রা ক্লাসের দায়িত্বপ্রাপ্ত নন'], 403);
+        }
+
+        $data = $request->validate([
+            'date' => ['required','date_format:Y-m-d'],
+            'items' => ['required','array','min:1'],
+            'items.*.student_id' => ['required','integer'],
+            'items.*.status' => ['required','in:present,absent,late,excused'],
+        ]);
+
+        // Only allow submissions for today (parity with web)
+        if ($data['date'] !== now()->toDateString()) {
+            return response()->json(['message' => 'শুধুমাত্র আজকের তারিখের হাজিরা জমা দেওয়া যাবে'], 422);
+        }
+
+        $enrolledIds = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
+            ->where('status','active')
+            ->pluck('student_id');
+
+        $submittedIds = collect($data['items'])->pluck('student_id');
+        $missing = $enrolledIds->diff($submittedIds);
+        if ($missing->isNotEmpty()) {
+            return response()->json([
+                'message' => 'সকল শিক্ষার্থীর স্ট্যাটাস নির্বাচন করা হয়নি',
+                'missing_count' => $missing->count(),
+            ], 422);
+        }
+
+        DB::transaction(function() use ($data, $extraClass, $user) {
+            ExtraClassAttendance::where('extra_class_id', $extraClass->id)
+                ->whereDate('date', $data['date'])
+                ->delete();
+
+            foreach ($data['items'] as $it) {
+                ExtraClassAttendance::create([
+                    'extra_class_id' => $extraClass->id,
+                    'student_id' => $it['student_id'],
+                    'date' => $data['date'],
+                    'status' => $it['status'],
+                ]);
             }
         });
 

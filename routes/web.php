@@ -441,6 +441,18 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/store', [App\Http\Controllers\Teacher\StudentAttendanceController::class, 'store'])->name('store');
             });
 
+            // Extra Class Attendance (teacher-assigned)
+            Route::prefix('attendance/extra-classes')->name('attendance.extra-classes.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Teacher\ExtraClassAttendanceController::class, 'index'])->name('index');
+                Route::get('/take', [App\Http\Controllers\Teacher\ExtraClassAttendanceController::class, 'take'])->name('take');
+                Route::post('/store', [App\Http\Controllers\Teacher\ExtraClassAttendanceController::class, 'store'])->name('store');
+            });
+
+            // Team Attendance (stub; to be implemented)
+            Route::prefix('attendance/team')->name('attendance.team.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Teacher\TeamAttendanceController::class, 'index'])->name('index');
+            });
+
             // Lesson Evaluation
             Route::prefix('lesson-evaluation')->name('lesson-evaluation.')->group(function () {
                 Route::get('/', [App\Http\Controllers\Teacher\LessonEvaluationController::class, 'index'])->name('index');
