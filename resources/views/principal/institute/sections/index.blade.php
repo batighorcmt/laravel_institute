@@ -6,19 +6,31 @@
   <a href="{{ route('principal.institute.sections.create', $school) }}" class="btn btn-success"><i class="fas fa-plus mr-1"></i> নতুন সেকশন</a>
 </div>
 <div class="card"><div class="card-body">
+  @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show">
+      <i class="fas fa-check-circle"></i> {{ session('success') }}
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+  @endif
+  @if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show">
+      <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+      <button type="button" class="close" data-dismiss="alert">&times;</button>
+    </div>
+  @endif
   <form class="form-inline mb-3" method="get">
     <input type="text" class="form-control mr-2" name="q" value="{{ $q }}" placeholder="সার্চ...">
     <button class="btn btn-outline-secondary">সার্চ</button>
   </form>
   <table class="table table-striped">
-  <thead><tr><th>#</th><th>শাখা</th><th>শ্রেণি</th><th>শিক্ষক</th><th>স্ট্যাটাস</th><th class="text-right">অ্যাকশন</th></tr></thead>
+  <thead><tr><th>#</th><th>শাখা</th><th>শ্রেণি</th><th>শ্রেণি শিক্ষক</th><th>স্ট্যাটাস</th><th class="text-right">অ্যাকশন</th></tr></thead>
     <tbody>
       @forelse($items as $i => $item)
       <tr>
         <td>{{ $items->firstItem() + $i }}</td>
         <td>{{ $item->name }}</td>
   <td>{{ optional($item->class)->name }}</td>
-        <td>{{ $item->class_teacher_name }}</td>
+        <td>{{ $item->classTeacher?->user?->name ?? ($item->class_teacher_name ?? '-') }}</td>
         <td><span class="badge badge-{{ $item->status=='active'?'success':'secondary' }}">{{ $item->status }}</span></td>
         <td class="text-right">
           <a href="{{ route('principal.institute.sections.edit', [$school,$item]) }}" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i></a>

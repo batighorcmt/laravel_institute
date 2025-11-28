@@ -21,7 +21,7 @@ class RoutineEntry extends Model
     public function schoolClass(): BelongsTo { return $this->belongsTo(SchoolClass::class, 'class_id'); }
     public function section(): BelongsTo { return $this->belongsTo(Section::class); }
     public function subject(): BelongsTo { return $this->belongsTo(Subject::class); }
-    public function teacher(): BelongsTo { return $this->belongsTo(User::class, 'teacher_id'); }
+    public function teacher(): BelongsTo { return $this->belongsTo(Teacher::class, 'teacher_id'); }
 
     public function scopeForSchool(Builder $q, $schoolId): Builder { return $q->where('school_id', $schoolId); }
     public function scopeForClassSection(Builder $q, $classId, $sectionId): Builder { return $q->where('class_id',$classId)->where('section_id',$sectionId); }

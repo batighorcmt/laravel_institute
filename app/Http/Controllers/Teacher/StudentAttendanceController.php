@@ -73,8 +73,7 @@ class StudentAttendanceController extends Controller
             ->first();
 
         if (!$section) {
-            return redirect()->route('teacher.institute.attendance.class.index', $school)
-                ->with('error', 'আপনি এই শাখার ক্লাস টিচার নন। শুধুমাত্র ক্লাস টিচার হাজিরা নিতে পারবেন।');
+            abort(403, 'আপনি এই শাখার ক্লাস টিচার নন। শুধুমাত্র ক্লাস টিচার হাজিরা নিতে পারবেন।');
         }
 
         $schoolClass = SchoolClass::findOrFail($classId);
@@ -141,7 +140,7 @@ class StudentAttendanceController extends Controller
             ->first();
 
         if (!$section) {
-            return redirect()->back()->with('error', 'আপনি এই শাখার ক্লাস টিচার নন।');
+            abort(403, 'আপনি এই শাখার ক্লাস টিচার নন।');
         }
 
         DB::beginTransaction();

@@ -23,15 +23,16 @@ class RoutineController extends Controller
     public function panel(School $school)
     {
         $classes = SchoolClass::forSchool($school->id)->active()->ordered()->get(['id','name','numeric_value']);
-        $sections = Section::forSchool($school->id)->orderBy('name')->get(['id','name','class_id']);
-        // teachers with designation and serial ordering
-        $teacherRoleIdVal = Role::where('name', Role::TEACHER)->value('id');
-        $teachers = UserSchoolRole::where('school_id',$school->id)
-            ->where('role_id',$teacherRoleIdVal)
-            ->join('users','users.id','=','user_school_roles.user_id')
-            ->orderByRaw('COALESCE(user_school_roles.serial_number, 999999) asc')
-            ->orderBy('users.name')
-            ->get(['users.id as id','users.name as name','user_school_roles.designation','user_school_roles.serial_number']);
+        $sections = Section::forSchool($school->id)
+            ->orderBy('name')
+            ->with(['classTeacher.user'])
+            ->get(['id','name','class_id','class_teacher_id','class_teacher_name']);
+        // Teachers for dropdown: use Teacher record IDs, show associated user name
+        $teachers = Teacher::where('school_id',$school->id)
+            ->with('user:id,name')
+            ->orderByRaw('COALESCE(serial_number, 999999) asc')
+            ->orderBy(User::select('name')->whereColumn('users.id','teachers.user_id'))
+            ->get(['id','user_id','school_id','designation','serial_number']);
         return view('principal.routines.panel', compact('school','classes','sections','teachers'));
     }
 
@@ -100,30 +101,36 @@ class RoutineController extends Controller
 
     public function grid(Request $request, School $school)
     {
-        $classId = (int)$request->get('class_id');
-        $sectionId = (int)$request->get('section_id');
-        if(!$classId || !$sectionId) return response()->json([]);
-        $entries = RoutineEntry::forSchool($school->id)->forClassSection($classId,$sectionId)
-            ->with(['subject:id,name','teacher:id,name'])
-            ->get();
-        $grid = [];
-        foreach ($entries as $e) {
-            $day = $e->day_of_week; $pn = (int)$e->period_number;
-            $grid[$day][$pn][] = [
-                'id' => $e->id,
-                'subject_id' => $e->subject_id,
-                'subject_name' => $e->subject?->name,
-                'teacher_id' => $e->teacher_id,
-                'teacher_name' => $e->teacher?->name,
-                'start_time' => $e->start_time,
-                'end_time' => $e->end_time,
-                'room' => $e->room,
-                'remarks' => $e->remarks,
-                'period_number' => $pn,
-                'day_of_week' => $day,
-            ];
+        try {
+            $classId = (int)$request->get('class_id');
+            $sectionId = (int)$request->get('section_id');
+            if(!$classId || !$sectionId) return response()->json([]);
+            $entries = RoutineEntry::forSchool($school->id)
+                ->forClassSection($classId,$sectionId)
+                ->with(['subject','teacher.user'])
+                ->get();
+            $grid = [];
+            foreach ($entries as $e) {
+                $day = $e->day_of_week; $pn = (int)$e->period_number;
+                $grid[$day][$pn][] = [
+                    'id' => $e->id,
+                    'subject_id' => $e->subject_id,
+                    'subject_name' => $e->subject?->name,
+                    'teacher_id' => $e->teacher_id,
+                    'teacher_name' => optional(optional($e->teacher)->user)->name,
+                    'start_time' => $e->start_time,
+                    'end_time' => $e->end_time,
+                    'room' => $e->room,
+                    'remarks' => $e->remarks,
+                    'period_number' => $pn,
+                    'day_of_week' => $day,
+                ];
+            }
+            return response()->json($grid);
+        } catch (\Throwable $e) {
+            // Avoid breaking the UI; return empty grid on server errors
+            return response()->json([], 200);
         }
-        return response()->json($grid);
     }
 
     public function saveEntry(Request $request, School $school)
@@ -145,17 +152,9 @@ class RoutineController extends Controller
         $chk = ClassSubject::where('school_id',$school->id)->where('class_id',$data['class_id'])->where('subject_id',$data['subject_id'])->exists();
         if(!$chk) return response()->json(['success'=>false,'error'=>'Subject not assigned to class']);
         
-        // Validate teacher and get actual teacher record ID
-        $teacherUserId = $data['teacher_id']; // This is actually user_id from frontend
-        $teacherOk = UserSchoolRole::where('school_id',$school->id)
-            ->where('user_id', $teacherUserId)
-            ->whereHas('role', fn($q)=>$q->where('name', Role::TEACHER))
-            ->exists();
-        if(!$teacherOk) return response()->json(['success'=>false,'error'=>'Invalid teacher']);
-        
-        // Get the actual teacher record ID (not user_id)
-        $teacher = Teacher::where('user_id', $teacherUserId)
-            ->where('school_id', $school->id)
+        // Validate teacher as Teacher record ID
+        $teacher = Teacher::where('school_id', $school->id)
+            ->where('id', $data['teacher_id'])
             ->first();
         if(!$teacher) return response()->json(['success'=>false,'error'=>'Teacher record not found']);
         
@@ -166,7 +165,7 @@ class RoutineController extends Controller
             'day_of_week'=>$data['day_of_week'],
             'period_number'=>$data['period_number'],
             'subject_id'=>$data['subject_id'],
-            'teacher_id'=>$teacher->id, // Use teacher record ID, not user_id
+            'teacher_id'=>$teacher->id,
             'start_time'=>$data['start_time'] ?? null,
             'end_time'=>$data['end_time'] ?? null,
             'room'=>$data['room'] ?? null,
@@ -204,7 +203,7 @@ class RoutineController extends Controller
         }
         $periodCount = ClassPeriod::forSchool($school->id)->forClassSection($classId,$sectionId)->value('period_count') ?? 0;
         $entries = RoutineEntry::forSchool($school->id)->forClassSection($classId,$sectionId)
-            ->with(['subject:id,name','teacher:id,name'])
+            ->with(['subject:id,name','teacher.user:id,name'])
             ->get()
             ->groupBy(fn($e)=>$e->day_of_week.'#'.$e->period_number);
         $days = ['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'];

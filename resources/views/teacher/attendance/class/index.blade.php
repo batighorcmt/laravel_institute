@@ -4,7 +4,12 @@
 
 @section('content')
 <div class="d-flex justify-content-between mb-3">
-    <h1 class="m-0">ছাত্র-ছাত্রী হাজিরা নিন</h1>
+    <div>
+        <h1 class="m-0">ছাত্র-ছাত্রী হাজিরা নিন</h1>
+        @isset($classTeacher)
+            <div class="text-muted small">এই শাখার শ্রেণি শিক্ষক: <strong>{{ $classTeacher->name }}</strong></div>
+        @endisset
+    </div>
     <a href="{{ route('teacher.dashboard') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-left mr-1"></i> ড্যাশবোর্ড
     </a>
@@ -54,6 +59,11 @@
                             <select name="section_id" id="section_id" class="form-control" required>
                                 <option value="">-- প্রথমে ক্লাস নির্বাচন করুন --</option>
                             </select>
+                            @isset($canTakeAttendance)
+                                @if(!$canTakeAttendance)
+                                    <small class="text-danger">শুধুমাত্র শ্রেণি শিক্ষক এই শাখার উপস্থিতি গ্রহণ করতে পারবেন।</small>
+                                @endif
+                            @endisset
                         </div>
                     </div>
 

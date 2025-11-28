@@ -32,6 +32,7 @@
         <select id="section_id" class="form-control" disabled>
           <option value="">— শাখা —</option>
         </select>
+        <small id="classTeacherInfo" class="text-muted d-block mt-1" style="display:none"></small>
       </div>
       <div class="form-group col-md-4 align-self-end text-right">
         <div id="periodControls" class="d-inline-block" style="display:none">
@@ -120,6 +121,7 @@
     var sel = document.getElementById('section_id');
     sel.innerHTML = '<option value="">— শাখা —</option>';
     sel.disabled = !classId;
+    document.getElementById('classTeacherInfo').style.display='none';
     if(!classId) return;
     sections.filter(s=>String(s.class_id)===String(classId)).forEach(function(s){
       var o=document.createElement('option'); o.value=s.id; o.textContent=s.name; sel.appendChild(o);
@@ -175,7 +177,15 @@
   }
 
   document.getElementById('class_id').addEventListener('change', function(){ loadSections(this.value); document.getElementById('section_id').value=''; document.getElementById('section_id').disabled=!this.value; document.getElementById('routineGridWrap').style.display='none'; });
-  document.getElementById('section_id').addEventListener('change', loadGrid);
+  document.getElementById('section_id').addEventListener('change', function(){
+    var secId = this.value; var info = document.getElementById('classTeacherInfo');
+    if(!secId){ info.style.display='none'; info.textContent=''; loadGrid(); return; }
+    var sec = sections.find(function(s){ return String(s.id)===String(secId); });
+    var teacherName = '';
+    try { teacherName = (sec && sec.class_teacher && sec.class_teacher.user && sec.class_teacher.user.name) ? sec.class_teacher.user.name : (sec.class_teacher_name || ''); } catch(_) {}
+    if(teacherName){ info.style.display='block'; info.textContent = 'এই শাখার শ্রেণি শিক্ষক: ' + teacherName; } else { info.style.display='none'; info.textContent=''; }
+    loadGrid();
+  });
 
   document.getElementById('addPeriodBtn').addEventListener('click', function(){
     var cls=document.getElementById('class_id').value, sec=document.getElementById('section_id').value; if(!cls||!sec) return;
@@ -198,7 +208,7 @@
 
   // Entry modal mechanics (multiple rows)
   function subjectOptionsHtml(){ return '<option value="">— বিষয় —</option>'; }
-  function teacherOptionsHtml(){ return '<option value="">— শিক্ষক —</option>'+ teachers.map(t=>'<option value="'+t.id+'">'+t.name+'</option>').join(''); }
+  function teacherOptionsHtml(){ return '<option value="">— শিক্ষক —</option>'+ teachers.map(t=>'<option value="'+t.id+'">'+(t.user && t.user.name ? t.user.name : ('Teacher #'+t.id))+'</option>').join(''); }
 
   function addEntryRow(tblBody, defaults){
     var tr=document.createElement('tr');

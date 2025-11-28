@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
@@ -22,15 +22,14 @@ class SelfAttendancePage extends ConsumerStatefulWidget {
 class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
   final Dio _dio = DioClient().dio;
   final ImagePicker _picker = ImagePicker();
-  XFile? _photo;
-  Position? _position;
   bool _busy = false;
   String? _error;
-  bool _fetchingLocation = false;
   Map<String, dynamic>? _todayRecord;
   Map<String, dynamic>? _settings;
   bool _loadingSettings = true;
   int? _schoolId;
+  XFile? _photo;
+  Position? _position;
 
   @override
   Widget build(BuildContext context) {
@@ -58,127 +57,6 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
               const SizedBox(height: 8),
               _SettingsBanner(settings: _settings, loading: _loadingSettings),
               const SizedBox(height: 12),
-              // Photo capture card
-              Card(
-                elevation: 0,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Photo',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      if (_photo != null)
-                        AspectRatio(
-                          aspectRatio: 3 / 4,
-                          child: Image.file(
-                            File(_photo!.path),
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      else
-                        Container(
-                          height: 160,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text('No photo captured'),
-                        ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(24),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
-                            ),
-                            onPressed: _busy ? null : _capturePhoto,
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.photo_camera),
-                                SizedBox(width: 8),
-                                Text('Capture'),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _photo != null ? 'Ready' : 'Required',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Location card
-              Card(
-                elevation: 0,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Location',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          if (_fetchingLocation)
-                            const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          if (_fetchingLocation) const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: _busy ? null : _getLocation,
-                            child: Text(
-                              _position == null ? 'Get Location' : 'Refresh',
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _position != null
-                                  ? 'Lat: ${_position!.latitude.toStringAsFixed(4)}, Lng: ${_position!.longitude.toStringAsFixed(4)}'
-                                  : 'Required',
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (_fetchingLocation)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            'অপেক্ষা করুন লোকেশন খোঁজা হচ্ছে...',
-                            style: TextStyle(color: Colors.orange[700]),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
               const SizedBox(height: 12),
               // Action buttons
               Row(
@@ -271,11 +149,9 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
     );
   }
 
-  // No longer used: submission is controlled by flows
-
+  // Capture photo via camera
   Future<void> _capturePhoto() async {
     try {
-      setState(() => _error = null);
       final camStatus = await Permission.camera.request();
       if (!camStatus.isGranted) {
         setState(() => _error = 'Camera permission denied');
@@ -286,47 +162,25 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
         imageQuality: 75,
       );
       if (image == null) {
-        setState(() => _error = 'No photo captured (cancelled)');
+        setState(() => _error = 'No photo captured');
         return;
       }
-      // Basic file existence check
       if (!File(image.path).existsSync()) {
         setState(() => _error = 'Captured file missing at ${image.path}');
         return;
       }
       setState(() => _photo = image);
-    } on PermissionDeniedException catch (e) {
-      setState(() => _error = 'Permission error: ${e.message}');
-    } on Exception catch (e) {
-      final msg = e.toString();
-      // Common platform exceptions hints
-      String hint = '';
-      if (msg.contains('cameraUnavailable') ||
-          msg.contains('CameraAccessDenied')) {
-        hint =
-            'Camera unavailable – emulator may not support camera or permission not granted.';
-      } else if (msg.contains('NoSuchMethodError')) {
-        hint = 'Plugin initialization issue – try flutter clean & re-run.';
-      }
-      setState(
-        () => _error =
-            'Camera error: $msg${hint.isNotEmpty ? '\nHint: $hint' : ''}',
-      );
+    } catch (e) {
+      setState(() => _error = 'Camera error: $e');
     }
   }
 
+  // Get current location
   Future<void> _getLocation() async {
     try {
-      setState(() {
-        _error = null;
-        _fetchingLocation = true;
-      });
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(() {
-          _error = 'Location service disabled';
-          _fetchingLocation = false;
-        });
+        setState(() => _error = 'Location service disabled');
         return;
       }
       LocationPermission permission = await Geolocator.checkPermission();
@@ -335,10 +189,7 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        setState(() {
-          _error = 'Location permission denied';
-          _fetchingLocation = false;
-        });
+        setState(() => _error = 'Location permission denied');
         return;
       }
       final pos = await Geolocator.getCurrentPosition(
@@ -346,15 +197,9 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
           accuracy: LocationAccuracy.high,
         ),
       );
-      setState(() {
-        _position = pos;
-        _fetchingLocation = false;
-      });
+      setState(() => _position = pos);
     } catch (e) {
-      setState(() {
-        _error = 'Location error: $e';
-        _fetchingLocation = false;
-      });
+      setState(() => _error = 'Location error: $e');
     }
   }
 
@@ -363,14 +208,12 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       setState(() {
         _busy = true;
         _error = null;
-        _photo = null;
-        _position = null;
       });
       await _capturePhoto();
-      if (_photo == null) return; // user cancelled
+      if (_photo == null) return;
       await _getLocation();
       if (_position == null) {
-        setState(() => _error = 'লোকেশন পাওয়া যায়নি');
+        setState(() => _error = 'Location not found');
         return;
       }
       await _submitCheckIn();
@@ -380,7 +223,6 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       if (mounted) {
         setState(() {
           _busy = false;
-          _fetchingLocation = false;
         });
       }
     }
@@ -391,14 +233,12 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       setState(() {
         _busy = true;
         _error = null;
-        _photo = null;
-        _position = null;
       });
       await _capturePhoto();
       if (_photo == null) return;
       await _getLocation();
       if (_position == null) {
-        setState(() => _error = 'লোকেশন পাওয়া যায়নি');
+        setState(() => _error = 'Location not found');
         return;
       }
       await _submitCheckout();
@@ -408,7 +248,6 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       if (mounted) {
         setState(() {
           _busy = false;
-          _fetchingLocation = false;
         });
       }
     }
@@ -421,12 +260,12 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       barrierDismissible: true,
       builder: (context) {
         return AlertDialog(
-          title: const Text('সাফল্য'),
+          title: const Text('Success'),
           content: Text(message),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('ঠিক আছে'),
+              child: const Text('OK'),
             ),
           ],
         );
@@ -435,8 +274,6 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
   }
 
   Future<void> _submitCheckIn() async {
-    if (_photo == null || _position == null) return;
-    final fileName = 'self_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final schoolId = _schoolId;
     if (schoolId == null) {
       setState(
@@ -444,6 +281,8 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       );
       return;
     }
+    if (_photo == null || _position == null) return;
+    final fileName = 'self_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final form = FormData.fromMap({
       'lat': _position!.latitude,
       'lng': _position!.longitude,
@@ -480,8 +319,6 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
   }
 
   Future<void> _submitCheckout() async {
-    if (_photo == null || _position == null) return;
-    final fileName = 'self_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final schoolId = _schoolId;
     if (schoolId == null) {
       setState(
@@ -489,6 +326,8 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       );
       return;
     }
+    if (_photo == null || _position == null) return;
+    final fileName = 'self_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final form = FormData.fromMap({
       'lat': _position!.latitude,
       'lng': _position!.longitude,
@@ -589,10 +428,7 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       if (item is Map) {
         try {
           final type = item['type'];
-          final lat = item['lat'];
-          final lng = item['lng'];
-          final path = item['photoPath'];
-          if (type == null || lat == null || lng == null || path == null) {
+          if (type == null) {
             continue;
           }
           // Resolve school_id similarly for offline retries
@@ -606,16 +442,22 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
               }
             }
           }
-          final formMap = {
+          final lat = item['lat'];
+          final lng = item['lng'];
+          final path = item['photoPath'];
+          if (lat == null || lng == null || path == null) {
+            remaining.add(item);
+            continue;
+          }
+          final form = FormData.fromMap({
             'lat': lat,
             'lng': lng,
             'photo': await MultipartFile.fromFile(
               path,
               filename: 'retry_${DateTime.now().millisecondsSinceEpoch}.jpg',
             ),
-          };
-          if (schoolId != null) formMap['school_id'] = schoolId;
-          final form = FormData.fromMap(formMap);
+            if (schoolId != null) 'school_id': schoolId,
+          });
           await _dio.post(
             type == 'checkin'
                 ? 'teacher/attendance'
@@ -688,34 +530,7 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
 
   void _successSnack(String msg) {
     if (!mounted) return;
-    final translated = _translateMessage(msg);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(translated)));
-  }
-
-  String _translateMessage(String msg) {
-    final lower = msg.toLowerCase();
-    // Map common English backend/fallback messages to Bengali.
-    if (lower.contains('check-in saved') || lower.contains('check in saved')) {
-      return 'উপস্থিতি সফলভাবে নথিভুক্ত হয়েছে';
-    }
-    if (lower.contains('check-out saved') ||
-        lower.contains('check out saved')) {
-      return 'প্রস্থান সফলভাবে নথিভুক্ত হয়েছে';
-    }
-    if (lower.contains('offline queue flushed')) {
-      return 'অফলাইন কিউ সম্পূর্ণ পাঠানো হয়েছে';
-    }
-    if (lower.contains('saved offline')) {
-      return 'অফলাইনে সংরক্ষণ করা হয়েছে, পরে পাঠানো হবে';
-    }
-    if (lower.contains('school') &&
-        lower.contains('not') &&
-        lower.contains('found')) {
-      return 'স্কুল তথ্য পাওয়া যায়নি';
-    }
-    return msg; // default keep original
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   void _handleDioError(DioException e) {
@@ -783,15 +598,14 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
         setState(() {
           _schoolId = sid;
           if (sid == null) {
-            _error =
-                'স্কুল আইডি পাওয়া যায়নি। অনুগ্রহ করে অ্যাডমিনের সাথে যোগাযোগ করুন।';
+            _error = 'School ID not found. Please contact admin.';
           }
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'স্কুল আইডি রিজলভ করতে ব্যর্থ। নেটওয়ার্ক চেক করুন।';
+          _error = 'Failed to resolve School ID. Please check network.';
         });
       }
     }
@@ -802,7 +616,7 @@ class _StatusHeader extends StatelessWidget {
   final Map<String, dynamic>? record;
   const _StatusHeader({required this.record});
 
-  String _banglaStatus(String? status) {
+  String _englishStatus(String? status) {
     switch ((status ?? '').toLowerCase()) {
       case 'present':
         return 'উপস্থিত';
@@ -820,7 +634,7 @@ class _StatusHeader extends StatelessWidget {
     if (record == null) return const SizedBox.shrink();
     final checkIn = record!['check_in_time'] ?? '-';
     final checkOut = record!['check_out_time'] ?? '-';
-    final status = _banglaStatus(record!['status']?.toString());
+    final status = _englishStatus(record!['status']?.toString());
     return Card(
       elevation: 0,
       color: Theme.of(context).colorScheme.surface,
@@ -830,13 +644,13 @@ class _StatusHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'আজকের উপস্থিতি',
+              "Today's Attendance",
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text('চেক ইন: $checkIn'),
-            Text('চেক আউট: $checkOut'),
-            if (status.isNotEmpty) Text('অবস্থা: $status'),
+            Text('Check-in: $checkIn'),
+            Text('Check-out: $checkOut'),
+            if (status.isNotEmpty) Text('Status: $status'),
           ],
         ),
       ),

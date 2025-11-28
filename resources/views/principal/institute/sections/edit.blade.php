@@ -13,7 +13,18 @@
       </select>
     </div>
     <div class="form-group col-md-4"><label>শাখার নাম *</label><input type="text" name="name" class="form-control" required value="{{ old('name',$section->name) }}"></div>
-    <div class="form-group col-md-4"><label>শ্রেণি শিক্ষকের নাম</label><input type="text" name="class_teacher_name" class="form-control" value="{{ old('class_teacher_name',$section->class_teacher_name) }}"></div>
+    <div class="form-group col-md-4">
+      <label>শ্রেণি শিক্ষক (ঐচ্ছিক)</label>
+      <select name="class_teacher_id" class="form-control">
+        <option value="">-- নির্বাচন করুন --</option>
+        @foreach($activeTeachers as $t)
+          <option value="{{ $t->id }}" {{ old('class_teacher_id',$section->class_teacher_id)==$t->id?'selected':'' }}>
+            {{ $t->user->name ?? ('Teacher #'.$t->id) }} ({{ $t->user->username ?? $t->user->email ?? '' }})
+          </option>
+        @endforeach
+      </select>
+      <small class="text-muted d-block mt-1">একজন শিক্ষক কেবল একটি শাখায় শ্রেণি শিক্ষক হতে পারবেন। ফাঁকা রাখাও যাবে।</small>
+    </div>
   </div>
   <div class="form-row">
     <div class="form-group col-md-3"><label>স্ট্যাটাস</label><select name="status" class="form-control"><option value="active" @if($section->status=='active') selected @endif>active</option><option value="inactive" @if($section->status=='inactive') selected @endif>inactive</option></select></div>

@@ -35,12 +35,13 @@
     <button onclick="window.print()" class="btn btn-primary btn-print"><i class="fas fa-print mr-1"></i> প্রিন্ট</button>
   </div>
 </div>
+@php($teacherName = $section->classTeacher?->user?->name ?? ($section->class_teacher_name ?? ''))
 <div class="card">
   <div class="card-body">
     <div class="header-info text-center">
       <h1 class="school-name mb-1">{{ $school->name }}</h1>
       <div class="routine-title">ক্লাস রুটিন — {{ date('Y') }}</div>
-      <div class="meta-line">শ্রেণি: {{ $class->name }} | শাখা: {{ $section->name }}</div>
+      <div class="meta-line">শ্রেণি: {{ $class->name }} | শাখা: {{ $section->name }}@if($teacherName) | শ্রেণি শিক্ষক: {{ $teacherName }}@endif</div>
     </div>
     @if($periodCount <= 0)
       <div class="alert alert-warning">এই শ্রেণি-শাখার পিরিয়ড সংখ্যা নির্ধারণ করা হয়নি।</div>
@@ -65,7 +66,7 @@
                   @forelse($list as $e)
                     <div class="cell-box">
                       <div class="sub">{{ $e->subject?->name }}</div>
-                      <div class="teach">{{ $e->teacher?->name }}</div>
+                      <div class="teach">{{ $e->teacher?->user?->name }}</div>
                       @if($e->start_time || $e->end_time)
                         <div class="time small text-muted">{{ $e->start_time }}{{ $e->end_time ? ' - '.$e->end_time : '' }}</div>
                       @endif
