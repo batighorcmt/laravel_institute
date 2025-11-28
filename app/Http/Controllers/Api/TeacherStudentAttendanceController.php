@@ -137,6 +137,17 @@ class TeacherStudentAttendanceController extends Controller
             ];
         })->values();
 
+        // Stats from DB for the given date
+        $records = Attendance::where('section_id', $section->id)
+            ->whereDate('date', $date)
+            ->get();
+        $stats = [
+            'total' => $records->count(),
+            'present' => $records->where('status','present')->count(),
+            'absent' => $records->where('status','absent')->count(),
+            'late' => $records->where('status','late')->count(),
+        ];
+
         return response()->json([
             'date' => $date,
             'section' => [
@@ -146,6 +157,7 @@ class TeacherStudentAttendanceController extends Controller
                 'class_name' => $section->schoolClass?->name,
             ],
             'students' => $students,
+            'stats' => $stats,
         ]);
     }
 
@@ -244,6 +256,18 @@ class TeacherStudentAttendanceController extends Controller
             ];
         })->sortBy('roll')->values();
 
+        // Stats from database records only (not local selections)
+        $records = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
+            ->whereDate('date', $date)
+            ->get();
+        $stats = [
+            'total' => $records->count(),
+            'present' => $records->where('status','present')->count(),
+            'absent' => $records->where('status','absent')->count(),
+            'late' => $records->where('status','late')->count(),
+            'excused' => $records->where('status','excused')->count(),
+        ];
+
         return response()->json([
             'date' => $date,
             'extra_class' => [
@@ -251,6 +275,7 @@ class TeacherStudentAttendanceController extends Controller
                 'name' => $extraClass->name,
             ],
             'students' => $students,
+            'stats' => $stats,
         ]);
     }
 
@@ -304,7 +329,21 @@ class TeacherStudentAttendanceController extends Controller
             }
         });
 
-        return response()->json(['message' => 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে']);
+        $records = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
+            ->whereDate('date', $data['date'])
+            ->get();
+        $stats = [
+            'total' => $records->count(),
+            'present' => $records->where('status','present')->count(),
+            'absent' => $records->where('status','absent')->count(),
+            'late' => $records->where('status','late')->count(),
+            'excused' => $records->where('status','excused')->count(),
+        ];
+
+        return response()->json([
+            'message' => 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে',
+            'stats' => $stats,
+        ]);
     }
 
     protected function resolveSchoolId(Request $request, $user, $explicit = null): ?int

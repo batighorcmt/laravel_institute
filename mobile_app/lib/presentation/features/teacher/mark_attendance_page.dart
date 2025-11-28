@@ -23,6 +23,8 @@ class _ClassSectionMarkAttendancePageState
   String? _error;
   String _date = _formatDate(DateTime.now());
   List<_StudentRow> _students = const [];
+  bool _isToday = true;
+  int _statTotal = 0, _statPresent = 0, _statAbsent = 0, _statLate = 0;
 
   @override
   void initState() {
@@ -43,7 +45,9 @@ class _ClassSectionMarkAttendancePageState
       );
       final data = r.data as Map<String, dynamic>? ?? {};
       _date = (data['date'] as String?) ?? _date;
+      _isToday = _date == _formatDate(DateTime.now());
       final list = (data['students'] as List? ?? []).cast<Map>();
+      final stats = (data['stats'] as Map?) ?? const {};
       _students = list
           .map(
             (m) => _StudentRow(
@@ -55,6 +59,10 @@ class _ClassSectionMarkAttendancePageState
             ),
           )
           .toList();
+      _statTotal = (stats['total'] as num?)?.toInt() ?? 0;
+      _statPresent = (stats['present'] as num?)?.toInt() ?? 0;
+      _statAbsent = (stats['absent'] as num?)?.toInt() ?? 0;
+      _statLate = (stats['late'] as num?)?.toInt() ?? 0;
     } catch (e) {
       _error = 'ডাটা লোড ব্যর্থ';
     } finally {
@@ -64,6 +72,33 @@ class _ClassSectionMarkAttendancePageState
         });
       }
     }
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final initial = _parseDate(_date) ?? now;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial.isAfter(now) ? now : initial,
+      firstDate: DateTime(now.year - 2, 1, 1),
+      lastDate: now,
+      helpText: 'তারিখ নির্বাচন করুন',
+    );
+    if (picked != null) {
+      setState(() {
+        _date = _formatDate(picked);
+      });
+      await _load();
+    }
+  }
+
+  DateTime? _parseDate(String s) {
+    try {
+      final p = s.split('-');
+      if (p.length == 3)
+        return DateTime(int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
+    } catch (_) {}
+    return null;
   }
 
   AttendanceStatus? _parseStatus(String? s) {
@@ -126,10 +161,22 @@ class _ClassSectionMarkAttendancePageState
               children: [
                 _HeaderBar(
                   date: _date,
-                  onSelectAllPresent: () =>
-                      _selectAll(AttendanceStatus.present),
-                  onSelectAllAbsent: () => _selectAll(AttendanceStatus.absent),
-                  onSelectAllLate: () => _selectAll(AttendanceStatus.late),
+                  onPickDate: _pickDate,
+                  onSelectAllPresent: _isToday
+                      ? () => _selectAll(AttendanceStatus.present)
+                      : null,
+                  onSelectAllAbsent: _isToday
+                      ? () => _selectAll(AttendanceStatus.absent)
+                      : null,
+                  onSelectAllLate: _isToday
+                      ? () => _selectAll(AttendanceStatus.late)
+                      : null,
+                ),
+                _CountsBar(
+                  total: _statTotal,
+                  present: _statPresent,
+                  absent: _statAbsent,
+                  late: _statLate,
                 ),
                 const Divider(height: 1),
                 Expanded(
@@ -141,7 +188,9 @@ class _ClassSectionMarkAttendancePageState
                       final s = _students[i];
                       return _StudentRowWidget(
                         row: s,
+                        enabled: _isToday,
                         onChanged: (st) {
+                          if (!_isToday) return;
                           setState(() {
                             _students[i] = s.copyWith(status: st);
                           });
@@ -156,13 +205,23 @@ class _ClassSectionMarkAttendancePageState
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: _isComplete ? _submit : null,
+                        onPressed: _isToday && _isComplete ? _submit : null,
                         icon: const Icon(Icons.save),
                         label: const Text('সাবমিট করুন'),
                       ),
                     ),
                   ),
                 ),
+                if (!_isToday)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: Text(
+                      'পূর্বের তারিখে শুধু রেকর্ড দেখা যাবে। আজকের তারিখে হাজিরা রেকর্ড করা যাবে।',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
+                    ),
+                  ),
               ],
             ),
     );
@@ -171,11 +230,13 @@ class _ClassSectionMarkAttendancePageState
 
 class _HeaderBar extends StatelessWidget {
   final String date;
-  final VoidCallback onSelectAllPresent;
-  final VoidCallback onSelectAllAbsent;
-  final VoidCallback onSelectAllLate;
+  final VoidCallback onPickDate;
+  final VoidCallback? onSelectAllPresent;
+  final VoidCallback? onSelectAllAbsent;
+  final VoidCallback? onSelectAllLate;
   const _HeaderBar({
     required this.date,
+    required this.onPickDate,
     required this.onSelectAllPresent,
     required this.onSelectAllAbsent,
     required this.onSelectAllLate,
@@ -184,33 +245,52 @@ class _HeaderBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(12.0),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              'তারিখ: $date',
-              style: Theme.of(context).textTheme.bodyMedium,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'তারিখ: $date',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+              TextButton.icon(
+                onPressed: onPickDate,
+                icon: const Icon(Icons.calendar_today),
+                label: const Text('তারিখ নির্বাচন'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 40,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _ActionChip(
+                  icon: Icons.check_circle,
+                  color: Colors.green,
+                  label: 'সব উপস্থিত',
+                  onTap: onSelectAllPresent ?? () {},
+                ),
+                const SizedBox(width: 8),
+                _ActionChip(
+                  icon: Icons.cancel,
+                  color: Colors.red,
+                  label: 'সব অনুপস্থিত',
+                  onTap: onSelectAllAbsent ?? () {},
+                ),
+                const SizedBox(width: 8),
+                _ActionChip(
+                  icon: Icons.access_time_filled,
+                  color: Colors.orange,
+                  label: 'সব দেরি',
+                  onTap: onSelectAllLate ?? () {},
+                ),
+              ],
             ),
-          ),
-          _ActionChip(
-            icon: Icons.check_circle,
-            color: Colors.green,
-            label: 'সব উপস্থিত',
-            onTap: onSelectAllPresent,
-          ),
-          const SizedBox(width: 8),
-          _ActionChip(
-            icon: Icons.cancel,
-            color: Colors.red,
-            label: 'সব অনুপস্থিত',
-            onTap: onSelectAllAbsent,
-          ),
-          const SizedBox(width: 8),
-          _ActionChip(
-            icon: Icons.access_time_filled,
-            color: Colors.orange,
-            label: 'সব দেরি',
-            onTap: onSelectAllLate,
           ),
         ],
       ),
@@ -279,7 +359,12 @@ class _StudentRow {
 class _StudentRowWidget extends StatelessWidget {
   final _StudentRow row;
   final ValueChanged<AttendanceStatus> onChanged;
-  const _StudentRowWidget({required this.row, required this.onChanged});
+  final bool enabled;
+  const _StudentRowWidget({
+    required this.row,
+    required this.onChanged,
+    required this.enabled,
+  });
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -310,7 +395,9 @@ class _StudentRowWidget extends StatelessWidget {
               tooltip: 'উপস্থিত',
               color: Colors.green,
               selected: row.status == AttendanceStatus.present,
-              onTap: () => onChanged(AttendanceStatus.present),
+              onTap: enabled
+                  ? () => onChanged(AttendanceStatus.present)
+                  : () {},
             ),
             const SizedBox(width: 6),
             _StatusButton(
@@ -318,7 +405,7 @@ class _StudentRowWidget extends StatelessWidget {
               tooltip: 'অনুপস্থিত',
               color: Colors.red,
               selected: row.status == AttendanceStatus.absent,
-              onTap: () => onChanged(AttendanceStatus.absent),
+              onTap: enabled ? () => onChanged(AttendanceStatus.absent) : () {},
             ),
             const SizedBox(width: 6),
             _StatusButton(
@@ -326,8 +413,61 @@ class _StudentRowWidget extends StatelessWidget {
               tooltip: 'দেরি',
               color: Colors.orange,
               selected: row.status == AttendanceStatus.late,
-              onTap: () => onChanged(AttendanceStatus.late),
+              onTap: enabled ? () => onChanged(AttendanceStatus.late) : () {},
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CountsBar extends StatelessWidget {
+  final int total;
+  final int present;
+  final int absent;
+  final int late;
+  const _CountsBar({
+    required this.total,
+    required this.present,
+    required this.absent,
+    required this.late,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodySmall;
+    Widget chip(Color c, String label, String value) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.08),
+        border: Border.all(color: c.withValues(alpha: 0.4)),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: style?.copyWith(color: c, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(width: 6),
+          Text(value, style: style),
+        ],
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: SizedBox(
+        height: 34,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            chip(Colors.grey, 'মোট', '$total'),
+            const SizedBox(width: 8),
+            chip(Colors.green, 'উপস্থিত', '$present'),
+            const SizedBox(width: 8),
+            chip(Colors.red, 'অনুপস্থিত', '$absent'),
+            const SizedBox(width: 8),
+            chip(Colors.orange, 'দেরি', '$late'),
           ],
         ),
       ),
