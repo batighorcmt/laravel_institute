@@ -147,25 +147,21 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
               onRefresh: _refresh,
               child: ListView.separated(
                 physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: _items.length + 1,
+                itemCount: _items.length + (_hasMore ? 1 : 0),
                 separatorBuilder: (_, __) => const Divider(height: 0),
                 itemBuilder: (context, index) {
                   if (index == _items.length) {
-                    if (!_hasMore) {
-                      return Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Center(child: Text('Total: ${_items.length}')),
-                      );
-                    }
                     return Padding(
                       padding: const EdgeInsets.all(16),
                       child: _loading
                           ? const Center(child: CircularProgressIndicator())
                           : ElevatedButton.icon(
-                              onPressed: () {
-                                _currentPage += 1;
-                                _loadPage();
-                              },
+                              onPressed: _loading
+                                  ? null
+                                  : () {
+                                      _currentPage += 1;
+                                      _loadPage();
+                                    },
                               icon: const Icon(Icons.expand_more),
                               label: const Text('Load More'),
                             ),

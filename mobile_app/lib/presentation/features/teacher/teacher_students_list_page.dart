@@ -76,6 +76,7 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
         _error = null;
         if (reset) {
           _items = data;
+          _deriveFiltersFromItems();
         } else {
           _items.addAll(data);
         }
@@ -88,6 +89,29 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _deriveFiltersFromItems() {
+    // Build dropdown options from currently loaded items when meta endpoints are unavailable
+    final classes = <String>{};
+    final sections = <String>{};
+    final groups = <String>{};
+    for (final it in _items) {
+      if (it is Map<String, dynamic>) {
+        final c = (it['class'] ?? '').toString();
+        final s = (it['section'] ?? '').toString();
+        final g = (it['group'] ?? '').toString();
+        if (c.isNotEmpty) classes.add(c);
+        if (s.isNotEmpty) sections.add(s);
+        if (g.isNotEmpty) groups.add(g);
+      }
+    }
+    _classes = classes.map((e) => {'id': e, 'name': e}).toList()
+      ..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+    _sections = sections.map((e) => {'id': e, 'name': e}).toList()
+      ..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+    _groups = groups.map((e) => {'id': e, 'name': e}).toList()
+      ..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
   }
 
   void _onSearch() => _load(reset: true);
@@ -130,16 +154,20 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                         ),
                       ),
                     ],
-                    onChanged: (v) async {
-                      setState(() {
-                        _classId = v;
-                        _sectionId = null;
-                        _sections = [];
-                      });
-                      final sections = await _repo.fetchSections(classId: v);
-                      if (mounted) setState(() => _sections = sections);
-                      _load(reset: true);
-                    },
+                    onChanged: _classes.isEmpty
+                        ? null
+                        : (v) async {
+                            setState(() {
+                              _classId = v;
+                              _sectionId = null;
+                              _sections = [];
+                            });
+                            final sections = await _repo.fetchSections(
+                              classId: v,
+                            );
+                            if (mounted) setState(() => _sections = sections);
+                            _load(reset: true);
+                          },
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -163,10 +191,12 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                         ),
                       ),
                     ],
-                    onChanged: (v) {
-                      setState(() => _sectionId = v);
-                      _load(reset: true);
-                    },
+                    onChanged: _sections.isEmpty
+                        ? null
+                        : (v) {
+                            setState(() => _sectionId = v);
+                            _load(reset: true);
+                          },
                   ),
                 ),
               ],
@@ -197,10 +227,12 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                         ),
                       ),
                     ],
-                    onChanged: (v) {
-                      setState(() => _groupId = v);
-                      _load(reset: true);
-                    },
+                    onChanged: _groups.isEmpty
+                        ? null
+                        : (v) {
+                            setState(() => _groupId = v);
+                            _load(reset: true);
+                          },
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -249,9 +281,18 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _onSearch,
-                  child: const Text('Search'),
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _onSearch,
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                    ),
+                    child: const Text('Search'),
+                  ),
                 ),
               ],
             ),

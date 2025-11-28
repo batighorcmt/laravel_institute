@@ -44,7 +44,8 @@ class StudentDirectoryController extends Controller
                 $q->where('roll_no', 'like', "%$s%")
                   ->orWhere('student_id', 'like', "%$s%")
                   ->orWhereHas('student', function($qs) use ($s) {
-                      $qs->where('full_name', 'like', "%$s%")
+                      // Use 'name' column for search to avoid unknown 'full_name'
+                      $qs->where('name', 'like', "%$s%")
                          ->orWhere('phone', 'like', "%$s%");
                   });
             });
