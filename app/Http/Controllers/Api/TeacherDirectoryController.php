@@ -56,9 +56,18 @@ class TeacherDirectoryController extends Controller
             ->pluck('designation')
             ->values();
 
-        return TeacherDirectoryResource::collection($paginated)->additional([
-            'school_id' => $schoolId,
+        // Transform items explicitly to avoid paginator resource edge cases
+        $items = TeacherDirectoryResource::collection($paginated->getCollection())->resolve();
+        return response()->json([
+            'data' => $items,
+            'meta' => [
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
+            ],
             'designations' => $designations,
+            'school_id' => $schoolId,
         ]);
     }
 }

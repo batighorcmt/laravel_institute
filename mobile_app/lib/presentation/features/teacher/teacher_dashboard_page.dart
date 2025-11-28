@@ -6,6 +6,7 @@ import '../../../core/network/dio_client.dart';
 import 'lesson_evaluation_list_page.dart';
 import 'homework_list_page.dart';
 import 'teacher_leave_list_page.dart';
+import 'teacher_directory_page.dart';
 import '../../state/auth_state.dart';
 import '../../../domain/auth/user_profile.dart';
 
@@ -156,6 +157,10 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
         ).push(MaterialPageRoute(builder: (_) => const TeacherLeaveListPage()));
         break;
       case 'teachers':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const TeacherDirectoryPage()),
+        );
+        break;
       case 'students':
         ScaffoldMessenger.of(
           context,
@@ -222,40 +227,41 @@ class _HeaderCard extends StatelessWidget {
   }
 }
 
+class _OpItem {
+  final String key;
+  final String title;
+  final IconData icon;
+  const _OpItem(this.key, this.title, this.icon);
+}
+
 class _OperationsGrid extends StatelessWidget {
   final void Function(String key) onTap;
   const _OperationsGrid({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final items = <({String key, String title, IconData icon})>[
-      (
-        key: 'self_attendance',
-        title: 'Self Attendance',
-        icon: Icons.how_to_reg_outlined,
+    final items = <_OpItem>[
+      const _OpItem(
+        'self_attendance',
+        'Self Attendance',
+        Icons.how_to_reg_outlined,
       ),
-      (
-        key: 'students_attendance',
-        title: 'Students Attendance',
-        icon: Icons.fact_check_outlined,
+      const _OpItem(
+        'students_attendance',
+        'Students Attendance',
+        Icons.fact_check_outlined,
       ),
-      (
-        key: 'lesson_evaluation',
-        title: 'Lesson Evaluation',
-        icon: Icons.rate_review_outlined,
+      const _OpItem(
+        'lesson_evaluation',
+        'Lesson Evaluation',
+        Icons.rate_review_outlined,
       ),
-      (key: 'homework', title: 'Homework', icon: Icons.assignment_outlined),
-      (
-        key: 'manage_leave',
-        title: 'Manage Leave',
-        icon: Icons.event_busy_outlined,
-      ),
-      (key: 'teachers', title: 'Teachers', icon: Icons.people_alt_outlined),
-      (key: 'students', title: 'Students', icon: Icons.school_outlined),
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const TeacherDirectoryPage()),
-            );
-            break;
+      const _OpItem('homework', 'Homework', Icons.assignment_outlined),
+      const _OpItem('manage_leave', 'Manage Leave', Icons.event_busy_outlined),
+      const _OpItem('teachers', 'Teachers', Icons.people_alt_outlined),
+      const _OpItem('students', 'Students', Icons.school_outlined),
+    ];
+    return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),

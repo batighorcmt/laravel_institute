@@ -123,7 +123,7 @@ class TeacherStudentAttendanceController extends Controller
             ->get();
 
         $existing = Attendance::where('section_id', $section->id)
-            ->whereDate('date', $date)
+            ->where('date', $date)
             ->pluck('status','student_id');
 
         $students = $enrollments->map(function($en) use ($existing) {
@@ -139,7 +139,7 @@ class TeacherStudentAttendanceController extends Controller
 
         // Stats from DB for the given date
         $records = Attendance::where('section_id', $section->id)
-            ->whereDate('date', $date)
+            ->where('date', $date)
             ->get();
         $stats = [
             'total' => $records->count(),
@@ -242,7 +242,7 @@ class TeacherStudentAttendanceController extends Controller
             ->get();
 
         $existing = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
-            ->whereDate('date', $date)
+            ->where('date', $date)
             ->pluck('status','student_id');
 
         $students = $enrollments->map(function($en) use ($existing) {
@@ -258,7 +258,7 @@ class TeacherStudentAttendanceController extends Controller
 
         // Stats from database records only (not local selections)
         $records = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
-            ->whereDate('date', $date)
+            ->where('date', $date)
             ->get();
         $stats = [
             'total' => $records->count(),
@@ -316,7 +316,7 @@ class TeacherStudentAttendanceController extends Controller
 
         DB::transaction(function() use ($data, $extraClass, $user) {
             ExtraClassAttendance::where('extra_class_id', $extraClass->id)
-                ->whereDate('date', $data['date'])
+                ->where('date', $data['date'])
                 ->delete();
 
             foreach ($data['items'] as $it) {
@@ -330,7 +330,7 @@ class TeacherStudentAttendanceController extends Controller
         });
 
         $records = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
-            ->whereDate('date', $data['date'])
+            ->where('date', $data['date'])
             ->get();
         $stats = [
             'total' => $records->count(),

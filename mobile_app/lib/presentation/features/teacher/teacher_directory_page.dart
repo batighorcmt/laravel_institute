@@ -74,6 +74,10 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
     await _loadPage(reset: true);
   }
 
+  void _doSearch() {
+    _loadPage(reset: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,7 +100,7 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                       ),
                     ),
                     textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => _doSearch(),
+                    onSubmitted: (_) => _loadPage(reset: true),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -104,7 +108,7 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                   tooltip: 'Clear',
                   onPressed: () {
                     _searchCtl.clear();
-                    _doSearch();
+                    _loadPage(reset: true);
                   },
                   icon: const Icon(Icons.close),
                 ),
