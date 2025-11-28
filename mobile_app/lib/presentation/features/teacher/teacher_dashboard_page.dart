@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/network/dio_client.dart';
+import 'lesson_evaluation_list_page.dart';
+import 'homework_list_page.dart';
 import '../../state/auth_state.dart';
 import '../../../domain/auth/user_profile.dart';
 
@@ -138,7 +140,15 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
         context.push('/teacher/students-attendance');
         break;
       case 'lesson_evaluation':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const LessonEvaluationListPage()),
+        );
+        break;
       case 'homework':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const TeacherHomeworkListPage()),
+        );
+        break;
       case 'manage_leave':
       case 'teachers':
       case 'students':
