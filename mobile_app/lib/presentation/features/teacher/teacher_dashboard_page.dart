@@ -7,6 +7,7 @@ import 'lesson_evaluation_list_page.dart';
 import 'homework_list_page.dart';
 import 'teacher_leave_list_page.dart';
 import 'teacher_directory_page.dart';
+import 'teacher_students_list_page.dart';
 import '../../state/auth_state.dart';
 import '../../../domain/auth/user_profile.dart';
 
@@ -162,9 +163,9 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
         ).push(MaterialPageRoute(builder: (_) => const TeacherDirectoryPage()));
         break;
       case 'students':
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Coming soon: $key')));
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const TeacherStudentsListPage()),
+        );
         break;
     }
   }

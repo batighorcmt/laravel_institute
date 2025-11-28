@@ -41,6 +41,9 @@ Route::prefix('v1')->group(function () {
         Route::post('teacher/leaves', [\App\Http\Controllers\Api\TeacherLeaveController::class, 'store'])->middleware('role:teacher');
         // Teacher directory (teacher + principal access)
         Route::get('teachers', [\App\Http\Controllers\Api\TeacherDirectoryController::class, 'index'])->middleware('role:teacher,principal');
+        // Teacher → Students directory and profile
+        Route::get('teacher/students', [\App\Http\Controllers\Api\StudentDirectoryController::class, 'index'])->middleware('role:teacher');
+        Route::get('teacher/students/{student}', [\App\Http\Controllers\Api\StudentDirectoryController::class, 'show'])->middleware('role:teacher');
         Route::get('teacher/subjects', [\App\Http\Controllers\Api\TeacherSubjectController::class, 'forClassSection'])->middleware('role:teacher');
         Route::get('teacher/lesson-evaluations', [\App\Http\Controllers\Api\LessonEvaluationController::class, 'index'])->middleware('role:teacher');
         Route::post('teacher/lesson-evaluations', [\App\Http\Controllers\Api\LessonEvaluationController::class, 'store'])->middleware('role:teacher');
