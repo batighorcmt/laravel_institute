@@ -175,11 +175,10 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                   final name = (t['name'] ?? '').toString();
                   final desig = (t['designation'] ?? '').toString();
                   final phone = (t['phone'] ?? '').toString();
-                  final serial = (t['serial_number'] ?? '').toString();
-                  final photo = (t['photo'] ?? '').toString();
+                  final photoUrl = (t['photo_url'] ?? '').toString();
                   return ListTile(
-                    leading: _TeacherAvatar(name: name, photo: photo),
-                    title: Text('$serial. $name'),
+                    leading: _TeacherAvatar(name: name, photoUrl: photoUrl),
+                    title: Text(name),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -226,13 +225,12 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
 
 class _TeacherAvatar extends StatelessWidget {
   final String name;
-  final String photo;
-  const _TeacherAvatar({required this.name, required this.photo});
+  final String photoUrl;
+  const _TeacherAvatar({required this.name, required this.photoUrl});
 
   @override
   Widget build(BuildContext context) {
-    final base = DioClient().dio.options.baseUrl;
-    final imageUrl = (photo.isNotEmpty) ? (base + photo) : null;
+    final imageUrl = (photoUrl.isNotEmpty) ? photoUrl : null;
     if (imageUrl == null) {
       return CircleAvatar(
         radius: 24,

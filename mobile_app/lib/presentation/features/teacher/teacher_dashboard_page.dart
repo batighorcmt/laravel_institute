@@ -157,9 +157,9 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
         ).push(MaterialPageRoute(builder: (_) => const TeacherLeaveListPage()));
         break;
       case 'teachers':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const TeacherDirectoryPage()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const TeacherDirectoryPage()));
         break;
       case 'students':
         ScaffoldMessenger.of(
