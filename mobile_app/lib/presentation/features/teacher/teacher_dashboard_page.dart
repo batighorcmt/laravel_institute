@@ -135,6 +135,8 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
         context.push('/teacher/self-attendance');
         break;
       case 'students_attendance':
+        context.push('/teacher/students-attendance');
+        break;
       case 'lesson_evaluation':
       case 'homework':
       case 'manage_leave':
