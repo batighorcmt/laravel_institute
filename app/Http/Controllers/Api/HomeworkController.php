@@ -59,8 +59,9 @@ class HomeworkController extends Controller
             'class_id' => ['required','integer'],
             'section_id' => ['nullable','integer'],
             'subject_id' => ['required','integer'],
-            'homework_date' => ['required','date'],
-            'submission_date' => ['nullable','date','after_or_equal:homework_date'],
+            // If not provided, default to today
+            'homework_date' => ['nullable','date'],
+            'submission_date' => ['nullable','date'],
             'title' => ['required','string','max:150'],
             'description' => ['nullable','string'],
             'attachment' => ['nullable','file','max:4096'],
@@ -76,13 +77,20 @@ class HomeworkController extends Controller
             $attachmentPath = $request->file('attachment')->store('homework', 'public');
         }
 
+        // Default homework_date to today if not provided
+        $homeworkDate = $validated['homework_date'] ?? Carbon::today()->toDateString();
+        // Validate submission_date not before homework_date if provided
+        if (!empty($validated['submission_date']) && Carbon::parse($validated['submission_date'])->lt(Carbon::parse($homeworkDate))) {
+            return response()->json(['message' => 'সাবমিশন তারিখ হোমওয়ার্ক তৈরির তারিখের আগে হতে পারে না'], 422);
+        }
+
         $homework = Homework::create([
             'school_id' => $schoolId,
             'class_id' => $validated['class_id'],
             'section_id' => $validated['section_id'] ?? null,
             'subject_id' => $validated['subject_id'],
             'teacher_id' => $teacher->id,
-            'homework_date' => $validated['homework_date'],
+            'homework_date' => $homeworkDate,
             'submission_date' => $validated['submission_date'] ?? null,
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,

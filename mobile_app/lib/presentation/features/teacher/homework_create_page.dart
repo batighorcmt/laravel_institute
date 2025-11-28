@@ -16,7 +16,8 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
 
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  // Meta-driven selections
+  // Routine-driven selections (today only)
+  // [{class_id,class_name,sections:[{id,name,subjects:[{id,name}]}]}]
   List<Map<String, dynamic>> _classes = const [];
   List<Map<String, dynamic>> _sections = const [];
   List<Map<String, dynamic>> _subjects = const [];
@@ -24,7 +25,7 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
   int? _selectedSectionId;
   int? _selectedSubjectId;
 
-  String _homeworkDate = _formatDate(DateTime.now());
+  // Creation date will be set server-side to today
   String? _submissionDate;
   bool _submitting = false;
 
@@ -32,7 +33,7 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
   void initState() {
     super.initState();
     _dio = DioClient().dio;
-    _loadClassMeta();
+    _loadTodayRoutine();
   }
 
   @override
@@ -42,44 +43,57 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
     super.dispose();
   }
 
-  Future<void> _loadClassMeta() async {
+  Future<void> _loadTodayRoutine() async {
     try {
-      final r = await _dio.get('teacher/students-attendance/class/meta');
-      final data = (r.data as List?)?.cast<Map>() ?? [];
-      _classes = data.map((e) => e.cast<String, dynamic>()).toList();
-      if (_classes.isNotEmpty) {
-        _selectedClassId = (_classes.first['class_id'] as num?)?.toInt();
-        _sections = ((_classes.first['sections'] as List?) ?? [])
-            .cast<Map>()
-            .map((e) => e.cast<String, dynamic>())
-            .toList();
-        if (_sections.isNotEmpty) {
-          _selectedSectionId = (_sections.first['id'] as num?)?.toInt();
-          await _loadSubjects();
+      final r = await _dio.get('teacher/lesson-evaluations/today-routine');
+      final items = (r.data is Map && r.data['items'] is List)
+          ? (r.data['items'] as List).cast<Map>()
+          : <Map>[];
+      final Map<int, Map<String, dynamic>> grouped = {};
+      for (final raw in items) {
+        final m = raw.cast<String, dynamic>();
+        final clsId = (m['class_id'] as num?)?.toInt();
+        final secId = (m['section_id'] as num?)?.toInt();
+        final subId = (m['subject_id'] as num?)?.toInt();
+        if (clsId == null || secId == null || subId == null) continue;
+        final cls = grouped.putIfAbsent(
+          clsId,
+          () => {
+            'class_id': clsId,
+            'class_name': (m['class_name'] ?? '').toString(),
+            'sections': <Map<String, dynamic>>[],
+          },
+        );
+        final sections = (cls['sections'] as List).cast<Map<String, dynamic>>();
+        Map<String, dynamic>? sec = sections.firstWhere(
+          (e) => (e['id'] as int) == secId,
+          orElse: () => {},
+        );
+        if (sec.isEmpty) {
+          sec = {
+            'id': secId,
+            'name': (m['section_name'] ?? '').toString(),
+            'subjects': <Map<String, dynamic>>[],
+          };
+          sections.add(sec);
+        }
+        final subs = (sec['subjects'] as List).cast<Map<String, dynamic>>();
+        if (!subs.any((e) => (e['id'] as int) == subId)) {
+          subs.add({'id': subId, 'name': (m['subject_name'] ?? '').toString()});
         }
       }
-      if (mounted) setState(() {});
-    } catch (_) {}
-  }
-
-  Future<void> _loadSubjects() async {
-    _subjects = const [];
-    _selectedSubjectId = null;
-    if (_selectedClassId == null || _selectedSectionId == null) return;
-    try {
-      final r = await _dio.get(
-        'teacher/subjects',
-        queryParameters: {
-          'class_id': _selectedClassId,
-          'section_id': _selectedSectionId,
-        },
-      );
-      final data = (r.data is Map && r.data['data'] is List)
-          ? (r.data['data'] as List).cast<Map>()
-          : <Map>[];
-      _subjects = data.map((e) => e.cast<String, dynamic>()).toList();
-      if (_subjects.isNotEmpty) {
-        _selectedSubjectId = (_subjects.first['id'] as num?)?.toInt();
+      _classes = grouped.values.toList();
+      if (_classes.isNotEmpty) {
+        _selectedClassId = (_classes.first['class_id'] as int);
+        _sections = (_classes.first['sections'] as List)
+            .cast<Map<String, dynamic>>();
+        if (_sections.isNotEmpty) {
+          _selectedSectionId = (_sections.first['id'] as int);
+          _subjects = (_sections.first['subjects'] as List)
+              .cast<Map<String, dynamic>>();
+          if (_subjects.isNotEmpty)
+            _selectedSubjectId = (_subjects.first['id'] as int);
+        }
       }
       if (mounted) setState(() {});
     } catch (_) {}
@@ -95,29 +109,14 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
     }
   }
 
-  Future<void> _pickHomeworkDate() async {
-    final now = DateTime.now();
-    final initial = _parseDate(_homeworkDate) ?? now;
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: DateTime(now.year - 2, 1, 1),
-      lastDate: DateTime(now.year + 1, 12, 31),
-      helpText: 'তারিখ নির্বাচন',
-    );
-    if (picked != null) {
-      setState(() {
-        _homeworkDate = _formatDate(picked);
-      });
-    }
-  }
+  // Homework creation date is server-side. Only due date is picked.
 
   Future<void> _pickSubmissionDate() async {
     final now = DateTime.now();
-    final base = _parseDate(_homeworkDate) ?? now;
+    final base = DateTime(now.year, now.month, now.day);
     final picked = await showDatePicker(
       context: context,
-      initialDate: _parseDate(_submissionDate ?? _homeworkDate) ?? base,
+      initialDate: _parseDate(_submissionDate) ?? base,
       firstDate: base,
       lastDate: DateTime(now.year + 1, 12, 31),
       helpText: 'সাবমিশন ডেট',
@@ -141,6 +140,14 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedClassId == null ||
+        _selectedSectionId == null ||
+        _selectedSubjectId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ক্লাস, শাখা ও বিষয় নির্বাচন করুন')),
+      );
+      return;
+    }
     setState(() {
       _submitting = true;
     });
@@ -149,7 +156,7 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
         'class_id': _selectedClassId,
         'section_id': _selectedSectionId,
         'subject_id': _selectedSubjectId,
-        'homework_date': _homeworkDate,
+        // homework_date is omitted; server will default to today
         'submission_date': _submissionDate,
         'title': _titleCtrl.text.trim(),
         'description': _descCtrl.text.trim().isEmpty
@@ -220,33 +227,58 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
                       _selectedSectionId = _sections.isNotEmpty
                           ? (_sections.first['id'] as num?)?.toInt()
                           : null;
-                      _subjects = const [];
-                      _selectedSubjectId = null;
+                      _subjects = _sections.isNotEmpty
+                          ? ((_sections.first['subjects'] as List?)
+                                    ?.cast<Map<String, dynamic>>() ??
+                                [])
+                          : [];
+                      _selectedSubjectId = _subjects.isNotEmpty
+                          ? (_subjects.first['id'] as int)
+                          : null;
                     });
-                    await _loadSubjects();
                   },
                 ),
               ),
               const SizedBox(height: 12),
-              // Section selector
+              // Section selector (2-column)
               InputDecorator(
                 decoration: const InputDecoration(labelText: 'Section'),
-                child: DropdownButton<int>(
-                  isExpanded: true,
-                  value: _selectedSectionId,
-                  items: _sections
-                      .map(
-                        (s) => DropdownMenuItem<int>(
-                          value: (s['id'] as num?)?.toInt(),
-                          child: Text((s['name'] ?? 'Section').toString()),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (v) async {
-                    setState(() {
-                      _selectedSectionId = v;
-                    });
-                    await _loadSubjects();
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisExtent: 40,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: _sections.length,
+                  itemBuilder: (_, i) {
+                    final s = _sections[i];
+                    final id = (s['id'] as num?)?.toInt();
+                    final selected = id != null && id == _selectedSectionId;
+                    return OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: selected
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.1)
+                            : null,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _selectedSectionId = id;
+                          _subjects =
+                              (s['subjects'] as List?)
+                                  ?.cast<Map<String, dynamic>>() ??
+                              [];
+                          _selectedSubjectId = _subjects.isNotEmpty
+                              ? (_subjects.first['id'] as int)
+                              : null;
+                        });
+                      },
+                      child: Text((s['name'] ?? 'Section').toString()),
+                    );
                   },
                 ),
               ),
@@ -288,17 +320,7 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(child: Text('Date: $_homeworkDate')),
-                  TextButton.icon(
-                    onPressed: _pickHomeworkDate,
-                    icon: const Icon(Icons.calendar_today),
-                    label: const Text('Pick'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
+              // Creation date hidden; server sets today
               Row(
                 children: [
                   Expanded(child: Text('Due: ${_submissionDate ?? '-'}')),
@@ -330,13 +352,7 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed:
-                      _submitting ||
-                          _selectedClassId == null ||
-                          _selectedSectionId == null ||
-                          _selectedSubjectId == null
-                      ? null
-                      : _submit,
+                  onPressed: _submitting ? null : _submit,
                   icon: const Icon(Icons.save),
                   label: Text(_submitting ? 'Saving...' : 'Save'),
                 ),
