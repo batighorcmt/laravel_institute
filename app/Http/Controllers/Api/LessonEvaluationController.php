@@ -50,7 +50,10 @@ class LessonEvaluationController extends Controller
     {
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id');
-        if (! $user->isTeacher($schoolId)) {
+        if (! $schoolId) {
+            $schoolId = $user->firstTeacherSchoolId();
+        }
+        if (! $schoolId || ! $user->isTeacher($schoolId)) {
             return response()->json(['message' => 'শুধু শিক্ষক লেসন ইভ্যালুয়েশন তৈরি করতে পারবেন'], 403);
         }
 
@@ -69,7 +72,7 @@ class LessonEvaluationController extends Controller
             'statuses.*' => ['required','string','in:completed,partial,not_done,absent'],
         ]);
 
-        $teacher = $user->teacher;
+        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }

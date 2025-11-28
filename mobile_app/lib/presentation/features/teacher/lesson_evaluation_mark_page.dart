@@ -136,12 +136,22 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
   Future<void> _submit() async {
     if (!_isComplete) return;
     try {
+      final now = DateTime.now();
+      final hh = now.hour.toString().padLeft(2, '0');
+      final mm = now.minute.toString().padLeft(2, '0');
+      // Backend expects format H:i (hours:minutes)
+      final time = '$hh:$mm';
       final body = {
         'routine_entry_id': widget.routineEntryId,
         'class_id': widget.classId,
         'section_id': widget.sectionId,
         'subject_id': widget.subjectId,
         'evaluation_date': _date,
+        'evaluation_time': time,
+        // Some backends may expect 'time' or 'date' keys as well
+        'time': time,
+        // Some APIs may expect 'date' instead of 'evaluation_date'; include both.
+        'date': _date,
         'student_ids': _rows.map((e) => e.id).toList(),
         'statuses': _rows.map((e) => e.status!.api).toList(),
       };
@@ -154,9 +164,28 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
       await _load();
     } catch (e) {
       if (!mounted) return;
+      String message = 'সংরক্ষণ ব্যর্থ';
+      if (e is DioException) {
+        final res = e.response;
+        if (res?.data is Map) {
+          final m = res!.data as Map;
+          if (m['message'] is String && (m['message'] as String).isNotEmpty) {
+            message = m['message'] as String;
+          } else if (m['errors'] is Map) {
+            final errs = m['errors'] as Map;
+            final first = errs.values.cast<List?>().firstWhere(
+              (v) => v != null && v.isNotEmpty,
+              orElse: () => null,
+            );
+            if (first != null && first.isNotEmpty && first.first is String) {
+              message = first.first as String;
+            }
+          }
+        }
+      }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('সংরক্ষণ ব্যর্থ')));
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
