@@ -39,11 +39,26 @@ class TeacherDirectoryController extends Controller
                   ->orWhere('phone','like',"%$s%");
             });
         }
-        $teachers = $query->orderBy('serial_number')->orderBy('id')->limit(500)->get();
+        $query->orderBy('serial_number')->orderBy('id');
+        $perPage = (int)($request->get('per_page', 40));
+        if ($perPage < 5) { $perPage = 40; }
+        if ($perPage > 200) { $perPage = 200; }
+        $page = (int)($request->get('page', 1));
+        $paginated = $query->paginate($perPage, ['*'], 'page', $page);
 
-        return TeacherDirectoryResource::collection($teachers)->additional([
-            'count' => $teachers->count(),
+        // Distinct designations list for filter chips
+        $designations = Teacher::query()
+            ->forSchool($schoolId)
+            ->active()
+            ->whereNotNull('designation')
+            ->distinct()
+            ->orderBy('designation')
+            ->pluck('designation')
+            ->values();
+
+        return TeacherDirectoryResource::collection($paginated)->additional([
             'school_id' => $schoolId,
+            'designations' => $designations,
         ]);
     }
 }
