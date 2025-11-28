@@ -209,6 +209,13 @@ class LessonEvaluationController extends Controller
         }
         $teacherId = $teacher->id;
         $routineEntryId = (int)$request->query('routine_entry_id');
+        $dateParam = $request->query('date');
+        $today = Carbon::today();
+        $date = $dateParam ? Carbon::parse($dateParam)->startOfDay() : $today;
+        if ($date->greaterThan($today)) {
+            return response()->json(['message' => 'ভবিষ্যৎ তারিখ নির্বাচন করা যাবে না'], 422);
+        }
+        $isToday = $date->isSameDay($today);
         if (! $routineEntryId) return response()->json(['message' => 'রুটিন নির্বাচন করুন'], 422);
 
         $entry = RoutineEntry::with(['class','section','subject'])
@@ -216,10 +223,9 @@ class LessonEvaluationController extends Controller
             ->where('teacher_id', $teacherId)
             ->findOrFail($routineEntryId);
 
-        $today = Carbon::today()->toDateString();
         $evaluation = LessonEvaluation::forSchool($schoolId)
             ->forTeacher($teacherId)
-            ->forDate($today)
+            ->forDate($date->toDateString())
             ->where('routine_entry_id', $entry->id)
             ->with('records')
             ->first();
@@ -254,8 +260,17 @@ class LessonEvaluationController extends Controller
             ];
         })->values();
 
+        // Stats from DB (evaluation records) only
+        $stats = [
+            'total' => $evaluation ? $evaluation->records->count() : 0,
+            'completed' => $evaluation ? $evaluation->records->where('status','completed')->count() : 0,
+            'partial' => $evaluation ? $evaluation->records->where('status','partial')->count() : 0,
+            'not_done' => $evaluation ? $evaluation->records->where('status','not_done')->count() : 0,
+            'absent' => $evaluation ? $evaluation->records->where('status','absent')->count() : 0,
+        ];
+
         return response()->json([
-            'date' => $today,
+            'date' => $date->toDateString(),
             'routine_entry' => [
                 'id' => $entry->id,
                 'class_id' => $entry->class_id,
@@ -268,6 +283,8 @@ class LessonEvaluationController extends Controller
             ],
             'students' => $students,
             'allowed_statuses' => ['completed','partial','not_done','absent'],
+            'stats' => $stats,
+            'read_only' => ! $isToday,
         ]);
     }
 }
