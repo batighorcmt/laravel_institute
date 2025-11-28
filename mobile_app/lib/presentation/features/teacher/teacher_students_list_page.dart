@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
+import '../../../core/network/dio_client.dart';
 import '../../../data/teacher/teacher_students_repository.dart';
 
 class TeacherStudentsListPage extends StatefulWidget {
@@ -14,24 +15,41 @@ class TeacherStudentsListPage extends StatefulWidget {
 
 class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   final _searchCtrl = TextEditingController();
-  final _dio = Dio();
+  late final Dio _dio;
   late final TeacherStudentsRepository _repo;
 
   int _page = 1;
   bool _loading = false;
   bool _hasMore = true;
   List<dynamic> _items = [];
+  String? _error;
 
   String? _classId;
   String? _sectionId;
   String? _groupId;
   String? _gender;
+  List<Map<String, dynamic>> _classes = [];
+  List<Map<String, dynamic>> _sections = [];
+  List<Map<String, dynamic>> _groups = [];
 
   @override
   void initState() {
     super.initState();
+    _dio = DioClient().dio;
     _repo = TeacherStudentsRepository(_dio);
+    _preloadFilters();
     _load(reset: true);
+  }
+
+  Future<void> _preloadFilters() async {
+    try {
+      final classes = await _repo.fetchClasses();
+      final groups = await _repo.fetchGroups();
+      setState(() {
+        _classes = classes;
+        _groups = groups;
+      });
+    } catch (_) {}
   }
 
   Future<void> _load({bool reset = false}) async {
@@ -51,12 +69,21 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       final meta = (res['meta'] as Map?) ?? {};
       setState(() {
         _page = page;
-        _hasMore = (meta['has_more'] as bool?) ?? false;
+        final current = (meta['current_page'] as int?) ?? page;
+        final last =
+            (meta['last_page'] as int?) ?? (data.isNotEmpty ? page + 1 : page);
+        _hasMore = current < last;
+        _error = null;
         if (reset) {
           _items = data;
         } else {
           _items.addAll(data);
         }
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _hasMore = false;
       });
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -78,6 +105,133 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       appBar: AppBar(title: const Text('Students')),
       body: Column(
         children: [
+          // Row 1: Class + Section
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _classId,
+                    decoration: const InputDecoration(
+                      labelText: 'Class',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: null,
+                        child: Text(''),
+                      ),
+                      ..._classes.map(
+                        (c) => DropdownMenuItem<String>(
+                          value: c['id']?.toString(),
+                          child: Text(c['name']?.toString() ?? 'Class'),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) async {
+                      setState(() {
+                        _classId = v;
+                        _sectionId = null;
+                        _sections = [];
+                      });
+                      final sections = await _repo.fetchSections(classId: v);
+                      if (mounted) setState(() => _sections = sections);
+                      _load(reset: true);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _sectionId,
+                    decoration: const InputDecoration(
+                      labelText: 'Section',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: null,
+                        child: Text(''),
+                      ),
+                      ..._sections.map(
+                        (s) => DropdownMenuItem<String>(
+                          value: s['id']?.toString(),
+                          child: Text(s['name']?.toString() ?? 'Section'),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      setState(() => _sectionId = v);
+                      _load(reset: true);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Row 2: Group + Gender (dropdowns, default blank)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _groupId,
+                    decoration: const InputDecoration(
+                      labelText: 'Group',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: null,
+                        child: Text(''),
+                      ),
+                      ..._groups.map(
+                        (g) => DropdownMenuItem<String>(
+                          value: g['id']?.toString(),
+                          child: Text(g['name']?.toString() ?? 'Group'),
+                        ),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      setState(() => _groupId = v);
+                      _load(reset: true);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _gender,
+                    decoration: const InputDecoration(
+                      labelText: 'Gender',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem<String>(value: null, child: Text('')),
+                      DropdownMenuItem<String>(
+                        value: 'male',
+                        child: Text('Male'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'female',
+                        child: Text('Female'),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      setState(() => _gender = v);
+                      _load(reset: true);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
@@ -102,79 +256,77 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
               ],
             ),
           ),
-          // Simple filter row (placeholders for now)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              children: [
-                FilterChip(
-                  label: const Text('Male'),
-                  selected: _gender == 'male',
-                  onSelected: (v) {
-                    setState(() => _gender = v ? 'male' : null);
-                    _load(reset: true);
-                  },
-                ),
-                const SizedBox(width: 8),
-                FilterChip(
-                  label: const Text('Female'),
-                  selected: _gender == 'female',
-                  onSelected: (v) {
-                    setState(() => _gender = v ? 'female' : null);
-                    _load(reset: true);
-                  },
-                ),
-              ],
-            ),
-          ),
           Expanded(
-            child: ListView.separated(
-              itemCount: _items.length + (_hasMore ? 1 : 0),
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                if (index >= _items.length) {
-                  // Load more trigger
-                  _load();
-                  return const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                final it = _items[index] as Map<String, dynamic>;
-                final photoUrl = it['photo_url'] as String?;
-                final name = it['name'] as String? ?? '';
-                final roll = it['roll']?.toString() ?? '';
-                final cls = it['class'] as String? ?? '';
-                final section = it['section'] as String? ?? '';
-                final phone = it['phone'] as String? ?? '';
-                final id = it['id']?.toString() ?? '';
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundImage: photoUrl != null && photoUrl.isNotEmpty
-                        ? CachedNetworkImageProvider(photoUrl)
-                        : null,
-                    child: (photoUrl == null || photoUrl.isEmpty)
-                        ? const Icon(Icons.person)
-                        : null,
-                  ),
-                  title: Text(name),
-                  subtitle: Text('Roll: $roll  •  $cls-$section'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.call),
-                    onPressed: phone.isNotEmpty ? () => _call(phone) : null,
-                  ),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            TeacherStudentProfilePage(studentId: id),
+            child: _loading && _items.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_error!),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () => _load(reset: true),
+                            child: const Text('Retry'),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                );
-              },
-            ),
+                    ),
+                  )
+                : _items.isEmpty
+                ? const Center(child: Text('No students found'))
+                : ListView.separated(
+                    itemCount: _items.length + (_hasMore ? 1 : 0),
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      if (index >= _items.length) {
+                        // Load more trigger
+                        if (!_loading) _load();
+                        return const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      final it = _items[index] as Map<String, dynamic>;
+                      final photoUrl = it['photo_url'] as String?;
+                      final name = it['name'] as String? ?? '';
+                      final roll = it['roll']?.toString() ?? '';
+                      final cls = it['class'] as String? ?? '';
+                      final section = it['section'] as String? ?? '';
+                      final phone = it['phone'] as String? ?? '';
+                      final id = it['id']?.toString() ?? '';
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage:
+                              photoUrl != null && photoUrl.isNotEmpty
+                              ? CachedNetworkImageProvider(photoUrl)
+                              : null,
+                          child: (photoUrl == null || photoUrl.isEmpty)
+                              ? const Icon(Icons.person)
+                              : null,
+                        ),
+                        title: Text(name),
+                        subtitle: Text('Roll: $roll  •  $cls-$section'),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.call),
+                          onPressed: phone.isNotEmpty
+                              ? () => _call(phone)
+                              : null,
+                        ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  TeacherStudentProfilePage(studentId: id),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -192,14 +344,16 @@ class TeacherStudentProfilePage extends StatefulWidget {
 }
 
 class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
-  final _dio = Dio();
+  late final Dio _dio;
   late final TeacherStudentsRepository _repo;
   Map<String, dynamic>? _data;
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
+    _dio = DioClient().dio;
     _repo = TeacherStudentsRepository(_dio);
     _load();
   }
@@ -208,7 +362,12 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     setState(() => _loading = true);
     try {
       final res = await _repo.fetchStudentProfile(widget.studentId);
-      setState(() => _data = res);
+      setState(() {
+        _data = res;
+        _error = null;
+      });
+    } catch (e) {
+      setState(() => _error = 'Failed to load profile');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -228,6 +387,23 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       appBar: AppBar(title: const Text('Student Profile')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _error != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_error!),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: _load,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(

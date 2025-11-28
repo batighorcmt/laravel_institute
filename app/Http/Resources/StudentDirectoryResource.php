@@ -23,12 +23,12 @@ class StudentDirectoryResource extends JsonResource
             }
         }
         return [
-            'student_id' => $st?->id,
+            'id' => $st?->id,
             'name' => $st?->full_name,
             'roll' => $en->roll_no,
-            'class_name' => $en->schoolClass?->name,
-            'section_name' => $en->section?->name,
-            'group_name' => $en->group?->name,
+            'class' => $en->class?->name,
+            'section' => $en->section?->name,
+            'group' => $en->group?->name,
             'gender' => $st?->gender,
             'phone' => $st?->phone,
             'photo_url' => $photoUrl,

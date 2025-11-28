@@ -50,7 +50,7 @@ class StudentDirectoryController extends Controller
             });
         }
 
-        $enroll->with(['student','schoolClass:id,name','section:id,name','group:id,name']);
+        $enroll->with(['student','class:id,name','section:id,name','group:id,name']);
         $enroll->orderBy('class_id')->orderBy('section_id')->orderBy('roll_no');
         $perPage = (int)($request->get('per_page', 40));
         if ($perPage < 10) $perPage = 40;
@@ -81,7 +81,7 @@ class StudentDirectoryController extends Controller
         }
 
         $student->load([
-            'currentEnrollment.schoolClass','currentEnrollment.section','currentEnrollment.group',
+            'currentEnrollment.class','currentEnrollment.section','currentEnrollment.group',
         ]);
         return (new StudentProfileResource($student));
     }

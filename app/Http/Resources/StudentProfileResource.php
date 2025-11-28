@@ -30,12 +30,10 @@ class StudentProfileResource extends JsonResource
             'date_of_birth' => optional($st?->date_of_birth)->toDateString(),
             'phone' => $st?->phone,
             'photo_url' => $photoUrl,
-            'class' => [
-                'name' => $en?->schoolClass?->name,
-                'section' => $en?->section?->name,
-                'group' => $en?->group?->name,
-                'roll' => $en?->roll_no,
-            ],
+            'class' => $en?->class?->name,
+            'section' => $en?->section?->name,
+            'group' => $en?->group?->name,
+            'roll' => $en?->roll_no,
             'guardians' => [
                 'father_name' => $st?->father_name,
                 'father_phone' => $st?->father_phone,
