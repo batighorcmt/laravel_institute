@@ -252,9 +252,10 @@ class _OperationsGrid extends StatelessWidget {
       ),
       (key: 'teachers', title: 'Teachers', icon: Icons.people_alt_outlined),
       (key: 'students', title: 'Students', icon: Icons.school_outlined),
-    ];
-
-    return GridView.count(
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TeacherDirectoryPage()),
+            );
+            break;
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
