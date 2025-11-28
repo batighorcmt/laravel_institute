@@ -40,8 +40,10 @@ class _ClassSectionsListPageState extends State<ClassSectionsListPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-              : ListView.separated(
+          ? Center(
+              child: Text(_error!, style: const TextStyle(color: Colors.red)),
+            )
+          : ListView.separated(
               padding: const EdgeInsets.all(12),
               separatorBuilder: (_, i) => const SizedBox(height: 8),
               itemCount: _items.length,
@@ -60,8 +62,11 @@ class _ClassSectionsListPageState extends State<ClassSectionsListPage> {
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () {
                             final sectionId = s['id'];
-                            final titleText = '${name.isEmpty ? 'Class ${m['class_id']}' : name} • Section ${s['name']}';
-                            context.push('/teacher/students-attendance/class/sections/$sectionId/mark?title=${Uri.encodeComponent(titleText)}');
+                            final titleText =
+                                '${name.isEmpty ? 'Class ${m['class_id']}' : name} • Section ${s['name']}';
+                            context.push(
+                              '/teacher/students-attendance/class/sections/$sectionId/mark?title=${Uri.encodeComponent(titleText)}',
+                            );
                           },
                         ),
                     ],

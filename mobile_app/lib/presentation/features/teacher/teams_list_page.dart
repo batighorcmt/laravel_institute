@@ -36,13 +36,15 @@ class _TeamsListPageState extends State<TeamsListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Team Attendance')),
-        body: _loading
+      body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-            ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-            : ListView.separated(
+          ? Center(
+              child: Text(_error!, style: const TextStyle(color: Colors.red)),
+            )
+          : ListView.separated(
               padding: const EdgeInsets.all(12),
-            separatorBuilder: (_, i) => const SizedBox(height: 8),
+              separatorBuilder: (_, i) => const SizedBox(height: 8),
               itemCount: _items.length,
               itemBuilder: (ctx, i) {
                 final m = _items[i] as Map<String, dynamic>? ?? {};

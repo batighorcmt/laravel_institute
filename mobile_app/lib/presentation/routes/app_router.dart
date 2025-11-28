@@ -10,7 +10,7 @@ import '../features/teacher/students_attendance_menu_page.dart';
 import '../features/teacher/class_sections_list_page.dart';
 import '../features/teacher/extra_classes_list_page.dart';
 import '../features/teacher/teams_list_page.dart';
-import '../features/teacher/class_section_mark_attendance_page.dart';
+import '../features/teacher/mark_attendance_page.dart';
 import '../features/parent/parent_dashboard_page.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -45,15 +45,24 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/teacher/students-attendance/class',
+      name: 'teacher-class-sections',
       builder: (context, state) => const ClassSectionsListPage(),
-    ),
-    GoRoute(
-      path: '/teacher/students-attendance/class/sections/:sectionId/mark',
-      builder: (context, state) {
-        final sectionId = int.tryParse(state.pathParameters['sectionId'] ?? '0') ?? 0;
-        final title = state.uri.queryParameters['title'] ?? 'Class Attendance';
-        return ClassSectionMarkAttendancePage(sectionId: sectionId, title: title);
-      },
+      routes: [
+        GoRoute(
+          path: 'sections/:sectionId/mark',
+          name: 'teacher-class-section-mark',
+          builder: (context, state) {
+            final sectionId =
+                int.tryParse(state.pathParameters['sectionId'] ?? '0') ?? 0;
+            final title =
+                state.uri.queryParameters['title'] ?? 'Class Attendance';
+            return ClassSectionMarkAttendancePage(
+              sectionId: sectionId,
+              title: title,
+            );
+          },
+        ),
+      ],
     ),
     GoRoute(
       path: '/teacher/students-attendance/extra',

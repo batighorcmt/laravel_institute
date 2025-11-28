@@ -117,14 +117,18 @@ class ExtraClassController extends Controller
     {
         if ($extraClass->school_id !== $school->id) abort(404);
 
+        // Fetch students from active enrollments for this class/academic year
         $students = Student::where('school_id', $school->id)
-            ->where('class_id', $extraClass->class_id)
             ->where('status', 'active')
-            ->with(['enrollment' => function($q) use ($school, $extraClass) {
+            ->whereHas('enrollments', function($q) use ($extraClass, $school) {
                 $q->where('school_id', $school->id)
-                    ->where('academic_year_id', $extraClass->academic_year_id)
-                    ->with('section');
-            }])
+                  ->where('class_id', $extraClass->class_id)
+                  ->where('status', 'active');
+                if ($extraClass->academic_year_id) {
+                    $q->where('academic_year_id', $extraClass->academic_year_id);
+                }
+            })
+            ->with(['currentEnrollment.section'])
             ->orderBy('student_name_bn')
             ->get();
 
@@ -146,7 +150,7 @@ class ExtraClassController extends Controller
         if ($extraClass->school_id !== $school->id) abort(404);
 
         $validated = $request->validate([
-            'enrollments' => 'required|array',
+            'enrollments' => 'nullable|array',
             'enrollments.*.student_id' => 'required|exists:students,id',
             'enrollments.*.assigned_section_id' => 'required|exists:sections,id',
         ]);
@@ -155,7 +159,8 @@ class ExtraClassController extends Controller
         try {
             ExtraClassEnrollment::where('extra_class_id', $extraClass->id)->delete();
 
-            foreach ($validated['enrollments'] as $enrollment) {
+            $rows = $validated['enrollments'] ?? [];
+            foreach ($rows as $enrollment) {
                 ExtraClassEnrollment::create([
                     'extra_class_id' => $extraClass->id,
                     'student_id' => $enrollment['student_id'],

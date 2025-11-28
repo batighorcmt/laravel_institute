@@ -3,23 +3,7 @@
 @section('title', 'Manage Students - ' . $extraClass->name)
 
 @section('content')
-<div class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1 class="m-0">Manage Students</h1>
-            </div>
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="{{ route('principal.dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('principal.institute.manage', $school) }}">{{ $school->name }}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('principal.institute.extra-classes.index', $school) }}">Extra Classes</a></li>
-                    <li class="breadcrumb-item active">Manage Students</li>
-                </ol>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Header and breadcrumb removed per request -->
 
 <section class="content">
     <div class="container-fluid">
@@ -86,7 +70,7 @@
                                             <input type="checkbox" id="checkAll">
                                         </th>
                                         <th>Roll</th>
-                                        <th>Student Name</th>
+                                        <th>Student Name (EN)</th>
                                         <th>Regular Section</th>
                                         <th>Assign to Section <span class="text-danger">*</span></th>
                                     </tr>
@@ -106,14 +90,18 @@
                                                        {{ $isEnrolled ? 'checked' : '' }}>
                                             </td>
                                             <td>{{ $student->currentEnrollment->roll_no ?? 'N/A' }}</td>
-                                            <td>{{ $student->name }}</td>
+                                            <td>{{ $student->student_name_en ?? $student->full_name ?? $student->name }}</td>
                                             <td>
                                                 <span class="badge badge-secondary">
                                                     {{ $student->currentEnrollment->section->name ?? 'N/A' }}
                                                 </span>
                                             </td>
                                             <td>
-                                                <input type="hidden" name="enrollments[{{ $loop->index }}][student_id]" value="{{ $student->id }}">
+                                                      <input type="hidden" 
+                                                          class="enrollment-student-id" 
+                                                          name="enrollments[{{ $loop->index }}][student_id]" 
+                                                          value="{{ $student->id }}"
+                                                          {{ !$isEnrolled ? 'disabled' : '' }}>
                                                 <select class="form-control form-control-sm section-select" 
                                                         name="enrollments[{{ $loop->index }}][assigned_section_id]"
                                                         data-student-id="{{ $student->id }}"
@@ -158,84 +146,120 @@
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    // Check all checkbox functionality
-    $('#checkAll').on('change', function() {
-        $('.student-checkbox').prop('checked', this.checked);
-        toggleSectionSelects();
-    });
+(function(){
+function initManageStudents(){
+    const checkAll = document.getElementById('checkAll');
+    const selectAllBtn = document.getElementById('selectAll');
+    const deselectAllBtn = document.getElementById('deselectAll');
 
-    // Individual checkbox change
-    $('.student-checkbox').on('change', function() {
-        toggleSectionSelects();
-        updateCheckAllState();
-    });
-
-    // Select all button
-    $('#selectAll').on('click', function() {
-        $('.student-checkbox').prop('checked', true);
-        toggleSectionSelects();
-        updateCheckAllState();
-    });
-
-    // Deselect all button
-    $('#deselectAll').on('click', function() {
-        $('.student-checkbox').prop('checked', false);
-        toggleSectionSelects();
-        updateCheckAllState();
-    });
+    const studentCheckboxes = () => Array.from(document.querySelectorAll('.student-checkbox'));
+    const sectionSelectForStudent = (id) => document.querySelector(`.section-select[data-student-id="${id}"]`);
+    const hiddenIdForStudent = (id) => {
+        const row = document.querySelector(`.section-select[data-student-id="${id}"]`);
+        if (!row) return null;
+        // hidden is in same row; select with closest tr then query
+        const tr = row.closest('tr');
+        return tr ? tr.querySelector('.enrollment-student-id') : null;
+    };
 
     function toggleSectionSelects() {
-        $('.student-checkbox').each(function() {
-            const studentId = $(this).val();
-            const sectionSelect = $(`.section-select[data-student-id="${studentId}"]`);
-            
-            if ($(this).is(':checked')) {
-                sectionSelect.prop('disabled', false);
-                if (!sectionSelect.val()) {
-                    sectionSelect.find('option:eq(1)').prop('selected', true);
-                }
+        studentCheckboxes().forEach(cb => {
+            const studentId = cb.value;
+            const sectionSelect = sectionSelectForStudent(studentId);
+            if (!sectionSelect) return;
+            if (cb.checked) {
+                sectionSelect.disabled = false;
+                const hidden = hiddenIdForStudent(studentId);
+                if (hidden) hidden.disabled = false;
             } else {
-                sectionSelect.prop('disabled', true);
+                sectionSelect.disabled = true;
+                // Clear selection to keep intent explicit
+                sectionSelect.value = '';
+                const hidden = hiddenIdForStudent(studentId);
+                if (hidden) hidden.disabled = true;
             }
         });
     }
 
     function updateCheckAllState() {
-        const total = $('.student-checkbox').length;
-        const checked = $('.student-checkbox:checked').length;
-        $('#checkAll').prop('checked', total === checked && total > 0);
+        const total = studentCheckboxes().length;
+        const checked = studentCheckboxes().filter(cb => cb.checked).length;
+        if (checkAll) checkAll.checked = total > 0 && total === checked;
     }
 
-    // Form validation
-    $('form').on('submit', function(e) {
-        let valid = true;
-        let errorMsg = '';
+    if (checkAll) {
+        checkAll.addEventListener('change', () => {
+            const checked = checkAll.checked;
+            studentCheckboxes().forEach(cb => { cb.checked = checked; });
+            toggleSectionSelects();
+        });
+    }
 
-        $('.student-checkbox:checked').each(function() {
-            const studentId = $(this).val();
-            const sectionSelect = $(`.section-select[data-student-id="${studentId}"]`);
-            
-            if (!sectionSelect.val()) {
-                valid = false;
-                sectionSelect.addClass('is-invalid');
-                errorMsg = 'Please assign a section for all selected students.';
-            } else {
-                sectionSelect.removeClass('is-invalid');
+    studentCheckboxes().forEach(cb => {
+        cb.addEventListener('change', () => {
+            toggleSectionSelects();
+            updateCheckAllState();
+        });
+    });
+
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', () => {
+            studentCheckboxes().forEach(cb => { cb.checked = true; });
+            toggleSectionSelects();
+            updateCheckAllState();
+        });
+    }
+
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', () => {
+            studentCheckboxes().forEach(cb => { cb.checked = false; });
+            toggleSectionSelects();
+            updateCheckAllState();
+        });
+    }
+
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            let valid = true;
+            let errorMsg = '';
+
+            const selected = studentCheckboxes().filter(cb => cb.checked);
+            selected.forEach(cb => {
+                const sectionSelect = sectionSelectForStudent(cb.value);
+                if (!sectionSelect || !sectionSelect.value) {
+                    valid = false;
+                    if (sectionSelect) sectionSelect.classList.add('is-invalid');
+                    errorMsg = 'Please assign a section for all selected students.';
+                } else {
+                    sectionSelect.classList.remove('is-invalid');
+                }
+            });
+
+            // Allow saving with zero selected rows (clears all enrollments)
+            if (selected.length === 0) {
+                valid = true;
+            }
+
+            if (!valid) {
+                e.preventDefault();
+                alert(errorMsg);
+                return false;
             }
         });
-
-        if (!valid) {
-            e.preventDefault();
-            alert(errorMsg);
-            return false;
-        }
-    });
+    }
 
     // Initialize on page load
     toggleSectionSelects();
     updateCheckAllState();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initManageStudents);
+} else {
+    initManageStudents();
+}
+})();
 </script>
 @endpush
 @endsection

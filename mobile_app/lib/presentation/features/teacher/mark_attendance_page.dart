@@ -1,0 +1,377 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import '../../../core/network/dio_client.dart';
+
+class ClassSectionMarkAttendancePage extends StatefulWidget {
+  final int sectionId;
+  final String title;
+  const ClassSectionMarkAttendancePage({
+    super.key,
+    required this.sectionId,
+    required this.title,
+  });
+
+  @override
+  State<ClassSectionMarkAttendancePage> createState() =>
+      _ClassSectionMarkAttendancePageState();
+}
+
+class _ClassSectionMarkAttendancePageState
+    extends State<ClassSectionMarkAttendancePage> {
+  late final Dio _dio;
+  bool _loading = true;
+  String? _error;
+  String _date = _formatDate(DateTime.now());
+  List<_StudentRow> _students = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _dio = DioClient().dio;
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final r = await _dio.get(
+        'teacher/students-attendance/class/sections/${widget.sectionId}/students',
+        queryParameters: {'date': _date},
+      );
+      final data = r.data as Map<String, dynamic>? ?? {};
+      _date = (data['date'] as String?) ?? _date;
+      final list = (data['students'] as List? ?? []).cast<Map>();
+      _students = list
+          .map(
+            (m) => _StudentRow(
+              id: m['id'] as int,
+              name: (m['name'] ?? '') as String,
+              roll: (m['roll'] ?? 0) as int,
+              photoUrl: (m['photo_url'] ?? '') as String,
+              status: _parseStatus(m['status'] as String?),
+            ),
+          )
+          .toList();
+    } catch (e) {
+      _error = 'ডাটা লোড ব্যর্থ';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  AttendanceStatus? _parseStatus(String? s) {
+    switch (s) {
+      case 'present':
+        return AttendanceStatus.present;
+      case 'absent':
+        return AttendanceStatus.absent;
+      case 'late':
+        return AttendanceStatus.late;
+    }
+    return null;
+  }
+
+  Future<void> _selectAll(AttendanceStatus st) async {
+    setState(() {
+      _students = _students.map((e) => e.copyWith(status: st)).toList();
+    });
+  }
+
+  bool get _isComplete =>
+      _students.isNotEmpty && _students.every((e) => e.status != null);
+
+  Future<void> _submit() async {
+    if (!_isComplete) return;
+    try {
+      final body = {
+        'date': _date,
+        'items': _students
+            .map((s) => {'student_id': s.id, 'status': s.status!.name})
+            .toList(),
+      };
+      final r = await _dio.post(
+        'teacher/students-attendance/class/sections/${widget.sectionId}/attendance',
+        data: body,
+      );
+      if (!mounted) return;
+      final msg = (r.data is Map && r.data['message'] is String)
+          ? r.data['message'] as String
+          : 'সফলভাবে সংরক্ষিত হয়েছে';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('সংরক্ষণ ব্যর্থ')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.title)),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+          ? Center(child: Text(_error!))
+          : Column(
+              children: [
+                _HeaderBar(
+                  date: _date,
+                  onSelectAllPresent: () =>
+                      _selectAll(AttendanceStatus.present),
+                  onSelectAllAbsent: () => _selectAll(AttendanceStatus.absent),
+                  onSelectAllLate: () => _selectAll(AttendanceStatus.late),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(12),
+                    separatorBuilder: (_, i) => const SizedBox(height: 8),
+                    itemCount: _students.length,
+                    itemBuilder: (ctx, i) {
+                      final s = _students[i];
+                      return _StudentRowWidget(
+                        row: s,
+                        onChanged: (st) {
+                          setState(() {
+                            _students[i] = s.copyWith(status: st);
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isComplete ? _submit : null,
+                        icon: const Icon(Icons.save),
+                        label: const Text('সাবমিট করুন'),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _HeaderBar extends StatelessWidget {
+  final String date;
+  final VoidCallback onSelectAllPresent;
+  final VoidCallback onSelectAllAbsent;
+  final VoidCallback onSelectAllLate;
+  const _HeaderBar({
+    required this.date,
+    required this.onSelectAllPresent,
+    required this.onSelectAllAbsent,
+    required this.onSelectAllLate,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'তারিখ: $date',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          _ActionChip(
+            icon: Icons.check_circle,
+            color: Colors.green,
+            label: 'সব উপস্থিত',
+            onTap: onSelectAllPresent,
+          ),
+          const SizedBox(width: 8),
+          _ActionChip(
+            icon: Icons.cancel,
+            color: Colors.red,
+            label: 'সব অনুপস্থিত',
+            onTap: onSelectAllAbsent,
+          ),
+          const SizedBox(width: 8),
+          _ActionChip(
+            icon: Icons.access_time_filled,
+            color: Colors.orange,
+            label: 'সব দেরি',
+            onTap: onSelectAllLate,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final VoidCallback onTap;
+  const _ActionChip({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.onTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 4),
+            Text(label),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum AttendanceStatus { present, absent, late }
+
+class _StudentRow {
+  final int id;
+  final String name;
+  final int roll;
+  final String photoUrl;
+  final AttendanceStatus? status;
+  const _StudentRow({
+    required this.id,
+    required this.name,
+    required this.roll,
+    required this.photoUrl,
+    required this.status,
+  });
+  _StudentRow copyWith({AttendanceStatus? status}) => _StudentRow(
+    id: id,
+    name: name,
+    roll: roll,
+    photoUrl: photoUrl,
+    status: status,
+  );
+}
+
+class _StudentRowWidget extends StatelessWidget {
+  final _StudentRow row;
+  final ValueChanged<AttendanceStatus> onChanged;
+  const _StudentRowWidget({required this.row, required this.onChanged});
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: Colors.grey.shade200,
+              backgroundImage: row.photoUrl.isEmpty
+                  ? null
+                  : NetworkImage(row.photoUrl),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 36,
+              child: Text(
+                '${row.roll}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(row.name)),
+            _StatusButton(
+              icon: Icons.check,
+              tooltip: 'উপস্থিত',
+              color: Colors.green,
+              selected: row.status == AttendanceStatus.present,
+              onTap: () => onChanged(AttendanceStatus.present),
+            ),
+            const SizedBox(width: 6),
+            _StatusButton(
+              icon: Icons.close,
+              tooltip: 'অনুপস্থিত',
+              color: Colors.red,
+              selected: row.status == AttendanceStatus.absent,
+              onTap: () => onChanged(AttendanceStatus.absent),
+            ),
+            const SizedBox(width: 6),
+            _StatusButton(
+              icon: Icons.access_time_filled,
+              tooltip: 'দেরি',
+              color: Colors.orange,
+              selected: row.status == AttendanceStatus.late,
+              onTap: () => onChanged(AttendanceStatus.late),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+  const _StatusButton({
+    required this.icon,
+    required this.tooltip,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 22,
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: selected ? color : color.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+            border: Border.all(color: color.withValues(alpha: 0.6)),
+          ),
+          child: Icon(icon, size: 18, color: selected ? Colors.white : color),
+        ),
+      ),
+    );
+  }
+}
+
+String _formatDate(DateTime d) {
+  final m = d.month.toString().padLeft(2, '0');
+  final day = d.day.toString().padLeft(2, '0');
+  return '${d.year}-$m-$day';
+}

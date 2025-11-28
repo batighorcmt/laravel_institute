@@ -39,8 +39,10 @@ class _ExtraClassesListPageState extends State<ExtraClassesListPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-              : ListView.separated(
+          ? Center(
+              child: Text(_error!, style: const TextStyle(color: Colors.red)),
+            )
+          : ListView.separated(
               padding: const EdgeInsets.all(12),
               separatorBuilder: (_, i) => const SizedBox(height: 8),
               itemCount: _items.length,

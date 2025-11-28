@@ -104,11 +104,6 @@
                                         name="section_id" 
                                         required>
                                     <option value="">Select Section</option>
-                                    @foreach($sections as $section)
-                                        <option value="{{ $section->id }}" {{ old('section_id') == $section->id ? 'selected' : '' }}>
-                                            {{ $section->name }}
-                                        </option>
-                                    @endforeach
                                 </select>
                                 @error('section_id')
                                     <span class="invalid-feedback">{{ $message }}</span>
@@ -217,3 +212,60 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+(function(){
+    function initDependentSections(){
+        const classSelect = document.getElementById('class_id');
+        const sectionSelect = document.getElementById('section_id');
+        if (!classSelect || !sectionSelect) return;
+
+        const metaUrl = "{{ route('principal.institute.meta.sections', $school) }}";
+        const oldSection = "{{ old('section_id') }}";
+
+        function clearSections(){
+            sectionSelect.innerHTML = '<option value="">Select Section</option>';
+        }
+
+        async function loadSectionsFor(classId, preselect){
+            if (!classId){ clearSections(); return; }
+            try{
+                const res = await fetch(metaUrl + '?class_id=' + encodeURIComponent(classId), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                clearSections();
+                data.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    if (preselect && String(preselect) === String(s.id)) opt.selected = true;
+                    sectionSelect.appendChild(opt);
+                });
+            }catch(e){
+                clearSections();
+            }
+        }
+
+        classSelect.addEventListener('change', function(){
+            loadSectionsFor(this.value, null);
+        });
+
+        // Initial population if a class is already selected
+        const initialClass = classSelect.value;
+        if (initialClass){
+            loadSectionsFor(initialClass, oldSection);
+        } else {
+            clearSections();
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initDependentSections);
+    } else {
+        initDependentSections();
+    }
+})();
+</script>
+@endpush
