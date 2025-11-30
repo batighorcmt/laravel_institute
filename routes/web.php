@@ -37,11 +37,25 @@ Route::prefix('admission/{schoolCode}')->group(function() {
     Route::get('/', [AdmissionFlowController::class, 'index'])->name('admission.index');
     Route::get('/instruction', [AdmissionFlowController::class, 'instruction'])->name('admission.instruction');
     Route::post('/instruction', [AdmissionFlowController::class, 'handleConsent'])->name('admission.instruction.consent');
-    Route::get('/apply', [AdmissionFlowController::class, 'apply'])->name('admission.apply');
-    Route::post('/apply', [AdmissionFlowController::class, 'submit'])->name('admission.apply.submit');
-    Route::get('/preview/{appId}', [AdmissionFlowController::class, 'preview'])->name('admission.preview');
+    // Block applying if an applicant session already exists (must logout first)
+    Route::get('/apply', [AdmissionFlowController::class, 'apply'])->middleware('admission.applicant.exclusive')->name('admission.apply');
+    Route::post('/apply', [AdmissionFlowController::class, 'submit'])->middleware('admission.applicant.exclusive')->name('admission.apply.submit');
+    // Require applicant session to view preview
+    Route::get('/preview/{appId}', [AdmissionFlowController::class, 'preview'])->middleware('admission.applicant.guard')->name('admission.preview');
     Route::post('/payment/initiate', [AdmissionFlowController::class, 'paymentInitiate'])->name('admission.payment');
-    Route::get('/copy/{appId}', [AdmissionFlowController::class, 'copy'])->name('admission.copy');
+    Route::get('/copy/{appId}', [AdmissionFlowController::class, 'copy'])->middleware('admission.applicant.guard')->name('admission.copy');
+    // Applicant login (POST) within admission group; use unique segment to avoid param collisions
+    Route::post('/applicant-login', [\App\Http\Controllers\AdmissionController::class, 'login'])->name('admission.login');
+    // Login page (Blade view) within admission flow
+    Route::get('/login', function(string $schoolCode) {
+        $school = \App\Models\School::where('code', $schoolCode)->first();
+        return view('admission.login', ['school' => $school]);
+    })->name('admission.login.page');
+    // Applicant logout: clear only the applicant session key
+    Route::post('/applicant-logout', function(string $schoolCode) {
+        session()->forget('admission_applicant');
+        return redirect()->route('admission.index', $schoolCode);
+    })->name('admission.logout');
     Route::match(['GET','POST'],'/payment/success/{appId}', [AdmissionFlowController::class,'paymentSuccess'])
         ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
         ->name('admission.payment.success');
@@ -186,11 +200,13 @@ Route::middleware(['auth'])->group(function () {
                 Route::delete('/class-settings/{setting}', [\App\Http\Controllers\Principal\AdmissionClassSettingController::class,'destroy'])->name('class-settings.destroy');
                 Route::get('/applications', [PrincipalAdmissionController::class,'applications'])->name('applications');
                 Route::get('/applications/{application}', [PrincipalAdmissionController::class,'show'])->name('applications.show');
+                Route::get('/applications/{application}/copy', [PrincipalAdmissionController::class,'copy'])->name('applications.copy');
                 Route::post('/applications/{application}/accept', [PrincipalAdmissionController::class,'accept'])->name('applications.accept');
                 Route::post('/applications/{application}/cancel', [PrincipalAdmissionController::class,'cancel'])->name('applications.cancel');
                 Route::get('/applications/{application}/admit-card', [PrincipalAdmissionController::class,'admitCard'])->name('applications.admit_card');
                 Route::get('/applications/{application}/edit', [PrincipalAdmissionController::class,'edit'])->name('applications.edit');
                 Route::post('/applications/{application}/update', [PrincipalAdmissionController::class,'update'])->name('applications.update');
+                Route::post('/applications/{application}/reset-password', [PrincipalAdmissionController::class,'resetPassword'])->name('applications.reset_password');
                 Route::get('/applications/{application}/payments', [PrincipalAdmissionController::class,'applicationPayments'])->name('applications.payments.details');
                 Route::get('/payments', [PrincipalAdmissionController::class,'payments'])->name('payments');
 

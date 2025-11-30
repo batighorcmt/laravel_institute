@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'presentation/routes/app_router.dart';
+import 'theme/app_theme.dart';
 import 'core/network/dio_client.dart';
 import 'core/config/env.dart';
 import 'dart:developer' as developer;
@@ -22,18 +23,21 @@ Future<void> main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(appRouterProvider);
+    // Force light mode per request; dark mode optional.
+    // final mode = ref.watch(themeModeProvider);
     return MaterialApp.router(
-      title: 'Institute App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      routerConfig: appRouter,
+      title: 'Batighor EIMS',
+      theme: AppTheme.light(),
+      // darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.light,
+      routerConfig: router,
     );
   }
 }

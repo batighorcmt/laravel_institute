@@ -2,6 +2,20 @@
 @section('title','Admission Applications')
 
 @section('content')
+@push('styles')
+<style>
+  /* Unified action button sizing */
+  .btn-group.app-actions .btn, .btn-action {
+    width:34px;
+    height:34px;
+    padding:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .btn-group.app-actions form { margin:0; }
+</style>
+@endpush
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="m-0"><i class="fas fa-list mr-1"></i> Admission Applications</h1>
   <div>
@@ -89,7 +103,10 @@
               <td>{{ $app->father_name_en }}</td>
               <td>{{ $app->mobile }}</td>
               <td>
-                <img src="{{ $app->photo ? asset('storage/admission/'.$app->photo) : asset('images/default-avatar.png') }}" alt="Photo" style="width:55px;height:70px;object-fit:cover" class="rounded border">
+                <img src="{{ $app->photo ? asset('storage/admission/'.$app->photo) : asset('images/default-avatar.png') }}"
+                     alt="Photo" style="width:55px;height:70px;object-fit:cover;cursor:pointer" class="rounded border shadow-sm app-photo-thumb"
+                     data-photo-url="{{ $app->photo ? asset('storage/admission/'.$app->photo) : asset('images/default-avatar.png') }}"
+                     data-app-name="{{ $app->name_en ?? $app->applicant_name }}">
               </td>
               <td>
                 @php
@@ -125,32 +142,36 @@
                   @endif
               </td>
               <td>
-                <div class="btn-group btn-group-sm" role="group">
-                  <a href="{{ route('principal.institute.admissions.applications.show', [$school->id, $app->id]) }}" class="btn btn-outline-primary" title="View"><i class="fas fa-eye"></i></a>
+                <div class="btn-group btn-group-sm app-actions" role="group">
+                  <a href="{{ route('principal.institute.admissions.applications.show', [$school->id, $app->id]) }}" class="btn btn-outline-primary btn-action" title="View"><i class="fas fa-eye"></i></a>
+                  <form action="{{ route('principal.institute.admissions.applications.reset_password', [$school->id, $app->id]) }}" method="post" onsubmit="return confirm('পাসওয়ার্ড রিসেট নিশ্চিত?');">
+                    @csrf
+                    <button type="submit" class="btn btn-outline-warning btn-action" title="Reset Password"><i class="fas fa-key"></i></button>
+                  </form>
                   @if(!$app->student_id)
-                    <a href="{{ route('principal.institute.admissions.applications.edit', [$school->id, $app->id]) }}" class="btn btn-outline-secondary" title="Edit"><i class="fas fa-edit"></i></a>
+                    <a href="{{ route('principal.institute.admissions.applications.edit', [$school->id, $app->id]) }}" class="btn btn-outline-secondary btn-action" title="Edit"><i class="fas fa-edit"></i></a>
                   @else
-                    <button class="btn btn-outline-secondary" title="Already Enrolled" disabled><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-outline-secondary btn-action" title="Already Enrolled" disabled><i class="fas fa-edit"></i></button>
                   @endif
-                  @if($app->app_id)
-                      <a href="{{ route('admission.copy', [$school->code, $app->app_id]) }}" target="_blank" class="btn btn-outline-info" title="Print Copy"><i class="fas fa-print"></i></a>
+                  @if($app->app_id && $app->payment_status === 'Paid')
+                    <a href="{{ route('principal.institute.admissions.applications.copy', [$school->id, $app->id]) }}" target="_blank" class="btn btn-outline-info btn-action" title="Print Copy"><i class="fas fa-print"></i></a>
                   @else
-                      <button class="btn btn-outline-info" title="Missing App ID" disabled><i class="fas fa-print"></i></button>
+                    <button class="btn btn-outline-info btn-action" title="{{ $app->payment_status === 'Paid' ? 'Missing App ID' : 'Unpaid – Copy Disabled' }}" disabled><i class="fas fa-print"></i></button>
                   @endif
-                  <a href="{{ route('principal.institute.admissions.applications.payments.details', [$school->id, $app->id]) }}" class="btn btn-outline-dark" title="Payments"><i class="fas fa-receipt"></i></a>
+                  <a href="{{ route('principal.institute.admissions.applications.payments.details', [$school->id, $app->id]) }}" class="btn btn-outline-dark btn-action" title="Payments"><i class="fas fa-receipt"></i></a>
                   @if(!$app->accepted_at && $app->status !== 'cancelled' && $app->payment_status==='Paid')
-                      <form action="{{ route('principal.institute.admissions.applications.accept', [$school->id, $app->id]) }}" method="post" onsubmit="return confirm('Confirm accept?')">
-                          @csrf
-                          <button class="btn btn-outline-success" title="Accept"><i class="fas fa-check"></i></button>
-                      </form>
+                    <form action="{{ route('principal.institute.admissions.applications.accept', [$school->id, $app->id]) }}" method="post" onsubmit="return confirm('Confirm accept?')">
+                      @csrf
+                      <button class="btn btn-outline-success btn-action" title="Accept"><i class="fas fa-check"></i></button>
+                    </form>
                   @endif
                   @if($app->status !== 'cancelled' && !$app->student_id)
-                      <button type="button" class="btn btn-outline-danger" title="Cancel" data-toggle="modal" data-target="#cancelModal" data-app-id="{{ $app->id }}" data-app-name="{{ $app->name_en ?? $app->applicant_name }}" data-cancel-url="{{ route('principal.institute.admissions.applications.cancel', [$school->id, $app->id]) }}">
-                        <i class="fas fa-times"></i>
-                      </button>
+                    <button type="button" class="btn btn-outline-danger btn-action" title="Cancel" data-toggle="modal" data-target="#cancelModal" data-app-id="{{ $app->id }}" data-app-name="{{ $app->name_en ?? $app->applicant_name }}" data-cancel-url="{{ route('principal.institute.admissions.applications.cancel', [$school->id, $app->id]) }}">
+                      <i class="fas fa-times"></i>
+                    </button>
                   @endif
                   @if($app->accepted_at)
-                      <a href="{{ route('principal.institute.admissions.applications.admit_card', [$school->id, $app->id]) }}" class="btn btn-outline-success" title="Admit Card"><i class="fas fa-id-card"></i></a>
+                    <a href="{{ route('principal.institute.admissions.applications.admit_card', [$school->id, $app->id]) }}" class="btn btn-outline-success btn-action" title="Admit Card"><i class="fas fa-id-card"></i></a>
                   @endif
                 </div>
               </td>
@@ -221,5 +242,36 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   });
 });
+// Photo modal dynamic creation
+function ensurePhotoModal(){
+  if(document.getElementById('photoModal')) return;
+  const modalHtml = `
+  <div class="modal fade" id="photoModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header py-2 bg-primary text-white">
+          <h5 class="modal-title"><i class="fas fa-image mr-1"></i> ছবি প্রদর্শন</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+        <div class="modal-body text-center">
+          <img id="modalFullPhoto" src="" alt="Full Photo" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.25)">
+          <div class="mt-2 small text-muted" id="modalPhotoCaption"></div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">বন্ধ</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+function openPhotoModal(url, caption){
+  ensurePhotoModal();
+  document.getElementById('modalFullPhoto').src = url;
+  document.getElementById('modalPhotoCaption').textContent = caption || '';
+  $('#photoModal').modal('show');
+}
+// Allow clicking thumbnail itself
+document.addEventListener('click',function(e){if(e.target.classList.contains('app-photo-thumb')){openPhotoModal(e.target.dataset.photoUrl,e.target.dataset.appName);}});
 </script>
 @endpush

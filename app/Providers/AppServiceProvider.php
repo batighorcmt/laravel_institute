@@ -20,7 +20,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-    // Use Bootstrap pagination views to match AdminLTE 3
-    \Illuminate\Pagination\Paginator::useBootstrap();
+        // Use Bootstrap pagination views to match AdminLTE 3
+        \Illuminate\Pagination\Paginator::useBootstrap();
+
+        // Register route middleware aliases for admission applicant flows
+        $router = $this->app['router'];
+        $router->aliasMiddleware('admission.applicant.guard', \App\Http\Middleware\AdmissionApplicantGuard::class);
+        $router->aliasMiddleware('admission.applicant.exclusive', \App\Http\Middleware\AdmissionApplicantExclusive::class);
     }
 }

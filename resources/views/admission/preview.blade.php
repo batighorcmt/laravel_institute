@@ -18,11 +18,26 @@
         @media (min-width:768px){ .applicant-name{ font-size:1.5rem; } .apply-class{ font-size:1.2rem; } }
         .fee-highlight { font-size:1.4rem; font-weight:800; color:#0d6efd; }
         .ssl-wide { width: 100vw; max-width: 100vw; height: auto; display:block; margin-left: 50%; transform: translateX(-50%); }
+        .login-bar { border: 1px solid #e9ecef; border-radius: 12px; padding: 12px; background:#f8f9fa; }
+        .login-bar .form-control { height: 40px; }
     </style>
     @endpush
 
     <div class="container my-4 preview-root">
-        
+        @php $applicantSession = session('admission_applicant'); @endphp
+        <div class="d-flex justify-content-end mb-2">
+            @if($applicantSession)
+                <div class="d-inline-flex align-items-center gap-2">
+                    <span class="badge bg-success px-3 py-2">লগইন: {{ data_get($applicantSession, 'app_id') }}</span>
+                    <form action="{{ route('admission.logout', $school->code) }}" method="post" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-right-from-bracket me-1"></i> লগআউট</button>
+                    </form>
+                </div>
+            @else
+                <a href="{{ route('admission.login.page', $school->code) }}" class="btn btn-outline-primary btn-sm"><i class="fa-solid fa-right-to-bracket me-1"></i> লগইন</a>
+            @endif
+        </div>
 
         <div class="card hero-card border-0">
             <div class="hero-banner p-4 p-md-5">

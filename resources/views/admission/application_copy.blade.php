@@ -1,8 +1,18 @@
 <x-layout.public :school="$school" :title="'ভর্তি আবেদন কপি — ' . ($school->name ?? '')">
     @php
-        // Check if payment is done - if not, redirect or show error
+        // Gate: allow only applicant login OR principal role
+        $applicantSession = session('admission_applicant');
+        $user = auth()->user();
+        $isPrincipal = $user && method_exists($user, 'hasRole') ? $user->hasRole('Principal') : false;
+        if (!$applicantSession && !$isPrincipal) {
+            abort(403, 'লগইন না থাকায় আবেদন কপি দেখা যাবে না।');
+        }
+
+        // Check if payment is done - if not, block copy for applicants (principal can still view)
         if (!$application || strtolower($application->payment_status) !== 'paid') {
-            abort(403, 'ফিস পরিশোধ না করা আবেদনের কপি পাওয়া যাবে না।');
+            if (!$isPrincipal) {
+                abort(403, 'ফিস পরিশোধ না করায় আবেদনের কপি পাওয়া যাবে না।');
+            }
         }
         
         // Simple English digit to Bangla digit converter
@@ -121,7 +131,7 @@
             <tr class="section-head"><th style="width:50%">বর্তমান ঠিকানা</th><th style="width:50%">স্থায়ী ঠিকানা</th></tr>
             <tr>
                 <td>
-                    গ্রাম: {{ $application->present_village ?? '—' }},
+                    গ্রাম: {{ $application->present_village ?? '—' }}
                     @if($application->present_para_moholla)
                         ({{ $application->present_para_moholla }}),
                     @endif
@@ -130,7 +140,7 @@
                     জেলা: {{ $application->present_district ?? '—' }}
                 </td>
                 <td>
-                    গ্রাম: {{ $application->permanent_village ?? '—' }},
+                    গ্রাম: {{ $application->permanent_village ?? '—' }}
                     @if($application->permanent_para_moholla)
                         ({{ $application->permanent_para_moholla }}),
                     @endif
@@ -154,6 +164,8 @@
                             'aunt' => 'চাচী/খালা',
                             'brother' => 'ভাই',
                             'sister' => 'বোন',
+                            'grandfather' => 'দাদা/নানা',
+                            'grandmother' => 'দাদি/নানি',
                             'other' => 'অন্যান্য'
                         ];
                     @endphp
@@ -177,7 +189,7 @@
         <table class="form-table">
             <tr class="section-head"><th colspan="4">পেমেন্ট তথ্য</th></tr>
             <tr>
-                <td style="width:25%"><strong>স্ট্যাটাস:</strong> {{ $application->payment_status==='Paid' ? 'পরিশোধিত' : 'অপরিশোধিত' }}
+                <td style="width:25%"><strong>স্ট্যাটাস:</strong> {{ $application->payment_status==='Paid' ? 'পরিশোধিত' : 'অপরিশোধিত' }} <br>
                 @if ($application->payment_status==='Paid')
                     <span class="badge-status" style="color:green; font-weight:600;"><strong>পরিমান:</strong> {{bnDigits($payment->amount) }}</span>  
                 @endif
@@ -192,11 +204,11 @@
             <tr><td></td><td></td></tr>
         </table>
         <div class="attachments">
-            <div style="font-weight:600; border-bottom:1px solid #d0d7de; margin:10px 0 6px; padding-bottom:4px;">সংযুক্তি (প্রয়োজনে জমা দিবেন)</div>
+            <div style="font-weight:600; border-bottom:1px solid #d0d7de; margin:10px 0 6px; padding-bottom:4px;">সংযুক্তি (বিদ্যালয়ে জমা দিতে হবে)</div>
             <ol>
-                <li>1. জন্ম নিবন্ধন সনদের ফটোকপি</li>
-                <li>2. পিতা-মাতা/অভিভাবকের জাতীয় পরিচয়পত্রের ফটোকপি</li>
-                <li>3. পূর্ববর্তী পরীক্ষার মার্কশিট/প্রশংসাপত্র</li>
+                <li>১. অনলাইনকৃত জন্ম নিবন্ধন সনদের ফটোকপি</li>
+                <li>২. পিতা, মাতা ও অভিভাবকের (পিতা-মাতা ব্যতিত অন্যকেউ হলে) জাতীয় পরিচয়পত্রের ফটোকপি</li>
+                <li>৩. পূর্ববর্তী পরীক্ষার মার্কশিট/প্রশংসাপত্র</li>
             </ol>
         </div>
         <div class="print-bar no-print text-center">

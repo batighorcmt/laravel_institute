@@ -140,12 +140,47 @@ class AdmissionController extends Controller
         if (!$application->accepted_at) {
             DB::transaction(function () use ($school, $application) {
                 if (!$application->admission_roll_no) {
-                    $q = AdmissionApplication::where('school_id', $school->id);
-                    if ($application->academic_year_id) {
-                        $q->where('academic_year_id', $application->academic_year_id);
+                    // Determine class numeric prefix from class_name
+                    $raw = (string)($application->class_name ?? '');
+                    $classNum = (int) preg_replace('/[^0-9]/', '', $raw);
+                    // Fallback: if no digits found, keep previous global incremental behavior
+                    if ($classNum <= 0) {
+                        $qFallback = AdmissionApplication::where('school_id', $school->id);
+                        if ($application->academic_year_id) {
+                            $qFallback->where('academic_year_id', $application->academic_year_id);
+                        }
+                        $max = (int) ($qFallback->lockForUpdate()->max('admission_roll_no') ?? 0);
+                        $application->admission_roll_no = $max + 1;
+                    } else {
+                        // Count already-accepted applications for the same class (and academic year, if set)
+                        $q = AdmissionApplication::where('school_id', $school->id)
+                            ->where('class_name', $application->class_name)
+                            ->whereNotNull('accepted_at');
+                        if ($application->academic_year_id) {
+                            $q->where('academic_year_id', $application->academic_year_id);
+                        }
+                        // Lock the rows scanned to avoid race conditions during concurrent accepts
+                        $acceptedCount = (int) ($q->lockForUpdate()->count());
+                        $seq = max(min($acceptedCount + 1, 999), 1); // 3-digit sequence within class
+                        $prefix = $classNum * 1000;
+                        $roll = (int) ($prefix + $seq);
+                        // Ensure uniqueness within the same school/year
+                        $existsQuery = AdmissionApplication::where('school_id', $school->id)
+                            ->where('admission_roll_no', $roll);
+                        if ($application->academic_year_id) {
+                            $existsQuery->where('academic_year_id', $application->academic_year_id);
+                        }
+                        while ($existsQuery->exists() && $seq < 999) {
+                            $seq++;
+                            $roll = (int) ($prefix + $seq);
+                            $existsQuery = AdmissionApplication::where('school_id', $school->id)
+                                ->where('admission_roll_no', $roll);
+                            if ($application->academic_year_id) {
+                                $existsQuery->where('academic_year_id', $application->academic_year_id);
+                            }
+                        }
+                        $application->admission_roll_no = $roll;
                     }
-                    $max = (int) ($q->lockForUpdate()->max('admission_roll_no') ?? 0);
-                    $application->admission_roll_no = $max + 1; // store as int; render padded
                 }
                 $application->accepted_at = now();
                 $application->status = 'accepted';
@@ -168,7 +203,30 @@ class AdmissionController extends Controller
     public function show(School $school, AdmissionApplication $application)
     {
         abort_if($application->school_id !== $school->id, 404);
-        return view('principal.admissions.show', compact('school','application'));    
+        $academicYear = null;
+        if ($application->academic_year_id) {
+            $academicYear = \App\Models\AcademicYear::find($application->academic_year_id);
+        }
+        return view('principal.admissions.show', compact('school','application','academicYear'));    
+    }
+
+    public function copy(School $school, AdmissionApplication $application)
+    {
+        abort_if($application->school_id !== $school->id, 404);
+        if (strtolower($application->payment_status) !== 'paid') {
+            return response()->view('admission.blocked', [
+                'schoolCode' => $school->code,
+                'title' => 'দেখার অনুমতি নেই',
+                'message' => 'ফিস পরিশোধ হয় নাই। তাই দেখানো সম্ভব নয়।',
+                'showLogout' => false,
+            ], 403);
+        }
+        $payment = $application->payments()->latest()->first();
+        return view('admission.application_copy', [
+            'school' => $school,
+            'application' => $application,
+            'payment' => $payment,
+        ]);
     }
 
     public function admitCard(School $school, AdmissionApplication $application)
@@ -241,17 +299,52 @@ class AdmissionController extends Controller
             'name_en' => 'required|string|max:191',
             'name_bn' => 'required|string|max:191',
             'father_name_en' => 'required|string|max:191',
+            'father_name_bn' => 'nullable|string|max:191',
             'mother_name_en' => 'required|string|max:191',
+            'mother_name_bn' => 'nullable|string|max:191',
             'guardian_name_en' => 'nullable|string|max:191',
+            'guardian_name_bn' => 'nullable|string|max:191',
+            'guardian_relation' => 'nullable|string|max:64',
             'gender' => 'required|string|max:16',
             'religion' => 'nullable|string|max:32',
+            'blood_group' => 'nullable|string|max:8',
+            'birth_reg_no' => 'nullable|string|max:64',
             'dob' => 'nullable|date|before:today',
             'mobile' => 'required|string|max:32',
             'class_name' => 'nullable|string|max:64',
             'last_school' => 'nullable|string|max:191',
             'result' => 'nullable|string|max:64',
             'pass_year' => 'nullable|string|max:8',
+            'achievement' => 'nullable|string|max:500',
+            // Present address
+            'present_village' => 'nullable|string|max:191',
+            'present_para_moholla' => 'nullable|string|max:191',
+            'present_post_office' => 'nullable|string|max:191',
+            'present_upazilla' => 'nullable|string|max:191',
+            'present_district' => 'nullable|string|max:191',
+            // Permanent address
+            'permanent_village' => 'nullable|string|max:191',
+            'permanent_para_moholla' => 'nullable|string|max:191',
+            'permanent_post_office' => 'nullable|string|max:191',
+            'permanent_upazilla' => 'nullable|string|max:191',
+            'permanent_district' => 'nullable|string|max:191',
+            // Photo
+            'photo' => 'nullable|image|max:2048',
         ]);
+
+        // Handle photo upload
+        if (request()->hasFile('photo')) {
+            $file = request()->file('photo');
+            $name = 'app_'.$application->id.'_'.time().'.'.$file->getClientOriginalExtension();
+            $file->storeAs('public/admission', $name);
+            // Optionally remove old photo if exists
+            if ($application->photo && \Storage::disk('public')->exists('admission/'.$application->photo)) {
+                // Silent try-catch to avoid breaking if deletion fails
+                try { \Storage::disk('public')->delete('admission/'.$application->photo); } catch (\Throwable $e) {}
+            }
+            $data['photo'] = $name;
+        }
+
         $application->fill($data)->save();
         return redirect()->route('principal.institute.admissions.applications.show', [$school->id, $application->id])
             ->with('success','আবেদন তথ্য আপডেট হয়েছে');
@@ -262,5 +355,46 @@ class AdmissionController extends Controller
         abort_if($application->school_id !== $school->id, 404);
         $payments = $application->payments()->latest()->get();
         return view('principal.admissions.payment_details', compact('school','application','payments'));
+    }
+
+    public function resetPassword(School $school, AdmissionApplication $application)
+    {
+        abort_if($application->school_id !== $school->id, 404);
+        // Find associated user by username (stored as APP ID during creation)
+        $user = \App\Models\User::where('username', $application->app_id)->first();
+        if (!$user) {
+            return redirect()->route('principal.institute.admissions.applications.show', [$school->id, $application->id])
+                ->with('error','ইউজার পাওয়া যায়নি (username mismatch)');
+        }
+        // Generate new password (8 char mixed) for robustness
+        $newPlain = \Illuminate\Support\Str::random(8);
+        $user->password = bcrypt($newPlain);
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users','password_changed_at')) {
+            $user->password_changed_at = now();
+        }
+        $user->save();
+        // Update application->data password & hashed variant
+        $dataArr = is_array($application->data) ? $application->data : [];
+        $dataArr['password'] = $newPlain;
+        $dataArr['password_hashed'] = $user->password;
+        $application->data = $dataArr;
+        $application->save();
+        // Send SMS via service and log
+        $smsService = new \App\Services\SmsService($school);
+        $message = "আপনার ভর্তি আবেদন পাসওয়ার্ড রিসেট করা হয়েছে। Username: {$application->app_id}, New Password: {$newPlain}.";
+        $smsService->sendSms($application->mobile, $message, 'admission_password_reset', [
+            'recipient_type' => 'applicant',
+            'recipient_id' => $application->id,
+            'recipient_name' => $application->name_en,
+        ]);
+        \Illuminate\Support\Facades\Log::info('sms_dispatch', [
+            'type' => 'admission_password_reset',
+            'school_code' => $school->code,
+            'recipient' => $application->mobile,
+            'app_id' => $application->app_id,
+            'status' => 'sent'
+        ]);
+        return redirect()->route('principal.institute.admissions.applications.show', [$school->id, $application->id])
+            ->with('success','পাসওয়ার্ড রিসেট হয়েছে এবং এসএমএস পাঠানো হয়েছে');
     }
 }

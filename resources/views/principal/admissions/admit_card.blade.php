@@ -28,7 +28,7 @@
     elseif ($classNum === 7) $classLabelBn = 'সপ্তম';
     elseif ($classNum === 8) $classLabelBn = 'অষ্টম';
     elseif ($classNum === 9) $classLabelBn = 'নবম';
-    elseif ($classNum === 10) $classLabelBn = '১০';
+    elseif ($classNum === 10) $classLabelBn = 'দশম';
     // Venues array for optional selection (screen-only)
     $venuesArr = (isset($venues) && is_array($venues)) ? $venues : [];
     // Principal (institution head) info from role assignment

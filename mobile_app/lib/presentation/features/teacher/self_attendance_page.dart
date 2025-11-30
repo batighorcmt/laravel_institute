@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:image/image.dart' as img;
 import '../../../core/network/dio_client.dart';
 import '../../state/auth_state.dart';
 import '../../../data/auth/auth_repository.dart';
@@ -159,7 +160,7 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       }
       final image = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 75,
+        imageQuality: 60,
       );
       if (image == null) {
         setState(() => _error = 'No photo captured');
@@ -169,7 +170,32 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
         setState(() => _error = 'Captured file missing at ${image.path}');
         return;
       }
-      setState(() => _photo = image);
+      // Compress and resize to reduce server storage usage
+      try {
+        final bytes = await File(image.path).readAsBytes();
+        final decoded = img.decodeImage(bytes);
+        if (decoded != null) {
+          final maxDim = 800;
+          final w = decoded.width;
+          final h = decoded.height;
+          img.Image resized;
+          if (w > h && w > maxDim) {
+            resized = img.copyResize(decoded, width: maxDim);
+          } else if (h >= w && h > maxDim) {
+            resized = img.copyResize(decoded, height: maxDim);
+          } else {
+            resized = decoded;
+          }
+          final jpeg = img.encodeJpg(resized, quality: 60);
+          final tmpPath = image.path.replaceFirst('.jpg', '_compressed.jpg');
+          await File(tmpPath).writeAsBytes(jpeg, flush: true);
+          setState(() => _photo = XFile(tmpPath));
+        } else {
+          setState(() => _photo = image);
+        }
+      } catch (_) {
+        setState(() => _photo = image);
+      }
     } catch (e) {
       setState(() => _error = 'Camera error: $e');
     }

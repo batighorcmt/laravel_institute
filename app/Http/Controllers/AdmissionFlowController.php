@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\StoreAdmissionApplicationRequest;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\UploadedFile;
 
@@ -166,14 +167,35 @@ class AdmissionFlowController extends Controller
                 'role_id' => $applicantRole->id,
                 'status' => 'active'
             ]);
-            // Send SMS with password
+            // Generate applicant login password and persist to both user and application for portal login
             $password = Str::random(8);
             $user->password = bcrypt($password);
             $user->save();
+            // Store for applicant portal login inside application data (no new DB column)
+            $dataArr = is_array($application->data) ? $application->data : [];
+            $dataArr['password'] = $password; // plaintext for convenience
+            $dataArr['password_hashed'] = $user->password; // hashed variant
+            $application->data = $dataArr;
+            $application->save();
 
             $smsService = new \App\Services\SmsService($school);
             $message = "Your application submitted to {$school->name}. Username: {$appId}, Password: {$password}.";
             $smsService->sendSms($application->mobile, $message);
+            // Log the SMS dispatch with type 'admission'
+            Log::info('sms_dispatch', [
+                'type' => 'admission',
+                'school_code' => $school->code,
+                'recipient' => $application->mobile,
+                'app_id' => $application->app_id,
+                'message' => $message,
+                'status' => 'sent',
+            ]);
+            // Auto-login applicant session and redirect to preview (guarded)
+            $request->session()->put('admission_applicant', [
+                'app_id' => $application->app_id,
+                'school_code' => $school->code,
+                'name' => $application->name_bn ?? $application->name_en,
+            ]);
             DB::commit();
             return redirect()->route('admission.preview', [$school->code, $application->app_id]);
         } catch (\Throwable $e) {
@@ -279,6 +301,16 @@ class AdmissionFlowController extends Controller
     {
         $school = $this->schoolByCode($code);
         $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
+        // Enforce that only the logged-in applicant can view their own preview
+        $sess = session('admission_applicant');
+        if (!$sess || ($sess['school_code'] ?? null) !== $school->code || ($sess['app_id'] ?? null) !== $application->app_id) {
+            return response()->view('admission.blocked', [
+                'schoolCode' => $school->code,
+                'title' => 'দেখার অনুমতি নেই',
+                'message' => 'আবেদনকারী লগইন নেই বা প্রতিষ্ঠান মেলেনি।',
+                'showLogout' => true,
+            ], 403);
+        }
         $fee = null;
         if (\Illuminate\Support\Facades\Schema::hasTable('admission_class_settings') && $school->admission_academic_year_id) {
             $setting = \App\Models\AdmissionClassSetting::forSchoolYear($school->id, $school->admission_academic_year_id)
@@ -354,7 +386,31 @@ class AdmissionFlowController extends Controller
     {
         $school = $this->schoolByCode($code);
         $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
+        // Enforce that only the logged-in applicant can view their own copy
+        $sess = session('admission_applicant');
+        if (!$sess || ($sess['school_code'] ?? null) !== $school->code || ($sess['app_id'] ?? null) !== $application->app_id) {
+            return response()->view('admission.blocked', [
+                'schoolCode' => $school->code,
+                'title' => 'দেখার অনুমতি নেই',
+                'message' => 'কেবলমাত্র লগইনকৃত আবেদনকারীই তার আবেদনপত্র দেখতে পারবে।',
+                'showLogout' => true,
+            ], 403);
+        }
+        // Refresh latest payment info (avoid stale session issue)
         $payment = $application->payments()->latest()->first();
+        if (strtolower($application->payment_status) !== 'paid') {
+            // If any payment record marked Completed, update application and proceed
+            $completed = $application->payments()->where('status','Completed')->latest()->first();
+            if ($completed) {
+                $application->payment_status = 'Paid';
+                $application->save();
+                $payment = $completed; // use the completed payment
+            } else {
+                // Not paid – redirect to preview with notice instead of blocked page
+                return redirect()->route('admission.preview', [$school->code, $application->app_id])
+                    ->with('error','পেমেন্ট সম্পন্ন হয়নি বা ব্যর্থ হয়েছে; আবেদন কপি দেখতে প্রথমে ফিস পরিশোধ করুন');
+            }
+        }
         return view('admission.application_copy', compact('school','application','payment'));
     }
 
@@ -372,6 +428,15 @@ class AdmissionFlowController extends Controller
             ]);
             $application->update(['payment_status'=>'Paid']);
         }
+        // Auto-restore applicant session if lost during gateway redirect
+        $sess = session('admission_applicant');
+        if (!$sess || ($sess['app_id'] ?? null) !== $application->app_id) {
+            session()->put('admission_applicant', [
+                'app_id' => $application->app_id,
+                'school_code' => $school->code,
+                'name' => $application->name_bn ?? $application->name_en,
+            ]);
+        }
         return redirect()->route('admission.copy', [$school->code, $application->app_id])->with('success','পেমেন্ট সফল');
     }
 
@@ -388,6 +453,15 @@ class AdmissionFlowController extends Controller
                 'gateway_response' => $request->all()
             ]);
         }
+        // Ensure applicant can retry payment by restoring session
+        $sess = session('admission_applicant');
+        if (!$sess || ($sess['app_id'] ?? null) !== $application->app_id) {
+            session()->put('admission_applicant', [
+                'app_id' => $application->app_id,
+                'school_code' => $school->code,
+                'name' => $application->name_bn ?? $application->name_en,
+            ]);
+        }
         return redirect()->route('admission.preview', [$school->code, $application->app_id])->with('error','পেমেন্ট ব্যর্থ হয়েছে');
     }
 
@@ -402,6 +476,15 @@ class AdmissionFlowController extends Controller
                 'status' => 'Failed',
                 'gateway_status' => 'CANCELLED',
                 'gateway_response' => $request->all()
+            ]);
+        }
+        // Restore session for retry after cancellation
+        $sess = session('admission_applicant');
+        if (!$sess || ($sess['app_id'] ?? null) !== $application->app_id) {
+            session()->put('admission_applicant', [
+                'app_id' => $application->app_id,
+                'school_code' => $school->code,
+                'name' => $application->name_bn ?? $application->name_en,
             ]);
         }
         return redirect()->route('admission.preview', [$school->code, $application->app_id])->with('error','পেমেন্ট বাতিল করা হয়েছে');

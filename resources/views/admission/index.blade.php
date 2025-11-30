@@ -25,6 +25,20 @@
     <div class="container my-5">
         <div class="row justify-content-center">
             <div class="col-lg-10">
+                @php $applicantSession = session('admission_applicant'); @endphp
+                <div class="d-flex justify-content-end mb-2">
+                    @if($applicantSession)
+                        <div class="d-inline-flex align-items-center gap-2">
+                            <span class="badge bg-success px-3 py-2">লগইন: {{ data_get($applicantSession, 'app_id') }}</span>
+                            <form action="{{ route('admission.logout', $school->code) }}" method="post" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-right-from-bracket me-1"></i> লগআউট</button>
+                            </form>
+                        </div>
+                    @else
+                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#applicantLoginModal"><i class="fas fa-right-to-bracket me-1"></i> আবেদনকারী লগইন</button>
+                    @endif
+                </div>
                 <div class="p-4 p-md-5 hero text-center mb-4">
                     <div class="mb-3">
                         @php $logo = $school->logo ?? null; @endphp
@@ -93,9 +107,40 @@
         </div>
     </div>
 
+    <!-- Applicant Login Modal -->
+    <div class="modal fade" id="applicantLoginModal" tabindex="-1" aria-labelledby="applicantLoginLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="applicantLoginLabel">আবেদনকারী লগইন</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ route('admission.login', ['schoolCode' => $school->code]) }}" method="post" id="applicantLoginForm">
+                        @csrf
+                        <div class="mb-3">
+                            <label class="form-label">ইউজারনেম (Application ID)</label>
+                            <input type="text" name="username" class="form-control" placeholder="যেমন: JSS_ADD0001" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">পাসওয়ার্ড</label>
+                            <input type="password" name="password" class="form-control" placeholder="পাসওয়ার্ড লিখুন" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-right-to-bracket me-1"></i> লগইন</button>
+                    </form>
+                    @if(session('admission_login_error'))
+                        <div class="alert alert-danger mt-2 mb-0">{{ session('admission_login_error') }}</div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
     <script>
-        // No scripts needed for static page, keep hook for consistency
+        // Placeholder hook if needed later
     </script>
+    <!-- Bootstrap JS for modal functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     @endpush
 </x-layout.public>

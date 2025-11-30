@@ -1,12 +1,19 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
+import '../../core/config/env.dart';
 
 class UserProfile {
   final int id;
   final String name;
   final List<UserRole> roles;
+  final String? photoUrl;
 
-  UserProfile({required this.id, required this.name, required this.roles});
+  UserProfile({
+    required this.id,
+    required this.name,
+    required this.roles,
+    this.photoUrl,
+  });
 
   /// Robust factory accepting potentially malformed structures.
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -43,10 +50,29 @@ class UserProfile {
         .where((e) => e is Map || e is String)
         .map((e) => UserRole.fromAny(e))
         .toList();
+    String? photo;
+    for (final key in const [
+      'photo',
+      'avatar',
+      'image',
+      'photo_url',
+      'avatar_url',
+      'profile_image',
+      'profile_photo_url',
+      'profilePhotoUrl',
+    ]) {
+      final v = json[key];
+      if (v != null && v.toString().trim().isNotEmpty) {
+        photo = v.toString();
+        break;
+      }
+    }
+
     return UserProfile(
       id: (json['id'] as num).toInt(),
       name: (json['name'] ?? '').toString(),
       roles: roles,
+      photoUrl: _absolutePhoto(photo),
     );
   }
 
@@ -65,8 +91,30 @@ class UserProfile {
       } catch (_) {}
     }
     // Fallback empty profile (id 0) to avoid crash
-    return UserProfile(id: 0, name: '', roles: []);
+    return UserProfile(id: 0, name: '', roles: [], photoUrl: null);
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'roles': roles.map((r) => r.toJson()).toList(),
+    'photo_url': photoUrl,
+  };
+}
+
+String? _absolutePhoto(String? url) {
+  if (url == null || url.trim().isEmpty) return null;
+  final s = url.trim();
+  if (s.startsWith('http://') || s.startsWith('https://')) return s;
+  // Build origin from API base URL
+  final base = Env.apiBaseUrl;
+  final uri = Uri.tryParse(base);
+  if (uri == null) return s;
+  final origin = uri.hasScheme && uri.host.isNotEmpty
+      ? '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}'
+      : base;
+  if (s.startsWith('/')) return '$origin$s';
+  return '$origin/$s';
 }
 
 class UserRole {
@@ -94,4 +142,10 @@ class UserRole {
     }
     return UserRole(role: '', schoolId: null, schoolName: null);
   }
+
+  Map<String, dynamic> toJson() => {
+    'role': role,
+    'school_id': schoolId,
+    'school_name': schoolName,
+  };
 }

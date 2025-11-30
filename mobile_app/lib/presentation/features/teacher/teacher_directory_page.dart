@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../data/teacher/teacher_directory_repository.dart';
-import '../../../core/network/dio_client.dart';
 
 class TeacherDirectoryPage extends StatefulWidget {
   const TeacherDirectoryPage({super.key});
@@ -47,12 +46,20 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
         search: _searchCtl.text.trim().isEmpty ? null : _searchCtl.text.trim(),
         designation: _designation,
       );
-      final items = (data['items'] as List<Map<String, dynamic>>);
-      final meta = data['meta'] as Map<String, dynamic>;
-      _designations = (data['designations'] as List<String>);
-      final lastPage = (meta['last_page'] is int)
-          ? meta['last_page'] as int
-          : _currentPage;
+      final rawItems = (data['items'] as List?) ?? const [];
+      final items = rawItems
+          .map((e) => Map<String, dynamic>.from((e as Map?) ?? const {}))
+          .toList();
+      final meta = Map<String, dynamic>.from(
+        (data['meta'] as Map?) ?? const {},
+      );
+      _designations = ((data['designations'] as List?) ?? const [])
+          .map((e) => e.toString())
+          .toList();
+      final lastPageValue = meta['last_page'];
+      final lastPage = (lastPageValue is int)
+          ? lastPageValue
+          : int.tryParse(lastPageValue?.toString() ?? '') ?? _currentPage;
       setState(() {
         _items.addAll(items);
         _hasMore = _currentPage < lastPage;

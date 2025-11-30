@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../routes/app_router.dart';
+import 'package:go_router/go_router.dart';
+import '../../../widgets/gradient_scaffold.dart';
 import '../../state/auth_state.dart';
 import '../../../domain/auth/user_profile.dart';
+import '../../../theme/theme_mode_provider.dart';
 
 class HomePage extends ConsumerWidget {
   final UserProfile profile;
@@ -11,8 +13,19 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final roles = profile.roles.map((r) => r.role).toSet();
-    return Scaffold(
-      appBar: AppBar(title: const Text('Institute App')),
+    return GradientScaffold(
+      appBar: AppBar(
+        title: const Text('Institute App'),
+        actions: [
+          IconButton(
+            tooltip: 'Toggle theme',
+            icon: const Icon(Icons.dark_mode_outlined),
+            onPressed: () {
+              ref.read(themeModeProvider.notifier).toggle();
+            },
+          ),
+        ],
+      ),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -21,21 +34,21 @@ class HomePage extends ConsumerWidget {
             const SizedBox(height: 12),
             if (roles.contains('principal'))
               ElevatedButton(
-                onPressed: () => appRouter.go('/principal'),
+                onPressed: () => context.go('/principal'),
                 child: const Text('Principal Dashboard'),
               ),
             if (roles.contains('teacher'))
               ElevatedButton(
-                onPressed: () => appRouter.go('/teacher'),
+                onPressed: () => context.go('/teacher'),
                 child: const Text('Teacher Dashboard'),
               ),
             if (roles.contains('parent'))
               ElevatedButton(
-                onPressed: () => appRouter.go('/parent'),
+                onPressed: () => context.go('/parent'),
                 child: const Text('Parent Dashboard'),
               ),
             ElevatedButton(
-              onPressed: () => appRouter.go('/login'),
+              onPressed: () => context.go('/login'),
               child: const Text('Go to Login'),
             ),
             const SizedBox(height: 12),

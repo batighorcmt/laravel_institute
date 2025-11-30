@@ -56,12 +56,14 @@
                 @endif
 
                 <div class="card admission-form-card shadow-lg border-0">
-                    <div class="pt-4 text-center">
+                    <div class="pt-4 text-center d-flex flex-column align-items-center">
                         @php $logo = $school->logo ?? null; @endphp
                         @if($logo)
-                            <img src="{{ asset('storage/'.$logo) }}" alt="{{ $school->name }}" style="height:64px" />
+                            <img src="{{ asset('storage/'.$logo) }}" alt="{{ $school->name_bn }} লোগো"
+                                 style="height:72px; width:auto; object-fit:contain; display:block; margin:0 auto;" />
+                            <div class="mt-2 h5 fw-semibold text-primary">{{ $school->name_bn }}</div>
                         @else
-                            <div class="fw-bold text-secondary">{{ $school->name }}</div>
+                            <div class="h5 fw-semibold text-primary">{{ $school->name_bn }}</div>
                         @endif
                     </div>
                     <div class="card-header bg-primary text-white py-3">
@@ -178,6 +180,8 @@
                                                 <option value="aunt" {{ old('guardian_relation')=='aunt' ? 'selected' : '' }}>চাচী/খালা</option>
                                                 <option value="brother" {{ old('guardian_relation')=='brother' ? 'selected' : '' }}>ভাই</option>
                                                 <option value="sister" {{ old('guardian_relation')=='sister' ? 'selected' : '' }}>বোন</option>
+                                                <option value="grandfather" {{ old('guardian_relation')=='grandfather' ? 'selected' : '' }}>দাদা/নানা</option>
+                                                <option value="grandmother" {{ old('guardian_relation')=='grandmother' ? 'selected' : '' }}>দাদি/নানি</option>
                                                 <option value="other" {{ old('guardian_relation')=='other' ? 'selected' : '' }}>অন্যান্য</option>
                                             </select>
                                             <label for="guardian_relation">অভিভাবকের সম্পর্ক <span class="text-danger">*</span></label>
@@ -301,7 +305,7 @@
                                 <div class="row g-3">
                                     <!-- Present Address (detailed) -->
                                     <div class="col-md-6">
-                                        <h6 class="mb-3 text-primary">বর্তমান ঠিকানা</h6>
+                                        <h6 class="mb-3 text-primary">বর্তমান ঠিকানা (বাংলায়)</h6>
                                         <div class="row g-2">
                                             <div class="col-md-6">
                                                 <div class="form-floating">
@@ -344,7 +348,7 @@
                                     
                                     <!-- Permanent Address (detailed) -->
                                     <div class="col-md-6">
-                                        <h6 class="mb-3 text-primary">স্থায়ী ঠিকানা</h6>
+                                        <h6 class="mb-3 text-primary">স্থায়ী ঠিকানা (বাংলায়)</h6>
                                         <div class="form-check mb-2">
                                             <input class="form-check-input" type="checkbox" id="same_as_present" onclick="copyPresentAddress()">
                                             <label class="form-check-label" for="same_as_present">বর্তমান ঠিকানার মতো একই</label>
