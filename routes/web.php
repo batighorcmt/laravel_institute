@@ -209,6 +209,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/applications/{application}/reset-password', [PrincipalAdmissionController::class,'resetPassword'])->name('applications.reset_password');
                 Route::get('/applications/{application}/payments', [PrincipalAdmissionController::class,'applicationPayments'])->name('applications.payments.details');
                 Route::get('/payments', [PrincipalAdmissionController::class,'payments'])->name('payments');
+                Route::get('/payments/{payment}/invoice', [PrincipalAdmissionController::class,'paymentInvoice'])->name('payments.invoice');
 
                 // Admission Enrollment - Convert passed students to enrolled students
                 Route::get('/enrollment', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'index'])->name('enrollment.index');

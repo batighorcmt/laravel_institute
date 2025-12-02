@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'অ্যাডমিন')</title>
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="{{ asset('images/batighor-favicon.png') }}">
-    <link rel="apple-touch-icon" href="{{ asset('images/batighor-favicon.png') }}">
 
     @vite(['resources/css/app.css','resources/js/app.js'])
     <style>

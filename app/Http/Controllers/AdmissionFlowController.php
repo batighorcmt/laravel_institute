@@ -396,20 +396,13 @@ class AdmissionFlowController extends Controller
                 'showLogout' => true,
             ], 403);
         }
-        // Refresh latest payment info (avoid stale session issue)
         $payment = $application->payments()->latest()->first();
+        // Enforce payment required for copy/print (original behavior)
         if (strtolower($application->payment_status) !== 'paid') {
-            // If any payment record marked Completed, update application and proceed
-            $completed = $application->payments()->where('status','Completed')->latest()->first();
-            if ($completed) {
-                $application->payment_status = 'Paid';
-                $application->save();
-                $payment = $completed; // use the completed payment
-            } else {
-                // Not paid – redirect to preview with notice instead of blocked page
-                return redirect()->route('admission.preview', [$school->code, $application->app_id])
-                    ->with('error','পেমেন্ট সম্পন্ন হয়নি বা ব্যর্থ হয়েছে; আবেদন কপি দেখতে প্রথমে ফিস পরিশোধ করুন');
-            }
+            return response()->view('admission.copy_blocked', [
+                'school' => $school,
+                'application' => $application,
+            ], 403);
         }
         return view('admission.application_copy', compact('school','application','payment'));
     }
@@ -428,15 +421,6 @@ class AdmissionFlowController extends Controller
             ]);
             $application->update(['payment_status'=>'Paid']);
         }
-        // Auto-restore applicant session if lost during gateway redirect
-        $sess = session('admission_applicant');
-        if (!$sess || ($sess['app_id'] ?? null) !== $application->app_id) {
-            session()->put('admission_applicant', [
-                'app_id' => $application->app_id,
-                'school_code' => $school->code,
-                'name' => $application->name_bn ?? $application->name_en,
-            ]);
-        }
         return redirect()->route('admission.copy', [$school->code, $application->app_id])->with('success','পেমেন্ট সফল');
     }
 
@@ -453,15 +437,6 @@ class AdmissionFlowController extends Controller
                 'gateway_response' => $request->all()
             ]);
         }
-        // Ensure applicant can retry payment by restoring session
-        $sess = session('admission_applicant');
-        if (!$sess || ($sess['app_id'] ?? null) !== $application->app_id) {
-            session()->put('admission_applicant', [
-                'app_id' => $application->app_id,
-                'school_code' => $school->code,
-                'name' => $application->name_bn ?? $application->name_en,
-            ]);
-        }
         return redirect()->route('admission.preview', [$school->code, $application->app_id])->with('error','পেমেন্ট ব্যর্থ হয়েছে');
     }
 
@@ -476,15 +451,6 @@ class AdmissionFlowController extends Controller
                 'status' => 'Failed',
                 'gateway_status' => 'CANCELLED',
                 'gateway_response' => $request->all()
-            ]);
-        }
-        // Restore session for retry after cancellation
-        $sess = session('admission_applicant');
-        if (!$sess || ($sess['app_id'] ?? null) !== $application->app_id) {
-            session()->put('admission_applicant', [
-                'app_id' => $application->app_id,
-                'school_code' => $school->code,
-                'name' => $application->name_bn ?? $application->name_en,
             ]);
         }
         return redirect()->route('admission.preview', [$school->code, $application->app_id])->with('error','পেমেন্ট বাতিল করা হয়েছে');

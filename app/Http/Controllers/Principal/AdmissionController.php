@@ -119,13 +119,55 @@ class AdmissionController extends Controller
         ));
     }
 
-    public function payments(School $school)
+    public function payments(Request $request, School $school)
     {
-        // Placeholder view until payment integration is specified
-        $payments = collect();
-        return view('principal.admissions.payments', compact('school','payments'));
+        // Filters: status (Completed/Failed/Pending), date range (from/to), search (app_id/name)
+        $status = $request->string('status')->trim()->toString();
+        $from = $request->date('from');
+        $to = $request->date('to');
+        $search = $request->string('q')->trim()->toString();
+
+        $query = \App\Models\AdmissionPayment::with(['application' => function($q){
+                $q->select('id','school_id','app_id','name_en','name_bn','class_name','payment_status');
+            }])
+            ->whereHas('application', function($q) use ($school){
+                $q->where('school_id', $school->id);
+            });
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('transaction_id','like',"%$search%")
+                  ->orWhereHas('application', function($qa) use ($search){
+                      $qa->where('app_id','like',"%$search%")
+                         ->orWhere('name_en','like',"%$search%")
+                         ->orWhere('name_bn','like',"%$search%");
+                  });
+            });
+        }
+
+        $payments = $query->orderByDesc('id')->paginate(30)->appends($request->query());
+        return view('principal.admissions.payments', compact('school','payments','status','from','to','search'));
     }
 
+    public function paymentInvoice(School $school, \App\Models\AdmissionPayment $payment)
+    {
+        abort_if(optional($payment->application)->school_id !== $school->id, 404);
+        $payment->load(['application']);
+        return view('principal.admissions.payment_invoice', [
+            'school' => $school,
+            'payment' => $payment,
+            'application' => $payment->application,
+        ]);
+    }
     public function accept(School $school, AdmissionApplication $application)
     {
         abort_if($application->school_id !== $school->id, 404);
@@ -140,47 +182,12 @@ class AdmissionController extends Controller
         if (!$application->accepted_at) {
             DB::transaction(function () use ($school, $application) {
                 if (!$application->admission_roll_no) {
-                    // Determine class numeric prefix from class_name
-                    $raw = (string)($application->class_name ?? '');
-                    $classNum = (int) preg_replace('/[^0-9]/', '', $raw);
-                    // Fallback: if no digits found, keep previous global incremental behavior
-                    if ($classNum <= 0) {
-                        $qFallback = AdmissionApplication::where('school_id', $school->id);
-                        if ($application->academic_year_id) {
-                            $qFallback->where('academic_year_id', $application->academic_year_id);
-                        }
-                        $max = (int) ($qFallback->lockForUpdate()->max('admission_roll_no') ?? 0);
-                        $application->admission_roll_no = $max + 1;
-                    } else {
-                        // Count already-accepted applications for the same class (and academic year, if set)
-                        $q = AdmissionApplication::where('school_id', $school->id)
-                            ->where('class_name', $application->class_name)
-                            ->whereNotNull('accepted_at');
-                        if ($application->academic_year_id) {
-                            $q->where('academic_year_id', $application->academic_year_id);
-                        }
-                        // Lock the rows scanned to avoid race conditions during concurrent accepts
-                        $acceptedCount = (int) ($q->lockForUpdate()->count());
-                        $seq = max(min($acceptedCount + 1, 999), 1); // 3-digit sequence within class
-                        $prefix = $classNum * 1000;
-                        $roll = (int) ($prefix + $seq);
-                        // Ensure uniqueness within the same school/year
-                        $existsQuery = AdmissionApplication::where('school_id', $school->id)
-                            ->where('admission_roll_no', $roll);
-                        if ($application->academic_year_id) {
-                            $existsQuery->where('academic_year_id', $application->academic_year_id);
-                        }
-                        while ($existsQuery->exists() && $seq < 999) {
-                            $seq++;
-                            $roll = (int) ($prefix + $seq);
-                            $existsQuery = AdmissionApplication::where('school_id', $school->id)
-                                ->where('admission_roll_no', $roll);
-                            if ($application->academic_year_id) {
-                                $existsQuery->where('academic_year_id', $application->academic_year_id);
-                            }
-                        }
-                        $application->admission_roll_no = $roll;
+                    $q = AdmissionApplication::where('school_id', $school->id);
+                    if ($application->academic_year_id) {
+                        $q->where('academic_year_id', $application->academic_year_id);
                     }
+                    $max = (int) ($q->lockForUpdate()->max('admission_roll_no') ?? 0);
+                    $application->admission_roll_no = $max + 1; // store as int; render padded
                 }
                 $application->accepted_at = now();
                 $application->status = 'accepted';
@@ -207,7 +214,7 @@ class AdmissionController extends Controller
         if ($application->academic_year_id) {
             $academicYear = \App\Models\AcademicYear::find($application->academic_year_id);
         }
-        return view('principal.admissions.show', compact('school','application','academicYear'));    
+        return view('principal.admissions.show', compact('school','application','academicYear'));
     }
 
     public function copy(School $school, AdmissionApplication $application)
@@ -277,6 +284,7 @@ class AdmissionController extends Controller
         return redirect()->route('principal.institute.admissions.applications.show', [$school->id,$application->id])
             ->with('success','আবেদন বাতিল করা হয়েছে');
     }
+
 
     public function edit(School $school, AdmissionApplication $application)
     {

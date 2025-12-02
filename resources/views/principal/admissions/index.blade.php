@@ -3,18 +3,6 @@
 
 @section('content')
 @push('styles')
-<style>
-  /* Unified action button sizing */
-  .btn-group.app-actions .btn, .btn-action {
-    width:34px;
-    height:34px;
-    padding:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
-  .btn-group.app-actions form { margin:0; }
-</style>
 @endpush
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="m-0"><i class="fas fa-list mr-1"></i> Admission Applications</h1>
@@ -142,36 +130,36 @@
                   @endif
               </td>
               <td>
-                <div class="btn-group btn-group-sm app-actions" role="group">
-                  <a href="{{ route('principal.institute.admissions.applications.show', [$school->id, $app->id]) }}" class="btn btn-outline-primary btn-action" title="View"><i class="fas fa-eye"></i></a>
-                  <form action="{{ route('principal.institute.admissions.applications.reset_password', [$school->id, $app->id]) }}" method="post" onsubmit="return confirm('পাসওয়ার্ড রিসেট নিশ্চিত?');">
+                <div class="btn-group btn-group-sm" role="group">
+                  <a href="{{ route('principal.institute.admissions.applications.show', [$school->id, $app->id]) }}" class="btn btn-outline-primary" title="View"><i class="fas fa-eye"></i></a>
+                  <form action="{{ route('principal.institute.admissions.applications.reset_password', [$school->id, $app->id]) }}" method="post" onsubmit="return confirm('পাসওয়ার্ড রিসেট নিশ্চিত?');" class="d-inline">
                     @csrf
-                    <button type="submit" class="btn btn-outline-warning btn-action" title="Reset Password"><i class="fas fa-key"></i></button>
+                    <button type="submit" class="btn btn-outline-warning" title="Reset Password"><i class="fas fa-key"></i></button>
                   </form>
                   @if(!$app->student_id)
-                    <a href="{{ route('principal.institute.admissions.applications.edit', [$school->id, $app->id]) }}" class="btn btn-outline-secondary btn-action" title="Edit"><i class="fas fa-edit"></i></a>
+                    <a href="{{ route('principal.institute.admissions.applications.edit', [$school->id, $app->id]) }}" class="btn btn-outline-secondary" title="Edit"><i class="fas fa-edit"></i></a>
                   @else
-                    <button class="btn btn-outline-secondary btn-action" title="Already Enrolled" disabled><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-outline-secondary" title="Already Enrolled" disabled><i class="fas fa-edit"></i></button>
                   @endif
                   @if($app->app_id && $app->payment_status === 'Paid')
-                    <a href="{{ route('principal.institute.admissions.applications.copy', [$school->id, $app->id]) }}" target="_blank" class="btn btn-outline-info btn-action" title="Print Copy"><i class="fas fa-print"></i></a>
+                    <a href="{{ route('principal.institute.admissions.applications.copy', [$school->id, $app->id]) }}" target="_blank" class="btn btn-outline-info" title="Print Copy"><i class="fas fa-print"></i></a>
                   @else
-                    <button class="btn btn-outline-info btn-action" title="{{ $app->payment_status === 'Paid' ? 'Missing App ID' : 'Unpaid – Copy Disabled' }}" disabled><i class="fas fa-print"></i></button>
+                    <button class="btn btn-outline-info" title="{{ $app->payment_status === 'Paid' ? 'Missing App ID' : 'Unpaid – Copy Disabled' }}" disabled><i class="fas fa-print"></i></button>
                   @endif
-                  <a href="{{ route('principal.institute.admissions.applications.payments.details', [$school->id, $app->id]) }}" class="btn btn-outline-dark btn-action" title="Payments"><i class="fas fa-receipt"></i></a>
+                  <a href="{{ route('principal.institute.admissions.applications.payments.details', [$school->id, $app->id]) }}" class="btn btn-outline-dark" title="Payments"><i class="fas fa-receipt"></i></a>
                   @if(!$app->accepted_at && $app->status !== 'cancelled' && $app->payment_status==='Paid')
                     <form action="{{ route('principal.institute.admissions.applications.accept', [$school->id, $app->id]) }}" method="post" onsubmit="return confirm('Confirm accept?')">
                       @csrf
-                      <button class="btn btn-outline-success btn-action" title="Accept"><i class="fas fa-check"></i></button>
+                      <button class="btn btn-outline-success" title="Accept"><i class="fas fa-check"></i></button>
                     </form>
                   @endif
                   @if($app->status !== 'cancelled' && !$app->student_id)
-                    <button type="button" class="btn btn-outline-danger btn-action" title="Cancel" data-toggle="modal" data-target="#cancelModal" data-app-id="{{ $app->id }}" data-app-name="{{ $app->name_en ?? $app->applicant_name }}" data-cancel-url="{{ route('principal.institute.admissions.applications.cancel', [$school->id, $app->id]) }}">
+                    <button type="button" class="btn btn-outline-danger" title="Cancel" data-toggle="modal" data-target="#cancelModal" data-app-id="{{ $app->id }}" data-app-name="{{ $app->name_en ?? $app->applicant_name }}" data-cancel-url="{{ route('principal.institute.admissions.applications.cancel', [$school->id, $app->id]) }}">
                       <i class="fas fa-times"></i>
                     </button>
                   @endif
                   @if($app->accepted_at)
-                    <a href="{{ route('principal.institute.admissions.applications.admit_card', [$school->id, $app->id]) }}" class="btn btn-outline-success btn-action" title="Admit Card"><i class="fas fa-id-card"></i></a>
+                    <a href="{{ route('principal.institute.admissions.applications.admit_card', [$school->id, $app->id]) }}" class="btn btn-outline-success" title="Admit Card"><i class="fas fa-id-card"></i></a>
                   @endif
                 </div>
               </td>

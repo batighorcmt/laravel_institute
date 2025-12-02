@@ -1,6 +1,7 @@
 <x-layout.public :school="$school" :title="'আবেদন সারসংক্ষেপ — ' . ($school->name ?? '')">
     @push('styles')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="icon" type="image/png" href="{{ asset('images/batighor-favicon.png') }}">
     <style>
         .preview-root { font-size: 1.06rem; }
         .hero-card { border-radius: 16px; overflow: hidden; box-shadow: 0 10px 24px rgba(0,0,0,.08); }

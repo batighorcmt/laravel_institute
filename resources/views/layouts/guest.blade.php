@@ -7,9 +7,6 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Favicon -->
-        <link rel="icon" type="image/png" href="{{ asset('images/batighor-favicon.png') }}">
-        <link rel="apple-touch-icon" href="{{ asset('images/batighor-favicon.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
