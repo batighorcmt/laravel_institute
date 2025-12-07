@@ -181,13 +181,41 @@ class AdmissionController extends Controller
         }
         if (!$application->accepted_at) {
             DB::transaction(function () use ($school, $application) {
+                // Compute class-prefixed roll: classNumber*1000 + sequence (within class)
                 if (!$application->admission_roll_no) {
-                    $q = AdmissionApplication::where('school_id', $school->id);
-                    if ($application->academic_year_id) {
-                        $q->where('academic_year_id', $application->academic_year_id);
+                    $classRaw = (string)($application->class_name ?? '');
+                    $classNum = (int)preg_replace('/[^0-9]/','', $classRaw);
+                    // Fallback to simple sequence if class number not found
+                    if ($classNum <= 0) {
+                        $q = AdmissionApplication::where('school_id', $school->id);
+                        if ($application->academic_year_id) {
+                            $q->where('academic_year_id', $application->academic_year_id);
+                        }
+                        $max = (int) ($q->lockForUpdate()->max('admission_roll_no') ?? 0);
+                        $application->admission_roll_no = $max + 1;
+                    } else {
+                        // Count existing accepted/applications with same class to determine next sequence
+                        $q = AdmissionApplication::where('school_id', $school->id)
+                            ->where(function($qc) use ($classRaw) {
+                                $qc->where('class_name', $classRaw);
+                            });
+                        if ($application->academic_year_id) {
+                            $q->where('academic_year_id', $application->academic_year_id);
+                        }
+                        // lock for update to avoid race conditions
+                        $acceptedCount = (int) ($q->lockForUpdate()->whereNotNull('accepted_at')->count());
+                        $seq = max(min($acceptedCount + 1, 999), 1);
+                        $prefix = $classNum * 1000;
+                        $roll = (int) ($prefix + $seq);
+                        // ensure uniqueness just in case
+                        while (AdmissionApplication::where('school_id',$school->id)
+                                ->when($application->academic_year_id, function($qa) use($application){ $qa->where('academic_year_id',$application->academic_year_id); })
+                                ->where('admission_roll_no',$roll)->exists() && $seq < 999) {
+                            $seq++;
+                            $roll = (int) ($prefix + $seq);
+                        }
+                        $application->admission_roll_no = $roll;
                     }
-                    $max = (int) ($q->lockForUpdate()->max('admission_roll_no') ?? 0);
-                    $application->admission_roll_no = $max + 1; // store as int; render padded
                 }
                 $application->accepted_at = now();
                 $application->status = 'accepted';
