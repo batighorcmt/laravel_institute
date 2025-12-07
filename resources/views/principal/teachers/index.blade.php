@@ -19,13 +19,14 @@
       <table class="table table-hover mb-0">
             <thead>
               <tr>
-                <th style="width:80px">সিরিয়াল</th>
+                <th style="width:80px">ক্রমিক নং</th>
                 <th>নাম</th>
-                <th>মোবাইল</th>
-                <th>ইউজারনেম</th>
-                <th>পাসওয়ার্ড</th>
                 <th>পদবী</th>
-                <th style="width:140px">কার্য</th>
+                <th>মোবাইল নং</th>
+                <th>ইউজার নেম</th>
+                <th>পাসওয়ার্ড</th>
+                <th style="width:80px">ছবি</th>
+                <th style="width:160px">কার্য/একশন</th>
               </tr>
             </thead>
             <tbody>
@@ -33,6 +34,7 @@
                 <tr>
                   <td>{{ $t->serial_number }}</td>
                   <td>{{ $t->first_name }} {{ $t->last_name }}</td>
+                  <td>{{ $t->designation }}</td>
                   <td>{{ $t->phone }}</td>
                   <td>
                     @if($t->user && $t->user->username)
@@ -48,7 +50,24 @@
                       <span class="text-muted">-</span>
                     @endif
                   </td>
-                  <td>{{ $t->designation }}</td>
+                  <td>
+                    @php
+                      $photoUrl = null;
+                      if (!empty($t->photo)) {
+                          $p = ltrim((string)$t->photo, '/');
+                          if (str_starts_with($p, 'public/')) { $p = substr($p, strlen('public/')); }
+                          if (str_starts_with($p, 'storage/')) { $p = substr($p, strlen('storage/')); }
+                          $photoUrl = \Illuminate\Support\Facades\Storage::disk('public')->exists($p)
+                              ? \Illuminate\Support\Facades\Storage::url($p)
+                              : asset('storage/'.$p);
+                      }
+                    @endphp
+                    @if(!empty($photoUrl))
+                      <img src="{{ $photoUrl }}" alt="{{ $t->first_name }}" style="width:42px;height:42px;object-fit:cover;border-radius:4px;border:1px solid #ddd;" />
+                    @else
+                      <span class="text-muted">-</span>
+                    @endif
+                  </td>
                   <td>
                     @php($isPrincipalUser = isset($principalUserIds) && in_array($t->user_id, $principalUserIds))
                     @if($isPrincipalUser)
@@ -71,7 +90,7 @@
                   </td>
                 </tr>
               @empty
-                <tr><td colspan="7" class="text-center text-muted">কোনো শিক্ষক পাওয়া যায়নি</td></tr>
+                <tr><td colspan="8" class="text-center text-muted">কোনো শিক্ষক পাওয়া যায়নি</td></tr>
               @endforelse
             </tbody>
           </table>

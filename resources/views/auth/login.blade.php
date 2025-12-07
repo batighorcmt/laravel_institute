@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>স্কুল ম্যানেজমেন্ট সিস্টেম | লগইন</title>
+    <link rel="icon" href="{{ asset('images/batighor-favicon.png') }}">
+    <title>Batighor EIMS | Login</title>
     @vite(['resources/css/app.css','resources/js/app.js'])
     <style>
         body, .form-control, .btn { font-family: 'Kalpurush', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; }
@@ -12,6 +13,11 @@
             position:fixed; inset:0; z-index:-1;
             background:linear-gradient(120deg,#0d6efd,#6610f2,#6f42c1,#20c997,#0dcaf0);
             background-size:400% 400%; animation:gradientMove 18s ease infinite;
+        }
+        .bg-mark {
+            position:fixed; inset:0; z-index:-1; display:flex; align-items:center; justify-content:center; opacity:.08;
+            background-repeat:no-repeat; background-position:center; background-size:min(520px, 60vw) auto;
+            background-image:url('{{ asset('images/logo.svg') }}');
         }
         @keyframes gradientMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
         .glass-card { background:rgba(255,255,255,.75); backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%); border:1px solid rgba(255,255,255,.4); }
@@ -28,7 +34,9 @@
         .toggle-pass { position:absolute; top:50%; right:14px; transform:translateY(-50%); background:transparent; border:none; color:#6c757d; }
         .toggle-pass:focus { outline:none; color:#0d6efd; }
         .login-wrapper { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 18px; }
-        .logo-circle { width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,#0d6efd,#20c997); display:flex; align-items:center; justify-content:center; color:#fff; font-size:26px; font-weight:600; box-shadow:0 8px 18px -6px rgba(13,110,253,.55); }
+        .brand-wrap { display:flex; flex-direction:column; align-items:center; }
+        .brand-logo { width:200px; height:200px; object-fit:contain; filter:drop-shadow(0 8px 18px rgba(13,110,253,.35)); }
+        .brand-title { font-weight:800; font-size:1.25rem; letter-spacing:.5px; }
         .caps-indicator { display:none; font-size:.72rem; color:#dc3545; margin-left:4px; }
         .action-row { display:flex; justify-content:space-between; align-items:center; margin:-6px 0 14px; }
         .btn-gradient { background:linear-gradient(135deg,#0d6efd,#6610f2); border:none; color:#fff; font-weight:600; letter-spacing:.5px; box-shadow:0 12px 24px -10px rgba(13,110,253,.55); }
@@ -54,13 +62,13 @@
 </head>
 <body>
 <div class="bg-animated"></div>
+<div class="bg-mark"></div>
 <div class="login-wrapper">
     <div class="glass-card shadow-lg rounded-4 p-4 p-md-5 fade-in" style="width:100%; max-width:600px; position:relative;">
-        <button id="themeToggleLogin" class="dark-toggle"><i class="fas fa-adjust"></i><span>মোড</span></button>
-        <div class="text-center mb-4">
-            <div class="logo-circle mb-3">S</div>
-            <div class="brand-mark"><i class="fas fa-graduation-cap"></i> স্কুল ম্যানেজমেন্ট সিস্টেম</div>
-            <p class="text-muted mt-2 mb-0" style="font-size:.85rem;">একক লগইন – সকল অনুমতি নিয়ন্ত্রিত নিরাপদ অ্যাক্সেস</p>
+        <button id="themeToggleLogin" class="dark-toggle"><i class="fas fa-adjust"></i><span>Mode</span></button>
+        <div class="text-center mb-4 brand-wrap">
+            <img src="{{ asset('images/batighor_eims.png') }}" alt="Batighor" class="brand-logo mb-2">
+            <div class="brand-title">Batighor Educational Institute Management System</div>
         </div>
 
         @if ($errors->any())
@@ -79,32 +87,32 @@
             @csrf
             <div class="floating-group">
                 <input type="email" id="email" name="email" value="{{ old('email') }}" placeholder=" " required autocomplete="username" class="@error('email') is-invalid @enderror">
-                <label for="email">ইমেইল</label>
+                <label for="email">Email / Username</label>
                 @error('email')<small class="text-danger" style="position:absolute; bottom:-16px; left:4px;">{{ $message }}</small>@enderror
             </div>
             <div class="floating-group">
                 <input type="password" id="password" name="password" placeholder=" " required autocomplete="current-password" class="@error('password') is-invalid @enderror">
-                <label for="password">পাসওয়ার্ড <span id="capsIndicator" class="caps-indicator">(Caps Lock)</span></label>
-                <button type="button" class="toggle-pass" id="togglePassword" aria-label="পাসওয়ার্ড দেখুন"><i class="fas fa-eye"></i></button>
+                <label for="password">Password <span id="capsIndicator" class="caps-indicator">(Caps Lock)</span></label>
+                <button type="button" class="toggle-pass" id="togglePassword" aria-label="Show Password"><i class="fas fa-eye"></i></button>
                 @error('password')<small class="text-danger" style="position:absolute; bottom:-16px; left:4px;">{{ $message }}</small>@enderror
             </div>
             <div class="action-row" style="justify-content:space-between;">
                 <div class="form-check" style="margin:0;">
                     <input class="form-check-input" type="checkbox" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
-                    <label class="form-check-label" for="remember" style="font-size:.75rem;">মনে রাখুন</label>
+                    <label class="form-check-label" for="remember" style="font-size:.75rem;">Remember Me</label>
                 </div>
                 @if (Route::has('password.request'))
-                    <div class="meta-links"><a href="{{ route('password.request') }}">পাসওয়ার্ড রিসেট করুন</a></div>
+                    <div class="meta-links"><a href="{{ route('password.request') }}">Password Reset</a></div>
                 @endif
             </div>
             
-            <button type="submit" class="btn btn-gradient btn-block py-3 rounded-3" id="submitBtn" style="font-size:.9rem;">
+            <button type="submit" class="btn btn-gradient btn-block py-3 rounded-3" id="submitBtn" style="font-size:.95rem;">
                 <span class="spinner-border spinner-border-sm d-none" id="submitSpinner" role="status" aria-hidden="true"></span>
-                <span class="btn-text">লগইন</span>
+                <span class="btn-text">Login</span>
             </button>
         </form>
         <div class="mt-4 text-center meta-links" style="font-size:.7rem;">
-            <span>© {{ date('Y') }} স্কুল ম্যানেজমেন্ট • নিরাপদ ও স্কেলেবল</span>
+            <span>© {{ date('Y') }} Batighor Software Systems Limited</span>
         </div>
     </div>
 </div>
