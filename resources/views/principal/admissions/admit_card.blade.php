@@ -40,6 +40,9 @@
     $sessionBn = strtr((string)$session, $bnDigits);
     $examDtBn = strtr((string)$examDt, $bnDigits);
     $rollBn = strtr((string)$roll, $bnDigits);
+    // DOB in Bangla digits
+    $dobEn = optional($application->dob)->format('d-m-Y');
+    $dobBn = $dobEn ? strtr((string)$dobEn, $bnDigits) : '—';
     // Class label mapping
     $classLabelBn = $classRaw;
     if ($classNum === 6) $classLabelBn = 'ষষ্ঠ';
@@ -264,7 +267,7 @@ body footer, body .footer, body .main-footer, body .app-footer { display:none !i
                         <tr><td>নাম (ইংরেজি)</td><td>: {{ $application->name_en }}</td></tr>
                         <tr><td>পিতা</td><td>: {{ $application->father_name_bn ?: $application->father_name_en }}</td></tr>
                         <tr><td>মাতা</td><td>: {{ $application->mother_name_bn ?: $application->mother_name_en }}</td></tr>
-                        <tr><td>জন্ম তারিখ</td><td>: {{ optional($application->dob)->format('d-m-Y') }}</td></tr>
+                        <tr><td>জন্ম তারিখ</td><td>: {{ $dobBn }}</td></tr>
                         <tr><td>লিঙ্গ</td><td>: {{ $genderBn }}</td></tr>
                     </table>
                 </div>
