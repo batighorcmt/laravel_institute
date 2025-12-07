@@ -109,6 +109,21 @@ class SchoolController extends Controller
                 ]);
             }
 
+            // Ensure a Teacher profile exists for principal so they appear in teacher list
+            \App\Models\Teacher::firstOrCreate(
+                ['user_id' => $user->id, 'school_id' => $school->id],
+                [
+                    'first_name' => $data['principal_name_en'],
+                    'last_name' => null,
+                    'first_name_bn' => $data['principal_name_bn'] ?? null,
+                    'last_name_bn' => null,
+                    'phone' => $data['principal_phone'] ?? null,
+                    'designation' => $data['principal_designation'] ?? 'Principal',
+                    'serial_number' => 1,
+                    'status' => 'active',
+                ]
+            );
+
             $defaultAdminInfo = [
                 'email' => $data['principal_email'],
                 'password' => $passwordPlain,
@@ -143,7 +158,13 @@ class SchoolController extends Controller
             ->withRole(Role::PRINCIPAL)
             ->with('user')
             ->first();
-        return view('superadmin.schools.edit', compact('school','principal'));
+        $principalTeacher = null;
+        if ($principal) {
+            $principalTeacher = \App\Models\Teacher::where('school_id', $school->id)
+                ->where('user_id', $principal->user_id)
+                ->first();
+        }
+        return view('superadmin.schools.edit', compact('school','principal','principalTeacher'));
     }
 
     /**
@@ -182,8 +203,8 @@ class SchoolController extends Controller
             }
             $school->update($data);
 
-            // If principal info provided, update or create principal user
-            if (!empty($data['principal_email']) || !empty($data['principal_name_en']) || !empty($data['principal_phone'])) {
+            // If any principal info provided, update or create principal user/relations
+            if (!empty($data['principal_email']) || !empty($data['principal_name_en']) || !empty($data['principal_phone']) || !empty($data['principal_designation']) || !empty($data['principal_name_bn'])) {
                 $principalRole = Role::where('name', Role::PRINCIPAL)->first();
                 $teacherRole = Role::where('name', Role::TEACHER)->first();
                 if ($principalPivot) {
@@ -213,6 +234,18 @@ class SchoolController extends Controller
                             'serial_number' => 1,
                         ]);
                     }
+                    // Ensure Teacher profile exists/updated
+                    $teacherProfile = \App\Models\Teacher::firstOrNew([
+                        'user_id' => $principalPivot->user_id,
+                        'school_id' => $school->id,
+                    ]);
+                    $teacherProfile->first_name = $data['principal_name_en'] ?: ($teacherProfile->first_name ?? $principalUser->first_name ?? '');
+                    $teacherProfile->first_name_bn = $data['principal_name_bn'] ?? $teacherProfile->first_name_bn;
+                    $teacherProfile->phone = $data['principal_phone'] ?? $teacherProfile->phone;
+                    $teacherProfile->designation = $data['principal_designation'] ?? ($teacherProfile->designation ?: 'Principal');
+                    if (!$teacherProfile->serial_number) { $teacherProfile->serial_number = 1; }
+                    if (!$teacherProfile->status) { $teacherProfile->status = 'active'; }
+                    $teacherProfile->save();
                 } else {
                     // Create new principal user if missing
                     if (!empty($data['principal_email'])) {
@@ -244,6 +277,18 @@ class SchoolController extends Controller
                                 'serial_number' => 1,
                             ]);
                         }
+                        // Create Teacher profile too
+                        \App\Models\Teacher::firstOrCreate(
+                            ['user_id' => $user->id, 'school_id' => $school->id],
+                            [
+                                'first_name' => $data['principal_name_en'] ?: $school->name,
+                                'first_name_bn' => $data['principal_name_bn'] ?? null,
+                                'phone' => $data['principal_phone'] ?? null,
+                                'designation' => $data['principal_designation'] ?? 'Principal',
+                                'serial_number' => 1,
+                                'status' => 'active',
+                            ]
+                        );
                     }
                 }
             }

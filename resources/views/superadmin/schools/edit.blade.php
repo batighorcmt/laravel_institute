@@ -86,7 +86,7 @@
       </div>
       <div class="form-group col-md-6">
         <label>প্রতিষ্ঠান প্রধানের নাম (বাংলা)</label>
-        <input type="text" name="principal_name_bn" class="form-control" value="{{ old('principal_name_bn') }}">
+        <input type="text" name="principal_name_bn" class="form-control" value="{{ old('principal_name_bn', optional($principalTeacher)->first_name_bn) }}">
       </div>
     </div>
     <div class="form-row">

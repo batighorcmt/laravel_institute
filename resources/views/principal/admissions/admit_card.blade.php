@@ -52,9 +52,68 @@
     // Principal (institution head) info from role assignment
     $principalRole = \App\Models\UserSchoolRole::active()->forSchool($school->id)->withRole(\App\Models\Role::PRINCIPAL)->with(['user'])->first();
     $principalUser = $principalRole?->user;
-    $principalPhoto = $principalUser && $principalUser->photo ? asset('storage/'.ltrim($principalUser->photo,'/')) : null;
-    $principalSignature = $principalUser && ($principalUser->signature ?? null) ? asset('storage/'.ltrim($principalUser->signature,'/')) : null;
-    $principalDesignation = $principalUser && (!empty($principalUser->designation) ? $principalUser->designation : null) ?: ($principalRole?->designation ?: 'প্রতিষ্ঠান প্রধান');
+    // Prefer Teacher profile assets for principal
+    $principalTeacher = null;
+    if ($principalUser) {
+        $principalTeacher = \App\Models\Teacher::where('user_id', $principalUser->id)
+            ->where('school_id', $school->id)
+            ->first();
+    }
+    // Fallback: find a teacher marked as Principal in this school
+    if (!$principalTeacher) {
+        $principalTeacher = \App\Models\Teacher::where('school_id', $school->id)
+            ->where(function($q){
+                $q->where('designation','like','%Principal%')
+                  ->orWhere('designation','like','%প্রতিষ্ঠান প্রধান%')
+                  ->orWhere('designation','like','%প্রধান শিক্ষক%');
+            })
+            ->orderByRaw('COALESCE(serial_number, 999999) ASC')
+            ->first();
+    }
+    $principalPhoto = null;
+    $principalSignature = null;
+    // Helper to normalize public storage paths like "public/storage/..." or "/storage/..."
+    $normalizeStoragePath = function(string $path) {
+        $t = ltrim($path,'/');
+        if (str_starts_with($t, 'public/storage/')) {
+            $t = substr($t, strlen('public/storage/'));
+        } elseif (str_starts_with($t, 'storage/')) {
+            $t = substr($t, strlen('storage/'));
+        }
+        return $t;
+    };
+
+    if ($principalTeacher) {
+        if (!empty($principalTeacher->photo)) {
+            $p = $normalizeStoragePath((string)$principalTeacher->photo);
+            $principalPhoto = \Illuminate\Support\Facades\Storage::disk('public')->exists($p)
+                ? \Illuminate\Support\Facades\Storage::url($p)
+                : (str_starts_with($p,'http') ? $p : asset('storage/'.$p));
+        }
+        if (!empty($principalTeacher->signature)) {
+            $s = $normalizeStoragePath((string)$principalTeacher->signature);
+            $principalSignature = \Illuminate\Support\Facades\Storage::disk('public')->exists($s)
+                ? \Illuminate\Support\Facades\Storage::url($s)
+                : (str_starts_with($s,'http') || str_starts_with('/'.$s,'/storage/') ? ('/storage/'.$s) : asset('storage/'.$s));
+        }
+    } else if ($principalUser) {
+        // Fallback to user photo/signature if teacher profile not found
+        if (!empty($principalUser->photo)) {
+            $p = $normalizeStoragePath((string)$principalUser->photo);
+            $principalPhoto = \Illuminate\Support\Facades\Storage::disk('public')->exists($p)
+                ? \Illuminate\Support\Facades\Storage::url($p)
+                : (str_starts_with($p,'http') ? $p : asset('storage/'.$p));
+        }
+        if (!empty($principalUser->signature)) {
+            $s = $normalizeStoragePath((string)$principalUser->signature);
+            $principalSignature = \Illuminate\Support\Facades\Storage::disk('public')->exists($s)
+                ? \Illuminate\Support\Facades\Storage::url($s)
+                : (str_starts_with($s,'http') || str_starts_with('/'.$s,'/storage/') ? ('/storage/'.$s) : asset('storage/'.$s));
+        }
+    }
+    $principalDesignation = $principalTeacher && !empty($principalTeacher->designation)
+        ? $principalTeacher->designation
+        : ($principalRole?->designation ?: 'প্রতিষ্ঠান প্রধান');
 @endphp
 
 <style>
