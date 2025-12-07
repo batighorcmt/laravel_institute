@@ -8,9 +8,20 @@
     $rawSeq = (int)($application->admission_roll_no ?? 0);
     $classRaw = (string)($application->class_name ?? '');
     $classNum = (int)preg_replace('/[^0-9]/','', $classRaw);
-    if ($rawSeq > 0 && $classNum > 0) {
-        $calc = ($classNum * 1000) + max(min($rawSeq, 999), 1);
-        $roll = str_pad((string)$calc, 4, '0', STR_PAD_LEFT);
+    if ($classNum > 0 && $rawSeq > 0) {
+        $prefixStart = $classNum * 1000;
+        $prefixEnd = ($classNum + 1) * 1000; // exclusive upper bound
+        if ($rawSeq >= $prefixStart && $rawSeq < $prefixEnd) {
+            // Already stored as class-prefixed roll; use as-is
+            $roll = str_pad((string)$rawSeq, 4, '0', STR_PAD_LEFT);
+        } elseif ($rawSeq < 1000) {
+            // Stored as sequence only; compose class-prefixed display
+            $seq = max(min($rawSeq, 999), 1);
+            $roll = str_pad((string)($prefixStart + $seq), 4, '0', STR_PAD_LEFT);
+        } else {
+            // Fallback: unknown format, just show the stored number
+            $roll = str_pad((string)$rawSeq, 4, '0', STR_PAD_LEFT);
+        }
     } else {
         $roll = $application->admission_roll_no ? str_pad($application->admission_roll_no, 3, '0', STR_PAD_LEFT) : '—';
     }
