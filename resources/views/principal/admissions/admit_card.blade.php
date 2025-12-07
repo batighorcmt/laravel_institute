@@ -4,7 +4,16 @@
     $logo = $school->logo ? asset('storage/'.$school->logo) : null;
     $photo = $application->photo ? asset('storage/admission/'.$application->photo) : asset('images/default-avatar.png');
     $session = $application->academicYear->name ?? ($school->admissionAcademicYear->name ?? '');
-    $roll = $application->admission_roll_no ? str_pad($application->admission_roll_no, 3, '0', STR_PAD_LEFT) : '—';
+    // Display roll: prefer class-prefixed 4 digits (classNumber + 3-digit sequence)
+    $rawSeq = (int)($application->admission_roll_no ?? 0);
+    $classRaw = (string)($application->class_name ?? '');
+    $classNum = (int)preg_replace('/[^0-9]/','', $classRaw);
+    if ($rawSeq > 0 && $classNum > 0) {
+        $calc = ($classNum * 1000) + max(min($rawSeq, 999), 1);
+        $roll = str_pad((string)$calc, 4, '0', STR_PAD_LEFT);
+    } else {
+        $roll = $application->admission_roll_no ? str_pad($application->admission_roll_no, 3, '0', STR_PAD_LEFT) : '—';
+    }
     // Prefer settings-provided exam datetime
     $examFromSettings = isset($examDatetime) && $examDatetime ? \Carbon\Carbon::parse($examDatetime)->format('d-m-Y h:i A') : null;
     $examDt = $examFromSettings ?: ($application->exam_datetime ? \Carbon\Carbon::parse($application->exam_datetime)->format('d-m-Y h:i A') : '—');
@@ -21,8 +30,6 @@
     $examDtBn = strtr((string)$examDt, $bnDigits);
     $rollBn = strtr((string)$roll, $bnDigits);
     // Class label mapping
-    $classRaw = (string)($application->class_name ?? '');
-    $classNum = (int)preg_replace('/[^0-9]/','', $classRaw);
     $classLabelBn = $classRaw;
     if ($classNum === 6) $classLabelBn = 'ষষ্ঠ';
     elseif ($classNum === 7) $classLabelBn = 'সপ্তম';
