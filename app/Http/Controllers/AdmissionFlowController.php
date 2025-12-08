@@ -475,6 +475,43 @@ class AdmissionFlowController extends Controller
         return response('OK');
     }
 
+    /**
+     * Show admit card for the logged-in applicant after successful payment.
+     * Uses the same Blade as principal side: resources/views/principal/admissions/admit_card.blade.php
+     */
+    public function admitCard($code, $appId)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id', $school->id)
+            ->where('app_id', $appId)
+            ->firstOrFail();
+
+        // Allow only logged-in applicant to view their admit card
+        $sess = session('admission_applicant');
+        if (!$sess || ($sess['school_code'] ?? null) !== $school->code || ($sess['app_id'] ?? null) !== $application->app_id) {
+            return response()->view('admission.blocked', [
+                'schoolCode' => $school->code,
+                'title' => 'দেখার অনুমতি নেই',
+                'message' => 'কেবলমাত্র লগইনকৃত আবেদনকারীই তার প্রবেশপত্র দেখতে পারবে।',
+                'showLogout' => true,
+            ], 403);
+        }
+
+        // Require payment to print admit card
+        if (strtolower($application->payment_status) !== 'paid') {
+            return response()->view('admission.copy_blocked', [
+                'school' => $school,
+                'application' => $application,
+            ], 403);
+        }
+
+        // Optional exam datetime and venues (can be wired from settings/seat plan later)
+        $examDatetime = null;
+        $venues = [];
+
+        return view('principal.admissions.admit_card', compact('school', 'application', 'examDatetime', 'venues'));
+    }
+
     public function handleConsent(Request $request, $code)
     {
         $school = $this->schoolByCode($code);

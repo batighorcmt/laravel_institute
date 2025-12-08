@@ -171,6 +171,7 @@
                 @else
                     <div class="text-center">
                         <a href="{{ route('admission.copy', [$school->code, $application->app_id]) }}" class="btn btn-success btn-lg"><i class="fa-solid fa-file-lines me-2"></i> আবেদন কপি</a>
+                        <a href="{{ route('admission.admit_card', [$school->code, $application->app_id]) }}" class="btn btn-primary btn-lg ms-2"><i class="fa-solid fa-id-card me-2"></i> এডমিট কার্ড</a>
                     </div>
                 @endif
             </div>

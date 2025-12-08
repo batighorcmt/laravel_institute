@@ -44,6 +44,10 @@ Route::prefix('admission/{schoolCode}')->group(function() {
     Route::get('/preview/{appId}', [AdmissionFlowController::class, 'preview'])->middleware('admission.applicant.guard')->name('admission.preview');
     Route::post('/payment/initiate', [AdmissionFlowController::class, 'paymentInitiate'])->name('admission.payment');
     Route::get('/copy/{appId}', [AdmissionFlowController::class, 'copy'])->middleware('admission.applicant.guard')->name('admission.copy');
+    // Applicant admit card (printable) using the same guard
+    Route::get('/admit-card/{appId}', [AdmissionFlowController::class, 'admitCard'])
+        ->middleware('admission.applicant.guard')
+        ->name('admission.admit_card');
     // Applicant login (POST) within admission group; use unique segment to avoid param collisions
     Route::post('/applicant-login', [\App\Http\Controllers\AdmissionController::class, 'login'])->name('admission.login');
     // Login page (Blade view) within admission flow
