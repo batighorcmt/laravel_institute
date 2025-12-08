@@ -171,7 +171,12 @@
                 @else
                     <div class="text-center">
                         <a href="{{ route('admission.copy', [$school->code, $application->app_id]) }}" class="btn btn-success btn-lg"><i class="fa-solid fa-file-lines me-2"></i> আবেদন কপি</a>
-                        <a href="{{ route('admission.admit_card', [$school->code, $application->app_id]) }}" class="btn btn-primary btn-lg ms-2"><i class="fa-solid fa-id-card me-2"></i> এডমিট কার্ড</a>
+                        @if($application->accepted_at)
+                            <a href="{{ route('admission.admit_card', [$school->code, $application->app_id]) }}" class="btn btn-primary btn-lg ms-2"><i class="fa-solid fa-id-card me-2"></i> এডমিট কার্ড</a>
+                        @else
+                            <button class="btn btn-outline-secondary btn-lg ms-2" disabled title="আবেদন গ্রহণের পর এডমিট কার্ড পাওয়া যাবে"><i class="fa-solid fa-id-card me-2"></i> এডমিট কার্ড</button>
+                            <div class="small text-muted mt-2">আবেদন গ্রহণ করা না হলে এডমিট কার্ড মেনু দেখাবে না। আবেদন গ্রহণ করা হলে তবেই পূর্ণাঙ্গ ফিচার সহ এডমিট কার্ড দেখাবে।</div>
+                        @endif
                     </div>
                 @endif
             </div>

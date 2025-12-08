@@ -267,7 +267,8 @@ class AdmissionController extends Controller
     public function admitCard(School $school, AdmissionApplication $application)
     {
         abort_if($application->school_id !== $school->id, 404);
-        abort_unless((bool)$application->accepted_at, 403, 'এখনো গ্রহণ হয়নি');
+        // Show admit card only for accepted applications
+        abort_unless($application->accepted_at, 404);
         $settings = Setting::forSchool($school->id)
             ->whereIn('key', ['admission_exam_datetime','admission_exam_venues'])
             ->pluck('value','key');

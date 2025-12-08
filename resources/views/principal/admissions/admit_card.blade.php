@@ -232,12 +232,12 @@ body footer, body .footer, body .main-footer, body .app-footer { display:none !i
                 <div>
                     <div class="school-name">{{ $school->name_bn ?: $school->name }}</div>
                     <div class="school-meta">
-                        @if($school->address_bn || $school->address)
-                            {{ $school->address_bn ?: $school->address }}
-                        @endif
-                    </br>
-                        @if($school->phone) ফোন: {{ $school->phone }} @endif
-                        @if($school->email) • ইমেইল: {{ $school->email }} @endif
+                        <div>{{ $school->address_bn ?: ($school->address ?: '—') }}</div>
+                        <div>
+                            @if($school->phone) ফোন: {{ $school->phone }} @endif
+                            @if($school->phone && $school->email) • @endif
+                            @if($school->email) ইমেইল: {{ $school->email }} @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -277,7 +277,7 @@ body footer, body .footer, body .main-footer, body .app-footer { display:none !i
                         <div style="margin-top:12px; display:flex; justify-content:center;">
                             <div style="width:150px; height:150px; border:2px solid #000; display:flex; align-items:center; justify-content:center; padding:6px; box-sizing:border-box;">
                                 @if(app()->bound('qrcode'))
-                                    {!! app('qrcode')->size(140)->generate($qrText) !!}
+                                    {!! app('qrcode')->encoding('UTF-8')->size(140)->generate($qrText) !!}
                                 @else
                                     <div style="width:140px; height:140px;"></div>
                                 @endif

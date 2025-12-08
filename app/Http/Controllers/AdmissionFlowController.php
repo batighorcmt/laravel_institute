@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\School;
 use App\Models\AdmissionApplication;
 use App\Models\AdmissionPayment;
+use App\Models\Setting;
 use App\Models\Role;
 use App\Models\SchoolPaymentSetting;
 use App\Services\SSLCommerzClient;
@@ -497,6 +498,16 @@ class AdmissionFlowController extends Controller
             ], 403);
         }
 
+        // Require acceptance to show admit card
+        if (!$application->accepted_at) {
+            return response()->view('admission.blocked', [
+                'schoolCode' => $school->code,
+                'title' => 'আবেদন গ্রহণ করা হয়নি',
+                'message' => 'আবেদন গ্রহণ করা হলে তবেই পূর্ণাঙ্গ ফিচার সহ এডমিট কার্ড দেখাবে।',
+                'showLogout' => true,
+            ], 403);
+        }
+
         // Require payment to print admit card
         if (strtolower($application->payment_status) !== 'paid') {
             return response()->view('admission.copy_blocked', [
@@ -505,9 +516,16 @@ class AdmissionFlowController extends Controller
             ], 403);
         }
 
-        // Optional exam datetime and venues (can be wired from settings/seat plan later)
-        $examDatetime = null;
+        // Exam datetime and venues from settings
+        $settings = Setting::forSchool($school->id)
+            ->whereIn('key', ['admission_exam_datetime','admission_exam_venues'])
+            ->pluck('value','key');
+        $examDatetime = $settings->get('admission_exam_datetime');
         $venues = [];
+        if ($settings->get('admission_exam_venues')) {
+            $v = json_decode($settings->get('admission_exam_venues'), true);
+            if (is_array($v)) { $venues = $v; }
+        }
 
         return view('principal.admissions.admit_card', compact('school', 'application', 'examDatetime', 'venues'));
     }
