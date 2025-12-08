@@ -421,6 +421,12 @@ class AdmissionFlowController extends Controller
             ]);
             $application->update(['payment_status'=>'Paid']);
         }
+        // Ensure applicant session exists after payment gateway redirect
+        $request->session()->put('admission_applicant', [
+            'app_id' => $application->app_id,
+            'school_code' => $school->code,
+            'name' => $application->name_bn ?? $application->name_en,
+        ]);
         return redirect()->route('admission.copy', [$school->code, $application->app_id])->with('success','পেমেন্ট সফল');
     }
 
