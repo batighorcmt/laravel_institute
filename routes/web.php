@@ -203,6 +203,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::put('/class-settings/{setting}', [\App\Http\Controllers\Principal\AdmissionClassSettingController::class,'update'])->name('class-settings.update');
                 Route::delete('/class-settings/{setting}', [\App\Http\Controllers\Principal\AdmissionClassSettingController::class,'destroy'])->name('class-settings.destroy');
                 Route::get('/applications', [PrincipalAdmissionController::class,'applications'])->name('applications');
+                Route::get('/applications/summary', [PrincipalAdmissionController::class,'summary'])->name('applications.summary');
                 Route::get('/applications/{application}', [PrincipalAdmissionController::class,'show'])->name('applications.show');
                 Route::get('/applications/{application}/copy', [PrincipalAdmissionController::class,'copy'])->name('applications.copy');
                 Route::post('/applications/{application}/accept', [PrincipalAdmissionController::class,'accept'])->name('applications.accept');
@@ -497,6 +498,9 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/students/{student}', [App\Http\Controllers\Teacher\DirectoryController::class, 'studentShow'])->name('students.show');
                 Route::get('/teachers', [App\Http\Controllers\Teacher\DirectoryController::class, 'teachers'])->name('teachers');
             });
+
+            // Billing collection page for teachers (restricted by assigned class in controller)
+            Route::get('/billing/collect', [App\Http\Controllers\Teacher\Billing\CollectController::class, 'create'])->name('billing.collect');
         });
     });
 
@@ -504,4 +508,19 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('parent')->name('parent.')->middleware(['role:parent'])->group(function () {
         Route::get('/dashboard', [ParentController::class, 'dashboard'])->name('dashboard');
     });
+
+    // Billing blades (simple views; access limited by nav visibility and auth)
+    Route::get('/billing/due', function () { return view('billing.due'); })->name('billing.due');
+    Route::get('/billing/statement', function () { return view('billing.statement'); })->name('billing.statement');
+    Route::get('/billing/collect', function () { return view('billing.collect'); })->name('billing.collect');
+
+    // Billing Settings
+    Route::get('/billing/settings/fee-structures', [\App\Http\Controllers\Billing\SettingsController::class, 'feeStructureIndex'])->name('billing.settings.fee_structures');
+    Route::post('/billing/settings/fee-structures', [\App\Http\Controllers\Billing\SettingsController::class, 'feeStructureStore'])->name('billing.settings.fee_structures.store');
+    Route::get('/billing/settings/discounts', [\App\Http\Controllers\Billing\SettingsController::class, 'discountsIndex'])->name('billing.settings.discounts');
+    Route::post('/billing/settings/discounts', [\App\Http\Controllers\Billing\SettingsController::class, 'discountsStore'])->name('billing.settings.discounts.store');
+    Route::get('/billing/settings/categories', [\App\Http\Controllers\Billing\SettingsController::class, 'categoriesIndex'])->name('billing.settings.categories');
+    Route::post('/billing/settings/categories', [\App\Http\Controllers\Billing\SettingsController::class, 'categoriesStore'])->name('billing.settings.categories.store');
+    Route::get('/billing/settings/global-fees', [\App\Http\Controllers\Billing\SettingsController::class, 'globalFeesIndex'])->name('billing.settings.global_fees');
+    Route::post('/billing/settings/global-fees', [\App\Http\Controllers\Billing\SettingsController::class, 'globalFeesStore'])->name('billing.settings.global_fees.store');
 });

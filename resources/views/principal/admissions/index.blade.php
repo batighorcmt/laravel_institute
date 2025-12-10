@@ -8,6 +8,7 @@
   <h1 class="m-0"><i class="fas fa-list mr-1"></i> Admission Applications</h1>
   <div>
     <a href="{{ route('principal.institute.admissions.settings', $school) }}" class="btn btn-outline-secondary">Settings</a>
+    <a href="{{ route('principal.institute.admissions.applications.summary', $school->id) }}" class="btn btn-outline-primary ml-2">Application Summary</a>
   </div>
 </div>
 
@@ -34,6 +35,12 @@
     <div class="border rounded p-2 text-center bg-light">
       <div class="small text-muted">Paid Apps</div>
       <div class="h5 mb-0 text-primary">{{ $paidApps }}</div>
+    </div>
+  </div>
+  <div class="col-md-2 col-6 mb-2">
+    <div class="border rounded p-2 text-center bg-light">
+      <div class="small text-muted">Unpaid Apps</div>
+      <div class="h5 mb-0 text-warning">{{ $unpaidApps }}</div>
     </div>
   </div>
   <div class="col-md-2 col-6 mb-2">

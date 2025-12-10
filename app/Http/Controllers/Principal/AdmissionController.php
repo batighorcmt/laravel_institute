@@ -86,14 +86,22 @@ class AdmissionController extends Controller
 
     public function applications(School $school)
     {
-        $query = AdmissionApplication::where('school_id',$school->id);
-        $apps = $query->orderByDesc('id')->paginate(20);
+        // Use separate immutable base query for stats and a separate query for list to avoid pagination side-effects
+        $baseQuery = AdmissionApplication::query()->where('school_id', $school->id);
+        $apps = AdmissionApplication::query()->where('school_id', $school->id)
+            ->orderByDesc('id')
+            ->paginate(20);
 
         // Statistics
-        $totalApps = (clone $query)->count();
-        $acceptedApps = (clone $query)->whereNotNull('accepted_at')->count();
-        $cancelledApps = (clone $query)->where('status','cancelled')->count();
-        $paidApps = (clone $query)->where('payment_status','Paid')->count();
+        $totalApps = (clone $baseQuery)->count();
+        $acceptedApps = (clone $baseQuery)->whereNotNull('accepted_at')->count();
+        $cancelledApps = (clone $baseQuery)->where('status','cancelled')->count();
+        $paidApps = (clone $baseQuery)->where('payment_status','Paid')->count();
+        $unpaidApps = (clone $baseQuery)
+            ->where('status','!=','cancelled')
+            ->where(function($q){
+                $q->whereNull('payment_status')->orWhere('payment_status','!=','Paid');
+            })->count();
 
         // Total paid amount (sum of successful payments for applications of this school)
         $totalPaidAmount = \App\Models\AdmissionPayment::whereHas('application', function($q) use ($school){
@@ -107,7 +115,7 @@ class AdmissionController extends Controller
             $settings = \App\Models\AdmissionClassSetting::forSchoolYear($school->id, $school->admission_academic_year_id)
                 ->get()->keyBy('class_code');
         }
-        foreach ((clone $query)->get(['class_name']) as $appRow) {
+        foreach ((clone $baseQuery)->get(['class_name']) as $appRow) {
             if ($appRow->class_name && isset($settings[$appRow->class_name])) {
                 $expectedTotalFees += (float) $settings[$appRow->class_name]->fee_amount;
             }
@@ -115,7 +123,65 @@ class AdmissionController extends Controller
         $unpaidAmount = max($expectedTotalFees - (float)$totalPaidAmount, 0);
 
         return view('principal.admissions.index', compact(
-            'school','apps','totalApps','acceptedApps','cancelledApps','paidApps','totalPaidAmount','expectedTotalFees','unpaidAmount'
+            'school','apps','totalApps','acceptedApps','cancelledApps','paidApps','unpaidApps','totalPaidAmount','expectedTotalFees','unpaidAmount'
+        ));
+    }
+
+    public function summary(Request $request, School $school)
+    {
+        $base = AdmissionApplication::query()->where('school_id', $school->id);
+        // Optional: filter by academic year if provided, otherwise use current admission year
+        $yearId = (int) $request->query('year_id', $school->admission_academic_year_id ?: 0);
+        if ($yearId) {
+            $base->where('academic_year_id', $yearId);
+        }
+
+        $totalApps = (clone $base)->count();
+        $acceptedApps = (clone $base)->whereNotNull('accepted_at')->count();
+        $cancelledApps = (clone $base)->where('status','cancelled')->count();
+        $paidApps = (clone $base)->where('payment_status','Paid')->count();
+        $unpaidApps = (clone $base)
+            ->where('status','!=','cancelled')
+            ->where(function($q){ $q->whereNull('payment_status')->orWhere('payment_status','!=','Paid'); })
+            ->count();
+
+        // By class
+        $byClass = (clone $base)
+            ->select('class_name', DB::raw('COUNT(*) as total'))
+            ->groupBy('class_name')
+            ->orderByDesc('total')
+            ->get();
+        // By gender
+        $byGender = (clone $base)
+            ->select('gender', DB::raw('COUNT(*) as total'))
+            ->groupBy('gender')
+            ->orderByDesc('total')
+            ->get();
+        // By village (present_village)
+        $byVillage = (clone $base)
+            ->select('present_village', DB::raw('COUNT(*) as total'))
+            ->groupBy('present_village')
+            ->orderByDesc('total')
+            ->limit(50)
+            ->get();
+        // By previous school (last_school)
+        $byPrevSchool = (clone $base)
+            ->select('last_school', DB::raw('COUNT(*) as total'))
+            ->groupBy('last_school')
+            ->orderByDesc('total')
+            ->limit(50)
+            ->get();
+
+        // Payments summary
+        $totalPaidAmount = \App\Models\AdmissionPayment::whereHas('application', function($q) use ($school, $yearId){
+                $q->where('school_id', $school->id);
+                if ($yearId) { $q->where('academic_year_id', $yearId); }
+            })
+            ->where('status','Completed')
+            ->sum('amount');
+
+        return view('principal.admissions.summary', compact(
+            'school','yearId','totalApps','acceptedApps','cancelledApps','paidApps','unpaidApps','totalPaidAmount','byClass','byGender','byVillage','byPrevSchool'
         ));
     }
 
