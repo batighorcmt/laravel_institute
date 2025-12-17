@@ -31,6 +31,7 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   List<Map<String, dynamic>> _classes = [];
   List<Map<String, dynamic>> _sections = [];
   List<Map<String, dynamic>> _groups = [];
+  List<String> _genderOptions = [];
 
   @override
   void initState() {
@@ -44,10 +45,10 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   Future<void> _preloadFilters() async {
     try {
       final classes = await _repo.fetchClasses();
-      final groups = await _repo.fetchGroups();
       setState(() {
         _classes = classes;
-        _groups = groups;
+        _groups = [];
+        _genderOptions = [];
       });
     } catch (_) {}
   }
@@ -92,24 +93,14 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   }
 
   void _deriveFiltersFromItems() {
-    // Build dropdown options from currently loaded items when meta endpoints are unavailable
-    final classes = <String>{};
-    final sections = <String>{};
+    // Only derive groups as a fallback; keep classes/sections from meta
     final groups = <String>{};
     for (final it in _items) {
       if (it is Map<String, dynamic>) {
-        final c = (it['class'] ?? '').toString();
-        final s = (it['section'] ?? '').toString();
         final g = (it['group'] ?? '').toString();
-        if (c.isNotEmpty) classes.add(c);
-        if (s.isNotEmpty) sections.add(s);
         if (g.isNotEmpty) groups.add(g);
       }
     }
-    _classes = classes.map((e) => {'id': e, 'name': e}).toList()
-      ..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
-    _sections = sections.map((e) => {'id': e, 'name': e}).toList()
-      ..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
     _groups = groups.map((e) => {'id': e, 'name': e}).toList()
       ..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
   }
@@ -121,6 +112,11 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
+  }
+
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
   }
 
   @override
@@ -161,11 +157,27 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                               _classId = v;
                               _sectionId = null;
                               _sections = [];
+                              _groupId = null;
+                              _groups = [];
+                              _gender = null;
+                              _genderOptions = [];
                             });
                             final sections = await _repo.fetchSections(
                               classId: v,
                             );
-                            if (mounted) setState(() => _sections = sections);
+                            final groups = v != null && v.isNotEmpty
+                                ? await _repo.fetchGroupsForClass(v)
+                                : <Map<String, dynamic>>[];
+                            final genders = v != null && v.isNotEmpty
+                                ? await _repo.fetchGendersForClass(v)
+                                : <String>[];
+                            if (mounted) {
+                              setState(() {
+                                _sections = sections;
+                                _groups = groups;
+                                _genderOptions = genders;
+                              });
+                            }
                             _load(reset: true);
                           },
                   ),
@@ -244,15 +256,16 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                       isDense: true,
                       border: OutlineInputBorder(),
                     ),
-                    items: const [
-                      DropdownMenuItem<String>(value: null, child: Text('')),
-                      DropdownMenuItem<String>(
-                        value: 'male',
-                        child: Text('Male'),
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: null,
+                        child: Text(''),
                       ),
-                      DropdownMenuItem<String>(
-                        value: 'female',
-                        child: Text('Female'),
+                      ..._genderOptions.map(
+                        (g) => DropdownMenuItem<String>(
+                          value: g,
+                          child: Text(_capitalize(g)),
+                        ),
                       ),
                     ],
                     onChanged: (v) {
