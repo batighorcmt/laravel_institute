@@ -19,9 +19,19 @@ class StudentDirectoryController extends Controller
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
+        // Determine academic year: explicit query param or current academic year
+        $yearId = (int)($request->query('academic_year_id', 0));
+        if (! $yearId) {
+            $yearId = (int)(\App\Models\AcademicYear::forSchool($schoolId)->current()->value('id') ?? 0);
+        }
+
         $enroll = StudentEnrollment::query()
             ->where('school_id', $schoolId)
             ->where('status', 'active');
+
+        if ($yearId) {
+            $enroll->where('academic_year_id', $yearId);
+        }
 
         // Filters
         if ($request->filled('class_id')) {
