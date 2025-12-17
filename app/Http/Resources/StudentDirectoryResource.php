@@ -30,7 +30,7 @@ class StudentDirectoryResource extends JsonResource
             'section' => $en->section?->name,
             'group' => $en->group?->name,
             'gender' => $st?->gender,
-            'phone' => $st?->phone,
+            'phone' => $st?->guardian_phone,
             'photo_url' => $photoUrl,
         ];
     }
