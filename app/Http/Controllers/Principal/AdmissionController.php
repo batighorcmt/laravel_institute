@@ -127,6 +127,236 @@ class AdmissionController extends Controller
         ));
     }
 
+    public function applicationsPrint(Request $request, School $school)
+    {
+        // Filters from query
+        $status = array_filter((array) $request->query('status')); // accepted|pending|cancelled
+        $pay = array_filter((array) $request->query('pay')); // paid|unpaid
+        $class = trim((string) $request->query('class', ''));
+
+        $query = AdmissionApplication::query()->where('school_id', $school->id);
+        // Status filter
+        if (!empty($status)) {
+            $query->where(function($q) use ($status) {
+                if (in_array('accepted', $status, true)) {
+                    $q->orWhereNotNull('accepted_at');
+                }
+                if (in_array('pending', $status, true)) {
+                    $q->orWhere(function($qp){ $qp->whereNull('accepted_at')->where('status','!=','cancelled'); });
+                }
+                if (in_array('cancelled', $status, true)) {
+                    $q->orWhere('status','cancelled');
+                }
+            });
+        }
+        // Payment filter
+        if (!empty($pay)) {
+            $query->where(function($q) use ($pay) {
+                if (in_array('paid', $pay, true)) { $q->orWhere('payment_status','Paid'); }
+                if (in_array('unpaid', $pay, true)) { $q->orWhere(function($qp){ $qp->whereNull('payment_status')->orWhere('payment_status','!=','Paid'); }); }
+            });
+        }
+        // Class filter (exact or partial)
+        if ($class !== '') {
+            $query->where('class_name','like',"%$class%");
+        }
+
+        $apps = $query->orderByDesc('id')->get();
+
+        // Eager-load payments to avoid N+1 queries
+        if (method_exists(AdmissionApplication::class, 'payments')) {
+            try { $apps->load(['payments' => function($q){ $q->select('id','admission_application_id','amount','payment_method','status','created_at'); }]); } catch (\Throwable $e) {}
+        }
+
+        // Class settings for fee amounts
+        $settingsByClass = [];
+        if ($school->admission_academic_year_id) {
+            $settingsByClass = \App\Models\AdmissionClassSetting::forSchoolYear($school->id, $school->admission_academic_year_id)
+                ->get()
+                ->keyBy('class_code');
+        }
+
+        // Precompute view-friendly array to avoid complex Blade expressions
+        $appsJson = $apps->map(function(AdmissionApplication $a){
+            // Latest payment method (if any)
+            $paymentMethod = null;
+            $amountPaid = null;
+            if (isset($a->payments) && $a->payments instanceof \Illuminate\Support\Collection && $a->payments->count() > 0) {
+                $latest = $a->payments->sortByDesc('id')->first();
+                $paymentMethod = $latest?->payment_method;
+                $amountPaid = $latest?->amount;
+            }
+            return [
+                'id' => $a->id,
+                'class_name' => $a->class_name,
+                'app_id' => $a->app_id,
+                'admission_roll_no' => $a->admission_roll_no,
+                'name_en' => $a->name_en ?? $a->applicant_name,
+                'name_bn' => $a->name_bn ?? $a->applicant_name,
+                'father_name_en' => $a->father_name_en,
+                'father_name_bn' => $a->father_name_bn,
+                'mother_name_en' => $a->mother_name_en,
+                'mother_name_bn' => $a->mother_name_bn,
+                'mobile' => $a->mobile,
+                'gender' => $a->gender,
+                'religion' => $a->religion,
+                'dob' => optional($a->dob)->format('Y-m-d'),
+                'payment_status' => $a->payment_status,
+                'status' => $a->status,
+                'accepted_at' => $a->accepted_at,
+                'present_village' => $a->present_village,
+                'present_para_moholla' => $a->present_para_moholla,
+                'present_post_office' => $a->present_post_office,
+                'present_upazilla' => $a->present_upazilla,
+                'present_district' => $a->present_district,
+                'last_school' => $a->last_school,
+                'result' => $a->result,
+                'photo' => $a->photo,
+                'fee_amount' => null, // filled below
+                'payment_method' => $paymentMethod,
+                'amount_paid' => $amountPaid,
+                'created_at' => optional($a->created_at)->format('Y-m-d H:i'),
+            ];
+        })->values();
+
+        // Fill fee_amount from class settings mapping
+        if (!empty($settingsByClass)) {
+            $appsJson = $appsJson->map(function(array $x) use ($settingsByClass) {
+                $code = (string)($x['class_name'] ?? '');
+                if ($code && isset($settingsByClass[$code])) {
+                    $x['fee_amount'] = (float)$settingsByClass[$code]->fee_amount;
+                }
+                return $x;
+            });
+        }
+
+        return view('principal.admissions.applications_print', [
+            'school' => $school,
+            'appsJson' => $appsJson,
+            'statusFilter' => $status,
+            'payFilter' => $pay,
+            'classFilter' => $class,
+        ]);
+    }
+
+    public function applicationsPrintCsv(Request $request, School $school)
+    {
+        // Reuse same filters as print view
+        $status = array_filter((array) $request->query('status'));
+        $pay = array_filter((array) $request->query('pay'));
+        $class = trim((string) $request->query('class', ''));
+        $lang = $request->query('lang','bn');
+
+        $query = AdmissionApplication::query()->where('school_id', $school->id);
+        if (!empty($status)) {
+            $query->where(function($q) use ($status) {
+                if (in_array('accepted', $status, true)) { $q->orWhereNotNull('accepted_at'); }
+                if (in_array('pending', $status, true)) { $q->orWhere(function($qp){ $qp->whereNull('accepted_at')->where('status','!=','cancelled'); }); }
+                if (in_array('cancelled', $status, true)) { $q->orWhere('status','cancelled'); }
+            });
+        }
+        if (!empty($pay)) {
+            $query->where(function($q) use ($pay) {
+                if (in_array('paid', $pay, true)) { $q->orWhere('payment_status','Paid'); }
+                if (in_array('unpaid', $pay, true)) { $q->orWhere(function($qp){ $qp->whereNull('payment_status')->orWhere('payment_status','!=','Paid'); }); }
+            });
+        }
+        if ($class !== '') { $query->where('class_name','like',"%$class%"); }
+
+        $apps = $query->orderByDesc('id')->get();
+        // Eager-load payments for method
+        try { $apps->load(['payments' => function($q){ $q->select('id','admission_application_id','amount','payment_method','status','created_at'); }]); } catch (\Throwable $e) {}
+
+        // Settings for fee amount mapping
+        $settingsByClass = [];
+        if ($school->admission_academic_year_id) {
+            $settingsByClass = \App\Models\AdmissionClassSetting::forSchoolYear($school->id, $school->admission_academic_year_id)
+                ->get()->keyBy('class_code');
+        }
+
+        $toBn = function($s){ $en=['0','1','2','3','4','5','6','7','8','9']; $bn=['০','১','২','৩','৪','৫','৬','৭','৮','৯']; return str_replace($en,$bn,(string)$s); };
+        $mapGender = function($v) use ($lang){ $m=['male'=>'ছেলে','female'=>'মেয়ে','other'=>'অন্যান্য']; return $lang==='bn' ? ($m[strtolower((string)$v)] ?? $v) : $v; };
+        $mapReligion = function($v) use ($lang){ $m=['islam'=>'ইসলাম','hindu'=>'হিন্দু','buddhist'=>'বৌদ্ধ','christian'=>'খ্রিস্টান']; $key=strtolower((string)$v); return $lang==='bn' ? ($m[$key] ?? $v) : $v; };
+        $mapMethod = function($v) use ($lang){ $en=['sslcommerz'=>'SSLCommerz','bkash'=>'bKash','nagad'=>'Nagad','cash'=>'Cash','bank'=>'Bank']; $bn=['sslcommerz'=>'অনলাইন','bkash'=>'বিকাশ','nagad'=>'নগদ','cash'=>'নগদে','bank'=>'ব্যাংক']; $key=strtolower((string)$v); return $lang==='bn' ? ($bn[$key] ?? $v) : ($en[$key] ?? $v); };
+
+        $headers = [
+            $lang==='bn' ? 'ক্রমিক নং' : '#',
+            $lang==='bn' ? 'আবেদন আইডি' : 'Application ID',
+            $lang==='bn' ? 'রোল নং' : 'Roll No',
+            $lang==='bn' ? 'শ্রেণি' : 'Class',
+            $lang==='bn' ? 'শিক্ষার্থীর নাম' : 'Student Name',
+            $lang==='bn' ? 'পিতার নাম' : "Father's Name",
+            $lang==='bn' ? 'মাতার নাম' : "Mother's Name",
+            $lang==='bn' ? 'মোবাইল নং' : 'Mobile No',
+            $lang==='bn' ? 'জন্ম তারিখ' : 'Date of Birth',
+            $lang==='bn' ? 'লিঙ্গ' : 'Gender',
+            $lang==='bn' ? 'ধর্ম' : 'Religion',
+            $lang==='bn' ? 'বর্তমান ঠিকানা' : 'Present Address',
+            $lang==='bn' ? 'পূর্ববর্তী বিদ্যালয়ের নাম' : 'Previous School',
+            $lang==='bn' ? 'ফলাফল' : 'Result',
+            $lang==='bn' ? 'ফিসের পরিমান' : 'Fee Amount',
+            $lang==='bn' ? 'পরিশোধের মাধ্যম' : 'Payment Method',
+            $lang==='bn' ? 'আবেদন স্ট্যাটাস' : 'Application Status',
+            $lang==='bn' ? 'আবেদনের তারিখ' : 'Application Date',
+        ];
+
+        $filename = 'admission_applications_'.$school->id.'_'.date('Ymd_His').'.csv';
+        return response()->streamDownload(function() use ($apps,$settingsByClass,$headers,$lang,$toBn,$mapGender,$mapReligion,$mapMethod) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, $headers);
+            $i = 0;
+            foreach ($apps as $a) {
+                $i++;
+                $latest = null; if (isset($a->payments) && $a->payments instanceof \Illuminate\Support\Collection) { $latest = $a->payments->sortByDesc('id')->first(); }
+                $fee = null; $code = (string)($a->class_name ?? ''); if ($code && isset($settingsByClass[$code])) { $fee = (float)$settingsByClass[$code]->fee_amount; }
+                $presentAddressParts = [];
+                if ($a->present_village) { $v=$a->present_village; if ($a->present_para_moholla) { $v .= ' ('.$a->present_para_moholla.')'; } $presentAddressParts[] = $v; }
+                if ($a->present_post_office) { $presentAddressParts[] = $a->present_post_office; }
+                if ($a->present_upazilla) { $presentAddressParts[] = $a->present_upazilla; }
+                if ($a->present_district) { $presentAddressParts[] = $a->present_district; }
+                $addr = implode(', ', $presentAddressParts);
+
+                $serial = $i;
+                $roll = $a->admission_roll_no ? str_pad((string)$a->admission_roll_no,3,'0',STR_PAD_LEFT) : '—';
+                $dob = $a->dob ? $a->dob->format('Y-m-d') : '';
+                $created = $a->created_at ? $a->created_at->format('Y-m-d H:i') : '';
+                $statusTxt = $a->accepted_at ? ($lang==='bn' ? 'গৃহীত' : 'Accepted') : ($a->status==='cancelled' ? ($lang==='bn' ? 'বাতিল' : 'Cancelled') : ($lang==='bn' ? 'অপেক্ষমান' : 'Pending'));
+                $payMethod = $mapMethod($latest?->payment_method);
+                $feeTxt = $fee === null ? '—' : ('৳ '.number_format($fee,2));
+                if ($lang==='bn') {
+                    $serial = $toBn($serial);
+                    $roll = $roll !== '—' ? $toBn($roll) : $roll;
+                    $dob = $dob ? $toBn($dob) : '';
+                    $created = $created ? $toBn($created) : '';
+                    $feeTxt = $fee === null ? '—' : ('৳ '.$toBn(number_format($fee,2)));
+                }
+                fputcsv($out, [
+                    $serial,
+                    $lang==='bn' ? $toBn((string)($a->app_id ?? '')) : ($a->app_id ?? ''),
+                    $roll,
+                    $a->class_name,
+                    $lang==='bn' ? ($a->name_bn ?: ($a->applicant_name ?: '')) : ($a->name_en ?: ($a->applicant_name ?: '')),
+                    $lang==='bn' ? ($a->father_name_bn ?: '') : ($a->father_name_en ?: ''),
+                    $lang==='bn' ? ($a->mother_name_bn ?: '') : ($a->mother_name_en ?: ''),
+                    $lang==='bn' ? $toBn((string)($a->mobile ?: '')) : ($a->mobile ?: ''),
+                    $dob,
+                    $mapGender($a->gender),
+                    $mapReligion($a->religion),
+                    $addr,
+                    $a->last_school ?: '',
+                    $a->result ?: '',
+                    $feeTxt,
+                    $payMethod,
+                    $statusTxt,
+                    $created,
+                ]);
+            }
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     public function summary(Request $request, School $school)
     {
         $base = AdmissionApplication::query()->where('school_id', $school->id);
@@ -334,7 +564,7 @@ class AdmissionController extends Controller
     {
         abort_if($application->school_id !== $school->id, 404);
         // Show admit card only for accepted applications
-        abort_unless($application->accepted_at, 404);
+        abort_unless((bool)$application->accepted_at, 404);
         $settings = Setting::forSchool($school->id)
             ->whereIn('key', ['admission_exam_datetime','admission_exam_venues'])
             ->pluck('value','key');

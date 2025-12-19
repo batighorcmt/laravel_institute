@@ -203,6 +203,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::put('/class-settings/{setting}', [\App\Http\Controllers\Principal\AdmissionClassSettingController::class,'update'])->name('class-settings.update');
                 Route::delete('/class-settings/{setting}', [\App\Http\Controllers\Principal\AdmissionClassSettingController::class,'destroy'])->name('class-settings.destroy');
                 Route::get('/applications', [PrincipalAdmissionController::class,'applications'])->name('applications');
+                Route::get('/applications/print', [PrincipalAdmissionController::class,'applicationsPrint'])->name('applications.print');
+                Route::get('/applications/print.csv', [PrincipalAdmissionController::class,'applicationsPrintCsv'])->name('applications.print.csv');
                 Route::get('/applications/summary', [PrincipalAdmissionController::class,'summary'])->name('applications.summary');
                 Route::get('/applications/{application}', [PrincipalAdmissionController::class,'show'])->name('applications.show');
                 Route::get('/applications/{application}/copy', [PrincipalAdmissionController::class,'copy'])->name('applications.copy');
@@ -521,6 +523,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/billing/settings/discounts', [\App\Http\Controllers\Billing\SettingsController::class, 'discountsStore'])->name('billing.settings.discounts.store');
     Route::get('/billing/settings/categories', [\App\Http\Controllers\Billing\SettingsController::class, 'categoriesIndex'])->name('billing.settings.categories');
     Route::post('/billing/settings/categories', [\App\Http\Controllers\Billing\SettingsController::class, 'categoriesStore'])->name('billing.settings.categories.store');
+    Route::patch('/billing/settings/categories/{category}', [\App\Http\Controllers\Billing\SettingsController::class, 'categoriesUpdate'])->name('billing.settings.categories.update');
+    Route::delete('/billing/settings/categories/{category}', [\App\Http\Controllers\Billing\SettingsController::class, 'categoriesDestroy'])->name('billing.settings.categories.destroy');
     Route::get('/billing/settings/global-fees', [\App\Http\Controllers\Billing\SettingsController::class, 'globalFeesIndex'])->name('billing.settings.global_fees');
     Route::post('/billing/settings/global-fees', [\App\Http\Controllers\Billing\SettingsController::class, 'globalFeesStore'])->name('billing.settings.global_fees.store');
 });

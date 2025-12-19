@@ -10,13 +10,14 @@
         <table class="table table-sm mb-0 table-striped">
             <thead>
                 <tr>
-                    <th>#</th><th>নাম</th><th>ধরন</th><th>তারিখ</th><th>স্ট্যাটাস</th><th>সাবজেক্ট</th><th></th>
+                    <th>#</th><th>শ্রেণি</th><th>নাম</th><th>ধরন</th><th>তারিখ</th><th>স্ট্যাটাস</th><th>সাবজেক্ট</th><th></th>
                 </tr>
             </thead>
             <tbody>
             @forelse($exams as $ex)
                 <tr>
                     <td>{{ $ex->id }}</td>
+                    <td>{{ $ex->class_name }}</td>
                     <td>{{ $ex->name }}</td>
                     <td>{{ $ex->type==='subject'?'প্রতি বিষয়':'সামগ্রীক' }}</td>
                     <td>{{ optional($ex->exam_date)->format('d-m-Y') }}</td>

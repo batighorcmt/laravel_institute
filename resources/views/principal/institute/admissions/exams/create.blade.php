@@ -7,6 +7,15 @@
     <div class="card mb-3">
         <div class="card-body">
             <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>শ্রেণি *</label>
+                    <select name="class_name" class="form-control" required>
+                        <option value="">-- নির্বাচন করুন --</option>
+                        @foreach(($classOptions ?? []) as $cls)
+                            <option value="{{ $cls }}" {{ old('class_name')===$cls?'selected':'' }}>{{ $cls }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="form-group col-md-6">
                     <label>পরীক্ষার নাম *</label>
                     <input type="text" name="name" class="form-control" required value="{{ old('name') }}">

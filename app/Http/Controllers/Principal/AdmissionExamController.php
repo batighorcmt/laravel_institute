@@ -28,13 +28,22 @@ class AdmissionExamController extends Controller
     public function create(School $school)
     {
         $this->authorizePrincipal($school);
-        return view('principal.institute.admissions.exams.create', compact('school'));
+        $classOptions = [];
+        if ($school->admission_academic_year_id) {
+            $classOptions = \App\Models\AdmissionClassSetting::forSchoolYear($school->id, $school->admission_academic_year_id)
+                ->pluck('class_code')
+                ->unique()
+                ->sort()
+                ->values();
+        }
+        return view('principal.institute.admissions.exams.create', compact('school','classOptions'));
     }
 
     public function store(School $school, Request $request)
     {
         $this->authorizePrincipal($school);
         $data = $request->validate([
+            'class_name'=>['required','string','max:50'],
             'name'=>['required','string','max:150'],
             'type'=>['required', Rule::in(['subject','overall'])],
             'overall_pass_mark'=>['nullable','integer','min:0'],
@@ -73,7 +82,15 @@ class AdmissionExamController extends Controller
         $this->authorizePrincipal($school);
         abort_unless($exam->school_id===$school->id,404);
         $exam->load('subjects');
-        return view('principal.institute.admissions.exams.edit', compact('school','exam'));
+        $classOptions = [];
+        if ($school->admission_academic_year_id) {
+            $classOptions = \App\Models\AdmissionClassSetting::forSchoolYear($school->id, $school->admission_academic_year_id)
+                ->pluck('class_code')
+                ->unique()
+                ->sort()
+                ->values();
+        }
+        return view('principal.institute.admissions.exams.edit', compact('school','exam','classOptions'));
     }
 
     public function update(School $school, AdmissionExam $exam, Request $request)
@@ -81,6 +98,7 @@ class AdmissionExamController extends Controller
         $this->authorizePrincipal($school);
         abort_unless($exam->school_id===$school->id,404);
         $data = $request->validate([
+            'class_name'=>['required','string','max:50'],
             'name'=>['required','string','max:150'],
             'type'=>['required', Rule::in(['subject','overall'])],
             'overall_pass_mark'=>['nullable','integer','min:0'],
@@ -134,6 +152,7 @@ class AdmissionExamController extends Controller
             ->whereNotNull('accepted_at')
             ->where('status','accepted')
             ->whereNotNull('admission_roll_no')
+            ->when($exam->class_name, function($q) use ($exam){ $q->where('class_name',$exam->class_name); })
             ->orderBy('admission_roll_no')
             ->limit(500)
             ->get();
@@ -193,6 +212,7 @@ class AdmissionExamController extends Controller
             ->whereNotNull('accepted_at')
             ->where('status','accepted')
             ->whereNotNull('admission_roll_no')
+            ->when($exam->class_name, function($q) use ($exam){ $q->where('class_name',$exam->class_name); })
             ->pluck('id');
         if ($exam->type === 'subject') {
             $subjects = $exam->subjects;

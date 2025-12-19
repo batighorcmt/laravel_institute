@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class AdmissionExam extends Model
 {
     protected $fillable = [
-        'school_id','name','type','overall_pass_mark','exam_date','status'
+        'school_id','class_name','name','type','overall_pass_mark','exam_date','status'
     ];
 
     protected $casts = [

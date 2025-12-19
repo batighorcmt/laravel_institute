@@ -9,6 +9,7 @@
   <div>
     <a href="{{ route('principal.institute.admissions.settings', $school) }}" class="btn btn-outline-secondary">Settings</a>
     <a href="{{ route('principal.institute.admissions.applications.summary', $school->id) }}" class="btn btn-outline-primary ml-2">Application Summary</a>
+    <a href="{{ route('principal.institute.admissions.applications.print', $school->id) }}" class="btn btn-outline-info ml-2" target="_blank"><i class="fas fa-print mr-1"></i> Print Page</a>
   </div>
 </div>
 
