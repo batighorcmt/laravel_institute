@@ -84,13 +84,66 @@ class AdmissionController extends Controller
         return redirect()->back()->with('success','Admission সেটিংস আপডেট হয়েছে');
     }
 
-    public function applications(School $school)
+    public function applications(Request $request, School $school)
     {
-        // Use separate immutable base query for stats and a separate query for list to avoid pagination side-effects
+        // Base query
         $baseQuery = AdmissionApplication::query()->where('school_id', $school->id);
-        $apps = AdmissionApplication::query()->where('school_id', $school->id)
-            ->orderByDesc('id')
-            ->paginate(20);
+
+        // Filters
+        $class = trim((string) $request->query('class'));
+        $gender = trim((string) $request->query('gender'));
+        $religion = trim((string) $request->query('religion'));
+        $village = trim((string) $request->query('village'));
+        $upazila = trim((string) $request->query('upazila'));
+        $district = trim((string) $request->query('district'));
+        $prevSchool = trim((string) $request->query('prev_school'));
+        $payStatus = trim((string) $request->query('pay_status'));
+        $from = $request->date('from');
+        $to = $request->date('to');
+        $q = trim((string) $request->query('q'));
+
+        $listQuery = AdmissionApplication::query()->where('school_id', $school->id);
+        if ($class !== '') { $listQuery->where('class_name', $class); }
+        if ($gender !== '') { $listQuery->where('gender', $gender); }
+        if ($religion !== '') { $listQuery->where('religion', $religion); }
+        if ($village !== '') { $listQuery->where('present_village', $village); }
+        if ($upazila !== '') { $listQuery->where('present_upazilla', $upazila); }
+        if ($district !== '') { $listQuery->where('present_district', $district); }
+        if ($prevSchool !== '') { $listQuery->where('last_school', $prevSchool); }
+        if ($payStatus !== '') {
+            if (strtolower($payStatus) === 'paid') {
+                $listQuery->where('payment_status', 'Paid');
+            } elseif (strtolower($payStatus) === 'unpaid') {
+                $listQuery->where(function($q){ $q->whereNull('payment_status')->orWhere('payment_status','!=','Paid'); })
+                         ->where('status','!=','cancelled');
+            } else {
+                $listQuery->where('payment_status', $payStatus);
+            }
+        }
+        if ($from) { $listQuery->whereDate('created_at','>=',$from); }
+        if ($to) { $listQuery->whereDate('created_at','<=',$to); }
+        if ($q !== '') {
+            $listQuery->where(function($qq) use ($q) {
+                $qq->where('app_id','like',"%$q%")
+                   ->orWhere('name_en','like',"%$q%")
+                   ->orWhere('name_bn','like',"%$q%")
+                   ->orWhere('father_name_en','like',"%$q%")
+                   ->orWhere('father_name_bn','like',"%$q%")
+                   ->orWhere('mother_name_en','like',"%$q%")
+                   ->orWhere('mother_name_bn','like',"%$q%")
+                   ->orWhere('mobile','like',"%$q%")
+                   ->orWhere('class_name','like',"%$q%")
+                   ->orWhere('last_school','like',"%$q%")
+                   ->orWhere('present_village','like',"%$q%")
+                   ->orWhere('present_para_moholla','like',"%$q%")
+                   ->orWhere('present_post_office','like',"%$q%")
+                   ->orWhere('present_upazilla','like',"%$q%")
+                   ->orWhere('present_district','like',"%$q%")
+                   ->orWhere('admission_roll_no','like',"%$q%");
+            });
+        }
+
+        $apps = $listQuery->orderByDesc('id')->paginate(20)->appends($request->query());
 
         // Statistics
         $totalApps = (clone $baseQuery)->count();
@@ -122,9 +175,68 @@ class AdmissionController extends Controller
         }
         $unpaidAmount = max($expectedTotalFees - (float)$totalPaidAmount, 0);
 
-        return view('principal.admissions.index', compact(
-            'school','apps','totalApps','acceptedApps','cancelledApps','paidApps','unpaidApps','totalPaidAmount','expectedTotalFees','unpaidAmount'
-        ));
+        // Distinct lists for filters
+        $distinct = fn($col) => AdmissionApplication::where('school_id',$school->id)
+            ->whereNotNull($col)
+            ->where($col,'!=','')
+            ->distinct()->orderBy($col)->pluck($col)->values();
+        $classes = $distinct('class_name');
+        $genders = $distinct('gender');
+        $religions = $distinct('religion');
+        $villages = $distinct('present_village');
+        $upazilas = $distinct('present_upazilla');
+        $districts = $distinct('present_district');
+        $prevSchools = $distinct('last_school');
+        $payStatuses = AdmissionApplication::where('school_id',$school->id)
+            ->select('payment_status')->distinct()->pluck('payment_status')->filter()->values();
+
+        // AJAX partial response for real-time search/filter
+        if ($request->ajax()) {
+            return response()->json([
+                'rows' => view('principal.admissions.partials._rows', [
+                    'apps' => $apps,
+                    'school' => $school,
+                ])->render(),
+                'pagination' => view('principal.admissions.partials._pagination', [
+                    'apps' => $apps,
+                    'school' => $school,
+                ])->render(),
+            ]);
+        }
+
+        return view('principal.admissions.index', [
+            'school' => $school,
+            'apps' => $apps,
+            'totalApps' => $totalApps,
+            'acceptedApps' => $acceptedApps,
+            'cancelledApps' => $cancelledApps,
+            'paidApps' => $paidApps,
+            'unpaidApps' => $unpaidApps,
+            'totalPaidAmount' => $totalPaidAmount,
+            'expectedTotalFees' => $expectedTotalFees,
+            'unpaidAmount' => $unpaidAmount,
+            'classes' => $classes,
+            'genders' => $genders,
+            'religions' => $religions,
+            'villages' => $villages,
+            'upazilas' => $upazilas,
+            'districts' => $districts,
+            'prevSchools' => $prevSchools,
+            'payStatuses' => $payStatuses,
+            'filters' => [
+                'class' => $class,
+                'gender' => $gender,
+                'religion' => $religion,
+                'village' => $village,
+                'upazila' => $upazila,
+                'district' => $district,
+                'prev_school' => $prevSchool,
+                'pay_status' => $payStatus,
+                'from' => $from ? $from->format('Y-m-d') : '',
+                'to' => $to ? $to->format('Y-m-d') : '',
+                'q' => $q,
+            ],
+        ]);
     }
 
     public function applicationsPrint(Request $request, School $school)

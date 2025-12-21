@@ -60,10 +60,102 @@
 
 <div class="card mb-3">
   <div class="card-body py-2">
-    <div class="form-inline">
-      <label for="appSearch" class="mr-2 mb-0 font-weight-semibold">Search:</label>
-      <input type="text" id="appSearch" class="form-control form-control-sm w-50" placeholder="Type to filter...">
-    </div>
+    <form method="get" action="{{ route('principal.institute.admissions.applications', $school->id) }}">
+      <div class="row">
+        <div class="col-md-2 mb-2">
+          <label class="small mb-1">শ্রেণি</label>
+          <select name="class" class="form-control form-control-sm">
+            <option value="">সব</option>
+            @foreach(($classes ?? []) as $c)
+              <option value="{{ $c }}" {{ ($filters['class'] ?? '')===$c ? 'selected' : '' }}>{{ $c }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <label class="small mb-1">লিঙ্গ</label>
+          <select name="gender" class="form-control form-control-sm">
+            <option value="">সব</option>
+            @foreach(($genders ?? []) as $g)
+              <option value="{{ $g }}" {{ ($filters['gender'] ?? '')===$g ? 'selected' : '' }}>{{ $g }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <label class="small mb-1">ধর্ম</label>
+          <select name="religion" class="form-control form-control-sm">
+            <option value="">সব</option>
+            @foreach(($religions ?? []) as $r)
+              <option value="{{ $r }}" {{ ($filters['religion'] ?? '')===$r ? 'selected' : '' }}>{{ $r }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <label class="small mb-1">গ্রাম</label>
+          <select name="village" class="form-control form-control-sm">
+            <option value="">সব</option>
+            @foreach(($villages ?? []) as $v)
+              <option value="{{ $v }}" {{ ($filters['village'] ?? '')===$v ? 'selected' : '' }}>{{ $v }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <label class="small mb-1">উপজেলা</label>
+          <select name="upazila" class="form-control form-control-sm">
+            <option value="">সব</option>
+            @foreach(($upazilas ?? []) as $u)
+              <option value="{{ $u }}" {{ ($filters['upazila'] ?? '')===$u ? 'selected' : '' }}>{{ $u }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <label class="small mb-1">জেলা</label>
+          <select name="district" class="form-control form-control-sm">
+            <option value="">সব</option>
+            @foreach(($districts ?? []) as $d)
+              <option value="{{ $d }}" {{ ($filters['district'] ?? '')===$d ? 'selected' : '' }}>{{ $d }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <label class="small mb-1">পূর্ববর্তী বিদ্যালয়</label>
+          <select name="prev_school" class="form-control form-control-sm">
+            <option value="">সব</option>
+            @foreach(($prevSchools ?? []) as $ps)
+              <option value="{{ $ps }}" {{ ($filters['prev_school'] ?? '')===$ps ? 'selected' : '' }}>{{ $ps }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <label class="small mb-1">ফিস স্ট্যাটাস</label>
+          <select name="pay_status" class="form-control form-control-sm">
+            <option value="">সব</option>
+            <option value="Paid" {{ ($filters['pay_status'] ?? '')==='Paid' ? 'selected' : '' }}>Paid</option>
+            <option value="Unpaid" {{ ($filters['pay_status'] ?? '')==='Unpaid' ? 'selected' : '' }}>Unpaid</option>
+            @foreach(($payStatuses ?? []) as $ps)
+              @if($ps && !in_array($ps,['Paid']))
+                <option value="{{ $ps }}" {{ ($filters['pay_status'] ?? '')===$ps ? 'selected' : '' }}>{{ $ps }}</option>
+              @endif
+            @endforeach
+          </select>
+        </div>
+        <div class="col-md-2 mb-2">
+          <label class="small mb-1">তারিখ হতে</label>
+          <input type="date" name="from" value="{{ $filters['from'] ?? '' }}" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-2 mb-2">
+          <label class="small mb-1">তারিখ পর্যন্ত</label>
+          <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="form-control form-control-sm">
+        </div>
+        <div class="col-md-4 mb-2">
+          <label class="small mb-1">সার্চ (সমস্ত ডাটা)</label>
+          <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" class="form-control form-control-sm" placeholder="নাম, আইডি, মোবাইল, ঠিকানা ইত্যাদি">
+        </div>
+      </div>
+      <div class="text-right">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-search mr-1"></i> ফিল্টার প্রযোজ্য করো</button>
+        <a href="{{ route('principal.institute.admissions.applications', $school->id) }}" class="btn btn-sm btn-secondary ml-2">রিসেট</a>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -88,99 +180,15 @@
             <th>Submitted</th>
           </tr>
         </thead>
-        <tbody>
-          @forelse($apps as $app)
-            <tr>
-              <td>{{ ($loop->iteration + ($apps->currentPage()-1)*$apps->perPage()) }}</td>
-              <td>{{ $app->class_name }}</td>
-              <td>{{ $app->app_id ?: '—' }}</td>
-              <td>{{ $app->admission_roll_no ? str_pad($app->admission_roll_no,3,'0',STR_PAD_LEFT) : '—' }}</td>
-              <td>{{ $app->name_en ?? $app->applicant_name }}</td>
-              <td>{{ $app->father_name_en }}</td>
-              <td>{{ $app->mobile }}</td>
-              <td>
-                <img src="{{ $app->photo ? asset('storage/admission/'.$app->photo) : asset('images/default-avatar.png') }}"
-                     alt="Photo" style="width:55px;height:70px;object-fit:cover;cursor:pointer" class="rounded border shadow-sm app-photo-thumb"
-                     data-photo-url="{{ $app->photo ? asset('storage/admission/'.$app->photo) : asset('images/default-avatar.png') }}"
-                     data-app-name="{{ $app->name_en ?? $app->applicant_name }}">
-              </td>
-              <td>
-                @php
-                  $parts = [];
-                  if($app->present_village){
-                      $v = $app->present_village;
-                      if($app->present_para_moholla){ $v .= ' ('.$app->present_para_moholla.')'; }
-                      $parts[] = $v;
-                  }
-                  if($app->present_post_office){ $parts[] = $app->present_post_office; }
-                  if($app->present_upazilla){ $parts[] = $app->present_upazilla; }
-                  if($app->present_district){ $parts[] = $app->present_district; }
-                  echo e(implode(', ', $parts) ?: '—');
-                @endphp
-              </td>
-              <td>
-                  @if($app->accepted_at)
-                      <span class="badge badge-success">Accepted</span>
-                      @if($app->student_id)
-                        <span class="badge badge-info ml-1" title="Enrolled"><i class="fas fa-user-check"></i> Enrolled</span>
-                      @endif
-                  @elseif($app->status === 'cancelled')
-                      <span class="badge badge-danger">Cancelled</span>
-                  @else
-                      <span class="badge badge-secondary">Pending</span>
-                  @endif
-              </td>
-              <td>
-                  @if($app->payment_status === 'Paid')
-                      <span class="badge badge-success">Paid</span>
-                  @else
-                      <span class="badge badge-warning text-dark">Unpaid</span>
-                  @endif
-              </td>
-              <td>
-                <div class="btn-group btn-group-sm" role="group">
-                  <a href="{{ route('principal.institute.admissions.applications.show', [$school->id, $app->id]) }}" class="btn btn-outline-primary" title="View"><i class="fas fa-eye"></i></a>
-                  <form action="{{ route('principal.institute.admissions.applications.reset_password', [$school->id, $app->id]) }}" method="post" onsubmit="return confirm('পাসওয়ার্ড রিসেট নিশ্চিত?');" class="d-inline">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-warning" title="Reset Password"><i class="fas fa-key"></i></button>
-                  </form>
-                  @if(!$app->student_id)
-                    <a href="{{ route('principal.institute.admissions.applications.edit', [$school->id, $app->id]) }}" class="btn btn-outline-secondary" title="Edit"><i class="fas fa-edit"></i></a>
-                  @else
-                    <button class="btn btn-outline-secondary" title="Already Enrolled" disabled><i class="fas fa-edit"></i></button>
-                  @endif
-                  @if($app->app_id && $app->payment_status === 'Paid')
-                    <a href="{{ route('principal.institute.admissions.applications.copy', [$school->id, $app->id]) }}" target="_blank" class="btn btn-outline-info" title="Print Copy"><i class="fas fa-print"></i></a>
-                  @else
-                    <button class="btn btn-outline-info" title="{{ $app->payment_status === 'Paid' ? 'Missing App ID' : 'Unpaid – Copy Disabled' }}" disabled><i class="fas fa-print"></i></button>
-                  @endif
-                  <a href="{{ route('principal.institute.admissions.applications.payments.details', [$school->id, $app->id]) }}" class="btn btn-outline-dark" title="Payments"><i class="fas fa-receipt"></i></a>
-                  @if(!$app->accepted_at && $app->status !== 'cancelled' && $app->payment_status==='Paid')
-                    <form action="{{ route('principal.institute.admissions.applications.accept', [$school->id, $app->id]) }}" method="post" onsubmit="return confirm('Confirm accept?')">
-                      @csrf
-                      <button class="btn btn-outline-success" title="Accept"><i class="fas fa-check"></i></button>
-                    </form>
-                  @endif
-                  @if($app->status !== 'cancelled' && !$app->student_id)
-                    <button type="button" class="btn btn-outline-danger" title="Cancel" data-toggle="modal" data-target="#cancelModal" data-app-id="{{ $app->id }}" data-app-name="{{ $app->name_en ?? $app->applicant_name }}" data-cancel-url="{{ route('principal.institute.admissions.applications.cancel', [$school->id, $app->id]) }}">
-                      <i class="fas fa-times"></i>
-                    </button>
-                  @endif
-                  @if($app->accepted_at)
-                    <a href="{{ route('principal.institute.admissions.applications.admit_card', [$school->id, $app->id]) }}" class="btn btn-outline-success" title="Admit Card"><i class="fas fa-id-card"></i></a>
-                  @endif
-                </div>
-              </td>
-              <td>{{ $app->created_at->format('Y-m-d H:i') }}</td>
-            </tr>
-          @empty
-            <tr><td colspan="12" class="text-center text-muted">No applications yet.</td></tr>
-          @endforelse
+        <tbody id="appsTbody">
+          @include('principal.admissions.partials._rows', ['apps'=>$apps, 'school'=>$school])
         </tbody>
       </table>
     </div>
   </div>
-  <div class="card-footer">{{ $apps->links() }}</div>
+  <div class="card-footer" id="appsPagination">
+    @include('principal.admissions.partials._pagination', ['apps'=>$apps, 'school'=>$school])
+  </div>
 </div>
   <!-- Cancellation Modal -->
   <div class="modal fade" id="cancelModal" tabindex="-1" role="dialog" aria-labelledby="cancelModalLabel" aria-hidden="true">
@@ -227,15 +235,39 @@ document.addEventListener('DOMContentLoaded', function(){
     $('#cancelAppName').text(appName);
     $('#cancellationReason').val('').focus();
   });
-  // Live search filter
-  const input = document.getElementById('appSearch');
-  const rows = document.querySelectorAll('#applicationsTable tbody tr');
-  input.addEventListener('input', function(){
-    const term = this.value.toLowerCase();
-    rows.forEach(r => {
-      const txt = r.textContent.toLowerCase();
-      r.style.display = txt.indexOf(term) !== -1 ? '' : 'none';
-    });
+  // Real-time search/filter via AJAX
+  const form = document.querySelector('form[action*="admissions/applications"]');
+  const tbody = document.getElementById('appsTbody');
+  const pager = document.getElementById('appsPagination');
+  const debounce = (fn, delay) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); }; };
+  const buildUrl = (page=null) => {
+    const base = form.getAttribute('action');
+    const fd = new FormData(form);
+    if (page) fd.set('page', page);
+    const params = new URLSearchParams(fd);
+    return base + '?' + params.toString();
+  };
+  const loadData = (url) => {
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+      .then(r => r.json())
+      .then(json => {
+        if (json.rows) tbody.innerHTML = json.rows;
+        if (json.pagination) pager.innerHTML = json.pagination;
+      })
+      .catch(() => {});
+  };
+  const trigger = debounce(() => loadData(buildUrl()), 350);
+  // Bind search input
+  const qInput = form.querySelector('input[name="q"]');
+  if (qInput) qInput.addEventListener('input', trigger);
+  // Auto-apply for dropdowns and dates
+  form.querySelectorAll('select, input[type="date"]').forEach(el => {
+    el.addEventListener('change', () => loadData(buildUrl()));
+  });
+  // Intercept pagination clicks
+  document.addEventListener('click', function(e){
+    const a = e.target.closest('#appsPagination .pagination a');
+    if (a) { e.preventDefault(); const url = a.getAttribute('href'); loadData(url); }
   });
 });
 // Photo modal dynamic creation
