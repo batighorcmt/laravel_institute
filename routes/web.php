@@ -434,6 +434,37 @@ Route::middleware(['auth'])->group(function () {
             Route::get('teams/{team}/add-students', [PrincipalTeamController::class, 'addStudents'])->name('teams.add-students');
             Route::post('teams/{team}/add-students', [PrincipalTeamController::class, 'storeStudents'])->name('teams.store-students');
             Route::get('teams/{team}/members', [PrincipalTeamController::class, 'members'])->name('teams.members');
+
+            // Documents (Prottayon, Certificate, Testimonial, Settings)
+            Route::prefix('documents')->name('documents.')->group(function(){
+                // Prottayon
+                Route::get('/prottayon', [\App\Http\Controllers\Principal\Documents\ProttayonController::class, 'index'])->name('prottayon.index');
+                Route::post('/prottayon/generate', [\App\Http\Controllers\Principal\Documents\ProttayonController::class, 'generate'])->name('prottayon.generate');
+                Route::get('/prottayon/print/{document}', [\App\Http\Controllers\Principal\Documents\ProttayonController::class, 'print'])->name('prottayon.print');
+                Route::get('/prottayon/history', [\App\Http\Controllers\Principal\Documents\ProttayonController::class, 'history'])->name('prottayon.history');
+                Route::get('/prottayon/{document}/edit', [\App\Http\Controllers\Principal\Documents\ProttayonController::class, 'edit'])->name('prottayon.edit');
+                Route::put('/prottayon/{document}', [\App\Http\Controllers\Principal\Documents\ProttayonController::class, 'update'])->name('prottayon.update');
+
+                // Certificate (past-year study certificate)
+                Route::get('/certificate', [\App\Http\Controllers\Principal\Documents\CertificateController::class, 'index'])->name('certificate.index');
+                Route::post('/certificate/generate', [\App\Http\Controllers\Principal\Documents\CertificateController::class, 'generate'])->name('certificate.generate');
+                Route::get('/certificate/print/{document}', [\App\Http\Controllers\Principal\Documents\CertificateController::class, 'print'])->name('certificate.print');
+                Route::get('/certificate/history', [\App\Http\Controllers\Principal\Documents\CertificateController::class, 'history'])->name('certificate.history');
+                Route::get('/certificate/{document}/edit', [\App\Http\Controllers\Principal\Documents\CertificateController::class, 'edit'])->name('certificate.edit');
+                Route::put('/certificate/{document}', [\App\Http\Controllers\Principal\Documents\CertificateController::class, 'update'])->name('certificate.update');
+
+                // Testimonial (SSC/HSC)
+                Route::get('/testimonial', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'index'])->name('testimonial.index');
+                Route::post('/testimonial/generate', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'generate'])->name('testimonial.generate');
+                Route::get('/testimonial/print/{document}', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'print'])->name('testimonial.print');
+                Route::get('/testimonial/history', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'history'])->name('testimonial.history');
+                Route::get('/testimonial/{document}/edit', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'edit'])->name('testimonial.edit');
+                Route::put('/testimonial/{document}', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'update'])->name('testimonial.update');
+
+                // Settings (backgrounds, colors for print pages)
+                Route::get('/settings', [\App\Http\Controllers\Principal\Documents\SettingsController::class, 'index'])->name('settings.index');
+                Route::post('/settings', [\App\Http\Controllers\Principal\Documents\SettingsController::class, 'store'])->name('settings.store');
+            });
         });
     });
 
@@ -527,4 +558,11 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/billing/settings/categories/{category}', [\App\Http\Controllers\Billing\SettingsController::class, 'categoriesDestroy'])->name('billing.settings.categories.destroy');
     Route::get('/billing/settings/global-fees', [\App\Http\Controllers\Billing\SettingsController::class, 'globalFeesIndex'])->name('billing.settings.global_fees');
     Route::post('/billing/settings/global-fees', [\App\Http\Controllers\Billing\SettingsController::class, 'globalFeesStore'])->name('billing.settings.global_fees.store');
+
+    // Fine Settings
+    Route::get('/billing/settings/fines', [\App\Http\Controllers\Billing\SettingsController::class, 'fineIndex'])->name('billing.settings.fines');
+    Route::post('/billing/settings/fines', [\App\Http\Controllers\Billing\SettingsController::class, 'fineStore'])->name('billing.settings.fines.store');
 });
+
+// Public document verification endpoint (QR target)
+Route::get('/verify/document/{code}', [\App\Http\Controllers\Documents\VerificationController::class, 'show'])->name('documents.verify');
