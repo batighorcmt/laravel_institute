@@ -29,6 +29,12 @@
     .alert-note { background:#fee2e2; border:1px solid #fecaca; color:#b91c1c; padding:16px 20px; border-radius:16px; font-size:.95rem; font-weight:700; }
     .inline-tag { padding:6px 12px; background:#eef2ff; color:#4338ca; border-radius:10px; font-size:.9rem; font-weight:700; letter-spacing:.5px; }
     @media (max-width:640px){ .fields-table td.label { width:120px; } }
+    /* Mobile adjustments: avoid sticky and constrain photo height */
+    @media (max-width: 768px) {
+        .sidebar-card { position: static; top: auto; }
+        .photo-large { aspect-ratio: 1 / 1; max-height: 280px; }
+        .photo-large img { object-fit: contain; }
+    }
 </style>
 @endpush
 

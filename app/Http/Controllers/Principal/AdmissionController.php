@@ -504,14 +504,12 @@ class AdmissionController extends Controller
             ->select('present_village', DB::raw('COUNT(*) as total'))
             ->groupBy('present_village')
             ->orderByDesc('total')
-            ->limit(50)
             ->get();
         // By previous school (last_school)
         $byPrevSchool = (clone $base)
             ->select('last_school', DB::raw('COUNT(*) as total'))
             ->groupBy('last_school')
             ->orderByDesc('total')
-            ->limit(50)
             ->get();
 
         // Payments summary
@@ -781,7 +779,9 @@ class AdmissionController extends Controller
         if (request()->hasFile('photo')) {
             $file = request()->file('photo');
             $name = 'app_'.$application->id.'_'.time().'.'.$file->getClientOriginalExtension();
-            $file->storeAs('public/admission', $name);
+            // Ensure directory exists and store on the public disk
+            try { \Storage::disk('public')->makeDirectory('admission'); } catch (\Throwable $e) {}
+            \Storage::disk('public')->putFileAs('admission', $file, $name);
             // Optionally remove old photo if exists
             if ($application->photo && \Storage::disk('public')->exists('admission/'.$application->photo)) {
                 // Silent try-catch to avoid breaking if deletion fails
