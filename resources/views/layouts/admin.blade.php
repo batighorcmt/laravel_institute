@@ -336,6 +336,37 @@
                                 </ul>
                             </li>
 
+                            {{-- Documents --}}
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.documents.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.documents.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-file-signature"></i>
+                                    <p>Documents <i class="right fas fa-angle-left"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item"><a href="{{ route('principal.institute.documents.prottayon.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.prottayon.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Prottayon</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.documents.certificate.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.certificate.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Certificate</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.documents.testimonial.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.testimonial.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Testimonial</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.documents.settings.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.settings.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Settings</p></a></li>
+                                </ul>
+                            </li>
+
+                            {{-- Billing --}}
+                            <li class="nav-item has-treeview {{ request()->routeIs('billing.due') || request()->routeIs('billing.statement') || request()->routeIs('billing.collect') || request()->routeIs('billing.settings.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('billing.due') || request()->routeIs('billing.statement') || request()->routeIs('billing.collect') || request()->routeIs('billing.settings.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-money-bill-wave"></i>
+                                    <p>Billing <i class="right fas fa-angle-left"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item"><a href="{{ route('billing.due') }}" class="nav-link {{ request()->routeIs('billing.due') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Due Preview</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.statement') }}" class="nav-link {{ request()->routeIs('billing.statement') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Student Statement</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.collect') }}" class="nav-link {{ request()->routeIs('billing.collect') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Collect Payment</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.settings.fee_structures') }}" class="nav-link {{ request()->routeIs('billing.settings.fee_structures') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Fee Structures</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.settings.discounts') }}" class="nav-link {{ request()->routeIs('billing.settings.discounts') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Discounts</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.settings.categories') }}" class="nav-link {{ request()->routeIs('billing.settings.categories') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Fee Categories</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.settings.global_fees') }}" class="nav-link {{ request()->routeIs('billing.settings.global_fees') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Global Fees</p></a></li>
+                                </ul>
+                            </li>
+
                         
                             {{-- SMS (top-level) --}}
                             <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.sms.*') ? 'menu-open' : '' }}">

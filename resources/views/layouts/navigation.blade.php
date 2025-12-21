@@ -15,6 +15,18 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    @php($user = Auth::user())
+                    @if($user && ($user->isTeacher($user->current_school_id ?? null) || $user->isPrincipal($user->current_school_id ?? null) || $user->isSuperAdmin()))
+                        <x-nav-link :href="route('billing.due')" :active="request()->routeIs('billing.due')">
+                            {{ __('Billing: Due') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('billing.statement')" :active="request()->routeIs('billing.statement')">
+                            {{ __('Billing: Statement') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('billing.collect')" :active="request()->routeIs('billing.collect')">
+                            {{ __('Billing: Collect') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -34,7 +46,7 @@
                     </x-slot>
 
                     <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
+                        <x-dropdown-link :href="route('profile.show')">
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
@@ -70,6 +82,17 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+            @if($user && ($user->isTeacher($user->current_school_id ?? null) || $user->isPrincipal($user->current_school_id ?? null) || $user->isSuperAdmin()))
+                <x-responsive-nav-link :href="route('billing.due')" :active="request()->routeIs('billing.due')">
+                    {{ __('Billing: Due') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('billing.statement')" :active="request()->routeIs('billing.statement')">
+                    {{ __('Billing: Statement') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('billing.collect')" :active="request()->routeIs('billing.collect')">
+                    {{ __('Billing: Collect') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <!-- Responsive Settings Options -->
@@ -80,7 +103,7 @@
             </div>
 
             <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
+                <x-responsive-nav-link :href="route('profile.show')">
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
 
