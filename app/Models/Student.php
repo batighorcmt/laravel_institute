@@ -129,34 +129,33 @@ class Student extends Model
 
     /**
      * Generate unique student ID
-     * Format: <school_code><class_numeric_2digits><sequential_4digits>
-     * Example: JSS060001, JSS100002
-     * 
+     * New Format: <school_code>S<sequential_5digits>
+     * Example: JSSS00001, JSSS00002
+     *
+     * Note: Kept the second parameter in the signature for backward compatibility,
+     * but it is ignored by this new scheme.
+     *
      * @param int $schoolId
-     * @param int $classNumericValue
+     * @param int $classNumericValue Ignored
      * @return string
      */
     public static function generateStudentId($schoolId, $classNumericValue): string
     {
         $school = School::find($schoolId);
         $schoolCode = $school ? ($school->code ?? 'SCH') : 'SCH';
-        
-        // Pad class numeric to 2 digits
-        $classPadded = str_pad($classNumericValue, 2, '0', STR_PAD_LEFT);
-        
-        // Find last student ID with this school code and class prefix
-        $prefix = $schoolCode . $classPadded;
+        // New prefix: SchoolCode + 'S'
+        $prefix = $schoolCode . 'S';
         $lastStudent = self::where('school_id', $schoolId)
             ->where('student_id', 'LIKE', $prefix . '%')
             ->orderByRaw('CAST(SUBSTRING(student_id, ' . (strlen($prefix) + 1) . ') AS UNSIGNED) DESC')
             ->first();
         
         $serial = 1;
-        if ($lastStudent && preg_match('/^' . preg_quote($prefix, '/') . '(\d{4})$/', $lastStudent->student_id, $matches)) {
+        if ($lastStudent && preg_match('/^' . preg_quote($prefix, '/') . '(\d{1,})$/', $lastStudent->student_id, $matches)) {
             $serial = intval($matches[1]) + 1;
         }
         
-        return $prefix . str_pad($serial, 4, '0', STR_PAD_LEFT);
+        return $prefix . str_pad($serial, 5, '0', STR_PAD_LEFT);
     }
 
     // Return a URL for the student's photo, trying common storage locations.

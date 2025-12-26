@@ -81,10 +81,6 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
     await _loadPage(reset: true);
   }
 
-  void _doSearch() {
-    _loadPage(reset: true);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

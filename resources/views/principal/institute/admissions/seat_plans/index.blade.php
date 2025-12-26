@@ -8,14 +8,21 @@
 <div class="card mb-4">
     <div class="card-body p-0">
         <table class="table table-sm mb-0 table-striped">
-            <thead><tr><th>#</th><th>নাম</th><th>পরীক্ষা</th><th>শিফট</th><th>রুম</th><th>স্ট্যাটাস</th><th>ক্রিয়া</th></tr></thead>
+            <thead><tr><th>#</th><th>নাম</th><th>পরীক্ষা(শ্রেণি)</th><th>শিফট</th><th>রুম</th><th>স্ট্যাটাস</th><th>ক্রিয়া</th></tr></thead>
             <tbody>
             @forelse($plans as $p)
                 @if($p instanceof \App\Models\AdmissionExamSeatPlan)
                 <tr>
                     <td>{{ $p->id }}</td>
                     <td>{{ $p->name }}</td>
-                    <td>{{ $p->exam?->name }}</td>
+                    <td>
+                        @php($examList = ($p->relationLoaded('exams') ? $p->exams : collect()))
+                        @if($examList && $examList->count())
+                            {{ $examList->map(fn($e)=>($e->name.' ('.$e->class_name.')'))->implode(', ') }}
+                        @else
+                            {{ $p->exam?->name }} @if($p->exam?->class_name) ({{ $p->exam?->class_name }}) @endif
+                        @endif
+                    </td>
                     <td>{{ $p->shift }}</td>
                     <td>{{ $p->rooms()->count() }}</td>
                     <td>{{ $p->status }}</td>

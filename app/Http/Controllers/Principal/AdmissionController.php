@@ -159,7 +159,12 @@ class AdmissionController extends Controller
         // Total paid amount (sum of successful payments for applications of this school)
         $totalPaidAmount = \App\Models\AdmissionPayment::whereHas('application', function($q) use ($school){
             $q->where('school_id',$school->id);
-        })->where('status','Completed')->sum('amount');
+        })
+        ->where('status','Completed')
+        ->where(function($q){
+            $q->where('fee_type','application')->orWhereNull('fee_type');
+        })
+        ->sum('amount');
 
         // Expected total fees based on class settings (match by class_code == application->class_name)
         $expectedTotalFees = 0;
@@ -518,6 +523,9 @@ class AdmissionController extends Controller
                 if ($yearId) { $q->where('academic_year_id', $yearId); }
             })
             ->where('status','Completed')
+            ->where(function($q){
+                $q->where('fee_type','application')->orWhereNull('fee_type');
+            })
             ->sum('amount');
 
         return view('principal.admissions.summary', compact(

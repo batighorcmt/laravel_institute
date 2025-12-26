@@ -19,19 +19,138 @@ class AdmissionEnrollmentController extends Controller
     /**
      * Display list of all applications for enrollment
      */
-    public function index(School $school)
+    public function index(School $school, Request $request)
     {
-        // Get all applications that are accepted and paid, not yet enrolled
-        $applications = AdmissionApplication::where('school_id', $school->id)
+        // Overall dataset for stats (accepted + application-fee paid) regardless of enrollment
+        $overallBase = AdmissionApplication::where('school_id', $school->id)
             ->where('status', 'accepted')
-            ->where('payment_status', 'paid')
-            ->whereNull('student_id')
-            ->with(['academicYear'])
+            ->where('payment_status', 'paid');
+
+        // Base query for listing (accepted + application-fee paid), includes enrolled and not-yet-enrolled
+        $baseQuery = (clone $overallBase)->with(['academicYear','examResults']);
+
+        // Filters
+        $filters = [
+            'class' => trim((string)$request->get('class', '')),
+            'permission' => $request->get('permission', ''), // '1','0',''
+            'fee_status' => $request->get('fee_status', ''), // 'paid','unpaid',''
+            'q' => trim((string)$request->get('q', '')),
+        ];
+
+        if ($filters['class'] !== '') {
+            $baseQuery->where('class_name', $filters['class']);
+        }
+        if ($filters['permission'] !== '') {
+            $baseQuery->where('admission_permission', $filters['permission'] === '1');
+        }
+        if ($filters['q'] !== '') {
+            $q = $filters['q'];
+            $baseQuery->where(function($sub) use ($q) {
+                $sub->where('name_bn','like',"%{$q}%")
+                    ->orWhere('name_en','like',"%{$q}%")
+                    ->orWhere('app_id','like',"%{$q}%")
+                    ->orWhere('mobile','like',"%{$q}%");
+            });
+        }
+
+        // We need a set of matching IDs for stats and fee filter
+        $matchingIds = (clone $baseQuery)->pluck('id');
+
+        // Fee status filter requires payments lookup
+        if ($filters['fee_status'] === 'paid' || $filters['fee_status'] === 'unpaid') {
+            $paidIds = \App\Models\AdmissionPayment::whereIn('admission_application_id', $matchingIds)
+                ->where('status','Completed')
+                ->where('fee_type','admission')
+                ->pluck('admission_application_id')
+                ->unique();
+            if ($filters['fee_status'] === 'paid') {
+                $baseQuery->whereIn('id', $paidIds);
+            } else {
+                $baseQuery->whereNotIn('id', $paidIds);
+            }
+        }
+
+        // Final list with ordering + pagination
+        $applications = $baseQuery
             ->orderBy('class_name')
             ->orderBy('name_bn')
-            ->paginate(20);
+            ->paginate(20)
+            ->appends($request->query());
 
-        return view('principal.admissions.enrollment.index', compact('school', 'applications'));
+        // Attach derived attributes: merit_rank, admission_fee_paid
+        // Precompute latest exam per class
+        $latestExamByClass = \App\Models\AdmissionExam::where('school_id',$school->id)
+            ->orderByDesc('exam_date')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy('class_name')
+            ->map(function($list){ return $list->first(); });
+
+        // Build merit ranking maps
+        $meritMap = [];
+        foreach ($latestExamByClass as $className => $exam) {
+            $results = \App\Models\AdmissionExamResult::where('exam_id',$exam->id)
+                ->orderByDesc('total_obtained')
+                ->orderBy('id')
+                ->get(['application_id','total_obtained']);
+            $rank = 1;
+            foreach ($results as $r) {
+                $meritMap[$className][$r->application_id] = $rank;
+                $rank++;
+            }
+        }
+
+        // Admission fee paid check by payments table with fee_type='admission' and status 'Completed'
+        $applications->getCollection()->transform(function(AdmissionApplication $a) use ($meritMap, $school) {
+            $class = (string)($a->class_name ?? '');
+            $a->merit_rank = $class && isset($meritMap[$class][$a->id]) ? $meritMap[$class][$a->id] : null;
+            $a->admission_fee_paid = \App\Models\AdmissionPayment::where('admission_application_id',$a->id)
+                ->where('status','Completed')
+                ->when(true, function($q){ $q->where('fee_type','admission'); })
+                ->exists();
+            return $a;
+        });
+
+        // Classes for filter dropdown (from overall dataset)
+        $classes = (clone $overallBase)
+            ->select('class_name')
+            ->distinct()
+            ->orderBy('class_name')
+            ->pluck('class_name');
+
+        // Stats for this view (based on current filtered set)
+        $visibleIds = $applications->getCollection()->pluck('id');
+        // If you want stats for all filtered (not only current page), use $matchingIds
+        // Stats should always be based on the overall dataset, not filters
+        $overallIds = (clone $overallBase)->pluck('id');
+        $permittedCount = (clone $overallBase)->where('admission_permission', true)->count();
+
+        $paidPayments = \App\Models\AdmissionPayment::whereIn('admission_application_id', $overallIds)
+            ->where('status','Completed')
+            ->where('fee_type','admission')
+            ->get(['admission_application_id','amount']);
+
+        $paidIdsAll = $paidPayments->pluck('admission_application_id')->unique();
+        $paidCount = $paidIdsAll->count();
+
+        $dueCount = max(0, $permittedCount - $paidCount);
+
+        $totalCollected = (float)$paidPayments->sum('amount');
+        $totalAssigned = (float)AdmissionApplication::whereIn('id', $overallIds)
+            ->where('admission_permission', true)
+            ->sum('admission_fee');
+        $totalDue = max(0.0, $totalAssigned - $totalCollected);
+
+        $stats = [
+            'permittedCount' => $permittedCount,
+            'paidCount' => $paidCount,
+            'dueCount' => $dueCount,
+            'totalCollected' => $totalCollected,
+            'totalAssigned' => $totalAssigned,
+            'totalDue' => $totalDue,
+        ];
+
+        return view('principal.admissions.enrollment.index', compact('school', 'applications','filters','classes','stats'));
     }
 
     /**
@@ -94,6 +213,53 @@ class AdmissionEnrollmentController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Permission data endpoint for modal prefill
+     */
+    public function permissionData(School $school, AdmissionApplication $application)
+    {
+        if ($application->school_id !== $school->id) {
+            return response()->json(['message'=>'Invalid request'], 403);
+        }
+        return response()->json([
+            'permission' => (bool)($application->admission_permission ?? false),
+            'admission_fee' => (float)($application->admission_fee ?? 0),
+            'paid' => \App\Models\AdmissionPayment::where('admission_application_id',$application->id)
+                ->where('status','Completed')
+                ->where('fee_type','admission')
+                ->exists(),
+        ]);
+    }
+
+    /**
+     * Store permission + admission fee
+     */
+    public function permissionStore(Request $request, School $school)
+    {
+        $data = $request->validate([
+            'application_id' => 'required|exists:admission_applications,id',
+            'permission' => 'required|in:0,1',
+            'admission_fee' => 'required|numeric|min:0',
+        ]);
+        $application = AdmissionApplication::findOrFail($data['application_id']);
+        if ($application->school_id !== $school->id) {
+            return back()->with('error','অবৈধ অনুরোধ');
+        }
+        // Block editing permission/fee after admission fee is paid
+        $admissionFeePaid = \App\Models\AdmissionPayment::where('admission_application_id',$application->id)
+            ->where('status','Completed')
+            ->where('fee_type','admission')
+            ->exists();
+        if ($admissionFeePaid) {
+            return back()->with('error','ভর্তি ফিস পরিশোধিত হওয়ায় অনুমতি পরিবর্তন করা যাবে না');
+        }
+        $application->admission_permission = (bool)$data['permission'];
+        $application->admission_fee = (float)$data['admission_fee'];
+        $application->save();
+
+        return back()->with('success','ভর্তি অনুমতি ও ফিস নির্ধারণ সংরক্ষিত হয়েছে');
     }
 
     /**

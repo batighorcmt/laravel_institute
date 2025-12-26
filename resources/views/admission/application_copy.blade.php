@@ -214,6 +214,58 @@
         <div class="print-bar no-print text-center">
             <button onclick="window.print()" class="btn btn-dark btn-sm"><i class="fa-solid fa-print me-1"></i> প্রিন্ট করুন</button>
             <a href="{{ route('admission.preview', [$school->code, $application->app_id]) }}" class="btn btn-link btn-sm">প্রিভিউতে ফিরে যান</a>
+                        @php
+                                // Admission fee payable conditions
+                                $admissionFeePaid = \App\Models\AdmissionPayment::where('admission_application_id',$application->id)
+                                        ->where('status','Completed')
+                                        ->where('fee_type','admission')
+                                        ->exists();
+                        @endphp
+                        @if(($application->admission_permission ?? false) && ($application->admission_fee ?? 0) > 0 && !$admissionFeePaid)
+                            <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#admissionFeeModal">
+                                <i class="fa-solid fa-credit-card me-1"></i> ভর্তির ফিস দিন
+                            </button>
+                        @endif
         </div>
     </div>
+
+        <!-- Admission Fee Modal -->
+        @php
+                // Compute merit rank and obtained marks for display
+                $latestExam = \App\Models\AdmissionExam::where('school_id',$school->id)
+                        ->where('class_name', $application->class_name)
+                        ->orderByDesc('exam_date')
+                        ->orderByDesc('id')
+                        ->first();
+                $obtained = null; $meritRank = null;
+                if ($latestExam) {
+                        $results = \App\Models\AdmissionExamResult::where('exam_id',$latestExam->id)
+                                ->orderByDesc('total_obtained')
+                                ->orderBy('id')
+                                ->get(['application_id','total_obtained']);
+                        $rank=1; foreach($results as $r){ if($r->application_id===$application->id){ $obtained=$r->total_obtained; $meritRank=$rank; break; } $rank++; }
+                }
+        @endphp
+        <div class="modal fade" id="admissionFeeModal" tabindex="-1" role="dialog" aria-labelledby="admissionFeeModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="admissionFeeModalLabel">ভর্তির ফিস প্রদান</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>মেধাক্রম:</strong> {{ $meritRank ? bnDigits($meritRank) : '—' }}</p>
+                        <p><strong>প্রাপ্ত নম্বর:</strong> {{ $obtained ? bnDigits($obtained) : '—' }}</p>
+                        <p><strong>ভর্তির ফিস:</strong> {{ bnDigits(number_format((float)($application->admission_fee ?? 0), 2)) }} টাকা</p>
+                    </div>
+                    <div class="modal-footer">
+                        <form method="POST" action="{{ route('admission.fee.initiate', [$school->code]) }}" class="ms-auto">
+                            @csrf
+                            <input type="hidden" name="app_id" value="{{ $application->app_id }}">
+                            <button type="submit" class="btn btn-success"><i class="fa-solid fa-money-bill-wave me-1"></i> পেমেন্ট করুন</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
 </x-layout.public>

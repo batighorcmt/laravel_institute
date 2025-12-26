@@ -48,7 +48,9 @@ class AdmissionApplication extends Model
         'present_village','present_para_moholla','present_post_office','present_upazilla','present_district',
         'permanent_village','permanent_para_moholla','permanent_post_office','permanent_upazilla','permanent_district',
         'last_school','result','pass_year','achievement','payment_status',
-        'cancellation_reason','student_id'
+        'cancellation_reason','student_id',
+        // New fields for admission permission & fee
+        'admission_permission','admission_fee'
     ];
 
     protected $casts = [
@@ -57,6 +59,8 @@ class AdmissionApplication extends Model
         'dob' => 'date',
         'payment_status' => 'string',
         'accepted_at' => 'datetime',
+        'admission_permission' => 'boolean',
+        'admission_fee' => 'decimal:2',
     ];
 
     public function school(): BelongsTo

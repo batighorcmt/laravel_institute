@@ -31,6 +31,9 @@
                     @if($applicantSession)
                         <div class="d-inline-flex align-items-center gap-2">
                             <span class="badge bg-success px-3 py-2">লগইন: {{ data_get($applicantSession, 'app_id') }}</span>
+                            <a href="{{ route('admission.preview', [$school->code, data_get($applicantSession,'app_id')]) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i> প্রিভিউ
+                            </a>
                             <form action="{{ route('admission.logout', $school->code) }}" method="post" class="d-inline">
                                 @csrf
                                 <button type="submit" class="btn btn-outline-danger btn-sm"><i class="fas fa-right-from-bracket me-1"></i> লগআউট</button>

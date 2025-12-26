@@ -349,7 +349,8 @@ class AdmissionFlowController extends Controller
             'payment_method' => 'SSLCommerz',
             'tran_id' => $tranId,
             'invoice_no' => $invoice,
-            'status' => 'Initiated'
+            'status' => 'Initiated',
+            'fee_type' => 'application'
         ]);
         $client = new SSLCommerzClient();
         $payload = [
@@ -381,6 +382,155 @@ class AdmissionFlowController extends Controller
             return redirect()->back()->with('error','গেটওয়ে ত্রুটি');
         }
         return redirect()->away($gatewayUrl);
+    }
+
+    // Initiate admission fee payment (after permission)
+    public function admissionFeeInitiate($code, Request $request)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$request->get('app_id'))->firstOrFail();
+        // Require applicant session
+        $sess = session('admission_applicant');
+        if (!$sess || ($sess['school_code'] ?? null) !== $school->code || ($sess['app_id'] ?? null) !== $application->app_id) {
+            return redirect()->route('admission.login.page', [$school->code])->with('error','Applicant login required');
+        }
+        // Must be permitted and fee configured
+        if (!(bool)($application->admission_permission ?? false)) {
+            return redirect()->back()->with('error','ভর্তি অনুমতি প্রদান করা হয়নি');
+        }
+        $amount = (float) ($application->admission_fee ?? 0);
+        if ($amount <= 0) {
+            return redirect()->back()->with('error','ভর্তি ফিস নির্ধারিত নেই');
+        }
+        // Payment settings
+        $settings = SchoolPaymentSetting::where('school_id',$school->id)->first();
+        if (!$settings || !$settings->active) {
+            return redirect()->back()->with('error','পেমেন্ট সেটিংস সক্রিয় নেই');
+        }
+        $tranId = 'TX'.strtoupper(Str::random(12));
+        $invoice = 'INV'.date('Ymd').Str::upper(Str::random(6));
+        $payment = AdmissionPayment::create([
+            'admission_application_id' => $application->id,
+            'amount' => $amount,
+            'payment_method' => 'SSLCommerz',
+            'tran_id' => $tranId,
+            'invoice_no' => $invoice,
+            'status' => 'Initiated',
+            'fee_type' => 'admission'
+        ]);
+        $client = new SSLCommerzClient();
+        $payload = [
+            'store_id' => $settings->store_id,
+            'store_passwd' => $settings->store_password,
+            'total_amount' => $amount,
+            'currency' => 'BDT',
+            'tran_id' => $tranId,
+            'success_url' => route('admission.fee.success', [$school->code, $application->app_id]),
+            'fail_url' => route('admission.fee.fail', [$school->code, $application->app_id]),
+            'cancel_url' => route('admission.fee.cancel', [$school->code, $application->app_id]),
+            'ipn_url' => route('admission.fee.ipn'),
+            'emi_option' => 0,
+            'cus_name' => $application->name_en,
+            'cus_phone' => $application->mobile,
+            'cus_email' => 'noemail@example.com',
+            'cus_add1' => $application->present_address ?? 'N/A',
+            'cus_city' => 'City',
+            'cus_country' => 'Bangladesh',
+            'shipping_method' => 'NO',
+            'num_of_item' => 1,
+            'product_name' => 'Admission Fee',
+            'product_category' => 'Admission',
+            'product_profile' => 'general'
+        ];
+        $gatewayUrl = $client->initiate($payload, (bool)$settings->sandbox);
+        if (!$gatewayUrl) {
+            $payment->update(['status'=>'Failed']);
+            return redirect()->back()->with('error','গেটওয়ে ত্রুটি');
+        }
+        return redirect()->away($gatewayUrl);
+    }
+
+    public function admissionFeeSuccess($code, $appId, Request $request)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
+        $tranId = $request->get('tran_id');
+        $payment = AdmissionPayment::where('tran_id',$tranId)->where('admission_application_id',$application->id)->first();
+        if ($payment) {
+            $payment->update([
+                'status' => 'Completed',
+                'gateway_status' => $request->get('status'),
+                'gateway_response' => $request->all()
+            ]);
+        }
+        // Keep applicant session
+        $request->session()->put('admission_applicant', [
+            'app_id' => $application->app_id,
+            'school_code' => $school->code,
+            'name' => $application->name_bn ?? $application->name_en,
+        ]);
+        // Redirect to printable admission fee receipt
+        return redirect()->route('admission.fee.receipt', [$school->code, $application->app_id, optional($payment)->id])
+            ->with('success','ভর্তি ফিস পেমেন্ট সফল');
+    }
+
+    public function admissionFeeFail($code, $appId, Request $request)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
+        $tranId = $request->get('tran_id');
+        $payment = AdmissionPayment::where('tran_id',$tranId)->where('admission_application_id',$application->id)->first();
+        if ($payment) {
+            $payment->update([
+                'status' => 'Failed',
+                'gateway_status' => $request->get('status'),
+                'gateway_response' => $request->all()
+            ]);
+        }
+        return redirect()->route('admission.copy', [$school->code, $application->app_id])->with('error','ভর্তি ফিস পেমেন্ট ব্যর্থ হয়েছে');
+    }
+
+    public function admissionFeeCancel($code, $appId, Request $request)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
+        $tranId = $request->get('tran_id');
+        $payment = AdmissionPayment::where('tran_id',$tranId)->where('admission_application_id',$application->id)->first();
+        if ($payment) {
+            $payment->update([
+                'status' => 'Failed',
+                'gateway_status' => 'CANCELLED',
+                'gateway_response' => $request->all()
+            ]);
+        }
+        return redirect()->route('admission.copy', [$school->code, $application->app_id])->with('error','ভর্তি ফিস পেমেন্ট বাতিল করা হয়েছে');
+    }
+
+    public function admissionFeeIpn(Request $request)
+    {
+        $tranId = $request->get('tran_id');
+        $payment = AdmissionPayment::where('tran_id',$tranId)->first();
+        if ($payment) {
+            $payment->update([
+                'gateway_status' => $request->get('status'),
+                'gateway_response' => $request->all()
+            ]);
+        }
+        return response('OK');
+    }
+
+    public function admissionFeeReceipt($code, $appId, \App\Models\AdmissionPayment $payment)
+    {
+        $school = $this->schoolByCode($code);
+        $application = AdmissionApplication::where('school_id',$school->id)->where('app_id',$appId)->firstOrFail();
+        // Validate payment belongs to this application and is admission fee
+        abort_if($payment->admission_application_id !== $application->id, 404);
+        abort_if(strtolower((string)$payment->fee_type) !== 'admission', 404);
+        return view('admission.fee_receipt', [
+            'school' => $school,
+            'application' => $application,
+            'payment' => $payment,
+        ]);
     }
 
     public function copy($code, $appId)

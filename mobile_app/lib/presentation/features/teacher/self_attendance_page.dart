@@ -153,6 +153,8 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
   // Capture photo via camera
   Future<void> _capturePhoto() async {
     try {
+      // Always clear any previous photo to avoid accidental reuse
+      setState(() => _photo = null);
       final camStatus = await Permission.camera.request();
       if (!camStatus.isGranted) {
         setState(() => _error = 'Camera permission denied');
@@ -160,7 +162,10 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       }
       final image = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 60,
+        // Strongly reduce file size at capture
+        imageQuality: 40,
+        maxWidth: 640,
+        maxHeight: 640,
       );
       if (image == null) {
         setState(() => _error = 'No photo captured');
@@ -175,7 +180,8 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
         final bytes = await File(image.path).readAsBytes();
         final decoded = img.decodeImage(bytes);
         if (decoded != null) {
-          final maxDim = 800;
+          // Further enforce a smaller dimension for upload
+          final maxDim = 640;
           final w = decoded.width;
           final h = decoded.height;
           img.Image resized;
@@ -186,8 +192,15 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
           } else {
             resized = decoded;
           }
-          final jpeg = img.encodeJpg(resized, quality: 60);
-          final tmpPath = image.path.replaceFirst('.jpg', '_compressed.jpg');
+          final jpeg = img.encodeJpg(resized, quality: 40);
+          // Write to a new jpg file path to avoid mismatched extensions
+          final lower = image.path.toLowerCase();
+          final tmpPath = (lower.endsWith('.jpg') || lower.endsWith('.jpeg'))
+              ? image.path.replaceFirst(
+                  RegExp(r'\.jpe?g$', caseSensitive: false),
+                  '_compressed.jpg',
+                )
+              : image.path + '_compressed.jpg';
           await File(tmpPath).writeAsBytes(jpeg, flush: true);
           setState(() => _photo = XFile(tmpPath));
         } else {

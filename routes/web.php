@@ -69,7 +69,23 @@ Route::prefix('admission/{schoolCode}')->group(function() {
     Route::match(['GET','POST'],'/payment/cancel/{appId}', [AdmissionFlowController::class,'paymentCancel'])
         ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
         ->name('admission.payment.cancel');
+    // Admission fee payment routes
+    Route::post('/admission-fee/initiate', [AdmissionFlowController::class,'admissionFeeInitiate'])->name('admission.fee.initiate');
+    Route::match(['GET','POST'],'/admission-fee/success/{appId}', [AdmissionFlowController::class,'admissionFeeSuccess'])
+        ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+        ->name('admission.fee.success');
+    Route::match(['GET','POST'],'/admission-fee/fail/{appId}', [AdmissionFlowController::class,'admissionFeeFail'])
+        ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+        ->name('admission.fee.fail');
+    Route::match(['GET','POST'],'/admission-fee/cancel/{appId}', [AdmissionFlowController::class,'admissionFeeCancel'])
+        ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+        ->name('admission.fee.cancel');
+    // Printable receipt for admission fee
+    Route::get('/admission-fee/receipt/{appId}/{payment}', [AdmissionFlowController::class,'admissionFeeReceipt'])->name('admission.fee.receipt');
 });
+Route::post('/admission-fee/ipn', [AdmissionFlowController::class,'admissionFeeIpn'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+    ->name('admission.fee.ipn');
 Route::post('/admission/payment/ipn', [AdmissionFlowController::class,'paymentIpn'])
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
     ->name('admission.payment.ipn');
@@ -224,6 +240,10 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/enrollment', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'store'])->name('enrollment.store');
                 Route::get('/enrollment/{student}/subjects', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'subjects'])->name('enrollment.subjects');
                 Route::post('/enrollment/{student}/subjects', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'storeSubjects'])->name('enrollment.subjects.store');
+
+                // Admission Permission & Fee (Modal endpoints)
+                Route::get('/permission/{application}/data', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'permissionData'])->name('permission.data');
+                Route::post('/permission/store', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'permissionStore'])->name('permission.store');
 
                 // Admission Exam management
                 Route::prefix('exams')->name('exams.')->group(function(){

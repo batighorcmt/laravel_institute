@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AdmissionPayment extends Model
 {
     protected $fillable = [
-        'admission_application_id','amount','payment_method','tran_id','invoice_no','status','gateway_response','gateway_status'
+        'admission_application_id','amount','payment_method','tran_id','invoice_no','status','gateway_response','gateway_status','fee_type'
     ];
 
     protected $casts = [
@@ -16,6 +16,7 @@ class AdmissionPayment extends Model
         'status' => 'string',
         'gateway_response' => 'array',
         'gateway_status' => 'string',
+        'fee_type' => 'string',
     ];
 
     public function application(): BelongsTo

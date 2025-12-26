@@ -9,13 +9,15 @@
         <div class="card-body">
             <div class="form-row">
                 <div class="form-group col-md-5">
-                    <label>পরীক্ষা *</label>
-                    <select name="exam_id" class="form-control" required>
-                        <option value="">-- নির্বাচন করুন --</option>
+                    <label>পরীক্ষা সমূহ *</label>
+                    <select name="exam_ids[]" class="form-control" multiple required>
                         @foreach($exams as $ex)
-                            <option value="{{ $ex->id }}" {{ $seatPlan->exam_id==$ex->id?'selected':'' }}>{{ $ex->name }} ({{ $ex->type==='subject'?'প্রতি বিষয়':'সামগ্রীক' }})</option>
+                            <option value="{{ $ex->id }}" {{ $seatPlan->exams->pluck('id')->contains($ex->id) ? 'selected' : '' }}>
+                                {{ $ex->name }} — {{ $ex->class_name ?? 'শ্রেণি নেই' }} ({{ $ex->type==='subject'?'প্রতি বিষয়':'সামগ্রীক' }})
+                            </option>
                         @endforeach
                     </select>
+                    <small class="text-muted">একাধিক পরীক্ষা নির্বাচন করুন</small>
                 </div>
                 <div class="form-group col-md-4">
                     <label>প্ল্যান নাম *</label>

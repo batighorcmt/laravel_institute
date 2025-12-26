@@ -23,7 +23,7 @@ class AdmissionSeatPlanController extends Controller
     public function index(School $school)
     {
         $this->authorizePrincipal($school);
-        $plans = AdmissionExamSeatPlan::where('school_id',$school->id)->with('exam')->orderByDesc('id')->paginate(20);
+        $plans = AdmissionExamSeatPlan::where('school_id',$school->id)->with(['exam','exams'])->orderByDesc('id')->paginate(20);
         $exams = AdmissionExam::where('school_id',$school->id)->orderByDesc('id')->get();
         return view('principal.institute.admissions.seat_plans.index', compact('school','plans','exams'));
     }
@@ -39,12 +39,19 @@ class AdmissionSeatPlanController extends Controller
     {
         $this->authorizePrincipal($school);
         $data = $request->validate([
-            'exam_id'=>['required', Rule::exists('admission_exams','id')->where(fn($q)=>$q->where('school_id',$school->id))],
+            'exam_ids'=>['required','array','min:1'],
+            'exam_ids.*'=>[Rule::exists('admission_exams','id')->where(fn($q)=>$q->where('school_id',$school->id))],
             'name'=>['required','string','max:150'],
             'shift'=>['nullable','string','max:20'],
         ]);
-        $data['school_id']=$school->id; $data['shift']=$data['shift'] ?? 'Morning';
-        $plan = AdmissionExamSeatPlan::create($data);
+        $payload = [
+            'exam_id' => (int)($data['exam_ids'][0]), // primary for backward compatibility
+            'school_id' => $school->id,
+            'name' => $data['name'],
+            'shift' => $data['shift'] ?? 'Morning',
+        ];
+        $plan = AdmissionExamSeatPlan::create($payload);
+        $plan->exams()->sync($data['exam_ids']);
         return redirect()->route('principal.institute.admissions.seat-plans.index',$school)->with('success','সীট প্ল্যান তৈরি হয়েছে');
     }
 
@@ -52,6 +59,7 @@ class AdmissionSeatPlanController extends Controller
     {
         $this->authorizePrincipal($school); abort_unless($seatPlan->school_id===$school->id,404);
         $exams = AdmissionExam::where('school_id',$school->id)->orderByDesc('id')->get();
+        $seatPlan->load('exams');
         return view('principal.institute.admissions.seat_plans.edit', compact('school','seatPlan','exams'));
     }
 
@@ -59,12 +67,19 @@ class AdmissionSeatPlanController extends Controller
     {
         $this->authorizePrincipal($school); abort_unless($seatPlan->school_id===$school->id,404);
         $data = $request->validate([
-            'exam_id'=>['required', Rule::exists('admission_exams','id')->where(fn($q)=>$q->where('school_id',$school->id))],
+            'exam_ids'=>['required','array','min:1'],
+            'exam_ids.*'=>[Rule::exists('admission_exams','id')->where(fn($q)=>$q->where('school_id',$school->id))],
             'name'=>['required','string','max:150'],
             'shift'=>['nullable','string','max:20'],
             'status'=>['nullable', Rule::in(['active','inactive','completed'])]
         ]);
-        $seatPlan->update($data);
+        $seatPlan->update([
+            'exam_id' => (int)($data['exam_ids'][0]),
+            'name' => $data['name'],
+            'shift' => $data['shift'] ?? $seatPlan->shift,
+            'status' => $request->input('status',$seatPlan->status),
+        ]);
+        $seatPlan->exams()->sync($data['exam_ids']);
         return redirect()->route('principal.institute.admissions.seat-plans.index',$school)->with('success','প্ল্যান আপডেট হয়েছে');
     }
 
@@ -139,13 +154,23 @@ class AdmissionSeatPlanController extends Controller
     {
         $this->authorizePrincipal($school); abort_unless($seatPlan->school_id===$school->id && $room->seat_plan_id===$seatPlan->id,404);
         $room->load('allocations');
-        $seatPlan->load(['allocations','exam','school']);
+        $seatPlan->load(['allocations','exam','exams','school']);
         $allocatedIds = $seatPlan->allocations->pluck('application_id')->all();
         // Only show applications that are currently accepted (accepted_at not null, status == accepted)
         $availableApps = \App\Models\AdmissionApplication::where('school_id',$school->id)
             ->whereNotNull('accepted_at')
             ->where('status','accepted')
             ->whereNotNull('admission_roll_no')
+            ->when($seatPlan->exams && $seatPlan->exams->count()>0, function($q) use($seatPlan){
+                $classes = $seatPlan->exams->pluck('class_name')->filter()->unique()->values()->all();
+                if (!empty($classes)) {
+                    $q->whereIn('class_name', $classes);
+                }
+            }, function($q) use($seatPlan){
+                if ($seatPlan->exam && $seatPlan->exam->class_name) {
+                    $q->where('class_name', $seatPlan->exam->class_name);
+                }
+            })
             ->whereNotIn('id',$allocatedIds)
             ->orderBy('admission_roll_no')
             ->limit(500)

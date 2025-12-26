@@ -44,6 +44,7 @@
             <th>Application ID</th>
             <th>Applicant</th>
             <th>Class</th>
+            <th>Fee Type</th>
             <th>Amount</th>
             <th>Status</th>
             <th>Method</th>
@@ -61,6 +62,12 @@
               <td>{{ $app?->app_id ?? '—' }}</td>
               <td>{{ $app?->name_en ?? $app?->name_bn ?? '—' }}</td>
               <td>{{ $app?->class_name ?? '—' }}</td>
+              <td>
+                @php($ft = strtolower((string)($pay->fee_type ?? '')))
+                <span class="badge badge-{{ $ft==='admission' ? 'info' : 'primary' }}">
+                  {{ $ft==='admission' ? 'Admission Fee' : 'Application Fee' }}
+                </span>
+              </td>
               <td>৳ {{ number_format((float)$pay->amount, 2) }}</td>
               <td>
                 @if($pay->status === 'Completed')

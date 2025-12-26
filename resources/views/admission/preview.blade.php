@@ -177,9 +177,100 @@
                             <button class="btn btn-outline-secondary btn-lg ms-2" disabled title="আবেদন গ্রহণের পর এডমিট কার্ড পাওয়া যাবে"><i class="fa-solid fa-id-card me-2"></i> এডমিট কার্ড</button>
                             <div class="small text-muted mt-2">আবেদন গ্রহণ করা না হলে এডমিট কার্ড মেনু দেখাবে না। আবেদন গ্রহণ করা হলে তবেই পূর্ণাঙ্গ ফিচার সহ এডমিট কার্ড দেখাবে।</div>
                         @endif
+                                                @php
+                                                        // Admission fee button visibility (permission granted, fee set, unpaid)
+                                                        $admissionFeePaid = \App\Models\AdmissionPayment::where('admission_application_id',$application->id)
+                                                                ->where('status','Completed')
+                                                                ->where('fee_type','admission')
+                                                                ->exists();
+                            // Latest admission fee payment (for receipt link)
+                            $admissionFeePayment = \App\Models\AdmissionPayment::where('admission_application_id',$application->id)
+                                ->where('status','Completed')
+                                ->where('fee_type','admission')
+                                ->latest()
+                                ->first();
+                                                @endphp
+                                                @if(($application->admission_permission ?? false) && ($application->admission_fee ?? 0) > 0 && !$admissionFeePaid)
+                                                    <button class="btn btn-success btn-lg ms-2 open-adm-fee" data-toggle="modal" data-target="#admissionFeeModal">
+                                                        <i class="fa-solid fa-credit-card me-2"></i> ভর্তির ফিস দিন
+                                                    </button>
+                                                @endif
+                        @if($admissionFeePayment)
+                            <a href="{{ route('admission.fee.receipt', [$school->code, $application->app_id, $admissionFeePayment->id]) }}" class="btn btn-outline-dark btn-lg ms-2" target="_blank">
+                                <i class="fa-solid fa-receipt me-2"></i> ভর্তি ফিস রশিদ
+                            </a>
+                        @endif
                     </div>
                 @endif
             </div>
         </div>
     </div>
+
+        @php
+                // Prepare merit rank and obtained marks for modal
+                $latestExam = \App\Models\AdmissionExam::where('school_id',$school->id)
+                        ->where('class_name', $application->class_name)
+                        ->orderByDesc('exam_date')
+                        ->orderByDesc('id')
+                        ->first();
+                $obtained = null; $meritRank = null;
+                if ($latestExam) {
+                        $results = \App\Models\AdmissionExamResult::where('exam_id',$latestExam->id)
+                                ->orderByDesc('total_obtained')
+                                ->orderBy('id')
+                                ->get(['application_id','total_obtained']);
+                        $rank=1; foreach($results as $r){ if($r->application_id===$application->id){ $obtained=$r->total_obtained; $meritRank=$rank; break; } $rank++; }
+                }
+        @endphp
+        <!-- Admission Fee Modal (Preview Page) -->
+        <div class="modal fade" id="admissionFeeModal" tabindex="-1" role="dialog" aria-labelledby="admissionFeeModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="admissionFeeModalLabel">ভর্তির ফিস প্রদান</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>মেধাক্রম:</strong> {{ $meritRank ? $meritRank : '—' }}</p>
+                        <p><strong>প্রাপ্ত নম্বর:</strong> {{ $obtained ? $obtained : '—' }}</p>
+                        <p><strong>ভর্তির ফিস:</strong> {{ number_format((float)($application->admission_fee ?? 0), 2) }} টাকা</p>
+                    </div>
+                    <div class="modal-footer">
+                        <form method="POST" action="{{ route('admission.fee.initiate', [$school->code]) }}" class="ms-auto">
+                            @csrf
+                            <input type="hidden" name="app_id" value="{{ $application->app_id }}">
+                            <button type="submit" class="btn btn-success"><i class="fa-solid fa-money-bill-wave me-1"></i> পেমেন্ট করুন</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @push('scripts')
+        <script>
+        (function(){
+            if (typeof jQuery !== 'undefined') {
+                jQuery(function($){
+                    $(document).on('click', '.open-adm-fee', function(e){
+                        e.preventDefault();
+                        $('#admissionFeeModal').modal('show');
+                    });
+                });
+            } else {
+                // Vanilla fallback
+                document.addEventListener('click', function(e){
+                    const btn = e.target.closest('.open-adm-fee');
+                    if (!btn) return;
+                    e.preventDefault();
+                    const el = document.getElementById('admissionFeeModal');
+                    if (window.bootstrap && bootstrap.Modal) {
+                        const modal = new bootstrap.Modal(el);
+                        modal.show();
+                    } else {
+                        el.style.display = 'block';
+                    }
+                });
+            }
+        })();
+        </script>
+        @endpush
 </x-layout.public>
