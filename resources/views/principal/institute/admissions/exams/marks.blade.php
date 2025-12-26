@@ -25,8 +25,8 @@
                                     </th>
                                 @endforeach
                             @else
-                                @php($overallMax = 100)
-                                <th style="min-width:120px;" class="text-center">মোট নম্বর<br><small>FM: {{ $overallMax }}</small></th>
+                                @php($overallMax = (int)($exam->overall_full_mark ?? 100))
+                                <th style="min-width:120px;" class="text-center">মোট নম্বর<br><small>FM: {{ $overallMax }}{{ $exam->overall_pass_mark ? ' / PM: '.$exam->overall_pass_mark : '' }}</small></th>
                             @endif
                         </tr>
                     </thead>

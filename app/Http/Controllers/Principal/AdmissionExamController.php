@@ -46,11 +46,18 @@ class AdmissionExamController extends Controller
             'class_name'=>['required','string','max:50'],
             'name'=>['required','string','max:150'],
             'type'=>['required', Rule::in(['subject','overall'])],
+            'overall_full_mark'=>['nullable','integer','min:1'],
             'overall_pass_mark'=>['nullable','integer','min:0'],
             'exam_date'=>['nullable','date'],
         ]);
         if ($data['type']==='overall') {
-            $request->validate(['overall_pass_mark'=>['required','integer','min:0']]);
+            $request->validate([
+                'overall_full_mark'=>['required','integer','min:1'],
+                'overall_pass_mark'=>['required','integer','min:0','lte:overall_full_mark'],
+            ]);
+        } else {
+            $data['overall_full_mark'] = null;
+            $data['overall_pass_mark'] = null;
         }
         $data['school_id']=$school->id;
         $exam = AdmissionExam::create($data);
@@ -101,13 +108,18 @@ class AdmissionExamController extends Controller
             'class_name'=>['required','string','max:50'],
             'name'=>['required','string','max:150'],
             'type'=>['required', Rule::in(['subject','overall'])],
+            'overall_full_mark'=>['nullable','integer','min:1'],
             'overall_pass_mark'=>['nullable','integer','min:0'],
             'exam_date'=>['nullable','date'],
             'status'=>['nullable', Rule::in(['draft','scheduled','completed'])]
         ]);
         if ($data['type']==='overall') {
-            $request->validate(['overall_pass_mark'=>['required','integer','min:0']]);
+            $request->validate([
+                'overall_full_mark'=>['required','integer','min:1'],
+                'overall_pass_mark'=>['required','integer','min:0','lte:overall_full_mark'],
+            ]);
         } else {
+            $data['overall_full_mark'] = null; // not used
             $data['overall_pass_mark'] = null; // not used
         }
         $exam->update($data);
@@ -131,6 +143,8 @@ class AdmissionExamController extends Controller
                 'display_order'=>$idx,
             ]);
         }
+        // Recompute results to reflect any change in pass marks/full marks
+        $this->computeResults($exam, $school);
         return redirect()->route('principal.institute.admissions.exams.index',$school)->with('success','ভর্তি পরীক্ষা আপডেট হয়েছে');
     }
 
@@ -186,10 +200,8 @@ class AdmissionExamController extends Controller
             }
         } else { // overall type
             $submitted = $request->input('overall', []); // [appId] => total
-            // Define a sensible maximum for overall marks.
-            // Since there's no explicit overall full mark stored, default to 100.
-            // This avoids incorrect caps like pass_mark*2 causing 66 on 100-mark exams.
-            $overallMax = 100;
+            // Clamp to configured overall full mark, fallback to 100 if missing
+            $overallMax = (int)($exam->overall_full_mark ?? 100);
             foreach ($submitted as $appId => $val) {
                 if ($val === '' || $val === null) { continue; }
                 $val = (int)$val; if ($val < 0) { $val = 0; }

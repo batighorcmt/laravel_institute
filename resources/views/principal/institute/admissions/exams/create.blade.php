@@ -28,6 +28,10 @@
                     </select>
                 </div>
                 <div class="form-group col-md-3 overall-only d-none">
+                    <label>সামগ্রীক পূর্ণ নম্বর *</label>
+                    <input type="number" name="overall_full_mark" class="form-control" min="1" value="{{ old('overall_full_mark') }}">
+                </div>
+                <div class="form-group col-md-3 overall-only d-none">
                     <label>সামগ্রীক পাস নম্বর *</label>
                     <input type="number" name="overall_pass_mark" class="form-control" min="0" value="{{ old('overall_pass_mark') }}">
                 </div>
@@ -82,6 +86,10 @@ document.addEventListener('DOMContentLoaded', function(){
         const isOverall = typeSelect.value==='overall';
         document.querySelectorAll('.subject-only').forEach(el=>{ el.style.display = isOverall? 'none':'table-cell'; });
         document.querySelectorAll('.overall-only').forEach(el=>{ el.classList.toggle('d-none', !isOverall); });
+        // Toggle required for overall fields
+        document.querySelectorAll('[name="overall_full_mark"], [name="overall_pass_mark"]').forEach(el=>{
+            el.required = isOverall;
+        });
     }
     typeSelect.addEventListener('change', adjustType); adjustType();
 });
