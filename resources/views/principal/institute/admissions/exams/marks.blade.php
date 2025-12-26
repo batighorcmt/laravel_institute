@@ -25,7 +25,8 @@
                                     </th>
                                 @endforeach
                             @else
-                                <th style="min-width:120px;" class="text-center">মোট নম্বর</th>
+                                @php($overallMax = 100)
+                                <th style="min-width:120px;" class="text-center">মোট নম্বর<br><small>FM: {{ $overallMax }}</small></th>
                             @endif
                         </tr>
                     </thead>
@@ -44,7 +45,7 @@
                             @else
                                 @php($existing = optional($marks->get($ap->id))->first())
                                 <td class="p-1">
-                                    <input type="number" name="overall[{{ $ap->id }}]" value="{{ $existing?->obtained_mark }}" min="0" class="form-control form-control-sm" />
+                                    <input type="number" name="overall[{{ $ap->id }}]" value="{{ $existing?->obtained_mark }}" min="0" max="{{ $overallMax }}" class="form-control form-control-sm" />
                                 </td>
                             @endif
                         </tr>
@@ -69,4 +70,19 @@
   .marks-table { min-width:100%; }
 }
 </style>
+<script>
+// Real-time clamp for mark inputs (respects min/max attributes)
+document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.marks-table input[type="number"]').forEach(function(inp){
+        inp.addEventListener('input', function(){
+            var min = (this.min !== '' ? parseInt(this.min, 10) : null);
+            var max = (this.max !== '' ? parseInt(this.max, 10) : null);
+            var val = this.value === '' ? '' : parseInt(this.value, 10);
+            if (val === '') { return; }
+            if (min !== null && val < min) { this.value = min; return; }
+            if (max !== null && val > max) { this.value = max; return; }
+        });
+    });
+});
+</script>
 @endsection

@@ -186,11 +186,14 @@ class AdmissionExamController extends Controller
             }
         } else { // overall type
             $submitted = $request->input('overall', []); // [appId] => total
-            $fullMark = (int)($exam->overall_pass_mark ?? 0); // Using pass mark as max? (No total stored in exam) - accept any positive if not set
+            // Define a sensible maximum for overall marks.
+            // Since there's no explicit overall full mark stored, default to 100.
+            // This avoids incorrect caps like pass_mark*2 causing 66 on 100-mark exams.
+            $overallMax = 100;
             foreach ($submitted as $appId => $val) {
                 if ($val === '' || $val === null) { continue; }
                 $val = (int)$val; if ($val < 0) { $val = 0; }
-                if ($fullMark > 0 && $val > $fullMark*2) { /* arbitrary cap */ $val = $fullMark*2; }
+                if ($val > $overallMax) { $val = $overallMax; }
                 \App\Models\AdmissionExamMark::updateOrCreate([
                     'exam_id'=>$exam->id,
                     'application_id'=>(int)$appId,
