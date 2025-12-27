@@ -44,25 +44,26 @@
     @push('styles')
     <style>
         body { background:#ffffff; }
-        .receipt-container { max-width: 860px; margin: 16px auto; background:#fff; padding: 12px; }
+        .receipt-container { max-width: 860px; margin: 16px auto; background:#fff; padding: 12px; font-size: 1.2rem; }
         .receipt { border:1px solid #ccc; padding: 12px 24px 20px; margin-bottom: 20px; position: relative; }
-        .copy-label { text-align:right; font-weight:700; }
+        .copy-label { text-align:right; font-weight:700; font-size: 1.1em; }
         .watermark { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); opacity:.06; width:400px; z-index:0; }
         .watermark img { width:100%; }
         .content { position: relative; z-index: 1; }
         .header { display:flex; align-items:center; justify-content:space-between; }
         .logo img { width:64px; height:64px; object-fit:contain; }
         .header-text { text-align:center; flex:1; }
-        .header-text h2 { font-size: 34px; font-weight: 800; line-height: 1.2; }
-        .title { font-size: 20px; font-weight:1000; text-align:center; margin:6px 0; border-top:1px dashed #888; border-bottom:1px dashed #888; padding:6px 0; }
+        .header-text h2 { font-size: 42px; font-weight: 800; line-height: 1.2; }
+        .header-text p { font-size: 1.05em; }
+        .title { font-size: 24px; font-weight:1000; text-align:center; margin:6px 0; border-top:1px dashed #888; border-bottom:1px dashed #888; padding:6px 0; }
         .title strong { color:#000000; padding:2px 10px; border-radius:4px; box-shadow:0 0 0 2px #000000 inset; }
         .row { display:flex; margin:6px 0; }
-        .label { width:200px; font-weight:700; }
-        .value { flex:1; border-bottom:1px dotted #aaa; padding:2px 10px; }
-        .footer { display:flex; justify-content:space-between; margin-top: 50px; margin-bottom: 80px; font-weight:700; }
+        .label { width:220px; font-weight:700; font-size: 1.05em; }
+        .value { flex:1; border-bottom:1px dotted #aaa; padding:2px 10px; font-size: 1.05em; }
+        .footer { display:flex; justify-content:space-between; margin-top: 50px; margin-bottom: 80px; font-weight:700; font-size: 1.1em; }
         .divider { width:100%; text-align:center; position:relative; height:20px; margin:22px 0; }
         .divider::before { content:""; position:absolute; top:50%; left:0; right:0; border-top:2px dashed #aaa; z-index:1; }
-        .divider span { background:#fff; padding:0 15px; position:relative; z-index:2; font-size:16px; font-weight:700; color:#555; }
+        .divider span { background:#fff; padding:0 15px; position:relative; z-index:2; font-size:18px; font-weight:700; color:#555; }
         @media print { .no-print { display:none !important; } .receipt { page-break-inside: avoid; } }
     </style>
     @endpush
@@ -100,6 +101,9 @@
         @endfor
         <div class="text-center no-print">
             <button onclick="window.print()" class="btn btn-dark btn-sm"><i class="fa-solid fa-print me-1"></i> প্রিন্ট করুন</button>
+            <a href="{{ route('admission.preview', [$school->code, $application->app_id]) }}" class="btn btn-outline-primary btn-sm ms-2" target="_blank">
+                <i class="fa-solid fa-eye me-1"></i> প্রিভিউ
+            </a>
         </div>
     </div>
 </x-layout.public>
