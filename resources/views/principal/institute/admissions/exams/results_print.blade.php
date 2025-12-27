@@ -52,6 +52,7 @@
                 <th style="text-align:center;">{{ $lang==='bn' ? 'মেধাক্রম' : 'Merit Position' }}</th>
                 <th style="text-align:center;">{{ $lang==='bn' ? 'ভর্তি রোল নং' : 'Admission Roll' }}</th>
                 <th>{{ $lang==='bn' ? 'নাম' : 'Name' }}</th>
+                <th style="text-align:center;">{{ $lang==='bn' ? 'মোবাইল নং' : 'Mobile' }}</th>
                 @if($exam->type==='subject')
                     @foreach($exam->subjects->sortBy('display_order') as $sub)
                         <th style="text-align:center;">{{ $lang==='bn' ? $sub->subject_name : ($sub->subject_name_en ?? $sub->subject_name) }}</th>
@@ -69,6 +70,9 @@
                     <td style="text-align:center; font-weight:600;">{{ $res->merit_position }}</td>
                     <td style="text-align:center; font-weight:600;">{{ $app?->admission_roll_no }}</td>
                     <td>{{ $lang==='bn' ? ($app?->name_bn ?? $app?->name_en) : ($app?->name_en ?? $app?->name_bn) }}</td>
+                    @php($m = $app?->mobile ? preg_replace('/[^0-9]/','', $app->mobile) : '')
+                    @php($m = (strlen($m)===13 && substr($m,0,3)==='880') ? ('0'.substr($m,3)) : $m)
+                    <td style="text-align:center;">{{ $m }}</td>
                     @if($exam->type==='subject')
                         @php($marksMap = $exam->marks()->where('application_id',$app->id)->get()->keyBy('subject_id'))
                         @foreach($exam->subjects->sortBy('display_order') as $sub)
@@ -87,7 +91,7 @@
                 </tr>
             @endforeach
             @if($results->isEmpty())
-                <tr><td colspan="{{ 6 + ($exam->type==='subject' ? $exam->subjects->count() : 0) }}" style="text-align:center;padding:20px;">{{ $lang==='bn' ? 'কোন ফলাফল নেই' : 'No results found' }}</td></tr>
+                <tr><td colspan="{{ 7 + ($exam->type==='subject' ? $exam->subjects->count() : 0) }}" style="text-align:center;padding:20px;">{{ $lang==='bn' ? 'কোন ফলাফল নেই' : 'No results found' }}</td></tr>
             @endif
         </tbody>
     </table>
