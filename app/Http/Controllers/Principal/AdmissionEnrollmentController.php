@@ -30,9 +30,11 @@ class AdmissionEnrollmentController extends Controller
         $baseQuery = (clone $overallBase)->with(['academicYear','examResults']);
 
         // Filters
+        $permRaw = (string)$request->get('permission', '');
+        $perm = ($permRaw === '1' || $permRaw === '0') ? $permRaw : '';
         $filters = [
             'class' => trim((string)$request->get('class', '')),
-            'permission' => $request->get('permission', ''), // '1','0',''
+            'permission' => $perm, // '1','0','' (normalized)
             'fee_status' => $request->get('fee_status', ''), // 'paid','unpaid',''
             'q' => trim((string)$request->get('q', '')),
         ];
