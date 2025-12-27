@@ -227,7 +227,26 @@ class AdmissionEnrollmentController extends Controller
             return $a;
         });
 
-        return view('principal.admissions.enrollment.print', compact('school','applications','filters'));
+        // Sorting options: class, roll, merit
+        $sortBy = $request->get('sort', 'class'); // class|roll|merit
+        $order = strtolower((string)$request->get('order', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $sorters = [
+            'class' => function(AdmissionApplication $a){ return $a->class_name ?? ''; },
+            'roll' => function(AdmissionApplication $a){ return $a->admission_roll_no ?? 0; },
+            'merit' => function(AdmissionApplication $a){ return $a->merit_rank ?? PHP_INT_MAX; },
+        ];
+        if(isset($sorters[$sortBy])){
+            $applications = $order === 'desc' ? $applications->sortByDesc($sorters[$sortBy])->values() : $applications->sortBy($sorters[$sortBy])->values();
+        }
+
+        // Classes for filter dropdown
+        $classes = (clone $overallBase)
+            ->select('class_name')
+            ->distinct()
+            ->orderBy('class_name')
+            ->pluck('class_name');
+
+        return view('principal.admissions.enrollment.print', compact('school','applications','filters','classes'));
     }
 
     /**
