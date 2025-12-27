@@ -123,6 +123,18 @@
                             <input type="checkbox" class="custom-control-input" id="only_fail" name="only_fail" value="1">
                             <label class="custom-control-label" for="only_fail">শুধুমাত্র অনুত্তীর্ণদের পাঠান</label>
                         </div>
+                        <hr>
+                        <div class="d-flex align-items-center" style="gap:15px;">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="sync" name="sync" value="1">
+                                <label class="custom-control-label" for="sync">সরাসরি পাঠান (কিউ ছাড়াই)</label>
+                            </div>
+                            <div>
+                                <label class="mb-0" for="limit"><small>সর্বোচ্চ প্রাপক (টেস্ট)</small></label>
+                                <input type="number" class="form-control form-control-sm" id="limit" name="limit" min="1" max="100" placeholder="25" style="width:100px;">
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1">টেস্টের জন্য উপরে চেকবক্স চালু করে সীমা দিন (যেমন 10–25)। লাইভ পাঠানোর সময় সীমা খালি রাখুন।</small>
                     </div>
 
                     <div class="alert alert-warning py-2">

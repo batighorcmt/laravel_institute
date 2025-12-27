@@ -385,6 +385,8 @@ class AdmissionExamController extends Controller
             'message_template' => 'required|string|max:1000',
             'only_pass' => 'nullable|boolean',
             'only_fail' => 'nullable|boolean',
+            'sync' => 'nullable|boolean',
+            'limit' => 'nullable|integer|min:1|max:100',
         ]);
         
         if ($exam->results()->count() === 0) {
@@ -407,6 +409,10 @@ class AdmissionExamController extends Controller
             return $a->application->admission_roll_no <=> $b->application->admission_roll_no;
         })->values();
         $pos = 1; foreach($sortedResults as $r){ $r->merit_position = $pos++; }
+
+        // Optional limit for dry run (caps recipients)
+        $limit = (int) $request->input('limit', 0);
+        if ($limit > 0) { $sortedResults = $sortedResults->take(min(100, $limit)); }
         
         $exam->load(['subjects']);
         $processed = [];
@@ -460,7 +466,75 @@ class AdmissionExamController extends Controller
         
         if (empty($payloads)) { return back()->with('error','কোনো বৈধ মোবাইল নম্বর পাওয়া যায়নি।'); }
         
-        // Chunk and dispatch jobs with delays to avoid provider rate limiting
+        // If configured, send synchronously (fallback when queue workers aren't running)
+        // Allow request to force sync regardless of env for dry run
+        $sendSync = $request->boolean('sync') ? true : (bool) env('SMS_SEND_SYNC', false);
+        if ($sendSync) {
+            @set_time_limit(600); // allow longer processing for bulk
+            $perMessageUsleep = (int) env('SMS_PER_MESSAGE_USLEEP', 700000);
+            $sent = 0; $failed = 0;
+            foreach ($payloads as $item) {
+                $mobile = $item['mobile'];
+                $message = $item['message'];
+                $meta = $item['meta'] ?? [];
+                try {
+                    $result = \App\Services\SmsSender::send($school->id, $mobile, $message);
+                    $ok = (bool)($result['success'] ?? false);
+                    $respMsg = $result['message'] ?? '';
+                    $respBody = $result['response'] ?? null;
+
+                    if (!$ok && strpos((string)$respMsg, 'HTTP 429') === 0) {
+                        usleep(500000);
+                        $result = \App\Services\SmsSender::send($school->id, $mobile, $message);
+                        $ok = (bool)($result['success'] ?? false);
+                        $respMsg = $result['message'] ?? $respMsg;
+                        $respBody = $result['response'] ?? $respBody;
+                    }
+
+                    \App\Models\SmsLog::query()->create([
+                        'school_id' => $school->id,
+                        'sent_by_user_id' => auth()->id(),
+                        'recipient_type' => $meta['recipient_type'] ?? null,
+                        'recipient_category' => $meta['recipient_category'] ?? null,
+                        'recipient_id' => $meta['recipient_id'] ?? null,
+                        'recipient_name' => $meta['recipient_name'] ?? null,
+                        'recipient_role' => $meta['recipient_role'] ?? null,
+                        'roll_number' => $meta['roll_number'] ?? null,
+                        'class_name' => $meta['class_name'] ?? null,
+                        'section_name' => $meta['section_name'] ?? null,
+                        'recipient_number' => $mobile,
+                        'message' => $message,
+                        'status' => $ok ? 'sent' : 'failed',
+                        'response' => ($respMsg ?: '') . (isset($respBody) ? ' | ' . substr((string)$respBody, 0, 200) : ''),
+                        'message_type' => 'result_notification',
+                    ]);
+                    $ok ? $sent++ : $failed++;
+                    if ($perMessageUsleep > 0) { usleep($perMessageUsleep); }
+                } catch (\Throwable $e) {
+                    \App\Models\SmsLog::query()->create([
+                        'school_id' => $school->id,
+                        'sent_by_user_id' => auth()->id(),
+                        'recipient_type' => $meta['recipient_type'] ?? null,
+                        'recipient_category' => $meta['recipient_category'] ?? null,
+                        'recipient_id' => $meta['recipient_id'] ?? null,
+                        'recipient_name' => $meta['recipient_name'] ?? null,
+                        'recipient_role' => $meta['recipient_role'] ?? null,
+                        'roll_number' => $meta['roll_number'] ?? null,
+                        'class_name' => $meta['class_name'] ?? null,
+                        'section_name' => $meta['section_name'] ?? null,
+                        'recipient_number' => $mobile,
+                        'message' => $message,
+                        'status' => 'failed',
+                        'response' => 'Exception: ' . $e->getMessage(),
+                        'message_type' => 'result_notification',
+                    ]);
+                    $failed++;
+                }
+            }
+            return back()->with('success', 'মোট '.count($payloads).' SMS সরাসরি পাঠানো হয়েছে। সফল: '.$sent.', ব্যর্থ: '.$failed);
+        }
+
+        // Otherwise, chunk and dispatch jobs with delays to avoid provider rate limiting
         $chunkSize = (int) env('SMS_CHUNK_SIZE', 20); // default 20 per batch
         $batchDelaySec = (int) env('SMS_BATCH_DELAY_SEC', 90); // default 90s between batches
         $chunks = array_chunk($payloads, max(1, $chunkSize));
