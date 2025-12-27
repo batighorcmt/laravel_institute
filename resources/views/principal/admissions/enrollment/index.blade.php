@@ -5,6 +5,8 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="m-0"><i class="fas fa-user-check mr-1"></i> ভর্তি নিশ্চিতকরণ</h1>
   <div>
+    @php($qs = isset($filters) && is_array($filters) ? http_build_query($filters) : '')
+    <a href="{{ route('principal.institute.admissions.enrollment.print', $school) }}@if($qs)?{{ $qs }}@endif" target="_blank" class="btn btn-outline-primary mr-2"><i class="fas fa-print mr-1"></i> প্রিন্ট</a>
     <a href="{{ route('principal.institute.admissions.applications', $school) }}" class="btn btn-outline-secondary">আবেদন তালিকা</a>
   </div>
 </div>

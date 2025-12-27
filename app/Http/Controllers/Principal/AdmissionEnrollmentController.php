@@ -154,6 +154,83 @@ class AdmissionEnrollmentController extends Controller
     }
 
     /**
+     * Print view for enrollment list (approved/unapproved based on filters)
+     */
+    public function print(School $school, Request $request)
+    {
+        // Reuse the same filtering logic as index but without pagination
+        $overallBase = AdmissionApplication::where('school_id', $school->id)
+            ->where('status', 'accepted')
+            ->where('payment_status', 'paid');
+
+        $baseQuery = (clone $overallBase)->with(['academicYear','examResults']);
+
+        $filters = [
+            'class' => trim((string)$request->get('class', '')),
+            'permission' => $request->get('permission', ''), // '1','0',''
+            'fee_status' => $request->get('fee_status', ''), // 'paid','unpaid',''
+            'q' => trim((string)$request->get('q', '')),
+        ];
+
+        if ($filters['class'] !== '') { $baseQuery->where('class_name', $filters['class']); }
+        if ($filters['permission'] !== '') { $baseQuery->where('admission_permission', $filters['permission'] === '1'); }
+        if ($filters['q'] !== '') {
+            $q = $filters['q'];
+            $baseQuery->where(function($sub) use ($q) {
+                $sub->where('name_bn','like',"%{$q}%")
+                    ->orWhere('name_en','like',"%{$q}%")
+                    ->orWhere('app_id','like',"%{$q}%")
+                    ->orWhere('mobile','like',"%{$q}%");
+            });
+        }
+
+        $matchingIds = (clone $baseQuery)->pluck('id');
+        if ($filters['fee_status'] === 'paid' || $filters['fee_status'] === 'unpaid') {
+            $paidIds = \App\Models\AdmissionPayment::whereIn('admission_application_id', $matchingIds)
+                ->where('status','Completed')
+                ->where('fee_type','admission')
+                ->pluck('admission_application_id')
+                ->unique();
+            if ($filters['fee_status'] === 'paid') { $baseQuery->whereIn('id', $paidIds); }
+            else { $baseQuery->whereNotIn('id', $paidIds); }
+        }
+
+        $applications = $baseQuery
+            ->orderBy('class_name')
+            ->orderBy('name_bn')
+            ->get();
+
+        // Attach merit rank and fee paid flags
+        $latestExamByClass = \App\Models\AdmissionExam::where('school_id',$school->id)
+            ->orderByDesc('exam_date')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy('class_name')
+            ->map(function($list){ return $list->first(); });
+
+        $meritMap = [];
+        foreach ($latestExamByClass as $className => $exam) {
+            $results = \App\Models\AdmissionExamResult::where('exam_id',$exam->id)
+                ->orderByDesc('total_obtained')
+                ->orderBy('id')
+                ->get(['application_id','total_obtained']);
+            $rank = 1; foreach ($results as $r) { $meritMap[$className][$r->application_id] = $rank; $rank++; }
+        }
+
+        $applications->transform(function(AdmissionApplication $a) use ($meritMap) {
+            $class = (string)($a->class_name ?? '');
+            $a->merit_rank = $class && isset($meritMap[$class][$a->id]) ? $meritMap[$class][$a->id] : null;
+            $a->admission_fee_paid = \App\Models\AdmissionPayment::where('admission_application_id',$a->id)
+                ->where('status','Completed')
+                ->when(true, function($q){ $q->where('fee_type','admission'); })
+                ->exists();
+            return $a;
+        });
+
+        return view('principal.admissions.enrollment.print', compact('school','applications','filters'));
+    }
+
+    /**
      * Show enrollment modal form data
      */
     public function create(School $school, $admission_application)
