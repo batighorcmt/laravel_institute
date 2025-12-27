@@ -415,7 +415,7 @@ class AdmissionExamController extends Controller
             $app = $result->application;
             if(!$app || !$app->mobile) { continue; }
             $mobile = preg_replace('/[^0-9]/','', (string)$app->mobile);
-            if(strlen($mobile) === 13 && str_starts_with($mobile,'880')) { $mobile = '0'.substr($mobile,3); }
+            if(strlen($mobile) === 13 && strpos($mobile,'880') === 0) { $mobile = '0'.substr($mobile,3); }
             if(strlen($mobile) !== 11) { continue; }
             if(in_array($mobile, $processed)) { continue; }
             $processed[] = $mobile;
@@ -461,13 +461,15 @@ class AdmissionExamController extends Controller
         if (empty($payloads)) { return back()->with('error','কোনো বৈধ মোবাইল নম্বর পাওয়া যায়নি।'); }
         
         // Chunk and dispatch jobs with delays to avoid provider rate limiting
-        $chunks = array_chunk($payloads, 50); // 50 per batch
+        $chunkSize = (int) env('SMS_CHUNK_SIZE', 20); // default 20 per batch
+        $batchDelaySec = (int) env('SMS_BATCH_DELAY_SEC', 90); // default 90s between batches
+        $chunks = array_chunk($payloads, max(1, $chunkSize));
         $userId = auth()->id();
         foreach ($chunks as $idx => $chunk) {
             \App\Jobs\SendSmsChunkJob::dispatch($school->id, $userId, $chunk)
-                ->delay(now()->addSeconds($idx * 60)); // spread by 60s per batch
+                ->delay(now()->addSeconds($idx * $batchDelaySec));
         }
         
-        return back()->with('success', 'মোট '.count($payloads).' প্রাপককে SMS পাঠানোর কাজ কিউ হয়েছে। '.count($chunks).'টি ব্যাচে পাঠানো হবে।');
+        return back()->with('success', 'মোট '.count($payloads).' প্রাপককে SMS পাঠানোর কাজ কিউ হয়েছে। '.count($chunks).'টি ব্যাচে (প্রতি ব্যাচ ~'.$chunkSize.' বার্তা) পাঠানো হবে।');
     }
 }
