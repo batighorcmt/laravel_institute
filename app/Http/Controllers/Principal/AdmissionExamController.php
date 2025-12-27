@@ -378,17 +378,15 @@ class AdmissionExamController extends Controller
 
     public function sendResultsSms(Request $request, School $school, AdmissionExam $exam)
     {
-        $this->authorizePrincipal($school); 
+        $this->authorizePrincipal($school);
         abort_unless($exam->school_id===$school->id,404);
         
-        // Validate request
         $request->validate([
             'message_template' => 'required|string|max:1000',
             'only_pass' => 'nullable|boolean',
             'only_fail' => 'nullable|boolean',
         ]);
         
-        // Ensure results exist
         if ($exam->results()->count() === 0) {
             return back()->with('error', 'কোন ফলাফল পাওয়া যায়নি। প্রথমে নম্বর এন্ট্রি করুন।');
         }
@@ -397,190 +395,79 @@ class AdmissionExamController extends Controller
         $onlyPass = $request->boolean('only_pass');
         $onlyFail = $request->boolean('only_fail');
         
-        // Load results with filters
         $resultsQuery = $exam->results()->with('application');
-        
-        if($onlyPass) {
-            $resultsQuery->where('is_pass', true);
-        } elseif($onlyFail) {
-            $resultsQuery->where('is_pass', false);
-        }
-        
+        if($onlyPass) { $resultsQuery->where('is_pass', true); }
+        elseif($onlyFail) { $resultsQuery->where('is_pass', false); }
         $results = $resultsQuery->get();
+        if($results->isEmpty()) { return back()->with('error', 'নির্বাচিত ফিল্টারে কোন ফলাফল নেই।'); }
         
-        if($results->isEmpty()) {
-            return back()->with('error', 'নির্বাচিত ফিল্টারে কোন ফলাফল নেই।');
-        }
-        
-        // Calculate merit positions if not already done
+        // Sort and assign merit
         $sortedResults = $results->sort(function($a, $b) {
-            $marksDiff = $b->total_obtained - $a->total_obtained;
-            if ($marksDiff != 0) return $marksDiff;
+            $diff = $b->total_obtained - $a->total_obtained; if ($diff !== 0) return $diff;
             return $a->application->admission_roll_no <=> $b->application->admission_roll_no;
         })->values();
-        
-        $position = 1;
-        foreach($sortedResults as $result) {
-            $result->merit_position = $position++;
-        }
+        $pos = 1; foreach($sortedResults as $r){ $r->merit_position = $pos++; }
         
         $exam->load(['subjects']);
-        
-        $sentCount = 0;
-        $failedCount = 0;
-        $errors = [];
-        $processedMobiles = []; // Track processed mobile numbers to avoid duplicates
-        
+        $processed = [];
+        $payloads = [];
         foreach($sortedResults as $result) {
             $app = $result->application;
+            if(!$app || !$app->mobile) { continue; }
+            $mobile = preg_replace('/[^0-9]/','', (string)$app->mobile);
+            if(strlen($mobile) === 13 && str_starts_with($mobile,'880')) { $mobile = '0'.substr($mobile,3); }
+            if(strlen($mobile) !== 11) { continue; }
+            if(in_array($mobile, $processed)) { continue; }
+            $processed[] = $mobile;
             
-            // Check if guardian mobile exists
-            if(!$app || !$app->mobile) {
-                $failedCount++;
-                $errors[] = "Roll {$app?->admission_roll_no}: মোবাইল নম্বর নেই";
-                continue;
-            }
-            
-            // Format mobile number
-            $mobile = preg_replace('/[^0-9]/', '', $app->mobile);
-            if(strlen($mobile) === 13 && substr($mobile, 0, 3) === '880') {
-                $mobile = '0'.substr($mobile, 3);
-            }
-            
-            if(strlen($mobile) !== 11) {
-                $failedCount++;
-                $errors[] = "Roll {$app->admission_roll_no}: অবৈধ মোবাইল নম্বর ({$app->mobile})";
-                continue;
-            }
-            
-            // Skip if already sent to this mobile
-            if(in_array($mobile, $processedMobiles)) {
-                continue; // Skip duplicate
-            }
-            
-            $processedMobiles[] = $mobile;
-            
-            // Calculate failed subjects dynamically
             $failedSubjectsCount = 0;
             if($exam->type === 'subject') {
                 $marks = $exam->marks()->where('application_id', $app->id)->get();
                 foreach($marks as $mark) {
                     $subject = $exam->subjects->find($mark->subject_id);
-                    if($subject && $mark->obtained_mark < $subject->pass_mark) {
-                        $failedSubjectsCount++;
-                    }
+                    if($subject && $mark->obtained_mark < $subject->pass_mark) { $failedSubjectsCount++; }
                 }
             }
             
-            // Prepare keyword replacements
             $studentName = $app->name_bn ?? $app->name_en;
             $rollNo = $app->admission_roll_no;
             $meritPosition = $result->merit_position;
             $totalMarks = $result->total_obtained;
             $resultStatus = $result->is_pass ? 'উত্তীর্ণ' : 'অকৃতকার্য';
+            $failedInfo = (!$result->is_pass && $failedSubjectsCount>0) ? "ফেল বিষয়: {$failedSubjectsCount}টি" : '';
             
-            $failedSubjectsInfo = '';
-            if(!$result->is_pass && $failedSubjectsCount > 0) {
-                $failedSubjectsInfo = "ফেল বিষয়: {$failedSubjectsCount}টি";
-            }
-            
-            // Replace keywords in template
             $message = str_replace(
                 ['{school_name}', '{exam_name}', '{student_name}', '{roll_no}', '{merit_position}', '{total_marks}', '{result_status}', '{failed_subjects_info}'],
-                [$school->name_bn, $exam->name, $studentName, $rollNo, $meritPosition, $totalMarks, $resultStatus, $failedSubjectsInfo],
+                [$school->name_bn, $exam->name, $studentName, $rollNo, $meritPosition, $totalMarks, $resultStatus, $failedInfo],
                 $messageTemplate
             );
-            
-            // Clean up empty lines
             $message = preg_replace('/\n{3,}/', "\n\n", $message);
             $message = trim($message);
             
-            // Send SMS using existing SmsSender service
-            try {
-                $smsResult = \App\Services\SmsSender::send($school->id, $mobile, $message);
-                
-                if($smsResult['success']) {
-                    $sentCount++;
-                    
-                    // Log SMS - success
-                    \App\Models\SmsLog::create([
-                        'school_id' => $school->id,
-                        'sent_by_user_id' => auth()->id(),
-                        'recipient_type' => 'admission_applicant',
-                        'recipient_category' => 'admission_exam_result',
-                        'recipient_id' => $app->id,
-                        'recipient_name' => $studentName,
-                        'recipient_role' => 'student',
-                        'roll_number' => $rollNo,
-                        'class_name' => null,
-                        'section_name' => null,
-                        'recipient_number' => $mobile,
-                        'message' => $message,
-                        'status' => 'sent',
-                        'response' => $smsResult['message'] . ' | ' . substr($smsResult['response'] ?? '', 0, 200),
-                        'message_type' => 'result_notification',
-                    ]);
-                } else {
-                    $failedCount++;
-                    $errors[] = "Roll {$rollNo}: " . $smsResult['message'];
-                    
-                    // Log SMS - failed
-                    \App\Models\SmsLog::create([
-                        'school_id' => $school->id,
-                        'sent_by_user_id' => auth()->id(),
-                        'recipient_type' => 'admission_applicant',
-                        'recipient_category' => 'admission_exam_result',
-                        'recipient_id' => $app->id,
-                        'recipient_name' => $studentName,
-                        'recipient_role' => 'student',
-                        'roll_number' => $rollNo,
-                        'class_name' => null,
-                        'section_name' => null,
-                        'recipient_number' => $mobile,
-                        'message' => $message,
-                        'status' => 'failed',
-                        'response' => $smsResult['message'] . ' | ' . substr($smsResult['response'] ?? '', 0, 200),
-                        'message_type' => 'result_notification',
-                    ]);
-                }
-            } catch(\Exception $e) {
-                $failedCount++;
-                $errors[] = "Roll {$rollNo}: " . $e->getMessage();
-                \Log::error('SMS Send Error for Roll '.$rollNo.': ' . $e->getMessage());
-                
-                // Log SMS - error
-                \App\Models\SmsLog::create([
-                    'school_id' => $school->id,
-                    'sent_by_user_id' => auth()->id(),
+            $payloads[] = [
+                'mobile' => $mobile,
+                'message' => $message,
+                'meta' => [
                     'recipient_type' => 'admission_applicant',
                     'recipient_category' => 'admission_exam_result',
                     'recipient_id' => $app->id,
                     'recipient_name' => $studentName,
                     'recipient_role' => 'student',
                     'roll_number' => $rollNo,
-                    'class_name' => null,
-                    'section_name' => null,
-                    'recipient_number' => $mobile,
-                    'message' => $message,
-                    'status' => 'failed',
-                    'response' => 'Exception: ' . $e->getMessage(),
-                    'message_type' => 'result_notification',
-                ]);
-            }
+                ],
+            ];
         }
         
-        $msg = "SMS পাঠানো সম্পন্ন। মোট প্রাপক: ".count($sortedResults)." জন | সফল: {$sentCount}টি, ব্যর্থ: {$failedCount}টি";
+        if (empty($payloads)) { return back()->with('error','কোনো বৈধ মোবাইল নম্বর পাওয়া যায়নি।'); }
         
-        if($sentCount > 0) {
-            if($failedCount > 0 && count($errors) > 0) {
-                $msg .= " | ব্যর্থ হওয়ার কারণ: " . implode(', ', array_slice($errors, 0, 3));
-            }
-            return back()->with('success', $msg);
-        } else {
-            if(count($errors) > 0) {
-                $msg .= " | ত্রুটি: " . implode(', ', array_slice($errors, 0, 3));
-            }
-            return back()->with('error', $msg);
+        // Chunk and dispatch jobs with delays to avoid provider rate limiting
+        $chunks = array_chunk($payloads, 50); // 50 per batch
+        $userId = auth()->id();
+        foreach ($chunks as $idx => $chunk) {
+            \App\Jobs\SendSmsChunkJob::dispatch($school->id, $userId, $chunk)
+                ->delay(now()->addSeconds($idx * 60)); // spread by 60s per batch
         }
+        
+        return back()->with('success', 'মোট '.count($payloads).' প্রাপককে SMS পাঠানোর কাজ কিউ হয়েছে। '.count($chunks).'টি ব্যাচে পাঠানো হবে।');
     }
 }
