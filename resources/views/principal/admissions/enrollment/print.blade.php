@@ -82,9 +82,12 @@
     .print-table { width:100%; border-collapse:collapse; }
     .print-table th, .print-table td { border:1px solid #333; padding:6px; }
     .print-table thead th { background:#f8f8f8; }
+    .fee-paid { color: #198754; font-weight:700; }
+    .fee-unpaid { color: #dc3545; font-weight:700; }
 </style>
 
 <div class="table-responsive">
+    @php($totalAssignedFee = $applications->sum('admission_fee'))
     <table class="table print-table mb-0">
         <thead>
             <tr>
@@ -96,6 +99,7 @@
                 <th style="text-align:center;">{{ $lang==='bn' ? 'মেধাক্রম' : 'Merit' }}</th>
                 <th style="text-align:center;">{{ $lang==='bn' ? 'অনুমতি' : 'Permission' }}</th>
                 <th style="text-align:center;">{{ $lang==='bn' ? 'নির্ধারিত ফিস' : 'Assigned Fee' }}</th>
+                <th style="text-align:center;">{{ $lang==='bn' ? 'মোট ফি' : 'Total Fee' }}</th>
                 <th style="text-align:center;">{{ $lang==='bn' ? 'ফিস' : 'Fee Status' }}</th>
                 <th style="text-align:center;">{{ $lang==='bn' ? 'মোবাইল' : 'Mobile' }}</th>
                 <th style="text-align:center;">{{ $lang==='bn' ? 'গ্রাম' : 'Village' }}</th>
@@ -112,16 +116,30 @@
                     <td style="text-align:center;">{{ $fmt($app->merit_rank) }}</td>
                     <td style="text-align:center;">{{ ($app->admission_permission ?? false) ? ($lang==='bn' ? 'অনুমোদিত' : 'Approved') : ($lang==='bn' ? 'অননুমোদিত' : 'Unapproved') }}</td>
                     <td style="text-align:center;">{{ isset($app->admission_fee) ? ($lang==='bn' ? $fmt(number_format($app->admission_fee, 2)) : number_format($app->admission_fee, 2)) : '—' }}</td>
-                    <td style="text-align:center;">{{ ($app->admission_fee_paid ?? false) ? ($lang==='bn' ? 'পরিশোধিত' : 'Paid') : ($lang==='bn' ? 'অপরিশোধিত' : 'Unpaid') }}</td>
+                    <td style="text-align:center;">{{ isset($app->admission_fee) ? ($lang==='bn' ? $fmt(number_format($app->admission_fee, 2)) : number_format($app->admission_fee, 2)) : '—' }}</td>
+                    <td style="text-align:center;">
+                        @if(isset($app->admission_fee_paid) && $app->admission_fee_paid)
+                            <span class="fee-paid">{{ $lang==='bn' ? 'পরিশোধিত' : 'Paid' }}</span>
+                        @else
+                            <span class="fee-unpaid">{{ $lang==='bn' ? 'অপরিশোধিত' : 'Unpaid' }}</span>
+                        @endif
+                    </td>
                     <td style="text-align:center;">{{ $lang==='bn' ? $fmt(preg_replace('/[^0-9]/','', $app->mobile)) : preg_replace('/[^0-9]/','', $app->mobile) }}</td>
                     <td style="text-align:center;">{{ $lang==='bn' ? ($app->present_village ?? $app->permanent_village ?? '—') : ($app->present_village ?? $app->permanent_village ?? '—') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="11" style="text-align:center; padding:20px;">কোনো শিক্ষার্থী পাওয়া যায়নি</td>
+                    <td colspan="12" style="text-align:center; padding:20px;">কোনো শিক্ষার্থী পাওয়া যায়নি</td>
                 </tr>
             @endforelse
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="8" style="text-align:right; font-weight:700;">{{ $lang==='bn' ? 'মোট নির্ধারিত ফিস' : 'Total Assigned Fee' }}</td>
+                <td style="text-align:center; font-weight:700;">{{ isset($totalAssignedFee) ? ($lang==='bn' ? $fmt(number_format($totalAssignedFee,2)) : number_format($totalAssignedFee,2)) : '0.00' }}</td>
+                <td colspan="3"></td>
+            </tr>
+        </tfoot>
     </table>
 </div>
 @endsection
