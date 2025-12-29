@@ -1,34 +1,5 @@
-    /**
-     * Mark admission fee as paid for an application (admin action)
-     */
-    public function payFee(School $school, $applicationId, Request $request)
-    {
-        $application = AdmissionApplication::where('school_id', $school->id)
-            ->where('id', $applicationId)
-            ->firstOrFail();
 
-        // Check if already paid
-        if ($application->admission_fee_paid) {
-            return redirect()->back()->with('success', 'Already marked as paid.');
-        }
-
-        // Mark as paid (simple flag, or create payment record if needed)
-        $application->admission_fee_paid = 1;
-        $application->save();
-
-        // Optionally, create a payment record (if you use a payments table)
-        // \App\Models\AdmissionPayment::create([
-        //     'admission_application_id' => $application->id,
-        //     'amount' => $application->admission_fee,
-        //     'status' => 'Completed',
-        //     'fee_type' => 'admission',
-        //     'paid_by' => $request->user()->id,
-        // ]);
-
-        return redirect()->back()->with('success', 'Admission fee marked as paid.');
-    }
 <?php
-
 namespace App\Http\Controllers\Principal;
 
 use App\Http\Controllers\Controller;
