@@ -126,7 +126,16 @@
                             <span class="fee-paid">{{ $lang==='bn' ? 'পরিশোধিত' : 'Paid' }}</span>
                         @else
                             <span class="fee-unpaid">{{ $lang==='bn' ? 'অপরিশোধিত' : 'Unpaid' }}</span>
-                            @if(auth()->check() && auth()->user()->isAdmin())
+                            @php
+                                $user = auth()->user();
+                                $isPrincipal = false;
+                                $isSuperAdmin = false;
+                                if($user) {
+                                    $isPrincipal = $user->user_school_roles()->whereHas('role', function($q){ $q->where('name', 'principal'); })->where('school_id', $school->id)->where('status', 'active')->exists();
+                                    $isSuperAdmin = $user->user_school_roles()->whereHas('role', function($q){ $q->where('name', 'super_admin'); })->where('status', 'active')->exists();
+                                }
+                            @endphp
+                            @if($isPrincipal || $isSuperAdmin)
                                 <form method="POST" action="{{ route('enrollment.fee.pay', [$school->id, $app->id]) }}" style="display:inline; margin-left:6px;">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-success">{{ $lang==='bn' ? 'পে করুন' : 'Pay' }}</button>
