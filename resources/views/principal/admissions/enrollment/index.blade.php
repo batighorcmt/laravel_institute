@@ -179,7 +179,7 @@
                     {{ $admissionFeePaid ? 'পরিশোধিত' : 'অপরিশোধিত' }}
                   </span>
                   @if(!$admissionFeePaid)
-                    <form method="POST" action="{{ route('enrollment.fee.pay', [$school->id, $app->id]) }}" style="margin-top:6px;">
+                    <form method="POST" action="{{ route('principal.institute.admissions.enrollment.fee.pay', [$school->id, $app->id]) }}" style="margin-top:6px;">
                       @csrf
                       <button type="submit" class="btn btn-sm btn-success">পেমেন্ট করুন</button>
                     </form>

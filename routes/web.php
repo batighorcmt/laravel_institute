@@ -239,7 +239,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/enrollment/print', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'print'])->name('enrollment.print');
                 Route::get('/enrollment/{admission_application}/data', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'create'])->name('enrollment.create');
                 Route::post('/enrollment', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'store'])->name('enrollment.store');
-                Route::post('/enrollment/{school}/{application}/pay', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'payFee'])->name('enrollment.fee.pay');
+                // Use full nested route name for clarity and to avoid RouteNotFoundException
+                Route::post('/enrollment/{school}/{application}/pay', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'payFee'])->name('principal.institute.admissions.enrollment.fee.pay');
                 Route::get('/enrollment/{student}/subjects', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'subjects'])->name('enrollment.subjects');
                 Route::post('/enrollment/{student}/subjects', [\App\Http\Controllers\Principal\AdmissionEnrollmentController::class,'storeSubjects'])->name('enrollment.subjects.store');
 
