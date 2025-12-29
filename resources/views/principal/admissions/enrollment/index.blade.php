@@ -178,6 +178,12 @@
                   <span class="badge {{ $admissionFeePaid ? 'badge-success' : 'badge-warning' }}" id="fee-badge-{{ $app->id }}">
                     {{ $admissionFeePaid ? 'পরিশোধিত' : 'অপরিশোধিত' }}
                   </span>
+                  @if(!$admissionFeePaid)
+                    <form method="POST" action="{{ route('enrollment.fee.pay', [$school->id, $app->id]) }}" style="margin-top:6px;">
+                      @csrf
+                      <button type="submit" class="btn btn-sm btn-success">পেমেন্ট করুন</button>
+                    </form>
+                  @endif
                 </td>
                 <td>{{ $app->mobile }}</td>
                 <td class="text-center">
