@@ -30,10 +30,10 @@
 <!-- Filters & Sorting (screen-only) -->
 <div class="no-print" style="margin-bottom:12px; padding:10px; background:#f8f9fa; border:1px solid #ddd; border-radius:6px; display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
     <form id="filterForm" method="GET" action="{{ url()->current() }}" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
-                <div>
-                    <label style="font-weight:600;">{{ $lang==='bn' ? 'রোল নং' : 'Roll No.' }}</label>
-                    <input type="text" name="roll" class="form-control form-control-sm" style="min-width:100px;" value="{{ $filters['roll'] ?? '' }}" placeholder="{{ $lang==='bn' ? 'রোল নং' : 'Roll No.' }}">
-                </div>
+        <div>
+            <label style="font-weight:600;">{{ $lang==='bn' ? 'রোল নং' : 'Roll No.' }}</label>
+            <input type="text" name="roll" class="form-control form-control-sm" style="min-width:100px;" value="{{ $filters['roll'] ?? '' }}" placeholder="{{ $lang==='bn' ? 'রোল নং' : 'Roll No.' }}">
+        </div>
         <div>
             <label style="font-weight:600;">{{ $lang==='bn' ? 'ক্লাস' : 'Class' }}</label>
             <select name="class" class="form-control form-control-sm" style="min-width:120px;">
