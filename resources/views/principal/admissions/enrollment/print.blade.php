@@ -30,6 +30,10 @@
 <!-- Filters & Sorting (screen-only) -->
 <div class="no-print" style="margin-bottom:12px; padding:10px; background:#f8f9fa; border:1px solid #ddd; border-radius:6px; display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
     <form id="filterForm" method="GET" action="{{ url()->current() }}" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+                <div>
+                    <label style="font-weight:600;">{{ $lang==='bn' ? 'রোল নং' : 'Roll No.' }}</label>
+                    <input type="text" name="roll" class="form-control form-control-sm" style="min-width:100px;" value="{{ $filters['roll'] ?? '' }}" placeholder="{{ $lang==='bn' ? 'রোল নং' : 'Roll No.' }}">
+                </div>
         <div>
             <label style="font-weight:600;">{{ $lang==='bn' ? 'ক্লাস' : 'Class' }}</label>
             <select name="class" class="form-control form-control-sm" style="min-width:120px;">
@@ -122,6 +126,12 @@
                             <span class="fee-paid">{{ $lang==='bn' ? 'পরিশোধিত' : 'Paid' }}</span>
                         @else
                             <span class="fee-unpaid">{{ $lang==='bn' ? 'অপরিশোধিত' : 'Unpaid' }}</span>
+                            @if(auth()->check() && auth()->user()->isAdmin())
+                                <form method="POST" action="{{ route('enrollment.fee.pay', [$school->id, $app->id]) }}" style="display:inline; margin-left:6px;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-success">{{ $lang==='bn' ? 'পে করুন' : 'Pay' }}</button>
+                                </form>
+                            @endif
                         @endif
                     </td>
                     <td style="text-align:center;">{{ $lang==='bn' ? $fmt(preg_replace('/[^0-9]/','', $app->mobile)) : preg_replace('/[^0-9]/','', $app->mobile) }}</td>

@@ -37,7 +37,11 @@ class AdmissionEnrollmentController extends Controller
             'permission' => $perm, // '1','0','' (normalized)
             'fee_status' => $request->get('fee_status', ''), // 'paid','unpaid',''
             'q' => trim((string)$request->get('q', '')),
+            'roll' => trim((string)$request->get('roll', '')),
         ];
+        if ($filters['roll'] !== '') {
+            $baseQuery->where('admission_roll_no', $filters['roll']);
+        }
 
         if ($filters['class'] !== '') {
             $baseQuery->where('class_name', $filters['class']);
