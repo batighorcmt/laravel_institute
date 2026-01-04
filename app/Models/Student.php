@@ -143,19 +143,22 @@ class Student extends Model
     {
         $school = School::find($schoolId);
         $schoolCode = $school ? ($school->code ?? 'SCH') : 'SCH';
-        // New prefix: SchoolCode + 'S'
-        $prefix = $schoolCode . 'S';
+        // Year last 2 digits
+        $year = date('y');
+        $prefix = $schoolCode . $year;
+
+        // Find last serial for this school and year
         $lastStudent = self::where('school_id', $schoolId)
             ->where('student_id', 'LIKE', $prefix . '%')
-            ->orderByRaw('CAST(SUBSTRING(student_id, ' . (strlen($prefix) + 1) . ') AS UNSIGNED) DESC')
+            ->orderByRaw('CAST(SUBSTRING(student_id, ' . (strlen($prefix) + 1) . ', 4) AS UNSIGNED) DESC')
             ->first();
-        
+
         $serial = 1;
-        if ($lastStudent && preg_match('/^' . preg_quote($prefix, '/') . '(\d{1,})$/', $lastStudent->student_id, $matches)) {
+        if ($lastStudent && preg_match('/^' . preg_quote($prefix, '/') . '(\d{4})$/', $lastStudent->student_id, $matches)) {
             $serial = intval($matches[1]) + 1;
         }
-        
-        return $prefix . str_pad($serial, 5, '0', STR_PAD_LEFT);
+
+        return $prefix . str_pad($serial, 4, '0', STR_PAD_LEFT);
     }
 
     // Return a URL for the student's photo, trying common storage locations.
