@@ -199,7 +199,7 @@
   </div>
   @if(!$applications->isEmpty())
     <div class="card-footer">
-      {{ $applications->links() }}
+      {{ $applications->links('vendor.pagination.short') }}
     </div>
   @endif
 </div>
@@ -549,11 +549,13 @@ document.addEventListener('click', function(e) {
   const btn = e.target.closest('.enroll-btn');
   if (!btn) return;
   const paid = btn.getAttribute('data-adm-fee-paid') === '1';
+  const appId = btn.getAttribute('data-app-id');
   if (!paid) {
+    // ফি পরিশোধিত না হলে alert
     alert('ভর্তি ফিস পরিশোধ করা হয়নি। আগে অনুমতি ও ফিস নির্ধারণ করুন।');
     return;
   }
-  const appId = btn.getAttribute('data-app-id');
+  // ফি পরিশোধিত হলে সরাসরি modal খুলবে
   openEnrollmentModal(appId);
 });
 
