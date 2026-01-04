@@ -50,7 +50,8 @@ class AdmissionEnrollmentController extends Controller
                 $sub->where('name_bn','like',"%{$q}%")
                     ->orWhere('name_en','like',"%{$q}%")
                     ->orWhere('app_id','like',"%{$q}%")
-                    ->orWhere('mobile','like',"%{$q}%");
+                    ->orWhere('mobile','like',"%{$q}%")
+                    ->orWhere('admission_roll_no','like',"%{$q}%");
             });
         }
 
