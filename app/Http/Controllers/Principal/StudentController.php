@@ -297,8 +297,8 @@ class StudentController extends Controller
         $this->authorizePrincipal($school);
         abort_unless($student->school_id===$school->id,404);
         $data = $request->validate([
-            'student_name_en'=>['nullable','string','max:150'],
-            'student_name_bn'=>['required','string','max:150'],
+            'student_name_en'=>['required','string','max:150'],
+            'student_name_bn'=>['nullable','string','max:150'],
             'date_of_birth'=>['required','date'],
             'gender'=>['required','in:male,female'],
             'father_name'=>['required','string','max:120'],
