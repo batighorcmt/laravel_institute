@@ -423,6 +423,7 @@ class AdmissionEnrollmentController extends Controller
                 'guardian_name_en' => $application->guardian_name_en,
                 'guardian_name_bn' => $application->guardian_name_bn,
                 'guardian_phone' => $application->mobile,
+                'guardian_relation' => $application->guardian_relation,
                 'present_address' => $application->present_address,
                 'permanent_address' => $application->permanent_address,
                 'present_village' => $application->present_village,

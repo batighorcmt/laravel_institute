@@ -264,8 +264,18 @@ class StudentController extends Controller
         }
         $timeline = $timeline->filter(fn($e)=>!empty($e['date']))->sortByDesc('date')->values();
 
+        // Attendance statistics for pie chart
+        $attendanceStats = [
+            'present' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'present')->count(),
+            'absent' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'absent')->count(),
+            'late' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'late')->count(),
+            'leave' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'leave')->count(),
+        ];
+        $workingDays = array_sum($attendanceStats);
+
         return view('principal.institute.students.show',compact(
-            'school','student','enrollments','memberships','allTeams','currentYear','activeEnrollment','currentSubjects','totalYears','timeline','years'
+            'school','student','enrollments','memberships','allTeams','currentYear','activeEnrollment','currentSubjects','totalYears','timeline','years',
+            'attendanceStats','workingDays'
         ));
     }
 

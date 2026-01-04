@@ -6,17 +6,8 @@
   <a href="{{ route('principal.institute.students.show',[$school,$student]) }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> প্রোফাইল</a>
 </div>
 @php
-  // Generate photo URL correctly
-  $photoUrl = asset('images/default-avatar.png');
-  if ($student->photo) {
-    $publicPath = public_path('storage/' . $student->photo);
-    $storagePath = storage_path('app/public/' . $student->photo);
-    if (file_exists($publicPath)) {
-      $photoUrl = asset('storage/' . $student->photo);
-    } elseif (file_exists($storagePath)) {
-      $photoUrl = asset('storage/' . $student->photo);
-    }
-  }
+  // Use Student model accessor for photo URL
+  $photoUrl = $student->photo_url;
 @endphp
 @if($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
 <div class="card shadow-lg">
@@ -86,14 +77,14 @@
         <div class="row">
           <div class="col-md-6">
             <div class="form-group">
-              <label>নাম (English)</label>
-              <input type="text" name="student_name_en" class="form-control" value="{{ old('student_name_en',$student->student_name_en) }}">
+              <label>নাম (English) *</label>
+              <input type="text" name="student_name_en" class="form-control" required value="{{ old('student_name_en',$student->student_name_en) }}">
             </div>
           </div>
           <div class="col-md-6">
             <div class="form-group">
-              <label>নাম (বাংলা) *</label>
-              <input type="text" name="student_name_bn" class="form-control" required value="{{ old('student_name_bn',$student->student_name_bn) }}">
+              <label>নাম (বাংলা)</label>
+              <input type="text" name="student_name_bn" class="form-control" value="{{ old('student_name_bn',$student->student_name_bn) }}">
             </div>
           </div>
         </div>
@@ -120,7 +111,7 @@
                 <option value="">-- নির্বাচন --</option>
                 @php($religions=['Islam'=>'ইসলাম','Hindu'=>'হিন্দু','Buddhist'=>'বৌদ্ধ','Christian'=>'খ্রিস্টান','Other'=>'অন্যান্য'])
                 @foreach($religions as $val=>$label)
-                  <option value="{{ $val }}" {{ old('religion',$student->religion)==$val?'selected':'' }}>{{ $label }}</option>
+                  <option value="{{ $val }}" {{ strtolower(old('religion',$student->religion))==strtolower($val)?'selected':'' }}>{{ $label }}</option>
                 @endforeach
               </select>
             </div>
@@ -179,9 +170,16 @@
               <label>Guardian Relation</label>
               <select id="guardian_relation" name="guardian_relation" class="form-control">
                 <option value="">-- নির্বাচন --</option>
-                <option value="father" {{ old('guardian_relation',$student->guardian_relation)=='father'?'selected':'' }}>Father</option>
-                <option value="mother" {{ old('guardian_relation',$student->guardian_relation)=='mother'?'selected':'' }}>Mother</option>
-                <option value="other" {{ old('guardian_relation',$student->guardian_relation)=='other'?'selected':'' }}>Other</option>
+                <option value="father" {{ strtolower(old('guardian_relation',$student->guardian_relation))=='father'?'selected':'' }}>Father</option>
+                <option value="mother" {{ strtolower(old('guardian_relation',$student->guardian_relation))=='mother'?'selected':'' }}>Mother</option>
+                <option value="grandfather" {{ strtolower(old('guardian_relation',$student->guardian_relation))=='grandfather'?'selected':'' }}>Grandfather</option>
+                <option value="grandmother" {{ strtolower(old('guardian_relation',$student->guardian_relation))=='grandmother'?'selected':'' }}>Grandmother</option>
+                <option value="uncle" {{ strtolower(old('guardian_relation',$student->guardian_relation))=='uncle'?'selected':'' }}>Uncle</option>
+                <option value="aunt" {{ strtolower(old('guardian_relation',$student->guardian_relation))=='aunt'?'selected':'' }}>Aunt</option>
+                <option value="brother" {{ strtolower(old('guardian_relation',$student->guardian_relation))=='brother'?'selected':'' }}>Brother</option>
+                <option value="sister" {{ strtolower(old('guardian_relation',$student->guardian_relation))=='sister'?'selected':'' }}>Sister</option>
+                <option value="self" {{ strtolower(old('guardian_relation',$student->guardian_relation))=='self'?'selected':'' }}>Self</option>
+                <option value="other" {{ strtolower(old('guardian_relation',$student->guardian_relation))=='other'?'selected':'' }}>Other</option>
               </select>
             </div>
           </div>

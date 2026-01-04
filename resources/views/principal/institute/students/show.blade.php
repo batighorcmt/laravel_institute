@@ -193,7 +193,7 @@
                         <div class="flex-grow-1">
                             <h6 class="mb-1">{{ $activeEnrollment->section->class_teacher_name }}</h6>
                             <p class="mb-0 small" style="opacity: 0.9;">
-                                <i class="fas fa-phone mr-1"></i> {{ $activeEnrollment->section->class_teacher_phone ?? 'N/A' }}
+                                <i class="fas fa-phone mr-1"></i> {{ $activeEnrollment->section->classTeacher?->phone ?? 'N/A' }}
                             </p>
                         </div>
                     </div>
@@ -295,26 +295,26 @@
             <div class="row mb-3">
                 <div class="col-6 col-md-3 mb-3">
                     <div class="stats-card">
-                        <div class="stats-number">16</div>
+                        <div class="stats-number">{{ $workingDays }}</div>
                         <div class="stats-label">Working<br>Days</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3 mb-3">
                     <div class="stats-card green">
-                        <div class="stats-number">10</div>
-                        <div class="stats-label">Present<br>(63%)</div>
+                        <div class="stats-number">{{ $attendanceStats['present'] }}</div>
+                        <div class="stats-label">Present<br>({{ $workingDays ? round($attendanceStats['present']/$workingDays*100) : 0 }}%)</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3 mb-3">
                     <div class="stats-card orange">
-                        <div class="stats-number">6</div>
-                        <div class="stats-label">Absent<br>(38%)</div>
+                        <div class="stats-number">{{ $attendanceStats['absent'] }}</div>
+                        <div class="stats-label">Absent<br>({{ $workingDays ? round($attendanceStats['absent']/$workingDays*100) : 0 }}%)</div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3 mb-3">
                     <div class="stats-card blue">
-                        <div class="stats-number">0</div>
-                        <div class="stats-label">Leave<br>(0%)</div>
+                        <div class="stats-number">{{ $attendanceStats['leave'] }}</div>
+                        <div class="stats-label">Leave<br>({{ $workingDays ? round($attendanceStats['leave']/$workingDays*100) : 0 }}%)</div>
                     </div>
                 </div>
             </div>
@@ -393,13 +393,6 @@
                 </div>
             </div>
 
-            <!-- Pie Chart -->
-            <div class="chart-container mb-3">
-                <h6 class="mb-3 font-weight-bold">
-                    <i class="fas fa-chart-pie mr-2 text-success"></i> Attendance Statistics
-                </h6>
-                <canvas id="attendanceChart" height="180"></canvas>
-            </div>
 
             <!-- Enrollment History -->
             @if(isset($enrollments) && count($enrollments) > 0)
@@ -568,56 +561,5 @@
 </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Attendance Pie Chart
-    const ctx = document.getElementById('attendanceChart');
-    if (ctx) {
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['Present', 'Absent', 'Late', 'Leave'],
-                datasets: [{
-                    data: [63, 38, 0, 0],
-                    backgroundColor: [
-                        '#10b981',
-                        '#ef4444',
-                        '#f59e0b',
-                        '#3b82f6'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 15,
-                            font: {
-                                size: 12,
-                                weight: '600'
-                            },
-                            usePointStyle: true,
-                            pointStyle: 'circle'
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.label + ': ' + context.parsed + '%';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-});
-</script>
 @endpush
 @endsection
