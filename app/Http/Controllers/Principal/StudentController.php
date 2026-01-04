@@ -80,9 +80,9 @@ class StudentController extends Controller
     public function store(School $school, Request $request)
     {
         $this->authorizePrincipal($school);
-    $data = $request->validate([
+        $data = $request->validate([
             'student_name_en'=>['nullable','string','max:150'],
-            'student_name_bn'=>['required','string','max:150'],
+            'student_name_bn'=>['nullable','string','max:150'],
             'date_of_birth'=>['required','date'],
             'gender'=>['required','in:male,female'],
             'father_name'=>['required','string','max:120'],
