@@ -74,7 +74,7 @@ class AdmissionEnrollmentController extends Controller
         // Final list with ordering + pagination
         $applications = $baseQuery
             ->orderBy('class_name')
-            ->orderBy('name_bn')
+            ->orderBy('admission_roll_no')
             ->paginate(20)
             ->appends($request->query());
 

@@ -61,7 +61,7 @@
           </select>
         </div>
         <div class="form-group mr-2 mb-2">
-          <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" class="form-control form-control-sm" placeholder="নাম/আবেদন আইডি/মোবাইল">
+          <input type="text" name="q" value="{{ $filters['q'] ?? '' }}" class="form-control form-control-sm" placeholder="নাম/আবেদন আইডি/মোবাইল/রোল নং">
         </div>
         <div class="form-group mb-2">
           <button type="submit" class="btn btn-sm btn-primary mr-2"><i class="fas fa-search mr-1"></i>ফিল্টার</button>
@@ -121,7 +121,7 @@
       </div>
     @else
       <div class="table-responsive">
-        <table class="table table-hover table-striped mb-0">
+        <table class="table table-hover table-striped mb-0 enrollment-table-responsive">
           <thead class="thead-dark">
             <tr>
               <th style="width:50px">#</th>
@@ -145,8 +145,7 @@
                 <td>
                   <img src="{{ $app->photo ? asset('storage/admission/'.$app->photo) : asset('images/default-avatar.png') }}" 
                        alt="Photo" 
-                       class="img-thumbnail" 
-                       style="width:60px; height:75px; object-fit:cover;">
+                       class="img-thumbnail enrollment-photo" >
                 </td>
                 <td>{{ $app->app_id ?? $app->id }}</td>
                 <td>{{ $app->admission_roll_no ? str_pad($app->admission_roll_no, 3, '0', STR_PAD_LEFT) : '—' }}</td>
@@ -348,6 +347,37 @@
   </div>
 
 @push('scripts')
+<style>
+@media (max-width: 768px) {
+  .enrollment-table-responsive {
+    font-size: 13px;
+    width: 100%;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .enrollment-table-responsive th, .enrollment-table-responsive td {
+    padding: 6px 4px;
+    min-width: 80px;
+  }
+  .enrollment-photo {
+    width: 48px !important;
+    height: 60px !important;
+    object-fit: cover !important;
+    border-radius: 6px;
+  }
+}
+@media (max-width: 480px) {
+  .enrollment-table-responsive th, .enrollment-table-responsive td {
+    min-width: 60px;
+    font-size: 12px;
+  }
+  .enrollment-photo {
+    width: 36px !important;
+    height: 45px !important;
+  }
+}
+</style>
 <script>
 let currentRequireGroup = false;
 
