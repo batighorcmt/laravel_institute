@@ -145,13 +145,7 @@
     <div class="profile-header mb-4">
         <div class="row align-items-center">
             <div class="col-auto">
-                @if($student->photo)
-                    <img src="{{ asset('storage/'.$student->photo) }}" alt="Profile" class="profile-avatar">
-                @else
-                    <div class="profile-avatar d-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.2);">
-                        <i class="fas fa-user fa-3x"></i>
-                    </div>
-                @endif
+                <img src="{{ $student->photo_url }}" alt="Profile" class="profile-avatar">
             </div>
             <div class="col">
                 <h2 class="mb-2 font-weight-bold">{{ $student->student_name_bn ?? $student->student_name_en }}</h2>

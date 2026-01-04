@@ -189,13 +189,14 @@
                     <button type="button" class="btn btn-success btn-sm enroll-btn" data-app-id="{{ $app->id }}">
                       <i class="fas fa-check-circle"></i> ভর্তি করুন
                     </button>
+                  @endif
                 </td>
               </tr>
-            
+            @endforeach
           </tbody>
         </table>
       </div>
-    
+    @endif
   </div>
   @if(!$applications->isEmpty())
     <div class="card-footer">
