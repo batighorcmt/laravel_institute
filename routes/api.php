@@ -80,5 +80,12 @@ Route::prefix('v1')->group(function () {
             Route::get('/students/{student}/due', [\App\Http\Controllers\Billing\DueController::class, 'show']);
             Route::get('/students/{student}/statement', [\App\Http\Controllers\Billing\StatementController::class, 'monthly']);
     });
+
+    // Principal student management endpoints
+    Route::prefix('principal')->middleware('role:principal')->group(function () {
+        Route::get('students/search', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'search']);
+        Route::get('students/filters/sections', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getSections']);
+        Route::get('students/filters/groups', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getGroups']);
+    });
     });
 });

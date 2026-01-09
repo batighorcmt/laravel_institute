@@ -16,7 +16,10 @@
   </div>
 </div>
 <form class="form-inline mb-3" method="get">
-  <input type="text" name="q" value="{{ $q }}" class="form-control mr-2" placeholder="নাম / আইডি সার্চ...">
+  <div class="position-relative mr-2" style="min-width: 250px;">
+    <input type="text" id="student-search" name="q" value="{{ $q }}" class="form-control" placeholder="নাম / আইডি সার্চ..." autocomplete="off">
+    <div id="search-results" class="position-absolute bg-white border rounded shadow-sm" style="top: 100%; left: 0; right: 0; z-index: 1000; display: none; max-height: 300px; overflow-y: auto;"></div>
+  </div>
   <select name="year_id" class="form-control mr-2">
     <option value="">-- বছর নির্বাচন --</option>
     @foreach(($years ?? []) as $y)
