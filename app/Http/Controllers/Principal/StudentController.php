@@ -40,6 +40,12 @@ class StudentController extends Controller
         $selectedYearId = (int)($request->query('year_id') ?: ($currentYear->id ?? 0));
         $selectedYear = $years->firstWhere('id', $selectedYearId);
 
+        // Get filter parameters
+        $classId = $request->get('class_id');
+        $sectionId = $request->get('section_id');
+        $groupId = $request->get('group_id');
+        $status = $request->get('status');
+
         $students = Student::forSchool($school->id)
             ->when($q, function($x) use ($q){
                 $x->where(function($inner) use ($q){
@@ -48,9 +54,15 @@ class StudentController extends Controller
                           ->orWhere('student_id','like',"%$q%");
                 });
             })
-            ->whereHas('enrollments', function($en) use ($selectedYearId){
+            ->when($status, function($x) use ($status){
+                $x->where('status', $status);
+            })
+            ->whereHas('enrollments', function($en) use ($selectedYearId, $classId, $sectionId, $groupId){
                 if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
                 else { $en->whereRaw('1=0'); }
+                if ($classId) { $en->where('class_id', $classId); }
+                if ($sectionId) { $en->where('section_id', $sectionId); }
+                if ($groupId) { $en->where('group_id', $groupId); }
             })
             ->with(['enrollments' => function($en) use ($selectedYearId){
                 if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }

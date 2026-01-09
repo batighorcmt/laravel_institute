@@ -23,7 +23,33 @@
       <option value="{{ $y->id }}" {{ (int)($selectedYearId ?? 0)===$y->id?'selected':'' }}>{{ $y->name }}</option>
     @endforeach
   </select>
-  <button class="btn btn-outline-secondary">ফিল্টার</button>
+  <select name="class_id" class="form-control mr-2">
+    <option value="">-- শ্রেণি নির্বাচন --</option>
+    @foreach($school->classes ?? [] as $class)
+      <option value="{{ $class->id }}" {{ request('class_id') == $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
+    @endforeach
+  </select>
+  <select name="section_id" class="form-control mr-2">
+    <option value="">-- শাখা নির্বাচন --</option>
+    @foreach($school->sections ?? [] as $section)
+      <option value="{{ $section->id }}" {{ request('section_id') == $section->id ? 'selected' : '' }}>{{ $section->name }}</option>
+    @endforeach
+  </select>
+  <select name="group_id" class="form-control mr-2">
+    <option value="">-- গ্রুপ নির্বাচন --</option>
+    @foreach($school->groups ?? [] as $group)
+      <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
+    @endforeach
+  </select>
+  <select name="status" class="form-control mr-2">
+    <option value="">-- স্ট্যাটাস নির্বাচন --</option>
+    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>সক্রিয়</option>
+    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>নিষ্ক্রিয়</option>
+    <option value="graduated" {{ request('status') == 'graduated' ? 'selected' : '' }}>গ্র্যাজুয়েট</option>
+    <option value="transferred" {{ request('status') == 'transferred' ? 'selected' : '' }}>ট্রান্সফার্ড</option>
+  </select>
+  <button class="btn btn-outline-secondary mr-2">ফিল্টার</button>
+  <a href="{{ route('principal.institute.students.index', $school) }}" class="btn btn-outline-danger">রিসেট</a>
 </form>
 <div class="table-responsive" style="overflow: visible;">
   <table class="table table-bordered table-sm">
