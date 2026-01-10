@@ -48,6 +48,7 @@
 
 @section('content')
   <div>
+    @includeFirst(['print_common','layouts.print_common','partials.print_common','common.print_common'], ['school' => $school, 'title' => $printTitle, 'subtitle' => $printSubtitle])
     <table class="print-table">
       <thead>
         <tr>

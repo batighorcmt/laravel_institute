@@ -107,7 +107,7 @@
         <th class="d-none d-lg-table-cell">মোবাইল নং</th>
         <th>স্ট্যাটাস</th>
         <th style="width:80px" class="d-none d-sm-table-cell">ছবি</th>
-        <th>বিষয়সমূহ ({{ $yearLabel }})</th>
+        <th class="d-none d-xl-table-cell">বিষয়সমূহ ({{ $yearLabel }})</th>
         <th style="width:120px">অ্যাকশন</th>
       </tr>
     </thead>
