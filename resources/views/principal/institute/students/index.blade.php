@@ -143,8 +143,11 @@
         <td>{{ $en? $en->group?->name : '-' }}</td>
         <td>{{ $stu->guardian_phone }}</td>
         <td>
-          @php($st = $stu->status)
-          <span class="badge badge-{{ $st==='active'?'success':($st==='inactive'?'secondary':($st==='graduated'?'info':'warning')) }}">{{ $st }}</span>
+          @php
+            $st = $stu->status;
+            $badgeClass = 'badge ' . ($st === 'active' ? 'badge-success' : ($st === 'inactive' ? 'badge-secondary' : ($st === 'graduated' ? 'badge-info' : 'badge-warning')));
+          @endphp
+          <span class="{{ $badgeClass }}">{{ $st }}</span>
         </td>
         <td class="text-center">
           <img src="{{ $stu->photo_url }}" alt="photo" style="width:40px;height:40px;object-fit:cover;border-radius:50%;">
