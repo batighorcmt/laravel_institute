@@ -99,10 +99,10 @@
         <th>শ্রেণি</th>
         <th>শাখা</th>
         <th>রোল</th>
-        <th>গ্রুপ</th>
+        <th class="d-none d-md-table-cell">গ্রুপ</th>
         <th class="d-none d-lg-table-cell">মোবাইল নং</th>
         <th>স্ট্যাটাস</th>
-        <th style="width:80px">ছবি</th>
+        <th style="width:80px" class="d-none d-sm-table-cell">ছবি</th>
         <th>বিষয়সমূহ ({{ $yearLabel }})</th>
         <th style="width:120px">অ্যাকশন</th>
       </tr>
@@ -140,8 +140,8 @@
         <td>{{ $en? $en->class?->name : '-' }}</td>
         <td>{{ $en? $en->section?->name : '-' }}</td>
         <td>{{ $en? $en->roll_no : '-' }}</td>
-        <td>{{ $en? $en->group?->name : '-' }}</td>
-        <td>{{ $stu->guardian_phone }}</td>
+        <td class="d-none d-md-table-cell">{{ $en? $en->group?->name : '-' }}</td>
+        <td class="d-none d-lg-table-cell">{{ $stu->guardian_phone }}</td>
         <td>
           @php
             $st = $stu->status;
@@ -149,10 +149,10 @@
           @endphp
           <span class="{{ $badgeClass }}">{{ $st }}</span>
         </td>
-        <td class="text-center">
+        <td class="text-center d-none d-sm-table-cell">
           <img src="{{ $stu->photo_url }}" alt="photo" style="width:40px;height:40px;object-fit:cover;border-radius:10%;">
         </td>
-        <td class="small">{!! $subsHtml ?: '-' !!}</td>
+        <td class="small d-none d-xl-table-cell">{!! $subsHtml ?: '-' !!}</td>
         <td class="text-nowrap">
           <div class="dropdown">
             <button class="btn btn-outline-secondary btn-sm dropdown-toggle student-action-dd" type="button" data-toggle="dropdown" data-boundary="window" aria-haspopup="true" aria-expanded="false">
