@@ -48,7 +48,26 @@
 
 @section('content')
   <div>
-    @includeFirst(['print_common','layouts.print_common','partials.print_common','common.print_common'], ['school' => $school, 'title' => $printTitle, 'subtitle' => $printSubtitle])
+    @if (\Illuminate\Support\Facades\View::exists('print_common'))
+      @include('print_common', ['school' => $school, 'title' => $printTitle, 'subtitle' => $printSubtitle])
+    @elseif (\Illuminate\Support\Facades\View::exists('layouts.print_common'))
+      @include('layouts.print_common', ['school' => $school, 'title' => $printTitle, 'subtitle' => $printSubtitle])
+    @elseif (\Illuminate\Support\Facades\View::exists('partials.print_common'))
+      @include('partials.print_common', ['school' => $school, 'title' => $printTitle, 'subtitle' => $printSubtitle])
+    @elseif (\Illuminate\Support\Facades\View::exists('common.print_common'))
+      @include('common.print_common', ['school' => $school, 'title' => $printTitle, 'subtitle' => $printSubtitle])
+    @else
+      <div style="text-align:center;margin-bottom:8px">
+        <div style="font-size:18px;font-weight:700">{{ $school->name_bn ?? $school->name }}</div>
+        @if(!empty($school->address_bn) || !empty($school->address))
+          <div class="small muted">{{ $lang==='bn' ? ($school->address_bn ?: $school->address) : ($school->address ?: $school->address_bn) }}</div>
+        @endif
+        <div style="font-size:16px;font-weight:600;margin-top:6px">{{ $printTitle }}</div>
+        @if(!empty($printSubtitle))
+          <div class="small muted">{{ $printSubtitle }}</div>
+        @endif
+      </div>
+    @endif
     <table class="print-table">
       <thead>
         <tr>
