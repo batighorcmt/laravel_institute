@@ -8,15 +8,15 @@
   $selectedYearId = $selectedYearId ?? 0;
   $yearLabel = $selectedYear ? $selectedYear->name : ($currentYear ? $currentYear->name : 'বর্ষ নির্ধারিত নয়');
 @endphp
-<div class="d-flex justify-content-between mb-3">
-  <h1 class="m-0">শিক্ষার্থী তালিকা - {{ $school->name }}</h1>
-  <div>
-    <a href="{{ route('principal.institute.students.create',$school) }}" class="btn btn-success"><i class="fas fa-user-plus mr-1"></i> নতুন শিক্ষার্থী</a>
-    <a href="{{ route('principal.institute.students.bulk',$school) }}" class="btn btn-outline-primary ml-2"><i class="fas fa-file-import mr-1"></i> Bulk student add</a>
+<div class="d-flex flex-column flex-md-row justify-content-between mb-3">
+  <h1 class="m-0 mb-2 mb-md-0">শিক্ষার্থী তালিকা - {{ $school->name }}</h1>
+  <div class="d-flex flex-column flex-sm-row">
+    <a href="{{ route('principal.institute.students.create',$school) }}" class="btn btn-success mb-1 mb-sm-0 mr-sm-2"><i class="fas fa-user-plus mr-1"></i> নতুন শিক্ষার্থী</a>
+    <a href="{{ route('principal.institute.students.bulk',$school) }}" class="btn btn-outline-primary"><i class="fas fa-file-import mr-1"></i> Bulk student add</a>
   </div>
 </div>
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div class="d-flex align-items-center">
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3">
+  <div class="d-flex align-items-center mb-2 mb-sm-0">
     <label class="mr-2 mb-0">প্রতি পৃষ্ঠায়:</label>
     <select name="per_page" class="form-control form-control-sm" style="width: auto;" onchange="changePerPage(this.value)">
       <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
@@ -88,7 +88,7 @@
   <button class="btn btn-outline-secondary mr-2">ফিল্টার</button>
   <a href="{{ route('principal.institute.students.index', $school) }}" class="btn btn-outline-danger">রিসেট</a>
 </form>
-<div class="table-responsive" style="overflow: visible;">
+<div class="table-responsive">
   <table class="table table-bordered table-sm">
     <thead class="thead-light">
       <tr>
@@ -100,7 +100,7 @@
         <th>শাখা</th>
         <th>রোল</th>
         <th>গ্রুপ</th>
-        <th>মোবাইল নং</th>
+        <th class="d-none d-lg-table-cell">মোবাইল নং</th>
         <th>স্ট্যাটাস</th>
         <th style="width:80px">ছবি</th>
         <th>বিষয়সমূহ ({{ $yearLabel }})</th>
