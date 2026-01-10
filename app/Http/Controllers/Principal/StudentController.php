@@ -45,6 +45,9 @@ class StudentController extends Controller
         $sectionId = $request->get('section_id');
         $groupId = $request->get('group_id');
         $status = $request->get('status');
+        $gender = $request->get('gender');
+        $religion = $request->get('religion');
+        $village = $request->get('village');
 
         $students = Student::forSchool($school->id)
             ->when($q, function($x) use ($q){
@@ -57,6 +60,15 @@ class StudentController extends Controller
             ->when($status, function($x) use ($status){
                 $x->where('status', $status);
             })
+            ->when($gender, function($x) use ($gender){
+                $x->where('gender', $gender);
+            })
+            ->when($religion, function($x) use ($religion){
+                $x->where('religion', $religion);
+            })
+            ->when($village, function($x) use ($village){
+                $x->where('present_village', $village);
+            })
             ->whereHas('enrollments', function($en) use ($selectedYearId, $classId, $sectionId, $groupId){
                 if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
                 else { $en->whereRaw('1=0'); }
@@ -68,7 +80,7 @@ class StudentController extends Controller
                 if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
                 $en->with(['class','section','group','subjects.subject','academicYear']);
             }])
-            ->orderBy('id','desc')->paginate(20)->withQueryString();
+            ->orderBy('id','desc')->paginate($request->get('per_page', 10))->withQueryString();
 
         return view('principal.institute.students.index',[
             'school'=>$school,
