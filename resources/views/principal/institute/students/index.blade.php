@@ -150,7 +150,7 @@
           <span class="{{ $badgeClass }}">{{ $st }}</span>
         </td>
         <td class="text-center">
-          <img src="{{ $stu->photo_url }}" alt="photo" style="width:40px;height:40px;object-fit:cover;border-radius:50%;">
+          <img src="{{ $stu->photo_url }}" alt="photo" style="width:40px;height:40px;object-fit:cover;border-radius:10%;">
         </td>
         <td class="small">{!! $subsHtml ?: '-' !!}</td>
         <td class="text-nowrap">
