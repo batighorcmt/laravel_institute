@@ -21,8 +21,9 @@
         /* Wrapper simplified to avoid forcing extra blank print page */
         .print-wrapper{display:block;}
         .print-main{padding:4px 0 0;}
-        /* Provide minimal bottom padding; large content will naturally flow onto next page */
-        .print-main{padding-bottom:30px;}
+        /* Reserve space for fixed footer to avoid overlap with table rows (screen + print) */
+        .print-main{padding-bottom:120px;}
+        @media print{ .print-main{ padding-bottom:120px !important; } }
         .print-header{ display:flex; align-items:center; gap:12px; border-bottom:2px solid var(--print-accent); padding:0 0 8px; margin-bottom:4px; position:relative; }
         .print-header .logo img{ width:70px; height:70px; object-fit:contain; }
         .print-header .logo{ position:absolute; left:6px; top:10px; width:0; height:0; overflow:visible; z-index:10; }
@@ -71,13 +72,23 @@
     <div class="print-header">
         <div class="logo">@if($logoUrl)<img src="{{ $logoUrl }}" alt="logo">@endif</div>
         <div class="center">
-            <h1 class="school-name">{{ $lang==='bn' ? ($school->name_bn ?? $school->name) : ($school->name ?? $school->name_bn) }}</h1>
-            @php $addr = $lang==='bn' ? ($school->address_bn ?? $school->address) : ($school->address ?? $school->address_bn); @endphp
-            @if($addr)
-                <div class="school-address">{{ $addr }}</div>
+            @if (\Illuminate\Support\Facades\View::exists('print_common'))
+                @include('print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
+            @elseif (\Illuminate\Support\Facades\View::exists('layouts.print_common'))
+                @include('layouts.print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
+            @elseif (\Illuminate\Support\Facades\View::exists('partials.print_common'))
+                @include('partials.print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
+            @elseif (\Illuminate\Support\Facades\View::exists('common.print_common'))
+                @include('common.print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
+            @else
+                <h1 class="school-name">{{ $lang==='bn' ? ($school->name_bn ?? $school->name) : ($school->name ?? $school->name_bn) }}</h1>
+                @php $addr = $lang==='bn' ? ($school->address_bn ?? $school->address) : ($school->address ?? $school->address_bn); @endphp
+                @if($addr)
+                    <div class="school-address">{{ $addr }}</div>
+                @endif
+                @isset($printTitle)<div class="page-title">{{ $printTitle }}</div>@endisset
+                @isset($printSubtitle)<div class="page-subtitle">{{ $printSubtitle }}</div>@endisset
             @endif
-            @isset($printTitle)<div class="page-title">{{ $printTitle }}</div>@endisset
-            @isset($printSubtitle)<div class="page-subtitle">{{ $printSubtitle }}</div>@endisset
             @yield('print_header_right')
         </div>
     </div>
