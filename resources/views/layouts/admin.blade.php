@@ -333,6 +333,7 @@
                                 </a>
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item"><a href="{{ route('principal.institute.students.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>List</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.students.create', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.create') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Add Student</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.students.bulk', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.bulk') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Bulk student add</p></a></li>
                                 </ul>
                             </li>

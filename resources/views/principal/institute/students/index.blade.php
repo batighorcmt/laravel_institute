@@ -12,7 +12,8 @@
   <h1 class="m-0 mb-2 mb-md-0">শিক্ষার্থী তালিকা - {{ $school->name }}</h1>
   <div class="d-flex flex-column flex-sm-row">
     <a href="{{ route('principal.institute.students.create',$school) }}" class="btn btn-success mb-1 mb-sm-0 mr-sm-2"><i class="fas fa-user-plus mr-1"></i> নতুন শিক্ষার্থী</a>
-    <a href="{{ route('principal.institute.students.bulk',$school) }}" class="btn btn-outline-primary"><i class="fas fa-file-import mr-1"></i> Bulk student add</a>
+    <a href="{{ route('principal.institute.students.bulk',$school) }}" class="btn btn-outline-primary mb-1 mb-sm-0 mr-sm-2"><i class="fas fa-file-import mr-1"></i> Bulk student add</a>
+    <a href="{{ route('principal.institute.students.print-controls',$school) }}" class="btn btn-outline-secondary"><i class="fas fa-print mr-1"></i> প্রিন্ট</a>
   </div>
 </div>
 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3">
@@ -27,7 +28,10 @@
     </select>
   </div>
 </div>
-<form class="form-inline mb-3" method="get">
+<button class="btn btn-outline-secondary d-md-none mb-2" type="button" data-toggle="collapse" data-target="#filtersCollapse" aria-expanded="false" aria-controls="filtersCollapse">
+  ফিল্টার দেখুন/লুকান
+</button>
+<form id="filtersCollapse" class="form-inline mb-3 collapse" method="get">
   <div class="position-relative mr-2" style="min-width: 250px;">
     <input type="text" id="student-search" name="q" value="{{ $q }}" class="form-control" placeholder="নাম / আইডি সার্চ..." autocomplete="off">
     <div id="search-results" class="position-absolute bg-white border rounded shadow-sm" style="top: 100%; left: 0; right: 0; z-index: 1000; display: none; max-height: 300px; overflow-y: auto;"></div>
@@ -317,6 +321,29 @@
 <script>
 (function(){
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+  // Ensure filters form is collapsed on mobile and visible on md+ screens
+  const filtersCollapse = document.getElementById('filtersCollapse');
+  let resizeTO;
+  function syncFiltersCollapse() {
+    if (!filtersCollapse) return;
+    if (window.innerWidth >= 768) {
+      if (!filtersCollapse.classList.contains('show')) {
+        filtersCollapse.classList.add('show');
+        filtersCollapse.style.height = 'auto';
+      }
+    } else {
+      if (filtersCollapse.classList.contains('show')) {
+        filtersCollapse.classList.remove('show');
+        filtersCollapse.style.height = '';
+      }
+    }
+  }
+  syncFiltersCollapse();
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeTO);
+    resizeTO = setTimeout(syncFiltersCollapse, 150);
+  });
 
   // AJAX helper function
   function ajaxRequest(url, data = {}) {

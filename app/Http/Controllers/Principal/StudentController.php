@@ -787,4 +787,140 @@ class StudentController extends Controller
         }
         return Storage::download($reportPath, "bulk-report-{$id}.csv");
     }
+
+    // Print Controls page
+    public function printControls(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+
+        $years = AcademicYear::forSchool($school->id)->orderByDesc('start_date')->get();
+        $currentYear = AcademicYear::forSchool($school->id)->current()->first();
+        $selectedYearId = (int)($request->query('year_id') ?: ($currentYear->id ?? 0));
+        $selectedYear = $years->firstWhere('id', $selectedYearId);
+
+        // Default selected columns (Photo optional)
+        $defaultCols = ['serial','student_id','name','father','class','section','roll','group','mobile','status','subjects'];
+        $cols = $request->query('cols', $defaultCols);
+
+        return view('principal.institute.students.print-controls', [
+            'school' => $school,
+            'years' => $years,
+            'currentYear' => $currentYear,
+            'selectedYear' => $selectedYear,
+            'selectedYearId' => $selectedYearId,
+            'cols' => $cols,
+            'lang' => $request->query('lang','bn'),
+        ]);
+    }
+
+    // Print Preview page
+    public function printPreview(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+
+        $lang = $request->query('lang','bn');
+
+        $years = AcademicYear::forSchool($school->id)->orderByDesc('start_date')->get();
+        $currentYear = AcademicYear::forSchool($school->id)->current()->first();
+        $selectedYearId = (int)($request->query('year_id') ?: ($currentYear->id ?? 0));
+        $selectedYear = $years->firstWhere('id', $selectedYearId);
+        $yearLabel = $selectedYear ? $selectedYear->name : ($currentYear ? $currentYear->name : '');
+
+        // Filters
+        $q = $request->get('q');
+        $classId = $request->get('class_id');
+        $sectionId = $request->get('section_id');
+        $groupId = $request->get('group_id');
+        $status = $request->get('status');
+        $gender = $request->get('gender');
+        $religion = $request->get('religion');
+        $village = $request->get('village');
+
+        $limit = (int)$request->query('limit', 1000);
+        if ($limit < 1) $limit = 1;
+        if ($limit > 5000) $limit = 5000;
+
+        $students = Student::forSchool($school->id)
+            ->when($q, function($x) use ($q){
+                $x->where(function($inner) use ($q){
+                    $inner->where('student_name_en','like',"%$q%")
+                          ->orWhere('student_name_bn','like',"%$q%")
+                          ->orWhere('student_id','like',"%$q%");
+                });
+            })
+            ->when($status, function($x) use ($status){
+                $x->where('status', $status);
+            })
+            ->when($gender, function($x) use ($gender){
+                $x->where('gender', $gender);
+            })
+            ->when($religion, function($x) use ($religion){
+                $x->where('religion', $religion);
+            })
+            ->when($village, function($x) use ($village){
+                $x->where('present_village', $village);
+            })
+            ->whereHas('enrollments', function($en) use ($selectedYearId, $classId, $sectionId, $groupId){
+                if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
+                else { $en->whereRaw('1=0'); }
+                if ($classId) { $en->where('class_id', $classId); }
+                if ($sectionId) { $en->where('section_id', $sectionId); }
+                if ($groupId) { $en->where('group_id', $groupId); }
+            })
+            ->with(['enrollments' => function($en) use ($selectedYearId){
+                if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
+                $en->with(['class','section','group','subjects.subject','academicYear']);
+            }])
+            ->orderBy('id','desc')
+            ->take($limit)
+            ->get();
+
+        // Columns selection
+        $defaultCols = ['serial','student_id','name','father','class','section','roll','group','mobile','status','subjects'];
+        $cols = $request->query('cols', $defaultCols);
+
+        // Labels per language
+        $labelsBn = [
+            'serial' => 'ক্রমিক',
+            'student_id' => 'আইডি নং',
+            'name' => 'নাম',
+            'father' => 'পিতার নাম',
+            'class' => 'শ্রেণি',
+            'section' => 'শাখা',
+            'roll' => 'রোল',
+            'group' => 'গ্রুপ',
+            'mobile' => 'মোবাইল নং',
+            'status' => 'স্ট্যাটাস',
+            'photo' => 'ছবি',
+            'subjects' => 'বিষয়সমূহ',
+        ];
+        $labelsEn = [
+            'serial' => 'Serial',
+            'student_id' => 'Student ID',
+            'name' => 'Name',
+            'father' => "Father's Name",
+            'class' => 'Class',
+            'section' => 'Section',
+            'roll' => 'Roll',
+            'group' => 'Group',
+            'mobile' => 'Mobile',
+            'status' => 'Status',
+            'photo' => 'Photo',
+            'subjects' => 'Subjects',
+        ];
+        $labels = $lang === 'bn' ? $labelsBn : $labelsEn;
+
+        return view('principal.institute.students.print-preview', [
+            'school' => $school,
+            'students' => $students,
+            'years' => $years,
+            'currentYear' => $currentYear,
+            'selectedYear' => $selectedYear,
+            'selectedYearId' => $selectedYearId,
+            'yearLabel' => $yearLabel,
+            'cols' => $cols,
+            'labels' => $labels,
+            'lang' => $lang,
+        ]);
+    }
 }

@@ -424,6 +424,10 @@ Route::middleware(['auth'])->group(function () {
             Route::get('students/bulk/status/{id}', [\App\Http\Controllers\Principal\StudentController::class,'bulkStatus'])->name('students.bulk.status');
             Route::get('students/bulk/report/{id}', [\App\Http\Controllers\Principal\StudentController::class,'bulkReport'])->name('students.bulk.report');
 
+            // Print controls and preview
+            Route::get('students/print-controls', [\App\Http\Controllers\Principal\StudentController::class,'printControls'])->name('students.print-controls');
+            Route::get('students/print-preview', [\App\Http\Controllers\Principal\StudentController::class,'printPreview'])->name('students.print-preview');
+
             Route::resource('students', \App\Http\Controllers\Principal\StudentController::class);
             Route::patch('students/{student}/status', [\App\Http\Controllers\Principal\StudentController::class,'toggleStatus'])->name('students.toggle-status');
             Route::post('students/{student}/enrollments', [\App\Http\Controllers\Principal\StudentController::class,'addEnrollment'])->name('students.enrollments.add');
