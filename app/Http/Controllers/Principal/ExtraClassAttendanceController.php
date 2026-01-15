@@ -7,6 +7,10 @@ use App\Models\School;
 use App\Models\ExtraClass;
 use App\Models\ExtraClassAttendance;
 use App\Models\ExtraClassEnrollment;
+use App\Models\Setting;
+use App\Models\SmsTemplate;
+use App\Models\Student;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -101,12 +105,15 @@ class ExtraClassAttendanceController extends Controller
                 ]);
             }
 
+            // Send SMS notifications
+            $smsCount = $this->sendExtraAttendanceSms($school, $validated['attendance'], $extraClass, $validated['date']);
+
             DB::commit();
             return redirect()->route('principal.institute.extra-classes.attendance.take', [
                 'school' => $school,
                 'extra_class_id' => $extraClass->id,
                 'date' => $validated['date']
-            ])->with('success', 'Attendance recorded successfully!');
+            ])->with('success', 'Attendance recorded successfully! ' . $smsCount . ' SMS sent.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Failed to save attendance: ' . $e->getMessage());
@@ -229,5 +236,53 @@ class ExtraClassAttendanceController extends Controller
             'print'
         ));
     }
-}
 
+    private function sendExtraAttendanceSms(School $school, array $attendanceData, $extraClass, $date)
+    {
+        $sentCount = 0;
+        foreach ($attendanceData as $att) {
+            $newStatus = $att['status'];
+            // For extra class, always send
+            $send = true;
+
+            if ($send) {
+                $template = SmsTemplate::where(function($q) use ($school) {
+                    $q->where('school_id', $school->id)->orWhereNull('school_id');
+                })->where('type', 'extra_class')->where('title', 'extra_class_' . $newStatus)->first();
+                if ($template) {
+                    $student = Student::find($att['student_id']);
+                    if ($student && $student->guardian_phone) {
+                        $enrollment = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)->where('student_id', $att['student_id'])->first();
+                        $assignedSection = $enrollment ? $enrollment->assignedSection : null;
+                        $roll_no = $enrollment && $enrollment->student->currentEnrollment ? $enrollment->student->currentEnrollment->roll_no : null;
+                        $class_name = $extraClass->schoolClass ? $extraClass->schoolClass->name : null;
+                        $section_name = $assignedSection ? $assignedSection->name : null;
+                        $message = $this->replacePlaceholders($template->content, $student, $newStatus, $date);
+                        $extra = [
+                            'recipient_id' => $student->id,
+                            'recipient_name' => $student->student_name_en,
+                            'recipient_type' => 'student',
+                            'recipient_category' => 'guardian',
+                            'roll_number' => $roll_no,
+                            'class_name' => $class_name,
+                            'section_name' => $section_name,
+                        ];
+                        $smsService = new SmsService($school);
+                        $result = $smsService->sendSms($student->guardian_phone, $message, 'extra_attendance', $extra);
+                        if ($result) $sentCount++;
+                    }
+                }
+            }
+        }
+        return $sentCount;
+    }
+
+    private function replacePlaceholders($content, $student, $status, $date)
+    {
+        return str_replace(
+            ['{student_name}', '{status}', '{date}'],
+            [$student->student_name_en, $status, $date],
+            $content
+        );
+    }
+}

@@ -8,7 +8,9 @@
 
 <ul class="nav nav-tabs mb-3" id="smsTab" role="tablist">
   <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#api" role="tab">API Settings</a></li>
-  <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#attendance" role="tab">Attendance SMS</a></li>
+  <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#attendance" role="tab">General Attendance SMS</a></li>
+  <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#class-attendance" role="tab">Class Attendance SMS</a></li>
+  <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#extra-class-attendance" role="tab">Extra Class Attendance SMS</a></li>
   <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#templates" role="tab">SMS Templates</a></li>
 </ul>
 <div class="tab-content" id="smsTabContent">
@@ -37,7 +39,7 @@
   </div>
   <div class="tab-pane fade" id="attendance" role="tabpanel">
     <div class="card p-4">
-      <h5 class="mb-3">হাজিরা SMS সেটিংস</h5>
+      <h5 class="mb-3">সাধারণ হাজিরা SMS সেটিংস</h5>
       <p class="text-muted">যে স্ট্যাটাসে SMS যাবে তা নির্বাচন করুন।</p>
       <form method="post" action="{{ route('principal.institute.sms.attendance.save',$school) }}">
         @csrf
@@ -61,20 +63,81 @@
       </form>
     </div>
   </div>
+  <div class="tab-pane fade" id="class-attendance" role="tabpanel">
+    <div class="card p-4">
+      <h5 class="mb-3">ক্লাস হাজিরা SMS সেটিংস</h5>
+      <p class="text-muted">ক্লাস হাজিরার ক্ষেত্রে যে স্ট্যাটাসে SMS যাবে তা নির্বাচন করুন।</p>
+      <form method="post" action="{{ route('principal.institute.sms.class-attendance.save',$school) }}">
+        @csrf
+        <div class="custom-control custom-switch mb-2">
+          <input type="checkbox" class="custom-control-input" id="sms_class_present" name="sms_class_attendance_present" {{ $classAttendance['sms_class_attendance_present']=='1'?'checked':'' }}>
+          <label class="custom-control-label" for="sms_class_present">Present (উপস্থিত)</label>
+        </div>
+        <div class="custom-control custom-switch mb-2">
+          <input type="checkbox" class="custom-control-input" id="sms_class_absent" name="sms_class_attendance_absent" {{ $classAttendance['sms_class_attendance_absent']=='1'?'checked':'' }}>
+          <label class="custom-control-label" for="sms_class_absent">Absent (অনুপস্থিত)</label>
+        </div>
+        <div class="custom-control custom-switch mb-2">
+          <input type="checkbox" class="custom-control-input" id="sms_class_late" name="sms_class_attendance_late" {{ $classAttendance['sms_class_attendance_late']=='1'?'checked':'' }}>
+          <label class="custom-control-label" for="sms_class_late">Late (বিলম্ব)</label>
+        </div>
+        <div class="custom-control custom-switch mb-4">
+          <input type="checkbox" class="custom-control-input" id="sms_class_halfday" name="sms_class_attendance_half_day" {{ $classAttendance['sms_class_attendance_half_day']=='1'?'checked':'' }}>
+          <label class="custom-control-label" for="sms_class_halfday">Half Day (আধা দিন)</label>
+        </div>
+        <button class="btn btn-primary"><i class="fas fa-save mr-1"></i> সংরক্ষণ</button>
+      </form>
+    </div>
+  </div>
+  <div class="tab-pane fade" id="extra-class-attendance" role="tabpanel">
+    <div class="card p-4">
+      <h5 class="mb-3">এক্সট্রা ক্লাস হাজিরা SMS সেটিংস</h5>
+      <p class="text-muted">এক্সট্রা ক্লাস হাজিরার ক্ষেত্রে যে স্ট্যাটাসে SMS যাবে তা নির্বাচন করুন।</p>
+      <form method="post" action="{{ route('principal.institute.sms.extra-class-attendance.save',$school) }}">
+        @csrf
+        <div class="custom-control custom-switch mb-2">
+          <input type="checkbox" class="custom-control-input" id="sms_extra_present" name="sms_extra_class_attendance_present" {{ $extraClassAttendance['sms_extra_class_attendance_present']=='1'?'checked':'' }}>
+          <label class="custom-control-label" for="sms_extra_present">Present (উপস্থিত)</label>
+        </div>
+        <div class="custom-control custom-switch mb-2">
+          <input type="checkbox" class="custom-control-input" id="sms_extra_absent" name="sms_extra_class_attendance_absent" {{ $extraClassAttendance['sms_extra_class_attendance_absent']=='1'?'checked':'' }}>
+          <label class="custom-control-label" for="sms_extra_absent">Absent (অনুপস্থিত)</label>
+        </div>
+        <div class="custom-control custom-switch mb-2">
+          <input type="checkbox" class="custom-control-input" id="sms_extra_late" name="sms_extra_class_attendance_late" {{ $extraClassAttendance['sms_extra_class_attendance_late']=='1'?'checked':'' }}>
+          <label class="custom-control-label" for="sms_extra_late">Late (বিলম্ব)</label>
+        </div>
+        <div class="custom-control custom-switch mb-4">
+          <input type="checkbox" class="custom-control-input" id="sms_extra_halfday" name="sms_extra_class_attendance_half_day" {{ $extraClassAttendance['sms_extra_class_attendance_half_day']=='1'?'checked':'' }}>
+          <label class="custom-control-label" for="sms_extra_halfday">Half Day (আধা দিন)</label>
+        </div>
+        <button class="btn btn-primary"><i class="fas fa-save mr-1"></i> সংরক্ষণ</button>
+      </form>
+    </div>
+  </div>
   <div class="tab-pane fade" id="templates" role="tabpanel">
     <div class="d-flex justify-content-between align-items-center mb-2">
       <h5 class="mb-0">SMS টেমপ্লেট ({{ $templates->count() }})</h5>
       <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#addTemplateModal"><i class="fa fa-plus"></i> নতুন</button>
     </div>
     <table class="table table-bordered table-striped table-sm">
-      <thead><tr><th style="width:150px">শিরোনাম</th><th>বডি</th><th style="width:115px">অ্যাকশন</th></tr></thead>
+      <thead><tr><th style="width:100px">ধরন</th><th style="width:150px">শিরোনাম</th><th>বডি</th><th style="width:115px">অ্যাকশন</th></tr></thead>
       <tbody>
       @forelse($templates as $t)
         <tr>
+          <td>
+            @if($t->type == 'general')
+              <span class="badge badge-secondary">সাধারণ</span>
+            @elseif($t->type == 'class')
+              <span class="badge badge-primary">ক্লাস</span>
+            @elseif($t->type == 'extra_class')
+              <span class="badge badge-warning">এক্সট্রা ক্লাস</span>
+            @endif
+          </td>
           <td>{{ $t->title }}</td>
           <td><pre class="mb-0" style="white-space:pre-wrap;word-break:break-word;">{{ $t->content }}</pre></td>
           <td>
-            <button class="btn btn-warning btn-sm edit-btn" data-id="{{ $t->id }}" data-title="{{ e($t->title) }}" data-content="{{ e($t->content) }}" data-toggle="modal" data-target="#editTemplateModal"><i class="fa fa-edit"></i></button>
+            <button class="btn btn-warning btn-sm edit-btn" data-data="{{ json_encode(['id' => $t->id, 'title' => $t->title, 'content' => $t->content, 'type' => $t->type]) }}" data-toggle="modal" data-target="#editTemplateModal"><i class="fa fa-edit"></i></button>
             <form method="post" action="{{ route('principal.institute.sms.templates.destroy',[$school,$t]) }}" style="display:inline" onsubmit="return confirm('মুছতে নিশ্চিত?');">
               @csrf @method('DELETE')
               <button class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button>
@@ -82,7 +145,7 @@
           </td>
         </tr>
       @empty
-        <tr><td colspan="3" class="text-center text-muted">কোনো টেমপ্লেট নেই</td></tr>
+        <tr><td colspan="4" class="text-center text-muted">কোনো টেমপ্লেট নেই</td></tr>
       @endforelse
       </tbody>
     </table>
@@ -97,6 +160,14 @@
         @csrf
         <div class="modal-header"><h5 class="modal-title">টেমপ্লেট যুক্ত করুন</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
         <div class="modal-body">
+          <div class="form-group">
+            <label>ধরন</label>
+            <select name="type" class="form-control" required>
+              <option value="general">সাধারণ</option>
+              <option value="class">ক্লাস হাজিরা</option>
+              <option value="extra_class">এক্সট্রা ক্লাস হাজিরা</option>
+            </select>
+          </div>
           <div class="form-group">
             <label>শিরোনাম</label>
             <input type="text" name="title" class="form-control" required>
@@ -124,6 +195,14 @@
         <div class="modal-header"><h5 class="modal-title">টেমপ্লেট সম্পাদনা</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
         <div class="modal-body">
           <input type="hidden" name="template_id" id="editTemplateId">
+          <div class="form-group">
+            <label>ধরন</label>
+            <select name="type" id="editTemplateType" class="form-control" required>
+              <option value="general">সাধারণ</option>
+              <option value="class">ক্লাস হাজিরা</option>
+              <option value="extra_class">এক্সট্রা ক্লাস হাজিরা</option>
+            </select>
+          </div>
           <div class="form-group">
             <label>শিরোনাম</label>
             <input type="text" name="title" id="editTemplateTitle" class="form-control" required>
@@ -157,17 +236,15 @@
   });
 
   // Edit template modal fill
-  document.querySelectorAll('.edit-btn').forEach(btn=>{
-    btn.addEventListener('click', function(){
-      const id = this.dataset.id;
-      const title = this.dataset.title;
-      const content = this.dataset.content;
-      document.getElementById('editTemplateId').value = id;
-      document.getElementById('editTemplateTitle').value = title;
-      document.getElementById('editTemplateContent').value = content;
-      const form = document.getElementById('editTemplateForm');
-      form.action = '{{ route('principal.institute.sms.templates.update',[$school,'__ID__']) }}'.replace('__ID__', id);
-    });
+  $('#editTemplateModal').on('show.bs.modal', function (event) {
+    const button = event.relatedTarget; // Button that triggered the modal
+    const data = JSON.parse(button.dataset.data);
+    document.getElementById('editTemplateId').value = data.id;
+    document.getElementById('editTemplateTitle').value = data.title;
+    document.getElementById('editTemplateContent').value = data.content;
+    document.getElementById('editTemplateType').value = data.type;
+    const form = document.getElementById('editTemplateForm');
+    form.action = '{{ route('principal.institute.sms.templates.update',[$school,'__ID__']) }}'.replace('__ID__', data.id);
   });
 })();
 </script>

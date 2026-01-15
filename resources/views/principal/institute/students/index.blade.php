@@ -28,10 +28,14 @@
     </select>
   </div>
 </div>
-<button class="btn btn-outline-secondary d-md-none mb-2" type="button" data-toggle="collapse" data-target="#filtersCollapse" aria-expanded="false" aria-controls="filtersCollapse">
-  ফিল্টার দেখুন/লুকান
-</button>
-<form id="filtersCollapse" class="form-inline mb-3 collapse" method="get">
+<div id="filtersBar" class="card card-body p-2 mb-3" style="background:#f8fafc;">
+  <div class="d-flex align-items-center mb-2">
+    <strong class="mr-2">Filters</strong>
+    <button class="btn btn-outline-secondary d-md-none ml-auto" type="button" data-toggle="collapse" data-target="#filtersCollapse" aria-expanded="false" aria-controls="filtersCollapse">
+      ফিল্টার দেখুন/লুকান
+    </button>
+  </div>
+  <form id="filtersCollapse" class="form-inline" method="get" style="display:flex; flex-wrap:wrap; gap:.5rem; align-items:flex-start;">
   <div class="position-relative mr-2" style="min-width: 250px;">
     <input type="text" id="student-search" name="q" value="{{ $q }}" class="form-control" placeholder="নাম / আইডি সার্চ..." autocomplete="off">
     <div id="search-results" class="position-absolute bg-white border rounded shadow-sm" style="top: 100%; left: 0; right: 0; z-index: 1000; display: none; max-height: 300px; overflow-y: auto;"></div>
@@ -44,19 +48,19 @@
   </select>
   <select name="class_id" class="form-control mr-2">
     <option value="">-- শ্রেণি নির্বাচন --</option>
-    @foreach($school->classes ?? [] as $class)
+    @foreach(($classes ?? ($school->classes ?? collect())) as $class)
       <option value="{{ $class->id }}" {{ request('class_id') == $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
     @endforeach
   </select>
   <select name="section_id" class="form-control mr-2">
     <option value="">-- শাখা নির্বাচন --</option>
-    @foreach($school->sections ?? [] as $section)
+    @foreach(($sections ?? ($school->sections ?? collect())) as $section)
       <option value="{{ $section->id }}" {{ request('section_id') == $section->id ? 'selected' : '' }}>{{ $section->name }}</option>
     @endforeach
   </select>
   <select name="group_id" class="form-control mr-2">
     <option value="">-- গ্রুপ নির্বাচন --</option>
-    @foreach($school->groups ?? [] as $group)
+    @foreach(($groups ?? ($school->groups ?? collect())) as $group)
       <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
     @endforeach
   </select>
@@ -92,6 +96,7 @@
   <button class="btn btn-outline-secondary mr-2">ফিল্টার</button>
   <a href="{{ route('principal.institute.students.index', $school) }}" class="btn btn-outline-danger">রিসেট</a>
 </form>
+</div>
 <div class="table-responsive">
   <table class="table table-bordered table-sm">
     <thead class="thead-light">
@@ -141,7 +146,7 @@
         <td>{{ $stu->student_id }}</td>
         <td>{{ $stu->full_name }}</td>
         <td>{{ $stu->father_name_bn ?: $stu->father_name }}</td>
-        <td>{{ $en? $en->class?->name : '-' }}</td>
+        <td>{{ $en? $en->{'class'}?->name : '-' }}</td>
         <td>{{ $en? $en->section?->name : '-' }}</td>
         <td>{{ $en? $en->roll_no : '-' }}</td>
         <td class="d-none d-md-table-cell">{{ $en? $en->group?->name : '-' }}</td>
@@ -295,26 +300,36 @@
   /* Compact pagination already handles ellipsis, no need for additional hiding */
 }
 
-/* Responsive filter form */
-@media (max-width: 768px) {
-  .form-inline .form-control {
-    margin-bottom: 0.5rem;
-    width: 100%;
+  /* Responsive filter form */
+  @media (max-width: 768px) {
+    .form-inline .form-control {
+      margin-bottom: 0.5rem;
+      width: 100%;
+    }
+
+    .form-inline .btn {
+      margin-bottom: 0.5rem;
+    }
+
+    .form-inline {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .form-inline .mr-2 {
+      margin-right: 0 !important;
+    }
   }
 
-  .form-inline .btn {
-    margin-bottom: 0.5rem;
+  /* Ensure filters are always visible on md+ screens even if collapse JS/CSS conflicts */
+  @media (min-width: 768px) {
+    #filtersCollapse.collapse {
+      display: flex !important;
+      height: auto !important;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
   }
-
-  .form-inline {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .form-inline .mr-2 {
-    margin-right: 0 !important;
-  }
-}
 </style>
 @endpush
 @push('scripts')
@@ -426,7 +441,7 @@
   const sectionSelect = document.querySelector('select[name="section_id"]');
   const groupSelect = document.querySelector('select[name="group_id"]');
 
-  classSelect.addEventListener('change', function() {
+  if (classSelect && sectionSelect && groupSelect) classSelect.addEventListener('change', function() {
     const classId = this.value;
 
     // Reset section and group
