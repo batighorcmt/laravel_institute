@@ -91,8 +91,8 @@
         <div class="row">
           <div class="col-md-3">
             <div class="form-group">
-              <label>জন্ম তারিখ *</label>
-              <input type="date" name="date_of_birth" class="form-control" required value="{{ old('date_of_birth',optional($student->date_of_birth)->toDateString()) }}">
+              <label>জন্ম তারিখ</label>
+              <input type="date" name="date_of_birth" class="form-control" value="{{ old('date_of_birth',optional($student->date_of_birth)->toDateString()) }}">
             </div>
           </div>
           <div class="col-md-3">
@@ -240,7 +240,7 @@
       <div class="mb-4">
         <h5 class="mb-2"><i class="fas fa-file-alt mr-2"></i>অফিসিয়াল</h5>
         <div class="row">
-          <div class="col-md-6"><div class="form-group"><label>ভর্তি তারিখ *</label><input type="date" name="admission_date" class="form-control" required value="{{ old('admission_date',optional($student->admission_date)->toDateString()) }}"></div></div>
+          <div class="col-md-6"><div class="form-group"><label>ভর্তি তারিখ</label><input type="date" name="admission_date" class="form-control" value="{{ old('admission_date',optional($student->admission_date)->toDateString()) }}"></div></div>
           <div class="col-md-6"><div class="form-group"><label>স্ট্যাটাস *</label><select name="status" class="form-control" required><option value="active" {{ old('status',$student->status)=='active'?'selected':'' }}>Active</option><option value="inactive" {{ old('status',$student->status)=='inactive'?'selected':'' }}>Inactive</option><option value="graduated" {{ old('status',$student->status)=='graduated'?'selected':'' }}>Graduated</option><option value="transferred" {{ old('status',$student->status)=='transferred'?'selected':'' }}>Transferred</option></select></div></div>
         </div>
       </div>
