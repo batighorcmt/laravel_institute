@@ -334,7 +334,7 @@ class StudentController extends Controller
         $data = $request->validate([
             'student_name_en'=>['required','string','max:150'],
             'student_name_bn'=>['nullable','string','max:150'],
-            'date_of_birth'=>['required','date'],
+            'date_of_birth'=>['nullable','date'],
             'gender'=>['required','in:male,female'],
             'father_name'=>['required','string','max:120'],
             'mother_name'=>['required','string','max:120'],
@@ -360,7 +360,7 @@ class StudentController extends Controller
             'pass_year'=>['nullable','string','max:10'],
             'previous_result'=>['nullable','string','max:50'],
             'previous_remarks'=>['nullable','string','max:500'],
-            'admission_date'=>['required','date'],
+            'admission_date'=>['nullable','date'],
             'status'=>['required','in:active,inactive,graduated,transferred'],
             'photo'=>['nullable','image','max:1024'],
         ]);
