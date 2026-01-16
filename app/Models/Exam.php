@@ -18,6 +18,8 @@ class Exam extends Model
         'class_id',
         'name',
         'name_bn',
+        'exam_type',
+        'total_subjects_without_fourth',
         'start_date',
         'end_date',
         'status',

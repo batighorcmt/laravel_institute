@@ -288,10 +288,13 @@ Route::middleware(['auth'])->group(function () {
             Route::prefix('exams')->name('exams.')->group(function(){
                 Route::get('/', [App\Http\Controllers\Principal\ExamController::class,'index'])->name('index');
                 Route::get('/create', [App\Http\Controllers\Principal\ExamController::class,'create'])->name('create');
+                Route::get('/fetch-subjects', [App\Http\Controllers\Principal\ExamController::class,'fetchSubjects'])->name('fetch-subjects');
                 Route::post('/', [App\Http\Controllers\Principal\ExamController::class,'store'])->name('store');
                 Route::get('/{exam}', [App\Http\Controllers\Principal\ExamController::class,'show'])->name('show');
                 Route::get('/{exam}/edit', [App\Http\Controllers\Principal\ExamController::class,'edit'])->name('edit');
                 Route::put('/{exam}', [App\Http\Controllers\Principal\ExamController::class,'update'])->name('update');
+                Route::get('/{exam}/bulk-update', [App\Http\Controllers\Principal\ExamController::class,'bulkUpdateView'])->name('bulk-update');
+                Route::post('/{exam}/bulk-update', [App\Http\Controllers\Principal\ExamController::class,'bulkUpdate'])->name('bulk-update.store');
                 Route::delete('/{exam}', [App\Http\Controllers\Principal\ExamController::class,'destroy'])->name('destroy');
                 
                 // Exam Subjects
@@ -373,6 +376,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('sms', [\App\Http\Controllers\Principal\SmsSettingsController::class,'index'])->name('sms.index');
                 Route::post('sms/api', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveApi'])->name('sms.api.save');
                 Route::post('sms/attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveAttendance'])->name('sms.attendance.save');
+                Route::post('sms/class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveClassAttendance'])->name('sms.class-attendance.save');
+                Route::post('sms/extra-class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveExtraClassAttendance'])->name('sms.extra-class-attendance.save');
                 Route::post('sms/templates', [\App\Http\Controllers\Principal\SmsSettingsController::class,'storeTemplate'])->name('sms.templates.store');
                 Route::patch('sms/templates/{template}', [\App\Http\Controllers\Principal\SmsSettingsController::class,'updateTemplate'])->name('sms.templates.update');
                 Route::delete('sms/templates/{template}', [\App\Http\Controllers\Principal\SmsSettingsController::class,'destroyTemplate'])->name('sms.templates.destroy');

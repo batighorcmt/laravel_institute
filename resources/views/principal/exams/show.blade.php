@@ -36,12 +36,18 @@
             <div class="card-header">
                 <h3 class="card-title">পরীক্ষার তথ্য</h3>
                 <div class="card-tools">
-                    <a href="{{ route('principal.institute.exams.edit', [$school, $exam]) }}" class="btn btn-sm btn-warning">
-                        <i class="fas fa-edit"></i> সম্পাদনা করুন
+                    <a href="{{ route('principal.institute.exams.index', $school) }}" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-arrow-left"></i> পরীক্ষা তালিকা
                     </a>
-                    <a href="{{ route('principal.institute.marks.show', [$school, $exam]) }}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-pen"></i> নম্বর Entry
+                    <a href="{{ route('principal.institute.exams.create', $school) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> নতুন পরীক্ষা
                     </a>
+                    <button onclick="window.print()" type="button" class="btn btn-sm btn-outline-dark">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                    <button onclick="printLandscape()" type="button" class="btn btn-sm btn-outline-dark">
+                        <i class="fas fa-print"></i> Print (Landscape)
+                    </button>
                 </div>
             </div>
             <div class="card-body">
@@ -57,12 +63,20 @@
                                 <td>{{ $exam->name_bn ?? 'N/A' }}</td>
                             </tr>
                             <tr>
+                                <th>পরীক্ষার ধরন:</th>
+                                <td>{{ $exam->exam_type ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
                                 <th>শ্রেণি:</th>
                                 <td>{{ $exam->class->name ?? 'N/A' }}</td>
                             </tr>
                             <tr>
                                 <th>শিক্ষাবর্ষ:</th>
                                 <td>{{ $exam->academicYear->name ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>মোট বিষয় (৪র্থ বাদে):</th>
+                                <td>{{ $exam->total_subjects_without_fourth ?? 'N/A' }}</td>
                             </tr>
                         </table>
                     </div>
@@ -116,15 +130,26 @@
                         <table class="table table-bordered table-hover">
                             <thead>
                                 <tr>
-                                    <th>ক্রমিক</th>
-                                    <th>বিষয়ের নাম</th>
-                                    <th>শিক্ষক</th>
-                                    <th>সৃজনশীল</th>
-                                    <th>MCQ</th>
-                                    <th>ব্যবহারিক</th>
-                                    <th>মোট</th>
-                                    <th>পরীক্ষার তারিখ</th>
-                                    <th>কার্যক্রম</th>
+                                    <th rowspan="2">ক্রমিক</th>
+                                    <th rowspan="2">বিষয়</th>
+                                    <th rowspan="2">পরীক্ষার তারিখ</th>
+                                    <th rowspan="2">সময়</th>
+                                    <th rowspan="2">নম্বর Entry শেষ তারিখ</th>
+                                    <th colspan="2">সৃজনশীল</th>
+                                    <th colspan="2">MCQ</th>
+                                    <th colspan="2">ব্যবহারিক</th>
+                                    <th rowspan="2">মোট</th>
+                                    <th rowspan="2">শিক্ষক</th>
+                                    <th rowspan="2" class="d-print-none">কার্যক্রম</th>
+                                    <th rowspan="2">স্বাক্ষর</th>
+                                </tr>
+                                <tr>
+                                    <th>পূর্ণমান</th>
+                                    <th>পাস</th>
+                                    <th>পূর্ণমান</th>
+                                    <th>পাস</th>
+                                    <th>পূর্ণমান</th>
+                                    <th>পাস</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -132,13 +157,36 @@
                                     <tr>
                                         <td>{{ $loop->iteration }}</td>
                                         <td><strong>{{ $examSubject->subject->name ?? 'N/A' }}</strong></td>
-                                        <td>{{ $examSubject->teacher->name ?? 'Not Assigned' }}</td>
-                                        <td>{{ $examSubject->creative_full_mark }}</td>
-                                        <td>{{ $examSubject->mcq_full_mark }}</td>
-                                        <td>{{ $examSubject->practical_full_mark }}</td>
-                                        <td><strong>{{ $examSubject->total_full_mark }}</strong></td>
-                                        <td>{{ $examSubject->exam_date ? $examSubject->exam_date->format('d/m/Y') : 'N/A' }}</td>
                                         <td>
+                                            @if($examSubject->exam_date)
+                                                {{ $examSubject->exam_date->format('d/m/Y') }}
+                                            @else
+                                                <span class="text-muted">—</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($examSubject->exam_start_time)
+                                                {{ \Carbon\Carbon::parse($examSubject->exam_start_time)->format('h:i A') }}
+                                            @else
+                                                <span class="text-muted">—</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($examSubject->mark_entry_deadline)
+                                                {{ $examSubject->mark_entry_deadline->format('d/m/Y') }}
+                                            @else
+                                                <span class="text-muted">—</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $examSubject->creative_full_mark }}</td>
+                                        <td>{{ $examSubject->creative_pass_mark }}</td>
+                                        <td>{{ $examSubject->mcq_full_mark }}</td>
+                                        <td>{{ $examSubject->mcq_pass_mark }}</td>
+                                        <td>{{ $examSubject->practical_full_mark }}</td>
+                                        <td>{{ $examSubject->practical_pass_mark }}</td>
+                                        <td><strong>{{ $examSubject->total_full_mark }}</strong></td>
+                                        <td>{{ $examSubject->teacher->name ?? 'Not Assigned' }}</td>
+                                        <td class="d-print-none">
                                             <button class="btn btn-sm btn-warning" data-toggle="modal" data-target="#editSubjectModal{{ $examSubject->id }}">
                                                 <i class="fas fa-edit"></i>
                                             </button>
@@ -150,6 +198,7 @@
                                                 </button>
                                             </form>
                                         </td>
+                                        <td class="signature-cell"></td>
                                     </tr>
 
                                     <!-- Edit Subject Modal -->
@@ -429,4 +478,30 @@
         </div>
     </div>
 </section>
+
+<style>
+@media print {
+    html, body { background:#fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .content-header, .main-footer, .d-print-none, .sidebar, .navbar { display:none !important; }
+    .table th, .table td { font-size:12px; padding:8px 6px; line-height:1.2; }
+    .table th { background:transparent !important; color:#000 !important; text-align:center; vertical-align:middle; }
+    .table tr { background:transparent !important; }
+    .table td, .table th { border:1px solid #444 !important; }
+    .signature-cell { min-width: 95px; height: 28px; }
+}
+</style>
+
+@push('scripts')
+<script>
+    function printLandscape() {
+        var st = document.createElement('style');
+        st.id = 'landscapeStyle';
+        st.media = 'print';
+        st.appendChild(document.createTextNode('@page { size: landscape; }'));
+        document.head.appendChild(st);
+        window.print();
+        setTimeout(function(){ var s=document.getElementById('landscapeStyle'); if (s) s.remove(); }, 1000);
+    }
+</script>
+@endpush
 @endsection

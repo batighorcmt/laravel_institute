@@ -16,6 +16,12 @@ class SmsSettingsController extends Controller
     protected array $attendanceKeys = [
         'sms_attendance_present','sms_attendance_absent','sms_attendance_late','sms_attendance_half_day'
     ];
+    protected array $classAttendanceKeys = [
+        'sms_class_attendance_present','sms_class_attendance_absent','sms_class_attendance_late','sms_class_attendance_half_day'
+    ];
+    protected array $extraClassAttendanceKeys = [
+        'sms_extra_class_attendance_present','sms_extra_class_attendance_absent','sms_extra_class_attendance_late','sms_extra_class_attendance_half_day'
+    ];
 
     public function index(School $school)
     {
@@ -37,6 +43,18 @@ class SmsSettingsController extends Controller
             'sms_attendance_late' => $settings['sms_attendance_late'] ?? '1',
             'sms_attendance_half_day' => $settings['sms_attendance_half_day'] ?? '0',
         ];
+        $classAttendance = [
+            'sms_class_attendance_present' => $settings['sms_class_attendance_present'] ?? '0',
+            'sms_class_attendance_absent' => $settings['sms_class_attendance_absent'] ?? '1',
+            'sms_class_attendance_late' => $settings['sms_class_attendance_late'] ?? '1',
+            'sms_class_attendance_half_day' => $settings['sms_class_attendance_half_day'] ?? '0',
+        ];
+        $extraClassAttendance = [
+            'sms_extra_class_attendance_present' => $settings['sms_extra_class_attendance_present'] ?? '0',
+            'sms_extra_class_attendance_absent' => $settings['sms_extra_class_attendance_absent'] ?? '1',
+            'sms_extra_class_attendance_late' => $settings['sms_extra_class_attendance_late'] ?? '1',
+            'sms_extra_class_attendance_half_day' => $settings['sms_extra_class_attendance_half_day'] ?? '0',
+        ];
 
         $templates = SmsTemplate::forSchool($school->id)->orderByDesc('id')->get();
 
@@ -44,6 +62,8 @@ class SmsSettingsController extends Controller
             'school' => $school,
             'api' => $api,
             'attendance' => $attendance,
+            'classAttendance' => $classAttendance,
+            'extraClassAttendance' => $extraClassAttendance,
             'templates' => $templates,
         ]);
     }
@@ -70,11 +90,32 @@ class SmsSettingsController extends Controller
         return back()->with('success','হাজিরা সম্পর্কিত SMS সেটিংস আপডেট হয়েছে');
     }
 
+    public function saveClassAttendance(Request $request, School $school)
+    {
+        $payload = [];
+        foreach ($this->classAttendanceKeys as $k) {
+            $payload[$k] = $request->has($k) ? '1' : '0';
+        }
+        $this->upsertSettings($school->id, $payload);
+        return back()->with('success','ক্লাস হাজিরা SMS সেটিংস আপডেট হয়েছে');
+    }
+
+    public function saveExtraClassAttendance(Request $request, School $school)
+    {
+        $payload = [];
+        foreach ($this->extraClassAttendanceKeys as $k) {
+            $payload[$k] = $request->has($k) ? '1' : '0';
+        }
+        $this->upsertSettings($school->id, $payload);
+        return back()->with('success','এক্সট্রা ক্লাস হাজিরা SMS সেটিংস আপডেট হয়েছে');
+    }
+
     public function storeTemplate(Request $request, School $school)
     {
         $data = $request->validate([
             'title' => 'required|string|max:100',
             'content' => 'required|string',
+            'type' => 'required|string|in:general,class,extra_class',
         ]);
         $data['school_id'] = $school->id;
         SmsTemplate::create($data);
@@ -87,6 +128,7 @@ class SmsSettingsController extends Controller
         $data = $request->validate([
             'title' => 'required|string|max:100',
             'content' => 'required|string',
+            'type' => 'required|string|in:general,class,extra_class',
         ]);
         $template->update($data);
         return back()->with('success','টেমপ্লেট আপডেট হয়েছে');

@@ -10,6 +10,9 @@ use App\Models\SchoolClass;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
+use App\Models\Setting;
+use App\Models\SmsTemplate;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -546,10 +549,84 @@ class AttendanceController extends Controller
                 $message = 'উপস্থিতি সফলভাবে রেকর্ড করা হয়েছে!';
             }
 
+            // Send SMS notifications
+            $smsCount = $this->sendAttendanceSms($school, $request->attendance, $classId, $sectionId, $date, $isExistingRecord);
+
+            $message .= " {$smsCount} SMS sent.";
+
             return redirect()->route('principal.institute.attendance.class.take', [$school, 'class_id' => $classId, 'section_id' => $sectionId])->with('success', $message);
 
         } catch (\Exception $e) {
             return back()->with('error', 'উপস্থিতি রেকর্ড করতে সমস্যা হয়েছে: ' . $e->getMessage());
         }
+    }
+
+    public function testSendAttendanceSms(School $school, array $attendanceData, $classId, $sectionId, $date, $isExistingRecord)
+    {
+        return $this->sendAttendanceSms($school, $attendanceData, $classId, $sectionId, $date, $isExistingRecord);
+    }
+
+    private function sendAttendanceSms(School $school, array $attendanceData, $classId, $sectionId, $date, $isExistingRecord)
+    {
+        $settings = Setting::forSchool($school->id)->where('key', 'like', 'sms_class_attendance_%')->pluck('value', 'key');
+        $currentAcademicYear = AcademicYear::forSchool($school->id)->current()->first();
+        $sentCount = 0;
+
+        foreach ($attendanceData as $studentId => $data) {
+            $newStatus = $data['status'];
+            $oldStatus = Attendance::where('student_id', $studentId)->where('date', $date)->value('status');
+
+            if ($oldStatus === $newStatus) continue; // no change
+
+            $send = false;
+            if ($isExistingRecord) {
+                // update, always send
+                $send = true;
+            } else {
+                // new, check setting
+                $key = 'sms_class_attendance_' . $newStatus;
+                $send = ($settings[$key] ?? '0') === '1';
+            }
+
+            if ($send) {
+                $template = SmsTemplate::where(function($q) use ($school) {
+                    $q->where('school_id', $school->id)->orWhereNull('school_id');
+                })->where(function($q) {
+                    $q->whereIn('type', ['general', 'class'])->orWhereNull('type');
+                })->where('title', $newStatus)->orderByRaw("FIELD(type, 'general', 'class', null)")->first();
+                if ($template) {
+                    $student = Student::find($studentId);
+                    if ($student && $student->guardian_phone) {
+                        $enrollment = StudentEnrollment::where('student_id', $studentId)->where('class_id', $classId)->where('section_id', $sectionId)->where('status', 'active')->first();
+                        $class = SchoolClass::find($classId);
+                        $section = Section::find($sectionId);
+                        $message = $this->replacePlaceholders($template->content, $student, $newStatus, $date);
+                        $extra = [
+                            'recipient_id' => $student->id,
+                            'recipient_name' => $student->student_name_en,
+                            'recipient_type' => 'student',
+                            'recipient_category' => 'guardian',
+                            'roll_number' => $enrollment ? $enrollment->roll_no : null,
+                            'class_name' => $class ? $class->name : null,
+                            'section_name' => $section ? $section->name : null,
+                        ];
+                        $smsService = new SmsService($school);
+                        $result = $smsService->sendSms($student->guardian_phone, $message, 'attendance', $extra);
+                        if ($result) $sentCount++; // assuming sendSms returns true on success
+                    }
+                }
+            }
+        }
+
+        return $sentCount;
+    }
+
+    private function replacePlaceholders($content, $student, $status, $date)
+    {
+        return str_replace(
+            ['{student_name}', '{status}', '{date}'],
+            [$student->student_name_en, $status, $date],
+            $content
+        );
     }
 }

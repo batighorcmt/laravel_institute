@@ -77,7 +77,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="name">পরীক্ষার নাম (ইংরেজি) <span class="text-danger">*</span></label>
                                 <input type="text" name="name" id="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $exam->name) }}" required>
@@ -87,11 +87,39 @@
                             </div>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label for="name_bn">পরীক্ষার নাম (বাংলা)</label>
                                 <input type="text" name="name_bn" id="name_bn" class="form-control @error('name_bn') is-invalid @enderror" value="{{ old('name_bn', $exam->name_bn) }}">
                                 @error('name_bn')
+                                    <span class="invalid-feedback">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="exam_type">পরীক্ষার ধরন</label>
+                                <select name="exam_type" id="exam_type" class="form-control @error('exam_type') is-invalid @enderror">
+                                    <option value="">-- নির্বাচন করুন --</option>
+                                    <option value="Half Yearly" {{ old('exam_type', $exam->exam_type) == 'Half Yearly' ? 'selected' : '' }}>Half Yearly</option>
+                                    <option value="Final" {{ old('exam_type', $exam->exam_type) == 'Final' ? 'selected' : '' }}>Final</option>
+                                    <option value="Monthly" {{ old('exam_type', $exam->exam_type) == 'Monthly' ? 'selected' : '' }}>Monthly</option>
+                                </select>
+                                @error('exam_type')
+                                    <span class="invalid-feedback">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="total_subjects_without_fourth">মোট বিষয় (৪র্থ বাদে)</label>
+                                <input type="number" name="total_subjects_without_fourth" id="total_subjects_without_fourth" class="form-control @error('total_subjects_without_fourth') is-invalid @enderror" value="{{ old('total_subjects_without_fourth', $exam->total_subjects_without_fourth) }}" min="1" placeholder="e.g., 6">
+                                <small class="text-muted">GPA হিসাবের জন্য ব্যবহার করা হবে (৪র্থ/ঐচ্ছিক বিষয় বাদে)</small>
+                                @error('total_subjects_without_fourth')
                                     <span class="invalid-feedback">{{ $message }}</span>
                                 @enderror
                             </div>

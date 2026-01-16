@@ -87,19 +87,55 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <a href="{{ route('principal.institute.exams.show', [$school, $exam]) }}" class="btn btn-sm btn-info" title="বিস্তারিত দেখুন">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="{{ route('principal.institute.exams.edit', [$school, $exam]) }}" class="btn btn-sm btn-warning" title="সম্পাদনা করুন">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <form action="{{ route('principal.institute.exams.destroy', [$school, $exam]) }}" method="POST" class="d-inline" onsubmit="return confirm('আপনি কি নিশ্চিত?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" title="মুছে ফেলুন">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
+                                        <style>
+                                            .custom-dropdown {
+                                                position: relative;
+                                                display: inline-block;
+                                            }
+                                            .custom-dropdown-menu {
+                                                display: none;
+                                                position: absolute;
+                                                z-index: 1000;
+                                                min-width: 200px;
+                                                background-color: white;
+                                                border: 1px solid #ddd;
+                                                box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+                                                right: 0;
+                                                margin-top: 5px;
+                                            }
+                                            .custom-dropdown-menu a {
+                                                display: block;
+                                                padding: 8px 12px;
+                                                text-decoration: none;
+                                                color: #333;
+                                                font-size: 14px;
+                                            }
+                                            .custom-dropdown-menu a:hover {
+                                                background-color: #f1f1f1;
+                                            }
+                                            .custom-dropdown.show .custom-dropdown-menu {
+                                                display: block;
+                                            }
+                                        </style>
+                                        <div class="custom-dropdown">
+                                            <button class="btn btn-sm btn-primary" onclick="toggleDropdown(this, event)">Actions</button>
+                                            <div class="custom-dropdown-menu">
+                                                <a href="{{ route('principal.institute.exams.show', [$school, $exam]) }}"><i class="fas fa-eye"></i> Details</a>
+                                                <a href="{{ route('principal.institute.exams.bulk-update', [$school, $exam]) }}"><i class="fas fa-tasks"></i> Bulk Update</a>
+                                                <a href="{{ route('principal.institute.exams.edit', [$school, $exam]) }}"><i class="fas fa-pencil-alt"></i> Edit</a>
+                                                <a href="{{ route('principal.institute.seat-plans.index', $school) }}?exam_id={{ $exam->id }}"><i class="fas fa-chair"></i> Seat Plan</a>
+                                                <a href="{{ route('principal.institute.marks.show', [$school, $exam]) }}"><i class="fas fa-pen"></i> Mark Entry</a>
+                                                <a href="{{ route('principal.institute.results.marksheet', $school) }}?exam_id={{ $exam->id }}"><i class="fas fa-file-alt"></i> Results</a>
+                                                <div style="border-top: 1px solid #ddd; margin: 5px 0;"></div>
+                                                <form action="{{ route('principal.institute.exams.destroy', [$school, $exam]) }}" method="POST" class="d-inline" onsubmit="return confirm('আপনি কি নিশ্চিত যে আপনি এই পরীক্ষা মুছে ফেলতে চান?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="custom-dropdown-menu" style="width: 100%; text-align: left; border: none; background: none; padding: 8px 12px; color: #dc3545; cursor: pointer;">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -119,4 +155,26 @@
         </div>
     </div>
 </section>
+
+@push('scripts')
+<script>
+    function toggleDropdown(button, event) {
+        event.stopPropagation();
+        const dropdown = button.parentElement;
+        dropdown.classList.toggle('show');
+        
+        // Close others
+        document.querySelectorAll('.custom-dropdown').forEach(d => {
+            if (d !== dropdown) d.classList.remove('show');
+        });
+    }
+
+    // Close when clicking outside
+    window.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-dropdown')) {
+            document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('show'));
+        }
+    });
+</script>
+@endpush
 @endsection

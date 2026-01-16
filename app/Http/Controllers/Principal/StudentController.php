@@ -40,6 +40,13 @@ class StudentController extends Controller
         $selectedYearId = (int)($request->query('year_id') ?: ($currentYear->id ?? 0));
         $selectedYear = $years->firstWhere('id', $selectedYearId);
 
+        // Load school relationships for filter options
+        $school->load(['classes', 'sections', 'groups']);
+        // Also fetch lists explicitly to avoid reliance on eager loading in views
+        $classes = SchoolClass::forSchool($school->id)->ordered()->get();
+        $sections = Section::forSchool($school->id)->ordered()->get();
+        $groups = Group::forSchool($school->id)->orderBy('name')->get();
+
         // Get filter parameters
         $classId = $request->get('class_id');
         $sectionId = $request->get('section_id');
@@ -90,6 +97,10 @@ class StudentController extends Controller
             'currentYear'=>$currentYear,
             'selectedYear'=>$selectedYear,
             'selectedYearId'=>$selectedYearId,
+            // filter source lists
+            'classes' => $classes,
+            'sections' => $sections,
+            'groups' => $groups,
         ]);
     }
 
