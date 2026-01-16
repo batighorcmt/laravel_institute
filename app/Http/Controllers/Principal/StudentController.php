@@ -809,6 +809,10 @@ class StudentController extends Controller
         $selectedYearId = (int)($request->query('year_id') ?: ($currentYear->id ?? 0));
         $selectedYear = $years->firstWhere('id', $selectedYearId);
 
+        // Load classes and sections separately for better control
+        $classes = SchoolClass::forSchool($school->id)->ordered()->get();
+        $sections = Section::forSchool($school->id)->with('class')->get();
+
         // Default selected columns (Photo optional)
         $defaultCols = ['serial','student_id','name','father','class','section','roll','group','mobile','status','subjects'];
         $cols = $request->query('cols', $defaultCols);
@@ -819,6 +823,8 @@ class StudentController extends Controller
             'currentYear' => $currentYear,
             'selectedYear' => $selectedYear,
             'selectedYearId' => $selectedYearId,
+            'classes' => $classes,
+            'sections' => $sections,
             'cols' => $cols,
             'lang' => $request->query('lang','bn'),
         ]);
@@ -847,11 +853,15 @@ class StudentController extends Controller
         $religion = $request->get('religion');
         $village = $request->get('village');
 
+        // Sorting parameters
+        $sortBy = $request->get('sort_by', 'student_id');
+        $sortOrder = $request->get('sort_order', 'asc');
+
         $limit = (int)$request->query('limit', 1000);
         if ($limit < 1) $limit = 1;
         if ($limit > 5000) $limit = 5000;
 
-        $students = Student::forSchool($school->id)
+        $studentsQuery = Student::forSchool($school->id)
             ->when($q, function($x) use ($q){
                 $x->where(function($inner) use ($q){
                     $inner->where('student_name_en','like',"%$q%")
@@ -881,10 +891,47 @@ class StudentController extends Controller
             ->with(['enrollments' => function($en) use ($selectedYearId){
                 if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
                 $en->with(['class','section','group','subjects.subject','academicYear']);
-            }])
-            ->orderBy('id','desc')
-            ->take($limit)
-            ->get();
+            }]);
+
+        // Apply sorting based on sort_by parameter
+        switch ($sortBy) {
+            case 'student_id':
+                $studentsQuery->orderBy('student_id', $sortOrder);
+                break;
+            case 'class':
+                $studentsQuery->join('student_enrollments', function($join) use ($selectedYearId) {
+                    $join->on('students.id', '=', 'student_enrollments.student_id')
+                         ->where('student_enrollments.academic_year_id', $selectedYearId);
+                })
+                ->join('classes', 'student_enrollments.class_id', '=', 'classes.id')
+                ->orderBy('classes.numeric_value', $sortOrder)
+                ->select('students.*');
+                break;
+            case 'section':
+                $studentsQuery->join('student_enrollments', function($join) use ($selectedYearId) {
+                    $join->on('students.id', '=', 'student_enrollments.student_id')
+                         ->where('student_enrollments.academic_year_id', $selectedYearId);
+                })
+                ->join('sections', 'student_enrollments.section_id', '=', 'sections.id')
+                ->orderBy('sections.name', $sortOrder)
+                ->select('students.*');
+                break;
+            case 'roll':
+                $studentsQuery->join('student_enrollments', function($join) use ($selectedYearId) {
+                    $join->on('students.id', '=', 'student_enrollments.student_id')
+                         ->where('student_enrollments.academic_year_id', $selectedYearId);
+                })
+                ->orderBy('student_enrollments.roll_no', $sortOrder)
+                ->select('students.*');
+                break;
+            case 'village':
+                $studentsQuery->orderBy('present_village', $sortOrder);
+                break;
+            default:
+                $studentsQuery->orderBy('id', 'desc');
+        }
+
+        $students = $studentsQuery->take($limit)->get();
 
         // Columns selection
         $defaultCols = ['serial','student_id','name','father','class','section','roll','group','mobile','status','subjects'];
@@ -896,6 +943,7 @@ class StudentController extends Controller
             'student_id' => 'আইডি নং',
             'name' => 'নাম',
             'father' => 'পিতার নাম',
+            'mother' => 'মাতার নাম',
             'class' => 'শ্রেণি',
             'section' => 'শাখা',
             'roll' => 'রোল',
@@ -904,12 +952,33 @@ class StudentController extends Controller
             'status' => 'স্ট্যাটাস',
             'photo' => 'ছবি',
             'subjects' => 'বিষয়সমূহ',
+            'date_of_birth' => 'জন্ম তারিখ',
+            'gender' => 'লিঙ্গ',
+            'religion' => 'ধর্ম',
+            'blood_group' => 'রক্তের গ্রুপ',
+            'guardian_name' => 'অভিভাবকের নাম',
+            'guardian_relation' => 'অভিভাবকের সম্পর্ক',
+            'present_village' => 'বর্তমান গ্রাম',
+            'present_para_moholla' => 'বর্তমান পাড়া/মহল্লা',
+            'present_post_office' => 'বর্তমান ডাকঘর',
+            'present_upazilla' => 'বর্তমান উপজেলা',
+            'present_district' => 'বর্তমান জেলা',
+            'permanent_village' => 'স্থায়ী গ্রাম',
+            'permanent_para_moholla' => 'স্থায়ী পাড়া/মহল্লা',
+            'permanent_post_office' => 'স্থায়ী ডাকঘর',
+            'permanent_upazilla' => 'স্থায়ী উপজেলা',
+            'permanent_district' => 'স্থায়ী জেলা',
+            'admission_date' => 'ভর্তির তারিখ',
+            'previous_school' => 'পূর্ববর্তী স্কুল',
+            'pass_year' => 'পাসের বছর',
+            'previous_result' => 'পূর্ববর্তী ফলাফল',
         ];
         $labelsEn = [
             'serial' => 'Serial',
             'student_id' => 'Student ID',
             'name' => 'Name',
             'father' => "Father's Name",
+            'mother' => "Mother's Name",
             'class' => 'Class',
             'section' => 'Section',
             'roll' => 'Roll',
@@ -918,6 +987,26 @@ class StudentController extends Controller
             'status' => 'Status',
             'photo' => 'Photo',
             'subjects' => 'Subjects',
+            'date_of_birth' => 'Date of Birth',
+            'gender' => 'Gender',
+            'religion' => 'Religion',
+            'blood_group' => 'Blood Group',
+            'guardian_name' => 'Guardian Name',
+            'guardian_relation' => 'Guardian Relation',
+            'present_village' => 'Present Village',
+            'present_para_moholla' => 'Present Para/Moholla',
+            'present_post_office' => 'Present Post Office',
+            'present_upazilla' => 'Present Upazilla',
+            'present_district' => 'Present District',
+            'permanent_village' => 'Permanent Village',
+            'permanent_para_moholla' => 'Permanent Para/Moholla',
+            'permanent_post_office' => 'Permanent Post Office',
+            'permanent_upazilla' => 'Permanent Upazilla',
+            'permanent_district' => 'Permanent District',
+            'admission_date' => 'Admission Date',
+            'previous_school' => 'Previous School',
+            'pass_year' => 'Pass Year',
+            'previous_result' => 'Previous Result',
         ];
         $labels = $lang === 'bn' ? $labelsBn : $labelsEn;
 
