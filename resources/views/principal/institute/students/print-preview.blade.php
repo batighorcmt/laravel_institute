@@ -78,13 +78,15 @@
   .print-table thead th{background:#f0f0f0 !important;font-weight:700;color:#000 !important}
   .w-serial{width:50px}
   .w-id{width:110px}
-  .w-roll{width:70px}
-  .w-class,.w-sec,.w-group{width:90px}
-  .w-status{width:90px}
+  .w-roll{width:60px}
+  .w-class{width:70px}
+  .w-sec{width:40px}
+  .w-group{width:70px}
+  .w-status{width:80px}
   .w-date{width:100px}
-  .w-gender{width:70px}
-  .w-blood{width:80px}
-  .photo-cell img{width:60px;height:60px;object-fit:cover;border-radius:6%}
+  .w-gender{width:60px}
+  .w-blood{width:70px}
+  .photo-cell img{width:auto;height:50px;object-fit:contain;}
   .small{font-size:12px}
   .muted{color:#555 !important}
   .nowrap{white-space:nowrap}
@@ -132,14 +134,29 @@
               @case('student_id')
                 <th class="w-id">{{ $labels['student_id'] ?? 'Student ID' }}</th>
                 @break
-              @case('name')
-                <th>{{ $labels['name'] ?? 'Name' }}</th>
+              @case('name_bn')
+                <th>{{ $labels['name_bn'] ?? 'Name' }}</th>
                 @break
-              @case('father')
-                <th>{{ $labels['father'] ?? "Father's Name" }}</th>
+              @case('name_en')
+                @if(!in_array('name_bn', $cols))
+                  <th>{{ $labels['name_en'] ?? 'Name' }}</th>
+                @endif
                 @break
-              @case('mother')
-                <th>{{ $labels['mother'] ?? "Mother's Name" }}</th>
+              @case('father_bn')
+                <th>{{ $labels['father_bn'] ?? "Father's Name" }}</th>
+                @break
+              @case('father_en')
+                @if(!in_array('father_bn', $cols))
+                  <th>{{ $labels['father_en'] ?? "Father's Name" }}</th>
+                @endif
+                @break
+              @case('mother_bn')
+                <th>{{ $labels['mother_bn'] ?? "Mother's Name" }}</th>
+                @break
+              @case('mother_en')
+                @if(!in_array('mother_bn', $cols))
+                  <th>{{ $labels['mother_en'] ?? "Mother's Name" }}</th>
+                @endif
                 @break
               @case('date_of_birth')
                 <th class="w-date">{{ $labels['date_of_birth'] ?? 'Date of Birth' }}</th>
@@ -165,8 +182,13 @@
               @case('group')
                 <th class="w-group">{{ $labels['group'] ?? 'Group' }}</th>
                 @break
-              @case('guardian_name')
-                <th>{{ $labels['guardian_name'] ?? 'Guardian Name' }}</th>
+              @case('guardian_name_bn')
+                <th>{{ $labels['guardian_name_bn'] ?? 'Guardian Name' }}</th>
+                @break
+              @case('guardian_name_en')
+                @if(!in_array('guardian_name_bn', $cols))
+                  <th>{{ $labels['guardian_name_en'] ?? 'Guardian Name' }}</th>
+                @endif
                 @break
               @case('guardian_relation')
                 <th>{{ $labels['guardian_relation'] ?? 'Guardian Relation' }}</th>
@@ -225,6 +247,9 @@
               @case('subjects')
                 <th>{{ ($labels['subjects'] ?? 'Subjects') . ($yearLabel ? " (" . $yearLabel . ")" : "") }}</th>
                 @break
+              @case('signature')
+                <th>{{ $labels['signature'] ?? 'Signature' }}</th>
+                @break
             @endswitch
           @endforeach
         </tr>
@@ -264,14 +289,65 @@
                 @case('student_id')
                   <td class="nowrap">{{ $stu->student_id }}</td>
                   @break
-                @case('name')
-                  <td>{{ $lang==='bn' ? ($stu->student_name_bn ?: ($stu->full_name ?? $stu->student_name_en)) : ($stu->student_name_en ?: ($stu->full_name ?? $stu->student_name_bn)) }}</td>
+                @case('name_bn')
+                  @php
+                    $hasBothNames = in_array('name_bn', $cols) && in_array('name_en', $cols);
+                    $nameBn = $stu->student_name_bn ?: '';
+                    $nameEn = $stu->student_name_en ?: '';
+                  @endphp
+                  @if($hasBothNames && $nameBn && $nameEn)
+                    <td>{{ $nameBn }}<br>{{ $nameEn }}</td>
+                  @else
+                    <td>{{ $nameBn ?: '-' }}</td>
+                  @endif
                   @break
-                @case('father')
-                  <td>{{ $lang==='bn' ? ($stu->father_name_bn ?: $stu->father_name) : ($stu->father_name ?: $stu->father_name_bn) }}</td>
+                @case('name_en')
+                  @php
+                    $hasBothNames = in_array('name_bn', $cols) && in_array('name_en', $cols);
+                  @endphp
+                  @if(!$hasBothNames)
+                    <td>{{ $stu->student_name_en ?: '-' }}</td>
+                  @endif
                   @break
-                @case('mother')
-                  <td>{{ $lang==='bn' ? ($stu->mother_name_bn ?: $stu->mother_name) : ($stu->mother_name ?: $stu->mother_name_bn) }}</td>
+                @case('father_bn')
+                  @php
+                    $hasBothFather = in_array('father_bn', $cols) && in_array('father_en', $cols);
+                    $fatherBn = $stu->father_name_bn ?: $stu->father_name ?: '';
+                    $fatherEn = $stu->father_name ?: '';
+                  @endphp
+                  @if($hasBothFather && $fatherBn && $fatherEn)
+                    <td>{{ $fatherBn }}<br>{{ $fatherEn }}</td>
+                  @else
+                    <td>{{ $fatherBn ?: '-' }}</td>
+                  @endif
+                  @break
+                @case('father_en')
+                  @php
+                    $hasBothFather = in_array('father_bn', $cols) && in_array('father_en', $cols);
+                  @endphp
+                  @if(!$hasBothFather)
+                    <td>{{ $stu->father_name ?: '-' }}</td>
+                  @endif
+                  @break
+                @case('mother_bn')
+                  @php
+                    $hasBothMother = in_array('mother_bn', $cols) && in_array('mother_en', $cols);
+                    $motherBn = $stu->mother_name_bn ?: $stu->mother_name ?: '';
+                    $motherEn = $stu->mother_name ?: '';
+                  @endphp
+                  @if($hasBothMother && $motherBn && $motherEn)
+                    <td>{{ $motherBn }}<br>{{ $motherEn }}</td>
+                  @else
+                    <td>{{ $motherBn ?: '-' }}</td>
+                  @endif
+                  @break
+                @case('mother_en')
+                  @php
+                    $hasBothMother = in_array('mother_bn', $cols) && in_array('mother_en', $cols);
+                  @endphp
+                  @if(!$hasBothMother)
+                    <td>{{ $stu->mother_name ?: '-' }}</td>
+                  @endif
                   @break
                 @case('date_of_birth')
                   <td class="nowrap">{{ $stu->date_of_birth ? ($lang==='bn' ? toBengaliNumber($stu->date_of_birth->format('d-m-Y')) : $stu->date_of_birth->format('d-m-Y')) : '-' }}</td>
@@ -297,8 +373,25 @@
                 @case('group')
                   <td>{{ $en? $en->group?->name : '-' }}</td>
                   @break
-                @case('guardian_name')
-                  <td>{{ ($lang==='bn' ? ($stu->guardian_name_bn ?: $stu->guardian_name_en) : ($stu->guardian_name_en ?: $stu->guardian_name_bn)) ?: '-' }}</td>
+                @case('guardian_name_bn')
+                  @php
+                    $hasBothGuardian = in_array('guardian_name_bn', $cols) && in_array('guardian_name_en', $cols);
+                    $guardianBn = $stu->guardian_name_bn ?: '';
+                    $guardianEn = $stu->guardian_name_en ?: '';
+                  @endphp
+                  @if($hasBothGuardian && $guardianBn && $guardianEn)
+                    <td>{{ $guardianBn }}<br>{{ $guardianEn }}</td>
+                  @else
+                    <td>{{ $guardianBn ?: '-' }}</td>
+                  @endif
+                  @break
+                @case('guardian_name_en')
+                  @php
+                    $hasBothGuardian = in_array('guardian_name_bn', $cols) && in_array('guardian_name_en', $cols);
+                  @endphp
+                  @if(!$hasBothGuardian)
+                    <td>{{ $stu->guardian_name_en ?: '-' }}</td>
+                  @endif
                   @break
                 @case('guardian_relation')
                   <td>{{ $stu->guardian_relation ? ($lang==='bn' ? ($stu->guardian_relation === 'father' ? 'পিতা' : ($stu->guardian_relation === 'mother' ? 'মাতা' : 'অন্যান্য')) : ucfirst($stu->guardian_relation)) : '-' }}</td>
@@ -360,6 +453,9 @@
                   @break
                 @case('subjects')
                   <td class="small">{!! $subsHtml ?: '-' !!}</td>
+                  @break
+                @case('signature')
+                  <td style="min-height: 40px; min-width: 120px; border-bottom: 1px solid #000;"></td>
                   @break
               @endswitch
             @endforeach

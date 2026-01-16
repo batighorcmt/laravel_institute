@@ -814,7 +814,7 @@ class StudentController extends Controller
         $sections = Section::forSchool($school->id)->with('class')->get();
 
         // Default selected columns (Photo optional)
-        $defaultCols = ['serial','student_id','name','father','class','section','roll','group','mobile','status','subjects'];
+        $defaultCols = ['serial','student_id','name_bn','father_bn','class','section','roll','group','mobile','status','subjects'];
         $cols = $request->query('cols', $defaultCols);
 
         return view('principal.institute.students.print-controls', [
@@ -861,25 +861,25 @@ class StudentController extends Controller
         if ($limit < 1) $limit = 1;
         if ($limit > 5000) $limit = 5000;
 
-        $studentsQuery = Student::forSchool($school->id)
+        $studentsQuery = Student::where('students.school_id', $school->id)
             ->when($q, function($x) use ($q){
                 $x->where(function($inner) use ($q){
-                    $inner->where('student_name_en','like',"%$q%")
-                          ->orWhere('student_name_bn','like',"%$q%")
-                          ->orWhere('student_id','like',"%$q%");
+                    $inner->where('students.student_name_en','like',"%$q%")
+                          ->orWhere('students.student_name_bn','like',"%$q%")
+                          ->orWhere('students.student_id','like',"%$q%");
                 });
             })
             ->when($status, function($x) use ($status){
-                $x->where('status', $status);
+                $x->where('students.status', $status);
             })
             ->when($gender, function($x) use ($gender){
-                $x->where('gender', $gender);
+                $x->where('students.gender', $gender);
             })
             ->when($religion, function($x) use ($religion){
-                $x->where('religion', $religion);
+                $x->where('students.religion', $religion);
             })
             ->when($village, function($x) use ($village){
-                $x->where('present_village', $village);
+                $x->where('students.present_village', $village);
             })
             ->whereHas('enrollments', function($en) use ($selectedYearId, $classId, $sectionId, $groupId){
                 if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
@@ -896,7 +896,7 @@ class StudentController extends Controller
         // Apply sorting based on sort_by parameter
         switch ($sortBy) {
             case 'student_id':
-                $studentsQuery->orderBy('student_id', $sortOrder);
+                $studentsQuery->orderBy('students.student_id', $sortOrder);
                 break;
             case 'class':
                 $studentsQuery->join('student_enrollments', function($join) use ($selectedYearId) {
@@ -925,25 +925,28 @@ class StudentController extends Controller
                 ->select('students.*');
                 break;
             case 'village':
-                $studentsQuery->orderBy('present_village', $sortOrder);
+                $studentsQuery->orderBy('students.present_village', $sortOrder);
                 break;
             default:
-                $studentsQuery->orderBy('id', 'desc');
+                $studentsQuery->orderBy('students.id', 'desc');
         }
 
         $students = $studentsQuery->take($limit)->get();
 
         // Columns selection
-        $defaultCols = ['serial','student_id','name','father','class','section','roll','group','mobile','status','subjects'];
+        $defaultCols = ['serial','student_id','name_bn','father_bn','class','section','roll','group','mobile','status','subjects'];
         $cols = $request->query('cols', $defaultCols);
 
         // Labels per language
         $labelsBn = [
             'serial' => 'ক্রমিক',
             'student_id' => 'আইডি নং',
-            'name' => 'নাম',
-            'father' => 'পিতার নাম',
-            'mother' => 'মাতার নাম',
+            'name_bn' => 'নাম',
+            'name_en' => 'নাম',
+            'father_bn' => 'পিতার নাম',
+            'father_en' => 'পিতার নাম',
+            'mother_bn' => 'মাতার নাম',
+            'mother_en' => 'মাতার নাম',
             'class' => 'শ্রেণি',
             'section' => 'শাখা',
             'roll' => 'রোল',
@@ -956,7 +959,8 @@ class StudentController extends Controller
             'gender' => 'লিঙ্গ',
             'religion' => 'ধর্ম',
             'blood_group' => 'রক্তের গ্রুপ',
-            'guardian_name' => 'অভিভাবকের নাম',
+            'guardian_name_bn' => 'অভিভাবকের নাম',
+            'guardian_name_en' => 'অভিভাবকের নাম',
             'guardian_relation' => 'অভিভাবকের সম্পর্ক',
             'present_village' => 'বর্তমান গ্রাম',
             'present_para_moholla' => 'বর্তমান পাড়া/মহল্লা',
@@ -972,13 +976,17 @@ class StudentController extends Controller
             'previous_school' => 'পূর্ববর্তী স্কুল',
             'pass_year' => 'পাসের বছর',
             'previous_result' => 'পূর্ববর্তী ফলাফল',
+            'signature' => 'স্বাক্ষর',
         ];
         $labelsEn = [
             'serial' => 'Serial',
             'student_id' => 'Student ID',
-            'name' => 'Name',
-            'father' => "Father's Name",
-            'mother' => "Mother's Name",
+            'name_bn' => 'Name',
+            'name_en' => 'Name',
+            'father_bn' => "Father's Name",
+            'father_en' => "Father's Name",
+            'mother_bn' => "Mother's Name",
+            'mother_en' => "Mother's Name",
             'class' => 'Class',
             'section' => 'Section',
             'roll' => 'Roll',
@@ -991,7 +999,8 @@ class StudentController extends Controller
             'gender' => 'Gender',
             'religion' => 'Religion',
             'blood_group' => 'Blood Group',
-            'guardian_name' => 'Guardian Name',
+            'guardian_name_bn' => 'Guardian Name',
+            'guardian_name_en' => 'Guardian Name',
             'guardian_relation' => 'Guardian Relation',
             'present_village' => 'Present Village',
             'present_para_moholla' => 'Present Para/Moholla',
@@ -1007,6 +1016,7 @@ class StudentController extends Controller
             'previous_school' => 'Previous School',
             'pass_year' => 'Pass Year',
             'previous_result' => 'Previous Result',
+            'signature' => 'Signature',
         ];
         $labels = $lang === 'bn' ? $labelsBn : $labelsEn;
 

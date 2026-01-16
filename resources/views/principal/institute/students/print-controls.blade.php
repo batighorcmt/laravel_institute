@@ -74,9 +74,12 @@
               $allColumns = [
                 'serial' => 'ক্রমিক',
                 'student_id' => 'আইডি নং',
-                'name' => 'নাম (বাংলা/ইংরেজি)',
-                'father' => 'পিতার নাম',
-                'mother' => 'মাতার নাম',
+                'name_bn' => 'নাম (বাংলা)',
+                'name_en' => 'নাম (ইংরেজি)',
+                'father_bn' => 'পিতার নাম (বাংলা)',
+                'father_en' => 'পিতার নাম (ইংরেজি)',
+                'mother_bn' => 'মাতার নাম (বাংলা)',
+                'mother_en' => 'মাতার নাম (ইংরেজি)',
                 'date_of_birth' => 'জন্ম তারিখ',
                 'gender' => 'লিঙ্গ',
                 'religion' => 'ধর্ম',
@@ -85,7 +88,8 @@
                 'section' => 'শাখা',
                 'roll' => 'রোল',
                 'group' => 'গ্রুপ',
-                'guardian_name' => 'অভিভাবকের নাম',
+                'guardian_name_bn' => 'অভিভাবকের নাম (বাংলা)',
+                'guardian_name_en' => 'অভিভাবকের নাম (ইংরেজি)',
                 'guardian_relation' => 'অভিভাবকের সম্পর্ক',
                 'mobile' => 'মোবাইল নং',
                 'present_village' => 'বর্তমান গ্রাম',
@@ -105,6 +109,7 @@
                 'status' => 'স্ট্যাটাস',
                 'subjects' => 'বিষয়সমূহ',
                 'photo' => 'ছবি',
+                'signature' => 'স্বাক্ষর',
               ];
               
               // Reorder columns based on current selection
