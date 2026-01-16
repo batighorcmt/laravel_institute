@@ -295,8 +295,18 @@
                     $nameBn = $stu->student_name_bn ?: '';
                     $nameEn = $stu->student_name_en ?: '';
                   @endphp
-                  @if($hasBothNames && $nameBn && $nameEn)
-                    <td>{{ $nameBn }}<br>{{ $nameEn }}</td>
+                  @if($hasBothNames)
+                    <td>
+                      @if($nameBn && $nameEn)
+                        {{ $nameBn }}<br>{{ $nameEn }}
+                      @elseif($nameBn)
+                        {{ $nameBn }}
+                      @elseif($nameEn)
+                        {{ $nameEn }}
+                      @else
+                        -
+                      @endif
+                    </td>
                   @else
                     <td>{{ $nameBn ?: '-' }}</td>
                   @endif
@@ -315,8 +325,18 @@
                     $fatherBn = $stu->father_name_bn ?: $stu->father_name ?: '';
                     $fatherEn = $stu->father_name ?: '';
                   @endphp
-                  @if($hasBothFather && $fatherBn && $fatherEn)
-                    <td>{{ $fatherBn }}<br>{{ $fatherEn }}</td>
+                  @if($hasBothFather)
+                    <td>
+                      @if($fatherBn && $fatherEn)
+                        {{ $fatherBn }}<br>{{ $fatherEn }}
+                      @elseif($fatherBn)
+                        {{ $fatherBn }}
+                      @elseif($fatherEn)
+                        {{ $fatherEn }}
+                      @else
+                        -
+                      @endif
+                    </td>
                   @else
                     <td>{{ $fatherBn ?: '-' }}</td>
                   @endif
@@ -335,8 +355,18 @@
                     $motherBn = $stu->mother_name_bn ?: $stu->mother_name ?: '';
                     $motherEn = $stu->mother_name ?: '';
                   @endphp
-                  @if($hasBothMother && $motherBn && $motherEn)
-                    <td>{{ $motherBn }}<br>{{ $motherEn }}</td>
+                  @if($hasBothMother)
+                    <td>
+                      @if($motherBn && $motherEn)
+                        {{ $motherBn }}<br>{{ $motherEn }}
+                      @elseif($motherBn)
+                        {{ $motherBn }}
+                      @elseif($motherEn)
+                        {{ $motherEn }}
+                      @else
+                        -
+                      @endif
+                    </td>
                   @else
                     <td>{{ $motherBn ?: '-' }}</td>
                   @endif
@@ -379,8 +409,18 @@
                     $guardianBn = $stu->guardian_name_bn ?: '';
                     $guardianEn = $stu->guardian_name_en ?: '';
                   @endphp
-                  @if($hasBothGuardian && $guardianBn && $guardianEn)
-                    <td>{{ $guardianBn }}<br>{{ $guardianEn }}</td>
+                  @if($hasBothGuardian)
+                    <td>
+                      @if($guardianBn && $guardianEn)
+                        {{ $guardianBn }}<br>{{ $guardianEn }}
+                      @elseif($guardianBn)
+                        {{ $guardianBn }}
+                      @elseif($guardianEn)
+                        {{ $guardianEn }}
+                      @else
+                        -
+                      @endif
+                    </td>
                   @else
                     <td>{{ $guardianBn ?: '-' }}</td>
                   @endif
