@@ -15,15 +15,25 @@
     <style>
         :root{ --print-accent:#222; --print-border:#444; }
         /* Default page setup - can be overridden in @push('print_head') */
-        @page{ size:A4 portrait; margin:10mm; }
+        @page{ size:A4 portrait; margin:12mm 12mm 18mm 12mm; }
         *{ box-sizing:border-box; }
         body{ font-family:'Kalpurush', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; margin:0; color:#000; font-size:14px; line-height:1.4; }
         /* Wrapper simplified to avoid forcing extra blank print page */
-        .print-wrapper{display:block;}
-        .print-main{padding:4px 0 0;}
+        .print-wrapper{display:block;position:relative;}
+        .print-main{padding:4px 0 0;position:relative;}
         /* Reserve space for fixed footer to avoid overlap with table rows (screen + print) */
-        .print-main{padding-bottom:120px;}
-        @media print{ .print-main{ padding-bottom:120px !important; } }
+        .print-main{padding-bottom:80px;margin-bottom:0;}
+        @media print{ 
+            body{margin:0;padding:0;}
+            .print-wrapper{position:relative;}
+            .print-main{padding-bottom:0 !important;} 
+            /* Prevent table rows from breaking across pages */
+            table{page-break-after:auto;}
+            table tr{page-break-inside:avoid !important;page-break-after:auto;}
+            table td{page-break-inside:avoid !important;}
+            table thead{display:table-header-group;}
+            table tfoot{display:table-footer-group;}
+        }
         .print-header{ display:flex; align-items:center; gap:12px; border-bottom:2px solid var(--print-accent); padding:0 0 8px; margin-bottom:4px; position:relative; }
         .print-header .logo img{ width:70px; height:70px; object-fit:contain; }
         .print-header .logo{ position:absolute; left:6px; top:10px; width:0; height:0; overflow:visible; z-index:10; }
@@ -32,8 +42,14 @@
         .school-address{ font-size:14px; margin:0; font-weight:500; line-height:1; }
         .page-title{ font-size:20px; font-weight:700; margin:0; line-height:1; }
         .page-subtitle{ font-size:15px; font-weight:600; margin:0; line-height:1; }
-        /* Fixed highlighted footer style (screen + print) */
-        .fixed-footer{position:fixed;left:0;right:0;bottom:0;text-align:center;font-size:12px;font-weight:800;background:#fff7a8;color:#000;padding:8px 10px;border-top:2px solid #333;z-index:9999;}
+        /* Fixed highlighted footer style */
+        .fixed-footer{position:fixed;left:0;right:0;bottom:0;text-align:center;font-size:12px;font-weight:700;background:#fff7a8;color:#000;padding:5px 10px;border-top:1px solid #333;z-index:9999;-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact;}
+        @media screen{
+            .fixed-footer{display:block;}
+        }
+        @media print{
+            .fixed-footer{position:fixed;bottom:0;left:0;right:0;height:auto;padding:5px 10px;font-size:11px;background:#fff7a8 !important;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+        }
         .fixed-footer .line{display:block;}
         .fixed-footer .meta{font-weight:600;font-size:11px;margin-top:2px;}
         .overlay-tools{position:fixed;top:6px;right:6px;z-index:999;display:flex;gap:8px;background:rgba(255,255,255,0.85);padding:6px 10px;border:1px solid #aaa;border-radius:8px;backdrop-filter:blur(4px);box-shadow:0 2px 4px rgba(0,0,0,0.15);}
