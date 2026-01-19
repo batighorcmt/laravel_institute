@@ -16,10 +16,8 @@ class TestimonialController extends Controller
 {
     public function index(Request $request, School $school)
     {
-        // Only class 10 students for SSC/HSC testimonial
-        $class10 = \App\Models\SchoolClass::where('school_id',$school->id)->where('numeric_value', 10)->first();
-        $students = $class10 ? Student::forSchool($school->id)->forClass($class10->id)->active()->get() : collect();
-        return view('principal.documents.testimonial.index', compact('school','students'));
+        $academicYears = \App\Models\AcademicYear::forSchool($school->id)->orderBy('start_date', 'desc')->get();
+        return view('principal.documents.testimonial.index', compact('school', 'academicYears'));
     }
 
     public function history(Request $request, School $school)
@@ -36,16 +34,20 @@ class TestimonialController extends Controller
         $validated = $request->validate([
             'student_id' => 'required|integer',
             'exam_name' => 'required|string', // SSC/HSC
-            'session_year' => 'required|integer',
+            'academic_year' => 'required|integer',
+            'session' => 'required|string',
+            'passing_year' => 'required|integer',
+            'result' => 'nullable|string',
             'roll' => 'nullable|string',
             'registration' => 'nullable|string',
             'center' => 'nullable|string',
         ]);
 
         $student = Student::forSchool($school->id)->findOrFail($validated['student_id']);
+        $academicYear = \App\Models\AcademicYear::find($validated['academic_year']);
 
-        // Memo: schoolCode<>testimonial<>academicYearName<>serialInYear
-        $memoNo = DocumentMemoService::generate($school, 'testimonial');
+        // Memo: schoolCode/testimonial/academicYearName/serialInYear
+        $memoNo = DocumentMemoService::generate($school, 'testimonial', null, $academicYear->name);
 
         $record = DocumentRecord::create([
             'school_id' => $school->id,
@@ -56,7 +58,10 @@ class TestimonialController extends Controller
             'code' => Str::uuid()->toString(),
             'data' => [
                 'exam_name' => $validated['exam_name'],
-                'session_year' => $validated['session_year'],
+                'academic_year' => $validated['academic_year'],
+                'session' => $validated['session'],
+                'passing_year' => $validated['passing_year'],
+                'result' => $validated['result'] ?? null,
                 'roll' => $validated['roll'] ?? null,
                 'registration' => $validated['registration'] ?? null,
                 'center' => $validated['center'] ?? null,
@@ -90,7 +95,10 @@ class TestimonialController extends Controller
         $validated = $request->validate([
             'student_id' => 'required|integer',
             'exam_name' => 'required|string',
-            'session_year' => 'required|integer',
+            'academic_year' => 'required|integer',
+            'session' => 'required|string',
+            'passing_year' => 'required|integer',
+            'result' => 'nullable|string',
             'roll' => 'nullable|string',
             'registration' => 'nullable|string',
             'center' => 'nullable|string',
@@ -100,7 +108,10 @@ class TestimonialController extends Controller
             'student_id' => $student->id,
             'data' => [
                 'exam_name' => $validated['exam_name'],
-                'session_year' => $validated['session_year'],
+                'academic_year' => $validated['academic_year'],
+                'session' => $validated['session'],
+                'passing_year' => $validated['passing_year'],
+                'result' => $validated['result'] ?? null,
                 'roll' => $validated['roll'] ?? null,
                 'registration' => $validated['registration'] ?? null,
                 'center' => $validated['center'] ?? null,

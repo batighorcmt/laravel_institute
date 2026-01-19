@@ -201,27 +201,35 @@ body {
 }
 
 /* ===== LOGO & QR ===== */
-.logo, .qr {
+.logo {
+    position: absolute;
+    top: 10px;
+    width: 80px;
+    height: 80px;
+    border: 0px solid #2a2a8f;
+    border-radius: 0%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    Left: 40px;
+}
+
+
+.qr {
+    right: 40px;
     position: absolute;
     top: 10px;
     width: 80px;
     height: 80px;
     border: 2px solid #2a2a8f;
-    border-radius: 50%;
+    border-radius: 0%;
     display: flex;
     align-items: center;
     justify-content: center;
     background: rgba(255, 255, 255, 0.95);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-}
-
-.logo {
-    left: 40px;
-}
-
-.qr {
-    right: 40px;
 }
 
 .logo-icon, .qr-icon {
@@ -537,7 +545,7 @@ body {
                 <div class="certificate-title"> Testimonial </div>
                 <div class="reference-overlay">
                     <div class="ref-number">Ref. No: {{ $document->memo_no }}</div>
-                    <div>Session: {{ $document->data['session_year'] - 1 }}-{{ $document->data['session_year'] }}</div>
+                    <div>Session: {{ $document->data['session'] }}</div>
                 </div>
             </div>
 
@@ -551,12 +559,12 @@ body {
 
                 <!-- Student Information -->
                 <div class="paragraph">
-                    <span class="info-label">Daughter of</span> <span class="info-value">{{ $student->father_name }}</span>
-                    <span class="info-label">and</span> <span class="info-value">{{ $student->mother_name }}</span>, <span class="info-label">Village</span> <span class="info-value">{{ $student->present_village }}</span>, <span class="info-label">Post Office</span> <span class="info-value">{{ $student->present_post_office }}</span>, <span class="info-label">Upazila</span> <span class="info-value">{{ $student->present_upazilla }}</span>, <span class="info-label">District</span> <span class="info-value">{{ $student->present_district }}</span>, <span class="info-label">passed the {{ $document->data['exam_name'] }} Examination in</span><span class="info-value">{{ $document->data['session_year'] }}</span><span class="info-label">from this school under the</span><span class="info-label"> Board of Intermediate and Secondary Education, Jashore,</span> <span class="info-label">bearing Roll <span class="info-value">{{ $document->data['center'] ?? '-' }} - {{ $document->data['roll'] ?? '-' }}</span> <span class="info-label"> No</span> <span class="info-value">{{ $document->data['registration'] ?? '-' }}</span>, <span class="info-label">Registration No</span> <span class="info-value">{{ $document->data['registration'] ?? '-' }}</span> <span class="info-label">and obtained GPA</span> <span class="info-value">-</span> <span class="info-label">out of scale 5.00 in</span> <span class="info-value">-</span><span class="info-label">  Group. Her Date of birth is</span> <span class="info-value">{{ $student->date_of_birth->format('d/m/Y') }}</span>.
+                    <span class="info-label">@if($student->gender == 'male') Son of @else Daughter of @endif</span> <span class="info-value">{{ $student->father_name }}</span>
+                    <span class="info-label">and</span> <span class="info-value">{{ $student->mother_name }}</span>, <span class="info-label">Village</span> <span class="info-value">{{ $student->present_village }}</span>, <span class="info-label">Post Office</span> <span class="info-value">{{ $student->present_post_office }}</span>, <span class="info-label">Upazila</span> <span class="info-value">{{ $student->present_upazilla }}</span>, <span class="info-label">District</span> <span class="info-value">{{ $student->present_district }}</span>, <span class="info-label">passed the @if($document->data['exam_name'] == 'SSC') Secondary School Certificate (S.S.C) @elseif($document->data['exam_name'] == 'HSC') Higher Secondary Certificate (H.S.C) @else {{ $document->data['exam_name'] }} @endif Examination in</span><span class="info-value">{{ $document->data['passing_year'] }}</span><span class="info-label">from this school under the</span><span class="info-label"> Board of Intermediate and Secondary Education, Jashore,</span> <span class="info-label">bearing Roll <span class="info-value">{{ $document->data['center'] ?? '-' }} - {{ $document->data['roll'] ?? '-' }}</span> <span class="info-label"> No</span> <span class="info-value">{{ $document->data['registration'] ?? '-' }}</span>, <span class="info-label">Registration No</span> <span class="info-value">{{ $document->data['registration'] ?? '-' }}</span> <span class="info-label">and obtained</span> <span class="info-value">{{ $document->data['result'] ?? '-' }}</span> <span class="info-label">out of scale 5.00 in</span> <span class="info-value">-</span><span class="info-label">  Group. @if($student->gender == 'male') His @else Her @endif Date of birth is</span> <span class="info-value">{{ $student->date_of_birth->format('d/m/Y') }}</span>.
                 </div>
 
                 <div class="paragraph paragraph-space">
-                    To the best of my knowledge, she did not take part in any illegal activities of the state or discipline. Her conduct and character are good. I wish her every success in life.
+                    To the best of my knowledge, @if($student->gender == 'male') he @else she @endif did not take part in any illegal activities of the state or discipline. @if($student->gender == 'male') His @else Her @endif conduct and character are good. I wish @if($student->gender == 'male') him @else her @endif every success in life.
                 </div>
             </div>
 

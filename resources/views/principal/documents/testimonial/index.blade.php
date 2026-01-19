@@ -12,6 +12,15 @@
       @csrf
       <div class="form-row">
         <div class="form-group col-md-4">
+          <label>শিক্ষাবর্ষ</label>
+          <select class="form-control" name="academic_year" id="tstAcademicYear" required>
+            <option value="">-- নির্বাচন করুন --</option>
+            @foreach($academicYears as $year)
+              <option value="{{ $year->id }}">{{ $year->name }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="form-group col-md-4">
           <label>শ্রেণি</label>
           <select class="form-control" name="class_id" id="tstClass" required>
             <option value="">-- নির্বাচন করুন --</option>
@@ -40,8 +49,16 @@
           </select>
         </div>
         <div class="form-group col-md-4">
-          <label>সেশন বছর</label>
-          <input type="number" class="form-control" name="session_year" required>
+          <label>সেশন</label>
+          <input type="text" class="form-control" name="session" placeholder="2023-2024" required>
+        </div>
+        <div class="form-group col-md-4">
+          <label>পাশের বছর</label>
+          <input type="number" class="form-control" name="passing_year" required>
+        </div>
+        <div class="form-group col-md-4">
+          <label>ফলাফল</label>
+          <input type="text" class="form-control" name="result" placeholder="e.g. GPA 5.00">
         </div>
       </div>
       <div class="form-row">
@@ -58,18 +75,20 @@
   (function(){
     const sectionsUrl = @json(route('principal.institute.meta.sections', $school));
     const studentsUrl = @json(route('principal.institute.meta.students', $school));
+    const academicYearSel = document.getElementById('tstAcademicYear');
     const classSel = document.getElementById('tstClass');
     const sectionSel = document.getElementById('tstSection');
     const studentSel = document.getElementById('tstStudent');
-    function clearOptions(sel, placeholder){ if(!sel) return; sel.innerHTML=''; const opt=document.createElement('option'); opt.value=''; opt.textContent=placeholder; sel.appendChild(opt);}    
+    function clearOptions(sel, placeholder){ if(!sel) return; sel.innerHTML=''; const opt=document.createElement('option'); opt.value=''; opt.textContent=placeholder; sel.appendChild(opt);}
     classSel && classSel.addEventListener('change', function(){
       const classId=this.value; clearOptions(sectionSel,'-- (ঐচ্ছিক) --'); clearOptions(studentSel,'-- নির্বাচন করুন --'); if(!classId) return;
       fetch(sectionsUrl+'?class_id='+encodeURIComponent(classId)).then(r=>r.json()).then(rows=>{ rows.forEach(r=>{ const o=document.createElement('option'); o.value=r.id; o.textContent=r.name; sectionSel.appendChild(o); }); });
-      fetch(studentsUrl+'?class_id='+encodeURIComponent(classId)).then(r=>r.json()).then(rows=>{ clearOptions(studentSel,'-- নির্বাচন করুন --'); rows.forEach(r=>{ const o=document.createElement('option'); o.value=r.student_id; o.textContent=r.name+' ('+(r.roll_no||'-')+')'; studentSel.appendChild(o); }); });
+      let url = studentsUrl+'?class_id='+encodeURIComponent(classId) + '&year_id=' + encodeURIComponent(academicYearSel.value);
+      fetch(url).then(r=>r.json()).then(rows=>{ clearOptions(studentSel,'-- নির্বাচন করুন --'); rows.forEach(r=>{ const o=document.createElement('option'); o.value=r.student_id; o.textContent=r.name+' ('+(r.roll_no||'-')+')'; studentSel.appendChild(o); }); });
     });
     sectionSel && sectionSel.addEventListener('change', function(){
       const classId=classSel?classSel.value:''; const sectionId=this.value; clearOptions(studentSel,'-- নির্বাচন করুন --'); if(!classId) return;
-      let url=studentsUrl+'?class_id='+encodeURIComponent(classId); if(sectionId) url+='&section_id='+encodeURIComponent(sectionId);
+      let url=studentsUrl+'?class_id='+encodeURIComponent(classId) + '&year_id=' + encodeURIComponent(academicYearSel.value); if(sectionId) url+='&section_id='+encodeURIComponent(sectionId);
       fetch(url).then(r=>r.json()).then(rows=>{ rows.forEach(r=>{ const o=document.createElement('option'); o.value=r.student_id; o.textContent=r.name+' ('+(r.roll_no||'-')+')'; studentSel.appendChild(o); }); });
     });
   })();
