@@ -21,6 +21,22 @@
           </select>
         </div>
         <div class="form-group col-md-4">
+          <label>বোর্ড</label>
+          <select class="form-control" name="board" required>
+            <option value="">-- নির্বাচন করুন --</option>
+            <option value="Dhaka">Dhaka</option>
+            <option value="Rajshahi">Rajshahi</option>
+            <option value="Comilla">Comilla</option>
+            <option value="Jessore">Jessore</option>
+            <option value="Chittagong">Chittagong</option>
+            <option value="Barisal">Barisal</option>
+            <option value="Sylhet">Sylhet</option>
+            <option value="Dinajpur">Dinajpur</option>
+            <option value="Madrasah">Madrasah</option>
+            <option value="Technical">Technical</option>
+          </select>
+        </div>
+        <div class="form-group col-md-4">
           <label>শ্রেণি</label>
           <select class="form-control" name="class_id" id="tstClass" required>
             <option value="">-- নির্বাচন করুন --</option>

@@ -25,12 +25,6 @@ body {
     align-items: center;
     min-height: 100vh;
     padding: 10px;
-    @if($setting && $setting->background_path)
-    background-image: url('{{ asset('storage/'.$setting->background_path) }}');
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-    @endif
 }
 
 /* ===== CERTIFICATE CONTAINER ===== */
@@ -278,27 +272,7 @@ body {
     right: -20px;
 }
 
-/* ===== REFERENCE OVERLAY ===== */
-.reference-overlay {
-    position: absolute;
-    top: 50%;
-    right: 30px;
-    transform: translateY(-50%);
-    text-align: right;
-    font-size: 15px;
-    color: #2a2a8f;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 8px 15px;
-    border-radius: 5px;
-    border: 1px solid rgba(42, 42, 143, 0.2);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-}
 
-.ref-number {
-    font-weight: 700;
-    margin-bottom: 3px;
-    font-size: 16px;
-}
 
 /* ===== CERTIFICATE BODY ===== */
 .certificate-body {
@@ -475,6 +449,12 @@ body {
         background: none;
         padding: 0;
         margin: 0;
+        @if($setting && $setting->background_path)
+        background-image: url('{{ asset('storage/'.$setting->background_path) }}');
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+        @endif
     }
 
     .certificate-container {
@@ -485,6 +465,9 @@ body {
         position: absolute;
         top: 0;
         left: 0;
+        @if($setting && $setting->background_path)
+        background: none;
+        @endif
     }
 
     .print-btn {
@@ -495,6 +478,8 @@ body {
     .certificate-content {
         page-break-inside: avoid;
     }
+
+
 }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:wght@400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
@@ -540,13 +525,9 @@ body {
                 <div class="school-contact">Web: {{ $school->website }} | Email: {{ $school->email }} | Phone: {{ $school->phone }}</div>
             </div>
 
-            <!-- CERTIFICATE TITLE WITH REFERENCE -->
+            <!-- CERTIFICATE TITLE -->
             <div class="certificate-title-section">
                 <div class="certificate-title"> Testimonial </div>
-                <div class="reference-overlay">
-                    <div class="ref-number">Ref. No: {{ $document->memo_no }}</div>
-                    <div>Session: {{ $document->data['session'] }}</div>
-                </div>
             </div>
 
             <!-- CERTIFICATE BODY -->
@@ -554,13 +535,13 @@ body {
                 <!-- Certification and Student Name -->
                 <div class="student-certification">
                     <div class="certify-text">This is to certify that</div>
-                    <div class="student-name-highlight">{{ $student->full_name }}</div>
+                    <div class="student-name-highlight">{{ $student->student_name_en ?: $student->student_name_bn }}</div>
                 </div>
 
                 <!-- Student Information -->
                 <div class="paragraph">
                     <span class="info-label">@if($student->gender == 'male') Son of @else Daughter of @endif</span> <span class="info-value">{{ $student->father_name }}</span>
-                    <span class="info-label">and</span> <span class="info-value">{{ $student->mother_name }}</span>, <span class="info-label">Village</span> <span class="info-value">{{ $student->present_village }}</span>, <span class="info-label">Post Office</span> <span class="info-value">{{ $student->present_post_office }}</span>, <span class="info-label">Upazila</span> <span class="info-value">{{ $student->present_upazilla }}</span>, <span class="info-label">District</span> <span class="info-value">{{ $student->present_district }}</span>, <span class="info-label">passed the @if($document->data['exam_name'] == 'SSC') Secondary School Certificate (S.S.C) @elseif($document->data['exam_name'] == 'HSC') Higher Secondary Certificate (H.S.C) @else {{ $document->data['exam_name'] }} @endif Examination in</span><span class="info-value">{{ $document->data['passing_year'] }}</span><span class="info-label">from this school under the</span><span class="info-label"> Board of Intermediate and Secondary Education, Jashore,</span> <span class="info-label">bearing Roll <span class="info-value">{{ $document->data['center'] ?? '-' }} </span> <span class="info-label"> No</span> {{ $document->data['roll'] ?? '-' }} <span class="info-value">{{ $document->data['registration'] ?? '-' }}</span>, <span class="info-label">Registration No</span> <span class="info-value">{{ $document->data['registration'] ?? '-' }}</span> <span class="info-label">and obtained</span> <span class="info-value">{{ $document->data['result'] ?? '-' }}</span> <span class="info-label">out of scale 5.00 in</span> <span class="info-value">-</span><span class="info-label">  Group. @if($student->gender == 'male') His @else Her @endif Date of birth is</span> <span class="info-value">{{ $student->date_of_birth ? $student->date_of_birth->format('d/m/Y') : '-' }}</span>.
+                    <span class="info-label">and</span> <span class="info-value">{{ $student->mother_name }}</span>, <span class="info-label">Village</span> <span class="info-value">{{ $student->present_village }}</span>, <span class="info-label">Post Office</span> <span class="info-value">{{ $student->present_post_office }}</span>, <span class="info-label">Upazila</span> <span class="info-value">{{ $student->present_upazilla }}</span>, <span class="info-label">District</span> <span class="info-value">{{ $student->present_district }}</span>, <span class="info-label">passed the @if($document->data['exam_name'] == 'SSC') Secondary School Certificate (S.S.C) @elseif($document->data['exam_name'] == 'HSC') Higher Secondary Certificate (H.S.C) @else {{ $document->data['exam_name'] }} @endif Examination in</span><span class="info-value">{{ $document->data['passing_year'] }}</span><span class="info-label">from this school under the</span><span class="info-label"> Board of Intermediate and Secondary Education, {{ $document->data['board'] }},</span> <span class="info-label">bearing Roll <span class="info-value">{{ $document->data['center'] ?? '-' }} </span> <span class="info-label"> No</span> <span class="info-value">{{ $document->data['roll'] ?? '-' }} </span>, <span class="info-label">Registration No</span> <span class="info-value">{{ $document->data['registration'] ?? '-' }}</span>, <span class="info-label">Session</span> <span class="info-value">{{ $document->data['session'] ?? '-' }}</span> <span class="info-label">and obtained GPA</span> <span class="info-value">{{ $document->data['result'] ?? '-' }}</span> <span class="info-label">out of scale 5.00 in</span> <span class="info-value">-</span><span class="info-label">  Group. @if($student->gender == 'male') His @else Her @endif Date of birth is</span> <span class="info-value">{{ $student->date_of_birth ? $student->date_of_birth->format('d/m/Y') : '-' }}</span>.
                 </div>
 
                 <div class="paragraph paragraph-space">
@@ -571,7 +552,8 @@ body {
             <!-- FOOTER -->
             <div class="certificate-footer">
                 <div class="date-info">
-                    <div><b>Date:</b> {{ $document->issued_at->format('d/m/Y') }}</div>
+                    <div><b>Ref. No:</b> {{ $document->memo_no }}</div>
+                    <div><b>Issue Date:</b> {{ $document->issued_at->format('d/m/Y') }}</div>
                 </div>
 
                 <div class="signature-section">

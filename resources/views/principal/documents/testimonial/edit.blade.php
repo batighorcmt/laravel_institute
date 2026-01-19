@@ -13,8 +13,33 @@
       @method('PUT')
       <div class="form-row">
         <div class="form-group col-md-4">
+          <label>শিক্ষাবর্ষ</label>
+          <select class="form-control" name="academic_year" id="tstAcademicYear" required>
+            <option value="">-- নির্বাচন করুন --</option>
+            @foreach($academicYears as $year)
+              <option value="{{ $year->id }}" {{ ($document->data['academic_year'] ?? '') == $year->id ? 'selected' : '' }}>{{ $year->name }}</option>
+            @endforeach
+          </select>
+        </div>
+        <div class="form-group col-md-4">
+          <label>বোর্ড</label>
+          <select class="form-control" name="board" required>
+            <option value="">-- নির্বাচন করুন --</option>
+            <option value="Dhaka" {{ ($document->data['board'] ?? '') === 'Dhaka' ? 'selected' : '' }}>Dhaka</option>
+            <option value="Rajshahi" {{ ($document->data['board'] ?? '') === 'Rajshahi' ? 'selected' : '' }}>Rajshahi</option>
+            <option value="Comilla" {{ ($document->data['board'] ?? '') === 'Comilla' ? 'selected' : '' }}>Comilla</option>
+            <option value="Jessore" {{ ($document->data['board'] ?? '') === 'Jessore' ? 'selected' : '' }}>Jessore</option>
+            <option value="Chittagong" {{ ($document->data['board'] ?? '') === 'Chittagong' ? 'selected' : '' }}>Chittagong</option>
+            <option value="Barisal" {{ ($document->data['board'] ?? '') === 'Barisal' ? 'selected' : '' }}>Barisal</option>
+            <option value="Sylhet" {{ ($document->data['board'] ?? '') === 'Sylhet' ? 'selected' : '' }}>Sylhet</option>
+            <option value="Dinajpur" {{ ($document->data['board'] ?? '') === 'Dinajpur' ? 'selected' : '' }}>Dinajpur</option>
+            <option value="Madrasah" {{ ($document->data['board'] ?? '') === 'Madrasah' ? 'selected' : '' }}>Madrasah</option>
+            <option value="Technical" {{ ($document->data['board'] ?? '') === 'Technical' ? 'selected' : '' }}>Technical</option>
+          </select>
+        </div>
+        <div class="form-group col-md-4">
           <label>শ্রেণি</label>
-          <select class="form-control" name="class_id" id="tstClass">
+          <select class="form-control" name="class_id" id="tstClass" required>
             <option value="">-- নির্বাচন করুন --</option>
             @foreach(\App\Models\SchoolClass::where('school_id',$school->id)->orderBy('numeric_value')->get() as $c)
               <option value="{{ $c->id }}">{{ $c->name ?? ('Class '.$c->numeric_value) }}</option>
@@ -33,22 +58,30 @@
             <option value="{{ $document->student_id }}">{{ $document->student?->full_name }}</option>
           </select>
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group col-md-3">
+        <div class="form-group col-md-4">
           <label>পরীক্ষার নাম</label>
           <select class="form-control" name="exam_name" required>
             <option value="SSC" {{ ($document->data['exam_name'] ?? '')==='SSC' ? 'selected' : '' }}>SSC</option>
             <option value="HSC" {{ ($document->data['exam_name'] ?? '')==='HSC' ? 'selected' : '' }}>HSC</option>
           </select>
         </div>
-        <div class="form-group col-md-3">
-          <label>সেশন বছর</label>
-          <input type="number" class="form-control" name="session_year" value="{{ $document->data['session_year'] ?? '' }}" required>
+        <div class="form-group col-md-4">
+          <label>সেশন</label>
+          <input type="text" class="form-control" name="session" value="{{ $document->data['session'] ?? '' }}" placeholder="2023-2024" required>
         </div>
-        <div class="form-group col-md-2"><label>Roll</label><input type="text" class="form-control" name="roll" value="{{ $document->data['roll'] ?? '' }}"></div>
-        <div class="form-group col-md-2"><label>Registration</label><input type="text" class="form-control" name="registration" value="{{ $document->data['registration'] ?? '' }}"></div>
-        <div class="form-group col-md-2"><label>Center</label><input type="text" class="form-control" name="center" value="{{ $document->data['center'] ?? '' }}"></div>
+        <div class="form-group col-md-4">
+          <label>পাশের বছর</label>
+          <input type="number" class="form-control" name="passing_year" value="{{ $document->data['passing_year'] ?? '' }}" required>
+        </div>
+        <div class="form-group col-md-4">
+          <label>ফলাফল</label>
+          <input type="text" class="form-control" name="result" value="{{ $document->data['result'] ?? '' }}" placeholder="e.g. GPA 5.00">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group col-md-4"><label>Roll</label><input type="text" class="form-control" name="roll" value="{{ $document->data['roll'] ?? '' }}"></div>
+        <div class="form-group col-md-4"><label>Registration</label><input type="text" class="form-control" name="registration" value="{{ $document->data['registration'] ?? '' }}"></div>
+        <div class="form-group col-md-4"><label>Center</label><input type="text" class="form-control" name="center" value="{{ $document->data['center'] ?? '' }}"></div>
       </div>
       <button class="btn btn-primary">সংরক্ষণ করুন</button>
       <a target="_blank" href="{{ route('principal.institute.documents.testimonial.print', [$school,$document->id]) }}" class="btn btn-outline-secondary">Print</a>

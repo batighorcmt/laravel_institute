@@ -35,6 +35,7 @@ class TestimonialController extends Controller
             'student_id' => 'required|integer',
             'exam_name' => 'required|string', // SSC/HSC
             'academic_year' => 'required|integer',
+            'board' => 'required|string',
             'session' => 'required|string',
             'passing_year' => 'required|integer',
             'result' => 'nullable|string',
@@ -59,6 +60,7 @@ class TestimonialController extends Controller
             'data' => [
                 'exam_name' => $validated['exam_name'],
                 'academic_year' => $validated['academic_year'],
+                'board' => $validated['board'],
                 'session' => $validated['session'],
                 'passing_year' => $validated['passing_year'],
                 'result' => $validated['result'] ?? null,
@@ -86,7 +88,8 @@ class TestimonialController extends Controller
     public function edit(Request $request, School $school, DocumentRecord $document)
     {
         abort_unless($document->school_id === $school->id && $document->type === 'testimonial', 404);
-        return view('principal.documents.testimonial.edit', compact('school','document'));
+        $academicYears = \App\Models\AcademicYear::forSchool($school->id)->orderBy('start_date', 'desc')->get();
+        return view('principal.documents.testimonial.edit', compact('school','document','academicYears'));
     }
 
     public function update(Request $request, School $school, DocumentRecord $document)
@@ -96,6 +99,7 @@ class TestimonialController extends Controller
             'student_id' => 'required|integer',
             'exam_name' => 'required|string',
             'academic_year' => 'required|integer',
+            'board' => 'required|string',
             'session' => 'required|string',
             'passing_year' => 'required|integer',
             'result' => 'nullable|string',
@@ -109,6 +113,7 @@ class TestimonialController extends Controller
             'data' => [
                 'exam_name' => $validated['exam_name'],
                 'academic_year' => $validated['academic_year'],
+                'board' => $validated['board'],
                 'session' => $validated['session'],
                 'passing_year' => $validated['passing_year'],
                 'result' => $validated['result'] ?? null,
