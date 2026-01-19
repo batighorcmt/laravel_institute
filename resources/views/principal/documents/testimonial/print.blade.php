@@ -511,14 +511,18 @@ body {
             <div class="header">
                 <!-- LOGO -->
                 <div class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
+                    @if($school->logo)
+                        <img src="{{ asset('storage/'.$school->logo) }}" alt="School Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                    @else
+                        <div class="logo-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                    @endif
                 </div>
 
                 <!-- QR CODE -->
                 <div class="qr">
-                    {!! \SimpleSoftwareIO\QrCode\Facades\QrCode::size(80)->generate(route('documents.verify', $document->code)) !!}
+                    {!! \SimpleSoftwareIO\QrCode\Facades\QrCode::size(96)->generate(route('documents.verify', $document->code)) !!}
                 </div>
 
                 <!-- SCHOOL INFO -->
