@@ -25,8 +25,15 @@
   $today = now()->toDateString();
   $attPresent = 0; $attAbsent = 0;
   if ($school && class_exists(\App\Models\Attendance::class)) {
-    // attendance table has no school_id; filter via students belonging to this school
-    if (class_exists(\App\Models\Student::class)) {
+    // attendance table has no school_id; filter via enrolled students belonging to this school
+    if (class_exists(\App\Models\StudentEnrollment::class) && class_exists(\App\Models\Student::class)) {
+      $enrolledStudentIds = \App\Models\StudentEnrollment::where('school_id',$school->id)
+        ->when($ayId, fn($q)=>$q->where('academic_year_id',$ayId))
+        ->where('status','active')
+        ->pluck('student_id');
+      $attPresent = \App\Models\Attendance::whereIn('student_id',$enrolledStudentIds)->whereDate('date',$today)->where('status','present')->count();
+      $attAbsent  = \App\Models\Attendance::whereIn('student_id',$enrolledStudentIds)->whereDate('date',$today)->where('status','absent')->count();
+    } elseif (class_exists(\App\Models\Student::class)) {
       $studentIds = \App\Models\Student::where('school_id',$school->id)->pluck('id');
       $attPresent = \App\Models\Attendance::whereIn('student_id',$studentIds)->whereDate('date',$today)->where('status','present')->count();
       $attAbsent  = \App\Models\Attendance::whereIn('student_id',$studentIds)->whereDate('date',$today)->where('status','absent')->count();
@@ -36,7 +43,7 @@
       $attAbsent  = \App\Models\Attendance::whereDate('date',$today)->where('status','absent')->count();
     }
   }
-  $attRate = ($attPresent + $attAbsent) > 0 ? round(($attPresent / ($attPresent + $attAbsent)) * 100, 1) : 0;
+  $attRate = $studentCount > 0 ? round(($attPresent / $studentCount) * 100, 1) : 0;
   // Teacher attendance today (optional models)
   $tPresent = null; $tAbsent = null;
   if ($school && class_exists(\App\Models\ExtraClassAttendance::class)) {
