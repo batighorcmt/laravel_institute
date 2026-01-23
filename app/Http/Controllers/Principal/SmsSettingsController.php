@@ -13,9 +13,6 @@ class SmsSettingsController extends Controller
     protected array $apiKeys = [
         'sms_api_url','sms_api_key','sms_sender_id','sms_masking'
     ];
-    protected array $attendanceKeys = [
-        'sms_attendance_present','sms_attendance_absent','sms_attendance_late','sms_attendance_half_day'
-    ];
     protected array $classAttendanceKeys = [
         'sms_class_attendance_present','sms_class_attendance_absent','sms_class_attendance_late','sms_class_attendance_half_day'
     ];
@@ -37,12 +34,6 @@ class SmsSettingsController extends Controller
             'sms_sender_id' => $settings['sms_sender_id'] ?? '',
             'sms_masking' => $settings['sms_masking'] ?? '',
         ];
-        $attendance = [
-            'sms_attendance_present' => $settings['sms_attendance_present'] ?? '0',
-            'sms_attendance_absent' => $settings['sms_attendance_absent'] ?? '1',
-            'sms_attendance_late' => $settings['sms_attendance_late'] ?? '1',
-            'sms_attendance_half_day' => $settings['sms_attendance_half_day'] ?? '0',
-        ];
         $classAttendance = [
             'sms_class_attendance_present' => $settings['sms_class_attendance_present'] ?? '0',
             'sms_class_attendance_absent' => $settings['sms_class_attendance_absent'] ?? '1',
@@ -61,7 +52,6 @@ class SmsSettingsController extends Controller
         return view('principal.institute.settings.sms', [
             'school' => $school,
             'api' => $api,
-            'attendance' => $attendance,
             'classAttendance' => $classAttendance,
             'extraClassAttendance' => $extraClassAttendance,
             'templates' => $templates,
@@ -78,16 +68,6 @@ class SmsSettingsController extends Controller
         ]);
         $this->upsertSettings($school->id, $data);
         return back()->with('success','API সেটিংস আপডেট হয়েছে');
-    }
-
-    public function saveAttendance(Request $request, School $school)
-    {
-        $payload = [];
-        foreach ($this->attendanceKeys as $k) {
-            $payload[$k] = $request->has($k) ? '1' : '0';
-        }
-        $this->upsertSettings($school->id, $payload);
-        return back()->with('success','হাজিরা সম্পর্কিত SMS সেটিংস আপডেট হয়েছে');
     }
 
     public function saveClassAttendance(Request $request, School $school)

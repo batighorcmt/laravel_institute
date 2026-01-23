@@ -239,16 +239,20 @@ class ExtraClassAttendanceController extends Controller
 
     private function sendExtraAttendanceSms(School $school, array $attendanceData, $extraClass, $date)
     {
+        $settings = Setting::forSchool($school->id)->where(function($q){
+            $q->where('key','like','sms_%');
+        })->pluck('value','key');
+
         $sentCount = 0;
         foreach ($attendanceData as $att) {
             $newStatus = $att['status'];
-            // For extra class, always send
-            $send = true;
+            $key = 'sms_extra_class_attendance_' . $newStatus;
+            $send = ($settings[$key] ?? '0') === '1';
 
             if ($send) {
                 $template = SmsTemplate::where(function($q) use ($school) {
                     $q->where('school_id', $school->id)->orWhereNull('school_id');
-                })->where('type', 'extra_class')->where('title', 'extra_class_' . $newStatus)->first();
+                })->whereIn('type', ['general', 'extra_class'])->where('title', $newStatus)->orderByRaw("FIELD(type, 'extra_class', 'general')")->first();
                 if ($template) {
                     $student = Student::find($att['student_id']);
                     if ($student && $student->guardian_phone) {
@@ -258,6 +262,7 @@ class ExtraClassAttendanceController extends Controller
                         $class_name = $extraClass->schoolClass ? $extraClass->schoolClass->name : null;
                         $section_name = $assignedSection ? $assignedSection->name : null;
                         $message = $this->replacePlaceholders($template->content, $student, $newStatus, $date);
+                        $recipientNumber = $student->guardian_phone;
                         $extra = [
                             'recipient_id' => $student->id,
                             'recipient_name' => $student->student_name_en,
@@ -268,7 +273,7 @@ class ExtraClassAttendanceController extends Controller
                             'section_name' => $section_name,
                         ];
                         $smsService = new SmsService($school);
-                        $result = $smsService->sendSms($student->guardian_phone, $message, 'extra_attendance', $extra);
+                        $result = $smsService->sendSms($recipientNumber, $message, 'extra_attendance', $extra);
                         if ($result) $sentCount++;
                     }
                 }

@@ -13,97 +13,97 @@
     @vite(['resources/css/app.css','resources/js/app.js'])
     <style>
         .navbar-search { min-width: 220px; }
-        
+
         /* Sidebar Hierarchical Styling */
         .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link {
             font-weight: 500;
             padding: 0.7rem 1rem;
             border-left: 3px solid transparent;
         }
-        
+
         .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
             background-color: rgba(255,255,255,.1) !important;
             border-left-color: #007bff;
         }
-        
+
         .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover {
             background-color: rgba(255,255,255,.05);
         }
-        
+
         /* First level submenu (nav-treeview) */
         .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link {
             padding-left: 2.5rem;
             font-size: 0.9rem;
             color: rgba(255,255,255,.7);
         }
-        
+
         .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link:hover {
             background-color: rgba(255,255,255,.05);
             color: #fff;
         }
-        
+
         .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link.active {
             background-color: rgba(255,255,255,.08);
             color: #fff;
         }
-        
+
         /* Second level submenu (nested nav-treeview) */
         .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link {
             padding-left: 3.5rem;
             font-size: 0.85rem;
             color: rgba(255,255,255,.6);
         }
-        
+
         .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link:hover {
             background-color: rgba(255,255,255,.04);
             color: #fff;
         }
-        
+
         .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link.active {
             background-color: rgba(255,255,255,.06);
             color: #fff;
         }
-        
+
         /* Third level submenu */
         .sidebar-dark-primary .nav-treeview .nav-treeview .nav-treeview > .nav-item > .nav-link {
             padding-left: 4.5rem;
             font-size: 0.8rem;
             color: rgba(255,255,255,.5);
         }
-        
+
         /* Icons for submenu items */
         .nav-treeview .nav-icon {
             font-size: 0.7rem;
             margin-left: 0.25rem;
             margin-right: 0.5rem;
         }
-        
+
         /* Parent menu item with treeview */
         .sidebar-dark-primary .nav-item.has-treeview > .nav-link .right {
             transition: transform 0.3s ease;
         }
-        
+
         .sidebar-dark-primary .nav-item.has-treeview.menu-open > .nav-link .right {
             transform: rotate(90deg);
         }
-        
+
         /* Add spacing between major menu groups */
         .nav-sidebar > .nav-item {
             margin-bottom: 0.2rem;
         }
-        
+
         /* Submenu background */
         .nav-treeview {
             background-color: rgba(0,0,0,.1);
             padding-top: 0.3rem;
             padding-bottom: 0.3rem;
         }
-        
+
         /* Nested submenu darker background */
         .nav-treeview .nav-treeview {
             background-color: rgba(0,0,0,.15);
         }
-        
+
         .nav-treeview .nav-treeview .nav-treeview {
             background-color: rgba(0,0,0,.2);
         }
@@ -322,6 +322,7 @@
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item"><a href="{{ route('principal.institute.results.marksheet', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.results.marksheet') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>মার্কশিট</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.marks.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.marks.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>নম্বর Entry</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.results.tabulation', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.results.tabulation') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>ট্যাবুলেশন শীট</p></a></li>
                                 </ul>
                             </li>
 
@@ -369,7 +370,7 @@
                                 </ul>
                             </li>
 
-                        
+
                             {{-- SMS (top-level) --}}
                             <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.sms.*') ? 'menu-open' : '' }}">
                                 <a href="#" class="nav-link {{ request()->routeIs('principal.institute.sms.*') ? 'active' : '' }}">
@@ -391,7 +392,7 @@
                                 </a>
                             </li>
 
-                           
+
 
                             {{-- Admissions --}}
                             <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.admissions.*') ? 'menu-open' : '' }}">
@@ -505,7 +506,7 @@
 
     <footer class="main-footer">
         {{-- Removed hard-coded version to keep print footer clean --}}
-        <strong>&copy; {{ date('Y') }} {{ config('app.name', 'School Management System') }}.</strong> All rights reserved. 
+        <strong>&copy; {{ date('Y') }} {{ config('app.name', 'School Management System') }}.</strong> All rights reserved.
         <div class="float-right d-none d-sm-inline">Version 1.0.0</div>
         {{-- <strong>&copy; {{ date('Y') }} স্কুল ম্যানেজমেন্ট সিস্টেম।</strong> সকল অধিকার সংরক্ষিত. --}}
     </footer>
@@ -516,7 +517,7 @@
     @push('scripts')
     <script>
         window.addEventListener('DOMContentLoaded', function(){
-            if (window.toastr) { 
+            if (window.toastr) {
                 toastr.success(@json(session('success')));
             }
         });
@@ -527,7 +528,7 @@
     @push('scripts')
     <script>
         window.addEventListener('DOMContentLoaded', function(){
-            if (window.toastr) { 
+            if (window.toastr) {
                 toastr.success(@json(session('status')));
             }
         });
@@ -538,7 +539,7 @@
     @push('scripts')
     <script>
         window.addEventListener('DOMContentLoaded', function(){
-            if (window.toastr) { 
+            if (window.toastr) {
                 toastr.info(@json(session('info')));
             }
         });
@@ -549,7 +550,7 @@
     @push('scripts')
     <script>
         window.addEventListener('DOMContentLoaded', function(){
-            if (window.toastr) { 
+            if (window.toastr) {
                 toastr.error(@json(session('error')));
             }
         });

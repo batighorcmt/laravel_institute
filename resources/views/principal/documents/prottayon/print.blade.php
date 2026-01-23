@@ -1,7 +1,3 @@
-@extends('layouts.print')
-@section('title','শিক্ষার্থী প্রত্যয়নপত্র')
-
-@section('content')
 <?php
   // Bangla digit converter
   if (!function_exists('bn_digits')) {
@@ -26,10 +22,15 @@
   }
 ?>
 <!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>শিক্ষার্থী প্রত্যয়নপত্র</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'SolaimanLipi', 'Siyam Rupali', Arial, sans-serif; background: #f5f5f5; color: #000; line-height: 1.6; }
-  .certificate-container { display: flex; flex-direction: column; max-width: 210mm; min-height: 297mm; margin: 10px auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); position: relative; padding: 12mm 10mm 30mm 10mm; page-break-after: avoid; }
+  .certificate-container { display: flex; flex-direction: column; max-width: 210mm; margin: 10px auto; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.1); position: relative; padding: 12mm 10mm 30mm 10mm; page-break-after: avoid; }
   .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px double #000; padding-bottom: 3px; margin-bottom: 12px; position: relative; z-index: 2; }
   .school-logo { display: flex; align-items: center; }
   .school-logo img { max-height: 60px; width: auto; vertical-align: middle; }
@@ -104,14 +105,39 @@
   <div class="content">
     <div class="student-info" style="background:none !important;border:1px solid #ddd;border-radius:5px;">
       <div class="info-row"><div class="info-label">শিক্ষার্থীর নাম:</div><div class="info-value">{{ $student->full_name ?? ($student->first_name.' '.$student->last_name ?? '') }}</div></div>
-      <div class="info-row"><div class="info-label">পিতার নাম:</div><div class="info-value">{{ $student->father_name ?? 'প্রদান করা হয়নি' }}</div></div>
-      <div class="info-row"><div class="info-label">মাতার নাম:</div><div class="info-value">{{ $student->mother_name ?? 'প্রদান করা হয়নি' }}</div></div>
-      <div class="info-row"><div class="info-label">ঠিকানা:</div><div class="info-value">{{ $student->present_address ?? 'প্রদান করা হয়নি' }}</div></div>
+      <div class="info-row"><div class="info-label">পিতার নাম:</div><div class="info-value">{{ $student->father_name_bn ?? 'প্রদান করা হয়নি' }}</div></div>
+      <div class="info-row"><div class="info-label">মাতার নাম:</div><div class="info-value">{{ $student->mother_name_bn ?? 'প্রদান করা হয়নি' }}</div></div>
+     <div class="info-row">
+  <div class="info-label">বর্তমান ঠিকানা:</div>
+  <div class="info-value">
+    {{
+      collect([
+        $student->present_village ? 'গ্রাম: '.$student->present_village : null,
+        $student->present_post_office ? 'ডাকঘর: '.$student->present_post_office : null,
+        $student->present_upazilla ? 'উপজেলা: '.$student->present_upazilla : null,
+        $student->present_district ? 'জেলা: '.$student->present_district : null,
+      ])->filter()->implode(', ') ?: 'প্রদান করা হয়নি'
+    }}
+  </div>
+</div>
+<div class="info-row">
+  <div class="info-label">স্থায়ী ঠিকানা:</div>
+  <div class="info-value">
+    {{
+      collect([
+        $student->present_village ? 'গ্রাম: '.$student->present_village : null,
+        $student->present_post_office ? 'ডাকঘর: '.$student->present_post_office : null,
+        $student->present_upazilla ? 'উপজেলা: '.$student->present_upazilla : null,
+        $student->present_district ? 'জেলা: '.$student->present_district : null,
+      ])->filter()->implode(', ') ?: 'প্রদান করা হয়নি'
+    }}
+  </div>
+</div>
       <div class="info-row"><div class="info-label">শ্রেণি ও শাখা:</div>
         <div class="info-value">
           @php($className = $document->data['class_name'] ?? ($student->class_name ?? ''))
           @php($sectionName = $document->data['section_name'] ?? ($student->section_name ?? ''))
-          {{ bn_digits($className ?: 'প্রদান করা হয়নি') }}@if(!empty($sectionName)) ({{ bn_digits($sectionName) }}) @endif
+          {{ ($className ?: 'প্রদান করা হয়নি') }}@if(!empty($sectionName)) ({{ ($sectionName) }}) @endif
         </div>
       </div>
       <div class="info-row"><div class="info-label">রোল নম্বর:</div><div class="info-value">{{ bn_digits($document->data['roll_number'] ?? ($student->roll_number ?? 'প্রদান করা হয়নি')) }}</div></div>
@@ -133,18 +159,17 @@
     </div>
 
     <div class="declaration">
-      <p>এই মর্মে প্রত্যয়ন করা যাচ্ছে যে, <strong>{{ $student->full_name ?? ($student->first_name.' '.$student->last_name ?? '') }}</strong> বর্তমানে {{ $school->name ?? 'বিদ্যালয়' }} এর {{ $className }} শ্রেণির একজন নিয়মিত শিক্ষার্থী হিসেবে অধ্যয়নরত আছে।</p>
+      <p>এই মর্মে প্রত্যয়ন করা যাচ্ছে যে, <strong>{{ $student->full_name ?? ($student->first_name.' '.$student->last_name ?? '') }}</strong> বর্তমানে {{ $school->name_bn ?? 'বিদ্যালয়' }} এর {{ $className }} শ্রেণির একজন নিয়মিত শিক্ষার্থী হিসেবে অধ্যয়নরত আছে।</p>
       <p style="margin-top: 8px;">সে একজন মেধাবী ও শৃংখলাবদ্ধ শিক্ষার্থী হিসেবে বিদ্যালয়ের সকলের নিকট পরিচিত। তার বিদ্যালয়ে উপস্থিতি ও আচরণ সন্তোষজনক। কোনো প্রকার শাস্তিমূলক ব্যবস্থার আওতাভুক্ত নয়।</p>
-      <p style="margin-top: 8px;">সে বিদ্যালয়ের সকল নিয়ম-কানুন মেনে চলে এবং নিয়মিতভাবে ক্লাসে উপস্থিত থাকে। প্রয়োজনে যেকোনো সময় এই প্রত্যয়নপত্র যাচাই করা যাবে।</p>
+      <p style="margin-top: 8px;">সে বিদ্যালয়ের সকল নিয়ম-কানুন মেনে চলে এবং নিয়মিতভাবে ক্লাসে উপস্থিত থাকে।</p>
     </div>
 
     <div style="height: 40px;"></div>
     <div class="signature-area">
       <div class="signature-box"><div class="signature-line"></div><div class="signature-name">শ্রেণি শিক্ষক</div></div>
-      <div class="signature-box"><div class="signature-line"></div><div class="signature-name">প্রধান শিক্ষক/অধ্যক্ষ</div></div>
+      <div class="signature-box"><div class="signature-line"></div><div class="signature-name">{{  $principalDesignation ?? 'প্রদান করা হয়নি' }}</div></div>
     </div>
   </div>
-
-  <div class="footer" style="margin-top:8px;padding:8px;background:#e9f2ff;color:#000;font-size:0.95rem;text-align:center;">কারিগরি সহযোগীতায়ঃ <strong>বাতিঘর কম্পিউটার'স</strong>, মোবাইলঃ <span style="font-weight:700">01762-396713</span></div>
   </div>
-@endsection
+</body>
+</html>

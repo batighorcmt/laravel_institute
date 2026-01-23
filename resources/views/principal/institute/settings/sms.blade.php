@@ -8,7 +8,6 @@
 
 <ul class="nav nav-tabs mb-3" id="smsTab" role="tablist">
   <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#api" role="tab">API Settings</a></li>
-  <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#attendance" role="tab">General Attendance SMS</a></li>
   <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#class-attendance" role="tab">Class Attendance SMS</a></li>
   <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#extra-class-attendance" role="tab">Extra Class Attendance SMS</a></li>
   <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#templates" role="tab">SMS Templates</a></li>
@@ -36,32 +35,6 @@
       </div>
       <button class="btn btn-primary"><i class="fas fa-save mr-1"></i> সংরক্ষণ</button>
     </form>
-  </div>
-  <div class="tab-pane fade" id="attendance" role="tabpanel">
-    <div class="card p-4">
-      <h5 class="mb-3">সাধারণ হাজিরা SMS সেটিংস</h5>
-      <p class="text-muted">যে স্ট্যাটাসে SMS যাবে তা নির্বাচন করুন।</p>
-      <form method="post" action="{{ route('principal.institute.sms.attendance.save',$school) }}">
-        @csrf
-        <div class="custom-control custom-switch mb-2">
-          <input type="checkbox" class="custom-control-input" id="sms_present" name="sms_attendance_present" {{ $attendance['sms_attendance_present']=='1'?'checked':'' }}>
-          <label class="custom-control-label" for="sms_present">Present (উপস্থিত)</label>
-        </div>
-        <div class="custom-control custom-switch mb-2">
-          <input type="checkbox" class="custom-control-input" id="sms_absent" name="sms_attendance_absent" {{ $attendance['sms_attendance_absent']=='1'?'checked':'' }}>
-          <label class="custom-control-label" for="sms_absent">Absent (অনুপস্থিত)</label>
-        </div>
-        <div class="custom-control custom-switch mb-2">
-          <input type="checkbox" class="custom-control-input" id="sms_late" name="sms_attendance_late" {{ $attendance['sms_attendance_late']=='1'?'checked':'' }}>
-          <label class="custom-control-label" for="sms_late">Late (বিলম্ব)</label>
-        </div>
-        <div class="custom-control custom-switch mb-4">
-          <input type="checkbox" class="custom-control-input" id="sms_halfday" name="sms_attendance_half_day" {{ $attendance['sms_attendance_half_day']=='1'?'checked':'' }}>
-          <label class="custom-control-label" for="sms_halfday">Half Day (আধা দিন)</label>
-        </div>
-        <button class="btn btn-primary"><i class="fas fa-save mr-1"></i> সংরক্ষণ</button>
-      </form>
-    </div>
   </div>
   <div class="tab-pane fade" id="class-attendance" role="tabpanel">
     <div class="card p-4">

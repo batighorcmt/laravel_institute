@@ -594,26 +594,41 @@ class AttendanceController extends Controller
                 })->where(function($q) {
                     $q->whereIn('type', ['general', 'class'])->orWhereNull('type');
                 })->where('title', $newStatus)->orderByRaw("FIELD(type, 'general', 'class', null)")->first();
-                if ($template) {
-                    $student = Student::find($studentId);
-                    if ($student && $student->guardian_phone) {
-                        $enrollment = StudentEnrollment::where('student_id', $studentId)->where('class_id', $classId)->where('section_id', $sectionId)->where('status', 'active')->first();
-                        $class = SchoolClass::find($classId);
-                        $section = Section::find($sectionId);
+
+                $student = Student::find($studentId);
+                if ($student && $student->guardian_phone) {
+                    $enrollment = StudentEnrollment::where('student_id', $studentId)->where('class_id', $classId)->where('section_id', $sectionId)->where('status', 'active')->first();
+                    $class = SchoolClass::find($classId);
+                    $section = Section::find($sectionId);
+
+                    $recipientNumber = $student->guardian_phone;
+
+                    if ($template) {
                         $message = $this->replacePlaceholders($template->content, $student, $newStatus, $date);
-                        $extra = [
-                            'recipient_id' => $student->id,
-                            'recipient_name' => $student->student_name_en,
-                            'recipient_type' => 'student',
-                            'recipient_category' => 'guardian',
-                            'roll_number' => $enrollment ? $enrollment->roll_no : null,
-                            'class_name' => $class ? $class->name : null,
-                            'section_name' => $section ? $section->name : null,
-                        ];
-                        $smsService = new SmsService($school);
-                        $result = $smsService->sendSms($student->guardian_phone, $message, 'attendance', $extra);
-                        if ($result) $sentCount++; // assuming sendSms returns true on success
+                    } else {
+                        // Default message if no template
+                        $statusText = match($newStatus) {
+                            'present' => 'Present',
+                            'absent' => 'Absent',
+                            'late' => 'Late',
+                            'half_day' => 'Half Day',
+                            default => $newStatus
+                        };
+                        $message = "Dear Parent, Your child {$student->student_name_en} is {$statusText} on {$date}. Regards, {$school->name}";
                     }
+
+                    $extra = [
+                        'recipient_id' => $student->id,
+                        'recipient_name' => $student->student_name_en,
+                        'recipient_type' => 'student',
+                        'recipient_category' => 'guardian',
+                        'roll_number' => $enrollment ? $enrollment->roll_no : null,
+                        'class_name' => $class ? $class->name : null,
+                        'section_name' => $section ? $section->name : null,
+                    ];
+                    $smsService = new SmsService($school);
+                    $result = $smsService->sendSms($recipientNumber, $message, 'attendance', $extra);
+                    if ($result) $sentCount++; // assuming sendSms returns true on success
                 }
             }
         }

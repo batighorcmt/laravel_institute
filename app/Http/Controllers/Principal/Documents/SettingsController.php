@@ -14,7 +14,12 @@ class SettingsController extends Controller
     {
         $pages = ['prottayon','certificate','testimonial'];
         $settings = DocumentSetting::where('school_id',$school->id)->whereIn('page',$pages)->get()->keyBy('page');
-        return view('principal.documents.settings.index', compact('school','settings','pages'));
+        $selected = [];
+        foreach ($pages as $page) {
+            $s = $settings[$page] ?? null;
+            $selected[$page] = $s ? array_filter($s->memo_format ?: [], 'is_string') : [];
+        }
+        return view('principal.documents.settings.index', compact('school','settings','pages','selected'));
     }
 
     public function store(Request $request, School $school)
@@ -23,6 +28,8 @@ class SettingsController extends Controller
             'page' => 'required|in:prottayon,certificate,testimonial',
             'background' => 'nullable|image|max:2048',
             'colors' => 'nullable|array',
+            'memo_format' => 'nullable|array|min:1',
+            'custom_text' => 'nullable|string',
         ]);
 
         $path = null;
@@ -36,6 +43,8 @@ class SettingsController extends Controller
         ]);
         if ($path) { $setting->background_path = $path; }
         if (isset($validated['colors'])) { $setting->colors = $validated['colors']; }
+        if (isset($validated['memo_format'])) { $setting->memo_format = $validated['memo_format']; }
+        if (isset($validated['custom_text'])) { $setting->custom_text = array_filter(array_map('trim', explode(',', $validated['custom_text']))); }
         $setting->save();
 
         return redirect()->route('principal.institute.documents.settings.index', $school)->with('success','Settings saved');

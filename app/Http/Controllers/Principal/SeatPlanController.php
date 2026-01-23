@@ -205,24 +205,24 @@ class SeatPlanController extends Controller
         $rooms = $seatPlan->rooms()->with(['allocations.student.currentEnrollment', 'allocations.student.class'])->get();
         $room = null;
         $allocations = collect();
-        
+
         if ($request->has('room_id')) {
             $room = $rooms->firstWhere('id', $request->room_id);
             if ($room) {
                 $allocations = $room->allocations;
             }
         }
-        
+
         $classes = SchoolClass::forSchool($school->id)
             ->whereIn('id', $seatPlan->seatPlanClasses()->pluck('class_id'))
             ->orderBy('numeric_value')
             ->get();
-            
+
         // Get current academic year
         $currentAcademicYear = AcademicYear::where('school_id', $school->id)
             ->where('is_current', true)
             ->first();
-            
+
         // Get students with active enrollment in current academic year
         $students = Student::forSchool($school->id)
             ->with('currentEnrollment')
@@ -240,8 +240,8 @@ class SeatPlanController extends Controller
 
     public function storeAllocation(Request $request, School $school, SeatPlan $seatPlan)
     {
-        // Handle DELETE via POST (for AJAX)
-        if ($request->has('_method') && $request->input('_method') === 'DELETE') {
+        // Handle clear action via POST (AJAX). Also support legacy _method=DELETE.
+        if ($request->has('clear') || ($request->has('_method') && $request->input('_method') === 'DELETE')) {
             return $this->removeAllocationBySeat($request, $school, $seatPlan);
         }
 
@@ -264,7 +264,7 @@ class SeatPlanController extends Controller
 
         if ($existing) {
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'This student is already assigned in this plan'
             ], 422);
         }
@@ -280,17 +280,22 @@ class SeatPlanController extends Controller
         $validated['seat_plan_id'] = $seatPlan->id;
         $allocation = SeatPlanAllocation::create($validated);
 
-        // Load student with class info
-        $allocation->load('student.class');
+        // Load student with class info and current enrollment class (if any)
+        $allocation->load(['student.class', 'student.currentEnrollment.class']);
+
+        // Prefer class from current enrollment when available
+        $className = data_get($allocation, 'student.currentEnrollment.class.name')
+            ?? data_get($allocation, 'student.class.name')
+            ?? 'N/A';
 
         return response()->json([
-            'success' => true, 
+            'success' => true,
             'message' => 'Seat assigned successfully',
             'data' => [
-                'roll' => $allocation->student->roll,
-                'student_id' => $allocation->student->student_id,
-                'student_name_en' => $allocation->student->student_name_en,
-                'class_name' => $allocation->student->class->name ?? 'N/A',
+                'roll' => data_get($allocation, 'student.roll'),
+                'student_id' => data_get($allocation, 'student.student_id'),
+                'student_name_en' => data_get($allocation, 'student.student_name_en'),
+                'class_name' => $className,
             ]
         ]);
     }

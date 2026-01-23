@@ -190,10 +190,28 @@ class ExamController extends Controller
     {
         $exam->load(['academicYear', 'class', 'examSubjects.subject', 'examSubjects.teacher']);
 
-        $subjects = Subject::forSchool($school->id)->get();
-        $teachers = User::whereHas('schoolRoles', function ($query) use ($school) {
-            $query->where('school_id', $school->id);
-        })->get();
+        // Limit subjects to those assigned to the exam's class
+        $subjects = \App\Models\ClassSubject::where('school_id', $school->id)
+            ->where('class_id', $exam->class_id)
+            ->with('subject')
+            ->get()
+            ->pluck('subject')
+            ->filter()
+            ->values();
+
+        // Use `teachers` table: fetch active teachers for this school and normalize
+        $teacherModels = \App\Models\Teacher::forSchool($school->id)
+            ->active()
+            ->with('user')
+            ->get();
+
+        $teachers = $teacherModels->map(function ($t) {
+            return (object) [
+                'id' => data_get($t, 'user.id', $t->id),
+                'name' => data_get($t, 'user.name', $t->name ?? ''),
+                'initials' => $t->initials ?? data_get($t, 'user.initials'),
+            ];
+        });
 
         return view('principal.exams.show', compact('school', 'exam', 'subjects', 'teachers'));
     }
@@ -364,7 +382,26 @@ class ExamController extends Controller
         $validated['total_full_mark'] = $validated['creative_full_mark'] + $validated['mcq_full_mark'] + $validated['practical_full_mark'];
         $validated['total_pass_mark'] = $validated['creative_pass_mark'] + $validated['mcq_pass_mark'] + $validated['practical_pass_mark'];
 
-        ExamSubject::create($validated);
+        // Prevent duplicate exam+subject entries and return a friendly notice
+        $exists = ExamSubject::where('exam_id', $exam->id)
+            ->where('subject_id', $validated['subject_id'])
+            ->exists();
+
+        if ($exists) {
+            return redirect()
+                ->route('principal.institute.exams.show', [$school, $exam])
+                ->with('warning', 'এই বিষয়টি ইতিমধ্যে পরীক্ষায় যুক্ত আছে');
+        }
+
+        try {
+            ExamSubject::create($validated);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // In case of a race condition causing unique constraint violation,
+            // return a friendly notice instead of exposing an exception.
+            return redirect()
+                ->route('principal.institute.exams.show', [$school, $exam])
+                ->with('warning', 'এই বিষয়টি ইতিমধ্যে পরীক্ষায় যুক্ত আছে');
+        }
 
         return redirect()
             ->route('principal.institute.exams.show', [$school, $exam])

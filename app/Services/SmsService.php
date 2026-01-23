@@ -16,6 +16,7 @@ class SmsService
     protected $apiUrl;
     protected $apiKey;
     protected $senderId;
+    protected $masking;
 
     public function __construct(School $school)
     {
@@ -24,6 +25,7 @@ class SmsService
         $this->apiUrl = $settings->get('sms_api_url');
         $this->apiKey = $settings->get('sms_api_key');
         $this->senderId = $settings->get('sms_sender_id');
+        $this->masking = $settings->get('sms_masking');
     }
 
     /**
@@ -35,18 +37,24 @@ class SmsService
      */
     public function sendSms($recipient, $message, $messageType = null, array $extra = [])
     {
-        if (!$this->apiUrl || !$this->apiKey || !$this->senderId) {
+        if (!$this->apiUrl || !$this->apiKey) {
             Log::error("SMS settings are not configured for school ID: {$this->school->id}");
             return false;
         }
 
         try {
-            $response = Http::get($this->apiUrl, [
+            $payload = [
                 'api_key' => $this->apiKey,
-                'senderid' => $this->senderId,
                 'number' => $recipient,
                 'message' => $message,
-            ]);
+            ];
+            if ($this->senderId) {
+                $payload['senderid'] = $this->senderId;
+            }
+            if ($this->masking) {
+                $payload['masking'] = $this->masking;
+            }
+            $response = Http::post($this->apiUrl, $payload);
 
             $payload = array_filter([
                 'school_id' => $this->school->id,

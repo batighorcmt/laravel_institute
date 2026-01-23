@@ -15,32 +15,32 @@
     #assignModal .select2-results__options { max-height: 360px; overflow-y: auto; }
 
     /* Grid layout - 3 columns side by side */
-    #grid { 
-        display: flex; 
-        gap: 16px; 
+    #grid {
+        display: flex;
+        gap: 16px;
         flex-wrap: nowrap;
         overflow-x: auto;
     }
-    .seat-column { 
-        flex: 1; 
-        min-width: 280px; 
+    .seat-column {
+        flex: 1;
+        min-width: 280px;
     }
-    
+
     /* Bench row - L and R side by side with bench number in middle */
-    .bench-row { 
-        display: flex; 
-        align-items: stretch; 
-        margin-bottom: 8px; 
-        border: 1px dashed #bbb; 
-        padding: 6px; 
+    .bench-row {
+        display: flex;
+        align-items: stretch;
+        margin-bottom: 8px;
+        border: 1px dashed #bbb;
+        padding: 6px;
         border-radius: 4px;
         background: #fff;
     }
-    
+
     /* Seat cells */
-    .seat-cell { 
-        cursor: pointer; 
-        background: #f8f9fa; 
+    .seat-cell {
+        cursor: pointer;
+        background: #f8f9fa;
         transition: all 0.2s;
         border: 1px solid #ddd;
         padding: 8px;
@@ -52,35 +52,35 @@
         align-items: center;
         text-align: center;
     }
-    .seat-cell:hover{ 
-        background: #fff3cd !important; 
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
+    .seat-cell:hover{
+        background: #fff3cd !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-    .seat-cell.bg-warning{ 
-        background: #ffe8a1 !important; 
+    .seat-cell.bg-warning{
+        background: #ffe8a1 !important;
     }
-    
+
     /* Assigned seat styling - exactly like PHP version */
-    .seat-roll{ 
-        font-size: 28px; 
-        font-weight: 900; 
-        color: #b00020; 
-        line-height: 1; 
+    .seat-roll{
+        font-size: 28px;
+        font-weight: 900;
+        color: #b00020;
+        line-height: 1;
         margin: 4px 0;
     }
-    .seat-name{ 
-        font-size: 13px; 
-        font-weight: 700; 
-        line-height: 1.1; 
+    .seat-name{
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.1;
         margin: 4px 0;
         color: #000;
     }
-    .seat-class{ 
-        font-size: 16px; 
+    .seat-class{
+        font-size: 16px;
         color: #666;
         margin: 2px 0;
     }
-    
+
     /* Bench number in middle */
     .bench-number {
         width: 36px;
@@ -92,7 +92,7 @@
         color: #000;
         margin: 0 4px;
     }
-    
+
     /* Position label (L/R) */
     .position-label {
         font-size: 11px;
@@ -100,14 +100,14 @@
         font-weight: normal;
         margin-bottom: 4px;
     }
-    
+
     /* Empty seat */
-    .seat-cell em { 
-        color: #999; 
+    .seat-cell em {
+        color: #999;
         font-style: italic;
         font-size: 13px;
     }
-    
+
     /* Clear button */
     .btn-xs {
         padding: 2px 8px;
@@ -116,31 +116,31 @@
     }
 
     /* Toast notifications - top right */
-    .app-toast-container{ 
-        position: fixed; 
-        top: 80px; 
-        right: 16px; 
-        z-index: 9999; 
-        display: flex; 
-        flex-direction: column; 
-        gap: 10px; 
+    .app-toast-container{
+        position: fixed;
+        top: 80px;
+        right: 16px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
-    .app-toast{ 
-        min-width: 260px; 
-        max-width: 380px; 
-        background: #343a40; 
-        color: #fff; 
-        padding: 12px 16px; 
-        border-radius: 6px; 
-        box-shadow: 0 6px 20px rgba(0,0,0,.3); 
-        opacity: 0; 
-        transform: translateX(20px); 
-        transition: opacity .3s ease, transform .3s ease; 
-        font-weight: 600; 
+    .app-toast{
+        min-width: 260px;
+        max-width: 380px;
+        background: #343a40;
+        color: #fff;
+        padding: 12px 16px;
+        border-radius: 6px;
+        box-shadow: 0 6px 20px rgba(0,0,0,.3);
+        opacity: 0;
+        transform: translateX(20px);
+        transition: opacity .3s ease, transform .3s ease;
+        font-weight: 600;
     }
-    .app-toast.show{ 
-        opacity: 1; 
-        transform: translateX(0); 
+    .app-toast.show{
+        opacity: 1;
+        transform: translateX(0);
     }
     .app-toast--success{ background: #28a745; }
     .app-toast--danger{ background: #dc3545; }
@@ -149,11 +149,11 @@
 
     /* Responsive */
     @media (max-width: 991.98px){
-        #grid { 
-            flex-wrap: wrap; 
+        #grid {
+            flex-wrap: wrap;
         }
-        .seat-column{ 
-            min-width: 100%; 
+        .seat-column{
+            min-width: 100%;
         }
     }
 </style>
@@ -166,7 +166,7 @@
             <div class="col-sm-12">
                 <h1 class="m-0">Assign Seats</h1>
                 <p class="text-muted mb-0">
-                    Plan: <strong>{{ $seatPlan->name }}</strong> — 
+                    Plan: <strong>{{ $seatPlan->name }}</strong> —
                     Room: <strong>{{ $room ? $room->room_no : 'Select Room' }}</strong>
                     @if($room) (Shift: {{ $seatPlan->shift ?? 'N/A' }}) @endif
                 </p>
@@ -215,7 +215,7 @@
                                     <div class="text-center font-weight-bold mb-2">
                                         Column {{ $col }} ({{ $benches }} benches)
                                     </div>
-                                    
+
                                     @for($bench = 1; $bench <= $benches; $bench++)
                                         @php
                                             $leftAllocation = $allocations->where('col_no', $col)->where('bench_no', $bench)->where('position', 'Left')->first();
@@ -228,23 +228,23 @@
                                                 @if($leftAllocation && $leftAllocation->student)
                                                     <div class="seat-roll"><strong>{{ $leftAllocation->student->roll ?? $leftAllocation->student->student_id }}</strong></div>
                                                     <div class="seat-name">{{ $leftAllocation->student->student_name_en }}</div>
-                                                    <div class="seat-class">Class: {{ $leftAllocation->student->class->name ?? 'N/A' }}</div>
+                                                    <div class="seat-class">Class: {{ data_get($leftAllocation, 'student.currentEnrollment.class.name') ?? data_get($leftAllocation, 'student.class.name') ?? 'N/A' }}</div>
                                                     <button type="button" class="btn btn-xs btn-outline-danger js-clear-seat" data-c="{{ $col }}" data-b="{{ $bench }}" data-p="L">Clear</button>
                                                 @else
                                                     <em>Empty</em>
                                                 @endif
                                             </div>
-                                            
+
                                             <!-- Bench Number -->
                                             <div class="bench-number">{{ $bench }}</div>
-                                            
+
                                             <!-- Right Seat -->
                                             <div class="seat-cell flex-fill" data-c="{{ $col }}" data-b="{{ $bench }}" data-p="R">
                                                 <div class="position-label">R</div>
                                                 @if($rightAllocation && $rightAllocation->student)
                                                     <div class="seat-roll"><strong>{{ $rightAllocation->student->roll ?? $rightAllocation->student->student_id }}</strong></div>
                                                     <div class="seat-name">{{ $rightAllocation->student->student_name_en }}</div>
-                                                    <div class="seat-class">Class: {{ $rightAllocation->student->class->name ?? 'N/A' }}</div>
+                                                    <div class="seat-class">Class: {{ data_get($rightAllocation, 'student.currentEnrollment.class.name') ?? data_get($rightAllocation, 'student.class.name') ?? 'N/A' }}</div>
                                                     <button type="button" class="btn btn-xs btn-outline-danger js-clear-seat" data-c="{{ $col }}" data-b="{{ $bench }}" data-p="R">Clear</button>
                                                 @else
                                                     <em>Empty</em>
@@ -319,7 +319,7 @@
 <script>
 (function() {
     'use strict';
-    
+
     // Wait for jQuery and document ready
     function withJQ(cb, tries){
         tries = tries || 20;
@@ -343,24 +343,24 @@
     $(document).on('click', '.seat-cell', function(e) {
         // Don't open modal if Clear button was clicked
         if ($(e.target).closest('.js-clear-seat').length) return;
-        
+
         selectedSeat = {
             c: $(this).data('c'),
             b: $(this).data('b'),
             p: $(this).data('p')
         };
-        
+
         markSelection(this);
-        
+
         // Fill modal inputs
         $('#m_col_no').val(selectedSeat.c);
         $('#m_bench_no').val(selectedSeat.b);
         $('#m_position').val(selectedSeat.p);
-        
+
         // Reset selects
         $('#modal_class_id').val('').trigger('change');
         $('#student_select').val(null).trigger('change').prop('disabled', true);
-        
+
         $('#assignModal').modal('show');
     });
 
@@ -421,7 +421,7 @@
     // Class change handler
     $('#modal_class_id').on('change', function() {
         $student.val(null).trigger('change');
-        
+
         if (this.value) {
             $student.prop('disabled', false);
             setTimeout(function() {
@@ -452,9 +452,9 @@
         var c = $('#m_col_no').val();
         var b = $('#m_bench_no').val();
         var p = $('#m_position').val();
-        
+
         if (!studentId || !c || !b || !p) return;
-        
+
         // AJAX assign
         $.ajax({
             url: "{{ route('principal.institute.seat-plans.allocate.store', [$school, $seatPlan]) }}",
@@ -472,13 +472,13 @@
                     showToast('danger', res.message || 'Assignment failed');
                     return;
                 }
-                
+
                 // Update seat cell
                 var $cell = $('.seat-cell[data-c="'+c+'"][data-b="'+b+'"][data-p="'+p+'"]');
                 if ($cell.length) {
                     renderSeatAssigned($cell[0], res.data);
                 }
-                
+
                 $('#assignModal').modal('hide');
                 showToast('success', 'Seat assigned');
             },
@@ -505,21 +505,21 @@
     $(document).on('click', '.js-clear-seat', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        
+
         var c = $(this).data('c');
         var b = $(this).data('b');
         var p = $(this).data('p');
         var $btn = $(this);
-        
+
         var prevHtml = $btn.html();
         $btn.prop('disabled', true).html('Clearing…');
-        
+
         $.ajax({
             url: "{{ route('principal.institute.seat-plans.allocate.store', [$school, $seatPlan]) }}",
             method: 'POST',
             data: {
                 _token: '{{ csrf_token() }}',
-                _method: 'DELETE',
+                clear: 1,
                 room_id: {{ $room ? $room->id : 0 }},
                 col_no: c,
                 bench_no: b,
@@ -531,12 +531,12 @@
                     $btn.prop('disabled', false).html(prevHtml);
                     return;
                 }
-                
+
                 var $cell = $('.seat-cell[data-c="'+c+'"][data-b="'+b+'"][data-p="'+p+'"]');
                 if ($cell.length) {
                     renderSeatEmpty($cell[0]);
                 }
-                
+
                 showToast('success', 'Seat cleared');
             },
             error: function(xhr) {
@@ -554,13 +554,13 @@
         var c = $(cell).data('c');
         var b = $(cell).data('b');
         var p = $(cell).data('p');
-        
+
         var html = '<div class="position-label">' + p + '</div>' +
                    '<div class="seat-roll"><strong>' + escapeHtml(roll) + '</strong></div>' +
                    '<div class="seat-name">' + escapeHtml(name) + '</div>' +
                    '<div class="seat-class">Class: ' + escapeHtml(className) + '</div>' +
                    '<button type="button" class="btn btn-xs btn-outline-danger js-clear-seat" data-c="'+c+'" data-b="'+b+'" data-p="'+p+'">Clear</button>';
-        
+
         $(cell).html(html);
     }
 
@@ -587,14 +587,14 @@
             $container = $('<div id="app-toast-container" class="app-toast-container"></div>');
             $('body').append($container);
         }
-        
+
         var $toast = $('<div class="app-toast app-toast--' + type + '" role="alert">' + message + '</div>');
         $container.append($toast);
-        
+
         setTimeout(function() {
             $toast.addClass('show');
         }, 10);
-        
+
         setTimeout(function() {
             $toast.removeClass('show');
             setTimeout(function() {
@@ -610,7 +610,7 @@
     @if(session('error'))
         showToast('danger', '{{ session('error') }}');
     @endif
-    
+
     }); // End document.ready
 })(); // End IIFE
 </script>

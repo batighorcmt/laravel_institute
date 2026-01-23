@@ -30,6 +30,7 @@
                 </button>
             </div>
         @endif
+        {{-- Warning/error shown as toast instead of inline alert --}}
 
         <!-- Exam Information Card -->
         <div class="card">
@@ -478,6 +479,41 @@
         </div>
     </div>
 </section>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    function _showToast(type, msg){
+        if (!msg) return;
+        if (window.showToast) { window.showToast(type === 'error' ? 'danger' : type, msg); return; }
+
+        var container = document.getElementById('app-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'app-toast-container';
+            container.className = 'app-toast-container';
+            document.body.appendChild(container);
+            var style = document.createElement('style');
+            style.innerHTML = ".app-toast-container{position:fixed;top:80px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:10px}.app-toast{min-width:260px;padding:12px 16px;border-radius:6px;color:#fff}.app-toast--success{background:#28a745}.app-toast--warning{background:#ffc107;color:#212529}.app-toast--danger{background:#dc3545}";
+            document.head.appendChild(style);
+        }
+
+        var toast = document.createElement('div');
+        toast.className = 'app-toast app-toast--' + (type === 'error' ? 'danger' : type);
+        toast.textContent = msg;
+        container.appendChild(toast);
+        setTimeout(function(){ toast.remove(); }, 3500);
+    }
+
+    @if(session('warning'))
+        _showToast('warning', {!! json_encode(session('warning')) !!});
+    @endif
+    @if(session('error'))
+        _showToast('error', {!! json_encode(session('error')) !!});
+    @endif
+});
+</script>
+@endpush
 
 <style>
 @media print {

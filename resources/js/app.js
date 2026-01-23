@@ -1,48 +1,66 @@
-// AdminLTE 3.2 setup (jQuery + Bootstrap 4 + Popper + OverlayScrollbars)
-import $ from 'jquery';
-// Load plugins after exposing jQuery globally to ensure they attach to the same instance
-const pluginsReady = Promise.all([
-    import('popper.js'),
-    import('bootstrap'),
-    import('admin-lte'),
-    import('select2/dist/js/select2.full')
-]);
-import toastr from 'toastr';
-import { Chart } from 'chart.js/auto';
+/**
+ * Laravel 12 + Vite + AdminLTE
+ * FINAL stable app.js
+ */
 
-// Expose helpful libs globally if needed
+// -------------------------
+// jQuery (MUST be first)
+// -------------------------
+import $ from 'jquery';
 window.$ = window.jQuery = $;
+
+// -------------------------
+// Bootstrap
+// -------------------------
+import 'bootstrap';
+
+// -------------------------
+// AdminLTE
+// -------------------------
+import 'admin-lte/dist/js/adminlte';
+
+// -------------------------
+// ✅ Select2 (FORCE bind)
+// -------------------------
+import select2 from 'select2/dist/js/select2.full.js';
+select2(window.$);
+
+// -------------------------
+// Toastr
+// -------------------------
+import toastr from 'toastr';
 window.toastr = toastr;
+
+// -------------------------
+// Chart.js
+// -------------------------
+import { Chart } from 'chart.js/auto';
 window.Chart = Chart;
 
-// Expose jQuery globally (AdminLTE plugins expect window.$)
-pluginsReady.then(() => {
-$(function () {
-    // Bootstrap 4 tooltip init (guard if plugin present)
-    if ($.fn && $.fn.tooltip) {
-        $('[data-toggle="tooltip"]').tooltip();
-    }
+// -------------------------
+// App Ready
+// -------------------------
+$(document).ready(function () {
 
-    // Initialize Select2 on any .select2 elements
+    /* Tooltip */
+    $('[data-toggle="tooltip"]').tooltip();
+
+    /* ✅ Select2 */
     if ($.fn.select2) {
-        $('.select2').select2({ width: '100%' });
+        $('.select2').select2({
+            width: '100%'
+        });
+        console.log('✅ Select2 loaded successfully');
+    } else {
+        console.error('❌ Select2 still not loaded');
     }
 
-    // Theme toggle
-    const applyTheme = (mode) => {
-        const body = document.body;
-        if (mode === 'dark') {
-            body.classList.add('dark-mode');
-        } else {
-            body.classList.remove('dark-mode');
-        }
+    /* Toastr config */
+    toastr.options = {
+        closeButton: true,
+        progressBar: true,
+        timeOut: 3000,
+        positionClass: 'toast-top-right',
     };
-    const saved = localStorage.getItem('theme');
-    if (saved) applyTheme(saved);
-    $(document).on('click', '#themeToggle', function () {
-        const current = localStorage.getItem('theme') === 'dark' ? 'light' : 'dark';
-        localStorage.setItem('theme', current);
-        applyTheme(current);
-    });
-});
+
 });

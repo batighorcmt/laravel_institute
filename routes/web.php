@@ -105,13 +105,13 @@ Route::post('/password/reset', [PasswordResetController::class, 'resetPassword']
 
 // Protected routes - require authentication
 Route::middleware(['auth'])->group(function () {
-    
+
     // Dashboard routes based on roles
     Route::get('/dashboard', function () {
         // Use Auth facade for clearer static analysis (avoids undefined method warning)
         $user = Auth::user();
         /** @var User $user */
-        
+
         if ($user->isSuperAdmin()) {
             return redirect()->route('superadmin.dashboard');
         } elseif ($user->isPrincipal()) {
@@ -121,7 +121,7 @@ Route::middleware(['auth'])->group(function () {
         } elseif ($user->isParent()) {
             return redirect()->route('parent.dashboard');
         }
-        
+
         return view('dashboard');
     })->name('dashboard');
 
@@ -296,7 +296,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/{exam}/bulk-update', [App\Http\Controllers\Principal\ExamController::class,'bulkUpdateView'])->name('bulk-update');
                 Route::post('/{exam}/bulk-update', [App\Http\Controllers\Principal\ExamController::class,'bulkUpdate'])->name('bulk-update.store');
                 Route::delete('/{exam}', [App\Http\Controllers\Principal\ExamController::class,'destroy'])->name('destroy');
-                
+
                 // Exam Subjects
                 Route::post('/{exam}/subjects', [App\Http\Controllers\Principal\ExamController::class,'addSubject'])->name('subjects.add');
                 Route::put('/{exam}/subjects/{examSubject}', [App\Http\Controllers\Principal\ExamController::class,'updateSubject'])->name('subjects.update');
@@ -323,21 +323,21 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/{seatPlan}/edit', [App\Http\Controllers\Principal\SeatPlanController::class,'edit'])->name('edit');
                 Route::put('/{seatPlan}', [App\Http\Controllers\Principal\SeatPlanController::class,'update'])->name('update');
                 Route::delete('/{seatPlan}', [App\Http\Controllers\Principal\SeatPlanController::class,'destroy'])->name('destroy');
-                
+
                 // Room Management
                 Route::get('/{seatPlan}/rooms', [App\Http\Controllers\Principal\SeatPlanController::class,'manageRooms'])->name('rooms');
                 Route::post('/{seatPlan}/rooms', [App\Http\Controllers\Principal\SeatPlanController::class,'storeRoom'])->name('rooms.store');
                 Route::get('/{seatPlan}/rooms/{room}/edit', [App\Http\Controllers\Principal\SeatPlanController::class,'editRoom'])->name('rooms.edit');
                 Route::put('/{seatPlan}/rooms/{room}', [App\Http\Controllers\Principal\SeatPlanController::class,'updateRoom'])->name('rooms.update');
                 Route::delete('/{seatPlan}/rooms/{room}', [App\Http\Controllers\Principal\SeatPlanController::class,'destroyRoom'])->name('rooms.destroy');
-                
+
                 // Seat Allocation
                 Route::get('/{seatPlan}/allocate', [App\Http\Controllers\Principal\SeatPlanController::class,'allocateSeats'])->name('allocate');
                 Route::post('/{seatPlan}/allocate', [App\Http\Controllers\Principal\SeatPlanController::class,'storeAllocation'])->name('allocate.store');
                 Route::delete('/{seatPlan}/allocations/{allocation}', [App\Http\Controllers\Principal\SeatPlanController::class,'removeAllocation'])->name('allocations.remove');
                 Route::get('/{seatPlan}/search-students', [App\Http\Controllers\Principal\SeatPlanController::class,'searchStudents'])->name('search-students');
                 Route::get('/{seatPlan}/find-student', [App\Http\Controllers\Principal\SeatPlanController::class,'findStudent'])->name('find-student');
-                
+
                 // Print
                 Route::get('/{seatPlan}/rooms/{room}/print', [App\Http\Controllers\Principal\SeatPlanController::class,'printRoom'])->name('rooms.print');
                 Route::get('/{seatPlan}/print-all', [App\Http\Controllers\Principal\SeatPlanController::class,'printAll'])->name('print-all');
@@ -348,18 +348,21 @@ Route::middleware(['auth'])->group(function () {
                 // Marksheet
                 Route::get('/marksheet', [App\Http\Controllers\Principal\ResultController::class,'marksheet'])->name('marksheet');
                 Route::get('/marksheet/{exam}/{student}/print', [App\Http\Controllers\Principal\ResultController::class,'printMarksheet'])->name('marksheet.print');
-                
+
                 // Merit List
                 Route::get('/merit-list', [App\Http\Controllers\Principal\ResultController::class,'meritList'])->name('merit-list');
                 Route::get('/merit-list/{exam}/{classId}/print', [App\Http\Controllers\Principal\ResultController::class,'printMeritList'])->name('merit-list.print');
-                
+
                 // Tabulation Sheet
                 Route::get('/tabulation', [App\Http\Controllers\Principal\ResultController::class,'tabulation'])->name('tabulation');
                 Route::get('/tabulation/{exam}/{classId}/print', [App\Http\Controllers\Principal\ResultController::class,'printTabulation'])->name('tabulation.print');
-                
+                // AJAX helpers for tabulation cascading selects
+                Route::get('/exams-by-year', [App\Http\Controllers\Principal\ResultController::class,'examsByYear'])->name('exams-by-year');
+                Route::get('/sections-by-class', [App\Http\Controllers\Principal\ResultController::class,'sectionsByClass'])->name('sections-by-class');
+
                 // Statistics
                 Route::get('/statistics', [App\Http\Controllers\Principal\ResultController::class,'statistics'])->name('statistics');
-                
+
                 // Publish/Unpublish
                 Route::post('/{exam}/publish', [App\Http\Controllers\Principal\ResultController::class,'publishResults'])->name('publish');
                 Route::post('/{exam}/unpublish', [App\Http\Controllers\Principal\ResultController::class,'unpublishResults'])->name('unpublish');
@@ -375,7 +378,6 @@ Route::middleware(['auth'])->group(function () {
                 // SMS Settings
                 Route::get('sms', [\App\Http\Controllers\Principal\SmsSettingsController::class,'index'])->name('sms.index');
                 Route::post('sms/api', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveApi'])->name('sms.api.save');
-                Route::post('sms/attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveAttendance'])->name('sms.attendance.save');
                 Route::post('sms/class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveClassAttendance'])->name('sms.class-attendance.save');
                 Route::post('sms/extra-class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveExtraClassAttendance'])->name('sms.extra-class-attendance.save');
                 Route::post('sms/templates', [\App\Http\Controllers\Principal\SmsSettingsController::class,'storeTemplate'])->name('sms.templates.store');
@@ -398,7 +400,7 @@ Route::middleware(['auth'])->group(function () {
             Route::resource('subjects', \App\Http\Controllers\Principal\SubjectController::class)->except(['show']);
             Route::resource('academic-years', \App\Http\Controllers\Principal\AcademicYearController::class)->except(['show']);
             Route::patch('academic-years/{academic_year}/current', [\App\Http\Controllers\Principal\AcademicYearController::class,'setCurrent'])->name('academic-years.set-current');
-            
+
             // Extra Classes routes
             Route::prefix('extra-classes')->name('extra-classes.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Principal\ExtraClassController::class, 'index'])->name('index');
@@ -409,7 +411,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::delete('/{extraClass}', [\App\Http\Controllers\Principal\ExtraClassController::class, 'destroy'])->name('destroy');
                 Route::get('/{extraClass}/students', [\App\Http\Controllers\Principal\ExtraClassController::class, 'manageStudents'])->name('students');
                 Route::post('/{extraClass}/students', [\App\Http\Controllers\Principal\ExtraClassController::class, 'storeStudents'])->name('students.store');
-                
+
                 // Extra Class Attendance routes
                 Route::prefix('attendance')->name('attendance.')->group(function () {
                     Route::get('/', [\App\Http\Controllers\Principal\ExtraClassAttendanceController::class, 'index'])->name('index');
@@ -419,7 +421,7 @@ Route::middleware(['auth'])->group(function () {
                     Route::get('/monthly-report', [\App\Http\Controllers\Principal\ExtraClassAttendanceController::class, 'monthlyReport'])->name('monthly-report');
                 });
             });
-            
+
             // Bulk student import routes should be defined before the resource route
             // to avoid the 'bulk' segment being interpreted as a student ID.
             Route::get('students/bulk', [\App\Http\Controllers\Principal\StudentController::class,'bulkForm'])->name('students.bulk');
@@ -501,7 +503,7 @@ Route::middleware(['auth'])->group(function () {
     // Teacher Routes (role-protected)
     Route::prefix('teacher')->name('teacher.')->middleware(['role:teacher'])->group(function () {
         Route::get('/dashboard', [TeacherController::class, 'dashboard'])->name('dashboard');
-        
+
         // Teacher Attendance
         Route::prefix('attendance')->name('attendance.')->group(function () {
             Route::get('/', [App\Http\Controllers\Teacher\AttendanceController::class, 'index'])->name('index');

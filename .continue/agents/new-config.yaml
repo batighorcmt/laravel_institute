@@ -1,0 +1,47 @@
+schemaVersion: 1
+
+models:
+  - name: Llama 3.1 8B (Local Ollama)
+    provider: ollama
+    model: llama3.1:8b
+    apiBase: http://127.0.0.1:11434
+    contextLength: 4096
+    temperature: 0.2
+    topP: 0.9
+
+defaultModel: Llama 3.1 8B (Local Ollama)
+
+autocompleteModel:
+  provider: ollama
+  model: llama3.1:8b
+  apiBase: http://127.0.0.1:11434
+
+embeddingsProvider:
+  provider: ollama
+  model: nomic-embed-text
+  apiBase: http://127.0.0.1:11434
+
+agent:
+  enabled: true
+  allowFileCreate: true
+  allowFileEdit: true
+  allowFileDelete: true
+  allowShellCommands: true
+
+context:
+  maxTokens: 4096
+  include:
+    - "**/*.php"
+    - "**/*.blade.php"
+    - "**/*.js"
+    - "**/*.css"
+    - "**/*.json"
+  exclude:
+    - "node_modules"
+    - "vendor"
+    - ".git"
+    - "storage"
+
+ui:
+  showTokens: true
+  showModel: true

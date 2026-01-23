@@ -87,13 +87,20 @@
   </div>
 
   <div class="form-row">
-    <div class="form-group col-md-6">
+    <div class="form-group col-md-4">
       <label>Email</label>
       <input type="email" name="email" class="form-control" value="{{ old('email', $teacher->user->email ?? '') }}">
     </div>
-    <div class="form-group col-md-6">
+    <div class="form-group col-md-4">
       <label>Designation</label>
       <input name="designation" class="form-control" value="{{ old('designation', $teacher->designation ?? '') }}">
+    </div>
+    <div class="form-group col-md-4">
+      <label>Initials</label>
+      <input name="initials" class="form-control" value="{{ old('initials', $teacher->initials ?? '') }}">
+      @error('initials')
+        <small class="text-danger">{{ $message }}</small>
+      @enderror
     </div>
   </div>
 
@@ -144,11 +151,11 @@
       <i class="fas fa-times"></i> বাতিল
     </a>
   </div>
-  
+
   <div class="alert alert-info mt-3">
-    <i class="fas fa-info-circle"></i> 
-    <strong>নোট:</strong> 
-    <span class="text-danger">*</span> চিহ্নিত ফিল্ডগুলি বাধ্যতামূলক। 
+    <i class="fas fa-info-circle"></i>
+    <strong>নোট:</strong>
+    <span class="text-danger">*</span> চিহ্নিত ফিল্ডগুলি বাধ্যতামূলক।
     Username এবং Password স্বয়ংক্রিয়ভাবে তৈরি হবে।
   </div>
   </div>

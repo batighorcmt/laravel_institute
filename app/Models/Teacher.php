@@ -22,6 +22,7 @@ class Teacher extends Model
         'phone',
         'plain_password',
         'designation',
+        'initials',
         'serial_number',
         'date_of_birth',
         'joining_date',

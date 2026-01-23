@@ -35,11 +35,18 @@ class MarkEntryController extends Controller
     {
         $examSubject->load('subject');
 
-        // Get students for this exam's class
-        $students = Student::forSchool($school->id)
+        // Get enrollments for students who have selected this subject
+        $enrollments = StudentEnrollment::where('school_id', $school->id)
+            ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $exam->class_id)
             ->where('status', 'active')
-            ->orderBy('student_id')
+            ->whereHas('subjects', function($query) use ($examSubject) {
+                $query->where('subject_id', $examSubject->subject_id);
+            })
+            ->with(['student', 'subjects' => function($query) use ($examSubject) {
+                $query->where('subject_id', $examSubject->subject_id);
+            }])
+            ->orderBy('roll_no')
             ->get();
 
         // Get existing marks
@@ -48,7 +55,7 @@ class MarkEntryController extends Controller
             ->get()
             ->keyBy('student_id');
 
-        return view('principal.marks.entry-form', compact('school', 'exam', 'examSubject', 'students', 'marks'));
+        return view('principal.marks.entry-form', compact('school', 'exam', 'examSubject', 'enrollments', 'marks'));
     }
 
     public function saveMark(Request $request, School $school, Exam $exam, ExamSubject $examSubject)
@@ -96,7 +103,11 @@ class MarkEntryController extends Controller
             ]
         );
 
-        return response()->json(['success' => true, 'message' => 'নম্বর সফলভাবে সংরক্ষণ করা হয়েছে']);
+        return response()->json([
+            'success' => true,
+            'message' => 'নম্বর সফলভাবে সংরক্ষণ করা হয়েছে',
+            'total_marks' => $isAbsent ? null : $totalMarks
+        ]);
     }
 
     private function calculateGrade($totalMarks, $examSubject, $marks, $isAbsent)
@@ -155,24 +166,38 @@ class MarkEntryController extends Controller
     // Print blank mark entry form
     public function printBlank(School $school, Exam $exam, ExamSubject $examSubject)
     {
-        $examSubject->load('subject');
+        $examSubject->load(['subject', 'teacher']);
 
-        $students = Student::forSchool($school->id)
+        // Get enrollments for students who have selected this subject
+        $enrollments = \App\Models\StudentEnrollment::where('school_id', $school->id)
+            ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $exam->class_id)
             ->where('status', 'active')
-            ->orderBy('student_id')
+            ->whereHas('subjects', function($query) use ($examSubject) {
+                $query->where('subject_id', $examSubject->subject_id);
+            })
+            ->with(['student', 'subjects' => function($query) use ($examSubject) {
+                $query->where('subject_id', $examSubject->subject_id);
+            }])
+            ->orderBy('roll_no')
             ->get();
 
-        return view('principal.marks.print-blank', compact('school', 'exam', 'examSubject', 'students'));
+        return view('principal.marks.print-blank', compact('school', 'exam', 'examSubject', 'enrollments'));
     }
 
     // Print filled mark entry form
     public function printFilled(School $school, Exam $exam, ExamSubject $examSubject)
     {
-        $examSubject->load('subject');
+        $examSubject->load(['subject', 'teacher']);
+
+        // Get students who have marks entered for this subject
+        $studentIdsWithMarks = Mark::forExam($exam->id)
+            ->where('exam_subject_id', $examSubject->id)
+            ->pluck('student_id')
+            ->unique();
 
         $students = Student::forSchool($school->id)
-            ->where('class_id', $exam->class_id)
+            ->whereIn('id', $studentIdsWithMarks)
             ->where('status', 'active')
             ->orderBy('student_id')
             ->get();
