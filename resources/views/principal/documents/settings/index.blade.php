@@ -40,7 +40,7 @@
 
               @if($s && is_string($s->background_path ?? null) && $s->background_path)
                 <div class="mt-2">
-                  <img src="{{ asset('storage/'.$s->background_path) }}"
+                  <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($s->background_path) }}"
                        alt="bg"
                        class="img-fluid rounded">
                 </div>

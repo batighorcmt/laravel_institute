@@ -449,12 +449,6 @@ body {
         background: none;
         padding: 0;
         margin: 0;
-        @if($setting && $setting->background_path)
-        background-image: url('{{ asset('storage/'.$setting->background_path) }}');
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-position: center;
-        @endif
     }
 
     .certificate-container {
@@ -466,7 +460,12 @@ body {
         top: 0;
         left: 0;
         @if($setting && $setting->background_path)
-        background: none;
+        background-image: url('{{ \Illuminate\Support\Facades\Storage::disk('public')->url($setting->background_path) }}');
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+        @else
+        background: linear-gradient(rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.98));
         @endif
     }
 
