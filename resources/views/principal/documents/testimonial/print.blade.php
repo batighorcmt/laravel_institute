@@ -464,6 +464,7 @@ body {
         background-size: cover;
         background-repeat: no-repeat;
         background-position: center;
+        opacity: 1;
         @else
         background: linear-gradient(rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.98));
         @endif
