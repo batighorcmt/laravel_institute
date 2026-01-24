@@ -377,11 +377,12 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('weekly-holidays', [\App\Http\Controllers\Principal\HolidayController::class,'updateWeekly'])->name('weekly-holidays.update');
                 // SMS Settings
                 Route::get('sms', [\App\Http\Controllers\Principal\SmsSettingsController::class,'index'])->name('sms.index');
-                Route::post('sms/api', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveApi'])->name('sms.api.save');
-                Route::post('sms/class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveClassAttendance'])->name('sms.class-attendance.save');
-                Route::post('sms/extra-class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveExtraClassAttendance'])->name('sms.extra-class-attendance.save');
+                Route::match(['post', 'patch'], 'sms', function() { abort(405, 'Method not allowed for this route. Use the appropriate form.'); });
+                Route::match(['post', 'patch'], 'sms/api', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveApi'])->name('sms.api.save');
+                Route::match(['post', 'patch'], 'sms/class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveClassAttendance'])->name('sms.class-attendance.save');
+                Route::match(['post', 'patch'], 'sms/extra-class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveExtraClassAttendance'])->name('sms.extra-class-attendance.save');
                 Route::post('sms/templates', [\App\Http\Controllers\Principal\SmsSettingsController::class,'storeTemplate'])->name('sms.templates.store');
-                Route::patch('sms/templates/{template}', [\App\Http\Controllers\Principal\SmsSettingsController::class,'updateTemplate'])->name('sms.templates.update');
+                Route::match(['post', 'patch'], 'sms/templates/{template}', [\App\Http\Controllers\Principal\SmsSettingsController::class,'updateTemplate'])->name('sms.templates.update');
                 Route::delete('sms/templates/{template}', [\App\Http\Controllers\Principal\SmsSettingsController::class,'destroyTemplate'])->name('sms.templates.destroy');
                 // SMS Panel + Logs
                 Route::get('sms/panel', [\App\Http\Controllers\Principal\SmsController::class,'panel'])->name('sms.panel');

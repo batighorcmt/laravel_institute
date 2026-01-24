@@ -173,7 +173,7 @@
     <!-- Sidebar -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
         <a href="#" class="brand-link">
-            <img src="{{ asset('images/logo.svg') }}" alt="Logo" class="brand-image img-circle elevation-3" width="33" height="33" style="opacity:.9">
+            <img src="{{ asset('images/batighorsoft.png') }}" alt="Logo" class="brand-image img-circle elevation-3" width="33" height="33" style="opacity:.9">
             <span class="brand-text font-weight-light">Batighor EIMS</span>
         </a>
         <div class="sidebar">
@@ -199,6 +199,8 @@
                                 <p>Users</p>
                             </a>
                         </li>
+
+                        {{--Principal Menu Items--}}
                     @elseif($u && $u->isPrincipal())
                         <li class="nav-item">
                             <a href="{{ route('principal.dashboard') }}" class="nav-link {{ request()->routeIs('principal.dashboard') ? 'active' : '' }}">
@@ -208,8 +210,8 @@
                         </li>
 
                         {{-- Academic Setup (remaining items) --}}
-                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.shifts.*') || request()->routeIs('principal.institute.sections.*') || request()->routeIs('principal.institute.groups.*') || request()->routeIs('principal.institute.classes.*') || request()->routeIs('principal.institute.subjects.*') || request()->routeIs('principal.institute.teams.*') || request()->routeIs('principal.institute.academic-years.*') || request()->routeIs('principal.institute.extra-classes.*') ? 'menu-open' : '' }}">
-                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.shifts.*') || request()->routeIs('principal.institute.sections.*') || request()->routeIs('principal.institute.groups.*') || request()->routeIs('principal.institute.classes.*') || request()->routeIs('principal.institute.subjects.*') || request()->routeIs('principal.institute.teams.*') || request()->routeIs('principal.institute.academic-years.*') || request()->routeIs('principal.institute.extra-classes.*') ? 'active' : '' }}">
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.shifts.*') || request()->routeIs('principal.institute.sections.*') || request()->routeIs('principal.institute.groups.*') || request()->routeIs('principal.institute.classes.*') || request()->routeIs('principal.institute.subjects.*') || request()->routeIs('principal.institute.teams.*') || request()->routeIs('principal.institute.academic-years.*') || request()->routeIs('principal.institute.extra-classes.*') || request()->routeIs('principal.institute.routine.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.shifts.*') || request()->routeIs('principal.institute.sections.*') || request()->routeIs('principal.institute.groups.*') || request()->routeIs('principal.institute.classes.*') || request()->routeIs('principal.institute.subjects.*') || request()->routeIs('principal.institute.teams.*') || request()->routeIs('principal.institute.academic-years.*') || request()->routeIs('principal.institute.extra-classes.*') || request()->routeIs('principal.institute.routine.*') ? 'active' : '' }}">
                                     <i class="nav-icon fas fa-cogs"></i>
                                     <p>Academic Setup <i class="right fas fa-angle-left"></i></p>
                                 </a>
@@ -223,8 +225,30 @@
                                     <li class="nav-item"><a href="{{ route('principal.institute.academic-years.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.academic-years.*') ? 'active' : '' }}"><i class="far fa-dot-circle nav-icon"></i><p>Academic Year</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.extra-classes.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.extra-classes.*') ? 'active' : '' }}"><i class="far fa-dot-circle nav-icon"></i><p>Extra Class</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.teams.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teams.*') ? 'active' : '' }}"><i class="far fa-dot-circle nav-icon"></i><p>Special Team/Group</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.payments.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.payments.*') ? 'active' : '' }}"><i class="far fa-dot-circle nav-icon"></i><p>Online Payments</p></a></li>
                                 </ul>
                                 </li>
+
+                                                            {{-- Teachers (top-level) --}}
+                            <li class="nav-item">
+                                <a href="{{ route('principal.institute.teachers.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teachers.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-chalkboard-teacher"></i>
+                                    <p>Teachers</p>
+                                </a>
+                            </li>
+
+                             {{-- Students (top-level) --}}
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.students.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.students.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-user-graduate"></i>
+                                    <p>Student <i class="right fas fa-angle-left"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item"><a href="{{ route('principal.institute.students.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>List</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.students.create', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.create') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Add Student</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.students.bulk', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.bulk') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Bulk student add</p></a></li>
+                                </ul>
+                            </li>
 
                                  {{-- Teacher Attendance --}}
                             <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.teacher-attendance.*') || request()->routeIs('teacher.attendance.*') ? 'menu-open' : '' }}">
@@ -293,13 +317,6 @@
                                         <li class="nav-item"><a href="{{ route('principal.institute.holidays.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.holidays.*') || request()->routeIs('principal.institute.weekly-holidays.*') ? 'active' : '' }}"><i class="far fa-dot-circle nav-icon"></i><p>Holiday Management</p></a></li>
                                     </ul>
                                 </li>
-                            {{-- Teachers (top-level) --}}
-                            <li class="nav-item">
-                                <a href="{{ route('principal.institute.teachers.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teachers.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fas fa-chalkboard-teacher"></i>
-                                    <p>Teacher</p>
-                                </a>
-                            </li>
 
                             {{-- Manage Exam --}}
                             <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.exams.*') || request()->routeIs('principal.institute.seat-plans.*') ? 'menu-open' : '' }}">
@@ -323,19 +340,6 @@
                                     <li class="nav-item"><a href="{{ route('principal.institute.results.marksheet', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.results.marksheet') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>মার্কশিট</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.marks.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.marks.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>নম্বর Entry</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.results.tabulation', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.results.tabulation') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>ট্যাবুলেশন শীট</p></a></li>
-                                </ul>
-                            </li>
-
-                            {{-- Students (top-level) --}}
-                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.students.*') ? 'menu-open' : '' }}">
-                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.students.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fas fa-user-graduate"></i>
-                                    <p>Student <i class="right fas fa-angle-left"></i></p>
-                                </a>
-                                <ul class="nav nav-treeview">
-                                    <li class="nav-item"><a href="{{ route('principal.institute.students.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>List</p></a></li>
-                                    <li class="nav-item"><a href="{{ route('principal.institute.students.create', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.create') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Add Student</p></a></li>
-                                    <li class="nav-item"><a href="{{ route('principal.institute.students.bulk', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.bulk') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Bulk student add</p></a></li>
                                 </ul>
                             </li>
 
@@ -383,17 +387,7 @@
                                     <li class="nav-item"><a href="{{ route('principal.institute.sms.logs', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.sms.logs*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>SMS Logs</p></a></li>
                                 </ul>
                             </li>
-
-                            {{-- Settings (other) --}}
-                            <li class="nav-item">
-                                <a href="{{ route('principal.institute.payments.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.payments.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fas fa-credit-card"></i>
-                                    <p>Online Payments</p>
-                                </a>
-                            </li>
-
-
-
+                        
                             {{-- Admissions --}}
                             <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.admissions.*') ? 'menu-open' : '' }}">
                                 <a href="#" class="nav-link {{ request()->routeIs('principal.institute.admissions.*') ? 'active' : '' }}">
@@ -415,6 +409,7 @@
                                 </ul>
                             </li>
                         @endif
+
                     @elseif($u && $u->isTeacher())
                         {{-- Teacher Dashboard --}}
                         <li class="nav-item">

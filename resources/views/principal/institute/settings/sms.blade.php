@@ -183,7 +183,7 @@
           <div class="form-group">
             <label>বডি</label>
             <textarea name="content" id="editTemplateContent" class="form-control" rows="4" required></textarea>
-            <small class="text-muted">ভ্যারিয়েবল: {student_name}, {date}, {status}, {school_name}, {amount}, {month}, {exam_name}, {exam_date}, {code}</small>
+            <small class="text-muted">ভ্যারিয়েবল: {student_name}, {date}, {status}, {school_name}, {amount}, {month}, {exam_name}, {exam_date}, {code}</small>
           </div>
         </div>
         <div class="modal-footer">

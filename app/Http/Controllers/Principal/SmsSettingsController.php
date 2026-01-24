@@ -35,10 +35,10 @@ class SmsSettingsController extends Controller
             'sms_masking' => $settings['sms_masking'] ?? '',
         ];
         $classAttendance = [
-            'sms_class_attendance_present' => $settings['sms_class_attendance_present'] ?? '0',
+            'sms_class_attendance_present' => $settings['sms_class_attendance_present'] ?? '1',
             'sms_class_attendance_absent' => $settings['sms_class_attendance_absent'] ?? '1',
             'sms_class_attendance_late' => $settings['sms_class_attendance_late'] ?? '1',
-            'sms_class_attendance_half_day' => $settings['sms_class_attendance_half_day'] ?? '0',
+            'sms_class_attendance_half_day' => $settings['sms_class_attendance_half_day'] ?? '1',
         ];
         $extraClassAttendance = [
             'sms_extra_class_attendance_present' => $settings['sms_extra_class_attendance_present'] ?? '0',
