@@ -560,7 +560,8 @@ class AttendanceController extends Controller
 
             // Send SMS notifications; receive detailed report
             // Queue SMS notifications so web request is fast; receive enqueue report
-            $smsReport = $this->enqueueAttendanceSms($school, $request->attendance, $classId, $sectionId, $date, $isExistingRecord, $previousStatuses);
+            $smsService = new \App\Services\AttendanceSmsService();
+            $smsReport = $smsService->enqueueAttendanceSms($school, $request->attendance, $classId, $sectionId, $date, $isExistingRecord, $previousStatuses, Auth::id());
             $message .= " {$smsReport['sent']} SMS queued.";
             if (!empty($smsReport['skipped'])) {
                 $message .= ' ' . count($smsReport['skipped']) . " SMS skipped.";

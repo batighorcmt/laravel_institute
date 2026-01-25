@@ -12,6 +12,7 @@ use App\Models\Attendance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\AttendanceSmsService;
 use Carbon\Carbon;
 
 class StudentAttendanceController extends Controller
@@ -143,6 +144,13 @@ class StudentAttendanceController extends Controller
             abort(403, 'আপনি এই শাখার ক্লাস টিচার নন।');
         }
 
+        // Capture previous statuses before modifying records
+        $previousStatuses = Attendance::where('class_id', $classId)
+            ->where('section_id', $sectionId)
+            ->where('date', $date)
+            ->pluck('status','student_id')
+            ->toArray();
+
         DB::beginTransaction();
         try {
             // Delete existing attendance for today
@@ -165,6 +173,10 @@ class StudentAttendanceController extends Controller
             }
 
             DB::commit();
+
+            // Enqueue SMS notifications using shared service
+            $smsService = new AttendanceSmsService();
+            $smsService->enqueueAttendanceSms($school, $request->attendance, $classId, $sectionId, $date, true, $previousStatuses, $user->id);
 
             return redirect()->route('teacher.institute.attendance.class.take', [
                 'school' => $school,

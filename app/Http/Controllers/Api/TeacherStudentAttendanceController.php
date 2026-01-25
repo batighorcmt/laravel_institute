@@ -14,6 +14,7 @@ use App\Models\Teacher;
 use App\Models\StudentEnrollment;
 use App\Models\Attendance;
 use Illuminate\Support\Facades\DB;
+use App\Services\AttendanceSmsService;
 
 class TeacherStudentAttendanceController extends Controller
 {
@@ -203,6 +204,13 @@ class TeacherStudentAttendanceController extends Controller
             ], 422);
         }
 
+        // Capture previous statuses before updates
+        $previousStatuses = Attendance::where('class_id', $section->class_id)
+            ->where('section_id', $section->id)
+            ->where('date', $date)
+            ->pluck('status','student_id')
+            ->toArray();
+
         DB::transaction(function() use ($items, $date, $section, $user) {
             foreach ($items as $it) {
                 Attendance::updateOrCreate(
@@ -219,6 +227,12 @@ class TeacherStudentAttendanceController extends Controller
                 );
             }
         });
+
+        // Enqueue SMS notifications in background
+        $smsService = new AttendanceSmsService();
+        // Build attendance payload as expected: studentId => ['status'=>...]
+        $attendancePayload = collect($items)->mapWithKeys(fn($it)=>[$it['student_id']=>['status'=>$it['status']]])->toArray();
+        $smsService->enqueueAttendanceSms($section->school_id ? \App\Models\School::find($section->school_id) : null, $attendancePayload, $section->class_id, $section->id, $date, true, $previousStatuses, $user->id);
 
         return response()->json(['message' => 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে']);
     }
