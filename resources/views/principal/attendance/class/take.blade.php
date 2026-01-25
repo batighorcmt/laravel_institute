@@ -15,6 +15,23 @@
         </div>
     @endif
 
+    @if(session('sms_report'))
+        @php $sr = session('sms_report'); @endphp
+        <div class="alert alert-secondary">
+            <strong>SMS রিপোর্ট:</strong>
+            {{ $sr['sent'] ?? 0 }} পাঠানো হয়েছে।
+            @php $sk = $sr['skipped'] ?? []; @endphp
+            @if(count($sk))
+                {{ count($sk) }} টি স্কিপ করা হয়েছে। নিচে কারণসমূহ:
+                <ul class="mt-2 mb-0">
+                    @foreach($sk as $it)
+                        <li>Student ID: {{ $it['student_id'] ?? 'N/A' }} — {{ $it['reason'] ?? 'unknown' }} @if(!empty($it['response'])) ({{ $it['response'] }}) @endif</li>
+                    @endforeach
+                </ul>
+            @endif
+        </div>
+    @endif
+
     <!-- Mark/Update Attendance Form -->
     <form method="POST" action="{{ route('principal.institute.attendance.class.store', $school) }}" id="attendanceForm">
         @csrf

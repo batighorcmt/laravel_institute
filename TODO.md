@@ -1,17 +1,21 @@
-# Document Memo Number Configuration
+# TODO: Fix Testimonial Background Image Issues
 
-## Completed Tasks
-- [x] Create migration to add memo_format column to document_settings table
-- [x] Run migration
-- [x] Update DocumentSetting model to include memo_format in fillable and casts
-- [x] Update SettingsController to handle memo_format in validation and saving
-- [x] Update settings view to include memo format checkboxes for keywords
-- [x] Update DocumentMemoService to generate memo based on configured format
+## Issues Identified
+- Uploaded background image not visible in testimonial settings.
+- Printing not working (background not applied during print).
 
-## Remaining Tasks
-- [x] Add JavaScript to make the memo format sortable (drag and drop)
-- [x] Implement custom_text as a configurable text field per setting
-- [x] Implement class keyword by passing student to generate method
-- [x] Update controllers to pass student if available for class keyword
-- [x] Test the settings page and memo generation
-- [x] Add validation for memo_format to ensure at least one keyword is selected
+## Changes Made
+- Updated background image URL generation in settings view to use `Storage::url()` instead of `asset()`.
+- Moved background application from `body` to `.certificate-container` in print CSS for better print compatibility.
+- Ensured fallback background for print when no custom background is set.
+- Added `opacity: 1` to the certificate container in print styles to ensure the background image is fully visible at 100% opacity.
+
+## Files Modified
+- `resources/views/principal/documents/settings/index.blade.php`: Changed img src to use Storage::url.
+- `resources/views/principal/documents/testimonial/print.blade.php`: Updated background CSS for print media.
+
+## Next Steps
+- Test uploading a background image in testimonial settings.
+- Verify the image is visible in the settings preview.
+- Test printing a testimonial to ensure background appears in print.
+- If issues persist, check APP_URL in .env and ensure storage link is properly set.

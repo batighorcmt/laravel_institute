@@ -13,6 +13,9 @@ use App\Models\StudentEnrollment;
 use App\Models\Setting;
 use App\Models\SmsTemplate;
 use App\Services\SmsService;
+use App\Services\SmsSender;
+use App\Models\SmsLog;
+use App\Jobs\SendSmsChunkJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -511,6 +514,12 @@ class AttendanceController extends Controller
         $isExistingRecord = $existingCount > 0;
 
         try {
+            // Capture previous attendance statuses for this class/section/date BEFORE we modify records
+            $previousStatuses = Attendance::where('class_id', $classId)
+                ->where('section_id', $sectionId)
+                ->where('date', $date)
+                ->pluck('status', 'student_id')
+                ->toArray();
             if ($isExistingRecord) {
                 // Update existing records
                 foreach ($request->attendance as $studentId => $data) {
@@ -549,12 +558,17 @@ class AttendanceController extends Controller
                 $message = 'উপস্থিতি সফলভাবে রেকর্ড করা হয়েছে!';
             }
 
-            // Send SMS notifications
-            $smsCount = $this->sendAttendanceSms($school, $request->attendance, $classId, $sectionId, $date, $isExistingRecord);
+            // Send SMS notifications; receive detailed report
+            // Queue SMS notifications so web request is fast; receive enqueue report
+            $smsReport = $this->enqueueAttendanceSms($school, $request->attendance, $classId, $sectionId, $date, $isExistingRecord, $previousStatuses);
+            $message .= " {$smsReport['sent']} SMS queued.";
+            if (!empty($smsReport['skipped'])) {
+                $message .= ' ' . count($smsReport['skipped']) . " SMS skipped.";
+            }
 
-            $message .= " {$smsCount} SMS sent.";
-
-            return redirect()->route('principal.institute.attendance.class.take', [$school, 'class_id' => $classId, 'section_id' => $sectionId])->with('success', $message);
+            return redirect()->route('principal.institute.attendance.class.take', [$school, 'class_id' => $classId, 'section_id' => $sectionId])
+                ->with('success', $message)
+                ->with('sms_report', $smsReport);
 
         } catch (\Exception $e) {
             return back()->with('error', 'উপস্থিতি রেকর্ড করতে সমস্যা হয়েছে: ' . $e->getMessage());
@@ -566,74 +580,171 @@ class AttendanceController extends Controller
         return $this->sendAttendanceSms($school, $attendanceData, $classId, $sectionId, $date, $isExistingRecord);
     }
 
-    private function sendAttendanceSms(School $school, array $attendanceData, $classId, $sectionId, $date, $isExistingRecord)
+    private function sendAttendanceSms(School $school, array $attendanceData, $classId, $sectionId, $date, $isExistingRecord, array $previousStatuses = [])
     {
-        $settings = Setting::forSchool($school->id)->where('key', 'like', 'sms_class_attendance_%')->pluck('value', 'key');
-        $currentAcademicYear = AcademicYear::forSchool($school->id)->current()->first();
+        // Behavior: notify guardians for any attendance status that has SMS enabled
+        // in the school's settings (sms_class_attendance_{status} = 1).
         $sentCount = 0;
+        $skipped = [];
+
+        // Load all sms_* settings for this school into an associative array (key => value)
+        $settings = Setting::forSchool($school->id)->where(function($q){ $q->where('key','like','sms_%'); })->pluck('value','key');
+
+        // Try to load a generic school-level SMS template for class attendance as a fallback
+        $genericTemplate = SmsTemplate::forSchool($school->id)->where('type', 'class')->latest()->first();
 
         foreach ($attendanceData as $studentId => $data) {
-            $newStatus = $data['status'];
-            $oldStatus = Attendance::where('student_id', $studentId)->where('date', $date)->value('status');
+            $newStatus = $data['status'] ?? null;
+            if (empty($newStatus)) continue;
 
-            if ($oldStatus === $newStatus) continue; // no change
-
-            $send = false;
-            if ($isExistingRecord) {
-                // update, always send
-                $send = true;
-            } else {
-                // new, check setting
-                $key = 'sms_class_attendance_' . $newStatus;
-                $send = ($settings[$key] ?? '0') === '1';
+            // Determine setting key for this status and check explicit '1' value
+            $settingKey = 'sms_class_attendance_' . $newStatus;
+            $send = ($settings[$settingKey] ?? '0') === '1';
+            if (!$send) {
+                continue; // not enabled for this status
             }
 
-            if ($send) {
-                $template = SmsTemplate::where(function($q) use ($school) {
-                    $q->where('school_id', $school->id)->orWhereNull('school_id');
-                })->where(function($q) {
-                    $q->whereIn('type', ['general', 'class'])->orWhereNull('type');
-                })->where('title', $newStatus)->orderByRaw("FIELD(type, 'general', 'class', null)")->first();
+            // Use previousStatuses map if provided (captured before DB updates).
+            // IMPORTANT: do NOT fall back to DB here because after inserts the DB will reflect the new status
+            // and we'd mistakenly consider the student as 'already' in that status.
+            $oldStatus = $previousStatuses[$studentId] ?? null;
+            if ($oldStatus === $newStatus) continue; // no change — skip duplicate
 
-                $student = Student::find($studentId);
-                if ($student && $student->guardian_phone) {
-                    $enrollment = StudentEnrollment::where('student_id', $studentId)->where('class_id', $classId)->where('section_id', $sectionId)->where('status', 'active')->first();
-                    $class = SchoolClass::find($classId);
-                    $section = Section::find($sectionId);
+            $student = Student::find($studentId);
+            if (!$student) {
+                logger()->warning('Attendance SMS: student record not found', ['student_id' => $studentId]);
+                $skipped[] = ['student_id' => $studentId, 'reason' => 'student_not_found'];
+                continue;
+            }
 
-                    $recipientNumber = $student->guardian_phone;
+            // Normalize and validate guardian phone
+            $rawPhone = $student->guardian_phone ?? '';
+            $recipientNumber = preg_replace('/[^0-9]/', '', (string)$rawPhone);
+            if (empty($recipientNumber)) {
+                // Log skipped due to missing guardian phone
+                SmsLog::create([
+                    'school_id' => $school->id,
+                    'sent_by_user_id' => Auth::id(),
+                    'recipient_type' => 'student',
+                    'recipient_category' => 'guardian',
+                    'recipient_id' => $student->id,
+                    'recipient_name' => $student->student_name_en,
+                    'recipient_number' => null,
+                    'message' => '',
+                    'status' => 'skipped',
+                    'response' => 'no guardian_phone',
+                    'message_type' => 'attendance',
+                ]);
+                $skipped[] = ['student_id' => $student->id, 'reason' => 'no_guardian_phone'];
+                continue;
+            }
 
-                    if ($template) {
-                        $message = $this->replacePlaceholders($template->content, $student, $newStatus, $date);
-                    } else {
-                        // Default message if no template
-                        $statusText = match($newStatus) {
-                            'present' => 'Present',
-                            'absent' => 'Absent',
-                            'late' => 'Late',
-                            'half_day' => 'Half Day',
-                            default => $newStatus
-                        };
-                        $message = "Dear Parent, Your child {$student->student_name_en} is {$statusText} on {$date}. Regards, {$school->name}";
-                    }
+            // Basic validity: require at least 10 digits (adjust as needed)
+            if (strlen($recipientNumber) < 10) {
+                SmsLog::create([
+                    'school_id' => $school->id,
+                    'sent_by_user_id' => Auth::id(),
+                    'recipient_type' => 'student',
+                    'recipient_category' => 'guardian',
+                    'recipient_id' => $student->id,
+                    'recipient_name' => $student->student_name_en,
+                    'recipient_number' => $recipientNumber,
+                    'message' => '',
+                    'status' => 'skipped',
+                    'response' => 'invalid phone number',
+                    'message_type' => 'attendance',
+                ]);
+                $skipped[] = ['student_id' => $student->id, 'reason' => 'invalid_phone'];
+                continue;
+            }
+            $enrollment = StudentEnrollment::where('student_id', $studentId)->where('class_id', $classId)->where('section_id', $sectionId)->where('status', 'active')->first();
+            $class = SchoolClass::find($classId);
+            $section = Section::find($sectionId);
 
-                    $extra = [
-                        'recipient_id' => $student->id,
-                        'recipient_name' => $student->student_name_en,
-                        'recipient_type' => 'student',
-                        'recipient_category' => 'guardian',
-                        'roll_number' => $enrollment ? $enrollment->roll_no : null,
-                        'class_name' => $class ? $class->name : null,
-                        'section_name' => $section ? $section->name : null,
-                    ];
-                    $smsService = new SmsService($school);
-                    $result = $smsService->sendSms($recipientNumber, $message, 'attendance', $extra);
-                    if ($result) $sentCount++; // assuming sendSms returns true on success
+            // Prepare message
+            $studentName = $student->student_name_bn ?? $student->student_name_en ?? '';
+            $className = $class?->name ?? '';
+            $sectionName = $section?->name ?? '';
+
+            // Prefer a per-status template (title == status) then fallback to generic class template
+            $template = SmsTemplate::where(function($q) use ($school) {
+                $q->where('school_id', $school->id)->orWhereNull('school_id');
+            })->whereIn('type', ['general', 'class'])->where('title', $newStatus)
+                ->orderByRaw("FIELD(type, 'class', 'general')")
+                ->first();
+
+            if (!$template) {
+                $template = $genericTemplate;
+            }
+
+            if ($template && !empty($template->content)) {
+                $message = $this->replacePlaceholders($template->content, $student, $newStatus, $date);
+            } else {
+                // Default message per status
+                if ($newStatus === 'present') {
+                    $message = "আপনার সন্তানের নাম: {$studentName}. তিনি/তিনি উপস্থিত ছিলেন: {$date}. শ্রেণি: {$className} {$sectionName}. - {$school->name}";
+                } elseif ($newStatus === 'late') {
+                    $message = "আপনার সন্তানের নাম: {$studentName}. তিনি/তিনি দেরিতে এসেছেন: {$date}. শ্রেণি: {$className} {$sectionName}. - {$school->name}";
+                } elseif ($newStatus === 'half_day') {
+                    $message = "আপনার সন্তানের নাম: {$studentName}. তিনি/তিনি আধা দিন উপস্থিত ছিলেন: {$date}. শ্রেণি: {$className} {$sectionName}. - {$school->name}";
+                } else {
+                    $message = "আপনার সন্তানের নাম: {$studentName}. স্ট্যাটাস: {$newStatus} ({$date}). শ্রেণি: {$className} {$sectionName}. - {$school->name}";
                 }
+            }
+
+            $extra = [
+                'recipient_id' => $student->id,
+                'recipient_name' => $student->student_name_en,
+                'recipient_type' => 'student',
+                'recipient_category' => 'class attendance',
+                'roll_number' => $enrollment ? $enrollment->roll_no : null,
+                'class_name' => $className,
+                'section_name' => $sectionName,
+            ];
+
+            try {
+                $result = SmsSender::send($school->id, $recipientNumber, $message);
+                $ok = (bool)($result['success'] ?? false);
+                $resp = $result['response'] ?? ($result['message'] ?? null);
+
+                // Persist a log entry for this attempt
+                SmsLog::create(array_filter([
+                    'school_id' => $school->id,
+                    'sent_by_user_id' => Auth::id(),
+                    'recipient_type' => $extra['recipient_type'] ?? 'student',
+                    'recipient_category' => $extra['recipient_category'] ?? 'guardian',
+                    'recipient_id' => $extra['recipient_id'] ?? $student->id,
+                    'recipient_name' => $extra['recipient_name'] ?? $student->student_name_en,
+                    'recipient_role' => $extra['recipient_role'] ?? null,
+                    'roll_number' => $extra['roll_number'] ?? null,
+                    'class_name' => $extra['class_name'] ?? $className,
+                    'section_name' => $extra['section_name'] ?? $sectionName,
+                    'recipient_number' => $recipientNumber,
+                    'message' => $message,
+                    'status' => $ok ? 'sent' : 'failed',
+                    'response' => is_string($resp) ? $resp : json_encode($resp),
+                    'message_type' => 'attendance',
+                ]));
+
+                if ($ok) { $sentCount++; }
+                else { $skipped[] = ['student_id' => $student->id, 'reason' => 'send_failed', 'response' => $resp]; }
+            } catch (\Throwable $e) {
+                logger()->error('Attendance SMS send failed for student '.$studentId.': '.$e->getMessage());
+                // Record failure log
+                SmsLog::create(array_filter([
+                    'school_id' => $school->id,
+                    'sent_by_user_id' => Auth::id(),
+                    'recipient_number' => $recipientNumber,
+                    'message' => $message,
+                    'status' => 'failed',
+                    'response' => 'Exception: '.$e->getMessage(),
+                    'message_type' => 'attendance',
+                ]));
+                $skipped[] = ['student_id' => $student->id, 'reason' => 'exception', 'exception' => $e->getMessage()];
             }
         }
 
-        return $sentCount;
+        return ['sent' => $sentCount, 'skipped' => $skipped];
     }
 
     private function replacePlaceholders($content, $student, $status, $date)
@@ -643,5 +754,88 @@ class AttendanceController extends Controller
             [$student->student_name_en, $status, $date],
             $content
         );
+    }
+
+    /**
+     * Enqueue attendance SMS payloads in background chunks. Returns report with counts and skipped list.
+     *
+     * @return array{sent:int, skipped:array}
+     */
+    private function enqueueAttendanceSms(School $school, array $attendanceData, $classId, $sectionId, $date, $isExistingRecord, array $previousStatuses = [])
+    {
+        $settings = Setting::forSchool($school->id)->where(function($q){ $q->where('key','like','sms_%'); })->pluck('value','key');
+        $genericTemplate = SmsTemplate::forSchool($school->id)->where('type', 'class')->latest()->first();
+
+        $payloads = [];
+        $skipped = [];
+
+        foreach ($attendanceData as $studentId => $data) {
+            $newStatus = $data['status'] ?? null;
+            if (empty($newStatus)) continue;
+
+            $settingKey = 'sms_class_attendance_' . $newStatus;
+            $send = ($settings[$settingKey] ?? '0') === '1';
+            if (!$send) { continue; }
+
+            $oldStatus = $previousStatuses[$studentId] ?? null;
+            if ($oldStatus === $newStatus) continue;
+
+            $student = Student::find($studentId);
+            if (!$student) { $skipped[] = ['student_id'=>$studentId,'reason'=>'student_not_found']; continue; }
+
+            $rawPhone = $student->guardian_phone ?? '';
+            $recipientNumber = preg_replace('/[^0-9]/', '', (string)$rawPhone);
+            if (empty($recipientNumber)) { $skipped[] = ['student_id'=>$studentId,'reason'=>'no_guardian_phone']; continue; }
+            if (strlen($recipientNumber) < 10) { $skipped[] = ['student_id'=>$studentId,'reason'=>'invalid_phone']; continue; }
+
+            $class = SchoolClass::find($classId);
+            $section = Section::find($sectionId);
+
+            // Choose template per-status or fallback
+            $template = SmsTemplate::where(function($q) use ($school) {
+                $q->where('school_id', $school->id)->orWhereNull('school_id');
+            })->whereIn('type',['general','class'])->where('title', $newStatus)
+                ->orderByRaw("FIELD(type, 'class', 'general')")->first();
+            if (!$template) { $template = $genericTemplate; }
+
+            if ($template && !empty($template->content)) {
+                $message = $this->replacePlaceholders($template->content, $student, $newStatus, $date);
+            } else {
+                $studentName = $student->student_name_bn ?? $student->student_name_en ?? '';
+                $className = $class?->name ?? '';
+                $sectionName = $section?->name ?? '';
+                if ($newStatus === 'present') {
+                    $message = "আপনার সন্তানের নাম: {$studentName}. তিনি/তিনি উপস্থিত ছিলেন: {$date}. শ্রেণি: {$className} {$sectionName}. - {$school->name}";
+                } elseif ($newStatus === 'late') {
+                    $message = "আপনার সন্তানের নাম: {$studentName}. তিনি/তিনি দেরিতে এসেছেন: {$date}. শ্রেণি: {$className} {$sectionName}. - {$school->name}";
+                } elseif ($newStatus === 'half_day') {
+                    $message = "আপনার সন্তানের নাম: {$studentName}. তিনি/তিনি আধা দিন উপস্থিত ছিলেন: {$date}. শ্রেণি: {$className} {$sectionName}. - {$school->name}";
+                } else {
+                    $message = "আপনার সন্তানের নাম: {$studentName}. স্ট্যাটাস: {$newStatus} ({$date}). শ্রেণি: {$className} {$sectionName}. - {$school->name}";
+                }
+            }
+
+            $enrollment = StudentEnrollment::where('student_id', $studentId)->where('class_id', $classId)->where('section_id', $sectionId)->where('status', 'active')->first();
+            $meta = [
+                'recipient_type' => 'student',
+                'recipient_category' => 'class attendance',
+                'recipient_id' => $student->id,
+                'recipient_name' => $student->student_name_en,
+                'roll_number' => $enrollment ? $enrollment->roll_no : null,
+                'class_name' => $class?->name ?? null,
+                'section_name' => $section?->name ?? null,
+            ];
+
+            $payloads[] = ['mobile' => $recipientNumber, 'message' => $message, 'meta' => $meta];
+        }
+
+        // Chunk and dispatch jobs
+        $chunkSize = (int) env('SMS_CHUNK_SIZE', 20);
+        $chunks = array_chunk($payloads, max(1, $chunkSize));
+        foreach ($chunks as $chunk) {
+            SendSmsChunkJob::dispatch($school->id, Auth::id(), $chunk);
+        }
+
+        return ['sent' => count($payloads), 'skipped' => $skipped];
     }
 }

@@ -130,8 +130,144 @@
 
   <div class="section">
     <h3>শ্রেণি ও শাখা ভিত্তিক উপস্থিতি/অনুপস্থিতি</h3>
-    <div id="attendanceByClassSection" style="min-height:220px; display:flex; align-items:center; justify-content:center; color:#6b7280;">চার্ট স্থাপন করা হবে</div>
+    @php
+      // Option C: produce per-section datasets for each class (present counts)
+      $classLabels = [];
+      $sectionLabels = [];
+      $datasetsBySection = [];
+      if ($school && class_exists(\App\Models\StudentEnrollment::class) && class_exists(\App\Models\Attendance::class) && class_exists(\App\Models\SchoolClass::class) && class_exists(\App\Models\Section::class)) {
+        $enrolls = \App\Models\StudentEnrollment::where('school_id',$school->id)
+          ->when($ayId, fn($q)=>$q->where('academic_year_id',$ayId))
+          ->where('status','active')
+          ->get(['student_id','class_id','section_id']);
+
+        $studentMap = [];
+        $classIds = [];
+        $sectionIds = [];
+        foreach ($enrolls as $e) {
+          $studentMap[$e->student_id] = ['class' => $e->class_id, 'section' => $e->section_id];
+          if ($e->class_id) $classIds[] = $e->class_id;
+          if ($e->section_id) $sectionIds[] = $e->section_id;
+        }
+        $classIds = array_values(array_unique($classIds));
+        $sectionIds = array_values(array_unique($sectionIds));
+
+        // init counts[classId][sectionId] for present and absent
+        $countsPresent = [];
+        $countsAbsent = [];
+        foreach ($classIds as $cid) {
+          $countsPresent[$cid] = [];
+          $countsAbsent[$cid] = [];
+          foreach ($sectionIds as $sid) {
+            $countsPresent[$cid][$sid] = 0;
+            $countsAbsent[$cid][$sid] = 0;
+          }
+        }
+
+        if (!empty($studentMap)) {
+          $attRecords = \App\Models\Attendance::whereIn('student_id', array_keys($studentMap))
+            ->whereDate('date',$today)
+            ->get(['student_id','status']);
+
+          foreach ($attRecords as $rec) {
+            $m = $studentMap[$rec->student_id] ?? null;
+            if (!$m) continue;
+            $cid = $m['class']; $sid = $m['section'];
+            if ($cid && $sid) {
+              if (!isset($countsPresent[$cid])) $countsPresent[$cid] = [];
+              if (!isset($countsAbsent[$cid])) $countsAbsent[$cid] = [];
+              if (!isset($countsPresent[$cid][$sid])) $countsPresent[$cid][$sid] = 0;
+              if (!isset($countsAbsent[$cid][$sid])) $countsAbsent[$cid][$sid] = 0;
+              if ($rec->status === 'present') $countsPresent[$cid][$sid]++;
+              elseif ($rec->status === 'absent') $countsAbsent[$cid][$sid]++;
+            }
+          }
+        }
+
+        // load labels
+        $classes = \App\Models\SchoolClass::whereIn('id', $classIds)->orderBy('numeric_value')->get()->keyBy('id');
+        $sections = \App\Models\Section::whereIn('id', $sectionIds)->get()->keyBy('id');
+
+        foreach ($classIds as $cid) {
+          $c = $classes[$cid] ?? null;
+          $classLabels[] = $c ? ($c->full_name ?? $c->name) : ("শ্রেণি " . $cid);
+        }
+
+        foreach ($sectionIds as $sid) {
+          $s = $sections[$sid] ?? null;
+          $sectionLabels[] = $s ? ($s->name ?? 'শাখা '.$sid) : ('শাখা '.$sid);
+        }
+
+        // prepare datasets: for each class-section pair create Present and Absent datasets
+        $datasetsByPair = [];
+        foreach ($classIds as $cid) {
+          foreach ($sectionIds as $sid) {
+            $pval = $countsPresent[$cid][$sid] ?? 0;
+            $aval = $countsAbsent[$cid][$sid] ?? 0;
+            if ($pval === 0 && $aval === 0) continue; // skip empty pairs
+            $className = $classes[$cid]->full_name ?? $classes[$cid]->name ?? ('শ্রেণি '.$cid);
+            $sectionName = $sections[$sid]->name ?? ('শাখা '.$sid);
+            $labelBase = $className . '-' . $sectionName;
+
+            // present dataset
+            $pdata = [];
+            foreach ($classIds as $cid2) {
+              $pdata[] = ($cid2 == $cid) ? $pval : 0;
+            }
+            $datasetsByPair[] = ['label'=>$labelBase . ' (P)','data'=>$pdata,'kind'=>'present'];
+
+            // absent dataset
+            $adata = [];
+            foreach ($classIds as $cid2) {
+              $adata[] = ($cid2 == $cid) ? $aval : 0;
+            }
+            $datasetsByPair[] = ['label'=>$labelBase . ' (A)','data'=>$adata,'kind'=>'absent'];
+          }
+        }
+      }
+    @endphp
+
+    <div id="attendanceByClassSection" style="min-height:220px; display:flex; align-items:center; justify-content:center; color:#6b7280;">
+      @if(!empty($classLabels) && (!empty($sectionLabels) || !empty($datasetsByPair)))
+        <canvas id="attendanceByClassChart" style="width:100%;max-height:420px"></canvas>
+      @else
+        <div style="padding:24px;color:#6b7280;">কোনো উপস্থিতি ডেটা উপলব্ধ নেই</div>
+      @endif
+    </div>
   </div>
+
+  @if(!empty($classLabels) && (!empty($sectionLabels) || !empty($datasetsByPair)))
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <script>
+      (function(){
+        const labels = {!! json_encode($classLabels) !!};
+        const sections = {!! json_encode($sectionLabels) !!};
+        const datasets = {!! json_encode($datasetsByPair ?? []) !!};
+
+        const palette = [
+          '#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#06B6D4','#F97316','#6366F1'
+        ];
+
+        const chartDatasets = datasets.map((d, i) => ({
+          label: d.label,
+          data: d.data,
+          backgroundColor: d.kind === 'present' ? 'rgba(34,197,94,0.85)' : 'rgba(239,68,68,0.7)'
+        }));
+
+        const ctx = document.getElementById('attendanceByClassChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: { labels: labels, datasets: chartDatasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: { x: { stacked: false }, y: { beginAtZero: true } }
+          }
+        });
+      })();
+    </script>
+  @endif
 
   <div class="section">
     <h3>পুরুষ/মহিলা শিক্ষার্থী</h3>

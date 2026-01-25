@@ -20,14 +20,24 @@ class SmsSender
         }
 
         try {
+            // Configurable HTTP timeouts and small retry to handle transient provider slowness
+            $timeout = (int) (env('SMS_HTTP_TIMEOUT', 30)); // seconds
+            $connectTimeout = (int) (env('SMS_HTTP_CONNECT_TIMEOUT', 5)); // seconds
+            $retryAttempts = (int) (env('SMS_HTTP_RETRY_ATTEMPTS', 2));
+            $retrySleepMillis = (int) (env('SMS_HTTP_RETRY_SLEEP_MS', 500));
+
             // Generic POST; adapt to provider requirements
-            $resp = Http::timeout(15)->asForm()->post($apiUrl, [
-                'api_key' => $apiKey,
-                'senderid' => $senderId,
-                'masking' => $masking,
-                'number' => $to,
-                'message' => $message,
-            ]);
+            $resp = Http::retry($retryAttempts, $retrySleepMillis)
+                ->withOptions(['connect_timeout' => $connectTimeout])
+                ->timeout($timeout)
+                ->asForm()
+                ->post($apiUrl, [
+                    'api_key' => $apiKey,
+                    'senderid' => $senderId,
+                    'masking' => $masking,
+                    'number' => $to,
+                    'message' => $message,
+                ]);
             
             $responseBody = $resp->body();
             $statusCode = $resp->status();
