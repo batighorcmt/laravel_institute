@@ -8,7 +8,9 @@ use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\SchoolClass;
 use App\Models\Section;
+use App\Models\SmsLog;
 use App\Jobs\SendSmsChunkJob;
+use Illuminate\Support\Facades\Auth;
 
 class AttendanceSmsService
 {
@@ -45,12 +47,48 @@ class AttendanceSmsService
             if ($oldStatus === $newStatus) continue;
 
             $student = Student::find($studentId);
-            if (!$student) { $skipped[] = ['student_id'=>$studentId,'reason'=>'student_not_found']; continue; }
+            if (!$student) {
+                $skipped[] = ['student_id'=>$studentId,'reason'=>'student_not_found'];
+                continue;
+            }
 
             $rawPhone = $student->guardian_phone ?? '';
             $recipientNumber = preg_replace('/[^0-9]/', '', (string)$rawPhone);
-            if (empty($recipientNumber)) { $skipped[] = ['student_id'=>$studentId,'reason'=>'no_guardian_phone']; continue; }
-            if (strlen($recipientNumber) < 10) { $skipped[] = ['student_id'=>$studentId,'reason'=>'invalid_phone']; continue; }
+            if (empty($recipientNumber)) {
+                // persist skipped log
+                SmsLog::create([
+                    'school_id' => $school->id,
+                    'sent_by_user_id' => $sentByUserId ?? Auth::id(),
+                    'recipient_type' => 'student',
+                    'recipient_category' => 'guardian',
+                    'recipient_id' => $student->id,
+                    'recipient_name' => $student->student_name_en,
+                    'recipient_number' => null,
+                    'message' => '',
+                    'status' => 'skipped',
+                    'response' => 'no guardian_phone',
+                    'message_type' => 'attendance',
+                ]);
+                $skipped[] = ['student_id'=>$studentId,'reason'=>'no_guardian_phone'];
+                continue;
+            }
+            if (strlen($recipientNumber) < 10) {
+                SmsLog::create([
+                    'school_id' => $school->id,
+                    'sent_by_user_id' => $sentByUserId ?? Auth::id(),
+                    'recipient_type' => 'student',
+                    'recipient_category' => 'guardian',
+                    'recipient_id' => $student->id,
+                    'recipient_name' => $student->student_name_en,
+                    'recipient_number' => $recipientNumber,
+                    'message' => '',
+                    'status' => 'skipped',
+                    'response' => 'invalid phone number',
+                    'message_type' => 'attendance',
+                ]);
+                $skipped[] = ['student_id'=>$studentId,'reason'=>'invalid_phone'];
+                continue;
+            }
 
             $class = SchoolClass::find($classId);
             $section = Section::find($sectionId);

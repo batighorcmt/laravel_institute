@@ -232,7 +232,10 @@ class TeacherStudentAttendanceController extends Controller
         $smsService = new AttendanceSmsService();
         // Build attendance payload as expected: studentId => ['status'=>...]
         $attendancePayload = collect($items)->mapWithKeys(fn($it)=>[$it['student_id']=>['status'=>$it['status']]])->toArray();
-        $smsService->enqueueAttendanceSms($section->school_id ? \App\Models\School::find($section->school_id) : null, $attendancePayload, $section->class_id, $section->id, $date, true, $previousStatuses, $user->id);
+        $schoolModel = \App\Models\School::find($section->school_id);
+        if ($schoolModel) {
+            $smsService->enqueueAttendanceSms($schoolModel, $attendancePayload, $section->class_id, $section->id, $date, true, $previousStatuses, $user->id);
+        }
 
         return response()->json(['message' => 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে']);
     }
