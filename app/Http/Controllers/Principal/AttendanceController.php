@@ -558,14 +558,20 @@ class AttendanceController extends Controller
                 $message = 'উপস্থিতি সফলভাবে রেকর্ড করা হয়েছে!';
             }
 
-            // Send SMS notifications; receive detailed report
-            // Queue SMS notifications so web request is fast; receive enqueue report
-            $smsService = new \App\Services\AttendanceSmsService();
-            $smsReport = $smsService->enqueueAttendanceSms($school, $request->attendance, $classId, $sectionId, $date, $isExistingRecord, $previousStatuses, Auth::id());
-            $message .= " {$smsReport['sent']} SMS queued.";
-            if (!empty($smsReport['skipped'])) {
-                $message .= ' ' . count($smsReport['skipped']) . " SMS skipped.";
+            // Dispatch background job to send attendance SMS (non-blocking)
+            // Prepare enriched student payloads so the job has required context
+            $studentsPayload = [];
+            foreach ($request->attendance as $sid => $data) {
+                $studentsPayload[(int)$sid] = array_merge($data, [
+                    'class_id' => $classId,
+                    'section_id' => $sectionId,
+                    'school_id' => $school->id,
+                    'previous_status' => $previousStatuses[$sid] ?? null,
+                    'sent_by_user_id' => Auth::id(),
+                ]);
             }
+            \App\Jobs\SendAttendanceSmsJob::dispatch($studentsPayload, $date);
+            $message .= ' SMS dispatch queued.';
 
             return redirect()->route('principal.institute.attendance.class.take', [$school, 'class_id' => $classId, 'section_id' => $sectionId])
                 ->with('success', $message)
