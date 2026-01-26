@@ -21,10 +21,12 @@ class SmsSender
 
         try {
             // Configurable HTTP timeouts and small retry to handle transient provider slowness
-            $timeout = (int) (env('SMS_HTTP_TIMEOUT', 30)); // seconds
-            $connectTimeout = (int) (env('SMS_HTTP_CONNECT_TIMEOUT', 5)); // seconds
-            $retryAttempts = (int) (env('SMS_HTTP_RETRY_ATTEMPTS', 2));
-            $retrySleepMillis = (int) (env('SMS_HTTP_RETRY_SLEEP_MS', 500));
+            // Set conservative defaults to avoid long blocking requests in web flows.
+            // These can be overridden via .env if needed.
+            $timeout = (int) (env('SMS_HTTP_TIMEOUT', 10)); // seconds
+            $connectTimeout = (int) (env('SMS_HTTP_CONNECT_TIMEOUT', 3)); // seconds
+            $retryAttempts = (int) (env('SMS_HTTP_RETRY_ATTEMPTS', 1));
+            $retrySleepMillis = (int) (env('SMS_HTTP_RETRY_SLEEP_MS', 200));
 
             // Generic POST; adapt to provider requirements
             $resp = Http::retry($retryAttempts, $retrySleepMillis)
