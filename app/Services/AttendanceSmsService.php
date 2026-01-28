@@ -135,11 +135,23 @@ class AttendanceSmsService
             $payloads[] = ['mobile' => $recipientNumber, 'message' => $message, 'meta' => $meta];
         }
 
-        // Chunk and dispatch jobs
+        // Chunk and dispatch jobs. If `SMS_SEND_IMMEDIATELY` is truthy, dispatch synchronously
         $chunkSize = (int) env('SMS_CHUNK_SIZE', 20);
         $chunks = array_chunk($payloads, max(1, $chunkSize));
+        $sendImmediately = (bool) env('SMS_SEND_IMMEDIATELY', false);
         foreach ($chunks as $chunk) {
-            SendSmsChunkJob::dispatch($school->id, $sentByUserId, $chunk);
+            if ($sendImmediately) {
+                // Dispatch synchronously so sending happens inline (useful when queue workers aren't running)
+                if (method_exists(SendSmsChunkJob::class, 'dispatchSync')) {
+                    SendSmsChunkJob::dispatchSync($school->id, $sentByUserId, $chunk);
+                } else {
+                    // Fallback: instantiate and run handle() directly
+                    $job = new SendSmsChunkJob($school->id, $sentByUserId, $chunk);
+                    $job->handle();
+                }
+            } else {
+                SendSmsChunkJob::dispatch($school->id, $sentByUserId, $chunk);
+            }
         }
 
         return ['sent' => count($payloads), 'skipped' => $skipped];
