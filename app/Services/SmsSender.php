@@ -40,26 +40,45 @@ class SmsSender
                     'number' => $to,
                     'message' => $message,
                 ]);
-            
+
             $responseBody = $resp->body();
             $statusCode = $resp->status();
-            
+
             // Log for debugging
             \Log::info('SMS API Response', [
                 'status' => $statusCode,
                 'body' => $responseBody,
                 'to' => $to
             ]);
-            
-            // Check if response is successful
-            if ($resp->successful()) {
-                // Most SMS providers return success even with HTTP 200
-                // So we consider HTTP 200 as success unless explicitly mentioned as error
-                // Common success patterns: "success", "sent", "ok", or just numbers/codes
-                return ['success' => true, 'message' => 'SMS sent successfully', 'response' => $responseBody];
+
+            // Basic success determination from HTTP status
+            $ok = $resp->successful();
+            $message = $ok ? 'SMS sent successfully' : "HTTP {$statusCode}";
+
+            // Try to detect provider-level errors inside JSON response bodies
+            $json = @json_decode($responseBody, true);
+            if (is_array($json)) {
+                // Many providers include an error_message or response_code field
+                if (!empty($json['error_message'])) {
+                    $ok = false;
+                    $message = 'Provider error: ' . (string)$json['error_message'];
+                } elseif (isset($json['response_code'])) {
+                    // Treat non-zero numeric codes as failure when provider uses 0 for success
+                    $code = $json['response_code'];
+                    if (is_numeric($code) && (int)$code !== 0) {
+                        $ok = false;
+                        $message = 'Provider response_code: ' . (string)$code;
+                    }
+                }
             } else {
-                return ['success' => false, 'message' => "HTTP {$statusCode}", 'response' => $responseBody];
+                // Heuristic: some providers include plain-text 'Unsuccess' markers
+                if (stripos($responseBody, 'unsuccess') !== false || stripos($responseBody, 'not enough balance') !== false) {
+                    $ok = false;
+                    $message = 'Provider reported failure: ' . substr($responseBody, 0, 200);
+                }
             }
+
+            return ['success' => $ok, 'message' => $message, 'response' => $responseBody];
         } catch (\Throwable $e) {
             \Log::error('SMS Send Exception', ['error' => $e->getMessage(), 'to' => $to]);
             return ['success' => false, 'message' => 'Exception: ' . $e->getMessage(), 'response' => null];
