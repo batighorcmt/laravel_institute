@@ -377,7 +377,7 @@ class TeacherStudentAttendanceController extends Controller
             $attendancePayload = collect($data['items'])->mapWithKeys(fn($it)=>[$it['student_id']=>['status'=>$it['status']]])->toArray();
             $schoolModel = \App\Models\School::find($extraClass->school_id);
             if ($schoolModel) {
-                $smsService->enqueueAttendanceSms($schoolModel, $attendancePayload, $extraClass->class_id, $extraClass->section_id, $data['date'], true, $previousStatuses, $user->id);
+                $smsService->enqueueAttendanceSms($schoolModel, $attendancePayload, $extraClass->class_id, $extraClass->section_id, $data['date'], true, $previousStatuses, $user->id, 'extra_class');
             }
         } catch (\Throwable $e) {
             // Don't fail the attendance submit if SMS enqueue fails; log for debugging

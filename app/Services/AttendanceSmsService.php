@@ -28,7 +28,10 @@ class AttendanceSmsService
      * @param int|null $sentByUserId
      * @return array{sent:int, skipped:array}
      */
-    public function enqueueAttendanceSms($school, array $attendanceData, $classId, $sectionId, $date, $isExistingRecord, array $previousStatuses = [], $sentByUserId = null)
+    /**
+     * @param string $messageContext 'class' or 'extra_class'
+     */
+    public function enqueueAttendanceSms($school, array $attendanceData, $classId, $sectionId, $date, $isExistingRecord, array $previousStatuses = [], $sentByUserId = null, string $messageContext = 'class')
     {
         $settings = Setting::forSchool($school->id)->where(function($q){ $q->where('key','like','sms_%'); })->pluck('value','key');
         $genericTemplate = SmsTemplate::forSchool($school->id)->where('type', 'class')->latest()->first();
@@ -40,7 +43,9 @@ class AttendanceSmsService
             $newStatus = $data['status'] ?? null;
             if (empty($newStatus)) continue;
 
-            $settingKey = 'sms_class_attendance_' . $newStatus;
+            // Settings key differs for class vs extra_class
+            $settingPrefix = $messageContext === 'extra_class' ? 'sms_extra_class_attendance_' : 'sms_class_attendance_';
+            $settingKey = $settingPrefix . $newStatus;
             $send = ($settings[$settingKey] ?? '0') === '1';
             if (!$send) { continue; }
 
@@ -103,11 +108,12 @@ class AttendanceSmsService
             $class = SchoolClass::find($classId);
             $section = Section::find($sectionId);
 
-            // Choose template per-status or fallback
+            // Choose template per-status or fallback. Prefer context-specific templates (extra_class/class)
+            $templateTypes = ['general', $messageContext];
             $template = SmsTemplate::where(function($q) use ($school) {
                 $q->where('school_id', $school->id)->orWhereNull('school_id');
-            })->whereIn('type',['general','class'])->where('title', $newStatus)
-                ->orderByRaw("FIELD(type, 'class', 'general')")->first();
+            })->whereIn('type',$templateTypes)->where('title', $newStatus)
+                ->orderByRaw("FIELD(type, '{$messageContext}', 'general')")->first();
             if (!$template) { $template = $genericTemplate; }
 
             if ($template && !empty($template->content)) {
@@ -134,7 +140,7 @@ class AttendanceSmsService
             $enrollment = StudentEnrollment::where('student_id', $studentId)->where('class_id', $classId)->where('section_id', $sectionId)->where('status', 'active')->first();
             $meta = [
                 'recipient_type' => 'student',
-                'recipient_category' => 'class attendance',
+                'recipient_category' => $messageContext === 'extra_class' ? 'extra class attendance' : 'class attendance',
                 'recipient_id' => $student->id,
                 'recipient_name' => $student->student_name_en,
                 'roll_number' => $enrollment ? $enrollment->roll_no : null,
@@ -150,7 +156,7 @@ class AttendanceSmsService
         $chunks = array_chunk($payloads, max(1, $chunkSize));
         $sendImmediately = (bool) env('SMS_SEND_IMMEDIATELY', false);
         foreach ($chunks as $chunk) {
-            if ($sendImmediately) {
+                if ($sendImmediately) {
                 // Dispatch synchronously so sending happens inline (useful when queue workers aren't running)
                 if (method_exists(SendSmsChunkJob::class, 'dispatchSync')) {
                     SendSmsChunkJob::dispatchSync($school->id, $sentByUserId, $chunk);
@@ -160,6 +166,7 @@ class AttendanceSmsService
                     $job->handle();
                 }
             } else {
+                // Attach context meta to chunk? the SendSmsChunkJob currently accepts raw payloads; context is embedded in message body/template.
                 SendSmsChunkJob::dispatch($school->id, $sentByUserId, $chunk);
             }
         }
