@@ -11,6 +11,7 @@ use App\Models\Section;
 use App\Models\SmsLog;
 use App\Jobs\SendSmsChunkJob;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Attendance;
 
 class AttendanceSmsService
 {
@@ -43,7 +44,16 @@ class AttendanceSmsService
             $send = ($settings[$settingKey] ?? '0') === '1';
             if (!$send) { continue; }
 
+            // Determine previous status. Prefer provided map (captured before DB updates).
             $oldStatus = $previousStatuses[$studentId] ?? null;
+            if ($oldStatus === null && $isExistingRecord) {
+                // Fall back to DB lookup when caller didn't supply previous statuses
+                $oldStatus = Attendance::where('student_id', $studentId)
+                    ->where('class_id', $classId)
+                    ->where('section_id', $sectionId)
+                    ->where('date', $date)
+                    ->value('status');
+            }
             if ($oldStatus === $newStatus) continue;
 
             $student = Student::find($studentId);
