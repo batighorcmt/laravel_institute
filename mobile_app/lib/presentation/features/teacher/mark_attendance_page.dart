@@ -136,10 +136,21 @@ class _ClassSectionMarkAttendancePageState
         data: body,
       );
       if (!mounted) return;
-      final msg = (r.data is Map && r.data['message'] is String)
-          ? r.data['message'] as String
+      final data = r.data as Map<String, dynamic>? ?? {};
+      final msg = data['message'] is String
+          ? data['message'] as String
           : 'সফলভাবে সংরক্ষিত হয়েছে';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      String extra = '';
+      if (data['sms_report'] is Map) {
+        final rpt = data['sms_report'] as Map;
+        final queued = rpt['sent'] ?? rpt['queued_count'] ?? null;
+        if (queued != null) {
+          extra = ' SMS queued: $queued';
+        }
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(msg + extra)));
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
