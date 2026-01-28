@@ -55,26 +55,37 @@ class SmsSender
             $ok = $resp->successful();
             $message = $ok ? 'SMS sent successfully' : "HTTP {$statusCode}";
 
-            // Try to detect provider-level errors inside JSON response bodies
+            // Try to detect provider-level signals inside JSON response bodies.
+            // Prefer an explicit `success_message` when present (many providers use non-zero codes
+            // but include a success_message). Fall back to `error_message` or response body heuristics.
             $json = @json_decode($responseBody, true);
             if (is_array($json)) {
-                // Many providers include an error_message or response_code field
-                if (!empty($json['error_message'])) {
+                if (!empty($json['success_message'])) {
+                    $ok = true;
+                    $message = 'Provider success: ' . (string)$json['success_message'];
+                } elseif (!empty($json['error_message'])) {
                     $ok = false;
                     $message = 'Provider error: ' . (string)$json['error_message'];
-                } elseif (isset($json['response_code'])) {
-                    // Treat non-zero numeric codes as failure when provider uses 0 for success
-                    $code = $json['response_code'];
-                    if (is_numeric($code) && (int)$code !== 0) {
+                } elseif (isset($json['response_code']) && is_numeric($json['response_code'])) {
+                    $code = (int)$json['response_code'];
+                    if ($code === 0) {
+                        $ok = true;
+                        $message = 'Provider response_code: 0';
+                    } else {
+                        // Ambiguous numeric code without explicit success_message -> treat as failure
                         $ok = false;
                         $message = 'Provider response_code: ' . (string)$code;
                     }
                 }
             } else {
-                // Heuristic: some providers include plain-text 'Unsuccess' markers
-                if (stripos($responseBody, 'unsuccess') !== false || stripos($responseBody, 'not enough balance') !== false) {
+                // Heuristics for plain-text responses
+                $lower = strtolower($responseBody);
+                if (stripos($lower, 'unsuccess') !== false || stripos($lower, 'not enough balance') !== false) {
                     $ok = false;
                     $message = 'Provider reported failure: ' . substr($responseBody, 0, 200);
+                } elseif (stripos($lower, 'sms submitted') !== false || stripos($lower, 'submitted successfully') !== false) {
+                    $ok = true;
+                    $message = 'Provider reported success: ' . substr($responseBody, 0, 200);
                 }
             }
 
