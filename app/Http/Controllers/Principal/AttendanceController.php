@@ -573,6 +573,15 @@ class AttendanceController extends Controller
             \App\Jobs\SendAttendanceSmsJob::dispatch($studentsPayload, $date);
             $message .= ' SMS dispatch queued.';
 
+            // Provide a minimal sms report to the view to avoid undefined variable errors
+            $smsReport = [
+                'queued' => true,
+                'queued_count' => is_array($studentsPayload) ? count($studentsPayload) : 0,
+                'date' => $date,
+                'class_id' => $classId,
+                'section_id' => $sectionId,
+            ];
+
             return redirect()->route('principal.institute.attendance.class.take', [$school, 'class_id' => $classId, 'section_id' => $sectionId])
                 ->with('success', $message)
                 ->with('sms_report', $smsReport);
