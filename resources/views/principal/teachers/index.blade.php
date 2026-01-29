@@ -21,6 +21,7 @@
               <tr>
                 <th style="width:80px">ক্রমিক নং</th>
                 <th>নাম</th>
+                <th>Initials</th>
                 <th>পদবী</th>
                 <th>মোবাইল নং</th>
                 <th>ইউজার নেম</th>
@@ -34,6 +35,7 @@
                 <tr>
                   <td>{{ $t->serial_number }}</td>
                   <td>{{ $t->first_name }} {{ $t->last_name }}</td>
+                  <td>{{ $t->initials ?? '-' }}</td>
                   <td>{{ $t->designation }}</td>
                   <td>{{ $t->phone }}</td>
                   <td>
@@ -90,7 +92,7 @@
                   </td>
                 </tr>
               @empty
-                <tr><td colspan="8" class="text-center text-muted">কোনো শিক্ষক পাওয়া যায়নি</td></tr>
+                <tr><td colspan="9" class="text-center text-muted">কোনো শিক্ষক পাওয়া যায়নি</td></tr>
               @endforelse
             </tbody>
           </table>
