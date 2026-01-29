@@ -11,6 +11,8 @@
 .cell-entry { background:#f8f9fa; border:1px dashed #e1e7ee; border-radius:4px; padding:.25rem .4rem; margin-bottom:.35rem; }
 .cell-entry .small { line-height:1.2; }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.6.2/dist/select2-bootstrap4.min.css">
 @endpush
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="m-0"><i class="fas fa-table mr-1"></i> ক্লাস রুটিন</h1>
@@ -90,6 +92,7 @@
 </div>
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 (function(){
   var sections = @json($sections);
@@ -208,16 +211,27 @@
 
   // Entry modal mechanics (multiple rows)
   function subjectOptionsHtml(){ return '<option value="">— বিষয় —</option>'; }
-  function teacherOptionsHtml(){ return '<option value="">— শিক্ষক —</option>'+ teachers.map(t=>'<option value="'+t.id+'">'+(t.user && t.user.name ? t.user.name : ('Teacher #'+t.id))+'</option>').join(''); }
+  function populateTeacherSelect(sel, selected){
+    sel.innerHTML = '';
+    var empty = document.createElement('option'); empty.value = ''; empty.textContent = '— শিক্ষক —'; sel.appendChild(empty);
+    (teachers||[]).forEach(function(t){
+      var o = document.createElement('option');
+      o.value = t.id;
+      var name = (t.user && t.user.name) ? t.user.name : ('Teacher #'+t.id);
+      o.textContent = name + (t.initials ? (' ('+t.initials+')') : '');
+      sel.appendChild(o);
+    });
+    if(typeof selected !== 'undefined' && selected !== null) sel.value = String(selected);
+  }
 
   function addEntryRow(tblBody, defaults){
     var tr=document.createElement('tr');
     tr.innerHTML = '<td><input type="number" class="form-control form-control-sm period-input" min="1" required></td>'+
-                   '<td><select class="form-control form-control-sm subject-input"></select></td>'+
-                   '<td><select class="form-control form-control-sm teacher-input">'+teacherOptionsHtml()+'</select></td>'+
-                   '<td><input type="time" class="form-control form-control-sm start-input"></td>'+
-                   '<td><input type="time" class="form-control form-control-sm end-input"></td>'+
-                   '<td><button type="button" class="btn btn-xs btn-outline-danger del-row">বাদ</button></td>';
+             '<td><select class="form-control form-control-sm subject-input"></select></td>'+
+             '<td><select class="form-control form-control-sm teacher-input"></select></td>'+
+             '<td><input type="time" class="form-control form-control-sm start-input"></td>'+
+             '<td><input type="time" class="form-control form-control-sm end-input"></td>'+
+             '<td><button type="button" class="btn btn-xs btn-outline-danger del-row">বাদ</button></td>';
     tblBody.appendChild(tr);
     // populate subjects for current class
     var cls=document.getElementById('class_id').value; 
@@ -233,14 +247,17 @@
     } else {
       sel.innerHTML = '<option value="">— প্রথমে শ্রেণি নির্বাচন করুন —</option>';
     }
+    var teacherSel = tr.querySelector('.teacher-input');
+    populateTeacherSelect(teacherSel, defaults ? defaults.teacher_id : '');
     if(defaults){
       tr.querySelector('.period-input').value = defaults.period_number || document.getElementById('cellModal').dataset.period;
-      tr.querySelector('.teacher-input').value = defaults.teacher_id || '';
       tr.querySelector('.start-input').value = defaults.start_time || '';
       tr.querySelector('.end-input').value = defaults.end_time || '';
     } else {
       tr.querySelector('.period-input').value = document.getElementById('cellModal').dataset.period;
     }
+    // Initialize Select2 for teacher select (attach to modal so search input receives focus)
+    try { $(teacherSel).select2({ theme: 'bootstrap4', width: '100%', dropdownParent: $('#cellModal'), minimumResultsForSearch: 0 }); } catch(_) {}
   }
 
   document.getElementById('routineGrid').addEventListener('click', function(e){
