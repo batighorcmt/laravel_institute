@@ -10,6 +10,12 @@
     <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}">
 
 
+    <script>
+        // Ensure jQuery is available for any legacy CDN-loaded plugins (temporary fallback for live host)
+        if (typeof window.jQuery === 'undefined') {
+            document.write('<script src="https://code.jquery.com/jquery-3.6.0.min.js"><\/script>');
+        }
+    </script>
     @vite(['resources/css/app.css','resources/js/app.js'])
     <style>
         .navbar-search { min-width: 220px; }
