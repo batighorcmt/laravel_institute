@@ -25,6 +25,9 @@ class _ClassSectionMarkAttendancePageState
   List<_StudentRow> _students = const [];
   bool _isToday = true;
   int _statTotal = 0, _statPresent = 0, _statAbsent = 0, _statLate = 0;
+  int _statMale = 0, _statFemale = 0;
+  bool _isUpdate = false;
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -56,6 +59,7 @@ class _ClassSectionMarkAttendancePageState
               roll: (m['roll'] ?? 0) as int,
               photoUrl: (m['photo_url'] ?? '') as String,
               status: _parseStatus(m['status'] as String?),
+              gender: (m['gender'] as String?) ?? '',
             ),
           )
           .toList();
@@ -63,6 +67,43 @@ class _ClassSectionMarkAttendancePageState
       _statPresent = (stats['present'] as num?)?.toInt() ?? 0;
       _statAbsent = (stats['absent'] as num?)?.toInt() ?? 0;
       _statLate = (stats['late'] as num?)?.toInt() ?? 0;
+      // male/female for PRESENT students: prefer server-provided present_male/present_female
+      _statMale =
+          (stats['present_male'] as num?)?.toInt() ??
+          (stats['male'] as num?)?.toInt() ??
+          -1;
+      _statFemale =
+          (stats['present_female'] as num?)?.toInt() ??
+          (stats['female'] as num?)?.toInt() ??
+          -1;
+      if (_statMale < 0 || _statFemale < 0) {
+        int male = 0, female = 0;
+        for (final s in _students) {
+          if (s.status != AttendanceStatus.present) continue;
+          final g = s.gender.toString().trim();
+          final gl = g.toLowerCase();
+          if (gl.isEmpty) continue;
+          if (gl.startsWith('m') ||
+              gl == 'm' ||
+              gl.contains('male') ||
+              g.contains('ছেল')) {
+            male++;
+          } else if (gl.startsWith('f') ||
+              gl == 'f' ||
+              gl.contains('female') ||
+              g.contains('মেয়') ||
+              g.contains('মে')) {
+            female++;
+          }
+        }
+        if (_statMale < 0) _statMale = male;
+        if (_statFemale < 0) _statFemale = female;
+      }
+      // Determine whether this is an update (existing DB records) or a first-time submit
+      _isUpdate = _statTotal > 0 || _students.any((s) => s.status != null);
+
+      // recompute counts for male/female if provided
+      // (these will be passed to the counts bar)
     } catch (e) {
       _error = 'ডাটা লোড ব্যর্থ';
     } finally {
@@ -124,6 +165,9 @@ class _ClassSectionMarkAttendancePageState
 
   Future<void> _submit() async {
     if (!_isComplete) return;
+    if (_submitting) return;
+    _submitting = true;
+    setState(() {});
     try {
       final body = {
         'date': _date,
@@ -158,6 +202,8 @@ class _ClassSectionMarkAttendancePageState
         context,
       ).showSnackBar(const SnackBar(content: Text('সংরক্ষণ ব্যর্থ')));
     }
+    _submitting = false;
+    setState(() {});
   }
 
   @override
@@ -188,6 +234,8 @@ class _ClassSectionMarkAttendancePageState
                   present: _statPresent,
                   absent: _statAbsent,
                   late: _statLate,
+                  male: _statMale,
+                  female: _statFemale,
                 ),
                 const Divider(height: 1),
                 Expanded(
@@ -216,9 +264,11 @@ class _ClassSectionMarkAttendancePageState
                     child: SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: _isToday && _isComplete ? _submit : null,
+                        onPressed: (_isToday && _isComplete && !_submitting)
+                            ? _submit
+                            : null,
                         icon: const Icon(Icons.save),
-                        label: const Text('সাবমিট করুন'),
+                        label: Text(_isUpdate ? 'আপডেট করুন' : 'সাবমিট করুন'),
                       ),
                     ),
                   ),
@@ -327,9 +377,9 @@ class _ActionChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
+          color: color.withOpacity(0.12),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.5)),
+          border: Border.all(color: color.withOpacity(0.5)),
         ),
         child: Row(
           children: [
@@ -351,12 +401,14 @@ class _StudentRow {
   final int roll;
   final String photoUrl;
   final AttendanceStatus? status;
+  final String gender;
   const _StudentRow({
     required this.id,
     required this.name,
     required this.roll,
     required this.photoUrl,
     required this.status,
+    required this.gender,
   });
   _StudentRow copyWith({AttendanceStatus? status}) => _StudentRow(
     id: id,
@@ -364,6 +416,7 @@ class _StudentRow {
     roll: roll,
     photoUrl: photoUrl,
     status: status,
+    gender: gender,
   );
 }
 
@@ -384,12 +437,24 @@ class _StudentRowWidget extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.grey.shade200,
-              backgroundImage: row.photoUrl.isEmpty
-                  ? null
-                  : NetworkImage(row.photoUrl),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: 36,
+                height: 36,
+                color: Colors.grey.shade200,
+                child: row.photoUrl.isEmpty
+                    ? Icon(Icons.person, size: 20, color: Colors.grey[600])
+                    : Image.network(
+                        row.photoUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(
+                          Icons.person,
+                          size: 20,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+              ),
             ),
             const SizedBox(width: 12),
             SizedBox(
@@ -438,11 +503,15 @@ class _CountsBar extends StatelessWidget {
   final int present;
   final int absent;
   final int late;
+  final int male;
+  final int female;
   const _CountsBar({
     required this.total,
     required this.present,
     required this.absent,
     required this.late,
+    required this.male,
+    required this.female,
   });
   @override
   Widget build(BuildContext context) {
@@ -450,8 +519,8 @@ class _CountsBar extends StatelessWidget {
     Widget chip(Color c, String label, String value) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.08),
-        border: Border.all(color: c.withValues(alpha: 0.4)),
+        color: c.withOpacity(0.08),
+        border: Border.all(color: c.withOpacity(0.4)),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -479,6 +548,10 @@ class _CountsBar extends StatelessWidget {
             chip(Colors.red, 'অনুপস্থিত', '$absent'),
             const SizedBox(width: 8),
             chip(Colors.orange, 'দেরি', '$late'),
+            const SizedBox(width: 8),
+            chip(Colors.blueGrey, 'ছেলে', '$male'),
+            const SizedBox(width: 8),
+            chip(Colors.pink, 'মেয়ে', '$female'),
           ],
         ),
       ),
@@ -510,9 +583,9 @@ class _StatusButton extends StatelessWidget {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: selected ? color : color.withValues(alpha: 0.12),
+            color: selected ? color : color.withOpacity(0.12),
             shape: BoxShape.circle,
-            border: Border.all(color: color.withValues(alpha: 0.6)),
+            border: Border.all(color: color.withOpacity(0.6)),
           ),
           child: Icon(icon, size: 18, color: selected ? Colors.white : color),
         ),

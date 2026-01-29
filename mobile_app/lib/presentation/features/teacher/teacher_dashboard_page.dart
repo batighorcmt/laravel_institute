@@ -26,7 +26,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
     final name = profile?.name ?? 'Teacher';
     final photoUrl = profile?.photoUrl;
     final schoolName = _firstSchoolName(profile);
-    final designation = 'Teacher';
+    final designation = profile?.teacherDesignation ?? 'Teacher';
 
     return Scaffold(
       appBar: AppBar(

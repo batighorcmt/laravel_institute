@@ -135,10 +135,11 @@ class TeacherStudentAttendanceController extends Controller
                 'roll' => $en->roll_no,
                 'photo_url' => $st?->photo_url,
                 'status' => $existing[$st?->id] ?? null,
+                'gender' => $st?->gender ?? null,
             ];
         })->values();
 
-        // Stats from DB for the given date
+        // Compute stats from DB for the given date
         $records = Attendance::where('section_id', $section->id)
             ->where('date', $date)
             ->get();
@@ -148,6 +149,28 @@ class TeacherStudentAttendanceController extends Controller
             'absent' => $records->where('status','absent')->count(),
             'late' => $records->where('status','late')->count(),
         ];
+        // Add male/female counts for PRESENT students (prefer server-side present counts)
+        $presentMale = Attendance::where('section_id', $section->id)
+            ->where('date', $date)
+            ->where('status', 'present')
+            ->join('students', 'attendance.student_id', '=', 'students.id')
+            ->where('students.gender', 'male')
+            ->count();
+        $presentFemale = Attendance::where('section_id', $section->id)
+            ->where('date', $date)
+            ->where('status', 'present')
+            ->join('students', 'attendance.student_id', '=', 'students.id')
+            ->where('students.gender', 'female')
+            ->count();
+
+        // Fallback: total male/female in enrollments (if no attendance records exist yet)
+        $maleCount = $enrollments->filter(fn($e)=>($e->student?->gender ?? '') === 'male')->count();
+        $femaleCount = $enrollments->filter(fn($e)=>($e->student?->gender ?? '') === 'female')->count();
+
+        $stats['male'] = $presentMale >= 0 ? $presentMale : $maleCount;
+        $stats['female'] = $presentFemale >= 0 ? $presentFemale : $femaleCount;
+        $stats['present_male'] = $presentMale;
+        $stats['present_female'] = $presentFemale;
 
         return response()->json([
             'date' => $date,
@@ -211,6 +234,8 @@ class TeacherStudentAttendanceController extends Controller
             ->pluck('status','student_id')
             ->toArray();
 
+        $wasExisting = !empty($previousStatuses);
+
         DB::transaction(function() use ($items, $date, $section, $user) {
             foreach ($items as $it) {
                 Attendance::updateOrCreate(
@@ -244,7 +269,7 @@ class TeacherStudentAttendanceController extends Controller
             \Log::error('Failed to enqueue class attendance SMS', ['error'=>$e->getMessage(), 'section_id'=>$section->id]);
         }
 
-        $resp = ['message' => 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে'];
+        $resp = ['message' => $wasExisting ? 'উপস্থিতি আপডেট হয়েছে' : 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে'];
         if ($smsReport !== null) { $resp['sms_report'] = $smsReport; }
         return response()->json($resp);
     }
@@ -279,6 +304,7 @@ class TeacherStudentAttendanceController extends Controller
                 'roll' => (int)($st?->currentEnrollment?->roll_no ?? 0),
                 'photo_url' => $st?->photo_url,
                 'status' => $existing[$st?->id] ?? null,
+                'gender' => $st?->gender ?? null,
             ];
         })->sortBy('roll')->values();
 
@@ -293,6 +319,27 @@ class TeacherStudentAttendanceController extends Controller
             'late' => $records->where('status','late')->count(),
             'excused' => $records->where('status','excused')->count(),
         ];
+        // present male/female for extra class
+        $presentMale = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
+            ->where('date', $date)
+            ->where('status', 'present')
+            ->join('students', 'extra_class_attendance.student_id', '=', 'students.id')
+            ->where('students.gender', 'male')
+            ->count();
+        $presentFemale = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
+            ->where('date', $date)
+            ->where('status', 'present')
+            ->join('students', 'extra_class_attendance.student_id', '=', 'students.id')
+            ->where('students.gender', 'female')
+            ->count();
+
+        $maleCount = $enrollments->filter(fn($e)=>($e->student?->gender ?? '') === 'male')->count();
+        $femaleCount = $enrollments->filter(fn($e)=>($e->student?->gender ?? '') === 'female')->count();
+
+        $stats['male'] = $presentMale >= 0 ? $presentMale : $maleCount;
+        $stats['female'] = $presentFemale >= 0 ? $presentFemale : $femaleCount;
+        $stats['present_male'] = $presentMale;
+        $stats['present_female'] = $presentFemale;
 
         return response()->json([
             'date' => $date,
@@ -346,6 +393,8 @@ class TeacherStudentAttendanceController extends Controller
             ->pluck('status','student_id')
             ->toArray();
 
+        $wasExisting = !empty($previousStatuses);
+
         DB::transaction(function() use ($data, $extraClass, $user) {
             ExtraClassAttendance::where('extra_class_id', $extraClass->id)
                 ->where('date', $data['date'])
@@ -388,7 +437,7 @@ class TeacherStudentAttendanceController extends Controller
         }
 
         return response()->json([
-            'message' => 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে',
+            'message' => $wasExisting ? 'উপস্থিতি আপডেট হয়েছে' : 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে',
             'stats' => $stats,
         ]);
     }

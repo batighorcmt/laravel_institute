@@ -49,11 +49,35 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
-        return response()->json([
+        $payload = [
             'id' => $user->id,
             'name' => $user->name,
             'roles' => $this->extractRoles($user),
-        ]);
+        ];
+
+        // If the user is a teacher for a school, include teacher designation and photo
+        $schoolId = $user->firstTeacherSchoolId();
+        if ($schoolId) {
+            $teacher = \App\Models\Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
+            if ($teacher) {
+                $photoUrl = null;
+                if ($teacher->photo) {
+                    if (str_starts_with($teacher->photo, 'http')) {
+                        $photoUrl = $teacher->photo;
+                    } else {
+                        $storageUrl = \Illuminate\Support\Facades\Storage::url($teacher->photo);
+                        $photoUrl = rtrim(config('app.url'), '/') . '/' . ltrim($storageUrl, '/');
+                    }
+                }
+                $payload['teacher'] = [
+                    'id' => $teacher->id,
+                    'designation' => $teacher->designation,
+                    'photo_url' => $photoUrl,
+                ];
+            }
+        }
+
+        return response()->json($payload);
     }
 
     /**
