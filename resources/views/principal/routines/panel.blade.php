@@ -268,6 +268,20 @@
         setTimeout(function(){ initSelect2For(el, tries-1); }, 100);
       } else {
         console.error('Select2 plugin not available to initialize element', el);
+        // Fallback: dynamically load Select2 from CDN once and try to init afterwards
+        if (!window.__select2_fallback_loading) {
+          window.__select2_fallback_loading = true;
+          var cdn = document.createElement('script');
+          cdn.src = 'https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js';
+          cdn.async = true;
+          cdn.onload = function(){
+            console.log('Select2 fallback loaded from CDN');
+            try { $(el).select2({ theme: 'bootstrap4', width: '100%', dropdownParent: $('#cellModal'), minimumResultsForSearch: 0 }); }
+            catch(err){ console.error('Select2 init after CDN load failed', err); }
+          };
+          cdn.onerror = function(){ console.error('Select2 CDN failed to load'); };
+          document.head.appendChild(cdn);
+        }
       }
     })(teacherSel, 20);
   }
