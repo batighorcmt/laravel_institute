@@ -31,14 +31,10 @@ class AuthNotifier extends AsyncNotifier<UserProfile?> {
         password: password,
         deviceName: 'flutter-app',
       );
-      dynamic rawUser = loginData['user'];
-      UserProfile profile;
-      if (rawUser != null) {
-        profile = UserProfile.fromDynamic(rawUser);
-      } else {
-        final data = await AuthRepository().me();
-        profile = UserProfile.fromDynamic(data);
-      }
+      // After successful login, always fetch the complete /me profile so
+      // server-provided teacher fields (designation/photo) are included.
+      final data = await AuthRepository().me();
+      final profile = UserProfile.fromDynamic(data);
       state = AsyncData(profile);
       await _writeCachedProfile(profile);
       return true;
