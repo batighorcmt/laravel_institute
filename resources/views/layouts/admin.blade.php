@@ -10,6 +10,21 @@
     <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}">
 
     @vite(['resources/css/app.css','resources/js/app.js'])
+    <script>
+        (function(){
+            function ensureSelect2(){
+                if (window.$ && $.fn && $.fn.select2) return;
+                if (window.__select2_cdn_loading) return;
+                window.__select2_cdn_loading = true;
+                var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css'; css.crossOrigin = 'anonymous'; document.head.appendChild(css);
+                var js = document.createElement('script'); js.src = 'https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js'; js.async = true; js.crossOrigin = 'anonymous';
+                js.onload = function(){ console.log('Select2 loaded from CDN (layout fallback)'); };
+                js.onerror = function(){ console.error('Select2 CDN failed to load'); };
+                document.head.appendChild(js);
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureSelect2); else ensureSelect2();
+        })();
+    </script>
     <style>
         .navbar-search { min-width: 220px; }
 
