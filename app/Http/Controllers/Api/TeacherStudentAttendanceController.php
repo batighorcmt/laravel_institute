@@ -152,13 +152,13 @@ class TeacherStudentAttendanceController extends Controller
         // Add male/female counts for PRESENT students (prefer server-side present counts)
         $presentMale = Attendance::where('section_id', $section->id)
             ->where('date', $date)
-            ->where('status', 'present')
+            ->where('attendance.status', 'present')
             ->join('students', 'attendance.student_id', '=', 'students.id')
             ->where('students.gender', 'male')
             ->count();
         $presentFemale = Attendance::where('section_id', $section->id)
             ->where('date', $date)
-            ->where('status', 'present')
+            ->where('attendance.status', 'present')
             ->join('students', 'attendance.student_id', '=', 'students.id')
             ->where('students.gender', 'female')
             ->count();
@@ -322,13 +322,13 @@ class TeacherStudentAttendanceController extends Controller
         // present male/female for extra class
         $presentMale = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
             ->where('date', $date)
-            ->where('status', 'present')
+            ->where('extra_class_attendance.status', 'present')
             ->join('students', 'extra_class_attendance.student_id', '=', 'students.id')
             ->where('students.gender', 'male')
             ->count();
         $presentFemale = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
             ->where('date', $date)
-            ->where('status', 'present')
+            ->where('extra_class_attendance.status', 'present')
             ->join('students', 'extra_class_attendance.student_id', '=', 'students.id')
             ->where('students.gender', 'female')
             ->count();

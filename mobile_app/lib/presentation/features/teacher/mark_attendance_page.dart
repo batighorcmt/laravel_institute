@@ -49,24 +49,45 @@ class _ClassSectionMarkAttendancePageState
       final data = r.data as Map<String, dynamic>? ?? {};
       _date = (data['date'] as String?) ?? _date;
       _isToday = _date == _formatDate(DateTime.now());
-      final list = (data['students'] as List? ?? []).cast<Map>();
-      final stats = (data['stats'] as Map?) ?? const {};
+      // Normalize students list safely
+      final rawList = data['students'];
+      final list = <Map<String, dynamic>>[];
+      if (rawList is List) {
+        for (final e in rawList) {
+          if (e is Map) {
+            try {
+              list.add(Map<String, dynamic>.from(e));
+            } catch (_) {
+              // ignore malformed element
+            }
+          }
+        }
+      }
+      final stats = (data['stats'] is Map) ? Map<String, dynamic>.from(data['stats']) : <String, dynamic>{};
+
+      int toInt(dynamic v) {
+        if (v == null) return 0;
+        if (v is num) return v.toInt();
+        return int.tryParse(v.toString()) ?? 0;
+      }
+
       _students = list
           .map(
             (m) => _StudentRow(
-              id: m['id'] as int,
-              name: (m['name'] ?? '') as String,
-              roll: (m['roll'] ?? 0) as int,
-              photoUrl: (m['photo_url'] ?? '') as String,
-              status: _parseStatus(m['status'] as String?),
-              gender: (m['gender'] as String?) ?? '',
+              id: (m['id'] is num) ? (m['id'] as num).toInt() : (int.tryParse(m['id']?.toString() ?? '') ?? 0),
+              name: (m['name'] ?? '').toString(),
+              roll: (m['roll'] is num) ? (m['roll'] as num).toInt() : (int.tryParse(m['roll']?.toString() ?? '') ?? 0),
+              photoUrl: (m['photo_url'] ?? '').toString(),
+              status: _parseStatus(m['status']?.toString()),
+              gender: (m['gender'] ?? '').toString(),
             ),
           )
           .toList();
-      _statTotal = (stats['total'] as num?)?.toInt() ?? 0;
-      _statPresent = (stats['present'] as num?)?.toInt() ?? 0;
-      _statAbsent = (stats['absent'] as num?)?.toInt() ?? 0;
-      _statLate = (stats['late'] as num?)?.toInt() ?? 0;
+
+      _statTotal = toInt(stats['total']);
+      _statPresent = toInt(stats['present']);
+      _statAbsent = toInt(stats['absent']);
+      _statLate = toInt(stats['late']);
       // male/female for PRESENT students: prefer server-provided present_male/present_female
       _statMale =
           (stats['present_male'] as num?)?.toInt() ??
@@ -105,7 +126,26 @@ class _ClassSectionMarkAttendancePageState
       // recompute counts for male/female if provided
       // (these will be passed to the counts bar)
     } catch (e) {
-      _error = 'ডাটা লোড ব্যর্থ';
+      String msg = 'ডাটা লোড ব্যর্থ';
+      try {
+        if (e is DioError) {
+          final resp = e.response;
+          if (resp != null) {
+            msg = 'লোড ব্যর্থ: ${resp.statusCode} ${resp.statusMessage ?? ''}';
+            if (resp.data is Map && resp.data['message'] != null) {
+              msg = '${msg} - ${resp.data['message']}';
+            }
+          } else {
+            msg = 'নেটওয়ার্ক ত্রুটি: ${e.message}';
+          }
+        } else {
+          msg = 'ত্রুটি: ${e.toString()}';
+        }
+      } catch (_) {}
+      _error = msg;
+      // Also print to console for debugging
+      // ignore: avoid_print
+      print('mark_attendance _load error: $e');
     } finally {
       if (mounted) {
         setState(() {
