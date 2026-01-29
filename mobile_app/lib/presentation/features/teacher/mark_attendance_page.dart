@@ -63,7 +63,9 @@ class _ClassSectionMarkAttendancePageState
           }
         }
       }
-      final stats = (data['stats'] is Map) ? Map<String, dynamic>.from(data['stats']) : <String, dynamic>{};
+      final stats = (data['stats'] is Map)
+          ? Map<String, dynamic>.from(data['stats'])
+          : <String, dynamic>{};
 
       int toInt(dynamic v) {
         if (v == null) return 0;
@@ -74,9 +76,13 @@ class _ClassSectionMarkAttendancePageState
       _students = list
           .map(
             (m) => _StudentRow(
-              id: (m['id'] is num) ? (m['id'] as num).toInt() : (int.tryParse(m['id']?.toString() ?? '') ?? 0),
+              id: (m['id'] is num)
+                  ? (m['id'] as num).toInt()
+                  : (int.tryParse(m['id']?.toString() ?? '') ?? 0),
               name: (m['name'] ?? '').toString(),
-              roll: (m['roll'] is num) ? (m['roll'] as num).toInt() : (int.tryParse(m['roll']?.toString() ?? '') ?? 0),
+              roll: (m['roll'] is num)
+                  ? (m['roll'] as num).toInt()
+                  : (int.tryParse(m['roll']?.toString() ?? '') ?? 0),
               photoUrl: (m['photo_url'] ?? '').toString(),
               status: _parseStatus(m['status']?.toString()),
               gender: (m['gender'] ?? '').toString(),
