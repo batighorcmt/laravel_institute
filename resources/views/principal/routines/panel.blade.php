@@ -51,14 +51,11 @@
   <div class="card">
     <div class="card-body">
       <div class="table-responsive">
+        @php($days=['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'])
         <table class="table table-bordered" id="routineGrid">
           <thead>
-            <tr>
-              <th style="width:110px">পিরিয়ড\\দিন</th>
-              @php($days=['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'])
-              @foreach($days as $dk=>$dn)
-                <th data-day="{{ $dk }}">{{ $dn }}</th>
-              @endforeach
+            <tr id="routineGridHead">
+              <th style="width:110px">দিন / পিরিয়ড</th>
             </tr>
           </thead>
           <tbody id="routineGridBody"></tbody>
@@ -96,7 +93,8 @@
 (function(){
   var sections = @json($sections);
   var teachers = @json($teachers);
-  var days = ['saturday','sunday','monday','tuesday','wednesday','thursday','friday'];
+  var dayLabels = @json($days);
+  var days = Object.keys(dayLabels);
 
   // Helper: fetch JSON with CSRF + credentials
   function fetchJSON(url, opts){
@@ -131,13 +129,26 @@
   }
 
   function buildGrid(period){
+    var theadRow = document.getElementById('routineGridHead');
+    var headerHtml = '<th style="width:110px">দিন / পিরিয়ড</th>';
+    for (var p=1; p<=period; p++){
+      headerHtml += '<th data-period="'+p+'">পিরিয়ড '+p+'</th>';
+    }
+    theadRow.innerHTML = headerHtml;
+
     var tbody = document.getElementById('routineGridBody');
     tbody.innerHTML = '';
-    for (var p=1; p<=period; p++){
+    days.forEach(function(d){
       var tr = document.createElement('tr');
-      tr.innerHTML = '<th>পিরিয়ড '+p+'</th>' + days.map(function(d){ return '<td class="cell-td" data-day="'+d+'" data-period="'+p+'"><button class="btn btn-xs btn-outline-success add-cell">ম্যানেজ</button><div class="cell-list mt-2"></div></td>'; }).join('');
+      var dayName = dayLabels[d] || d;
+      var cells = [];
+      cells.push('<th>'+dayName+'</th>');
+      for (var p=1; p<=period; p++){
+        cells.push('<td class="cell-td" data-day="'+d+'" data-period="'+p+'"><button class="btn btn-xs btn-outline-success add-cell">ম্যানেজ</button><div class="cell-list mt-2"></div></td>');
+      }
+      tr.innerHTML = cells.join('');
       tbody.appendChild(tr);
-    }
+    });
   }
 
   function refreshCellUI(cell, entries){
