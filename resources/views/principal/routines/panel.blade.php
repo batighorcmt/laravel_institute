@@ -11,8 +11,7 @@
 .cell-entry { background:#f8f9fa; border:1px dashed #e1e7ee; border-radius:4px; padding:.25rem .4rem; margin-bottom:.35rem; }
 .cell-entry .small { line-height:1.2; }
 </style>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.6.2/dist/select2-bootstrap4.min.css">
+<!-- Select2 CSS is bundled via Vite (resources/css/app.css) in production -->
 @endpush
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="m-0"><i class="fas fa-table mr-1"></i> ক্লাস রুটিন</h1>
@@ -92,7 +91,7 @@
 </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- Select2 JS is bundled via Vite (resources/js/app.js) in production -->
 <script>
 (function(){
   var sections = @json($sections);
