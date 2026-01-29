@@ -256,7 +256,20 @@
       tr.querySelector('.period-input').value = document.getElementById('cellModal').dataset.period;
     }
     // Initialize Select2 for teacher select (attach to modal so search input receives focus)
-    try { $(teacherSel).select2({ theme: 'bootstrap4', width: '100%', dropdownParent: $('#cellModal'), minimumResultsForSearch: 0 }); } catch(_) {}
+    (function initSelect2For(el, tries){
+      tries = typeof tries === 'number' ? tries : 20;
+      if (window.$ && $.fn && $.fn.select2) {
+        try {
+          $(el).select2({ theme: 'bootstrap4', width: '100%', dropdownParent: $('#cellModal'), minimumResultsForSearch: 0 });
+        } catch(err){ console.error('Select2 init error', err); }
+        return;
+      }
+      if (tries > 0) {
+        setTimeout(function(){ initSelect2For(el, tries-1); }, 100);
+      } else {
+        console.error('Select2 plugin not available to initialize element', el);
+      }
+    })(teacherSel, 20);
   }
 
   document.getElementById('routineGrid').addEventListener('click', function(e){
