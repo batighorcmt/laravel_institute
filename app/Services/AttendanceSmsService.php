@@ -43,12 +43,6 @@ class AttendanceSmsService
             $newStatus = $data['status'] ?? null;
             if (empty($newStatus)) continue;
 
-            // Settings key differs for class vs extra_class
-            $settingPrefix = $messageContext === 'extra_class' ? 'sms_extra_class_attendance_' : 'sms_class_attendance_';
-            $settingKey = $settingPrefix . $newStatus;
-            $send = ($settings[$settingKey] ?? '0') === '1';
-            if (!$send) { continue; }
-
             // Determine previous status. Prefer provided map (captured before DB updates).
             $oldStatus = $previousStatuses[$studentId] ?? null;
             if ($oldStatus === null && $isExistingRecord) {
@@ -59,7 +53,21 @@ class AttendanceSmsService
                     ->where('date', $date)
                     ->value('status');
             }
+
+            // If the status didn't change, skip.
             if ($oldStatus === $newStatus) continue;
+
+            // Settings key differs for class vs extra_class
+            $settingPrefix = $messageContext === 'extra_class' ? 'sms_extra_class_attendance_' : 'sms_class_attendance_';
+            $settingKey = $settingPrefix . $newStatus;
+            $send = ($settings[$settingKey] ?? '0') === '1';
+
+            // For updates (we have an old status and it changed), always send regardless of setting.
+            $shouldSend = $send;
+            if ($oldStatus !== null && $oldStatus !== $newStatus) {
+                $shouldSend = true;
+            }
+            if (!$shouldSend) { continue; }
 
             $student = Student::find($studentId);
             if (!$student) {

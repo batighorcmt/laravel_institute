@@ -236,7 +236,9 @@ class TeacherStudentAttendanceController extends Controller
             $attendancePayload = collect($items)->mapWithKeys(fn($it)=>[$it['student_id']=>['status'=>$it['status']]])->toArray();
             $schoolModel = \App\Models\School::find($section->school_id);
             if ($schoolModel) {
-                $smsReport = $smsService->enqueueAttendanceSms($schoolModel, $attendancePayload, $section->class_id, $section->id, $date, true, $previousStatuses, $user->id);
+                // Only mark as "existing record" when we actually had previous statuses captured.
+                $isExisting = !empty($previousStatuses);
+                $smsReport = $smsService->enqueueAttendanceSms($schoolModel, $attendancePayload, $section->class_id, $section->id, $date, $isExisting, $previousStatuses, $user->id);
             }
         } catch (\Throwable $e) {
             \Log::error('Failed to enqueue class attendance SMS', ['error'=>$e->getMessage(), 'section_id'=>$section->id]);
@@ -377,7 +379,8 @@ class TeacherStudentAttendanceController extends Controller
             $attendancePayload = collect($data['items'])->mapWithKeys(fn($it)=>[$it['student_id']=>['status'=>$it['status']]])->toArray();
             $schoolModel = \App\Models\School::find($extraClass->school_id);
             if ($schoolModel) {
-                $smsService->enqueueAttendanceSms($schoolModel, $attendancePayload, $extraClass->class_id, $extraClass->section_id, $data['date'], true, $previousStatuses, $user->id, 'extra_class');
+                $isExisting = !empty($previousStatuses);
+                $smsService->enqueueAttendanceSms($schoolModel, $attendancePayload, $extraClass->class_id, $extraClass->section_id, $data['date'], $isExisting, $previousStatuses, $user->id, 'extra_class');
             }
         } catch (\Throwable $e) {
             // Don't fail the attendance submit if SMS enqueue fails; log for debugging
