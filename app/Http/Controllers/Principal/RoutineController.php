@@ -32,7 +32,7 @@ class RoutineController extends Controller
             ->with('user:id,name')
             ->orderByRaw('COALESCE(serial_number, 999999) asc')
             ->orderBy(User::select('name')->whereColumn('users.id','teachers.user_id'))
-            ->get(['id','user_id','school_id','designation','serial_number']);
+            ->get(['id','user_id','school_id','designation','serial_number','initials']);
         return view('principal.routines.panel', compact('school','classes','sections','teachers'));
     }
 

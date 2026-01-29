@@ -63,6 +63,7 @@ class TeacherController extends Controller
             'phone' => 'nullable|string|max:32',
             'email' => 'nullable|email|max:191',
             'designation' => 'nullable|string|max:100',
+            'initials' => 'nullable|string|max:50',
             'serial_number' => 'nullable|integer|min:1',
             'photo' => 'nullable|image|max:2048',
             'signature' => 'nullable|image|max:2048',
@@ -143,6 +144,7 @@ class TeacherController extends Controller
                 'phone' => $data['phone'] ?? null,
                 'plain_password' => $plainPassword,
                 'designation' => $data['designation'] ?? null,
+                'initials' => $data['initials'] ?? null,
                 'serial_number' => $data['serial_number'] ?? $counter,
                 'date_of_birth' => $data['date_of_birth'] ?? null,
                 'joining_date' => $data['joining_date'] ?? null,
@@ -196,6 +198,7 @@ class TeacherController extends Controller
             'phone' => 'nullable|string|max:32',
             'email' => 'nullable|email|max:191',
             'designation' => 'nullable|string|max:100',
+            'initials' => 'nullable|string|max:50',
             'serial_number' => 'nullable|integer|min:1',
             'photo' => 'nullable|image|max:2048',
             'signature' => 'nullable|image|max:2048',
@@ -218,6 +221,7 @@ class TeacherController extends Controller
                 'qualification' => $data['qualification'] ?? null,
                 'phone' => $data['phone'] ?? null,
                 'designation' => $data['designation'] ?? null,
+                'initials' => $data['initials'] ?? null,
                 'serial_number' => $data['serial_number'] ?? null,
             ];
             
