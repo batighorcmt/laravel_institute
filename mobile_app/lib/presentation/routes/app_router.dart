@@ -144,8 +144,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         final profile = ref.read(authProvider).asData?.value;
         final roles =
             profile?.roles.map((r) => r.role.toLowerCase()).toList() ?? [];
-        if (roles.contains('teacher')) return '/teacher';
+        // Prefer principal dashboard when user has both principal and teacher roles
         if (roles.contains('principal')) return '/principal';
+        if (roles.contains('teacher')) return '/teacher';
         if (roles.contains('parent')) return '/parent';
         return '/'; // Fallback to home
       }

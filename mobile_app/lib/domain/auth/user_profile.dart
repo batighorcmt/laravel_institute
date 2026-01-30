@@ -7,12 +7,14 @@ class UserProfile {
   final String name;
   final List<UserRole> roles;
   final String? photoUrl;
+  final String? teacherDesignation;
 
   UserProfile({
     required this.id,
     required this.name,
     required this.roles,
     this.photoUrl,
+    this.teacherDesignation,
   });
 
   /// Robust factory accepting potentially malformed structures.
@@ -51,6 +53,7 @@ class UserProfile {
         .map((e) => UserRole.fromAny(e))
         .toList();
     String? photo;
+    String? teacherDesignation;
     for (final key in const [
       'photo',
       'avatar',
@@ -68,11 +71,25 @@ class UserProfile {
       }
     }
 
+    // Prefer teacher nested payload if present
+    final t = json['teacher'];
+    if (t is Map) {
+      final tp = t['photo_url'] ?? t['photo'];
+      if (tp != null && tp.toString().trim().isNotEmpty) {
+        photo = tp.toString();
+      }
+      final td = t['designation'];
+      if (td != null && td.toString().trim().isNotEmpty) {
+        teacherDesignation = td.toString();
+      }
+    }
+
     return UserProfile(
       id: (json['id'] as num).toInt(),
       name: (json['name'] ?? '').toString(),
       roles: roles,
       photoUrl: _absolutePhoto(photo),
+      teacherDesignation: teacherDesignation,
     );
   }
 
@@ -99,6 +116,7 @@ class UserProfile {
     'name': name,
     'roles': roles.map((r) => r.toJson()).toList(),
     'photo_url': photoUrl,
+    'teacher_designation': teacherDesignation,
   };
 }
 

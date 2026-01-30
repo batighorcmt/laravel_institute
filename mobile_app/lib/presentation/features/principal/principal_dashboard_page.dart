@@ -102,10 +102,8 @@ class _PrincipalDashboardPageState
             ],
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Attendance Summary',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
+          const SizedBox(height: 24),
+          // Attendance report card (compact) shown on homepage
           FutureBuilder<Map<String, dynamic>>(
             future: _attendanceSummaryFuture,
             builder: (context, snapshot) {
@@ -119,7 +117,7 @@ class _PrincipalDashboardPageState
                 return Text('Error: ${snapshot.error}');
               }
               final data = snapshot.data ?? {};
-              return _buildKeyValueList(data);
+              return _AttendanceReportCard(data: data);
             },
           ),
           const SizedBox(height: 24),
@@ -162,6 +160,95 @@ class _PrincipalDashboardPageState
             ),
           )
           .toList(),
+    );
+  }
+}
+
+class _AttendanceReportCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  const _AttendanceReportCard({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final d = data['data'] is Map
+        ? Map<String, dynamic>.from(data['data'])
+        : data;
+    final meta = data['meta'] is Map
+        ? Map<String, dynamic>.from(data['meta'])
+        : {};
+    double presentPct = 0;
+    double absentPct = 0;
+    try {
+      presentPct = (d['present_percentage'] is num)
+          ? (d['present_percentage'] as num).toDouble()
+          : double.tryParse('${d['present_percentage']}') ?? 0.0;
+      absentPct = (d['absent_percentage'] is num)
+          ? (d['absent_percentage'] as num).toDouble()
+          : double.tryParse('${d['absent_percentage']}') ?? 0.0;
+    } catch (_) {}
+
+    final message = meta['message'] ?? '';
+
+    return Card(
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Attendance Report Card',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Present',
+                        style: TextStyle(color: Colors.green),
+                      ),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: (presentPct / 100).clamp(0.0, 1.0),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('${presentPct.toStringAsFixed(1)}%'),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Absent', style: TextStyle(color: Colors.red)),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: (absentPct / 100).clamp(0.0, 1.0),
+                        color: Colors.redAccent,
+                        backgroundColor: Colors.red[50],
+                      ),
+                      const SizedBox(height: 4),
+                      Text('${absentPct.toStringAsFixed(1)}%'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if ((message as String).isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                message.toString(),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
