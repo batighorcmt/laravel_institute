@@ -34,6 +34,10 @@ class StudentProfileResource extends JsonResource
             'section' => $en?->section?->name,
             'group' => $en?->group?->name,
             'roll' => $en?->roll_no,
+            // Guardian fields (top-level) so mobile clients can easily read them
+            'guardian_name' => $st?->guardian_name_en ?? $st?->guardian_name_bn,
+            'guardian_phone' => $st?->guardian_phone,
+            'guardian_relation' => $st?->guardian_relation,
             'guardians' => [
                 'father_name' => $st?->father_name,
                 'father_phone' => $st?->father_phone,
