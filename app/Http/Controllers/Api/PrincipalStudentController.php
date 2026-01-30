@@ -118,4 +118,28 @@ class PrincipalStudentController extends Controller
 
         return response()->json($groups);
     }
+
+    /**
+     * Get classes available in the school (for principal)
+     */
+    public function getClasses(Request $request)
+    {
+        $user = Auth::user();
+        $schoolId = $request->attributes->get('current_school_id');
+
+        if (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $classes = \App\Models\SchoolClass::forSchool($schoolId)
+            ->active()->ordered()
+            ->get(['id','name','numeric_value'])
+            ->map(fn($c)=>[
+                'id' => (int)$c->id,
+                'name' => $c->name,
+                'numeric_value' => (int)$c->numeric_value,
+            ])->values();
+
+        return response()->json($classes);
+    }
 }
