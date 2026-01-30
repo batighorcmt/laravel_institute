@@ -31,7 +31,10 @@ class PrincipalReportController extends Controller
      */
     public function attendanceDetails(Request $request)
     {
-        $schoolId = $request->attributes->get('current_school_id');
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id')
+            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
+            ?? ($user->primarySchool()?->id ?? null);
         if (empty($schoolId)) {
             return response()->json(['message' => 'No school context'], 400);
         }
