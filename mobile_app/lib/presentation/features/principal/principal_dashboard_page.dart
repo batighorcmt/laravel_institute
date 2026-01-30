@@ -37,7 +37,9 @@ class _PrincipalDashboardPageState
   void initState() {
     super.initState();
     _dio = DioClient().dio;
-    _attendanceSummaryFuture = _fetchJson('principal/reports/attendance-details');
+    _attendanceSummaryFuture = _fetchJson(
+      'principal/reports/attendance-details',
+    );
   }
 
   Future<Map<String, dynamic>> _fetchJson(String path) async {
@@ -109,9 +111,6 @@ class _PrincipalDashboardPageState
               setState(() {
                 _attendanceSummaryFuture = _fetchJson(
                   'principal/reports/attendance-summary',
-                );
-                _examSummaryFuture = _fetchJson(
-                  'principal/reports/exam-results-summary',
                 );
               });
             },
@@ -525,8 +524,12 @@ class _AttendanceReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final d = data['data'] is Map ? Map<String, dynamic>.from(data['data']) : Map<String, dynamic>.from(data);
-    final meta = data['meta'] is Map ? Map<String, dynamic>.from(data['meta']) : <String,dynamic>{};
+    final d = data['data'] is Map
+        ? Map<String, dynamic>.from(data['data'])
+        : Map<String, dynamic>.from(data);
+    final meta = data['meta'] is Map
+        ? Map<String, dynamic>.from(data['meta'])
+        : <String, dynamic>{};
 
     int presentCount = 0;
     int absentCount = 0;
@@ -535,9 +538,15 @@ class _AttendanceReportCard extends StatelessWidget {
     double absentPct = 0.0;
 
     try {
-      presentCount = (d['present_today'] is num) ? (d['present_today'] as num).toInt() : int.tryParse('${d['present_today']}') ?? 0;
-      absentCount = (d['absent_today'] is num) ? (d['absent_today'] as num).toInt() : int.tryParse('${d['absent_today']}') ?? 0;
-      totalStudents = (d['total_students'] is num) ? (d['total_students'] as num).toInt() : int.tryParse('${d['total_students']}') ?? 0;
+      presentCount = (d['present_today'] is num)
+          ? (d['present_today'] as num).toInt()
+          : int.tryParse('${d['present_today']}') ?? 0;
+      absentCount = (d['absent_today'] is num)
+          ? (d['absent_today'] as num).toInt()
+          : int.tryParse('${d['absent_today']}') ?? 0;
+      totalStudents = (d['total_students'] is num)
+          ? (d['total_students'] as num).toInt()
+          : int.tryParse('${d['total_students']}') ?? 0;
       if (d['present_percentage'] is num) {
         presentPct = (d['present_percentage'] as num).toDouble();
       } else if (totalStudents > 0) {
@@ -570,9 +579,14 @@ class _AttendanceReportCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Present • $presentCount', style: const TextStyle(color: Colors.green)),
+                      Text(
+                        'Present • $presentCount',
+                        style: const TextStyle(color: Colors.green),
+                      ),
                       const SizedBox(height: 4),
-                      LinearProgressIndicator(value: (presentPct / 100).clamp(0.0, 1.0)),
+                      LinearProgressIndicator(
+                        value: (presentPct / 100).clamp(0.0, 1.0),
+                      ),
                       const SizedBox(height: 4),
                       Text('${presentPct.toStringAsFixed(1)}%'),
                     ],
@@ -583,9 +597,16 @@ class _AttendanceReportCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Absent • $absentCount', style: const TextStyle(color: Colors.red)),
+                      Text(
+                        'Absent • $absentCount',
+                        style: const TextStyle(color: Colors.red),
+                      ),
                       const SizedBox(height: 4),
-                      LinearProgressIndicator(value: (absentPct / 100).clamp(0.0, 1.0), color: Colors.redAccent, backgroundColor: Colors.red[50]),
+                      LinearProgressIndicator(
+                        value: (absentPct / 100).clamp(0.0, 1.0),
+                        color: Colors.redAccent,
+                        backgroundColor: Colors.red[50],
+                      ),
                       const SizedBox(height: 4),
                       Text('${absentPct.toStringAsFixed(1)}%'),
                     ],
@@ -597,7 +618,10 @@ class _AttendanceReportCard extends StatelessWidget {
             Text('Total students: ${totalStudents > 0 ? totalStudents : '—'}'),
             if ((message as String).isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(message.toString(), style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                message.toString(),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ],
         ),
