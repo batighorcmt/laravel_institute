@@ -84,6 +84,7 @@ Route::prefix('v1')->group(function () {
     // Principal student management endpoints
     Route::prefix('principal')->middleware('role:principal')->group(function () {
         Route::get('students/search', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'search']);
+        Route::get('students/filters/classes', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getClasses']);
         Route::get('students/filters/sections', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getSections']);
         Route::get('students/filters/groups', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getGroups']);
     });
