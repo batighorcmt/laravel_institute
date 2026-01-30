@@ -20,7 +20,8 @@ class PrincipalStudentController extends Controller
         $user = Auth::user();
         $schoolId = $request->attributes->get('current_school_id');
 
-        if (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+        // Allow principals, teachers (for their school), or superadmins
+        if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -74,7 +75,7 @@ class PrincipalStudentController extends Controller
         $schoolId = $request->attributes->get('current_school_id');
         $classId = $request->get('class_id');
 
-        if (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+        if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -101,7 +102,7 @@ class PrincipalStudentController extends Controller
         $schoolId = $request->attributes->get('current_school_id');
         $classId = $request->get('class_id');
 
-        if (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+        if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -127,7 +128,7 @@ class PrincipalStudentController extends Controller
         $user = Auth::user();
         $schoolId = $request->attributes->get('current_school_id');
 
-        if (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+        if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
