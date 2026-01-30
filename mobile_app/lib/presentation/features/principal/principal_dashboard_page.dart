@@ -29,7 +29,6 @@ class _PrincipalDashboardPageState
     extends ConsumerState<PrincipalDashboardPage> {
   late final Dio _dio;
   late Future<Map<String, dynamic>> _attendanceSummaryFuture;
-  late Future<Map<String, dynamic>> _examSummaryFuture;
   String? _overridePhoto;
   String? _overrideDesignation;
   bool _fetchedExtra = false;
@@ -38,10 +37,7 @@ class _PrincipalDashboardPageState
   void initState() {
     super.initState();
     _dio = DioClient().dio;
-    _attendanceSummaryFuture = _fetchJson(
-      'principal/reports/attendance-summary',
-    );
-    _examSummaryFuture = _fetchJson('principal/reports/exam-results-summary');
+    _attendanceSummaryFuture = _fetchJson('principal/reports/attendance-details');
   }
 
   Future<Map<String, dynamic>> _fetchJson(String path) async {
@@ -500,26 +496,6 @@ class _PrincipalDashboardPageState
             },
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Exam Results Summary',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          FutureBuilder<Map<String, dynamic>>(
-            future: _examSummaryFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: CircularProgressIndicator(),
-                );
-              }
-              if (snapshot.hasError) {
-                return Text('Error: ${snapshot.error}');
-              }
-              final data = snapshot.data ?? {};
-              return _buildKeyValueList(data);
-            },
-          ),
         ],
       ),
     );
@@ -549,21 +525,29 @@ class _AttendanceReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final d = data['data'] is Map
-        ? Map<String, dynamic>.from(data['data'])
-        : data;
-    final meta = data['meta'] is Map
-        ? Map<String, dynamic>.from(data['meta'])
-        : {};
-    double presentPct = 0;
-    double absentPct = 0;
+    final d = data['data'] is Map ? Map<String, dynamic>.from(data['data']) : Map<String, dynamic>.from(data);
+    final meta = data['meta'] is Map ? Map<String, dynamic>.from(data['meta']) : <String,dynamic>{};
+
+    int presentCount = 0;
+    int absentCount = 0;
+    int totalStudents = 0;
+    double presentPct = 0.0;
+    double absentPct = 0.0;
+
     try {
-      presentPct = (d['present_percentage'] is num)
-          ? (d['present_percentage'] as num).toDouble()
-          : double.tryParse('${d['present_percentage']}') ?? 0.0;
-      absentPct = (d['absent_percentage'] is num)
-          ? (d['absent_percentage'] as num).toDouble()
-          : double.tryParse('${d['absent_percentage']}') ?? 0.0;
+      presentCount = (d['present_today'] is num) ? (d['present_today'] as num).toInt() : int.tryParse('${d['present_today']}') ?? 0;
+      absentCount = (d['absent_today'] is num) ? (d['absent_today'] as num).toInt() : int.tryParse('${d['absent_today']}') ?? 0;
+      totalStudents = (d['total_students'] is num) ? (d['total_students'] as num).toInt() : int.tryParse('${d['total_students']}') ?? 0;
+      if (d['present_percentage'] is num) {
+        presentPct = (d['present_percentage'] as num).toDouble();
+      } else if (totalStudents > 0) {
+        presentPct = (presentCount / totalStudents) * 100.0;
+      }
+      if (d['absent_percentage'] is num) {
+        absentPct = (d['absent_percentage'] as num).toDouble();
+      } else if (totalStudents > 0) {
+        absentPct = (absentCount / totalStudents) * 100.0;
+      }
     } catch (_) {}
 
     final message = meta['message'] ?? '';
@@ -586,14 +570,9 @@ class _AttendanceReportCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Present',
-                        style: TextStyle(color: Colors.green),
-                      ),
+                      Text('Present • $presentCount', style: const TextStyle(color: Colors.green)),
                       const SizedBox(height: 4),
-                      LinearProgressIndicator(
-                        value: (presentPct / 100).clamp(0.0, 1.0),
-                      ),
+                      LinearProgressIndicator(value: (presentPct / 100).clamp(0.0, 1.0)),
                       const SizedBox(height: 4),
                       Text('${presentPct.toStringAsFixed(1)}%'),
                     ],
@@ -604,13 +583,9 @@ class _AttendanceReportCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Absent', style: TextStyle(color: Colors.red)),
+                      Text('Absent • $absentCount', style: const TextStyle(color: Colors.red)),
                       const SizedBox(height: 4),
-                      LinearProgressIndicator(
-                        value: (absentPct / 100).clamp(0.0, 1.0),
-                        color: Colors.redAccent,
-                        backgroundColor: Colors.red[50],
-                      ),
+                      LinearProgressIndicator(value: (absentPct / 100).clamp(0.0, 1.0), color: Colors.redAccent, backgroundColor: Colors.red[50]),
                       const SizedBox(height: 4),
                       Text('${absentPct.toStringAsFixed(1)}%'),
                     ],
@@ -618,12 +593,11 @@ class _AttendanceReportCard extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Text('Total students: ${totalStudents > 0 ? totalStudents : '—'}'),
             if ((message as String).isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text(
-                message.toString(),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text(message.toString(), style: Theme.of(context).textTheme.bodySmall),
             ],
           ],
         ),
