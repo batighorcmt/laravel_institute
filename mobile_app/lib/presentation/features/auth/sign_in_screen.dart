@@ -47,10 +47,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         final profile = ref.read(authProvider).asData?.value;
         final roles =
             profile?.roles.map((r) => r.role.toLowerCase()).toList() ?? [];
-        if (roles.contains('teacher')) {
-          context.go('/teacher');
-        } else if (roles.contains('principal')) {
+        // Prefer principal route when user is a principal.
+        if (roles.contains('principal')) {
           context.go('/principal');
+        } else if (roles.contains('teacher')) {
+          context.go('/teacher');
         } else if (roles.contains('parent')) {
           context.go('/parent');
         } else {

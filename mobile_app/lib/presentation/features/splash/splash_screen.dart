@@ -29,10 +29,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       return;
     }
     final roles = profile.roles.map((r) => r.role.toLowerCase()).toList();
-    if (roles.contains('teacher')) {
-      context.go('/teacher');
-    } else if (roles.contains('principal')) {
+    // Prefer principal dashboard when user is a principal even if they also
+    // have a teacher role. Principals should still be able to access
+    // teacher flows from their dashboard.
+    if (roles.contains('principal')) {
       context.go('/principal');
+    } else if (roles.contains('teacher')) {
+      context.go('/teacher');
     } else if (roles.contains('parent')) {
       context.go('/parent');
     } else {

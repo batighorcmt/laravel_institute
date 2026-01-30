@@ -10,6 +10,7 @@ class AnimatedTile extends StatefulWidget {
     this.riveIcon,
     this.stateMachine,
     this.background,
+    this.titleFontSize,
   });
 
   final String title;
@@ -18,6 +19,7 @@ class AnimatedTile extends StatefulWidget {
   final String? riveIcon; // Name of artboard/state machine inside icons.riv
   final String? stateMachine; // Optional override for state machine name
   final Color? background;
+  final double? titleFontSize;
 
   @override
   State<AnimatedTile> createState() => _AnimatedTileState();
@@ -75,19 +77,23 @@ class _AnimatedTileState extends State<AnimatedTile> {
           elevation: 3,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.black.withValues(alpha: 0.12)),
+            side: BorderSide(color: Colors.black.withOpacity(0.12)),
           ),
           color: bg,
           surfaceTintColor: Colors.transparent,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  height: 50,
-                  child: _artboard != null
-                      ? ColorFiltered(
+                  height: 40,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (_artboard != null)
+                        ColorFiltered(
                           colorFilter: const ColorFilter.matrix([
                             1.2,
                             0,
@@ -114,20 +120,36 @@ class _AnimatedTileState extends State<AnimatedTile> {
                             artboard: _artboard!,
                             fit: BoxFit.contain,
                           ),
-                        )
-                      : Icon(
-                          widget.icon ?? Icons.circle_outlined,
-                          size: 42,
-                          color: scheme.primary,
                         ),
+                      // Always render a contrast-aware icon on top so it's visible
+                      Builder(
+                        builder: (ctx) {
+                          final bg = widget.background ?? Colors.white;
+                          final iconColor = bg.computeLuminance() < 0.5
+                              ? Colors.white
+                              : scheme.primary;
+                          return Icon(
+                            widget.icon ?? Icons.circle_outlined,
+                            size: 28,
+                            color: iconColor,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  widget.title,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
+                const SizedBox(height: 4),
+                Flexible(
+                  child: Text(
+                    widget.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurface,
+                      fontSize: widget.titleFontSize ?? 12,
+                    ),
                   ),
                 ),
               ],

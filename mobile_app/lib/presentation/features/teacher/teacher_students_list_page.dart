@@ -40,12 +40,13 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
     _dio = DioClient().dio;
     _repo = TeacherStudentsRepository(_dio);
     _preloadFilters();
-    _load(reset: true);
   }
 
   Future<void> _preloadFilters() async {
     try {
       final classes = await _repo.fetchClasses();
+      // Do not use attendance-meta as a fallback. Use the teacher meta
+      // (DB-backed) result returned from the repository.
       setState(() {
         _classes = classes;
         _groups = [];
@@ -53,6 +54,9 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       });
     } catch (_) {}
   }
+
+  // Removed attendance-meta fallback. We rely on the repository's
+  // `fetchClasses()` which uses the teacher meta or principal DB endpoint.
 
   Future<void> _load({bool reset = false}) async {
     if (_loading) return;
@@ -69,12 +73,38 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       );
       final data = (res['data'] as List?) ?? [];
       final meta = (res['meta'] as Map?) ?? {};
+      // Robust pagination detection: handle several meta shapes
+      int current =
+          (meta['current_page'] as int?) ??
+          (meta['currentPage'] as int?) ??
+          (meta['page'] as int?) ??
+          page;
+      int? last = (meta['last_page'] as int?) ?? (meta['lastPage'] as int?);
+      bool nextPage = false;
+      if (meta['next_page_url'] != null) {
+        nextPage = true;
+      } else if (last != null) {
+        nextPage = current < last;
+      } else if (meta.containsKey('total') && meta.containsKey('per_page')) {
+        final total = (meta['total'] as num?)?.toInt();
+        final per = (meta['per_page'] as num?)?.toInt();
+        if (total != null && per != null && per > 0) {
+          final computedLast = ((total + per - 1) / per).ceil();
+          nextPage = current < computedLast;
+        } else {
+          nextPage = data.isNotEmpty;
+        }
+      } else {
+        // Fallback heuristic: if we received exactly a full page of items
+        // assume there may be more. Prefer using meta.per_page when
+        // available, otherwise default to 40.
+        final fallbackPerPage = (meta['per_page'] as int?) ?? 40;
+        nextPage = data.isNotEmpty && data.length >= fallbackPerPage;
+      }
+
       setState(() {
         _page = page;
-        final current = (meta['current_page'] as int?) ?? page;
-        final last =
-            (meta['last_page'] as int?) ?? (data.isNotEmpty ? page + 1 : page);
-        _hasMore = current < last;
+        _hasMore = nextPage;
         _error = null;
         if (reset) {
           _items = data;
@@ -151,36 +181,32 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                         ),
                       ),
                     ],
-                    onChanged: _classes.isEmpty
-                        ? null
-                        : (v) async {
-                            setState(() {
-                              _classId = v;
-                              _sectionId = null;
-                              _sections = [];
-                              _groupId = null;
-                              _groups = [];
-                              _gender = null;
-                              _genderOptions = [];
-                            });
-                            final sections = await _repo.fetchSections(
-                              classId: v,
-                            );
-                            final groups = v != null && v.isNotEmpty
-                                ? await _repo.fetchGroupsForClass(v)
-                                : <Map<String, dynamic>>[];
-                            final genders = v != null && v.isNotEmpty
-                                ? await _repo.fetchGendersForClass(v)
-                                : <String>[];
-                            if (mounted) {
-                              setState(() {
-                                _sections = sections;
-                                _groups = groups;
-                                _genderOptions = genders;
-                              });
-                            }
-                            _load(reset: true);
-                          },
+                    onChanged: (v) async {
+                      setState(() {
+                        _classId = v;
+                        _sectionId = null;
+                        _sections = [];
+                        _groupId = null;
+                        _groups = [];
+                        _gender = null;
+                        _genderOptions = [];
+                      });
+                      final sections = await _repo.fetchSections(classId: v);
+                      final groups = v != null && v.isNotEmpty
+                          ? await _repo.fetchGroupsForClass(v)
+                          : <Map<String, dynamic>>[];
+                      final genders = v != null && v.isNotEmpty
+                          ? await _repo.fetchGendersForClass(v)
+                          : <String>[];
+                      if (mounted) {
+                        setState(() {
+                          _sections = sections;
+                          _groups = groups;
+                          _genderOptions = genders;
+                        });
+                      }
+                      _load(reset: true);
+                    },
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -204,12 +230,10 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                         ),
                       ),
                     ],
-                    onChanged: _sections.isEmpty
-                        ? null
-                        : (v) {
-                            setState(() => _sectionId = v);
-                            _load(reset: true);
-                          },
+                    onChanged: (v) {
+                      setState(() => _sectionId = v);
+                      _load(reset: true);
+                    },
                   ),
                 ),
               ],
@@ -678,7 +702,11 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                   const SizedBox(height: 12),
 
                   // Quick actions row
-                  _buildQuickActions(context, phone: phone, email: email),
+                  _buildQuickActions(
+                    context,
+                    phone: guardianPhone,
+                    email: email,
+                  ),
 
                   const SizedBox(height: 12),
 
@@ -801,11 +829,14 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       _infoRow(
                         icon: Icons.call,
                         label: 'Phone',
-                        value: phone,
-                        onTap: phone.trim().isEmpty
+                        value: guardianPhone,
+                        onTap: guardianPhone.trim().isEmpty
                             ? null
                             : () async {
-                                final uri = Uri(scheme: 'tel', path: phone);
+                                final uri = Uri(
+                                  scheme: 'tel',
+                                  path: guardianPhone,
+                                );
                                 if (await canLaunchUrl(uri)) {
                                   await launchUrl(uri);
                                 }

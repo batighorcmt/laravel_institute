@@ -89,35 +89,78 @@ class TeacherStudentsRepository {
       } else {
         _classMetaCache = [];
       }
+    } on DioException catch (e) {
+      // If the teacher meta endpoint is forbidden (e.g., principal user),
+      // try the principal classes endpoint which reads from DB.
+      final status = e.response?.statusCode;
+      if (status == 403) {
+        try {
+          final res = await _dio.get('principal/students/filters/classes');
+          final data = res.data;
+          List<Map<String, dynamic>> rows = [];
+          if (data is List) {
+            rows = data.cast<Map<String, dynamic>>();
+          } else if (data is Map<String, dynamic> && data['classes'] is List) {
+            rows = (data['classes'] as List).cast<Map<String, dynamic>>();
+          }
+          _classMetaCache = rows
+              .map(
+                (m) => {
+                  'id': (m['id'])?.toString(),
+                  'name': (m['name'])?.toString() ?? 'Class',
+                  'numeric_value': m['numeric_value'],
+                },
+              )
+              .where((m) => (m['id']?.isNotEmpty ?? false))
+              .cast<Map<String, dynamic>>()
+              .toList();
+
+          // If the teacher-scoped meta returned too few classes (sometimes the
+          // API only returns classes the teacher is assigned to), try the
+          // principal DB-backed endpoint which returns all classes for the school.
+          if ((_classMetaCache ?? []).length <= 1) {
+            try {
+              final res = await _dio.get('principal/students/filters/classes');
+              final data = res.data;
+              List<Map<String, dynamic>> rows = [];
+              if (data is List) {
+                rows = data.cast<Map<String, dynamic>>();
+              } else if (data is Map<String, dynamic> &&
+                  data['classes'] is List) {
+                rows = (data['classes'] as List).cast<Map<String, dynamic>>();
+              }
+              final fromPrincipal = rows
+                  .map(
+                    (m) => {
+                      'id': (m['id'])?.toString(),
+                      'name': (m['name'])?.toString() ?? 'Class',
+                      'numeric_value': m['numeric_value'],
+                    },
+                  )
+                  .where((m) => (m['id']?.isNotEmpty ?? false))
+                  .cast<Map<String, dynamic>>()
+                  .toList();
+              if (fromPrincipal.isNotEmpty) {
+                _classMetaCache = fromPrincipal;
+              }
+            } catch (_) {
+              // ignore
+            }
+          }
+        } catch (_) {
+          _classMetaCache = [];
+        }
+      } else {
+        _classMetaCache = [];
+      }
     } catch (_) {
       _classMetaCache = [];
     }
 
-    // Fallback for older servers: use attendance meta to at least populate classes
-    if ((_classMetaCache ?? []).isEmpty) {
-      try {
-        final res2 = await _dio.get('teacher/students-attendance/class/meta');
-        final data2 = res2.data;
-        List<Map<String, dynamic>> rows = [];
-        if (data2 is List) {
-          rows = data2.cast<Map<String, dynamic>>();
-        } else if (data2 is Map<String, dynamic> && data2['data'] is List) {
-          rows = (data2['data'] as List).cast<Map<String, dynamic>>();
-        }
-        _classMetaCache = rows
-            .map(
-              (m) => {
-                'id': (m['class_id'] ?? m['id'])?.toString(),
-                'name': (m['class_name'] ?? m['name'])?.toString() ?? 'Class',
-              },
-            )
-            .where((m) => (m['id']?.isNotEmpty ?? false))
-            .cast<Map<String, dynamic>>()
-            .toList();
-      } catch (_) {
-        // still empty
-      }
-    }
+    // Do not fallback to attendance meta here — prefer the teacher meta
+    // endpoint which reads classes from DB. If that endpoint is forbidden
+    // for principals, we try the principal DB-backed endpoint in the
+    // DioException handler above.
   }
 
   Future<List<Map<String, dynamic>>> fetchClasses() async {
@@ -164,29 +207,57 @@ class TeacherStudentsRepository {
         _classScopedCache![classId] = res.data is Map<String, dynamic>
             ? res.data
             : {};
-      } catch (_) {
-        // Fallback: try attendance meta and extract sections for the class
-        try {
-          final res2 = await _dio.get('teacher/students-attendance/class/meta');
-          final data2 = res2.data;
-          final list = data2 is List
-              ? data2.cast<Map<String, dynamic>>()
-              : (data2 is Map<String, dynamic> && data2['data'] is List)
-              ? (data2['data'] as List).cast<Map<String, dynamic>>()
-              : <Map<String, dynamic>>[];
-          final match = list.firstWhere(
-            (m) =>
-                (m['class_id']?.toString() ?? m['id']?.toString()) == classId,
-            orElse: () => const {},
-          );
-          _classScopedCache![classId] = {
-            'sections': (match['sections'] as List?) ?? [],
-            'groups': [],
-            'genders': [],
-          };
-        } catch (_) {
-          _classScopedCache![classId] = {};
+      } on DioException catch (e) {
+        final status = e.response?.statusCode;
+        if (status == 403) {
+          // Principal user: call principal sections/groups endpoints
+          try {
+            final resSec = await _dio.get(
+              'principal/students/filters/sections',
+              queryParameters: {'class_id': classId},
+            );
+            final resGrp = await _dio.get(
+              'principal/students/filters/groups',
+              queryParameters: {'class_id': classId},
+            );
+            final sections = resSec.data is List ? resSec.data : [];
+            final groups = resGrp.data is List ? resGrp.data : [];
+            _classScopedCache![classId] = {
+              'sections': sections,
+              'groups': groups,
+              'genders': [],
+            };
+          } catch (_) {
+            _classScopedCache![classId] = {};
+          }
+        } else {
+          // Fallback: try attendance meta and extract sections for the class
+          try {
+            final res2 = await _dio.get(
+              'teacher/students-attendance/class/meta',
+            );
+            final data2 = res2.data;
+            final list = data2 is List
+                ? data2.cast<Map<String, dynamic>>()
+                : (data2 is Map<String, dynamic> && data2['data'] is List)
+                ? (data2['data'] as List).cast<Map<String, dynamic>>()
+                : <Map<String, dynamic>>[];
+            final match = list.firstWhere(
+              (m) =>
+                  (m['class_id']?.toString() ?? m['id']?.toString()) == classId,
+              orElse: () => const {},
+            );
+            _classScopedCache![classId] = {
+              'sections': (match['sections'] as List?) ?? [],
+              'groups': [],
+              'genders': [],
+            };
+          } catch (_) {
+            _classScopedCache![classId] = {};
+          }
         }
+      } catch (_) {
+        _classScopedCache![classId] = {};
       }
     }
     final sections = ((_classScopedCache![classId]['sections']) as List? ?? [])

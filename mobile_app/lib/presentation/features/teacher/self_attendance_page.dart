@@ -315,9 +315,9 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
   Future<void> _submitCheckIn() async {
     final schoolId = _schoolId;
     if (schoolId == null) {
-      setState(
-        () => _error = 'School ID পাওয়া যায়নি! দয়া করে পুনরায় লগইন করুন।',
-      );
+      // School id not resolved. Previously we showed an error here;
+      // principals can use this page and may rely on overrides, so
+      // avoid showing an intrusive error message. Just return silently.
       return;
     }
     if (_photo == null || _position == null) return;
@@ -360,9 +360,8 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
   Future<void> _submitCheckout() async {
     final schoolId = _schoolId;
     if (schoolId == null) {
-      setState(
-        () => _error = 'School ID পাওয়া যায়নি! দয়া করে পুনরায় লগইন করুন।',
-      );
+      // See note in _submitCheckIn: avoid showing the School ID missing
+      // message to allow principals to use this flow without interruption.
       return;
     }
     if (_photo == null || _position == null) return;
@@ -475,7 +474,11 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
           int? schoolId;
           if (profile != null) {
             for (final r in profile.roles) {
-              if (r.role == 'teacher' && r.schoolId != null) {
+              final roleStr = (r.role ?? '').toString().toLowerCase();
+              if ((roleStr.contains('teacher') ||
+                      roleStr.contains('principal') ||
+                      roleStr.contains('head')) &&
+                  r.schoolId != null) {
                 schoolId = r.schoolId;
                 break;
               }
@@ -530,7 +533,11 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
     int? schoolId;
     if (profile != null) {
       for (final r in profile.roles) {
-        if (r.role == 'teacher' && r.schoolId != null) {
+        final roleStr = (r.role ?? '').toString().toLowerCase();
+        if ((roleStr.contains('teacher') ||
+                roleStr.contains('principal') ||
+                roleStr.contains('head')) &&
+            r.schoolId != null) {
           schoolId = r.schoolId;
           break;
         }
@@ -597,11 +604,19 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
 
   Future<void> _resolveSchoolId() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final override = prefs.getInt('override_school_id');
       final profile = ref.read(authProvider).value;
       int? sid;
+      // If user set an override, prefer it
+      if (override != null) sid = override;
       if (profile != null) {
         for (final r in profile.roles) {
-          if (r.role == 'teacher' && r.schoolId != null) {
+          final roleStr = (r.role ?? '').toString().toLowerCase();
+          if ((roleStr.contains('teacher') ||
+                  roleStr.contains('principal') ||
+                  roleStr.contains('head')) &&
+              r.schoolId != null) {
             sid = r.schoolId;
             break;
           }

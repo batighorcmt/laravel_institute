@@ -42,6 +42,24 @@ class DioClient {
           );
           handler.next(options);
         },
+        onResponse: (response, handler) {
+          try {
+            developer.log(
+              'HTTP ${response.requestOptions.method} ${response.requestOptions.path} -> ${response.statusCode} | ${response.data}',
+              name: 'DioClient',
+            );
+          } catch (_) {}
+          handler.next(response);
+        },
+        onError: (err, handler) {
+          try {
+            developer.log(
+              'HTTP ERROR ${err.requestOptions.method} ${err.requestOptions.path} -> ${err.response?.statusCode} | ${err.message} | ${err.response?.data}',
+              name: 'DioClient',
+            );
+          } catch (_) {}
+          handler.next(err);
+        },
       ),
     );
   }

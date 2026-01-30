@@ -37,7 +37,10 @@ class HomePage extends ConsumerWidget {
                 onPressed: () => context.go('/principal'),
                 child: const Text('Principal Dashboard'),
               ),
-            if (roles.contains('teacher'))
+            // Principals should also be able to open the Teacher Dashboard
+            if (roles.contains('teacher') ||
+                roles.contains('principal') ||
+                roles.contains('head'))
               ElevatedButton(
                 onPressed: () => context.go('/teacher'),
                 child: const Text('Teacher Dashboard'),
