@@ -88,5 +88,13 @@ Route::prefix('v1')->group(function () {
         Route::get('students/filters/sections', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getSections']);
         Route::get('students/filters/groups', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getGroups']);
     });
+    // Also expose the same endpoints to teachers so they can fetch
+    // full DB-backed class/section/group lists when allowed.
+    Route::prefix('teacher')->middleware('role:teacher')->group(function () {
+        Route::get('students/search', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'search']);
+        Route::get('students/filters/classes', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getClasses']);
+        Route::get('students/filters/sections', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getSections']);
+        Route::get('students/filters/groups', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getGroups']);
+    });
     });
 });
