@@ -39,12 +39,12 @@
 <div class="card">
   <div class="card-body">
     <div class="header-info text-center">
-      <h1 class="school-name mb-1">{{ $school->name }}</h1>
+      <h1 class="school-name mb-1">{{ $school->name_bn }}</h1>
       <div class="routine-title">ক্লাস রুটিন — {{ date('Y') }}</div>
       <div class="meta-line">শ্রেণি: {{ $class->name }} | শাখা: {{ $section->name }}@if($teacherName) | শ্রেণি শিক্ষক: {{ $teacherName }}@endif</div>
     </div>
     @if($periodCount <= 0)
-      <div class="alert alert-warning">এই শ্রেণি-শাখার পিরিয়ড সংখ্যা নির্ধারণ করা হয়নি।</div>
+      <div class="alert alert-warning">এই শ্রেণি-শাখার পিরিয়ড সংখ্যা নির্ধারণ করা হয়নি।</div>
     @else
     <div class="table-responsive">
       <table class="table table-bordered table-sm table-routine">
