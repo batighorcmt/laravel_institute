@@ -253,4 +253,68 @@ class PrincipalReportController extends Controller
             'meta' => ['message' => 'exam results summary placeholder']
         ]);
     }
+
+    /**
+     * Return lesson evaluation reports for the principal's school.
+     * Optional filters: date (YYYY-MM-DD), class_id, section_id, subject_id
+     */
+    public function lessonEvaluations(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id')
+            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
+            ?? ($user->primarySchool()?->id ?? null);
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+
+        $query = \App\Models\LessonEvaluation::with(['teacher.user','class','section','subject','records'])
+            ->where('school_id', $schoolId);
+
+        if ($request->filled('date')) {
+            $query->whereDate('evaluation_date', $request->get('date'));
+        }
+        if ($request->filled('class_id')) {
+            $query->where('class_id', $request->get('class_id'));
+        }
+        if ($request->filled('section_id')) {
+            $query->where('section_id', $request->get('section_id'));
+        }
+        if ($request->filled('subject_id')) {
+            $query->where('subject_id', $request->get('subject_id'));
+        }
+
+        $items = $query->orderByDesc('evaluation_date')->paginate(25);
+
+        $data = $items->map(function($ev) {
+            $teacherName = null;
+            try {
+                $teacherName = $ev->teacher?->user?->name ?? $ev->teacher?->name ?? null;
+            } catch (\Throwable $_) {}
+            return [
+                'id' => $ev->id,
+                'evaluation_date' => $ev->evaluation_date?->toDateString(),
+                'evaluation_time' => $ev->evaluation_time?->format('H:i'),
+                'teacher_name' => $teacherName,
+                'class_name' => $ev->class?->name,
+                'section_name' => $ev->section?->name,
+                'subject_name' => $ev->subject?->name,
+                'notes' => $ev->notes,
+                'status' => $ev->status,
+                'stats' => $ev->getCompletionStats(),
+            ];
+        })->toArray();
+
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'pagination' => [
+                    'total' => $items->total(),
+                    'per_page' => $items->perPage(),
+                    'current_page' => $items->currentPage(),
+                    'last_page' => $items->lastPage(),
+                ]
+            ]
+        ]);
+    }
 }
