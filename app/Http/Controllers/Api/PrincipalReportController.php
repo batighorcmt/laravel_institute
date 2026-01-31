@@ -283,6 +283,20 @@ class PrincipalReportController extends Controller
         if ($request->filled('subject_id')) {
             $query->where('subject_id', $request->get('subject_id'));
         }
+        // Filter evaluations that include records with a specific status
+        if ($request->filled('status')) {
+            $status = $request->get('status');
+            $query->whereHas('records', function($q) use ($status) {
+                $q->where('status', $status);
+            });
+        }
+        // Filter by teacher name (partial match)
+        if ($request->filled('teacher')) {
+            $teacher = $request->get('teacher');
+            $query->whereHas('teacher.user', function($q) use ($teacher) {
+                $q->where('name', 'like', "%{$teacher}%");
+            });
+        }
 
         $items = $query->orderByDesc('evaluation_date')->paginate(25);
 
