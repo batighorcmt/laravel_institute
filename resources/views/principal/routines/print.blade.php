@@ -13,13 +13,16 @@
   * { -webkit-print-color-adjust: economy; print-color-adjust: economy; }
   body { color:#000 !important; }
   .text-muted { color:#000 !important; }
+  img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .table-routine th, .table-routine td { vertical-align: top; font-size:13px; }
 /* Simplify each entry: remove individual box borders/backgrounds */
 .cell-box { margin:0 0 4px 0; padding:0; border:none; background:transparent; }
 .cell-box .sub { font-weight:600; display:block; }
 .cell-box .teach { color:#000; display:block; }
-.header-info { margin-bottom:1rem; }
+.header-info { margin-bottom:1rem; display:flex; align-items:center; justify-content:center; gap:12px; }
+.header-info .logo { width:64px; height:64px; object-fit:contain; }
+.header-info .header-text { text-align:center; }
 .school-name { font-size: 32px; font-weight: 800; color:#000; }
 .routine-title { font-size: 22px; font-weight: 700; color:#000; margin-top:4px; }
 .meta-line { font-size: 14px; color:#000; }
@@ -38,10 +41,15 @@
 @php($teacherName = $section->classTeacher?->user?->name ?? ($section->class_teacher_name ?? ''))
 <div class="card">
   <div class="card-body">
-    <div class="header-info text-center">
-      <h1 class="school-name mb-1">{{ $school->name_bn }}</h1>
-      <div class="routine-title">ক্লাস রুটিন — {{ date('Y') }}</div>
-      <div class="meta-line">শ্রেণি: {{ $class->name }} | শাখা: {{ $section->name }}@if($teacherName) | শ্রেণি শিক্ষক: {{ $teacherName }}@endif</div>
+    <div class="header-info">
+      @if(!empty($school->logo))
+        <img src="{{ asset('storage/'.$school->logo) }}" alt="{{ $school->name_bn }} logo" class="logo" />
+      @endif
+      <div class="header-text">
+        <h1 class="school-name mb-1">{{ $school->name_bn }}</h1>
+        <div class="routine-title">ক্লাস রুটিন — {{ date('Y') }}</div>
+        <div class="meta-line">শ্রেণি: {{ $class->name }} | শাখা: {{ $section->name }}@if($teacherName) | শ্রেণি শিক্ষক: {{ $teacherName }}@endif</div>
+      </div>
     </div>
     @if($periodCount <= 0)
       <div class="alert alert-warning">এই শ্রেণি-শাখার পিরিয়ড সংখ্যা নির্ধারণ করা হয়নি।</div>
