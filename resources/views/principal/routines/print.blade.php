@@ -85,21 +85,21 @@
         <table class="table table-bordered table-sm table-routine">
           <thead>
             <tr>
-              <th style="width:110px">পিরিয়ড\\দিন</th>
-              @foreach($days as $dk=>$dn)
-                @if(isset($activeDays[$dk]))
-                  <th>{{ $dn }}</th>
+              <th style="width:110px">দিন / পিরিয়ড</th>
+              @for($p=1;$p<=$periodCount;$p++)
+                @if(isset($activePeriods[$p]))
+                  <th>পিরিয়ড {{ strtr($p, $bnMap ?? []) }}</th>
                 @endif
-              @endforeach
+              @endfor
             </tr>
           </thead>
           <tbody>
-            @for($p=1;$p<=$periodCount;$p++)
-              @if(isset($activePeriods[$p]))
+            @foreach($days as $dk=>$dn)
+              @if(isset($activeDays[$dk]))
                 <tr>
-                  <th>পিরিয়ড {{ strtr($p, $bnMap ?? []) }}</th>
-                  @foreach($days as $dk=>$dn)
-                    @if(isset($activeDays[$dk]))
+                  <th>{{ $dn }}</th>
+                  @for($p=1;$p<=$periodCount;$p++)
+                    @if(isset($activePeriods[$p]))
                       @php($list = collect($entries[$dk.'#'.$p] ?? []))
                       <td>
                         @forelse($list as $e)
@@ -121,10 +121,10 @@
                         @endforelse
                       </td>
                     @endif
-                  @endforeach
+                  @endfor
                 </tr>
               @endif
-            @endfor
+            @endforeach
           </tbody>
         </table>
       </div>
