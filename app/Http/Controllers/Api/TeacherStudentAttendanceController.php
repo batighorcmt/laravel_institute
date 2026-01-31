@@ -322,14 +322,14 @@ class TeacherStudentAttendanceController extends Controller
         // present male/female for extra class
         $presentMale = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
             ->where('date', $date)
-            ->where('extra_class_attendance.status', 'present')
-            ->join('students', 'extra_class_attendance.student_id', '=', 'students.id')
+            ->where('extra_class_attendances.status', 'present')
+            ->join('students', 'extra_class_attendances.student_id', '=', 'students.id')
             ->where('students.gender', 'male')
             ->count();
         $presentFemale = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
             ->where('date', $date)
-            ->where('extra_class_attendance.status', 'present')
-            ->join('students', 'extra_class_attendance.student_id', '=', 'students.id')
+            ->where('extra_class_attendances.status', 'present')
+            ->join('students', 'extra_class_attendances.student_id', '=', 'students.id')
             ->where('students.gender', 'female')
             ->count();
 
