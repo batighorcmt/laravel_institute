@@ -1,11 +1,25 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use App\Models\SchoolClass;
 use App\Http\Controllers\Api\AuthController;
 
 Route::prefix('v1')->group(function () {
     // Auth
     Route::post('auth/login', [AuthController::class, 'login']);
+    // Debug: return active classes for a given school_id (no auth) — quick test helper
+    Route::get('debug/classes', function (Request $request) {
+        $schoolId = $request->query('school_id');
+        if (! $schoolId) {
+            return response()->json(['message' => 'school_id query parameter required'], 400);
+        }
+        $rows = SchoolClass::where('school_id', $schoolId)
+            ->where('status', 'active')
+            ->orderBy('numeric_value')
+            ->get(['id','name']);
+        return response()->json($rows->map(fn($r)=>['id'=>$r->id,'name'=>$r->name])->values());
+    });
     Route::middleware(['auth:sanctum','throttle:120,1'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
