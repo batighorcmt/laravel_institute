@@ -1,25 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
-use App\Models\SchoolClass;
 use App\Http\Controllers\Api\AuthController;
 
 Route::prefix('v1')->group(function () {
     // Auth
     Route::post('auth/login', [AuthController::class, 'login']);
-    // Debug: return active classes for a given school_id (no auth) — quick test helper
-    Route::get('debug/classes', function (Request $request) {
-        $schoolId = $request->query('school_id');
-        if (! $schoolId) {
-            return response()->json(['message' => 'school_id query parameter required'], 400);
-        }
-        $rows = SchoolClass::where('school_id', $schoolId)
-            ->where('status', 'active')
-            ->orderBy('numeric_value')
-            ->get(['id','name']);
-        return response()->json($rows->map(fn($r)=>['id'=>$r->id,'name'=>$r->name])->values());
-    });
+
+    // Debug helpers (no auth) - quick verification endpoints
+    Route::get('debug/classes', [\App\Http\Controllers\Api\DebugController::class, 'classes']);
+
     Route::middleware(['auth:sanctum','throttle:120,1'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
@@ -104,6 +94,13 @@ Route::prefix('v1')->group(function () {
         Route::get('students/filters/sections', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getSections']);
         Route::get('students/filters/subjects', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getSubjects']);
         Route::get('students/filters/groups', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getGroups']);
+    });
+    
+    // Generic school metadata endpoints (classes, sections, teachers)
+    Route::prefix('meta')->middleware('role:teacher,principal')->group(function () {
+        Route::get('classes', [\App\Http\Controllers\Api\SchoolMetaController::class, 'classes']);
+        Route::get('sections', [\App\Http\Controllers\Api\SchoolMetaController::class, 'sections']);
+        Route::get('teachers', [\App\Http\Controllers\Api\SchoolMetaController::class, 'teachers']);
     });
     // Also expose the same endpoints to teachers so they can fetch
     // full DB-backed class/section/group lists when allowed.
