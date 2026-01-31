@@ -9,6 +9,9 @@ Route::prefix('v1')->group(function () {
 
     // Debug helpers (no auth) - quick verification endpoints
     Route::get('debug/classes', [\App\Http\Controllers\Api\DebugController::class, 'classes']);
+    Route::get('debug/sections', [\App\Http\Controllers\Api\DebugController::class, 'sections']);
+    Route::get('debug/subjects', [\App\Http\Controllers\Api\DebugController::class, 'subjects']);
+    Route::get('debug/teachers', [\App\Http\Controllers\Api\DebugController::class, 'teachers']);
 
     Route::middleware(['auth:sanctum','throttle:120,1'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
