@@ -98,7 +98,7 @@ Route::prefix('v1')->group(function () {
         Route::get('students/filters/subjects', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getSubjects']);
         Route::get('students/filters/groups', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getGroups']);
     });
-    
+
     // Generic school metadata endpoints (classes, sections, teachers)
     Route::prefix('meta')->middleware('role:teacher,principal')->group(function () {
         Route::get('classes', [\App\Http\Controllers\Api\SchoolMetaController::class, 'classes']);
