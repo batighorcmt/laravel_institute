@@ -38,10 +38,10 @@
                             <tr>
                                 <td>
                                     @if($record->student)
-                                            <img src="{{ $record->student->photo_url ?? asset('images/default-avatar.svg') }}" alt="photo" class="img-thumbnail" style="width:48px;height:48px;object-fit:cover">
-                                        @else
-                                            <div class="bg-light border text-center" style="width:48px;height:48px;line-height:48px">-</div>
-                                        @endif
+                                        <img src="{{ $record->student->photo_url ?? asset('images/default-avatar.svg') }}" alt="photo" style="width:48px;height:58px;object-fit:cover">
+                                    @else
+                                        <div class="bg-light text-center" style="width:48px;height:48px;line-height:48px">-</div>
+                                    @endif
                                 </td>
                                 <td>{{ optional($record->student)->roll ?? '-' }}</td>
                                 <td>{{ optional($record->student)->full_name ?? ('Student #' . $record->student_id) }}</td>

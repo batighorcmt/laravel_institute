@@ -92,9 +92,37 @@ class StudentDirectoryController extends Controller
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
-        $student->load([
-            'currentEnrollment.class','currentEnrollment.section','currentEnrollment.group',
-        ]);
+        // Determine academic year: explicit query param or current academic year
+        $yearId = (int)($request->query('academic_year_id', 0));
+        if (! $yearId) {
+            $yearId = (int)(\App\Models\AcademicYear::forSchool($schoolId)->current()->value('id') ?? 0);
+        }
+
+        // Load the student's enrollment for the current school and academic year (if present)
+        $enrollmentQuery = StudentEnrollment::query()
+            ->where('student_id', $student->id)
+            ->where('school_id', $schoolId)
+            ->where('status', 'active')
+            ->with(['class','section','group'])
+            ->latest();
+
+        if ($yearId) {
+            $enrollmentQuery->where('academic_year_id', $yearId);
+        }
+
+        $en = $enrollmentQuery->first();
+
+        // Attach the resolved enrollment to the student model so the resource can read it
+        if ($en) {
+            $student->setRelation('currentEnrollment', $en);
+        } else {
+            // Fallback: ensure relation exists but null to avoid undefined behaviour in resource
+            $student->setRelation('currentEnrollment', null);
+        }
+
+        // Also eager-load primary student relations used by the resource
+        $student->loadMissing(['class', 'optionalSubject']);
+
         return (new StudentProfileResource($student));
     }
 

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/network/dio_client.dart';
 import 'package:dio/dio.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'principal_student_profile_page.dart';
 
 class LessonEvaluationDetailsPage extends StatefulWidget {
   final Map<String, dynamic> report;
@@ -58,7 +60,9 @@ class _LessonEvaluationDetailsPageState
       if (resp.data is Map && resp.data['evaluation'] is Map) {
         final eval = resp.data['evaluation'] as Map<String, dynamic>;
         _remoteEval = eval;
-        final recs = eval['records'] is List ? eval['records'] as List<dynamic> : [];
+        final recs = eval['records'] is List
+            ? eval['records'] as List<dynamic>
+            : [];
         if (recs.isNotEmpty) {
           setState(() {
             _students = recs;
@@ -194,8 +198,225 @@ class _LessonEvaluationDetailsPageState
     if (l.contains('complete')) return 'পড়া হয়েছে';
     if (l.contains('partial')) return 'আংশিক হয়েছে';
     if (l.contains('absent')) return 'অনুপস্থিত';
-    if (l.contains('not') || l.contains('not_done') || l.contains('not done')) return 'পড়া হয়নি';
+    if (l.contains('not') || l.contains('not_done') || l.contains('not done'))
+      return 'পড়া হয়নি';
     return raw;
+  }
+
+  Color _statusColorFromRaw(String raw, BuildContext context) {
+    final l = raw.toLowerCase();
+    final scheme = Theme.of(context).colorScheme;
+    if (l.contains('not') || l.contains('not_done') || l.contains('not done'))
+      return Colors.red; // পড়া হয়নি -> red
+    if (l.contains('absent'))
+      return Colors.blueGrey; // অনুপস্থিত -> distinct color
+    if (l.contains('complete')) return Colors.green;
+    if (l.contains('partial')) return Colors.orange;
+    return scheme.onSurface.withOpacity(0.7);
+  }
+
+  Future<void> _callPhone(String? number) async {
+    if (number == null || number.toString().trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No phone number')));
+      return;
+    }
+    final uri = Uri(scheme: 'tel', path: number.toString());
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Cannot place call')));
+      }
+    } catch (_) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Call failed')));
+    }
+  }
+
+  void _showStudentModal(Map<String, dynamic> student) {
+    final raw = student['raw'] ?? student;
+    String photo = (student['photo'] ?? '')?.toString() ?? '';
+    String name = (student['name'] ?? '')?.toString() ?? '';
+    String father = '';
+    String mother = '';
+    String phone = '';
+
+    dynamic _findValue(dynamic node, List<String> keys) {
+      bool _hasVal(dynamic v) => v != null && v.toString().trim().isNotEmpty;
+
+      dynamic _search(dynamic cur) {
+        if (cur is Map) {
+          for (final k in keys) {
+            if (_hasVal(cur[k])) return cur[k];
+          }
+          // search nested maps
+          for (final v in cur.values) {
+            final r = _search(v);
+            if (_hasVal(r)) return r;
+          }
+        } else if (cur is List) {
+          for (final e in cur) {
+            final r = _search(e);
+            if (_hasVal(r)) return r;
+          }
+        }
+        return null;
+      }
+
+      return _search(node);
+    }
+
+    if (raw != null) {
+      father =
+          (_findValue(raw, [
+                    'father_name',
+                    'father',
+                    'guardian_father',
+                    'parent_father',
+                  ]) ??
+                  '')
+              .toString();
+      mother =
+          (_findValue(raw, [
+                    'mother_name',
+                    'mother',
+                    'guardian_mother',
+                    'parent_mother',
+                  ]) ??
+                  '')
+              .toString();
+      phone =
+          (_findValue(raw, [
+                    'guardian_phone',
+                    'guardian_mobile',
+                    'guardian_number',
+                    'guardian_contact',
+                    'phone',
+                    'mobile',
+                  ]) ??
+                  '')
+              .toString();
+      if (photo.isEmpty)
+        photo =
+            (_findValue(raw, [
+                      'photo_url',
+                      'photo',
+                      'image',
+                      'avatar',
+                      'profile_photo',
+                    ]) ??
+                    '')
+                .toString();
+      if (name.isEmpty)
+        name = (_findValue(raw, ['name', 'full_name', 'student_name']) ?? '')
+            .toString();
+    }
+
+    final studentId =
+        (_findValue(student, ['id', 'student_id', 'user_id']) ??
+                _findValue(raw, ['id', 'student_id', 'user_id']))
+            ?.toString();
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        return AlertDialog(
+          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (photo.isNotEmpty)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CachedNetworkImage(
+                    imageUrl: photo,
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.cover,
+                    placeholder: (c, u) => Container(
+                      width: 100,
+                      height: 100,
+                      color: Colors.grey.shade200,
+                    ),
+                    errorWidget: (c, u, e) => Container(
+                      width: 100,
+                      height: 100,
+                      color: Colors.grey.shade200,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 100,
+                  height: 100,
+                  color: Colors.grey.shade200,
+                  child: const Icon(Icons.person, size: 48),
+                ),
+              const SizedBox(height: 12),
+              Text(
+                name,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              if (father.isNotEmpty)
+                Text(
+                  'পিতা: $father',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              if (mother.isNotEmpty)
+                Text(
+                  'মাতা: $mother',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.call),
+                    label: const Text('কল'),
+                    onPressed: phone.isNotEmpty
+                        ? () {
+                            Navigator.of(ctx).pop();
+                            _callPhone(phone);
+                          }
+                        : null,
+                  ),
+                  OutlinedButton(
+                    child: const Text('প্রোফাইল'),
+                    onPressed: studentId != null
+                        ? () {
+                            Navigator.of(ctx).pop();
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => PrincipalStudentProfilePage(
+                                  studentId: studentId,
+                                  initialData: raw,
+                                ),
+                              ),
+                            );
+                          }
+                        : null,
+                  ),
+                  TextButton(
+                    child: const Text('বন্ধ'),
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   String? _getPhotoUrl(dynamic s) {
@@ -448,12 +669,24 @@ class _LessonEvaluationDetailsPageState
   @override
   Widget build(BuildContext context) {
     final remote = _remoteEval;
-    final title = '${remote?['evaluation_date'] ?? widget.report['evaluation_date'] ?? ''} • Details';
-    final stats = (remote?['stats'] ?? widget.report['stats']) as Map<String, dynamic>?;
-    final className = (remote?['class_name'] ?? widget.report['class_name'] ?? '').toString();
-    final sectionName = (remote?['section_name'] ?? widget.report['section_name'] ?? '').toString();
-    final subjectName = (remote?['subject_name'] ?? widget.report['subject_name'] ?? '').toString();
-    final teacherName = (remote?['teacher'] is Map ? (remote!['teacher']['name'] ?? '') : remote?['teacher_name']) ?? widget.report['teacher_name'] ?? '';
+    final title =
+        '${remote?['evaluation_date'] ?? widget.report['evaluation_date'] ?? ''} • Details';
+    final stats =
+        (remote?['stats'] ?? widget.report['stats']) as Map<String, dynamic>?;
+    final className =
+        (remote?['class_name'] ?? widget.report['class_name'] ?? '').toString();
+    final sectionName =
+        (remote?['section_name'] ?? widget.report['section_name'] ?? '')
+            .toString();
+    final subjectName =
+        (remote?['subject_name'] ?? widget.report['subject_name'] ?? '')
+            .toString();
+    final teacherName =
+        (remote?['teacher'] is Map
+            ? (remote!['teacher']['name'] ?? '')
+            : remote?['teacher_name']) ??
+        widget.report['teacher_name'] ??
+        '';
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: Padding(
@@ -485,15 +718,9 @@ class _LessonEvaluationDetailsPageState
                             ),
                           ),
                         if (sectionName.isNotEmpty)
-                          Text(
-                            sectionName,
-                            style: TextStyle(fontSize: 13),
-                          ),
+                          Text(sectionName, style: TextStyle(fontSize: 13)),
                         if (subjectName.isNotEmpty)
-                          Text(
-                            subjectName,
-                            style: TextStyle(fontSize: 13),
-                          ),
+                          Text(subjectName, style: TextStyle(fontSize: 13)),
                         if (teacherName.toString().trim().isNotEmpty)
                           Text(
                             teacherName.toString(),
@@ -588,6 +815,41 @@ class _LessonEvaluationDetailsPageState
               ),
             ),
             const SizedBox(height: 8),
+            // Status filter
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: DropdownButtonFormField<String>(
+                value: _statusFilter ?? '',
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).cardColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(value: '', child: Text('সকল স্ট্যাটাস')),
+                  DropdownMenuItem(
+                    value: 'complete',
+                    child: Text('পড়া হয়েছে'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'partial',
+                    child: Text('আংশিক হয়েছে'),
+                  ),
+                  DropdownMenuItem(value: 'not', child: Text('পড়া হয়নি')),
+                  DropdownMenuItem(value: 'absent', child: Text('অনুপস্থিত')),
+                ],
+                onChanged: (v) =>
+                    setState(() => _statusFilter = (v ?? '').toString()),
+              ),
+            ),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -646,210 +908,191 @@ class _LessonEvaluationDetailsPageState
   }
 
   Widget _buildStudentsTable() {
-    final rows = <DataRow>[];
     final normalized = _normalizedStudents();
-    for (var i = 0; i < normalized.length; i++) {
-      final s = normalized[i];
-      final st = (s['status'] ?? '').toString();
-      if (_statusFilter != null &&
-          _statusFilter!.isNotEmpty &&
-          st != _statusFilter)
-        continue;
-      final roll = (s['roll'] ?? '').toString();
-      final photo = (s['photo'] ?? '') as String?;
+    if (normalized.isEmpty)
+      return const Center(child: Text('No students to show'));
 
-      Widget photoWidget;
-      if (photo != null && photo.isNotEmpty) {
-        photoWidget = ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: CachedNetworkImage(
-            imageUrl: photo,
-            width: 56,
-            height: 56,
-            fit: BoxFit.cover,
-            placeholder: (c, url) => Container(
-              width: 56,
-              height: 56,
-              color: Colors.grey.shade200,
-              child: const Icon(Icons.person, color: Colors.grey),
-            ),
-            errorWidget: (c, u, e) => Container(
-              width: 56,
-              height: 56,
-              color: Colors.grey.shade200,
-              child: const Icon(Icons.person, color: Colors.grey),
-            ),
-          ),
-        );
-      } else {
-        photoWidget = Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+    return ListView.separated(
+      padding: EdgeInsets.zero,
+      itemCount: normalized.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (ctx, i) {
+        final s = normalized[i];
+        final st = (s['status'] ?? '').toString();
+        if (_statusFilter != null &&
+            _statusFilter!.isNotEmpty &&
+            !st.contains(_statusFilter!)) {
+          return const SizedBox.shrink();
+        }
+        final roll = (s['roll'] ?? '').toString();
+        final photo = (s['photo'] ?? '') as String?;
+
+        Widget leading;
+        if (photo != null && photo.isNotEmpty) {
+          leading = ClipRRect(
             borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.person, color: Colors.grey),
-        );
-      }
-
-      Color statusColor = Colors.grey;
-      final stLower = st.toLowerCase();
-      if (stLower.contains('complete'))
-        statusColor = Colors.green;
-      else if (stLower.contains('partial'))
-        statusColor = Colors.orange;
-      else if (stLower.contains('absent'))
-        statusColor = Colors.red;
-      else if (stLower.contains('not'))
-        statusColor = Colors.grey;
-
-      final statusLabel = _statusLabelLocalized(st);
-
-      rows.add(
-        DataRow(
-          cells: [
-            DataCell(photoWidget),
-            DataCell(Text(roll.isEmpty ? ((i + 1).toString()) : roll)),
-            DataCell(Text((s['name'] ?? '').toString())),
-            DataCell(
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+            child: CachedNetworkImage(
+              imageUrl: photo,
+              width: 44,
+              height: 44,
+              fit: BoxFit.cover,
+              placeholder: (c, u) => Container(
+                width: 44,
+                height: 44,
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.person, color: Colors.grey, size: 20),
+              ),
+              errorWidget: (c, u, e) => Container(
+                width: 44,
+                height: 44,
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.person, color: Colors.grey, size: 20),
               ),
             ),
-          ],
-        ),
-      );
-    }
+          );
+        } else {
+          leading = Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.person, color: Colors.grey, size: 20),
+          );
+        }
 
-    if (rows.isEmpty) return const Center(child: Text('No students to show'));
+        final statusLabel = _statusLabelLocalized(st);
+        final statusColor = _statusColorFromRaw(st, context);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Photo')),
-          DataColumn(label: Text('Roll')),
-          DataColumn(label: Text('Name')),
-          DataColumn(label: Text('Status')),
-        ],
-        rows: rows,
-      ),
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 6,
+          ),
+          leading: leading,
+          title: InkWell(
+            onTap: () => _showStudentModal(s),
+            child: Text(
+              (s['name'] ?? '').toString(),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          subtitle: Text(
+            roll.isEmpty ? '' : 'রোল: $roll',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          trailing: Chip(
+            label: Text(
+              statusLabel,
+              style: TextStyle(
+                color: statusColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+            backgroundColor: statusColor.withOpacity(0.12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildStudentsTableForList(List<dynamic> list) {
-    final rows = <DataRow>[];
     final normalized = _normalizeList(list);
-    for (var i = 0; i < normalized.length; i++) {
-      final s = normalized[i];
-      final st = (s['status'] ?? '').toString();
-      if (_statusFilter != null &&
-          _statusFilter!.isNotEmpty &&
-          st != _statusFilter)
-        continue;
-      final roll = (s['roll'] ?? '').toString();
-      final photo = (s['photo'] ?? '') as String?;
+    if (normalized.isEmpty)
+      return const Center(child: Text('No students to show'));
 
-      Widget photoWidget;
-      if (photo != null && photo.isNotEmpty) {
-        photoWidget = ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: CachedNetworkImage(
-            imageUrl: photo,
-            width: 56,
-            height: 56,
-            fit: BoxFit.cover,
-            placeholder: (c, url) => Container(
-              width: 56,
-              height: 56,
-              color: Colors.grey.shade200,
-              child: const Icon(Icons.person, color: Colors.grey),
-            ),
-            errorWidget: (c, u, e) => Container(
-              width: 56,
-              height: 56,
-              color: Colors.grey.shade200,
-              child: const Icon(Icons.person, color: Colors.grey),
-            ),
-          ),
-        );
-      } else {
-        photoWidget = Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+    return ListView.separated(
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      itemCount: normalized.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (ctx, i) {
+        final s = normalized[i];
+        final st = (s['status'] ?? '').toString();
+        if (_statusFilter != null &&
+            _statusFilter!.isNotEmpty &&
+            !st.contains(_statusFilter!)) {
+          return const SizedBox.shrink();
+        }
+        final roll = (s['roll'] ?? '').toString();
+        final photo = (s['photo'] ?? '') as String?;
+
+        Widget leading;
+        if (photo != null && photo.isNotEmpty) {
+          leading = ClipRRect(
             borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.person, color: Colors.grey),
-        );
-      }
-
-      Color statusColor = Colors.grey;
-      final stLower = st.toLowerCase();
-      if (stLower.contains('complete'))
-        statusColor = Colors.green;
-      else if (stLower.contains('partial'))
-        statusColor = Colors.orange;
-      else if (stLower.contains('absent'))
-        statusColor = Colors.red;
-      else if (stLower.contains('not'))
-        statusColor = Colors.grey;
-
-      final statusLabel = _statusLabelLocalized(st);
-
-      rows.add(
-        DataRow(
-          cells: [
-            DataCell(photoWidget),
-            DataCell(Text(roll.isEmpty ? ((i + 1).toString()) : roll)),
-            DataCell(Text((s['name'] ?? '').toString())),
-            DataCell(
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+            child: CachedNetworkImage(
+              imageUrl: photo,
+              width: 44,
+              height: 44,
+              fit: BoxFit.cover,
+              placeholder: (c, u) => Container(
+                width: 44,
+                height: 44,
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.person, color: Colors.grey, size: 20),
+              ),
+              errorWidget: (c, u, e) => Container(
+                width: 44,
+                height: 44,
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.person, color: Colors.grey, size: 20),
               ),
             ),
-          ],
-        ),
-      );
-    }
+          );
+        } else {
+          leading = Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.person, color: Colors.grey, size: 20),
+          );
+        }
 
-    if (rows.isEmpty) return const Center(child: Text('No students to show'));
+        final statusLabel = _statusLabelLocalized(st);
+        final statusColor = _statusColorFromRaw(st, context);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Photo')),
-          DataColumn(label: Text('Roll')),
-          DataColumn(label: Text('Name')),
-          DataColumn(label: Text('Status')),
-        ],
-        rows: rows,
-      ),
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 6,
+          ),
+          leading: leading,
+          title: InkWell(
+            onTap: () => _showStudentModal(s),
+            child: Text(
+              (s['name'] ?? '').toString(),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          subtitle: Text(
+            roll.isEmpty ? '' : 'রোল: $roll',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          trailing: Chip(
+            label: Text(
+              statusLabel,
+              style: TextStyle(
+                color: statusColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+            backgroundColor: statusColor.withOpacity(0.12),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          ),
+        );
+      },
     );
   }
 }

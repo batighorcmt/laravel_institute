@@ -6,10 +6,12 @@ class LessonEvaluationApiTestPage extends StatefulWidget {
   const LessonEvaluationApiTestPage({super.key});
 
   @override
-  State<LessonEvaluationApiTestPage> createState() => _LessonEvaluationApiTestPageState();
+  State<LessonEvaluationApiTestPage> createState() =>
+      _LessonEvaluationApiTestPageState();
 }
 
-class _LessonEvaluationApiTestPageState extends State<LessonEvaluationApiTestPage> {
+class _LessonEvaluationApiTestPageState
+    extends State<LessonEvaluationApiTestPage> {
   final _idCtrl = TextEditingController();
   String _output = '';
   bool _loading = false;
@@ -17,32 +19,58 @@ class _LessonEvaluationApiTestPageState extends State<LessonEvaluationApiTestPag
   Future<void> _fetchById() async {
     final id = _idCtrl.text.trim();
     if (id.isEmpty) return;
-    setState(() { _loading = true; _output = ''; });
+    setState(() {
+      _loading = true;
+      _output = '';
+    });
     try {
       final dio = DioClient().dio;
       final resp = await dio.get('principal/reports/lesson-evaluations/$id');
-      setState(() { _output = resp.data.toString(); });
+      setState(() {
+        _output = resp.data.toString();
+      });
     } on DioException catch (e) {
-      setState(() { _output = 'Error: ${e.response?.statusCode} ${e.message} ${e.response?.data}'; });
+      setState(() {
+        _output =
+            'Error: ${e.response?.statusCode} ${e.message} ${e.response?.data}';
+      });
     } catch (e) {
-      setState(() { _output = 'Error: $e'; });
+      setState(() {
+        _output = 'Error: $e';
+      });
     } finally {
-      setState(() { _loading = false; });
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
   Future<void> _fetchDetails() async {
-    setState(() { _loading = true; _output = ''; });
+    setState(() {
+      _loading = true;
+      _output = '';
+    });
     try {
       final dio = DioClient().dio;
-      final resp = await dio.get('principal/reports/lesson-evaluations/details');
-      setState(() { _output = resp.data.toString(); });
+      final resp = await dio.get(
+        'principal/reports/lesson-evaluations/details',
+      );
+      setState(() {
+        _output = resp.data.toString();
+      });
     } on DioException catch (e) {
-      setState(() { _output = 'Error: ${e.response?.statusCode} ${e.message} ${e.response?.data}'; });
+      setState(() {
+        _output =
+            'Error: ${e.response?.statusCode} ${e.message} ${e.response?.data}';
+      });
     } catch (e) {
-      setState(() { _output = 'Error: $e'; });
+      setState(() {
+        _output = 'Error: $e';
+      });
     } finally {
-      setState(() { _loading = false; });
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
@@ -63,7 +91,10 @@ class _LessonEvaluationApiTestPageState extends State<LessonEvaluationApiTestPag
           children: [
             TextField(
               controller: _idCtrl,
-              decoration: const InputDecoration(labelText: 'Evaluation ID', hintText: 'e.g. 6'),
+              decoration: const InputDecoration(
+                labelText: 'Evaluation ID',
+                hintText: 'e.g. 6',
+              ),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 8),
@@ -72,7 +103,13 @@ class _LessonEvaluationApiTestPageState extends State<LessonEvaluationApiTestPag
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _loading ? null : _fetchById,
-                    child: _loading ? const SizedBox(height:16,width:16,child:CircularProgressIndicator(strokeWidth:2)) : const Text('Fetch by ID'),
+                    child: _loading
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Fetch by ID'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -85,7 +122,9 @@ class _LessonEvaluationApiTestPageState extends State<LessonEvaluationApiTestPag
             const SizedBox(height: 12),
             Expanded(
               child: SingleChildScrollView(
-                child: SelectableText(_output.isEmpty ? 'No data yet' : _output),
+                child: SelectableText(
+                  _output.isEmpty ? 'No data yet' : _output,
+                ),
               ),
             ),
           ],
