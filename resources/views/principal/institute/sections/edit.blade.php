@@ -3,13 +3,7 @@
 @section('title','Edit Section')
 
 @section('content')
-@push('styles')
-<style>
-/* Show ~5 items in Select2 dropdown, scroll for additional results */
-.select2-container .select2-results__options { max-height: 180px; overflow-y: auto; }
-.select2-container--bootstrap4 .select2-results__option { white-space: nowrap; }
-</style>
-@endpush
+
 <div class="row mb-2">
     <div class="col">
         <h1 class="m-0">Edit Section</h1>
@@ -50,13 +44,12 @@
                     <label>Class Teacher (optional)</label>
 
                     {{-- IMPORTANT: options are rendered server-side --}}
-                    <select name="class_teacher_id" class="form-control" id="class_teacher_id">
-                        <option value="">-- Select --</option>
-                        @foreach($activeTeachers as $t)
-                            <option value="{{ $t->id }}"
-                                {{ old('class_teacher_id',$section->class_teacher_id)==$t->id?'selected':'' }}>
-                                {{ $t->user->name ?? ('Teacher #'.$t->id) }}
-                                ({{ $t->user->username ?? $t->user->email ?? '' }})
+                    <select name="class_teacher_id" class="form-control" id="class_teacher_id"
+                            data-initial="{{ old('class_teacher_id', $section->class_teacher_id) }}">
+                        <option value="">-- নির্বাচন করুন --</option>
+                        @foreach($activeTeachers as $teacher)
+                            <option value="{{ $teacher->id }}" {{ $section->class_teacher_id == $teacher->id ? 'selected' : '' }}>
+                                {{ $teacher->user->name ?? ('Teacher #'.$teacher->id) }}@if(!empty($teacher->initials)) ({{ $teacher->initials }})@endif
                             </option>
                         @endforeach
                     </select>
@@ -83,59 +76,6 @@
         </form>
     </div>
 </div>
+    
 @endsection
 
-@push('scripts')
-<script>
-(function () {
-
-    function loadSelect2Assets(callback) {
-        if (window.jQuery && jQuery.fn && jQuery.fn.select2) {
-            callback();
-            return;
-        }
-
-        // CSS
-        var css1 = document.createElement('link');
-        css1.rel = 'stylesheet';
-        css1.href = 'https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css';
-        document.head.appendChild(css1);
-
-        var css2 = document.createElement('link');
-        css2.rel = 'stylesheet';
-        css2.href = 'https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.3.1/dist/select2-bootstrap4.min.css';
-        document.head.appendChild(css2);
-
-        // JS
-        var js = document.createElement('script');
-        js.src = 'https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js';
-        js.onload = callback;
-        document.head.appendChild(js);
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        var select = document.getElementById('class_teacher_id');
-        if (!select) return;
-
-        loadSelect2Assets(function () {
-
-            // 🚫 NEVER destroy
-            // ✅ init once, after options are guaranteed to exist
-            $(select).select2({
-                theme: 'bootstrap4',
-                width: '100%',
-                placeholder: '-- নির্বাচন করুন --',
-                allowClear: true
-            });
-
-            // 🔒 force selected value (important for edit page)
-            var current = select.value;
-            if (current) {
-                $(select).val(String(current)).trigger('change');
-            }
-        });
-    });
-
-})();
-</script>
-@endpush

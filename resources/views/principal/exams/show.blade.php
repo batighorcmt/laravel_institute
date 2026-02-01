@@ -237,7 +237,7 @@
                                                                         <option value="">-- নির্বাচন করুন --</option>
                                                                         @foreach($teachers as $teacher)
                                                                             <option value="{{ $teacher->id }}" {{ $examSubject->teacher_id == $teacher->id ? 'selected' : '' }}>
-                                                                                {{ $teacher->name }}
+                                                                                {{ $teacher->user->name ?? $teacher->name }}@if(!empty($teacher->initials)) ({{ $teacher->initials }})@endif
                                                                             </option>
                                                                         @endforeach
                                                                     </select>
@@ -383,7 +383,7 @@
                                         <select name="teacher_id" class="form-control">
                                             <option value="">-- নির্বাচন করুন --</option>
                                             @foreach($teachers as $teacher)
-                                                <option value="{{ $teacher->id }}">{{ $teacher->name }}</option>
+                                                <option value="{{ $teacher->id }}">{{ $teacher->user->name ?? $teacher->name }}@if(!empty($teacher->initials)) ({{ $teacher->initials }})@endif</option>
                                             @endforeach
                                         </select>
                                     </div>
