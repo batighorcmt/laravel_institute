@@ -29,6 +29,18 @@ class StudentDirectoryController extends Controller
             ->where('school_id', $schoolId)
             ->where('status', 'active');
 
+        // Optional ordering by student columns (e.g. guardian_phone)
+        $orderBy = $request->query('order_by');
+        $direction = strtolower($request->query('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+        if ($orderBy === 'guardian_phone' || $orderBy === 'phone') {
+            // Join students table to allow ordering by guardian_phone while
+            // still returning StudentEnrollment models. Select enrollment
+            // columns explicitly to avoid column collisions.
+            $enroll->leftJoin('students', 'student_enrollments.student_id', '=', 'students.id')
+                ->select('student_enrollments.*')
+                ->orderBy('students.guardian_phone', $direction);
+        }
+
         if ($yearId) {
             $enroll->where('academic_year_id', $yearId);
         }
