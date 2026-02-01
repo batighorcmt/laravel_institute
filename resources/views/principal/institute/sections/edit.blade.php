@@ -3,6 +3,13 @@
 @section('title','Edit Section')
 
 @section('content')
+@push('styles')
+<style>
+/* Show ~5 items in Select2 dropdown, scroll for additional results */
+.select2-container .select2-results__options { max-height: 180px; overflow-y: auto; }
+.select2-container--bootstrap4 .select2-results__option { white-space: nowrap; }
+</style>
+@endpush
 <div class="row mb-2">
     <div class="col">
         <h1 class="m-0">Edit Section</h1>

@@ -3,6 +3,13 @@
 @section('title', 'পরীক্ষার বিস্তারিত')
 
 @section('content')
+@push('styles')
+<style>
+/* Limit Select2 dropdown height to ~5 items and enable scrolling */
+.select2-container .select2-results__options { max-height: 180px; overflow-y: auto; }
+.select2-container--bootstrap4 .select2-results__option { white-space: nowrap; }
+</style>
+@endpush
 <div class="content-header">
     <div class="container-fluid">
         <div class="row mb-2">
