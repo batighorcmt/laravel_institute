@@ -540,4 +540,48 @@ document.addEventListener('DOMContentLoaded', function(){
     }
 </script>
 @endpush
+
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function(){
+        function ensureSelect2AndInit(modal){
+            if(!modal) return;
+            var selects = modal.querySelectorAll('select[name="teacher_id"]');
+            if(!selects || selects.length===0) return;
+
+            function initAll(){
+                selects.forEach(function(el){
+                    try{
+                        if (window.jQuery && jQuery.fn && jQuery.fn.select2) {
+                            if ($(el).data('select2')) { try { $(el).select2('destroy'); } catch(e){} }
+                            $(el).select2({ theme: 'bootstrap4', width: '100%', dropdownParent: $(modal), placeholder: '-- নির্বাচন করুন --', allowClear: true });
+                        }
+                    } catch(err){ console.error('Select2 init error', err); }
+                });
+            }
+
+            if (window.jQuery && jQuery.fn && jQuery.fn.select2) { initAll(); return; }
+
+            if (!window.__select2_fallback_loading) {
+                window.__select2_fallback_loading = true;
+                var css = document.createElement('link'); css.rel='stylesheet'; css.href='https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css'; document.head.appendChild(css);
+                var themeCss = document.createElement('link'); themeCss.rel='stylesheet'; themeCss.href='https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.3.1/dist/select2-bootstrap4.min.css'; document.head.appendChild(themeCss);
+                var s = document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js'; s.async = true;
+                s.onload = function(){ initAll(); };
+                s.onerror = function(){ console.error('Select2 CDN failed to load'); };
+                document.head.appendChild(s);
+            } else {
+                var tries = 40;
+                (function wait(){ if (window.jQuery && jQuery.fn && jQuery.fn.select2) { initAll(); } else if (tries-->0) { setTimeout(wait,100); } })();
+            }
+        }
+
+        if (window.jQuery) {
+            $(document).on('shown.bs.modal', '.modal', function(){ ensureSelect2AndInit(this); });
+        } else {
+            document.querySelectorAll('.modal').forEach(function(modal){ modal.addEventListener('shown.bs.modal', function(){ ensureSelect2AndInit(modal); }); });
+        }
+    });
+    </script>
+    @endpush
 @endsection
