@@ -281,6 +281,17 @@
                                 </ul>
                             </li>
 
+                            {{-- Lesson Evaluation (Principal Reports) --}}
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.lesson-evaluations.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.lesson-evaluations.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-clipboard-check"></i>
+                                    <p>Lesson Evaluation <i class="right fas fa-angle-left"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item"><a href="{{ route('principal.institute.lesson-evaluations.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.lesson-evaluations.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Reports</p></a></li>
+                                </ul>
+                            </li>
+
                             @if(method_exists($u,'primarySchool') && $u->primarySchool())
                                 {{-- Attendance (top-level) --}}
                                 <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.attendance*') || request()->routeIs('principal.institute.holidays*') ? 'menu-open' : '' }}">
@@ -401,7 +412,7 @@
                                     <li class="nav-item"><a href="{{ route('principal.institute.sms.logs', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.sms.logs*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>SMS Logs</p></a></li>
                                 </ul>
                             </li>
-                        
+
                             {{-- Admissions --}}
                             <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.admissions.*') ? 'menu-open' : '' }}">
                                 <a href="#" class="nav-link {{ request()->routeIs('principal.institute.admissions.*') ? 'active' : '' }}">

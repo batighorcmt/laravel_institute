@@ -37,16 +37,15 @@ class TeacherController extends Controller
 
          // Today's routine
          $todayRoutine = collect();
-         if ($school && $currentYear) {
-             $today = Carbon::now()->format('l'); // e.g., Monday
-             $todayRoutine = RoutineEntry::where('school_id', $school->id)
-                 ->where('academic_year_id', $currentYear->id)
-                 ->where('day_of_week', $today)
-                 ->where('teacher_id', $user->id)
-                 ->with(['class', 'subject'])
-                 ->orderBy('start_time')
-                 ->get();
-         }
+        if ($school) {
+            $today = Carbon::now()->format('l'); // e.g., Monday
+            $todayRoutine = RoutineEntry::where('school_id', $school->id)
+                ->where('day_of_week', $today)
+                ->where('teacher_id', $user->id)
+                ->with(['class', 'subject'])
+                ->orderBy('start_time')
+                ->get();
+        }
 
          // Pending tasks: lesson evaluations to submit
          $pendingEvaluations = LessonEvaluation::where('teacher_id', $user->id)
