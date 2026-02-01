@@ -143,4 +143,39 @@ class PrincipalStudentController extends Controller
 
         return response()->json($classes);
     }
+
+    /**
+     * Get subjects for the school. Optionally filter by class_id/section_id when provided.
+     */
+    public function getSubjects(Request $request)
+    {
+        $user = Auth::user();
+        $schoolId = $request->attributes->get('current_school_id');
+
+        if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $classId = $request->get('class_id');
+        $sectionId = $request->get('section_id');
+
+        // If class+section provided, prefer subjects assigned via routine entries for that combination
+        if ($classId && $sectionId) {
+            $subjectIds = \App\Models\RoutineEntry::query()
+                ->where('school_id', $schoolId)
+                ->when($classId, fn($q)=>$q->where('class_id', $classId))
+                ->when($sectionId, fn($q)=>$q->where('section_id', $sectionId))
+                ->distinct()->pluck('subject_id')->filter()->unique()->values();
+
+            if ($subjectIds->isEmpty()) {
+                return response()->json([]);
+            }
+
+            $subjects = \App\Models\Subject::whereIn('id', $subjectIds)->orderBy('name')->get(['id','name']);
+        } else {
+            $subjects = \App\Models\Subject::forSchool($schoolId)->active()->orderBy('name')->get(['id','name']);
+        }
+
+        return response()->json($subjects->map(fn($s)=>['id'=>$s->id,'name'=>$s->name])->values());
+    }
 }

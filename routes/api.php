@@ -6,6 +6,13 @@ use App\Http\Controllers\Api\AuthController;
 Route::prefix('v1')->group(function () {
     // Auth
     Route::post('auth/login', [AuthController::class, 'login']);
+
+    // Debug helpers (no auth) - quick verification endpoints
+    Route::get('debug/classes', [\App\Http\Controllers\Api\DebugController::class, 'classes']);
+    Route::get('debug/sections', [\App\Http\Controllers\Api\DebugController::class, 'sections']);
+    Route::get('debug/subjects', [\App\Http\Controllers\Api\DebugController::class, 'subjects']);
+    Route::get('debug/teachers', [\App\Http\Controllers\Api\DebugController::class, 'teachers']);
+
     Route::middleware(['auth:sanctum','throttle:120,1'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
@@ -17,6 +24,7 @@ Route::prefix('v1')->group(function () {
     // Principal reports
     Route::get('principal/reports/attendance-summary', [\App\Http\Controllers\Api\PrincipalReportController::class, 'attendanceSummary'])->middleware('role:principal');
     Route::get('principal/reports/attendance-details', [\App\Http\Controllers\Api\PrincipalReportController::class, 'attendanceDetails'])->middleware('role:principal');
+    Route::get('principal/reports/lesson-evaluations', [\App\Http\Controllers\Api\PrincipalReportController::class, 'lessonEvaluations'])->middleware('role:principal');
     Route::get('principal/reports/exam-results-summary', [\App\Http\Controllers\Api\PrincipalReportController::class, 'examResultsSummary'])->middleware('role:principal');
 
     // Teacher attendance & academic actions
@@ -87,7 +95,15 @@ Route::prefix('v1')->group(function () {
         Route::get('students/search', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'search']);
         Route::get('students/filters/classes', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getClasses']);
         Route::get('students/filters/sections', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getSections']);
+        Route::get('students/filters/subjects', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getSubjects']);
         Route::get('students/filters/groups', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getGroups']);
+    });
+
+    // Generic school metadata endpoints (classes, sections, teachers)
+    Route::prefix('meta')->middleware('role:teacher,principal')->group(function () {
+        Route::get('classes', [\App\Http\Controllers\Api\SchoolMetaController::class, 'classes']);
+        Route::get('sections', [\App\Http\Controllers\Api\SchoolMetaController::class, 'sections']);
+        Route::get('teachers', [\App\Http\Controllers\Api\SchoolMetaController::class, 'teachers']);
     });
     // Also expose the same endpoints to teachers so they can fetch
     // full DB-backed class/section/group lists when allowed.
