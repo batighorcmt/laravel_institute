@@ -398,8 +398,10 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  TeacherStudentProfilePage(studentId: id),
+                              builder: (_) => TeacherStudentProfilePage(
+                                studentId: id,
+                                initialData: it,
+                              ),
                             ),
                           );
                         },
@@ -415,7 +417,12 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
 
 class TeacherStudentProfilePage extends StatefulWidget {
   final String studentId;
-  const TeacherStudentProfilePage({super.key, required this.studentId});
+  final Map<String, dynamic>? initialData;
+  const TeacherStudentProfilePage({
+    super.key,
+    required this.studentId,
+    this.initialData,
+  });
 
   @override
   State<TeacherStudentProfilePage> createState() =>
@@ -438,10 +445,40 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
   }
 
   Future<void> _load() async {
+    // Prefer showing initialData immediately to avoid UX "404" flashes.
     setState(() => _loading = true);
+    if (widget.initialData != null) {
+      setState(() {
+        _data = Map<String, dynamic>.from(widget.initialData!);
+        _error = null;
+        _loading = false;
+      });
+
+      // Attempt a background refresh if we have a valid id.
+      if (widget.studentId.trim().isEmpty) return;
+      try {
+        final res = await _repo.fetchStudentProfile(widget.studentId);
+        final inner = res['data'];
+        final Map<String, dynamic> normalized = inner is Map<String, dynamic>
+            ? inner
+            : res;
+        if (mounted)
+          setState(() {
+            _data = normalized;
+            _error = null;
+          });
+      } catch (_) {
+        // Keep initialData visible; don't overwrite with an error.
+      }
+      return;
+    }
+
     try {
+      if (widget.studentId.trim().isEmpty) {
+        setState(() => _error = 'No student id provided');
+        return;
+      }
       final res = await _repo.fetchStudentProfile(widget.studentId);
-      // Normalize response: many APIs wrap the payload under `data`
       final inner = res['data'];
       final Map<String, dynamic> normalized = inner is Map<String, dynamic>
           ? inner
@@ -451,7 +488,7 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
         _error = null;
       });
     } catch (e) {
-      setState(() => _error = 'Failed to load profile');
+      setState(() => _error = 'Failed to load profile: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

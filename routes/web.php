@@ -209,6 +209,12 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/{leave}/reject', [App\Http\Controllers\Principal\Institute\TeacherLeaveController::class, 'reject'])->name('reject');
             });
 
+            // Lesson Evaluation Reports (Principal)
+            Route::prefix('lesson-evaluations')->name('lesson-evaluations.')->group(function(){
+                Route::get('/', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class, 'index'])->name('index');
+                Route::get('/{lessonEvaluation}', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class, 'show'])->name('show');
+            });
+
             // Admission settings and applications
             Route::prefix('admissions')->name('admissions.')->group(function(){
                 Route::get('/settings', [PrincipalAdmissionController::class,'settings'])->name('settings');
@@ -599,3 +605,5 @@ Route::middleware(['auth'])->group(function () {
 
 // Public document verification endpoint (QR target)
 Route::get('/verify/document/{code}', [\App\Http\Controllers\Documents\VerificationController::class, 'show'])->name('documents.verify');
+
+    // Mobile-friendly JSON endpoints moved to API routes (use api.php with token auth)

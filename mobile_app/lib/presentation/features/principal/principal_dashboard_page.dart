@@ -12,9 +12,25 @@ import '../../../data/auth/auth_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../widgets/app_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../state/auth_state.dart';
+import '../teacher/lesson_evaluation_list_page.dart';
+import '../teacher/homework_list_page.dart';
+import '../teacher/teacher_leave_list_page.dart';
+import '../teacher/teacher_directory_page.dart';
+import '../teacher/teacher_students_list_page.dart';
+import '../../../core/network/dio_client.dart';
+import '../../../data/auth/auth_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../widgets/app_snack.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../widgets/animated_tile.dart';
 import '../../../widgets/rive_icon_registry.dart';
 import 'principal_attendance_details_page.dart';
+import 'principal_reports_page.dart';
+import 'notice_list_page.dart';
 // theme toggle removed for principal toolbar
 
 class PrincipalDashboardPage extends ConsumerStatefulWidget {
@@ -28,7 +44,6 @@ class PrincipalDashboardPage extends ConsumerStatefulWidget {
 class _PrincipalDashboardPageState
     extends ConsumerState<PrincipalDashboardPage> {
   late final Dio _dio;
-  late Future<Map<String, dynamic>> _attendanceSummaryFuture;
   String? _overridePhoto;
   String? _overrideDesignation;
   bool _fetchedExtra = false;
@@ -37,9 +52,6 @@ class _PrincipalDashboardPageState
   void initState() {
     super.initState();
     _dio = DioClient().dio;
-    _attendanceSummaryFuture = _fetchJson(
-      'principal/reports/attendance-details',
-    );
   }
 
   Future<Map<String, dynamic>> _fetchJson(String path) async {
@@ -108,11 +120,6 @@ class _PrincipalDashboardPageState
                 message: 'Profile refreshed',
                 success: true,
               );
-              setState(() {
-                _attendanceSummaryFuture = _fetchJson(
-                  'principal/reports/attendance-summary',
-                );
-              });
             },
           ),
           IconButton(
@@ -262,8 +269,8 @@ class _PrincipalDashboardPageState
             crossAxisCount: 3,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            crossAxisSpacing: 4,
+            mainAxisSpacing: 4,
             childAspectRatio: 1.15,
             children: [
               AnimatedTile(
@@ -358,31 +365,7 @@ class _PrincipalDashboardPageState
                   );
                 },
               ),
-              AnimatedTile(
-                title: 'Attendance Report',
-                titleFontSize: 9,
-                icon: Icons.bar_chart_outlined,
-                background: const Color(0xFFEFFAF6),
-                riveIcon: RiveIconRegistry.artboardFor('attendance'),
-                onTap: () async {
-                  final profile = ref.read(authProvider).asData?.value;
-                  await _ensureOverrideSchoolFromProfile(profile);
-                  if (!mounted) return;
-                  if (!hasTeachingRole(profile)) {
-                    showAppSnack(
-                      context,
-                      message:
-                          'No teacher role in profile. Refresh or contact admin.',
-                    );
-                    return;
-                  }
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const PrincipalAttendanceDetailsPage(),
-                    ),
-                  );
-                },
-              ),
+              // Attendance Report tile removed from grid (kept at page bottom)
               AnimatedTile(
                 title: 'Exams',
                 titleFontSize: 9,
@@ -471,28 +454,97 @@ class _PrincipalDashboardPageState
                   );
                 },
               ),
+              // Notice tile inserted after Students
+              AnimatedTile(
+                title: 'Notice',
+                titleFontSize: 9,
+                icon: Icons.campaign_outlined,
+                background: const Color(0xFFFFF3E0),
+                riveIcon: RiveIconRegistry.artboardFor('notice'),
+                onTap: () async {
+                  final profile = ref.read(authProvider).asData?.value;
+                  await _ensureOverrideSchoolFromProfile(profile);
+                  if (!mounted) return;
+                  if (!hasTeachingRole(profile)) {
+                    showAppSnack(
+                      context,
+                      message:
+                          'No teacher role in profile. Refresh or contact admin.',
+                    );
+                    return;
+                  }
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NoticeListPage()),
+                  );
+                },
+              ),
             ],
           ),
 
-          const SizedBox(height: 24),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
-          // Attendance report card (compact) shown on homepage
-          FutureBuilder<Map<String, dynamic>>(
-            future: _attendanceSummaryFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: CircularProgressIndicator(),
+          // Attendance Report card restored at page bottom
+          Card(
+            elevation: 1,
+            child: ListTile(
+              leading: const Icon(
+                Icons.bar_chart_outlined,
+                color: Colors.green,
+              ),
+              title: const Text('Attendance Report'),
+              subtitle: const Text(
+                'Daily attendance summaries and class-wise reports',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const PrincipalAttendanceDetailsPage(),
+                  ),
                 );
-              }
-              if (snapshot.hasError) {
-                return Text('Error: ${snapshot.error}');
-              }
-              final data = snapshot.data ?? {};
-              return _AttendanceReportCard(data: data);
-            },
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Reports card (opens a page containing multiple reports)
+          Card(
+            elevation: 1,
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const PrincipalReportsPage(),
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.folder_open_outlined, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Reports',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text('View attendance and evaluation reports'),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right),
+                  ],
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 24),
         ],
@@ -514,118 +566,6 @@ class _PrincipalDashboardPageState
             ),
           )
           .toList(),
-    );
-  }
-}
-
-class _AttendanceReportCard extends StatelessWidget {
-  final Map<String, dynamic> data;
-  const _AttendanceReportCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final d = data['data'] is Map
-        ? Map<String, dynamic>.from(data['data'])
-        : Map<String, dynamic>.from(data);
-    final meta = data['meta'] is Map
-        ? Map<String, dynamic>.from(data['meta'])
-        : <String, dynamic>{};
-
-    int presentCount = 0;
-    int absentCount = 0;
-    int totalStudents = 0;
-    double presentPct = 0.0;
-    double absentPct = 0.0;
-
-    try {
-      presentCount = (d['present_today'] is num)
-          ? (d['present_today'] as num).toInt()
-          : int.tryParse('${d['present_today']}') ?? 0;
-      absentCount = (d['absent_today'] is num)
-          ? (d['absent_today'] as num).toInt()
-          : int.tryParse('${d['absent_today']}') ?? 0;
-      totalStudents = (d['total_students'] is num)
-          ? (d['total_students'] as num).toInt()
-          : int.tryParse('${d['total_students']}') ?? 0;
-      if (d['present_percentage'] is num) {
-        presentPct = (d['present_percentage'] as num).toDouble();
-      } else if (totalStudents > 0) {
-        presentPct = (presentCount / totalStudents) * 100.0;
-      }
-      if (d['absent_percentage'] is num) {
-        absentPct = (d['absent_percentage'] as num).toDouble();
-      } else if (totalStudents > 0) {
-        absentPct = (absentCount / totalStudents) * 100.0;
-      }
-    } catch (_) {}
-
-    final message = meta['message'] ?? '';
-
-    return Card(
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Attendance Report Card',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Present • $presentCount',
-                        style: const TextStyle(color: Colors.green),
-                      ),
-                      const SizedBox(height: 4),
-                      LinearProgressIndicator(
-                        value: (presentPct / 100).clamp(0.0, 1.0),
-                      ),
-                      const SizedBox(height: 4),
-                      Text('${presentPct.toStringAsFixed(1)}%'),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Absent • $absentCount',
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                      const SizedBox(height: 4),
-                      LinearProgressIndicator(
-                        value: (absentPct / 100).clamp(0.0, 1.0),
-                        color: Colors.redAccent,
-                        backgroundColor: Colors.red[50],
-                      ),
-                      const SizedBox(height: 4),
-                      Text('${absentPct.toStringAsFixed(1)}%'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text('Total students: ${totalStudents > 0 ? totalStudents : '—'}'),
-            if ((message as String).isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                message.toString(),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }

@@ -99,6 +99,10 @@ Route::prefix('v1')->group(function () {
         Route::get('students/filters/groups', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getGroups']);
     });
 
+    // Lesson evaluation JSON endpoints for mobile (principal only)
+    Route::get('principal/reports/lesson-evaluations/{id}', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class, 'apiShow'])->middleware('role:principal');
+    Route::get('principal/reports/lesson-evaluations/details', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class, 'details'])->middleware('role:principal');
+
     // Generic school metadata endpoints (classes, sections, teachers)
     Route::prefix('meta')->middleware('role:teacher,principal')->group(function () {
         Route::get('classes', [\App\Http\Controllers\Api\SchoolMetaController::class, 'classes']);
