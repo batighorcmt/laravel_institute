@@ -46,18 +46,41 @@
   $attRate = $studentCount > 0 ? round(($attPresent / $studentCount) * 100, 1) : 0;
   // Teacher attendance today (optional models)
   $tPresent = null; $tAbsent = null;
-  if ($school && class_exists(\App\Models\ExtraClassAttendance::class)) {
-    // If teacher attendance table has no school_id, filter via Teacher.user_id for this school
+  if ($school) {
     $teacherUserIds = \App\Models\Teacher::where('school_id',$school->id)->pluck('user_id');
-    try {
-      $tPresent = \App\Models\ExtraClassAttendance::whereIn('user_id',$teacherUserIds)->whereDate('date',$today)->where('status','present')->count();
-      $tAbsent  = \App\Models\ExtraClassAttendance::whereIn('user_id',$teacherUserIds)->whereDate('date',$today)->where('status','absent')->count();
-    } catch (\Throwable $e) {
-      // Fallback silently if schema differs
-      $tPresent = \App\Models\ExtraClassAttendance::whereDate('date',$today)->where('status','present')->count();
-      $tAbsent  = \App\Models\ExtraClassAttendance::whereDate('date',$today)->where('status','absent')->count();
+
+    // Prefer the explicit TeacherAttendance model (if available)
+    if (class_exists(\App\Models\TeacherAttendance::class)) {
+      try {
+        $tPresent = \App\Models\TeacherAttendance::where('school_id',$school->id)->whereDate('date',$today)->where('status','present')->count();
+        $tAbsent  = \App\Models\TeacherAttendance::where('school_id',$school->id)->whereDate('date',$today)->where('status','absent')->count();
+      } catch (\Throwable $e) {
+        \Log::warning('TeacherAttendance count failed: '.$e->getMessage());
+        $tPresent = 0; $tAbsent = 0;
+      }
+
+    // If TeacherAttendance not present, allow ExtraClassAttendance only when it can be filtered by teacher user ids
+    } elseif (class_exists(\App\Models\ExtraClassAttendance::class)) {
+      try {
+        if (!empty($teacherUserIds)) {
+          // ExtraClassAttendance typically does not have user_id; only use if it does
+          if (method_exists(\App\Models\ExtraClassAttendance::class, 'whereIn') && \Schema::hasColumn('extra_class_attendances', 'user_id')) {
+            $tPresent = \App\Models\ExtraClassAttendance::whereIn('user_id',$teacherUserIds)->whereDate('date',$today)->where('status','present')->count();
+            $tAbsent  = \App\Models\ExtraClassAttendance::whereIn('user_id',$teacherUserIds)->whereDate('date',$today)->where('status','absent')->count();
+          } else {
+            // Do not do a global fallback; set zeros to avoid misleading counts
+            $tPresent = 0; $tAbsent = 0;
+          }
+        } else {
+          $tPresent = 0; $tAbsent = 0;
+        }
+      } catch (\Throwable $e) {
+        \Log::warning('ExtraClassAttendance teacher-count attempt failed: '.$e->getMessage());
+        $tPresent = 0; $tAbsent = 0;
+      }
     }
   }
+
   $tRate = ($tPresent !== null && $tAbsent !== null && ($tPresent + $tAbsent) > 0) ? round(($tPresent / ($tPresent + $tAbsent)) * 100, 1) : null;
   // Gender distribution (students)
   $maleCount = null; $femaleCount = null;
