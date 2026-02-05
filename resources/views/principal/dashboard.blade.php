@@ -21,7 +21,7 @@
       ->distinct('student_id')
       ->count('student_id');
   } elseif ($school && class_exists(\App\Models\Student::class)) {
-    $studentCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->where('academic_year_id',$ayId)->count();
+    $studentCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->where('academic_year_id',$ayId)->distinct('student_id')->count('student_id');
   }
   // Today attendance (students)
   $today = now()->toDateString();
