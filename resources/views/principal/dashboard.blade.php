@@ -135,7 +135,7 @@
 
   <div class="kpi-grid">
     <div class="kpi"><div class="label">মোট শ্রেণি</div><div class="value">{{ $classCount }}</div><div class="meta">শ্রেণি কনফিগারেশন</div></div>
-    <div class="kpi"><div class="label">মোট সক্রিয় শিক্ষার্থী</div><div class="value">{{ $studentCount }}</div><div class="meta"></div></div>
+    <div class="kpi"><div class="label">মোট সক্রিয় শিক্ষার্থী</div><div class="value">{{ $maleCount + $femaleCount }}</div><div class="meta"></div></div>
     <div class="kpi"><div class="label">আজ উপস্থিত</div><div class="value">{{ $attPresent }}</div><div class="meta">শিক্ষার্থী</div></div>
     <div class="kpi"><div class="label">আজ অনুপস্থিত</div><div class="value">{{ $attAbsent }}</div><div class="meta">শিক্ষার্থী</div></div>
     <div class="kpi"><div class="label">উপস্থিতির হার</div><div class="value">{{ $attRate }}%</div><div class="meta">শিক্ষার্থী</div></div>
