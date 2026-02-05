@@ -14,6 +14,7 @@ use App\Models\Teacher;
 use App\Models\StudentEnrollment;
 use App\Models\Attendance;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Services\AttendanceSmsService;
 
 class TeacherStudentAttendanceController extends Controller
@@ -24,7 +25,7 @@ class TeacherStudentAttendanceController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
 
-        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->first();
+        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         $classEnabled = $teacher ? Section::where('school_id',$schoolId)->where('class_teacher_id',$teacher->id)->where('status','active')->exists() : false;
         // ExtraClass model links teacher_id to users.id
         $extraEnabled = ExtraClass::where('school_id',$schoolId)->where('status','active')->where('teacher_id',$user->id)->exists();
@@ -43,7 +44,7 @@ class TeacherStudentAttendanceController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
 
-        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->first();
+        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher) return response()->json(['data'=>[]]);
 
         $sections = Section::where('school_id',$schoolId)
@@ -106,7 +107,7 @@ class TeacherStudentAttendanceController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user, $section->school_id);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
 
-        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->first();
+        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher || (int)$section->class_teacher_id !== (int)$teacher->id) {
             return response()->json(['message' => 'আপনি এই শাখার শ্রেণিশিক্ষক নন'], 403);
         }
@@ -195,7 +196,7 @@ class TeacherStudentAttendanceController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user, $section->school_id);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
 
-        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->first();
+        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher || (int)$section->class_teacher_id !== (int)$teacher->id) {
             return response()->json(['message' => 'আপনি এই শাখার শ্রেণিশিক্ষক নন'], 403);
         }
@@ -272,7 +273,7 @@ class TeacherStudentAttendanceController extends Controller
                 $smsReport = $smsService->enqueueAttendanceSms($schoolModel, $attendancePayload, $section->class_id, $section->id, $date, $isExisting, $previousStatuses, $user->id);
             }
         } catch (\Throwable $e) {
-            \Log::error('Failed to enqueue class attendance SMS', ['error'=>$e->getMessage(), 'section_id'=>$section->id]);
+            Log::error('Failed to enqueue class attendance SMS', ['error'=>$e->getMessage(), 'section_id'=>$section->id]);
         }
 
         $resp = ['message' => $wasExisting ? 'উপস্থিতি আপডেট হয়েছে' : 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে'];
@@ -443,7 +444,7 @@ class TeacherStudentAttendanceController extends Controller
             }
         } catch (\Throwable $e) {
             // Don't fail the attendance submit if SMS enqueue fails; log for debugging
-            \Log::error('Failed to enqueue extra-class attendance SMS', ['error'=>$e->getMessage(), 'extra_class_id'=>$extraClass->id]);
+            Log::error('Failed to enqueue extra-class attendance SMS', ['error'=>$e->getMessage(), 'extra_class_id'=>$extraClass->id]);
         }
 
         return response()->json([

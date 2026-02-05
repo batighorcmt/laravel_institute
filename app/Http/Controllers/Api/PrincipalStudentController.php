@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\School;
 use App\Models\Student;
 use App\Models\Section;
 use App\Models\Group;
@@ -17,11 +16,12 @@ class PrincipalStudentController extends Controller
      */
     public function search(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $schoolId = $request->attributes->get('current_school_id');
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
 
-        // Allow principals, teachers (for their school), or superadmins
-        if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
+        // Require a resolved school context and allow principals, teachers (for their school), or superadmins
+        if (empty($schoolId) || ! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -71,8 +71,9 @@ class PrincipalStudentController extends Controller
      */
     public function getSections(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $schoolId = $request->attributes->get('current_school_id');
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
         $classId = $request->get('class_id');
 
         if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
@@ -98,8 +99,9 @@ class PrincipalStudentController extends Controller
      */
     public function getGroups(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $schoolId = $request->attributes->get('current_school_id');
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
         $classId = $request->get('class_id');
 
         if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
@@ -125,8 +127,9 @@ class PrincipalStudentController extends Controller
      */
     public function getClasses(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $schoolId = $request->attributes->get('current_school_id');
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
 
         if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -149,8 +152,9 @@ class PrincipalStudentController extends Controller
      */
     public function getSubjects(Request $request)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $schoolId = $request->attributes->get('current_school_id');
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
 
         if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
             return response()->json(['message' => 'Unauthorized'], 403);
