@@ -153,27 +153,32 @@ class AttendanceController extends Controller
         $yearVal = $currentYear?->id;
 
         // Total active students (current year)
-        $totalStudents = StudentEnrollment::where('school_id', $school->id)
-            ->where('status', 'active')
-            ->when($yearVal, fn($q)=>$q->where('academic_year_id', $yearVal))
-            ->count();
+        $totalStudents = StudentEnrollment::where('student_enrollments.school_id', $school->id)
+            ->where('student_enrollments.status', 'active')
+            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
+            ->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->distinct('student_enrollments.student_id')
+            ->count('student_enrollments.student_id');
 
         // Today's attendance counts
         // Assumption: 'present' and 'late' are considered as present for overall percentage
         $presentToday = Attendance::join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $school->id)
+            ->where('students.status','active')
             ->whereIn('attendance.status', ['present','late'])
             ->count();
         $absentToday = Attendance::join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $school->id)
+            ->where('students.status','active')
             ->where('attendance.status', 'absent')
             ->count();
         // Attendance percent: show null when there are no attendance entries today for this school
         $anyAttendanceToday = Attendance::join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $school->id)
+            ->where('students.status','active')
             ->exists();
         $attendancePercent = ($totalStudents > 0 && $anyAttendanceToday)
             ? round(($presentToday / $totalStudents) * 100, 1)
@@ -193,6 +198,7 @@ class AttendanceController extends Controller
             ->join('students','students.id','=','student_enrollments.student_id')
             ->where('student_enrollments.school_id', $school->id)
             ->where('student_enrollments.status','active')
+            ->where('students.status','active')
             ->where('sections.status','active')
             ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
             ->groupBy('classes.id','classes.name','classes.numeric_value','sections.id','sections.name')
@@ -255,6 +261,7 @@ class AttendanceController extends Controller
             )
             ->join('students','students.id','=','attendance.student_id')
             ->where('attendance.date',$date)
+            ->where('students.status','active')
             ->groupBy('attendance.class_id','attendance.section_id')
             ->get()
             ->mapWithKeys(function($r){
@@ -343,6 +350,7 @@ class AttendanceController extends Controller
             ->join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $school->id)
+            ->where('students.status','active')
             ->whereIn('attendance.status', ['present','late'])
             ->groupBy('students.gender')
             ->pluck('cnt','gender');
@@ -357,6 +365,7 @@ class AttendanceController extends Controller
             ->leftJoin('classes','classes.id','=','student_enrollments.class_id')
             ->leftJoin('sections','sections.id','=','student_enrollments.section_id')
             ->where('student_enrollments.school_id', $school->id)
+            ->where('students.status','active')
             ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
             ->where('attendance.date', $date)
             ->where('attendance.status','absent')
