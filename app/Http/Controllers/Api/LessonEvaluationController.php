@@ -235,11 +235,13 @@ class LessonEvaluationController extends Controller
         $existing = $evaluation ? $evaluation->records->pluck('status','student_id') : collect();
 
         // Build enrollment query (optionally filter by subject assignments when exists)
-        $query = StudentEnrollment::with('student')
+        // Only include enrollments whose student record is active
+        $query = StudentEnrollment::with(['student' => fn($q)=>$q->where('status','active')])
             ->where('school_id', $schoolId)
             ->where('class_id', $entry->class_id)
             ->where('section_id', $entry->section_id)
-            ->where('status', 'active');
+            ->where('status', 'active')
+            ->whereHas('student', fn($q)=>$q->where('status','active'));
 
         $hasSubjectAssignments = DB::table('student_subjects')
             ->whereIn('student_enrollment_id', function($q) use ($schoolId, $entry) {

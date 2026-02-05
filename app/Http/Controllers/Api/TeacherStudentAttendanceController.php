@@ -119,7 +119,9 @@ class TeacherStudentAttendanceController extends Controller
                 'section_id' => $section->id,
                 'status' => 'active',
             ])
-            ->with(['student'])
+            // only include enrollments whose student record is active
+            ->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->with(['student' => fn($q)=>$q->where('status','active')])
             ->orderBy('roll_no')
             ->get();
 
@@ -154,12 +156,14 @@ class TeacherStudentAttendanceController extends Controller
             ->where('date', $date)
             ->where('attendance.status', 'present')
             ->join('students', 'attendance.student_id', '=', 'students.id')
+            ->where('students.status', 'active')
             ->where('students.gender', 'male')
             ->count();
         $presentFemale = Attendance::where('section_id', $section->id)
             ->where('date', $date)
             ->where('attendance.status', 'present')
             ->join('students', 'attendance.student_id', '=', 'students.id')
+            ->where('students.status', 'active')
             ->where('students.gender', 'female')
             ->count();
 
@@ -211,12 +215,14 @@ class TeacherStudentAttendanceController extends Controller
         $items = collect($data['items']);
 
         // Fetch active students for the section to validate completeness
+        // ensure only active student records are considered
         $sectionStudentIds = StudentEnrollment::where([
                 'school_id' => $schoolId,
                 'class_id' => $section->class_id,
                 'section_id' => $section->id,
                 'status' => 'active',
-            ])->pluck('student_id')->values();
+            ])->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->pluck('student_id')->values();
 
         $submittedIds = $items->pluck('student_id')->values();
         $missing = $sectionStudentIds->diff($submittedIds);
@@ -288,7 +294,8 @@ class TeacherStudentAttendanceController extends Controller
 
         $enrollments = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
             ->where('status','active')
-            ->with(['student.currentEnrollment'])
+            ->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->with(['student' => fn($q)=>$q->where('status','active')->with('currentEnrollment')])
             ->orderByDesc('id')
             ->get();
 
@@ -324,12 +331,14 @@ class TeacherStudentAttendanceController extends Controller
             ->where('date', $date)
             ->where('extra_class_attendances.status', 'present')
             ->join('students', 'extra_class_attendances.student_id', '=', 'students.id')
+            ->where('students.status', 'active')
             ->where('students.gender', 'male')
             ->count();
         $presentFemale = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
             ->where('date', $date)
             ->where('extra_class_attendances.status', 'present')
             ->join('students', 'extra_class_attendances.student_id', '=', 'students.id')
+            ->where('students.status', 'active')
             ->where('students.gender', 'female')
             ->count();
 
@@ -376,6 +385,7 @@ class TeacherStudentAttendanceController extends Controller
 
         $enrolledIds = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
             ->where('status','active')
+            ->whereHas('student', fn($q)=>$q->where('status','active'))
             ->pluck('student_id');
 
         $submittedIds = collect($data['items'])->pluck('student_id');
