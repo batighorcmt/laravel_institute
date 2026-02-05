@@ -14,12 +14,14 @@
   $classCount = $school ? (class_exists(\App\Models\ClassSubject::class) ? \App\Models\ClassSubject::where('school_id',$school->id)->distinct('class_id')->count('class_id') : 0) : 0;
   $studentCount = 0;
   if ($school && class_exists(\App\Models\StudentEnrollment::class)) {
+    // count distinct students with an active enrollment for the selected academic year
     $studentCount = \App\Models\StudentEnrollment::where('school_id',$school->id)
       ->when($ayId, fn($q)=>$q->where('academic_year_id',$ayId))
       ->where('status','active')
-      ->count();
+      ->distinct('student_id')
+      ->count('student_id');
   } elseif ($school && class_exists(\App\Models\Student::class)) {
-    $studentCount = \App\Models\Student::where('school_id',$school->id)->count();
+    $studentCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->count();
   }
   // Today attendance (students)
   $today = now()->toDateString();
@@ -34,7 +36,7 @@
       $attPresent = \App\Models\Attendance::whereIn('student_id',$enrolledStudentIds)->whereDate('date',$today)->where('status','present')->count();
       $attAbsent  = \App\Models\Attendance::whereIn('student_id',$enrolledStudentIds)->whereDate('date',$today)->where('status','absent')->count();
     } elseif (class_exists(\App\Models\Student::class)) {
-      $studentIds = \App\Models\Student::where('school_id',$school->id)->pluck('id');
+      $studentIds = \App\Models\Student::where('school_id',$school->id)->where('status','active')->pluck('id');
       $attPresent = \App\Models\Attendance::whereIn('student_id',$studentIds)->whereDate('date',$today)->where('status','present')->count();
       $attAbsent  = \App\Models\Attendance::whereIn('student_id',$studentIds)->whereDate('date',$today)->where('status','absent')->count();
     } else {
@@ -87,11 +89,11 @@
   if ($school && class_exists(\App\Models\StudentEnrollment::class) && class_exists(\App\Models\Student::class)) {
     $enrollQ = \App\Models\StudentEnrollment::where('school_id',$school->id)->when($ayId, fn($q)=>$q->where('academic_year_id',$ayId))->where('status','active');
     $studentIdsForAy = $enrollQ->pluck('student_id');
-    $maleCount = \App\Models\Student::whereIn('id',$studentIdsForAy)->where('gender','male')->count();
-    $femaleCount = \App\Models\Student::whereIn('id',$studentIdsForAy)->where('gender','female')->count();
+    $maleCount = \App\Models\Student::whereIn('id',$studentIdsForAy)->where('status','active')->where('gender','male')->count();
+    $femaleCount = \App\Models\Student::whereIn('id',$studentIdsForAy)->where('status','active')->where('gender','female')->count();
   } elseif ($school && class_exists(\App\Models\Student::class)) {
-    $maleCount = \App\Models\Student::where('school_id',$school->id)->where('gender','male')->count();
-    $femaleCount = \App\Models\Student::where('school_id',$school->id)->where('gender','female')->count();
+    $maleCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->where('gender','male')->count();
+    $femaleCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->where('gender','female')->count();
   }
   // Fees (payments summary)
   $feesToday = null; $feesMonth = null;
@@ -133,7 +135,7 @@
 
   <div class="kpi-grid">
     <div class="kpi"><div class="label">মোট শ্রেণি</div><div class="value">{{ $classCount }}</div><div class="meta">শ্রেণি কনফিগারেশন</div></div>
-    <div class="kpi"><div class="label">মোট শিক্ষার্থী</div><div class="value">{{ $maleCount + $femaleCount }}</div><div class="meta">ভর্তি/নিবন্ধিত</div></div>
+    <div class="kpi"><div class="label">মোট সক্রিয় শিক্ষার্থী</div><div class="value">{{ $studentCount }}</div><div class="meta"></div></div>
     <div class="kpi"><div class="label">আজ উপস্থিত</div><div class="value">{{ $attPresent }}</div><div class="meta">শিক্ষার্থী</div></div>
     <div class="kpi"><div class="label">আজ অনুপস্থিত</div><div class="value">{{ $attAbsent }}</div><div class="meta">শিক্ষার্থী</div></div>
     <div class="kpi"><div class="label">উপস্থিতির হার</div><div class="value">{{ $attRate }}%</div><div class="meta">শিক্ষার্থী</div></div>
