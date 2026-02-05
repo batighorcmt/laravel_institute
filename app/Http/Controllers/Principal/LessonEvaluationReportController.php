@@ -42,7 +42,10 @@ class LessonEvaluationReportController extends Controller
 
     public function show(School $school, LessonEvaluation $lessonEvaluation)
     {
-        $lessonEvaluation->load(['teacher', 'class', 'section', 'subject', 'records.student']);
+        // Load only records that belong to active students
+        $lessonEvaluation->load(['teacher', 'class', 'section', 'subject', 'records' => function($q){
+            $q->whereHas('student', fn($s)=>$s->where('status','active'))->with(['student' => fn($s)=>$s->where('status','active')]);
+        }]);
 
         $stats = $lessonEvaluation->getCompletionStats();
 
@@ -54,7 +57,9 @@ class LessonEvaluationReportController extends Controller
      */
     public function apiShow($id)
     {
-        $ev = LessonEvaluation::with(['teacher.user','class','section','subject','records.student'])
+        $ev = LessonEvaluation::with(['teacher.user','class','section','subject','records' => function($q){
+                $q->whereHas('student', fn($s)=>$s->where('status','active'))->with(['student' => fn($s)=>$s->where('status','active')]);
+            }])
             ->findOrFail($id);
 
         $data = [
@@ -73,20 +78,22 @@ class LessonEvaluationReportController extends Controller
                 'status' => $ev->status,
                 'stats' => $ev->getCompletionStats(),
                 'records' => $ev->records->map(function($r){
+                    // Skip records without an active student
+                    if (! $r->student) return null;
                     return [
                         'id' => $r->id,
                         'student_id' => $r->student_id,
                         'status' => $r->status,
                         'status_label' => $r->status_label,
                         'status_color' => $r->status_color,
-                        'student' => $r->student ? [
+                        'student' => [
                             'id' => $r->student->id,
                             'roll' => $r->student->roll,
                             'full_name' => $r->student->full_name,
                             'photo_url' => $r->student->photo_url ?? null,
-                        ] : null,
+                        ],
                     ];
-                })->toArray(),
+                })->filter()->values()->toArray(),
             ],
         ];
 
@@ -98,7 +105,7 @@ class LessonEvaluationReportController extends Controller
      */
     public function details(Request $request)
     {
-        $q = LessonEvaluation::with('records.student')->orderByDesc('evaluation_date');
+        $q = LessonEvaluation::with(['records' => function($q){ $q->whereHas('student', fn($s)=>$s->where('status','active'))->with(['student' => fn($s)=>$s->where('status','active')]); }])->orderByDesc('evaluation_date');
         if ($request->filled('class_id')) $q->where('class_id', $request->get('class_id'));
         if ($request->filled('section_id')) $q->where('section_id', $request->get('section_id'));
         if ($request->filled('subject_id')) $q->where('subject_id', $request->get('subject_id'));
@@ -109,18 +116,19 @@ class LessonEvaluationReportController extends Controller
         $records = [];
         foreach ($evaluations as $ev) {
             foreach ($ev->records as $r) {
+                if (! $r->student) continue;
                 $records[] = [
                     'evaluation_id' => $ev->id,
                     'student_id' => $r->student_id,
                     'status' => $r->status,
                     'status_label' => $r->status_label,
                     'status_color' => $r->status_color,
-                    'student' => $r->student ? [
+                    'student' => [
                         'id' => $r->student->id,
                         'roll' => $r->student->roll,
                         'full_name' => $r->student->full_name,
                         'photo_url' => $r->student->photo_url ?? null,
-                    ] : null,
+                    ],
                 ];
             }
         }

@@ -43,10 +43,11 @@ class ExtraClassAttendanceController extends Controller
 
         if ($extraClass->school_id !== $school->id) abort(404);
 
-        // Get enrolled students
+        // Get enrolled students (only active student records)
         $students = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
             ->where('status', 'active')
-            ->with(['student', 'assignedSection'])
+            ->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->with(['student' => fn($q)=>$q->where('status','active')->with('currentEnrollment.section'), 'assignedSection'])
             ->get()
             ->map(function ($enrollment) {
                 return (object)[
@@ -58,9 +59,11 @@ class ExtraClassAttendanceController extends Controller
             })
             ->sortBy('roll_no');
 
-        // Get existing attendance for this date
+        // Get existing attendance for this date (only for active enrolled students)
+        $studentIds = $students->pluck('id')->all();
         $attendanceRecords = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
             ->where('date', $date)
+            ->when(!empty($studentIds), fn($q)=>$q->whereIn('student_id', $studentIds))
             ->get()
             ->keyBy('student_id');
 
@@ -86,6 +89,19 @@ class ExtraClassAttendanceController extends Controller
 
         $extraClass = ExtraClass::findOrFail($validated['extra_class_id']);
         if ($extraClass->school_id !== $school->id) abort(404);
+
+        // Ensure submitted student IDs belong to active enrollments for this extra class
+        $enrolledIds = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
+            ->where('status', 'active')
+            ->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->pluck('student_id')
+            ->all();
+
+        foreach ($validated['attendance'] as $att) {
+            if (!in_array($att['student_id'], $enrolledIds)) {
+                return back()->with('error', 'Invalid student selected for attendance.');
+            }
+        }
 
         DB::beginTransaction();
         try {
@@ -136,11 +152,12 @@ class ExtraClassAttendanceController extends Controller
 
         if ($extraClass->school_id !== $school->id) abort(404);
 
-        // Get attendance records
+        // Get attendance records only for active students
         $attendances = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
             ->where('date', $date)
+            ->whereHas('student', fn($q)=>$q->where('status','active'))
             ->with(['student' => function ($q) {
-                $q->with(['currentEnrollment.section']);
+                $q->where('status', 'active')->with(['currentEnrollment.section']);
             }])
             ->get();
 
@@ -187,9 +204,11 @@ class ExtraClassAttendanceController extends Controller
         $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $monthNum, $yearNum);
         $endDate = sprintf('%04d-%02d-%02d', $yearNum, $monthNum, $daysInMonth);
 
-        // Get enrolled students
+        // Get enrolled students (only active student records)
         $students = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
-            ->with(['student.currentEnrollment.section', 'assignedSection'])
+            ->where('status', 'active')
+            ->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->with(['student' => fn($q)=>$q->where('status','active')->with('currentEnrollment.section'), 'assignedSection'])
             ->get()
             ->map(function ($enrollment) {
                 return (object)[

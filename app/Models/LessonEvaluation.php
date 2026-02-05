@@ -79,11 +79,13 @@ class LessonEvaluation extends Model
     // Get completion statistics
     public function getCompletionStats()
     {
-        $total = $this->records()->count();
-        $completed = $this->records()->where('status', 'completed')->count();
-        $partial = $this->records()->where('status', 'partial')->count();
-        $notDone = $this->records()->where('status', 'not_done')->count();
-        $absent = $this->records()->where('status', 'absent')->count();
+        // Only consider records whose related student is active
+        $base = $this->records()->whereHas('student', fn($q) => $q->where('status','active'));
+        $total = $base->count();
+        $completed = (clone $base)->where('status', 'completed')->count();
+        $partial = (clone $base)->where('status', 'partial')->count();
+        $notDone = (clone $base)->where('status', 'not_done')->count();
+        $absent = (clone $base)->where('status', 'absent')->count();
 
         return [
             'total' => $total,

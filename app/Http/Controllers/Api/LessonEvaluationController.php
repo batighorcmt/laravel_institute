@@ -72,7 +72,7 @@ class LessonEvaluationController extends Controller
             'statuses.*' => ['required','string','in:completed,partial,not_done,absent'],
         ]);
 
-        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->first();
+        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }
@@ -154,7 +154,7 @@ class LessonEvaluationController extends Controller
             return response()->json(['message' => 'শুধুমাত্র শিক্ষক'], 403);
         }
 
-        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->first();
+        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }
@@ -206,7 +206,7 @@ class LessonEvaluationController extends Controller
         if (! $schoolId || ! $user->isTeacher($schoolId)) {
             return response()->json(['message' => 'শুধুমাত্র শিক্ষক'], 403);
         }
-        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->first();
+        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }

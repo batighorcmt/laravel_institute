@@ -32,7 +32,7 @@ class PrincipalStudentController extends Controller
             return response()->json([]);
         }
 
-        $students = Student::forSchool($schoolId)
+        $students = Student::forSchool($schoolId)->active()
             ->where(function($q) use ($query) {
                 $q->where('student_name_en', 'like', "%{$query}%")
                   ->orWhere('student_name_bn', 'like', "%{$query}%")
@@ -42,7 +42,7 @@ class PrincipalStudentController extends Controller
                   ->orWhere('guardian_phone', 'like', "%{$query}%");
             })
             ->with(['enrollments' => function($en) {
-                $en->with(['class', 'section', 'group']);
+                $en->where('status','active')->with(['class', 'section', 'group']);
             }])
             ->limit($limit)
             ->get()

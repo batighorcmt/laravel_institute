@@ -52,17 +52,20 @@ class PrincipalReportController extends Controller
         $presentToday = Attendance::join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $schoolId)
+            ->where('students.status', 'active')
             ->whereIn('attendance.status', ['present','late'])
             ->count();
         $absentToday = Attendance::join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $schoolId)
+            ->where('students.status', 'active')
             ->where('attendance.status', 'absent')
             ->count();
 
         $anyAttendanceToday = Attendance::join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $schoolId)
+            ->where('students.status', 'active')
             ->exists();
 
         $attendancePercent = ($totalStudents > 0 && $anyAttendanceToday)
@@ -137,6 +140,7 @@ class PrincipalReportController extends Controller
                 DB::raw("COUNT(DISTINCT CASE WHEN attendance.status='absent' THEN attendance.student_id END) as absent_total")
             )
             ->join('students','students.id','=','attendance.student_id')
+            ->where('students.status','active')
             ->where('attendance.date',$date)
             ->groupBy('attendance.class_id','attendance.section_id')
             ->get()
@@ -223,6 +227,7 @@ class PrincipalReportController extends Controller
             ->join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $schoolId)
+            ->where('students.status', 'active')
             ->whereIn('attendance.status', ['present','late'])
             ->groupBy('students.gender')
             ->pluck('cnt','gender');
@@ -268,7 +273,9 @@ class PrincipalReportController extends Controller
             return response()->json(['message' => 'No school context'], 400);
         }
 
-        $query = \App\Models\LessonEvaluation::with(['teacher.user','class','section','subject','records'])
+        $query = \App\Models\LessonEvaluation::with(['teacher.user','class','section','subject', 'records' => function($q){
+                $q->whereHas('student', function($s){ $s->where('status','active'); })->with(['student' => function($ss){ $ss->where('status','active'); }]);
+            }])
             ->where('school_id', $schoolId);
 
         if ($request->filled('date')) {
