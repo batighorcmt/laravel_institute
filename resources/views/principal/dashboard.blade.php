@@ -14,12 +14,14 @@
   $classCount = $school ? (class_exists(\App\Models\ClassSubject::class) ? \App\Models\ClassSubject::where('school_id',$school->id)->distinct('class_id')->count('class_id') : 0) : 0;
   $studentCount = 0;
   if ($school && class_exists(\App\Models\StudentEnrollment::class)) {
+    // count distinct students with an active enrollment for the selected academic year
     $studentCount = \App\Models\StudentEnrollment::where('school_id',$school->id)
       ->when($ayId, fn($q)=>$q->where('academic_year_id',$ayId))
       ->where('status','active')
-      ->count();
+      ->distinct('student_id')
+      ->count('student_id');
   } elseif ($school && class_exists(\App\Models\Student::class)) {
-    $studentCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->count();
+    $studentCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->where('academic_year_id',$ayId)->count();
   }
   // Today attendance (students)
   $today = now()->toDateString();
@@ -87,8 +89,8 @@
   if ($school && class_exists(\App\Models\StudentEnrollment::class) && class_exists(\App\Models\Student::class)) {
     $enrollQ = \App\Models\StudentEnrollment::where('school_id',$school->id)->when($ayId, fn($q)=>$q->where('academic_year_id',$ayId))->where('status','active');
     $studentIdsForAy = $enrollQ->pluck('student_id');
-    $maleCount = \App\Models\Student::whereIn('id',$studentIdsForAy)->where('gender','male')->count();
-    $femaleCount = \App\Models\Student::whereIn('id',$studentIdsForAy)->where('gender','female')->count();
+    $maleCount = \App\Models\Student::whereIn('id',$studentIdsForAy)->where('status','active')->where('gender','male')->count();
+    $femaleCount = \App\Models\Student::whereIn('id',$studentIdsForAy)->where('status','active')->where('gender','female')->count();
   } elseif ($school && class_exists(\App\Models\Student::class)) {
   $maleCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->where('gender','male')->count();
   $femaleCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->where('gender','female')->count();
