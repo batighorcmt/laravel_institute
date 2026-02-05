@@ -43,7 +43,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
-use App\Models\Scopes\ActiveScope;
 
 class Student extends Model
 {
@@ -202,9 +201,6 @@ class Student extends Model
         return asset('images/default-avatar.svg');
     }
 
-    protected static function booted()
-    {
-        static::addGlobalScope(new ActiveScope());
-    }
+    
 }
 

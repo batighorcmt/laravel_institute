@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Scopes\ActiveScope;
 
 class Teacher extends Model
 {
@@ -83,8 +82,5 @@ class Teacher extends Model
         return $query->where('school_id', $schoolId);
     }
 
-    protected static function booted()
-    {
-        static::addGlobalScope(new ActiveScope());
-    }
+    
 }

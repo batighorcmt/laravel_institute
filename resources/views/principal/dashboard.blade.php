@@ -10,7 +10,7 @@
   $currentAy = $school ? \App\Models\AcademicYear::forSchool($school->id)->current()->first() : null;
   $ayId = $currentAy?->id;
   // Core counts (guard models that may not exist)
-  $teacherCount = $school ? \App\Models\Teacher::where('school_id',$school->id)->count() : 0;
+  $teacherCount = $school ? \App\Models\Teacher::where('school_id',$school->id)->where('status','active')->count() : 0;
   $classCount = $school ? (class_exists(\App\Models\ClassSubject::class) ? \App\Models\ClassSubject::where('school_id',$school->id)->distinct('class_id')->count('class_id') : 0) : 0;
   $studentCount = 0;
   if ($school && class_exists(\App\Models\StudentEnrollment::class)) {
@@ -19,7 +19,7 @@
       ->where('status','active')
       ->count();
   } elseif ($school && class_exists(\App\Models\Student::class)) {
-    $studentCount = \App\Models\Student::where('school_id',$school->id)->count();
+    $studentCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->count();
   }
   // Today attendance (students)
   $today = now()->toDateString();
@@ -34,7 +34,7 @@
       $attPresent = \App\Models\Attendance::whereIn('student_id',$enrolledStudentIds)->whereDate('date',$today)->where('status','present')->count();
       $attAbsent  = \App\Models\Attendance::whereIn('student_id',$enrolledStudentIds)->whereDate('date',$today)->where('status','absent')->count();
     } elseif (class_exists(\App\Models\Student::class)) {
-      $studentIds = \App\Models\Student::where('school_id',$school->id)->pluck('id');
+      $studentIds = \App\Models\Student::where('school_id',$school->id)->where('status','active')->pluck('id');
       $attPresent = \App\Models\Attendance::whereIn('student_id',$studentIds)->whereDate('date',$today)->where('status','present')->count();
       $attAbsent  = \App\Models\Attendance::whereIn('student_id',$studentIds)->whereDate('date',$today)->where('status','absent')->count();
     } else {
@@ -47,7 +47,7 @@
   // Teacher attendance today (optional models)
   $tPresent = null; $tAbsent = null;
   if ($school) {
-    $teacherUserIds = \App\Models\Teacher::where('school_id',$school->id)->pluck('user_id');
+    $teacherUserIds = \App\Models\Teacher::where('school_id',$school->id)->where('status','active')->pluck('user_id');
 
     // Prefer the explicit TeacherAttendance model (if available)
     if (class_exists(\App\Models\TeacherAttendance::class)) {
@@ -90,8 +90,8 @@
     $maleCount = \App\Models\Student::whereIn('id',$studentIdsForAy)->where('gender','male')->count();
     $femaleCount = \App\Models\Student::whereIn('id',$studentIdsForAy)->where('gender','female')->count();
   } elseif ($school && class_exists(\App\Models\Student::class)) {
-    $maleCount = \App\Models\Student::where('school_id',$school->id)->where('gender','male')->count();
-    $femaleCount = \App\Models\Student::where('school_id',$school->id)->where('gender','female')->count();
+  $maleCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->where('gender','male')->count();
+  $femaleCount = \App\Models\Student::where('school_id',$school->id)->where('status','active')->where('gender','female')->count();
   }
   // Fees (payments summary)
   $feesToday = null; $feesMonth = null;
