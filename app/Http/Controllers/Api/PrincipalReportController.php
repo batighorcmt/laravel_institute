@@ -44,9 +44,11 @@ class PrincipalReportController extends Controller
         $currentYear = AcademicYear::forSchool($schoolId)->current()->first();
         $yearVal = $currentYear?->id;
 
-        $totalStudents = StudentEnrollment::where('school_id', $schoolId)
-            ->where('status', 'active')
-            ->when($yearVal, fn($q)=>$q->where('academic_year_id', $yearVal))
+        $totalStudents = StudentEnrollment::join('students', 'students.id', '=', 'student_enrollments.student_id')
+            ->where('student_enrollments.school_id', $schoolId)
+            ->where('student_enrollments.status', 'active')
+            ->where('students.status', 'active')
+            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
             ->count();
 
         $presentToday = Attendance::join('students','students.id','=','attendance.student_id')
@@ -85,6 +87,7 @@ class PrincipalReportController extends Controller
             ->join('students','students.id','=','student_enrollments.student_id')
             ->where('student_enrollments.school_id', $schoolId)
             ->where('student_enrollments.status','active')
+            ->where('students.status', 'active')
             ->where('sections.status','active')
             ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
             ->groupBy('classes.id','classes.name','classes.numeric_value','sections.id','sections.name')
