@@ -29,6 +29,12 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   String? _sectionId;
   String? _groupId;
   String? _gender;
+  String? _academicYearId;
+  List<Map<String, dynamic>> _academicYears = [];
+  String? _religion;
+  List<String> _religionOptions = [];
+  String? _studentStatus;
+  List<String> _studentStatusOptions = [];
   List<Map<String, dynamic>> _classes = [];
   List<Map<String, dynamic>> _sections = [];
   List<Map<String, dynamic>> _groups = [];
@@ -53,6 +59,56 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
         _genderOptions = [];
       });
     } catch (_) {}
+
+    // Try to load academic year, religion and status options from meta endpoints
+    try {
+      final res = await _dio.get('teacher/students/meta');
+      final data = res.data;
+      if (data is Map<String, dynamic>) {
+        // Academic years (if provided)
+        if (data['academic_years'] is List) {
+          final list = (data['academic_years'] as List).cast<Map<String, dynamic>>();
+          _academicYears = list.map((e) => {'id': (e['id']?.toString() ?? e['year']?.toString() ?? ''), 'name': (e['name']?.toString() ?? e['year']?.toString() ?? '')}).where((e) => e['id'] != '').toList();
+        } else if (data['current_academic_year'] != null) {
+          final cur = data['current_academic_year'];
+          final id = (cur is Map && cur['id'] != null) ? cur['id'].toString() : cur.toString();
+          if (id.isNotEmpty) {
+            _academicYearId = id;
+            _academicYears = [{'id': id, 'name': id}];
+          }
+        }
+
+        // Religions
+        if (data['religions'] is List) {
+          _religionOptions = (data['religions'] as List).map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+        }
+
+        // Statuses
+        if (data['statuses'] is List) {
+          _studentStatusOptions = (data['statuses'] as List).map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+        }
+      }
+    } catch (_) {
+      // Fallback to principal filter endpoints (best-effort)
+      try {
+        final resY = await _dio.get('principal/students/filters/academic-years');
+        final dataY = resY.data;
+        if (dataY is List) {
+          _academicYears = (dataY as List).cast<Map<String, dynamic>>().map((e) => {'id': e['id']?.toString() ?? '', 'name': e['name']?.toString() ?? ''}).where((e) => e['id'] != '').toList();
+        }
+      } catch (_) {}
+      try {
+        final resR = await _dio.get('principal/students/filters/religions');
+        final dataR = resR.data;
+        if (dataR is List) _religionOptions = (dataR as List).map((e) => e.toString()).toList();
+      } catch (_) {}
+      try {
+        final resS = await _dio.get('principal/students/filters/statuses');
+        final dataS = resS.data;
+        if (dataS is List) _studentStatusOptions = (dataS as List).map((e) => e.toString()).toList();
+      } catch (_) {}
+    }
+    if (mounted) setState(() {});
   }
 
   // Removed attendance-meta fallback. We rely on the repository's
@@ -70,6 +126,9 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
         sectionId: _sectionId,
         groupId: _groupId,
         gender: _gender,
+        academicYear: _academicYearId,
+        religion: _religion,
+        studentStatus: _studentStatus,
       );
       final data = (res['data'] as List?) ?? [];
       final meta = (res['meta'] as Map?) ?? {};
@@ -156,6 +215,85 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       appBar: AppBar(title: const Text('Students')),
       body: Column(
         children: [
+          // Class Filter Horizontal List
+          if (_classes.isNotEmpty)
+            Container(
+              height: 50,
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _classes.length + 1,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                     final isSelected = _classId == null;
+                     return ChoiceChip(
+                        label: const Text('All'),
+                        selected: isSelected,
+                        onSelected: (bool selected) {
+                          if (!isSelected) {
+                            setState(() {
+                              _classId = null;
+                              _sectionId = null;
+                              _sections = [];
+                              _groupId = null;
+                              _groups = [];
+                              _gender = null;
+                              _genderOptions = [];
+                            });
+                            _load(reset: true);
+                          }
+                        },
+                     );
+                  }
+                  final c = _classes[index - 1];
+                  final cid = c['id']?.toString();
+                  final cname = c['name']?.toString() ?? 'Class';
+                  final isSelected = _classId == cid;
+                  return ChoiceChip(
+                    label: Text(cname),
+                    selected: isSelected,
+                    onSelected: (bool selected) async {
+                      // If already selected, maybe we want to deselect?
+                      // The 'All' chip handles the null case.
+                      // If clicking same chip, do nothing or user can click 'All'.
+                      if (isSelected) return; 
+
+                      setState(() {
+                        _classId = cid;
+                        _sectionId = null;
+                        _sections = [];
+                        _groupId = null;
+                        _groups = [];
+                        _gender = null;
+                        _genderOptions = [];
+                      });
+                      
+                      // Fetch dependent filters immediately
+                      final sections = await _repo.fetchSections(classId: cid);
+                      final groups = cid != null && cid.isNotEmpty
+                          ? await _repo.fetchGroupsForClass(cid)
+                          : <Map<String, dynamic>>[];
+                      final genders = cid != null && cid.isNotEmpty
+                          ? await _repo.fetchGendersForClass(cid)
+                          : <String>[];
+
+                      if (mounted) {
+                        setState(() {
+                          _sections = sections;
+                          _groups = groups;
+                          _genderOptions = genders;
+                        });
+                      }
+                      
+                      _load(reset: true);
+                    },
+                  );
+                },
+              ),
+            ),
+          
           // Row 1: Class + Section
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
@@ -232,6 +370,70 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                     ],
                     onChanged: (v) {
                       setState(() => _sectionId = v);
+                      _load(reset: true);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Row 0.5: Academic Year + Religion + Student Status
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _academicYearId,
+                    decoration: const InputDecoration(
+                      labelText: 'Academic Year',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String>(value: null, child: Text('')),
+                      ..._academicYears.map((y) => DropdownMenuItem<String>(value: y['id']?.toString(), child: Text(y['name']?.toString() ?? ''))),
+                    ],
+                    onChanged: (v) {
+                      setState(() => _academicYearId = v);
+                      _load(reset: true);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _religion,
+                    decoration: const InputDecoration(
+                      labelText: 'Religion',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String>(value: null, child: Text('')),
+                      ..._religionOptions.map((r) => DropdownMenuItem<String>(value: r, child: Text(r))),
+                    ],
+                    onChanged: (v) {
+                      setState(() => _religion = v);
+                      _load(reset: true);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _studentStatus,
+                    decoration: const InputDecoration(
+                      labelText: 'Student Status',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      const DropdownMenuItem<String>(value: null, child: Text('')),
+                      ..._studentStatusOptions.map((s) => DropdownMenuItem<String>(value: s, child: Text(s))),
+                    ],
+                    onChanged: (v) {
+                      setState(() => _studentStatus = v);
                       _load(reset: true);
                     },
                   ),
