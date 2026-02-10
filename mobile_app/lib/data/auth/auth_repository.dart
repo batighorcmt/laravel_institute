@@ -129,4 +129,32 @@ class AuthRepository {
     }
     return "${input[0]}***${input[input.length - 1]}";
   }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      if (newPassword != confirmPassword) {
+        throw Exception("New password and confirm password do not match");
+      }
+      final resp = await _dio.post(
+        "auth/change-password",
+        data: {
+          "current_password": currentPassword,
+          "new_password": newPassword,
+          "new_password_confirmation": confirmPassword,
+        },
+      );
+      if (resp.statusCode != 200) {
+        throw Exception(resp.data['message'] ?? 'Failed to update password');
+      }
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map
+          ? (e.response?.data['message'] ?? e.message)
+          : e.message;
+      throw Exception(msg);
+    }
+  }
 }

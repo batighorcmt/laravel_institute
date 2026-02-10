@@ -7,20 +7,7 @@ import '../teacher/homework_list_page.dart';
 import '../teacher/teacher_leave_list_page.dart';
 import '../teacher/teacher_directory_page.dart';
 import '../teacher/teacher_students_list_page.dart';
-import '../../../core/network/dio_client.dart';
-import '../../../data/auth/auth_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../../widgets/app_snack.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import '../../state/auth_state.dart';
-import '../teacher/lesson_evaluation_list_page.dart';
-import '../teacher/homework_list_page.dart';
-import '../teacher/teacher_leave_list_page.dart';
-import '../teacher/teacher_directory_page.dart';
-import '../teacher/teacher_students_list_page.dart';
+import '../teacher/teacher_profile_page.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../data/auth/auth_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -109,20 +96,6 @@ class _PrincipalDashboardPageState
         title: const Text('Principal Dashboard'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_outlined),
-            tooltip: 'Refresh profile & summaries',
-            onPressed: () async {
-              // Refresh user profile and summaries
-              final _ = ref.refresh(authProvider);
-              if (!mounted) return;
-              await showAppSnack(
-                context,
-                message: 'Profile refreshed',
-                success: true,
-              );
-            },
-          ),
-          IconButton(
             tooltip: 'Logout',
             icon: const Icon(Icons.logout, color: Colors.red),
             onPressed: () async {
@@ -204,59 +177,70 @@ class _PrincipalDashboardPageState
               }
               return Card(
                 elevation: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: const Color(0xFFE6F5EE),
-                        backgroundImage: (photo != null && photo.isNotEmpty)
-                            ? NetworkImage(photo)
-                            : null,
-                        child: (photo == null || photo.isEmpty)
-                            ? Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  color: Color(0xFF1A1D1F),
-                                ),
-                              )
-                            : null,
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const TeacherProfilePage(),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            if (designation.isNotEmpty)
-                              Text(
-                                designation,
-                                style: const TextStyle(
-                                  color: Color(0xFF4B5563),
-                                ),
-                              ),
-                            if (schoolName != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                schoolName,
-                                style: const TextStyle(
-                                  color: Color(0xFF4B5563),
-                                ),
-                              ),
-                            ],
-                          ],
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: const Color(0xFFE6F5EE),
+                          backgroundImage: (photo != null && photo.isNotEmpty)
+                              ? NetworkImage(photo)
+                              : null,
+                          child: (photo == null || photo.isEmpty)
+                              ? Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    color: Color(0xFF1A1D1F),
+                                  ),
+                                )
+                              : null,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              if (designation.isNotEmpty)
+                                Text(
+                                  designation,
+                                  style: const TextStyle(
+                                    color: Color(0xFF4B5563),
+                                  ),
+                                ),
+                              if (schoolName != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  schoolName,
+                                  style: const TextStyle(
+                                    color: Color(0xFF4B5563),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, color: Colors.grey),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -278,7 +262,6 @@ class _PrincipalDashboardPageState
                 titleFontSize: 9,
                 icon: Icons.how_to_reg_outlined,
                 background: const Color(0xFFF0F9FF),
-                riveIcon: RiveIconRegistry.artboardFor('self_attendance'),
                 onTap: () async {
                   final profile = ref.read(authProvider).asData?.value;
                   await _ensureOverrideSchoolFromProfile(profile);
@@ -299,7 +282,6 @@ class _PrincipalDashboardPageState
                 titleFontSize: 9,
                 icon: Icons.fact_check_outlined,
                 background: const Color(0xFFFFF7ED),
-                riveIcon: RiveIconRegistry.artboardFor('students_attendance'),
                 onTap: () async {
                   final profile = ref.read(authProvider).asData?.value;
                   await _ensureOverrideSchoolFromProfile(profile);
@@ -320,7 +302,6 @@ class _PrincipalDashboardPageState
                 titleFontSize: 9,
                 icon: Icons.rate_review_outlined,
                 background: const Color(0xFFF5F3FF),
-                riveIcon: RiveIconRegistry.artboardFor('lesson_evaluation'),
                 onTap: () async {
                   final profile = ref.read(authProvider).asData?.value;
                   await _ensureOverrideSchoolFromProfile(profile);
@@ -345,7 +326,6 @@ class _PrincipalDashboardPageState
                 titleFontSize: 9,
                 icon: Icons.assignment_outlined,
                 background: const Color(0xFFF0FDF4),
-                riveIcon: RiveIconRegistry.artboardFor('homework'),
                 onTap: () async {
                   final profile = ref.read(authProvider).asData?.value;
                   await _ensureOverrideSchoolFromProfile(profile);
@@ -371,7 +351,6 @@ class _PrincipalDashboardPageState
                 titleFontSize: 9,
                 icon: Icons.assessment_outlined,
                 background: const Color(0xFFF7FBFF),
-                riveIcon: RiveIconRegistry.artboardFor('exam_results'),
                 onTap: () async {
                   await showAppSnack(
                     context,
@@ -384,7 +363,6 @@ class _PrincipalDashboardPageState
                 titleFontSize: 9,
                 icon: Icons.event_busy_outlined,
                 background: const Color(0xFFFFF1F2),
-                riveIcon: RiveIconRegistry.artboardFor('manage_leave'),
                 onTap: () async {
                   final profile = ref.read(authProvider).asData?.value;
                   await _ensureOverrideSchoolFromProfile(profile);
@@ -409,7 +387,6 @@ class _PrincipalDashboardPageState
                 titleFontSize: 9,
                 icon: Icons.people_alt_outlined,
                 background: const Color(0xFFECFEFF),
-                riveIcon: RiveIconRegistry.artboardFor('teachers'),
                 onTap: () async {
                   final profile = ref.read(authProvider).asData?.value;
                   await _ensureOverrideSchoolFromProfile(profile);
@@ -434,7 +411,6 @@ class _PrincipalDashboardPageState
                 titleFontSize: 9,
                 icon: Icons.school_outlined,
                 background: const Color(0xFFFFFBEB),
-                riveIcon: RiveIconRegistry.artboardFor('students'),
                 onTap: () async {
                   final profile = ref.read(authProvider).asData?.value;
                   await _ensureOverrideSchoolFromProfile(profile);
@@ -460,7 +436,6 @@ class _PrincipalDashboardPageState
                 titleFontSize: 9,
                 icon: Icons.campaign_outlined,
                 background: const Color(0xFFFFF3E0),
-                riveIcon: RiveIconRegistry.artboardFor('notice'),
                 onTap: () async {
                   final profile = ref.read(authProvider).asData?.value;
                   await _ensureOverrideSchoolFromProfile(profile);
