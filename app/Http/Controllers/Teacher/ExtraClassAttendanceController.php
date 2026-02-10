@@ -51,7 +51,8 @@ class ExtraClassAttendanceController extends Controller
         // Load enrolled students mapped for table
         $students = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
             ->where('status','active')
-            ->with(['student.currentEnrollment','assignedSection'])
+            ->whereHas('student', fn($q) => $q->where('status','active'))
+            ->with(['student' => fn($q)=>$q->where('status','active')->with('currentEnrollment'), 'assignedSection'])
             ->get()
             ->map(function ($enrollment) {
                 return (object) [
@@ -64,8 +65,10 @@ class ExtraClassAttendanceController extends Controller
             ->sortBy('roll_no')
             ->values();
 
+        $studentIds = $students->pluck('id')->all();
         $attendanceRecords = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
             ->where('date', $date)
+            ->when(!empty($studentIds), fn($q)=>$q->whereIn('student_id', $studentIds))
             ->get()
             ->keyBy('student_id');
 
@@ -102,6 +105,19 @@ class ExtraClassAttendanceController extends Controller
         $isToday = Carbon::parse($validated['date'])->isSameDay(Carbon::today());
         if (!$isToday) {
             return back()->with('error', 'You can only record attendance for today.');
+        }
+
+        // Validate submitted student IDs belong to active enrollments
+        $enrolledIds = ExtraClassEnrollment::where('extra_class_id', $validated['extra_class_id'])
+            ->where('status','active')
+            ->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->pluck('student_id')
+            ->map(fn($v)=>(int)$v)
+            ->toArray();
+        $submittedIds = collect($validated['attendance'])->pluck('student_id')->map(fn($v)=>(int)$v)->unique()->toArray();
+        $missing = array_diff($submittedIds, $enrolledIds);
+        if (!empty($missing)) {
+            return back()->with('error', 'কিছু শিক্ষার্থী সক্রিয়ভাবে এনরোল করা নেই বা নিষ্ক্রীয় অবস্থায় আছে।')->withInput();
         }
 
         DB::beginTransaction();

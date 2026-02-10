@@ -72,7 +72,7 @@ class LessonEvaluationController extends Controller
             'statuses.*' => ['required','string','in:completed,partial,not_done,absent'],
         ]);
 
-        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->first();
+        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }
@@ -154,7 +154,7 @@ class LessonEvaluationController extends Controller
             return response()->json(['message' => 'শুধুমাত্র শিক্ষক'], 403);
         }
 
-        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->first();
+        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }
@@ -206,7 +206,7 @@ class LessonEvaluationController extends Controller
         if (! $schoolId || ! $user->isTeacher($schoolId)) {
             return response()->json(['message' => 'শুধুমাত্র শিক্ষক'], 403);
         }
-        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->first();
+        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }
@@ -235,11 +235,13 @@ class LessonEvaluationController extends Controller
         $existing = $evaluation ? $evaluation->records->pluck('status','student_id') : collect();
 
         // Build enrollment query (optionally filter by subject assignments when exists)
-        $query = StudentEnrollment::with('student')
+        // Only include enrollments whose student record is active
+        $query = StudentEnrollment::with(['student' => fn($q)=>$q->where('status','active')])
             ->where('school_id', $schoolId)
             ->where('class_id', $entry->class_id)
             ->where('section_id', $entry->section_id)
-            ->where('status', 'active');
+            ->where('status', 'active')
+            ->whereHas('student', fn($q)=>$q->where('status','active'));
 
         $hasSubjectAssignments = DB::table('student_subjects')
             ->whereIn('student_enrollment_id', function($q) use ($schoolId, $entry) {

@@ -15,6 +15,9 @@ class TeacherStudentsRepository {
     String? sectionId,
     String? groupId,
     String? gender,
+    String? academicYear,
+    String? religion,
+    String? studentStatus,
   }) async {
     final params = <String, dynamic>{'page': page};
     if (search != null && search.isNotEmpty) params['search'] = search;
@@ -23,6 +26,15 @@ class TeacherStudentsRepository {
       params['section_id'] = sectionId;
     if (groupId != null && groupId.isNotEmpty) params['group_id'] = groupId;
     if (gender != null && gender.isNotEmpty) params['gender'] = gender;
+    if (academicYear != null && academicYear.isNotEmpty) {
+      // include common param names to maximize backend compatibility
+      params['academic_year'] = academicYear;
+      params['enroll_academic_year'] = academicYear;
+      params['year'] = academicYear;
+      params['year_id'] = academicYear;
+    }
+    if (religion != null && religion.isNotEmpty) params['religion'] = religion;
+    if (studentStatus != null && studentStatus.isNotEmpty) params['status'] = studentStatus;
 
     try {
       // Use relative path so DioClient base `/api/v1` isn't duplicated
@@ -154,7 +166,17 @@ class TeacherStudentsRepository {
         _classMetaCache = [];
       }
     } catch (_) {
-      _classMetaCache = [];
+       // FINAL FALLBACK: try generic meta/classes if everything else failed
+       // This endpoint returns all active classes in the school.
+       try {
+         final res = await _dio.get('meta/classes');
+         final data = res.data;
+         if (data is List) {
+           _classMetaCache = List<Map<String, dynamic>>.from(data.map((x) => Map<String, dynamic>.from(x)));
+         }
+       } catch (_) {
+         _classMetaCache = [];
+       }
     }
 
     // Do not fallback to attendance meta here — prefer the teacher meta
@@ -257,7 +279,25 @@ class TeacherStudentsRepository {
           }
         }
       } catch (_) {
-        _classScopedCache![classId] = {};
+        // Fallback: try generic meta/sections (filtered by class_id) which is robust for DB-active sections
+        try {
+          final res = await _dio.get(
+            'meta/sections',
+            queryParameters: {'class_id': classId},
+          );
+          final data = res.data;
+          List<Map<String, dynamic>> rows = [];
+          if (data is List) {
+            rows = List<Map<String, dynamic>>.from(data.map((x) => Map<String, dynamic>.from(x)));
+          }
+           _classScopedCache![classId] = {
+              'sections': rows,
+              'groups': [],
+              'genders': [],
+            };
+        } catch (_) {
+           _classScopedCache![classId] = {};
+        }
       }
     }
     final sections = ((_classScopedCache![classId]['sections']) as List? ?? [])

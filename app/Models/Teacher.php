@@ -81,4 +81,6 @@ class Teacher extends Model
     {
         return $query->where('school_id', $schoolId);
     }
+
+    
 }

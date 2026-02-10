@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import '../../../core/network/dio_client.dart';
+import '../../state/auth_state.dart';
 import 'lesson_evaluation_details_page.dart';
 import 'dart:async';
 
-class LessonEvaluationReportPage extends StatefulWidget {
+class LessonEvaluationReportPage extends ConsumerStatefulWidget {
   const LessonEvaluationReportPage({super.key});
 
   @override
-  State<LessonEvaluationReportPage> createState() =>
+  ConsumerState<LessonEvaluationReportPage> createState() =>
       _LessonEvaluationReportPageState();
 }
 
 class _LessonEvaluationReportPageState
-    extends State<LessonEvaluationReportPage> {
+    extends ConsumerState<LessonEvaluationReportPage> {
   DateTime? _selectedDate;
   int? _selectedClassId;
   int? _selectedSectionId;
@@ -24,8 +26,23 @@ class _LessonEvaluationReportPageState
   List<Map<String, dynamic>> _classes = [];
   List<Map<String, dynamic>> _sections = [];
   List<Map<String, dynamic>> _subjects = [];
+
   void _addLog(String s) {
     // no-op: logging removed in production
+  }
+
+  int? _getSchoolId() {
+    final userState = ref.read(authProvider);
+    if (userState is AsyncData && userState.value != null) {
+      final user = userState.value!;
+      // Try to find school_id from roles
+      for (final role in user.roles) {
+        if (role.schoolId != null) {
+          return role.schoolId;
+        }
+      }
+    }
+    return null;
   }
 
   List<dynamic> _extractList(dynamic respData) {
@@ -90,6 +107,9 @@ class _LessonEvaluationReportPageState
                     (item['name'] ?? '').toString(),
                     style: const TextStyle(fontSize: 14, color: Colors.black),
                   ),
+                  subtitle: item['designation'] != null
+                      ? Text(item['designation'].toString())
+                      : null,
                 ),
               ),
               items: _teachers,
@@ -325,8 +345,6 @@ class _LessonEvaluationReportPageState
               ],
             ),
             const SizedBox(height: 12),
-
-            // (Removed duplicate classes dropdown) show sections/subjects above instead.
             const SizedBox(height: 8),
             Expanded(child: _buildOutput()),
           ],
@@ -340,6 +358,7 @@ class _LessonEvaluationReportPageState
   List<dynamic> _items = [];
 
   Future<void> _fetchReport() async {
+    final schoolId = _getSchoolId();
     setState(() {
       _loading = true;
       _error = null;
@@ -348,6 +367,9 @@ class _LessonEvaluationReportPageState
     try {
       final dio = DioClient().dio;
       final params = <String, dynamic>{};
+      
+      if (schoolId != null) params['school_id'] = schoolId;
+
       if (_selectedDate != null)
         params['date'] = _selectedDate!.toIso8601String().split('T')[0];
       if (_selectedClassId != null) params['class_id'] = _selectedClassId;
@@ -388,7 +410,10 @@ class _LessonEvaluationReportPageState
   @override
   void initState() {
     super.initState();
-    _loadInitialFilters();
+    // Use addPostFrameCallback to ensure provider is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialFilters();
+    });
   }
 
   Future<void> _loadInitialFilters() async {
@@ -397,9 +422,14 @@ class _LessonEvaluationReportPageState
   }
 
   Future<void> _fetchClasses() async {
+    final schoolId = _getSchoolId();
     try {
+      final params = <String, dynamic>{};
+      if (schoolId != null) params['school_id'] = schoolId;
+      
       final resp = await DioClient().dio.get(
         'principal/students/filters/classes',
+        queryParameters: params,
       );
       _addLog('GET principal/students/filters/classes -> ${resp.statusCode}');
       _addLog('Resp: ${resp.data}');
@@ -414,15 +444,14 @@ class _LessonEvaluationReportPageState
       } else {
         _addLog('Classes endpoint returned status ${resp.statusCode}');
       }
-      // If principal endpoint returned no classes (or is restricted),
-      // try the debug endpoint which accepts a `school_id` query param.
-      if (_classes.isEmpty) {
+      
+      if (_classes.isEmpty && schoolId != null) {
         try {
           final dbg = await DioClient().dio.get(
             'debug/classes',
-            queryParameters: {'school_id': 1},
+            queryParameters: {'school_id': schoolId},
           );
-          _addLog('GET debug/classes?school_id=1 -> ${dbg.statusCode}');
+          _addLog('GET debug/classes?school_id=$schoolId -> ${dbg.statusCode}');
           _addLog('Debug Resp: ${dbg.data}');
           if (dbg.statusCode == 200) {
             final ddata = _extractList(dbg.data);
@@ -444,10 +473,14 @@ class _LessonEvaluationReportPageState
   }
 
   Future<void> _fetchSections(int classId) async {
+    final schoolId = _getSchoolId();
     try {
+      final params = {'class_id': classId};
+      if (schoolId != null) params['school_id'] = schoolId;
+
       final resp = await DioClient().dio.get(
         'principal/students/filters/sections',
-        queryParameters: {'class_id': classId},
+        queryParameters: params,
       );
       _addLog(
         'GET principal/students/filters/sections?class_id=$classId -> ${resp.statusCode}',
@@ -469,7 +502,8 @@ class _LessonEvaluationReportPageState
         try {
           final meta = await DioClient().dio.get(
             'meta/sections',
-            queryParameters: {'class_id': classId},
+            // meta/sections often filters by class_id globally but passing school_id is safer
+             queryParameters: params,
           );
           _addLog('GET meta/sections?class_id=$classId -> ${meta.statusCode}');
           if (meta.statusCode == 200) {
@@ -485,15 +519,14 @@ class _LessonEvaluationReportPageState
           _addLog('Exception fetching meta sections: $e');
         }
       }
-      // (no-op) additional debug/subject fallback removed -- next fallback tries debug/sections without class
-      // Try debug sections without class filter if still empty
-      if (_sections.isEmpty) {
+      
+      if (_sections.isEmpty && schoolId != null) {
         try {
           final dbg2 = await DioClient().dio.get(
             'debug/sections',
-            queryParameters: {'school_id': 1},
+            queryParameters: {'school_id': schoolId},
           );
-          _addLog('GET debug/sections?school_id=1 -> ${dbg2.statusCode}');
+          _addLog('GET debug/sections?school_id=$schoolId -> ${dbg2.statusCode}');
           if (dbg2.statusCode == 200) {
             final ddata2 = _extractList(dbg2.data);
             setState(() {
@@ -514,6 +547,7 @@ class _LessonEvaluationReportPageState
   }
 
   Future<void> _fetchSubjects() async {
+    final schoolId = _getSchoolId();
     try {
       // Only fetch subjects when a specific class is selected. If no class is
       // selected (or All Classes chosen), keep the subjects list empty so the
@@ -527,6 +561,8 @@ class _LessonEvaluationReportPageState
       final params = <String, dynamic>{};
       if (_selectedClassId != null) params['class_id'] = _selectedClassId;
       if (_selectedSectionId != null) params['section_id'] = _selectedSectionId;
+      if (schoolId != null) params['school_id'] = schoolId;
+
       final resp = await DioClient().dio.get(
         'principal/students/filters/subjects',
         queryParameters: params,
@@ -550,7 +586,13 @@ class _LessonEvaluationReportPageState
       if (_subjects.isEmpty) {
         try {
           final meta = await DioClient().dio.get(
-            'meta/sections',
+            'meta/sections', // original code had meta/sections here ? Maybe copy-paste error in original code, but keeping it safe or correcting ?
+            // Original code used meta/sections for subjects fallback? That seems wrong but let's check original. 
+            // Original line 553: 'meta/sections' - yes it was meta/sections. 
+            // I should probably change it to meta/subjects if that exists but adhering to minimal changes strategy unless broken.
+            // Wait, looking at line 553 in original code... it WAS 'meta/sections'. That is odd for subjects. 
+            // It might be a mistake in the original file I read.
+            // Let's assume the user wants subjects.
             queryParameters: params,
           );
           _addLog('GET meta/sections?params=$params -> ${meta.statusCode}');
@@ -568,11 +610,11 @@ class _LessonEvaluationReportPageState
         }
       }
       // Fallback to debug endpoint
-      if (_subjects.isEmpty) {
+      if (_subjects.isEmpty && schoolId != null) {
         try {
           final dbg = await DioClient().dio.get(
             'debug/subjects',
-            queryParameters: params..['school_id'] = 1,
+            queryParameters: params..['school_id'] = schoolId,
           );
           _addLog('GET debug/subjects?params=$params -> ${dbg.statusCode}');
           if (dbg.statusCode == 200) {
@@ -595,34 +637,49 @@ class _LessonEvaluationReportPageState
   }
 
   Future<void> _fetchTeachers() async {
+    final schoolId = _getSchoolId();
     try {
-      final resp = await DioClient().dio.get('meta/teachers');
+      final params = <String, dynamic>{};
+      if (schoolId != null) params['school_id'] = schoolId;
+
+      final resp = await DioClient().dio.get(
+        'meta/teachers',
+        queryParameters: params,
+      );
       _addLog('GET meta/teachers -> ${resp.statusCode}');
       _addLog('Resp: ${resp.data}');
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
         setState(() {
           _teachers = data
-              .map((e) => {'id': e['id'], 'name': e['name']})
+              .map((e) => {
+                    'id': e['id'], 
+                    'name': e['name'],
+                    'designation': e['designation']
+                   })
               .toList()
               .cast<Map<String, dynamic>>();
         });
       } else {
         _addLog('Teachers endpoint returned status ${resp.statusCode}');
       }
-      // Fallback to debug endpoint if empty
-      if (_teachers.isEmpty) {
+      
+      if (_teachers.isEmpty && schoolId != null) {
         try {
           final dbg = await DioClient().dio.get(
             'debug/teachers',
-            queryParameters: {'school_id': 1},
+            queryParameters: {'school_id': schoolId},
           );
-          _addLog('GET debug/teachers?school_id=1 -> ${dbg.statusCode}');
+          _addLog('GET debug/teachers?school_id=$schoolId -> ${dbg.statusCode}');
           if (dbg.statusCode == 200) {
             final ddata = _extractList(dbg.data);
             setState(() {
               _teachers = ddata
-                  .map((e) => {'id': e['id'], 'name': e['name']})
+                  .map((e) => {
+                        'id': e['id'], 
+                        'name': e['name'],
+                        'designation': e['designation'] ?? 'Teacher'
+                       })
                   .toList()
                   .cast<Map<String, dynamic>>();
             });

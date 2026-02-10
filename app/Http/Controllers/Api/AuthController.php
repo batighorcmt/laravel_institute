@@ -92,6 +92,31 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logged out']);
     }
 
+    /**
+     * Change user password.
+     */
+    public function changePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($validated['current_password'], $user->password)) {
+            return response()->json([
+                'message' => 'The provided current password is incorrect.'
+            ], 422);
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($validated['new_password']),
+        ])->save();
+
+        return response()->json(['message' => 'Password updated successfully.']);
+    }
+
     private function extractRoles(User $user): array
     {
         // Collect active role names with school context (if available)
@@ -106,3 +131,4 @@ class AuthController extends Controller
         return $roles;
     }
 }
+

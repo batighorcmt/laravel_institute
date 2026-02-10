@@ -44,25 +44,30 @@ class PrincipalReportController extends Controller
         $currentYear = AcademicYear::forSchool($schoolId)->current()->first();
         $yearVal = $currentYear?->id;
 
-        $totalStudents = StudentEnrollment::where('school_id', $schoolId)
-            ->where('status', 'active')
-            ->when($yearVal, fn($q)=>$q->where('academic_year_id', $yearVal))
+        $totalStudents = StudentEnrollment::join('students', 'students.id', '=', 'student_enrollments.student_id')
+            ->where('student_enrollments.school_id', $schoolId)
+            ->where('student_enrollments.status', 'active')
+            ->where('students.status', 'active')
+            ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
             ->count();
 
         $presentToday = Attendance::join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $schoolId)
+            ->where('students.status', 'active')
             ->whereIn('attendance.status', ['present','late'])
             ->count();
         $absentToday = Attendance::join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $schoolId)
+            ->where('students.status', 'active')
             ->where('attendance.status', 'absent')
             ->count();
 
         $anyAttendanceToday = Attendance::join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $schoolId)
+            ->where('students.status', 'active')
             ->exists();
 
         $attendancePercent = ($totalStudents > 0 && $anyAttendanceToday)
@@ -82,6 +87,7 @@ class PrincipalReportController extends Controller
             ->join('students','students.id','=','student_enrollments.student_id')
             ->where('student_enrollments.school_id', $schoolId)
             ->where('student_enrollments.status','active')
+            ->where('students.status', 'active')
             ->where('sections.status','active')
             ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
             ->groupBy('classes.id','classes.name','classes.numeric_value','sections.id','sections.name')
@@ -137,6 +143,7 @@ class PrincipalReportController extends Controller
                 DB::raw("COUNT(DISTINCT CASE WHEN attendance.status='absent' THEN attendance.student_id END) as absent_total")
             )
             ->join('students','students.id','=','attendance.student_id')
+            ->where('students.status','active')
             ->where('attendance.date',$date)
             ->groupBy('attendance.class_id','attendance.section_id')
             ->get()
@@ -223,6 +230,7 @@ class PrincipalReportController extends Controller
             ->join('students','students.id','=','attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $schoolId)
+            ->where('students.status', 'active')
             ->whereIn('attendance.status', ['present','late'])
             ->groupBy('students.gender')
             ->pluck('cnt','gender');
@@ -268,7 +276,9 @@ class PrincipalReportController extends Controller
             return response()->json(['message' => 'No school context'], 400);
         }
 
-        $query = \App\Models\LessonEvaluation::with(['teacher.user','class','section','subject','records'])
+        $query = \App\Models\LessonEvaluation::with(['teacher.user','class','section','subject', 'records' => function($q){
+                $q->whereHas('student', function($s){ $s->where('status','active'); })->with(['student' => function($ss){ $ss->where('status','active'); }]);
+            }])
             ->where('school_id', $schoolId);
 
         if ($request->filled('date')) {

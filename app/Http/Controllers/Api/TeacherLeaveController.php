@@ -23,7 +23,7 @@ class TeacherLeaveController extends Controller
             return response()->json(['message' => 'শুধুমাত্র শিক্ষক'], 403);
         }
 
-        $teacher = Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
+        $teacher = Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->where('status','active')->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }
@@ -63,7 +63,7 @@ class TeacherLeaveController extends Controller
             'reason' => ['required','string','max:255'],
         ]);
 
-        $teacher = Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
+        $teacher = Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->where('status','active')->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }

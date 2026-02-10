@@ -200,5 +200,7 @@ class Student extends Model
 
         return asset('images/default-avatar.svg');
     }
+
+    
 }
 

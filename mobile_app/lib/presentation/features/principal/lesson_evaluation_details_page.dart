@@ -397,7 +397,7 @@ class _LessonEvaluationDetailsPageState
                             Navigator.of(ctx).pop();
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => PrincipalStudentProfilePage(
+                                builder: (_) => PrincipalStudentDetailView(
                                   studentId: studentId,
                                   initialData: raw,
                                 ),
