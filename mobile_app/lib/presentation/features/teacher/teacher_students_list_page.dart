@@ -648,6 +648,54 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       _tc(_pick(d, const ['mother_name', 'mother', 'mother_name_en'])),
       _pick(d, const ['mother_name_bn']),
     );
+    String fatherPhone = _pick(d, const [
+      'father_phone',
+      'father_mobile',
+      'father_phone_number',
+    ]);
+    String motherPhone = _pick(d, const [
+      'mother_phone',
+      'mother_mobile',
+      'mother_phone_number',
+    ]);
+    // Robust fallback: many API resources nest these under `guardians`.
+    final guardiansRaw = d['guardians'];
+    if ((fatherPhone.isEmpty || motherPhone.isEmpty) && guardiansRaw != null) {
+      if (guardiansRaw is Map) {
+        fatherPhone = fatherPhone.isNotEmpty
+            ? fatherPhone
+            : (guardiansRaw['father_phone'] ??
+                      guardiansRaw['fatherPhone'] ??
+                      guardiansRaw['father_mobile'] ??
+                      '')
+                  .toString();
+        motherPhone = motherPhone.isNotEmpty
+            ? motherPhone
+            : (guardiansRaw['mother_phone'] ??
+                      guardiansRaw['motherPhone'] ??
+                      guardiansRaw['mother_mobile'] ??
+                      '')
+                  .toString();
+      } else if (guardiansRaw is List && guardiansRaw.isNotEmpty) {
+        final g0 = guardiansRaw.firstWhere((e) => e is Map, orElse: () => null);
+        if (g0 is Map) {
+          fatherPhone = fatherPhone.isNotEmpty
+              ? fatherPhone
+              : (g0['father_phone'] ??
+                        g0['fatherPhone'] ??
+                        g0['father_mobile'] ??
+                        '')
+                    .toString();
+          motherPhone = motherPhone.isNotEmpty
+              ? motherPhone
+              : (g0['mother_phone'] ??
+                        g0['motherPhone'] ??
+                        g0['mother_mobile'] ??
+                        '')
+                    .toString();
+        }
+      }
+    }
     final guardianName = _combine(
       _tc(
         _pick(d, const [
@@ -829,6 +877,38 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                         icon: Icons.family_restroom,
                         label: 'Guardian',
                         value: guardianName,
+                      ),
+                      _infoRow(
+                        icon: Icons.call,
+                        label: 'Father Phone',
+                        value: fatherPhone,
+                        onTap: fatherPhone.trim().isEmpty
+                            ? null
+                            : () async {
+                                final uri = Uri(
+                                  scheme: 'tel',
+                                  path: fatherPhone,
+                                );
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri);
+                                }
+                              },
+                      ),
+                      _infoRow(
+                        icon: Icons.call,
+                        label: 'Mother Phone',
+                        value: motherPhone,
+                        onTap: motherPhone.trim().isEmpty
+                            ? null
+                            : () async {
+                                final uri = Uri(
+                                  scheme: 'tel',
+                                  path: motherPhone,
+                                );
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri);
+                                }
+                              },
                       ),
                       _infoRow(
                         icon: Icons.call,
