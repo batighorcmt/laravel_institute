@@ -37,11 +37,24 @@
         table-layout: fixed !important; 
     }
     
+    /* Subject sub-column widths for print */
+    #printSplitContainer th[class*="subgrp-"], 
+    #printSplitContainer td[class*="subgrp-"] {
+        width: 32px !important;
+        min-width: 32px !important;
+    }
+    #printSplitContainer .col-total {
+        width: 38px !important;
+    }
+    #printSplitContainer .col-gpa {
+        width: 35px !important;
+    }
+
     .text-center { text-align: center !important; }
     .font-weight-bold { font-weight: bold !important; }
-    .st-name { font-size: 8.5pt !important; overflow: hidden; text-overflow: ellipsis; }
+    .st-name { font-size: 8.5pt !important; white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; }
     
-    .sub-title { font-size: 7pt !important; font-weight: 700; min-height: 45px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+    .sub-title { font-size: 7.5pt !important; font-weight: 700; min-height: 45px; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden; }
     
     .fail-count { color: #d32f2f !important; font-weight: 800; }
     
@@ -114,10 +127,10 @@
                     <tr>
                         @foreach($finalSubjects as $key => $subject)
                             @if($subject['creative_full_mark'] > 0) <th class="text-center subgrp-{{ $loop->index }}">CQ</th> @endif
-                            @if($subject['mcq_full_mark'] > 0) <th class="text-center subgrp-{{ $loop->index }}">MQ</th> @endif
+                            @if($subject['mcq_full_mark'] > 0) <th class="text-center subgrp-{{ $loop->index }}">MCQ</th> @endif
                             @if($subject['practical_full_mark'] > 0) <th class="text-center subgrp-{{ $loop->index }}">PR</th> @endif
-                            <th class="text-center subgrp-{{ $loop->index }}">T</th>
-                            <th class="text-center subgrp-{{ $loop->index }}">G</th>
+                            <th class="text-center subgrp-{{ $loop->index }} col-total">Total</th>
+                            <th class="text-center subgrp-{{ $loop->index }} col-gpa">GPA</th>
                         @endforeach
                     </tr>
                 </thead>
@@ -158,10 +171,10 @@
                                     <td class="text-center subgrp-{{ $loop->index }}">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : toBn($practical, $lang)) }}</td>
                                 @endif
     
-                                <td class="text-center font-weight-bold subgrp-{{ $loop->index }}">
+                                <td class="text-center font-weight-bold subgrp-{{ $loop->index }} col-total">
                                     {{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : toBn($total, $lang)) }}
                                 </td>
-                                <td class="text-center subgrp-{{ $loop->index }}">
+                                <td class="text-center subgrp-{{ $loop->index }} col-gpa">
                                     @if($isNA || $isNR || !empty($resData['display_only']))
                                         {{-- Empty --}}
                                     @else
@@ -232,7 +245,7 @@
         const groups = Array.from(table.querySelectorAll('thead .subject-group'));
         const n = groups.length; 
         
-        if (n <= 12) {
+        if (n <= 10) {
             table.classList.remove('original');
             window.print();
             table.classList.add('original');
