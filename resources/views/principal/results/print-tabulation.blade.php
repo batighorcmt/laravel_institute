@@ -39,14 +39,15 @@
     
     #printSplitContainer th, #printSplitContainer td {
         white-space: nowrap !important;
-        padding: 1px 3px !important;
+        padding: 1px 2px !important; /* Extremely tight padding */
+        font-size: 7.5pt !important;
     }
 
     .text-center { text-align: center !important; }
     .font-weight-bold { font-weight: bold !important; }
-    .st-name { font-size: 8pt !important; white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+    .st-name { font-size: 7.5pt !important; white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
     
-    .sub-title { font-size: 6.5pt !important; font-weight: 700; min-height: 40px; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden; }
+    .sub-title { font-size: 6.5pt !important; font-weight: 700; min-height: 38px; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden; line-height: 1; }
     
     .fail-count { color: #d32f2f !important; font-weight: 800; }
     
@@ -109,12 +110,12 @@
                             </th>
                         @endforeach
                         
-                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'ঐচ্ছিক বিষয়' : 'Opt Code' }}</th>
-                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'মোট' : 'Total' }}</th>
-                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'জিপিএ' : 'GPA' }}</th>
-                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'গ্রেড' : 'Grd' }}</th>
-                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'অবস্থা' : 'Status' }}</th>
-                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'ফেল' : 'Fail' }}</th>
+                        <th rowspan="2" class="summary-col" style="width: 35px;">{{ $lang === 'bn' ? 'ঐচ্ছিক' : 'Opt' }}</th>
+                        <th rowspan="2" class="summary-col" style="width: 45px;">{{ $lang === 'bn' ? 'মোট' : 'Total' }}</th>
+                        <th rowspan="2" class="summary-col" style="width: 35px;">{{ $lang === 'bn' ? 'জিপিএ' : 'GPA' }}</th>
+                        <th rowspan="2" class="summary-col" style="width: 25px;">{{ $lang === 'bn' ? 'গ্রেড' : 'Grd' }}</th>
+                        <th rowspan="2" class="summary-col" style="width: 45px;">{{ $lang === 'bn' ? 'অবস্থা' : 'Status' }}</th>
+                        <th rowspan="2" class="summary-col" style="width: 25px;">{{ $lang === 'bn' ? 'ফেল' : 'Fail' }}</th>
                     </tr>
                     <tr>
                         @foreach($finalSubjects as $key => $subject)
@@ -237,14 +238,14 @@
         const groups = Array.from(table.querySelectorAll('thead .subject-group'));
         const n = groups.length; 
         
-        if (n <= 6) {
+        if (n <= 11) {
             table.classList.remove('original');
             window.print();
             table.classList.add('original');
             return;
         }
 
-        const mid = Math.max(0, Math.ceil(n/2));
+        const mid = Math.max(0, Math.ceil(n/2) + 1);
         
         function buildClone(hideStart, hideEnd, showSummary = true){
             const clone = table.cloneNode(true);
@@ -273,31 +274,31 @@
                 let count = 0;
                 visible.forEach(v => { if (v.style.display !== 'none') count++; });
                 th.setAttribute('colspan', count);
+
+                // Abbreviate ICT for print
+                const txt = (th.innerText || '').toLowerCase();
+                if (txt.indexOf('information') !== -1 && txt.indexOf('communication') !== -1) {
+                    const codeEl = th.querySelector('small');
+                    const codeTxt = codeEl ? codeEl.innerText : '';
+                    th.innerHTML = 'ICT' + (codeTxt ? '<br><small>' + codeTxt + '</small>' : '');
+                }
             });
 
             return clone;
         }
 
-        const parts = [];
-        
-        // Split into chunks of max 6 subjects
-        for (let i = 0; i < n; i += 6) {
-            parts.push({ start: i, end: Math.min(i + 6, n) });
-        }
-        
         container.innerHTML = '';
         
-        parts.forEach((part, index) => {
-            const isLast = (index === parts.length - 1);
-            const clone = buildClone(part.start, part.end, isLast);
-            container.appendChild(clone);
-            
-            if (!isLast) {
-                const brk = document.createElement('div'); 
-                brk.style.pageBreakAfter = 'always'; 
-                container.appendChild(brk);
-            }
-        });
+        // Split into exactly two parts: Part 1: Left Half (No summary), Part 2: Right Half (With summary)
+        const left = buildClone(0, mid, false);
+        container.appendChild(left);
+        
+        const brk = document.createElement('div'); 
+        brk.style.pageBreakAfter = 'always'; 
+        container.appendChild(brk);
+        
+        const right = buildClone(mid, n, true);
+        container.appendChild(right);
         
         // Append signatures to the last part
         if (signatures) {
