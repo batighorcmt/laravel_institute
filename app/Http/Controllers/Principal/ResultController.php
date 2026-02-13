@@ -219,11 +219,9 @@ class ResultController extends Controller
                 ->where('academic_year_id', $exam->academic_year_id)
                 ->pluck('id');
             
-            $assignedSubjectsMap = StudentSubject::whereIn('student_enrollment_id', $allEnrollmentIds)
+            $assignedSubjectsMap = StudentSubject::with('enrollment')->whereIn('student_enrollment_id', $allEnrollmentIds)
                 ->get()
-                ->groupBy(function($item) use ($activeStudentIds) {
-                    // We need student_id, but it's in enrollment relation. 
-                    // To avoid N+1, we already have allEnrollmentIds.
+                ->groupBy(function($item) {
                     return $item->enrollment->student_id;
                 });
             
@@ -396,6 +394,15 @@ class ResultController extends Controller
                                 break;
                             }
                         }
+                    }
+
+                    // --- SECOND CHANCE: If it has marks, it is applicable! ---
+                    if (!$isApplicable) {
+                         $hasAnyMark = false;
+                         foreach ($fSub['component_ids'] as $eid) {
+                             if ($studentMarks->firstWhere('exam_subject_id', $eid)) { $hasAnyMark = true; break; }
+                         }
+                         if ($hasAnyMark) $isApplicable = true;
                     }
                     
                     if (!$isApplicable) {
@@ -994,6 +1001,15 @@ class ResultController extends Controller
                                 break;
                             }
                         }
+                    }
+
+                    // --- SECOND CHANCE: If it has marks, it is applicable! ---
+                    if (!$isApplicable) {
+                         $hasAnyMark = false;
+                         foreach ($fSub['component_ids'] as $eid) {
+                             if ($studentMarks->firstWhere('exam_subject_id', $eid)) { $hasAnyMark = true; break; }
+                         }
+                         if ($hasAnyMark) $isApplicable = true;
                     }
                     
                     if (!$isApplicable) {

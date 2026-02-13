@@ -187,7 +187,7 @@
                                                 $practical = $resData['practical'] ?? '';
                                                 
                                                 // Check for absent/NR to style appropriately if needed
-                                                $isNR = ($grade === 'N/R' || $grade === '');
+                                                $isNR = ($grade === 'N/R' || ($grade === '' && empty($resData['display_only'])));
                                                 $isAbsent = $resData['is_absent'] ?? false;
                                                 $isNA = !empty($resData['is_not_applicable']);
                                             @endphp
