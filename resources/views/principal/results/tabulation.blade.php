@@ -24,7 +24,13 @@
     <div class="container-fluid">
         <div class="card">
                 <div class="card-header bg-info">
-                    <h3 class="card-title">{{ optional($exam)->name ?? 'ট্যাবুলেশন শীট' }}@if(optional($exam)->class) - {{ optional($exam)->class->name }}@endif</h3>
+                    <h3 class="card-title">
+                        @php 
+                            $eName = ($exam && $exam->name_bn) ? $exam->name_bn : (optional($exam)->name ?? 'ট্যাবুলেশন শীট');
+                            $cName = (optional($exam)->class->name_bn) ? optional($exam)->class->name_bn : optional($exam)->class->name;
+                        @endphp
+                        {{ $eName }} @if($cName) - {{ $cName }} @endif
+                    </h3>
                     <div class="card-tools">
                         @php $classIdForPrint = $class->id ?? request('class_id'); @endphp
                         @if($exam && $classIdForPrint)
@@ -59,9 +65,9 @@
                                 <label>শ্রেণি</label>
                                 <select name="class_id" id="class_id" class="form-control">
                                     <option value="">-- শ্রেণি নির্বাচন করুন --</option>
-                                    @foreach($classes as $class)
-                                        <option value="{{ $class->id }}" {{ request('class_id') == $class->id ? 'selected' : '' }}>
-                                            {{ $class->name }}
+                                    @foreach($classes as $cls)
+                                        <option value="{{ $cls->id }}" {{ request('class_id') == $cls->id ? 'selected' : '' }}>
+                                            {{ $cls->name }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -173,36 +179,35 @@
                                         @foreach($finalSubjects as $key => $subject)
                                             @php
                                                 $resData = $result->subject_results->get($key);
-                                                $grade = $resData['grade'] ?? '-';
-                                                $gpa = $resData['gpa'] ?? 0;
-                                                $total = $resData['total'] ?? 0;
-                                                $creative = $resData['creative'] ?? 0;
-                                                $mcq = $resData['mcq'] ?? 0;
-                                                $practical = $resData['practical'] ?? 0;
+                                                $grade = $resData['grade'] ?? '';
+                                                $gpa = $resData['gpa'] ?? '';
+                                                $total = $resData['total'] ?? '';
+                                                $creative = $resData['creative'] ?? '';
+                                                $mcq = $resData['mcq'] ?? '';
+                                                $practical = $resData['practical'] ?? '';
                                                 
                                                 // Check for absent/NR to style appropriately if needed
-                                                $isNR = ($grade === 'N/R');
+                                                $isNR = ($grade === 'N/R' || $grade === '');
                                                 $isAbsent = $resData['is_absent'] ?? false;
+                                                $isNA = !empty($resData['is_not_applicable']);
                                             @endphp
 
                                             @if($subject['creative_full_mark'] > 0)
-                                                <td class="text-center text-muted">{{ $isNR ? '-' : ($isAbsent ? 'Ab' : $creative) }}</td>
+                                                <td class="text-center text-muted">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : $creative) }}</td>
                                             @endif
                                             @if($subject['mcq_full_mark'] > 0)
-                                                <td class="text-center text-muted">{{ $isNR ? '-' : ($isAbsent ? 'Ab' : $mcq) }}</td>
+                                                <td class="text-center text-muted">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : $mcq) }}</td>
                                             @endif
                                             @if($subject['practical_full_mark'] > 0)
-                                                <td class="text-center text-muted">{{ $isNR ? '-' : ($isAbsent ? 'Ab' : $practical) }}</td>
+                                                <td class="text-center text-muted">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : $practical) }}</td>
                                             @endif
 
                                             <td class="text-center font-weight-bold">
-                                                {{ $isNR ? '-' : ($isAbsent ? 'Ab' : $total) }}
+                                                {{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : $total) }}
                                             </td>
                                             <td class="text-center">
-                                                @if(!empty($resData['is_not_applicable']))
+                                                @if($isNA || $isNR || !empty($resData['display_only']))
                                                     {{-- Empty --}}
-                                                @elseif($isNR || !empty($resData['display_only']))
-                                                    <span class="text-muted">-</span>
                                                 @else
                                                     {{ number_format($gpa, 2) }}
                                                 @endif

@@ -929,18 +929,35 @@ class ResultController extends Controller
                 ->get()
                 ->keyBy('student_id');
 
+            // Fetch optional subject mapping for all students
+            $studentOptionalSubjectMap = StudentSubject::whereIn('student_enrollment_id', $allEnrollmentIds)
+                ->where('is_optional', 1)
+                ->with('subject')
+                ->get()
+                ->groupBy(function($item) {
+                    return $item->enrollment->student_id;
+                });
+
             // 4. Process Each Student
             foreach ($students as $student) {
+                // Get optional subject code for this student
+                $optSubRecord = $studentOptionalSubjectMap->get($student->id)?->first();
+                $optSubCode = $optSubRecord ? $optSubRecord->subject->code : null;
+
                 $res = $resultsCollection->get($student->id);
                 if (!$res) {
                     // Create dummy result object if not calculated yet? 
                     // Or just skip/show empty? Better show empty row with student info
                      $res = new Result();
                      $res->student_id = $student->id;
+                     $res->fourth_subject_id = $optSubRecord ? $optSubRecord->subject_id : null;
+                     $res->fourth_subject_code = $optSubCode;
                      // set relation
                      $res->setRelation('student', $student);
                 } else {
                      $res->setRelation('student', $student);
+                     $res->fourth_subject_id = $optSubRecord ? $optSubRecord->subject_id : null;
+                     $res->fourth_subject_code = $optSubCode;
                 }
 
 
@@ -1132,8 +1149,12 @@ class ResultController extends Controller
         }
         
         $printTitle = $lang === 'bn' ? 'টেবুলেশন শিট' : 'Tabulation Sheet';
-        $printSubtitle = ($lang === 'bn' ? 'পরীক্ষা: ' : 'Exam: ') . $exam->name . ' | ' . 
-                        ($lang === 'bn' ? 'শ্রেণি: ' : 'Class: ') . $class->name . ' | ' . 
+        
+        $eName = ($lang === 'bn' && $exam->name_bn) ? $exam->name_bn : $exam->name;
+        $cName = ($lang === 'bn' && $class->name_bn) ? $class->name_bn : $class->name;
+        
+        $printSubtitle = ($lang === 'bn' ? 'পরীক্ষা: ' : 'Exam: ') . $eName . ' | ' . 
+                        ($lang === 'bn' ? 'শ্রেণি: ' : 'Class: ') . $cName . ' | ' . 
                         ($lang === 'bn' ? 'বছর: ' : 'Year: ') . $exam->academicYear->name;
         
         if ($sectionId) {
