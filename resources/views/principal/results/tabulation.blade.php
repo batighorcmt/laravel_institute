@@ -56,20 +56,6 @@
 
                         <div class="col-md-3">
                             <div class="form-group">
-                                <label>পরীক্ষা</label>
-                                <select name="exam_id" id="exam_id" class="form-control">
-                                    <option value="">-- পরীক্ষা নির্বাচন করুন --</option>
-                                    @foreach($exams as $examItem)
-                                        <option value="{{ $examItem->id }}" {{ request('exam_id') == $examItem->id ? 'selected' : '' }}>
-                                            {{ $examItem->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="col-md-3">
-                            <div class="form-group">
                                 <label>শ্রেণি</label>
                                 <select name="class_id" id="class_id" class="form-control">
                                     <option value="">-- শ্রেণি নির্বাচন করুন --</option>
@@ -95,6 +81,21 @@
                                 </select>
                             </div>
                         </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>পরীক্ষা</label>
+                                <select name="exam_id" id="exam_id" class="form-control">
+                                    <option value="">-- পরীক্ষা নির্বাচন করুন --</option>
+                                    @foreach($exams as $examItem)
+                                        <option value="{{ $examItem->id }}" {{ request('exam_id') == $examItem->id ? 'selected' : '' }}>
+                                            {{ $examItem->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
 
                         <div class="col-md-1">
                             <div class="form-group">
@@ -267,10 +268,10 @@ document.addEventListener('DOMContentLoaded', function(){
         sel.appendChild(opt);
     }
 
-    function loadExams(yearId, selected){
+    function loadExams(yearId, classId, selected){
         clearSelect(examSelect, '-- পরীক্ষা নির্বাচন করুন --');
-        if(!yearId) return;
-        fetch(examsUrl + '?academic_year_id=' + encodeURIComponent(yearId))
+        if(!yearId || !classId) return;
+        fetch(examsUrl + '?academic_year_id=' + encodeURIComponent(yearId) + '&class_id=' + encodeURIComponent(classId))
             .then(r => r.json())
             .then(data => {
                 data.forEach(function(e){
@@ -302,18 +303,23 @@ document.addEventListener('DOMContentLoaded', function(){
 
     // initialize if values present
     const initYear = yearSelect ? yearSelect.value : '';
-    const initExam = '{{ request("exam_id") }}';
-    if(initYear) loadExams(initYear, initExam);
-
     const initClass = classSelect ? classSelect.value : '';
+    const initExam = '{{ request("exam_id") }}';
     const initSection = '{{ request("section_id") }}';
+
+    if(initYear && initClass) loadExams(initYear, initClass, initExam);
     if(initClass) loadSections(initClass, initSection);
 
     if(yearSelect){
-        yearSelect.addEventListener('change', function(){ loadExams(this.value, null); });
+        yearSelect.addEventListener('change', function(){ 
+            loadExams(this.value, classSelect ? classSelect.value : '', null); 
+        });
     }
     if(classSelect){
-        classSelect.addEventListener('change', function(){ loadSections(this.value, null); });
+        classSelect.addEventListener('change', function(){ 
+            loadSections(this.value, null);
+            loadExams(yearSelect ? yearSelect.value : '', this.value, null);
+        });
     }
 });
 </script>

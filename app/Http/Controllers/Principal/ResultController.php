@@ -125,20 +125,20 @@ class ResultController extends Controller
 
         if ($request->filled('exam_id') && $request->filled('class_id')) {
             $exam = Exam::with('examSubjects.subject')->find($request->exam_id);
-            $class = SchoolClass::find($request->class_id);
+            // Safety: If exam is linked to a class, always use THAT class_id
+            $classId = ($exam && $exam->class_id) ? $exam->class_id : $request->class_id;
+            $class = SchoolClass::find($classId);
+            
             $examSubjects = $exam ? $exam->examSubjects()->orderBy('display_order')->get() : collect();
             $examSubjectIds = $examSubjects->pluck('subject_id')->toArray();
             // Fetch Class Subjects with Group info for sorting
-            $classSubjects = ClassSubject::where('class_id', $class->id)
+            $classSubjects = ClassSubject::where('class_id', $classId)
                 ->whereIn('subject_id', $examSubjectIds)
                 ->with('group')
                 ->get()
                 ->keyBy('subject_id');
 
-            // Sort Exam Subjects: 
-            // 1. Group Priority: Common (null) -> Science -> Humanities -> Business -> Other
-            // 2. Compulsory (is_optional=0) -> Optional (is_optional=1)
-            // 3. ClassSubject Order No
+            // ... (Sorting logic remains same) ...
             $examSubjects = $examSubjects->sort(function($a, $b) use ($classSubjects) {
                 $csA = $classSubjects[$a->subject_id] ?? null;
                 $csB = $classSubjects[$b->subject_id] ?? null;
@@ -175,37 +175,34 @@ class ResultController extends Controller
             });
 
             // Load sections for the selected class (for the section dropdown)
-            $sections = Section::forSchool($school->id)->where('class_id', $class->id)->ordered()->get();
+            $sections = Section::forSchool($school->id)->where('class_id', $classId)->ordered()->get();
 
             // Results for the selected class/exam, optionally filtered by section
             $resultQuery = Result::with(['student'])
                 ->forExam($exam->id)
-                ->forClass($class->id)
+                ->forClass($classId)
                 ->orderByMerit();
 
             if ($request->filled('section_id')) {
-                $resultQuery->where('section_id', $request->section_id);
+                $resultQuery->where('results.section_id', $request->section_id);
             }
 
             $results = $resultQuery->get();
 
-            // Start with student ids from existing results
-            $resultStudentIds = $results->pluck('student_id')->unique()->values()->all();
-
-            // Include students who have marks for this exam (even if no Result row exists)
-            $marksForExam = Mark::forExam($exam->id)->get();
-            $studentIdsWithMarks = $marksForExam->pluck('student_id')->unique()->values()->all();
-
-            // Include students who are enrolled in this class/section (entry form uses enrollments)
-            $enrollmentQuery = StudentEnrollment::where('school_id', $school->id)->where('class_id', $class->id)->where('status','active');
+            // Fetch students who are enrolled in this class/section for THIS academic year
+            $enrollmentQuery = StudentEnrollment::where('school_id', $school->id)
+                ->where('class_id', $classId)
+                ->where('academic_year_id', $exam->academic_year_id)
+                ->where('status','active');
+                
             if ($request->filled('section_id')) {
                 $enrollmentQuery->where('section_id', $request->section_id);
             }
+            
             $enrolledStudentIds = $enrollmentQuery->pluck('student_id')->unique()->values()->all();
 
-            // Union all student ids we want to show
-            $allStudentIds = collect($resultStudentIds)
-                ->merge($studentIdsWithMarks)
+            // Union all student ids we want to show (Results + Enrolled)
+            $allStudentIds = collect($results->pluck('student_id'))
                 ->merge($enrolledStudentIds)
                 ->unique()
                 ->values()
@@ -616,15 +613,23 @@ class ResultController extends Controller
 
 
 
-    // AJAX: get exams for an academic year (used by tabulation cascading select)
+    // AJAX: get exams for an academic year and class (used by tabulation cascading select)
     public function examsByYear(Request $request, School $school)
     {
         $yearId = $request->get('academic_year_id');
+        $classId = $request->get('class_id');
+        
         if (! $yearId) {
             return response()->json([], 200);
         }
 
-        $exams = Exam::forSchool($school->id)->forAcademicYear($yearId)->orderBy('created_at','desc')->get(['id','name']);
+        $query = Exam::forSchool($school->id)->forAcademicYear($yearId);
+        
+        if ($classId) {
+            $query->where('class_id', $classId);
+        }
+        
+        $exams = $query->orderBy('created_at','desc')->get(['id','name']);
         return response()->json($exams);
     }
 
@@ -754,6 +759,8 @@ class ResultController extends Controller
         $sections = \App\Models\Section::forSchool($school->id)->where('class_id', $classId)->get();
 
         $exam = Exam::with(['examSubjects.subject'])->find($examId);
+        // Safety: If exam is linked to a class, always use THAT class_id
+        $classId = ($exam && $exam->class_id) ? $exam->class_id : $classId;
         $class = SchoolClass::find($classId);
         
         // --- CORE TABULATION LOGIC COPY START ---
@@ -767,16 +774,13 @@ class ResultController extends Controller
             $examSubjects = $exam->examSubjects()->with('subject')->get();
             
             // Fetch Class Subjects with Group info for sorting
-            $classSubjects = \App\Models\ClassSubject::where('class_id', $classId)
+            $classSubjects = ClassSubject::where('class_id', $classId)
                 ->whereIn('subject_id', $examSubjects->pluck('subject_id'))
                 ->with('group')
                 ->get()
                 ->keyBy('subject_id');
 
-            // Sort Exam Subjects: 
-            // 1. Group Priority: Common (null) -> Science -> Humanities -> Business -> Other
-            // 2. Compulsory (is_optional=0) -> Optional (is_optional=1)
-            // 3. ClassSubject Order No
+            // ... (Sorting logic remains same) ...
             $examSubjects = $examSubjects->sort(function($a, $b) use ($classSubjects) {
                 $csA = $classSubjects[$a->subject_id] ?? null;
                 $csB = $classSubjects[$b->subject_id] ?? null;
@@ -813,8 +817,6 @@ class ResultController extends Controller
             });
 
             // 2. Prepare Display Columns (Group merged subjects)
-            // ... (Copy logic from tabulation) ...
-            
             // Logic to merge subjects based on combine_group
             $processedGroups = [];
             foreach ($examSubjects as $sub) {
@@ -827,14 +829,14 @@ class ResultController extends Controller
                     // Add individual components FIRST (Display Only)
                     foreach($groupSubjects as $gSub) {
                         $finalSubjects->push([
-                            'id' => $gSub->id, // Virtual ID? No, use real ID
+                            'id' => $gSub->id, 
                             'name' => $gSub->subject->name . ' (' . ($gSub->subject->code ?? '') . ')',
                             'creative_full_mark' => $gSub->creative_full_mark,
                             'mcq_full_mark' => $gSub->mcq_full_mark,
                             'practical_full_mark' => $gSub->practical_full_mark,
                             'total_full_mark' => $gSub->total_full_mark,
                             'is_combined' => false,
-                            'display_only' => true, // Mark as display only
+                            'display_only' => true, 
                             'component_ids' => [$gSub->id] 
                         ]);
                     }
@@ -859,7 +861,7 @@ class ResultController extends Controller
                         'mcq_full_mark' => $sub->mcq_full_mark,
                         'practical_full_mark' => $sub->practical_full_mark,
                         'total_full_mark' => $sub->total_full_mark,
-                        'is_combined' => false, // Standard single subject
+                        'is_combined' => false, 
                         'component_ids' => [$sub->id]
                     ]);
                 }
@@ -867,33 +869,38 @@ class ResultController extends Controller
 
 
             // 3. Fetch Student Results
-            // Fetch all marks for this exam/class
-            // Also filter by section if provided
-            $query = Student::with(['currentEnrollment.section', 'currentEnrollment.group'])
-                ->forSchool($school->id)
+            // Fetch students who are enrolled in this class/section for THIS academic year
+            $enrollmentQuery = StudentEnrollment::where('school_id', $school->id)
                 ->where('class_id', $classId)
-                ->where('status', 'active');
-
+                ->where('academic_year_id', $exam->academic_year_id)
+                ->where('status','active');
+                
             if ($request->section_id) {
-                $query->whereHas('currentEnrollment', function($q) use ($request) {
-                    $q->where('section_id', $request->section_id);
-                });
+                $enrollmentQuery->where('section_id', $request->section_id);
             }
             
-            // Sort by Section then Roll
-            // Need to join enrollments to sort by section/roll efficiently or do it in collection
-            // Doing in collection for simplicity as done in tabulation
-            // Sort by Section then Roll
-            $students = $query->get();
+            $enrolledStudentIds = $enrollmentQuery->pluck('student_id')->unique()->values()->all();
 
-            // Pre-load assigned subjects for all these students to check applicability and filter
-            // Deduce enrollment IDs for students in this class/school
-            $allEnrollmentIds = StudentEnrollment::whereIn('student_id', $students->pluck('id'))
+            // Union all student ids (Existing Results + Enrolled)
+            $existingResults = Result::where('exam_id', $examId)->whereIn('student_id', $enrolledStudentIds)->get();
+            
+            $allStudentIds = collect($existingResults->pluck('student_id'))
+                ->merge($enrolledStudentIds)
+                ->unique()
+                ->values()
+                ->all();
+            
+            $students = Student::with(['currentEnrollment.section', 'currentEnrollment.group'])
+                ->whereIn('id', $allStudentIds)
+                ->get();
+
+            // Pre-load assigned subjects for all these students
+            $allEnrollmentIds = StudentEnrollment::whereIn('student_id', $allStudentIds)
+                ->where('academic_year_id', $exam->academic_year_id)
                 ->where('class_id', $classId)
-                ->where('school_id', $school->id)
                 ->pluck('id');
             
-            $assignedSubjectsMap = StudentSubject::whereIn('student_enrollment_id', $allEnrollmentIds)
+            $assignedSubjectsMap = StudentSubject::with('enrollment')->whereIn('student_enrollment_id', $allEnrollmentIds)
                 ->get()
                 ->groupBy('enrollment.student_id');
             
