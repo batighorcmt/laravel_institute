@@ -705,23 +705,46 @@ class ResultController extends Controller
             // 1. Get Exam Subjects
             $examSubjects = $exam->examSubjects()->with('subject')->get();
             
-            // Fetch Class Subjects for sorting order and optional status
+            // Fetch Class Subjects with Group info for sorting
             $classSubjects = \App\Models\ClassSubject::where('class_id', $classId)
                 ->whereIn('subject_id', $examSubjects->pluck('subject_id'))
+                ->with('group')
                 ->get()
                 ->keyBy('subject_id');
-            // Sort Exam Subjects: First Compulsory (is_optional=0), Then Optional (is_optional=1), Then Order No
+
+            // Sort Exam Subjects: 
+            // 1. Group Priority: Common (null) -> Science -> Humanities -> Business -> Other
+            // 2. Compulsory (is_optional=0) -> Optional (is_optional=1)
+            // 3. ClassSubject Order No
             $examSubjects = $examSubjects->sort(function($a, $b) use ($classSubjects) {
                 $csA = $classSubjects[$a->subject_id] ?? null;
                 $csB = $classSubjects[$b->subject_id] ?? null;
                 
+                // Group Priority
+                $groupA = $csA ? strtolower($csA->group->name ?? '') : '';
+                $groupB = $csB ? strtolower($csB->group->name ?? '') : '';
+                
+                // Define priority map (lower is first)
+                $priority = function($gName) {
+                    if (empty($gName)) return 0; // Common
+                    if (str_contains($gName, 'science') || str_contains($gName, 'বিজ্ঞান')) return 1;
+                    if (str_contains($gName, 'humanities') || str_contains($gName, 'মানবিক')) return 2;
+                    if (str_contains($gName, 'business') || str_contains($gName, 'ব্যবসায়')) return 3;
+                    return 4; // Other
+                };
+                
+                $pA = $priority($groupA);
+                $pB = $priority($groupB);
+                
+                if ($pA != $pB) return $pA <=> $pB;
+                
+                // Optional Priority
                 $optA = $csA ? $csA->is_optional : 0;
                 $optB = $csB ? $csB->is_optional : 0;
                 
-                if ($optA != $optB) {
-                    return $optA <=> $optB; // Compulsory first
-                }
+                if ($optA != $optB) return $optA <=> $optB;
                 
+                // Order No Priority
                 $orderA = $csA ? $csA->order_no : 999;
                 $orderB = $csB ? $csB->order_no : 999;
                 
