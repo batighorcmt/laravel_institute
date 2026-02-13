@@ -351,19 +351,55 @@ class ResultController extends Controller
 
                 $res->subject_results = collect(); // Store processed result for each final subject
 
-                // Identify optional subject for this student
-                $studentOptionalId = $res->fourth_subject_id;
+                // Determine Student Group
+                $studentGroupId = $stu->currentEnrollment ? $stu->currentEnrollment->group_id : null;
+                $currentStudentOptionalId = $res->fourth_subject_id;
 
                 foreach ($finalSubjects as $key => $fSub) {
-                    // Check if this is the optional subject
-                    $isOptional = false;
-                    foreach ($fSub['component_ids'] as $cid) {
-                        $comp = $examSubjects->firstWhere('id', $cid);
-                        if ($comp && $comp->subject_id == $studentOptionalId) {
-                            $isOptional = true;
-                            break;
+                    // --- APPLICABILITY CHECK START ---
+                    $subjId = $fSub['subject_id'] ?? null;
+                    // If combined/virtual, pick first component to check group
+                    if (!$subjId && !empty($fSub['component_ids'])) {
+                        $firstCompId = $fSub['component_ids'][0];
+                        $firstComp = $examSubjects->firstWhere('id', $firstCompId);
+                        $subjId = $firstComp ? $firstComp->subject_id : null;
+                    }
+                    
+                    $isApplicable = true;
+                    if ($subjId && isset($classSubjects[$subjId])) {
+                        $cs = $classSubjects[$subjId];
+                        // 1. Group Mismatch
+                        if ($cs->group_id && $studentGroupId && $cs->group_id != $studentGroupId) {
+                            $isApplicable = false;
+                        }
+                        // 2. Optional Mismatch
+                        // If subject is marked optional in class, but it's not the student's selected optional subject
+                        if ($cs->is_optional && $currentStudentOptionalId != $subjId) {
+                            $isApplicable = false;
                         }
                     }
+                    
+                    if (!$isApplicable) {
+                         $res->subject_results->put($key, [
+                            'grade' => '', 
+                            'gpa' => '', 
+                            'total' => '',
+                            'display_only' => true, // Treat as display only (empty)
+                            'is_not_applicable' => true // Custom flag if needed by view
+                        ]);
+                        continue; // Skip processing and fail counting
+                    }
+                    // --- APPLICABILITY CHECK END ---
+
+                    // Check if this is the optional subject (Original Logic)
+                     $isOptional = false;
+                     foreach ($fSub['component_ids'] as $cid) {
+                         $comp = $examSubjects->firstWhere('id', $cid);
+                         if ($comp && $comp->subject_id == $currentStudentOptionalId) {
+                             $isOptional = true;
+                             break;
+                         }
+                     }
 
                     // Check if this subject is DISPLAY ONLY (Individual part of a merged group)
                     // If so, we just fetch marks and DO NOT calculate GPA/Status contribution directly (or do we?)
@@ -909,8 +945,60 @@ class ResultController extends Controller
 
                 $studentOptionalId = $res->fourth_subject_id; // Need to ensure fourth_subject_id is loaded or fetchable
 
+                // Determine Student Group
+                $studentGroupId = $student->currentEnrollment ? $student->currentEnrollment->group_id : null;
+                $studentOptionalSubjectId = $res->fourth_subject_id; // From previous logic
+
                 foreach ($finalSubjects as $key => $fSub) {
-                     // logic to identify optional
+                    $subjectId = $fSub['subject_id'] ?? null; // For non-combined subjects
+                    if (!$subjectId && isset($fSub['component_ids']) && count($fSub['component_ids']) > 0) {
+                         // For combined subjects, use the subject_id of the first component for group/optional check
+                         $firstComp = $examSubjects->where('id', $fSub['component_ids'][0])->first();
+                         $subjectId = $firstComp ? $firstComp->subject_id : null;
+                    }
+
+                    // CHECK APPLICABILITY
+                    $isApplicable = true;
+                    $cs = null;
+                    if ($subjectId && isset($classSubjects[$subjectId])) {
+                        $cs = $classSubjects[$subjectId];
+                        
+                        // 1. Group Check
+                        if ($cs->group_id && $studentGroupId && $cs->group_id != $studentGroupId) {
+                            $isApplicable = false;
+                        }
+                        
+                        // 2. Optional Check
+                        // If it's an optional subject type, it's only applicable if it matches the student's optional subject
+                        // OR if it's a compulsory subject for that group (sometimes optional subjects are compulsory for others)
+                        // Actually, 'is_optional' in ClassSubject usually means "Can be taken as 4th subject". 
+                        // But if a student enters marks for it, they probably took it.
+                        // However, to be safe: If is_optional is true, AND it is NOT the student's 4th subject, AND the student has NO marks for it...
+                        // The user says: "subjects not assigned to him". 
+                        // If ClassSubject says is_optional=true, and Student says optional_subject_id != this_subject, then it's not his 4th.
+                        // Is it his main? Usually if is_optional=true, it's a 4th subject slot.
+                        // Let's assume: If is_optional=1 AND subject_id != student_optional_subject_id -> Not Applicable.
+                        if ($cs->is_optional && $studentOptionalSubjectId != $subjectId) {
+                             $isApplicable = false;
+                        }
+                    } else {
+                        // If we can't find class subject info, assume applicable? Or not? 
+                        // Better to assume applicable to avoid hiding valid things, but might cause "Fail" count issue.
+                        // If no class subject, it might not be in the class list?
+                        // For now, if no class subject info, we assume it's applicable to avoid hiding subjects that might be valid but misconfigured.
+                    }
+                    
+                    if (!$isApplicable) {
+                         $res->subject_results->put($key, [
+                            'grade' => '', 'gpa' => 0, 'total' => 0,
+                            'creative' => 0, 'mcq' => 0, 'practical' => 0,
+                            'is_optional' => false, 'is_absent' => false, 'display_only' => false,
+                            'not_applicable' => true // Custom flag for display
+                        ]);
+                         continue; // Skip fail count calculation
+                    }
+
+                    // The original logic to identify optional subject for GPA calculation
                     $isOptional = false;
                     foreach ($fSub['component_ids'] as $cid) {
                         $comp = $examSubjects->firstWhere('id', $cid);

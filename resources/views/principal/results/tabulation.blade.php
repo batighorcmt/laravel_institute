@@ -198,7 +198,9 @@
                                                 {{ $isNR ? '-' : ($isAbsent ? 'Ab' : $total) }}
                                             </td>
                                             <td class="text-center">
-                                                @if($isNR || !empty($resData['display_only']))
+                                                @if(!empty($resData['is_not_applicable']))
+                                                    {{-- Empty --}}
+                                                @elseif($isNR || !empty($resData['display_only']))
                                                     <span class="text-muted">-</span>
                                                 @else
                                                     {{ number_format($gpa, 2) }}
