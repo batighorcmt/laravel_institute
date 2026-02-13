@@ -34,27 +34,19 @@
     /* Print specific */
     #printSplitContainer .table-tabulation { 
         width: 100% !important; 
-        table-layout: fixed !important; 
+        table-layout: auto !important; 
     }
     
-    /* Subject sub-column widths for print */
-    #printSplitContainer th[class*="subgrp-"], 
-    #printSplitContainer td[class*="subgrp-"] {
-        width: 32px !important;
-        min-width: 32px !important;
-    }
-    #printSplitContainer .col-total {
-        width: 38px !important;
-    }
-    #printSplitContainer .col-gpa {
-        width: 35px !important;
+    #printSplitContainer th, #printSplitContainer td {
+        white-space: nowrap !important;
+        padding: 1px 3px !important;
     }
 
     .text-center { text-align: center !important; }
     .font-weight-bold { font-weight: bold !important; }
-    .st-name { font-size: 8.5pt !important; white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; }
+    .st-name { font-size: 8pt !important; white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
     
-    .sub-title { font-size: 7.5pt !important; font-weight: 700; min-height: 45px; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden; }
+    .sub-title { font-size: 6.5pt !important; font-weight: 700; min-height: 40px; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden; }
     
     .fail-count { color: #d32f2f !important; font-weight: 800; }
     
@@ -117,20 +109,20 @@
                             </th>
                         @endforeach
                         
-                        <th rowspan="2" class="summary-col" style="width: 35px;">{{ $lang === 'bn' ? 'ঐচ্ছিক বিষয়' : 'Opt Code' }}</th>
-                        <th rowspan="2" class="summary-col" style="width: 45px;">{{ $lang === 'bn' ? 'মোট' : 'Total' }}</th>
-                        <th rowspan="2" class="summary-col" style="width: 35px;">{{ $lang === 'bn' ? 'জিপিএ' : 'GPA' }}</th>
-                        <th rowspan="2" class="summary-col" style="width: 25px;">{{ $lang === 'bn' ? 'গ্রেড' : 'Grd' }}</th>
-                        <th rowspan="2" class="summary-col" style="width: 45px;">{{ $lang === 'bn' ? 'অবস্থা' : 'Status' }}</th>
-                        <th rowspan="2" class="summary-col" style="width: 25px;">{{ $lang === 'bn' ? 'ফেল' : 'Fail' }}</th>
+                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'ঐচ্ছিক বিষয়' : 'Opt Code' }}</th>
+                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'মোট' : 'Total' }}</th>
+                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'জিপিএ' : 'GPA' }}</th>
+                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'গ্রেড' : 'Grd' }}</th>
+                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'অবস্থা' : 'Status' }}</th>
+                        <th rowspan="2" class="summary-col">{{ $lang === 'bn' ? 'ফেল' : 'Fail' }}</th>
                     </tr>
                     <tr>
                         @foreach($finalSubjects as $key => $subject)
                             @if($subject['creative_full_mark'] > 0) <th class="text-center subgrp-{{ $loop->index }}">CQ</th> @endif
-                            @if($subject['mcq_full_mark'] > 0) <th class="text-center subgrp-{{ $loop->index }}">MCQ</th> @endif
+                            @if($subject['mcq_full_mark'] > 0) <th class="text-center subgrp-{{ $loop->index }}">MQ</th> @endif
                             @if($subject['practical_full_mark'] > 0) <th class="text-center subgrp-{{ $loop->index }}">PR</th> @endif
-                            <th class="text-center subgrp-{{ $loop->index }} col-total">Total</th>
-                            <th class="text-center subgrp-{{ $loop->index }} col-gpa">GPA</th>
+                            <th class="text-center subgrp-{{ $loop->index }} col-total">Tot</th>
+                            <th class="text-center subgrp-{{ $loop->index }} col-gpa">GP</th>
                         @endforeach
                     </tr>
                 </thead>
@@ -245,7 +237,7 @@
         const groups = Array.from(table.querySelectorAll('thead .subject-group'));
         const n = groups.length; 
         
-        if (n <= 10) {
+        if (n <= 6) {
             table.classList.remove('original');
             window.print();
             table.classList.add('original');
@@ -286,19 +278,26 @@
             return clone;
         }
 
+        const parts = [];
+        
+        // Split into chunks of max 6 subjects
+        for (let i = 0; i < n; i += 6) {
+            parts.push({ start: i, end: Math.min(i + 6, n) });
+        }
+        
         container.innerHTML = '';
         
-        // Part 1: Left Half (No summary)
-        const left = buildClone(0, mid, false);
-        container.appendChild(left);
-        
-        const brk = document.createElement('div'); 
-        brk.style.pageBreakAfter = 'always'; 
-        container.appendChild(brk);
-        
-        // Part 2: Right Half (With summary)
-        const right = buildClone(mid, n, true);
-        container.appendChild(right);
+        parts.forEach((part, index) => {
+            const isLast = (index === parts.length - 1);
+            const clone = buildClone(part.start, part.end, isLast);
+            container.appendChild(clone);
+            
+            if (!isLast) {
+                const brk = document.createElement('div'); 
+                brk.style.pageBreakAfter = 'always'; 
+                container.appendChild(brk);
+            }
+        });
         
         // Append signatures to the last part
         if (signatures) {
