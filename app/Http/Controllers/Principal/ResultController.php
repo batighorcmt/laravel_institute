@@ -215,6 +215,29 @@ class ResultController extends Controller
             // Only include students who are active in students table
             $activeStudentIds = Student::whereIn('id', $allStudentIds)->where('status','active')->pluck('id')->unique()->values()->all();
 
+            // Pre-load assigned subjects for all these students to check applicability and filter
+            $allEnrollmentIds = StudentEnrollment::whereIn('student_id', $activeStudentIds)
+                ->where('academic_year_id', $exam->academic_year_id)
+                ->pluck('id');
+            
+            $assignedSubjectsMap = StudentSubject::whereIn('student_enrollment_id', $allEnrollmentIds)
+                ->get()
+                ->groupBy(function($item) use ($activeStudentIds) {
+                    // We need student_id, but it's in enrollment relation. 
+                    // To avoid N+1, we already have allEnrollmentIds.
+                    return $item->enrollment->student_id;
+                });
+            
+            $studentAssignedSubjectIds = $assignedSubjectsMap->map(function($items) {
+                return $items->pluck('subject_id')->unique()->toArray();
+            });
+
+            // Requirement: If student has NO subjects assigned in this exam, do not show them.
+            $activeStudentIds = array_filter($activeStudentIds, function($sid) use ($studentAssignedSubjectIds, $examSubjectIds) {
+                $assigned = $studentAssignedSubjectIds[$sid] ?? [];
+                return !empty(array_intersect($assigned, $examSubjectIds));
+            });
+
             // Build a results collection that includes an item for each (active) student we want to display.
             // If a persistent Result exists use it; otherwise create a lightweight placeholder with student relation.
             $resultsCollection = collect();
@@ -241,7 +264,7 @@ class ResultController extends Controller
                 $optionalCode = null;
                 $optionalId = null;
                 if ($stu && $stu->currentEnrollment) {
-                    $optionalSubject = \App\Models\StudentSubject::where('student_enrollment_id', $stu->currentEnrollment->id)
+                    $optionalSubject = StudentSubject::where('student_enrollment_id', $stu->currentEnrollment->id)
                         ->where('is_optional', true)
                         ->with(['subject'])
                         ->first();
@@ -254,6 +277,7 @@ class ResultController extends Controller
 
                 $existing->fourth_subject_code = $optionalCode;
                 $existing->fourth_subject_id = $optionalId;
+                $existing->assigned_subject_ids = $studentAssignedSubjectIds[$sid] ?? []; // Attach for later use
                 $resultsCollection->push($existing);
             }
 
@@ -354,28 +378,24 @@ class ResultController extends Controller
                 // Determine Student Group
                 $studentGroupId = $stu->currentEnrollment ? $stu->currentEnrollment->group_id : null;
                 $currentStudentOptionalId = $res->fourth_subject_id;
+                $assignedSubIds = $res->assigned_subject_ids ?? [];
 
                 foreach ($finalSubjects as $key => $fSub) {
                     // --- APPLICABILITY CHECK START ---
+                    $isApplicable = false;
                     $subjId = $fSub['subject_id'] ?? null;
-                    // If combined/virtual, pick first component to check group
-                    if (!$subjId && !empty($fSub['component_ids'])) {
-                        $firstCompId = $fSub['component_ids'][0];
-                        $firstComp = $examSubjects->firstWhere('id', $firstCompId);
-                        $subjId = $firstComp ? $firstComp->subject_id : null;
-                    }
                     
-                    $isApplicable = true;
-                    if ($subjId && isset($classSubjects[$subjId])) {
-                        $cs = $classSubjects[$subjId];
-                        // 1. Group Mismatch
-                        if ($cs->group_id && $studentGroupId && $cs->group_id != $studentGroupId) {
-                            $isApplicable = false;
-                        }
-                        // 2. Optional Mismatch
-                        // If subject is marked optional in class, but it's not the student's selected optional subject
-                        if ($cs->is_optional && $currentStudentOptionalId != $subjId) {
-                            $isApplicable = false;
+                    if ($subjId) {
+                        // Check if this subject_id is assigned to the student
+                        $isApplicable = in_array($subjId, $assignedSubIds);
+                    } else if (!empty($fSub['component_ids'])) {
+                        // Merged subject: check if ANY component subject is assigned
+                        foreach ($fSub['component_ids'] as $cid) {
+                            $comp = $examSubjects->firstWhere('id', $cid);
+                            if ($comp && in_array($comp->subject_id, $assignedSubIds)) {
+                                $isApplicable = true;
+                                break;
+                            }
                         }
                     }
                     
@@ -385,13 +405,13 @@ class ResultController extends Controller
                             'gpa' => '', 
                             'total' => '',
                             'display_only' => true, // Treat as display only (empty)
-                            'is_not_applicable' => true // Custom flag if needed by view
+                            'is_not_applicable' => true // Custom flag for view
                         ]);
                         continue; // Skip processing and fail counting
                     }
                     // --- APPLICABILITY CHECK END ---
 
-                    // Check if this is the optional subject (Original Logic)
+                    // Check if this is the optional subject
                      $isOptional = false;
                      foreach ($fSub['component_ids'] as $cid) {
                          $comp = $examSubjects->firstWhere('id', $cid);
@@ -402,8 +422,6 @@ class ResultController extends Controller
                      }
 
                     // Check if this subject is DISPLAY ONLY (Individual part of a merged group)
-                    // If so, we just fetch marks and DO NOT calculate GPA/Status contribution directly (or do we?)
-                    // User said: "Individual subjects... show only... no calculation".
                     if (!empty($fSub['display_only'])) {
                         // Just aggregate marks for display
                         $subTotal = 0;
@@ -417,8 +435,6 @@ class ResultController extends Controller
                             $m = $studentMarks->firstWhere('exam_subject_id', $eid);
                             if ($m) {
                                 $hasRecord = true;
-                                if ($m->is_absent) $isAbsent = true; // Use stricter check? Or if any component absent?
-                                // Actually, for single component subject:
                                 if ($m->is_absent) $isAbsent = true;
                                 
                                 $subTotal += $m->total_marks;
@@ -429,12 +445,12 @@ class ResultController extends Controller
                         }
                         
                         if (!$hasRecord) $subGrade = 'N/R';
-                        elseif ($isAbsent) $subGrade = 'F'; // Just for display
+                        elseif ($isAbsent) $subGrade = 'F'; 
                         else $subGrade = ''; 
 
                         $res->subject_results->put($key, [
-                            'grade' => $subGrade, // Might be N/R or F or empty
-                            'gpa' => 0, // No GPA for individual parts
+                            'grade' => $subGrade,
+                            'gpa' => 0, 
                             'total' => $subTotal,
                             'creative' => $subCreative,
                             'mcq' => $subMcq,
@@ -443,17 +459,15 @@ class ResultController extends Controller
                             'is_absent' => $isAbsent,
                             'display_only' => true
                         ]);
-                        continue; // Skip GPA/Fail aggregation for this subject
+                        continue; 
                     }
 
-                    // ... Standard Calculation for Single or Combined Virtual Subject ...
-                    // Aggregate marks for this subject (simple or combined)
+                    // Standard Calculation for Single or Combined Virtual Subject
                     $subTotal = 0;
                     $subCreative = 0;
                     $subMcq = 0;
                     $subPractical = 0;
                     
-                    // Aggregated Pass Marks (for Combined validation)
                     $totalCreativePass = 0;
                     $totalMcqPass = 0;
                     $totalPracticalPass = 0;
@@ -461,7 +475,7 @@ class ResultController extends Controller
 
                     $subGP = 0;
                     $subGrade = '';
-                    $isAbsent = true; // Assume absent until we find a present record
+                    $isAbsent = true; 
                     $hasRecord = false;
                     $isFailed = false;
 
@@ -469,7 +483,6 @@ class ResultController extends Controller
                         $m = $studentMarks->firstWhere('exam_subject_id', $eid);
                         $subComp = $examSubjects->firstWhere('id', $eid); 
                         
-                        // Aggregate Pass Marks
                         if ($subComp) {
                             $totalCreativePass += $subComp->creative_pass_mark;
                             $totalMcqPass += $subComp->mcq_pass_mark;
@@ -491,39 +504,22 @@ class ResultController extends Controller
                         }
                     }
 
-                    // Check Pass Logic
                     if ($groupHasEachPassType) {
-                        // User Logic: Sum of Obtained Parts vs Sum of Pass Marks
-                        // Example: (Bangla 1 CQ + Bangla 2 CQ) >= (Bangla 1 CQ Pass + Bangla 2 CQ Pass)
-                        
-                        // Check Creative
-                        if ($totalCreativePass > 0 && $subCreative < $totalCreativePass) {
-                            $isFailed = true;
-                        }
-                        // Check MCQ
-                        if ($totalMcqPass > 0 && $subMcq < $totalMcqPass) {
-                            $isFailed = true;
-                        }
-                        // Check Practical
-                        if ($totalPracticalPass > 0 && $subPractical < $totalPracticalPass) {
-                            $isFailed = true;
-                        }
+                        if ($totalCreativePass > 0 && $subCreative < $totalCreativePass) $isFailed = true;
+                        if ($totalMcqPass > 0 && $subMcq < $totalMcqPass) $isFailed = true;
+                        if ($totalPracticalPass > 0 && $subPractical < $totalPracticalPass) $isFailed = true;
                     }
 
-                    // Calculate Grade & GPA for this subject
                     if (!$hasRecord) {
                         $subGrade = 'N/R';
                         $subGP = 0.00;
                     } elseif ($isAbsent) {
-                        $subGrade = 'F'; // Requirement: Absent students get F
-                        $subGP = 0.00;   // Requirement: Absent students get 0.00 GPA
+                        $subGrade = 'F'; 
+                        $subGP = 0.00;   
                         $hasAbsent = true;
-                        $isFailed = true; // Mark as failed
+                        $isFailed = true; 
                     } else {
-                        // Calculate GPA based on percentage of total full mark
                         $percent = ($fSub['total_full_mark'] > 0) ? ($subTotal / $fSub['total_full_mark']) * 100 : 0;
-                        
-                        // Fail if individual component failed OR total < total_pass_mark
                         if ($isFailed || $subTotal < $fSub['total_pass_mark']) {
                             $subGrade = 'F';
                             $subGP = 0.00;
@@ -538,7 +534,6 @@ class ResultController extends Controller
                         }
                     }
 
-                    // Store for view
                     $res->subject_results->put($key, [
                         'grade' => $subGrade,
                         'gpa' => $subGP,
@@ -551,46 +546,33 @@ class ResultController extends Controller
                     ]);
 
                     if ($isOptional) {
-                        // Optional subject logic: Add bonus if GPA > 2
                         if ($subGP > 2.00) {
                             $bonus = $subGP - 2.00;
                             $totalGpa += $bonus;
                         }
                     } else {
-                        // Compulsory subject
                         $grandTotal += $subTotal;
                         $totalGpa += $subGP;
+                        $subjectCount++; // Dynamic count of compulsory applicable subjects
                         
-                        // Count failure if Grade is F
-                        if ($subGrade == 'F') {
+                        if ($subGrade == 'F' || $subGrade == 'N/R') {
                             $failedSubjectCount++;
-                        } elseif ($subGrade == 'N/R') {
-                            // User request: If Subject assigned but NO marks (N/R) for a compulsory subject, it should be a FAIL.
-                            // Currently it was not counting.
-                            $failedSubjectCount++;
-                            // Optionally change grade to F for display? User just said "Status Showing Passed is not acceptable".
-                            // So ensuring fail count increment is enough to make Status = Failed.
-                            // We can leave display as N/R to indicate why.
                         }
                     }
                 }
 
                 // Final Calculation
-                // Use exam-defined total subjects count, or fallback to actual count of compulsory subjects
                 $divisor = $exam->total_subjects_without_fourth > 0 
-                    ? $exam->total_subjects_without_fourth 
-                    : $finalSubjects->filter(function($s) use ($res, $examSubjects){
-                        return $s['subject_id'] != $res->fourth_subject_id;
-                    })->count();
+                    ? min($exam->total_subjects_without_fourth, $subjectCount)
+                    : $subjectCount;
 
                 $finalGpa = ($divisor > 0) ? round($totalGpa / $divisor, 2) : 0.00;
                 if ($finalGpa > 5.00) $finalGpa = 5.00;
 
-                // Determine final letter grade
                 $finalLetter = '';
                 if ($failedSubjectCount > 0) {
                     $finalLetter = 'F';
-                    $finalGpa = 0.00; // If failed in any compulsory subject, GPA is 0
+                    $finalGpa = 0.00; 
                 } elseif ($finalGpa >= 5.00) $finalLetter = 'A+';
                 elseif ($finalGpa >= 4.00) $finalLetter = 'A';
                 elseif ($finalGpa >= 3.50) $finalLetter = 'A-';
@@ -899,7 +881,31 @@ class ResultController extends Controller
             // Sort by Section then Roll
             // Need to join enrollments to sort by section/roll efficiently or do it in collection
             // Doing in collection for simplicity as done in tabulation
+            // Sort by Section then Roll
             $students = $query->get();
+
+            // Pre-load assigned subjects for all these students to check applicability and filter
+            // Deduce enrollment IDs for students in this class/school
+            $allEnrollmentIds = StudentEnrollment::whereIn('student_id', $students->pluck('id'))
+                ->where('class_id', $classId)
+                ->where('school_id', $school->id)
+                ->pluck('id');
+            
+            $assignedSubjectsMap = StudentSubject::whereIn('student_enrollment_id', $allEnrollmentIds)
+                ->get()
+                ->groupBy('enrollment.student_id');
+            
+            $studentAssignedSubjectIds = $assignedSubjectsMap->map(function($items) {
+                return $items->pluck('subject_id')->unique()->toArray();
+            });
+
+            // Requirement: If student has NO subjects assigned in this exam, do not show them.
+            $examSubjectIds = $examSubjects->pluck('subject_id')->toArray();
+            $students = $students->filter(function($st) use ($studentAssignedSubjectIds, $examSubjectIds) {
+                $assigned = $studentAssignedSubjectIds[$st->id] ?? [];
+                return !empty(array_intersect($assigned, $examSubjectIds));
+            });
+
             // Sort: Section Name (numeric safe?) -> Roll
             $students = $students->sortBy(function($st) {
                  $sec = $st->currentEnrollment->section->numeric_value ?? 999;
@@ -947,62 +953,45 @@ class ResultController extends Controller
 
                 // Determine Student Group
                 $studentGroupId = $student->currentEnrollment ? $student->currentEnrollment->group_id : null;
-                $studentOptionalSubjectId = $res->fourth_subject_id; // From previous logic
+                $currentStudentOptionalId = $res->fourth_subject_id;
+                $assignedSubIds = $studentAssignedSubjectIds[$student->id] ?? [];
 
                 foreach ($finalSubjects as $key => $fSub) {
-                    $subjectId = $fSub['subject_id'] ?? null; // For non-combined subjects
-                    if (!$subjectId && isset($fSub['component_ids']) && count($fSub['component_ids']) > 0) {
-                         // For combined subjects, use the subject_id of the first component for group/optional check
-                         $firstComp = $examSubjects->where('id', $fSub['component_ids'][0])->first();
-                         $subjectId = $firstComp ? $firstComp->subject_id : null;
-                    }
-
-                    // CHECK APPLICABILITY
-                    $isApplicable = true;
-                    $cs = null;
-                    if ($subjectId && isset($classSubjects[$subjectId])) {
-                        $cs = $classSubjects[$subjectId];
-                        
-                        // 1. Group Check
-                        if ($cs->group_id && $studentGroupId && $cs->group_id != $studentGroupId) {
-                            $isApplicable = false;
+                    // --- APPLICABILITY CHECK START ---
+                    $isApplicable = false;
+                    $subjId = $fSub['subject_id'] ?? null;
+                    
+                    if ($subjId) {
+                        // Check if this subject_id is assigned to the student
+                        $isApplicable = in_array($subjId, $assignedSubIds);
+                    } else if (!empty($fSub['component_ids'])) {
+                        // Merged subject: check if ANY component subject is assigned
+                        foreach ($fSub['component_ids'] as $cid) {
+                            $comp = $examSubjects->firstWhere('id', $cid);
+                            if ($comp && in_array($comp->subject_id, $assignedSubIds)) {
+                                $isApplicable = true;
+                                break;
+                            }
                         }
-                        
-                        // 2. Optional Check
-                        // If it's an optional subject type, it's only applicable if it matches the student's optional subject
-                        // OR if it's a compulsory subject for that group (sometimes optional subjects are compulsory for others)
-                        // Actually, 'is_optional' in ClassSubject usually means "Can be taken as 4th subject". 
-                        // But if a student enters marks for it, they probably took it.
-                        // However, to be safe: If is_optional is true, AND it is NOT the student's 4th subject, AND the student has NO marks for it...
-                        // The user says: "subjects not assigned to him". 
-                        // If ClassSubject says is_optional=true, and Student says optional_subject_id != this_subject, then it's not his 4th.
-                        // Is it his main? Usually if is_optional=true, it's a 4th subject slot.
-                        // Let's assume: If is_optional=1 AND subject_id != student_optional_subject_id -> Not Applicable.
-                        if ($cs->is_optional && $studentOptionalSubjectId != $subjectId) {
-                             $isApplicable = false;
-                        }
-                    } else {
-                        // If we can't find class subject info, assume applicable? Or not? 
-                        // Better to assume applicable to avoid hiding valid things, but might cause "Fail" count issue.
-                        // If no class subject, it might not be in the class list?
-                        // For now, if no class subject info, we assume it's applicable to avoid hiding subjects that might be valid but misconfigured.
                     }
                     
                     if (!$isApplicable) {
                          $res->subject_results->put($key, [
-                            'grade' => '', 'gpa' => 0, 'total' => 0,
-                            'creative' => 0, 'mcq' => 0, 'practical' => 0,
-                            'is_optional' => false, 'is_absent' => false, 'display_only' => false,
-                            'not_applicable' => true // Custom flag for display
+                            'grade' => '', 
+                            'gpa' => '', 
+                            'total' => '',
+                            'display_only' => true, // Treat as display only (empty)
+                            'is_not_applicable' => true // Custom flag for view
                         ]);
-                         continue; // Skip fail count calculation
+                        continue; // Skip processing and fail counting
                     }
+                    // --- APPLICABILITY CHECK END ---
 
                     // The original logic to identify optional subject for GPA calculation
                     $isOptional = false;
                     foreach ($fSub['component_ids'] as $cid) {
                         $comp = $examSubjects->firstWhere('id', $cid);
-                        if ($comp && $comp->subject_id == $studentOptionalId) {
+                        if ($comp && $comp->subject_id == $currentStudentOptionalId) {
                             $isOptional = true;
                             break;
                         }
@@ -1025,7 +1014,9 @@ class ResultController extends Controller
                             }
                         }
                         
-                        $subGrade = (!$hasRecord) ? 'N/R' : ($isAbsent ? 'F' : ''); 
+                        if (!$hasRecord) $subGrade = 'N/R';
+                        elseif ($isAbsent) $subGrade = 'F'; 
+                        else $subGrade = ''; 
 
                         $res->subject_results->put($key, [
                             'grade' => $subGrade, 'gpa' => 0, 'total' => $subTotal,
@@ -1039,27 +1030,18 @@ class ResultController extends Controller
                     $subTotal = 0; $subCreative = 0; $subMcq = 0; $subPractical = 0;
                     $subGP = 0; $subGrade = '';
                     $isAbsent = true; $hasRecord = false; $isFailed = false;
-
-                     // Aggregated Pass Marks (for Combined validation)
-                    $totalCreativePass = 0;
-                    $totalMcqPass = 0;
-                    $totalPracticalPass = 0;
+                    $totalCreativePass = 0; $totalMcqPass = 0; $totalPracticalPass = 0;
                     $groupHasEachPassType = false;
 
                     foreach ($fSub['component_ids'] as $eid) {
                         $m = $studentMarks->firstWhere('exam_subject_id', $eid);
                         $subComp = $examSubjects->firstWhere('id', $eid);
-
-                         // Aggregate Pass Marks
                         if ($subComp) {
                             $totalCreativePass += $subComp->creative_pass_mark;
                             $totalMcqPass += $subComp->mcq_pass_mark;
                             $totalPracticalPass += $subComp->practical_pass_mark;
-                            if ($subComp->pass_type === 'each') {
-                                $groupHasEachPassType = true;
-                            }
+                            if ($subComp->pass_type === 'each') $groupHasEachPassType = true;
                         }
-
                         if ($m) {
                             $hasRecord = true;
                             if (!$m->is_absent) $isAbsent = false;
@@ -1070,7 +1052,6 @@ class ResultController extends Controller
                         }
                     }
 
-                     // Check Pass Logic
                     if ($groupHasEachPassType) {
                         if ($totalCreativePass > 0 && $subCreative < $totalCreativePass) $isFailed = true;
                         if ($totalMcqPass > 0 && $subMcq < $totalMcqPass) $isFailed = true;
@@ -1078,31 +1059,18 @@ class ResultController extends Controller
                     }
 
                     if (!$hasRecord) {
-                        $subGrade = 'N/R';
-                        $subGP = 0;
-                        if (!$isOptional) $failedSubjectCount++; // Compulsory N/R = Fail
+                        $subGrade = 'N/R'; $subGP = 0;
                     } elseif ($isAbsent) {
-                        $subGrade = 'F';
-                        $subGP = 0;
-                        if (!$isOptional) $failedSubjectCount++;
+                        $subGrade = 'F'; $subGP = 0;
                     } else {
-                         // Check Total Pass Mark
-                        $combTotalPass = 0;
-                        $combTotalFull = 0;
-                         foreach ($fSub['component_ids'] as $eid) {
+                        $combTotalPass = 0; $combTotalFull = 0;
+                        foreach ($fSub['component_ids'] as $eid) {
                             $subComp = $examSubjects->firstWhere('id', $eid);
-                            if($subComp) {
-                                $combTotalPass += $subComp->total_pass_mark;
-                                $combTotalFull += $subComp->total_full_mark;
-                            }
+                            if($subComp) { $combTotalPass += $subComp->total_pass_mark; $combTotalFull += $subComp->total_full_mark; }
                         }
-
                         if ($isFailed || $subTotal < $combTotalPass) {
-                            $subGrade = 'F';
-                            $subGP = 0;
-                            if (!$isOptional) $failedSubjectCount++;
+                            $subGrade = 'F'; $subGP = 0;
                         } else {
-                            // Calculate GPA
                             $percent = $combTotalFull > 0 ? ($subTotal / $combTotalFull) * 100 : 0;
                             if ($percent >= 80) { $subGrade = 'A+'; $subGP = 5.00; }
                             elseif ($percent >= 70) { $subGrade = 'A'; $subGP = 4.00; }
@@ -1110,54 +1078,50 @@ class ResultController extends Controller
                             elseif ($percent >= 50) { $subGrade = 'B'; $subGP = 3.00; }
                             elseif ($percent >= 40) { $subGrade = 'C'; $subGP = 2.00; }
                             elseif ($percent >= 33) { $subGrade = 'D'; $subGP = 1.00; }
-                            else { $subGrade = 'F'; $subGP = 0.00; if (!$isOptional) $failedSubjectCount++; }
+                            else { $subGrade = 'F'; $subGP = 0.00; }
                         }
                     }
                     
-                    if (!$isOptional && $subGrade != 'N/R') {
-                        $grandTotal += $subTotal;
-                        $totalGpa += $subGP;
-                        $subjectCount++;
-                    } elseif ($isOptional && $subGP > 2.00) {
-                         $totalGpa += ($subGP - 2.00);
-                    }
-
                     $res->subject_results->put($key, [
                         'grade' => $subGrade, 'gpa' => $subGP, 'total' => $subTotal,
                         'creative' => $subCreative, 'mcq' => $subMcq, 'practical' => $subPractical,
-                        'is_optional' => $isOptional, 'is_absent' => $isAbsent,'display_only' => false
+                        'is_optional' => $isOptional, 'is_absent' => $isAbsent
                     ]);
-                } // End Subject Loop
-                
-                 // Final Calculation
-                $res->computed_total_marks = $grandTotal;
-                $res->fail_count = $failedSubjectCount; 
 
-                if ($subjectCount > 0) {
-                     // Check if failed any subject?
-                     if ($failedSubjectCount > 0) {
-                         $res->computed_gpa = 0.00;
-                         $res->computed_letter = 'F';
-                         $res->computed_status = 'Failed';
-                     } else {
-                         $finalGpa = $totalGpa / $subjectCount;
-                         if ($finalGpa > 5.00) $finalGpa = 5.00;
-                         $res->computed_gpa = $finalGpa;
-                         
-                         if ($finalGpa >= 5.00) $res->computed_letter = 'A+';
-                         elseif ($finalGpa >= 4.00) $res->computed_letter = 'A';
-                         elseif ($finalGpa >= 3.50) $res->computed_letter = 'A-';
-                         elseif ($finalGpa >= 3.00) $res->computed_letter = 'B';
-                         elseif ($finalGpa >= 2.00) $res->computed_letter = 'C';
-                         elseif ($finalGpa >= 1.00) $res->computed_letter = 'D';
-                         else $res->computed_letter = 'F';
-                         
-                         $res->computed_status = 'Passed';
-                     }
-                } else {
-                     $res->computed_gpa = 0;
-                     $res->computed_status = 'N/A';
+                    if ($isOptional) {
+                        if ($subGP > 2.00) $totalGpa += ($subGP - 2.00);
+                    } else {
+                        $grandTotal += $subTotal;
+                        $totalGpa += $subGP;
+                        $subjectCount++;
+                        if ($subGrade == 'F' || $subGrade == 'N/R') $failedSubjectCount++;
+                    }
                 }
+
+                // Final Calculation
+                $divisor = $exam->total_subjects_without_fourth > 0 
+                    ? min($exam->total_subjects_without_fourth, $subjectCount)
+                    : $subjectCount;
+
+                $finalGpa = ($divisor > 0) ? round($totalGpa / $divisor, 2) : 0.00;
+                if ($finalGpa > 5.00) $finalGpa = 5.00;
+
+                $finalLetter = '';
+                if ($failedSubjectCount > 0) {
+                    $finalLetter = 'F'; $finalGpa = 0.00; 
+                } elseif ($finalGpa >= 5.00) $finalLetter = 'A+';
+                elseif ($finalGpa >= 4.00) $finalLetter = 'A';
+                elseif ($finalGpa >= 3.50) $finalLetter = 'A-';
+                elseif ($finalGpa >= 3.00) $finalLetter = 'B';
+                elseif ($finalGpa >= 2.00) $finalLetter = 'C';
+                elseif ($finalGpa >= 1.00) $finalLetter = 'D';
+                else $finalLetter = 'F';
+
+                $res->computed_total_marks = $grandTotal;
+                $res->computed_gpa = $finalGpa;
+                $res->computed_letter = $finalLetter;
+                $res->computed_status = ($finalLetter == 'F') ? 'অকৃতকার্য' : 'উত্তীর্ণ';
+                $res->fail_count = $failedSubjectCount;
 
                 $results->push($res);
             }
