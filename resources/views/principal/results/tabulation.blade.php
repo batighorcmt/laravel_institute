@@ -134,7 +134,7 @@
                                             <small>({{ $examSubject->total_full_mark ?? '-' }})</small>
                                         </th>
                                     @endforeach
-                                    <th rowspan="2" class="align-middle text-center" style="width: 120px;">চতুর্থ বিষয় কোড</th>
+                                    <th rowspan="2" class="align-middle text-center" style="width: 120px;">ঐচ্ছিক বিষয়</th>
                                     <th rowspan="2" class="align-middle text-center" style="width: 80px;">মোট</th>
                                     <th rowspan="2" class="align-middle text-center" style="width: 60px;">GPA</th>
                                     <th rowspan="2" class="align-middle text-center" style="width: 60px;">গ্রেড</th>
@@ -241,11 +241,11 @@
                                         <td class="text-center"><strong>{{ number_format($result->computed_total_marks ?? $result->total_marks ?? 0, 0) }}</strong></td>
                                         <td class="text-center"><strong>{{ number_format($result->computed_gpa ?? $result->gpa ?? 0, 2) }}</strong></td>
                                         <td class="text-center">
-                                            @php $letter = $result->computed_letter ?? $result->letter_grade; $gpaValue = $result->computed_gpa ?? $result->gpa ?? 0; @endphp
-                                            @if($gpaValue <= 0)
-                                                <span class="badge badge-danger">অকৃতকার্য</span>
-                                            @else
+                                            @php $letter = $result->computed_letter ?? $result->letter_grade; @endphp
+                                            @if($letter)
                                                 <span class="badge badge-{{ $letter == 'A+' ? 'success' : ($letter == 'F' ? 'danger' : 'info') }}">{{ $letter }}</span>
+                                            @else
+                                                <span class="badge badge-danger">F</span>
                                             @endif
                                         </td>
                                         <td class="text-center">

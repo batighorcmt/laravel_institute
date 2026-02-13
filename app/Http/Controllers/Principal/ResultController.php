@@ -124,7 +124,11 @@ class ResultController extends Controller
             $exam = Exam::with('examSubjects.subject')->find($request->exam_id);
             $class = SchoolClass::find($request->class_id);
             $examSubjects = $exam ? $exam->examSubjects()->orderBy('display_order')->get() : collect();
-            $classSubjects = ClassSubject::where('class_id', $class->id)->orderBy('order_no')->get();
+            $examSubjectIds = $examSubjects->pluck('subject_id')->toArray();
+            $classSubjects = ClassSubject::where('class_id', $class->id)
+                ->whereIn('subject_id', $examSubjectIds)
+                ->orderBy('order_no')
+                ->get();
 
             // Load sections for the selected class (for the section dropdown)
             $sections = Section::forSchool($school->id)->where('class_id', $class->id)->ordered()->get();
@@ -191,29 +195,27 @@ class ResultController extends Controller
                     $existing = $fake;
                 }
 
-                // determine fourth subject code (if any) from student's enrollment subjects
-                $fourthCode = null;
+                // determine optional subject code (if any) from student's enrollment subjects
+                $optionalCode = null;
+                $optionalId = null;
                 if ($stu && $stu->currentEnrollment) {
-                    $studentSubjects = \App\Models\StudentSubject::where('student_enrollment_id', $stu->currentEnrollment->id)
-                        ->with(['subject','classSubject'])
-                        ->get()
-                        ->sortBy(function($ss){
-                            return optional($ss->classSubject)->order_no ?? 0;
-                        })->values();
+                    $optionalSubject = \App\Models\StudentSubject::where('student_enrollment_id', $stu->currentEnrollment->id)
+                        ->where('is_optional', true)
+                        ->with(['subject'])
+                        ->first();
 
-                    if ($studentSubjects->count() >= 4) {
-                        $fourth = $studentSubjects->get(3);
-                        $fourthCode = optional($fourth->subject)->code ?? null;
-                        $fourthId = optional($fourth->subject)->id ?? null;
+                    if ($optionalSubject) {
+                        $optionalCode = optional($optionalSubject->subject)->code ?? null;
+                        $optionalId = optional($optionalSubject->subject)->id ?? null;
                     }
                 }
 
-                $existing->fourth_subject_code = $fourthCode;
-                $existing->fourth_subject_id = $fourthId ?? null;
+                $existing->fourth_subject_code = $optionalCode;
+                $existing->fourth_subject_id = $optionalId;
                 $resultsCollection->push($existing);
             }
 
-            // Now compute per-student totals, GPA and grade (excluding optional 4th subject)
+            // Now compute per-student totals, GPA and grade (excluding optional subject)
             foreach ($resultsCollection as $res) {
                 $sid = $res->student_id;
                 $studentMarksFor = $marks->where('student_id', $sid)->keyBy('exam_subject_id');
@@ -225,7 +227,7 @@ class ResultController extends Controller
                 $hasAbsent = false;
 
                 foreach ($examSubjects as $exSub) {
-                    // skip optional fourth subject if present
+                    // skip optional subject if present and matches
                     if (!empty($res->fourth_subject_id) && $exSub->subject_id == $res->fourth_subject_id) {
                         continue;
                     }
@@ -251,7 +253,7 @@ class ResultController extends Controller
                 // Determine letter grade based on GPA
                 $computedLetter = null;
                 if ($computedGpa <= 0) {
-                    $computedLetter = null; // will be treated as অকৃতকার্য in view
+                    $computedLetter = 'F'; // Ensure F is shown instead of just failing the view
                 } elseif ($computedGpa >= 5.00) {
                     $computedLetter = 'A+';
                 } elseif ($computedGpa >= 4.00) {
