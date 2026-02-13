@@ -143,6 +143,7 @@
                                         <th>MCQ পাস</th>
                                         <th>ব্যবহারিক পাস</th>
                                         <th>পাস টাইপ</th>
+                                        <th>Combine Group</th>
                                         <th>শিক্ষক</th>
                                     </tr>
                                 </thead>
@@ -285,6 +286,9 @@ $(document).ready(function() {
                                     <option value="total" ${passType === 'total' ? 'selected' : ''}>Total Marks</option>
                                     <option value="individual" ${passType === 'individual' ? 'selected' : ''}>Individual</option>
                                 </select>
+                            </td>
+                            <td>
+                                <input type="text" name="combine_group[]" class="form-control" placeholder="Group">
                             </td>
                             <td>
                                 <select name="teacher_id[]" class="form-control teacher-select">

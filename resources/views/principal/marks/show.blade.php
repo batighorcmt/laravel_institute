@@ -80,11 +80,16 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if($examSubject->mark_entry_completed)
-                                                <span class="badge badge-success">সম্পন্ন</span>
-                                            @else
-                                                <span class="badge badge-warning">চলমান</span>
-                                            @endif
+                                            @php
+                                                $stats = $subjectStats[$examSubject->id] ?? ['entered' => 0, 'total' => 0];
+                                                $entered = $stats['entered'];
+                                                $total = $stats['total'];
+                                                $isComplete = ($total > 0 && $entered >= $total);
+                                            @endphp
+                                            
+                                            <span class="badge badge-{{ $isComplete ? 'success' : 'warning' }}">
+                                                {{ $entered }} / {{ $total }}
+                                            </span>
                                         </td>
                                         <td>
                                             <a href="{{ route('principal.institute.marks.entry', [$school, $exam, $examSubject]) }}" class="btn btn-sm btn-primary" title="নম্বর Entry করুন">

@@ -140,6 +140,7 @@
                                 <tr>
                                     <th rowspan="2">ক্রমিক</th>
                                     <th rowspan="2">বিষয়</th>
+                                    <th rowspan="2">Combined</th>
                                     <th rowspan="2">পরীক্ষার তারিখ</th>
                                     <th rowspan="2">সময়</th>
                                     <th rowspan="2">নম্বর Entry শেষ তারিখ</th>
@@ -165,6 +166,7 @@
                                     <tr>
                                         <td>{{ $loop->iteration }}</td>
                                         <td><strong>{{ $examSubject->subject->name ?? 'N/A' }}</strong></td>
+                                        <td>{{ $examSubject->combine_group ?? '-' }}</td>
                                         <td>
                                             @if($examSubject->exam_date)
                                                 {{ $examSubject->exam_date->format('d/m/Y') }}
@@ -228,6 +230,12 @@
                                                                 <div class="form-group">
                                                                     <label>বিষয়</label>
                                                                     <input type="text" class="form-control" value="{{ $examSubject->subject->name }}" readonly>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <div class="form-group">
+                                                                    <label>Combine Group</label>
+                                                                    <input type="text" name="combine_group" class="form-control" value="{{ $examSubject->combine_group }}" placeholder="e.g. Bangla">
                                                                 </div>
                                                             </div>
                                                             <div class="col-md-6">
@@ -366,7 +374,7 @@
                         </div>
                         <div class="modal-body">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="form-group">
                                         <label>বিষয় <span class="text-danger">*</span></label>
                                         <select name="subject_id" class="form-control" required>
@@ -377,7 +385,14 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label>Combine Group (Optional)</label>
+                                        <input type="text" name="combine_group" class="form-control" placeholder="e.g. Bangla">
+                                        <small class="text-muted">Use same name to merge subjects</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
                                     <div class="form-group">
                                         <label>শিক্ষক</label>
                                         <select name="teacher_id" class="form-control">

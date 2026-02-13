@@ -28,7 +28,32 @@ class MarkEntryController extends Controller
     {
         $exam->load(['examSubjects.subject', 'examSubjects.teacher']);
 
-        return view('principal.marks.show', compact('school', 'exam'));
+        // Prepare counts
+        $subjectStats = [];
+        foreach ($exam->examSubjects as $sub) {
+            // Count total students having this subject
+            // Logic taken from entryForm method
+            $totalStudents = StudentEnrollment::where('school_id', $school->id)
+                ->where('academic_year_id', $exam->academic_year_id)
+                ->where('class_id', $exam->class_id)
+                ->where('status', 'active')
+                ->whereHas('subjects', function($query) use ($sub) {
+                    $query->where('subject_id', $sub->subject_id);
+                })
+                ->count();
+
+            // Count entered marks
+            $enteredMarks = Mark::where('exam_id', $exam->id)
+                ->where('exam_subject_id', $sub->id)
+                ->count();
+
+            $subjectStats[$sub->id] = [
+                'total' => $totalStudents,
+                'entered' => $enteredMarks
+            ];
+        }
+
+        return view('principal.marks.show', compact('school', 'exam', 'subjectStats'));
     }
 
     public function entryForm(School $school, Exam $exam, ExamSubject $examSubject)

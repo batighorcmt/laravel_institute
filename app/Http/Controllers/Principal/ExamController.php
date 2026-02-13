@@ -79,6 +79,8 @@ class ExamController extends Controller
             // Subjects array (optional - can create exam first, then add subjects)
             'subject_id' => 'nullable|array',
             'subject_id.*' => 'exists:subjects,id',
+            'combine_group' => 'nullable|array',
+            'combine_group.*' => 'nullable|string|max:50',
             'teacher_id' => 'nullable|array',
             'teacher_id.*' => 'nullable|exists:users,id',
             'creative_marks' => 'nullable|array',
@@ -155,6 +157,7 @@ class ExamController extends Controller
                     ExamSubject::create([
                         'exam_id' => $exam->id,
                         'subject_id' => $subjectId,
+                        'combine_group' => $validated['combine_group'][$index] ?? null,
                         'teacher_id' => !empty($validated['teacher_id'][$index]) ? (int)$validated['teacher_id'][$index] : null,
                         'creative_full_mark' => $creativeMarks,
                         'creative_pass_mark' => $creativePass,
@@ -197,6 +200,7 @@ class ExamController extends Controller
             ->get()
             ->pluck('subject')
             ->filter()
+            ->unique('id')
             ->values();
 
         // Use `teachers` table: fetch active teachers for this school and normalize
@@ -363,6 +367,7 @@ class ExamController extends Controller
     {
         $validated = $request->validate([
             'subject_id' => 'required|exists:subjects,id',
+            'combine_group' => 'nullable|string|max:50',
             'teacher_id' => 'nullable|exists:users,id',
             'creative_full_mark' => 'required|integer|min:0',
             'creative_pass_mark' => 'required|integer|min:0',
@@ -412,6 +417,7 @@ class ExamController extends Controller
     public function updateSubject(Request $request, School $school, Exam $exam, ExamSubject $examSubject)
     {
         $validated = $request->validate([
+            'combine_group' => 'nullable|string|max:50',
             'teacher_id' => 'nullable|exists:users,id',
             'creative_full_mark' => 'required|integer|min:0',
             'creative_pass_mark' => 'required|integer|min:0',

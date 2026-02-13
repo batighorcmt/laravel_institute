@@ -109,130 +109,99 @@
 
                 @if($results->count() > 0 && $exam && $exam->examSubjects->count() > 0)
                     <div class="table-responsive" style="overflow-x: auto;">
-                        <table class="table table-bordered table-sm" style="font-size: 11px;">
+                        <table class="table table-bordered table-sm" style="font-size: 13px;">
                             <thead class="thead-light">
                                 <tr>
-                                    <th rowspan="2" class="align-middle text-center" style="width: 50px;">ক্রমিক</th>
-                                    <th rowspan="2" class="align-middle text-center" style="width: 80px;">রোল</th>
-                                    <th rowspan="2" class="align-middle text-center" style="width: 100px;">শাখা</th>
-                                    <th rowspan="2" class="align-middle" style="min-width: 200px;">শিক্ষার্থীর নাম</th>
-                                    <th rowspan="2" class="align-middle text-center" style="width: 80px;">গ্রুপ</th>
-                                    @foreach($classSubjects as $classSubject)
-                                        @php $examSubject = $examSubjects->firstWhere('subject_id', $classSubject->subject_id); @endphp
+                                    <th rowspan="2" class="align-middle text-center" style="width: 50px;">Serial</th>
+                                    <th rowspan="2" class="align-middle text-center" style="width: 80px;">Student ID</th>
+                                    <th rowspan="2" class="align-middle text-center" style="width: 80px;">Roll</th>
+                                    <th rowspan="2" class="align-middle text-center" style="width: 100px;">Section</th>
+                                    <th rowspan="2" class="align-middle" style="min-width: 200px;">Name</th>
+                                    <th rowspan="2" class="align-middle text-center" style="width: 80px;">Group</th>
+                                    @foreach($finalSubjects as $key => $subject)
                                         @php
                                             $parts = [];
-                                            if($examSubject && $examSubject->hasCreative) $parts[] = 'creative';
-                                            if($examSubject && $examSubject->hasMcq) $parts[] = 'mcq';
-                                            if($examSubject && $examSubject->hasPractical) $parts[] = 'practical';
+                                            if($subject['creative_full_mark'] > 0) $parts[] = 'creative';
+                                            if($subject['mcq_full_mark'] > 0) $parts[] = 'mcq';
+                                            if($subject['practical_full_mark'] > 0) $parts[] = 'practical';
                                             // always include total and gpa
                                             $parts[] = 'total';
                                             $parts[] = 'gpa';
                                             $colspan = count($parts);
                                         @endphp
                                         <th colspan="{{ $colspan }}" class="text-center" style="min-width: 120px;">
-                                            {{ $classSubject->subject->name }}<br>
-                                            <small>({{ $examSubject->total_full_mark ?? '-' }})</small>
+                                            {{ $subject['name'] }}<br>
+                                            <small>({{ $subject['total_full_mark'] ?? '-' }})</small>
                                         </th>
                                     @endforeach
-                                    <th rowspan="2" class="align-middle text-center" style="width: 120px;">ঐচ্ছিক বিষয়</th>
-                                    <th rowspan="2" class="align-middle text-center" style="width: 80px;">মোট</th>
+                                    <th rowspan="2" class="align-middle text-center" style="width: 120px;">Optional Subject</th>
+                                    <th rowspan="2" class="align-middle text-center" style="width: 80px;">Total</th>
                                     <th rowspan="2" class="align-middle text-center" style="width: 60px;">GPA</th>
-                                    <th rowspan="2" class="align-middle text-center" style="width: 60px;">গ্রেড</th>
-                                    <th rowspan="2" class="align-middle text-center" style="width: 80px;">ফলাফল</th>
+                                    <th rowspan="2" class="align-middle text-center" style="width: 60px;">Grade</th>
+                                    <th rowspan="2" class="align-middle text-center" style="width: 80px;">Status</th>
+                                    <th rowspan="2" class="align-middle text-center" style="width: 60px;">Fail Count</th>
                                 </tr>
                                 <tr>
-                                    @foreach($classSubjects as $classSubject)
-                                        @php $examSubject = $examSubjects->firstWhere('subject_id', $classSubject->subject_id); @endphp
-                                        @if($examSubject && $examSubject->hasCreative)
-                                            <th class="text-center" style="width: 50px;">সৃজনশীল</th>
+                                    @foreach($finalSubjects as $key => $subject)
+                                        @if($subject['creative_full_mark'] > 0)
+                                            <th class="text-center" style="width: 50px;">CQ</th>
                                         @endif
-                                        @if($examSubject && $examSubject->hasMcq)
-                                            <th class="text-center" style="width: 50px;">নৈর্বর্ত্তিক</th>
+                                        @if($subject['mcq_full_mark'] > 0)
+                                            <th class="text-center" style="width: 50px;">MCQ</th>
                                         @endif
-                                        @if($examSubject && $examSubject->hasPractical)
-                                            <th class="text-center" style="width: 50px;">ব্যবহারিক</th>
+                                        @if($subject['practical_full_mark'] > 0)
+                                            <th class="text-center" style="width: 50px;">Prac</th>
                                         @endif
-                                        <th class="text-center" style="width: 50px;">মোট</th>
-                                        <th class="text-center" style="width: 40px;">জিপিএ</th>
+                                        <th class="text-center" style="width: 50px;">Total</th>
+                                        <th class="text-center" style="width: 40px;">GPA</th>
                                     @endforeach
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($results as $result)
-                                    @php
-                                        $studentMarks = $marks->where('student_id', $result->student_id)->keyBy('exam_subject_id');
-                                    @endphp
                                     <tr>
                                         <td class="text-center">{{ $loop->iteration }}</td>
-                                        <td class="text-center">{{ $result->student->roll ?? $result->student->student_id }}</td>
-                                        <td class="text-center">{{ optional($result->section)->name ?? optional($result->student->currentEnrollment->section)->name ?? '-' }}</td>
-                                        <td>{{ $result->student->student_name_en }}</td>
-                                        <td class="text-center">{{ $result->group_name ?? optional(optional($result->student)->currentEnrollment->group)->name ?? '-' }}</td>
+                                        <td class="text-center">{{ $result->student->student_id ?? '-' }}</td>
+                                        <td class="text-center">{{ optional(optional($result->student)->currentEnrollment)->roll_no ?? '-' }}</td>
+                                        <td class="text-center">{{ optional(optional($result->student)->currentEnrollment)->section->name ?? '-' }}</td>
+                                        <td>
+                                            <strong>{{ $result->student->student_name_en ?: ($result->student->student_name_bn ?: 'Unknown') }}</strong>
+                                        </td>
+                                        <td class="text-center">{{ optional(optional($result->student)->currentEnrollment)->group->name ?? '-' }}</td>
 
-                                        @foreach($classSubjects as $classSubject)
+                                        @foreach($finalSubjects as $key => $subject)
                                             @php
-                                                $examSubject = $examSubjects->firstWhere('subject_id', $classSubject->subject_id);
-                                                $mark = $examSubject ? $studentMarks->get($examSubject->id) : null;
+                                                $resData = $result->subject_results->get($key);
+                                                $grade = $resData['grade'] ?? '-';
+                                                $gpa = $resData['gpa'] ?? 0;
+                                                $total = $resData['total'] ?? 0;
+                                                $creative = $resData['creative'] ?? 0;
+                                                $mcq = $resData['mcq'] ?? 0;
+                                                $practical = $resData['practical'] ?? 0;
+                                                
+                                                // Check for absent/NR to style appropriately if needed
+                                                $isNR = ($grade === 'N/R');
+                                                $isAbsent = $resData['is_absent'] ?? false;
                                             @endphp
-                                            @if($examSubject && $examSubject->hasCreative)
-                                            <td class="text-center">
-                                                @if($mark)
-                                                    @if($mark->is_absent)
-                                                        <span class="text-danger">Ab</span>
-                                                    @else
-                                                        {{ number_format($mark->creative_marks ?? 0, 0) }}
-                                                    @endif
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
+
+                                            @if($subject['creative_full_mark'] > 0)
+                                                <td class="text-center text-muted">{{ $isNR ? '-' : ($isAbsent ? 'Ab' : $creative) }}</td>
+                                            @endif
+                                            @if($subject['mcq_full_mark'] > 0)
+                                                <td class="text-center text-muted">{{ $isNR ? '-' : ($isAbsent ? 'Ab' : $mcq) }}</td>
+                                            @endif
+                                            @if($subject['practical_full_mark'] > 0)
+                                                <td class="text-center text-muted">{{ $isNR ? '-' : ($isAbsent ? 'Ab' : $practical) }}</td>
                                             @endif
 
-                                            @if($examSubject && $examSubject->hasMcq)
-                                            <td class="text-center">
-                                                @if($mark)
-                                                    @if($mark->is_absent)
-                                                        <span class="text-danger">Ab</span>
-                                                    @else
-                                                        {{ number_format($mark->mcq_marks ?? 0, 0) }}
-                                                    @endif
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
+                                            <td class="text-center font-weight-bold">
+                                                {{ $isNR ? '-' : ($isAbsent ? 'Ab' : $total) }}
                                             </td>
-                                            @endif
-
-                                            @if($examSubject && $examSubject->hasPractical)
                                             <td class="text-center">
-                                                @if($mark)
-                                                    @if($mark->is_absent)
-                                                        <span class="text-danger">Ab</span>
-                                                    @else
-                                                        {{ number_format($mark->practical_marks ?? 0, 0) }}
-                                                    @endif
-                                                @else
+                                                @if($isNR || !empty($resData['display_only']))
                                                     <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                            @endif
-
-                                            <td class="text-center">
-                                                @if($mark)
-                                                    @if($mark->is_absent)
-                                                        <span class="text-danger">Ab</span>
-                                                    @else
-                                                        {{ number_format($mark->total_marks ?? 0, 0) }}
-                                                    @endif
                                                 @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-
-                                            <td class="text-center">
-                                                @if($mark && !$mark->is_absent)
-                                                    {{ number_format($mark->grade_point ?? 0, 2) }}
-                                                @else
-                                                    <span class="text-muted">-</span>
+                                                    {{ number_format($gpa, 2) }}
                                                 @endif
                                             </td>
                                         @endforeach
@@ -249,16 +218,19 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            @php $status = $result->computed_status ?? ($result->result_status == 'passed' ? 'উত্তীর্ণ' : 'অনুত্তীর্ণ'); @endphp
-                                            @if($status == 'উত্তীর্ণ')
-                                                <span class="badge badge-success" style="font-size: 9px;">উত্তীর্ণ</span>
+                                            @php $status = $result->computed_status ?? ($result->result_status == 'passed' ? 'Passed' : 'Failed'); @endphp
+                                            @if($status == 'উত্তীর্ণ' || $status == 'Passed')
+                                                <span class="badge badge-success">Passed</span>
                                             @elseif($status == 'অনুপস্থিত')
-                                                <span class="badge badge-warning" style="font-size: 9px;">অনুপস্থিত</span>
-                                            @elseif($status == 'অকৃতকার্য')
-                                                <span class="badge badge-danger" style="font-size: 9px;">অকৃতকার্য</span>
+                                                <span class="badge badge-warning">Absent</span>
+                                            @elseif($status == 'অকৃতকার্য' || $status == 'Failed')
+                                                <span class="badge badge-danger">Failed</span>
                                             @else
-                                                <span class="badge badge-secondary" style="font-size: 9px;">{{ $status }}</span>
+                                                <span class="badge badge-secondary">{{ $status }}</span>
                                             @endif
+                                        </td>
+                                        <td class="text-center font-weight-bold text-danger">
+                                            {{ $result->fail_count > 0 ? $result->fail_count : '-' }}
                                         </td>
                                     </tr>
                                 @endforeach

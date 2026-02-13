@@ -117,6 +117,7 @@ class ResultController extends Controller
         $class = null;
         $examSubjects = null;
         $classSubjects = collect();
+        $finalSubjects = collect(); // Combined subjects for display
         $results = collect();
         $marks = collect();
 
@@ -215,75 +216,329 @@ class ResultController extends Controller
                 $resultsCollection->push($existing);
             }
 
-            // Now compute per-student totals, GPA and grade (excluding optional subject)
-            foreach ($resultsCollection as $res) {
-                $sid = $res->student_id;
-                $studentMarksFor = $marks->where('student_id', $sid)->keyBy('exam_subject_id');
+            // 2b. Identify combined groups and prepare final subject list for columns
+            $finalSubjects = collect();
+            $processedGroups = [];
 
-                $sumTotal = 0;
-                $sumGpa = 0;
-                $countSubjects = 0;
-                $hasAny = false;
-                $hasAbsent = false;
+            foreach ($examSubjects as $sub) {
+                if ($sub->combine_group) {
+                    $groupName = trim($sub->combine_group);
+                    
+                    // Add individual subject as 'display only'
+                    $keyInd = 'ind_'.$sub->id;
+                    $finalSubjects->put($keyInd, [
+                        'type' => 'individual', // Display marks only
+                        'subject_id' => $sub->subject_id,
+                        'name' => $sub->subject->name,
+                        'code' => $sub->subject->code,
+                        'creative_full_mark' => $sub->creative_full_mark,
+                        'mcq_full_mark' => $sub->mcq_full_mark,
+                        'practical_full_mark' => $sub->practical_full_mark,
+                        'total_full_mark' => $sub->total_full_mark,
+                        'display_only' => true, // Flag for view
+                        'component_ids' => [$sub->id] // Points to itself for mark fetching
+                    ]);
 
-                foreach ($examSubjects as $exSub) {
-                    // skip optional subject if present and matches
-                    if (!empty($res->fourth_subject_id) && $exSub->subject_id == $res->fourth_subject_id) {
-                        continue;
+                    // Check if we need to add the Combined Subject (only once per group, ideally after the last one of the group?)
+                    // The user wants: "First show individual subjects... THEN merged subject".
+                    // So we should add the combined subject AFTER the LAST individual subject of that group.
+                    // We need to know if this is the last subject of this group traversing in order.
+                    // Let's check remaining subjects in examSubjects.
+                    $remainingInGroup = $examSubjects->where('combine_group', $groupName)->where('id', '>', $sub->id)->count();
+                    
+                    if ($remainingInGroup == 0 && !in_array($groupName, $processedGroups)) {
+                        // This is the last one, so add the Combined Virtual Subject
+                        $allInGroup = $examSubjects->where('combine_group', $groupName);
+                        
+                        $groupTotalFull = $allInGroup->sum('total_full_mark');
+                        $groupPassFull = $allInGroup->sum(function($s){
+                            return $s->creative_pass_mark + $s->mcq_pass_mark + $s->practical_pass_mark;
+                        });
+
+                        $compIds = $allInGroup->pluck('id')->toArray();
+                        
+                        $keyComb = 'comb_'.md5($groupName);
+                        
+                        $finalSubjects->put($keyComb, [
+                            'type' => 'combined',
+                            'subject_id' => null, // Virtual
+                            'name' => $groupName,
+                            'code' => '',
+                            'creative_full_mark' => $allInGroup->sum('creative_full_mark'),
+                            'mcq_full_mark' => $allInGroup->sum('mcq_full_mark'),
+                            'practical_full_mark' => $allInGroup->sum('practical_full_mark'),
+                            'total_full_mark' => $groupTotalFull,
+                            'total_pass_mark' => $groupPassFull,
+                            'pass_type' => 'combined', 
+                            'component_ids' => $compIds,
+                            'is_combined_result' => true
+                        ]);
+                        $processedGroups[] = $groupName;
                     }
 
-                    $mark = $studentMarksFor->get($exSub->id);
-                    $gp = 0;
-                    if ($mark) {
-                        $hasAny = true;
-                        if ($mark->is_absent) {
-                            $hasAbsent = true;
-                        }
-                        $sumTotal += ($mark->total_marks ?? 0);
-                        $gp = $mark->grade_point ?? 0;
-                    }
-
-                    $sumGpa += $gp;
-                    $countSubjects++;
-                }
-
-                $computedTotal = $sumTotal;
-                $computedGpa = $countSubjects > 0 ? round($sumGpa / $countSubjects, 2) : 0.00;
-
-                // Determine letter grade based on GPA
-                $computedLetter = null;
-                if ($computedGpa <= 0) {
-                    $computedLetter = 'F'; // Ensure F is shown instead of just failing the view
-                } elseif ($computedGpa >= 5.00) {
-                    $computedLetter = 'A+';
-                } elseif ($computedGpa >= 4.00) {
-                    $computedLetter = 'A';
-                } elseif ($computedGpa >= 3.50) {
-                    $computedLetter = 'A-';
-                } elseif ($computedGpa >= 3.00) {
-                    $computedLetter = 'B';
-                } elseif ($computedGpa >= 2.00) {
-                    $computedLetter = 'C';
-                } elseif ($computedGpa >= 1.00) {
-                    $computedLetter = 'D';
                 } else {
-                    $computedLetter = 'F';
+                    $key = 's_'.$sub->id;
+                    $finalSubjects->put($key, [
+                        'type' => 'single',
+                        'subject_id' => $sub->subject_id,
+                        'name' => $sub->subject->name,
+                        'code' => $sub->subject->code ?? '',
+                        'creative_full_mark' => $sub->creative_full_mark,
+                        'mcq_full_mark' => $sub->mcq_full_mark,
+                        'practical_full_mark' => $sub->practical_full_mark,
+                        'total_full_mark' => $sub->total_full_mark,
+                        'creative_pass_mark' => $sub->creative_pass_mark,
+                        'mcq_pass_mark' => $sub->mcq_pass_mark,
+                        'practical_pass_mark' => $sub->practical_pass_mark,
+                        'total_pass_mark' => ($sub->creative_pass_mark + $sub->mcq_pass_mark + $sub->practical_pass_mark),
+                        'pass_type' => $sub->pass_type,
+                        'component_ids' => [$sub->id]
+                    ]);
                 }
-
-                $computedStatus = ($computedGpa <= 0) ? 'অকৃতকার্য' : ($hasAbsent ? 'অনুপস্থিত' : 'উত্তীর্ণ');
-
-                $res->computed_total_marks = $computedTotal;
-                $res->computed_gpa = $computedGpa;
-                $res->computed_letter = $computedLetter;
-                $res->computed_status = $computedStatus;
             }
 
-            // Sort results by section name then by roll_no (via student's currentEnrollment)
+            // Now compute per-student totals
+            foreach ($resultsCollection as $res) {
+                $sid = $res->student_id;
+                $studentMarks = $marks->where('student_id', $sid);
+                
+                $grandTotal = 0;
+                $totalGpa = 0;
+                $subjectCount = 0;
+                $failedSubjectCount = 0;
+                $hasAbsent = false;
+
+                $res->subject_results = collect(); // Store processed result for each final subject
+
+                // Identify optional subject for this student
+                $studentOptionalId = $res->fourth_subject_id;
+
+                foreach ($finalSubjects as $key => $fSub) {
+                    // Check if this is the optional subject
+                    $isOptional = false;
+                    foreach ($fSub['component_ids'] as $cid) {
+                        $comp = $examSubjects->firstWhere('id', $cid);
+                        if ($comp && $comp->subject_id == $studentOptionalId) {
+                            $isOptional = true;
+                            break;
+                        }
+                    }
+
+                    // Check if this subject is DISPLAY ONLY (Individual part of a merged group)
+                    // If so, we just fetch marks and DO NOT calculate GPA/Status contribution directly (or do we?)
+                    // User said: "Individual subjects... show only... no calculation".
+                    if (!empty($fSub['display_only'])) {
+                        // Just aggregate marks for display
+                        $subTotal = 0;
+                        $subCreative = 0;
+                        $subMcq = 0;
+                        $subPractical = 0;
+                        $isAbsent = false;
+                        $hasRecord = false;
+                        
+                        foreach ($fSub['component_ids'] as $eid) {
+                            $m = $studentMarks->firstWhere('exam_subject_id', $eid);
+                            if ($m) {
+                                $hasRecord = true;
+                                if ($m->is_absent) $isAbsent = true; // Use stricter check? Or if any component absent?
+                                // Actually, for single component subject:
+                                if ($m->is_absent) $isAbsent = true;
+                                
+                                $subTotal += $m->total_marks;
+                                $subCreative += $m->creative_marks;
+                                $subMcq += $m->mcq_marks;
+                                $subPractical += $m->practical_marks;
+                            }
+                        }
+                        
+                        if (!$hasRecord) $subGrade = 'N/R';
+                        elseif ($isAbsent) $subGrade = 'F'; // Just for display
+                        else $subGrade = ''; 
+
+                        $res->subject_results->put($key, [
+                            'grade' => $subGrade, // Might be N/R or F or empty
+                            'gpa' => 0, // No GPA for individual parts
+                            'total' => $subTotal,
+                            'creative' => $subCreative,
+                            'mcq' => $subMcq,
+                            'practical' => $subPractical,
+                            'is_optional' => false,
+                            'is_absent' => $isAbsent,
+                            'display_only' => true
+                        ]);
+                        continue; // Skip GPA/Fail aggregation for this subject
+                    }
+
+                    // ... Standard Calculation for Single or Combined Virtual Subject ...
+                    // Aggregate marks for this subject (simple or combined)
+                    $subTotal = 0;
+                    $subCreative = 0;
+                    $subMcq = 0;
+                    $subPractical = 0;
+                    
+                    // Aggregated Pass Marks (for Combined validation)
+                    $totalCreativePass = 0;
+                    $totalMcqPass = 0;
+                    $totalPracticalPass = 0;
+                    $groupHasEachPassType = false;
+
+                    $subGP = 0;
+                    $subGrade = '';
+                    $isAbsent = true; // Assume absent until we find a present record
+                    $hasRecord = false;
+                    $isFailed = false;
+
+                    foreach ($fSub['component_ids'] as $eid) {
+                        $m = $studentMarks->firstWhere('exam_subject_id', $eid);
+                        $subComp = $examSubjects->firstWhere('id', $eid); 
+                        
+                        // Aggregate Pass Marks
+                        if ($subComp) {
+                            $totalCreativePass += $subComp->creative_pass_mark;
+                            $totalMcqPass += $subComp->mcq_pass_mark;
+                            $totalPracticalPass += $subComp->practical_pass_mark;
+                            if ($subComp->pass_type === 'each') {
+                                $groupHasEachPassType = true;
+                            }
+                        }
+
+                        if ($m) {
+                            $hasRecord = true;
+                            if (!$m->is_absent) {
+                                $isAbsent = false;
+                            }
+                            $subTotal += $m->total_marks;
+                            $subCreative += $m->creative_marks;
+                            $subMcq += $m->mcq_marks;
+                            $subPractical += $m->practical_marks;
+                        }
+                    }
+
+                    // Check Pass Logic
+                    if ($groupHasEachPassType) {
+                        // User Logic: Sum of Obtained Parts vs Sum of Pass Marks
+                        // Example: (Bangla 1 CQ + Bangla 2 CQ) >= (Bangla 1 CQ Pass + Bangla 2 CQ Pass)
+                        
+                        // Check Creative
+                        if ($totalCreativePass > 0 && $subCreative < $totalCreativePass) {
+                            $isFailed = true;
+                        }
+                        // Check MCQ
+                        if ($totalMcqPass > 0 && $subMcq < $totalMcqPass) {
+                            $isFailed = true;
+                        }
+                        // Check Practical
+                        if ($totalPracticalPass > 0 && $subPractical < $totalPracticalPass) {
+                            $isFailed = true;
+                        }
+                    }
+
+                    // Calculate Grade & GPA for this subject
+                    if (!$hasRecord) {
+                        $subGrade = 'N/R';
+                        $subGP = 0.00;
+                    } elseif ($isAbsent) {
+                        $subGrade = 'F'; // Requirement: Absent students get F
+                        $subGP = 0.00;   // Requirement: Absent students get 0.00 GPA
+                        $hasAbsent = true;
+                        $isFailed = true; // Mark as failed
+                    } else {
+                        // Calculate GPA based on percentage of total full mark
+                        $percent = ($fSub['total_full_mark'] > 0) ? ($subTotal / $fSub['total_full_mark']) * 100 : 0;
+                        
+                        // Fail if individual component failed OR total < total_pass_mark
+                        if ($isFailed || $subTotal < $fSub['total_pass_mark']) {
+                            $subGrade = 'F';
+                            $subGP = 0.00;
+                        } else {
+                            if ($percent >= 80) { $subGrade = 'A+'; $subGP = 5.00; }
+                            elseif ($percent >= 70) { $subGrade = 'A'; $subGP = 4.00; }
+                            elseif ($percent >= 60) { $subGrade = 'A-'; $subGP = 3.50; }
+                            elseif ($percent >= 50) { $subGrade = 'B'; $subGP = 3.00; }
+                            elseif ($percent >= 40) { $subGrade = 'C'; $subGP = 2.00; }
+                            elseif ($percent >= 33) { $subGrade = 'D'; $subGP = 1.00; }
+                            else { $subGrade = 'F'; $subGP = 0.00; }
+                        }
+                    }
+
+                    // Store for view
+                    $res->subject_results->put($key, [
+                        'grade' => $subGrade,
+                        'gpa' => $subGP,
+                        'total' => $subTotal, 
+                        'creative' => $subCreative,
+                        'mcq' => $subMcq,
+                        'practical' => $subPractical,
+                        'is_optional' => $isOptional,
+                        'is_absent' => $isAbsent
+                    ]);
+
+                    if ($isOptional) {
+                        // Optional subject logic: Add bonus if GPA > 2
+                        if ($subGP > 2.00) {
+                            $bonus = $subGP - 2.00;
+                            $totalGpa += $bonus;
+                        }
+                    } else {
+                        // Compulsory subject
+                        $grandTotal += $subTotal;
+                        $totalGpa += $subGP;
+                        
+                        // Count failure if Grade is F
+                        if ($subGrade == 'F') {
+                            $failedSubjectCount++;
+                        } elseif ($subGrade == 'N/R') {
+                            // User request: If Subject assigned but NO marks (N/R) for a compulsory subject, it should be a FAIL.
+                            // Currently it was not counting.
+                            $failedSubjectCount++;
+                            // Optionally change grade to F for display? User just said "Status Showing Passed is not acceptable".
+                            // So ensuring fail count increment is enough to make Status = Failed.
+                            // We can leave display as N/R to indicate why.
+                        }
+                    }
+                }
+
+                // Final Calculation
+                // Use exam-defined total subjects count, or fallback to actual count of compulsory subjects
+                $divisor = $exam->total_subjects_without_fourth > 0 
+                    ? $exam->total_subjects_without_fourth 
+                    : $finalSubjects->filter(function($s) use ($res, $examSubjects){
+                        return $s['subject_id'] != $res->fourth_subject_id;
+                    })->count();
+
+                $finalGpa = ($divisor > 0) ? round($totalGpa / $divisor, 2) : 0.00;
+                if ($finalGpa > 5.00) $finalGpa = 5.00;
+
+                // Determine final letter grade
+                $finalLetter = '';
+                if ($failedSubjectCount > 0) {
+                    $finalLetter = 'F';
+                    $finalGpa = 0.00; // If failed in any compulsory subject, GPA is 0
+                } elseif ($finalGpa >= 5.00) $finalLetter = 'A+';
+                elseif ($finalGpa >= 4.00) $finalLetter = 'A';
+                elseif ($finalGpa >= 3.50) $finalLetter = 'A-';
+                elseif ($finalGpa >= 3.00) $finalLetter = 'B';
+                elseif ($finalGpa >= 2.00) $finalLetter = 'C';
+                elseif ($finalGpa >= 1.00) $finalLetter = 'D';
+                else $finalLetter = 'F';
+
+                $res->computed_total_marks = $grandTotal;
+                $res->computed_gpa = $finalGpa;
+                $res->computed_letter = $finalLetter;
+                $res->computed_status = ($finalLetter == 'F') ? 'অকৃতকার্য' : 'উত্তীর্ণ';
+                $res->fail_count = $failedSubjectCount;
+            }
+
+            // Sort results by section numeric value, then by roll number
             $results = $resultsCollection->sortBy(function($r){
+                // Section order: Try to get numeric order from section object if available, else name
                 $section = optional(optional($r->student)->currentEnrollment)->section;
-                $sectionName = $section ? $section->name : '';
-                $roll = optional(optional($r->student)->currentEnrollment)->roll_no ?? 0;
-                return $sectionName.'-'.str_pad($roll, 6, '0', STR_PAD_LEFT);
+                $secOrder = $section ? ($section->numeric_value ?? $section->id) : 999999;
+                
+                $roll = optional(optional($r->student)->currentEnrollment)->roll_no ?? 999999;
+                
+                // Return a string that sorts naturally: padded section order + padded roll
+                return sprintf('%09d-%09d', $secOrder, $roll);
             })->values();
 
             // Keep a lightweight students collection for any other display needs
@@ -295,7 +550,7 @@ class ResultController extends Controller
             }
         }
 
-        return view('principal.results.tabulation', compact('school', 'classes', 'academicYears', 'sections', 'exams', 'students', 'exam', 'class', 'examSubjects', 'classSubjects', 'results', 'marks'));
+        return view('principal.results.tabulation', compact('school', 'classes', 'academicYears', 'sections', 'exams', 'students', 'exam', 'class', 'examSubjects', 'classSubjects', 'finalSubjects', 'results', 'marks'));
     }
 
     // Print Tabulation Sheet

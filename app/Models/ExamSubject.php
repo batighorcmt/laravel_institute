@@ -14,6 +14,7 @@ class ExamSubject extends Model
     protected $fillable = [
         'exam_id',
         'subject_id',
+        'combine_group',
         'teacher_id',
         'creative_full_mark',
         'creative_pass_mark',
