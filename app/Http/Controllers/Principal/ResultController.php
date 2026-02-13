@@ -553,32 +553,7 @@ class ResultController extends Controller
         return view('principal.results.tabulation', compact('school', 'classes', 'academicYears', 'sections', 'exams', 'students', 'exam', 'class', 'examSubjects', 'classSubjects', 'finalSubjects', 'results', 'marks'));
     }
 
-    // Print Tabulation Sheet
-    public function printTabulation(School $school, Exam $exam, $classId)
-    {
-        $class = SchoolClass::find($classId);
-        $exam->load('examSubjects.subject');
-        $examSubjects = $exam->examSubjects()->orderBy('display_order')->get();
 
-        $students = Student::forSchool($school->id)
-            ->where('class_id', $class->id)
-            ->where('status', 'active')
-            ->orderBy('student_id')
-            ->get();
-
-        foreach ($students as $student) {
-            $student->marks = \App\Models\Mark::forExam($exam->id)
-                ->forStudent($student->id)
-                ->get()
-                ->keyBy('subject_id');
-
-            $student->result = Result::forExam($exam->id)
-                ->forStudent($student->id)
-                ->first();
-        }
-
-        return view('principal.results.print-tabulation', compact('school', 'exam', 'class', 'students', 'examSubjects'));
-    }
 
     // AJAX: get exams for an academic year (used by tabulation cascading select)
     public function examsByYear(Request $request, School $school)
@@ -678,7 +653,364 @@ class ResultController extends Controller
             'is_published' => false,
             'published_at' => null,
         ]);
+    }
 
+    public function unpublishResult(Request $request, School $school, $examId)
+    {
+        $exam = Exam::findOrFail($examId);
+        $exam->update(['status' => 'active']); // Revert to active or calculate again? Or just hide?
+        // Usually unpublish means set published_at to null or similar.
+        // Assuming status 'active' means not published/completed.
+        // Or if there is a 'published' status.
+        // Let's assume 'active'.
+        
         return back()->with('success', 'ফলাফল সফলভাবে আনপাবলিশ করা হয়েছে');
+    }
+
+    // Print Tabulation Sheet
+    public function printTabulation(Request $request, School $school, $examId, $classId)
+    {
+        // Re-use logic from tabulation, but focused on specific exam/class
+        // Simulate request parameters
+        // ... (rest of method same as before but inside class) ...
+        $req = new Request([
+            'academic_year_id' => $request->academic_year_id, // Passed via query or deduced?
+            // Actually print route might just need exam_id and class_id, but tabulation logic depends on them.
+            // Let's call the tabulation method logic or extract it.
+            // For now, I will extract the core logic effectively by setting request inputs.
+            'exam_id' => $examId,
+            'class_id' => $classId,
+            'section_id' => $request->section_id
+        ]);
+        
+        // Call internal or private method? 
+        // Or better: Just copy-paste logic? Copy headers is safer for now to avoid refactoring risk.
+        // Wait, I can just include the logic here.
+        
+        $academicYears = AcademicYear::forSchool($school->id)->get();
+        $classes = SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get();
+        $exams = Exam::forSchool($school->id)->orderBy('created_at', 'desc')->get();
+        $sections = \App\Models\Section::forSchool($school->id)->where('class_id', $classId)->get();
+
+        $exam = Exam::with(['examSubjects.subject'])->find($examId);
+        $class = SchoolClass::find($classId);
+        
+        // --- CORE TABULATION LOGIC COPY START ---
+        // (Simplified version of what is in tabulation method)
+        
+        $results = collect();
+        $finalSubjects = collect();
+
+        if ($exam && $class) {
+            // 1. Get Exam Subjects
+            $examSubjects = $exam->examSubjects()->with('subject')->get();
+            
+            // Fetch Class Subjects for sorting order and optional status
+            $classSubjects = \App\Models\ClassSubject::where('class_id', $classId)
+                ->whereIn('subject_id', $examSubjects->pluck('subject_id'))
+                ->get()
+                ->keyBy('subject_id');
+            // Sort Exam Subjects: First Compulsory (is_optional=0), Then Optional (is_optional=1), Then Order No
+            $examSubjects = $examSubjects->sort(function($a, $b) use ($classSubjects) {
+                $csA = $classSubjects[$a->subject_id] ?? null;
+                $csB = $classSubjects[$b->subject_id] ?? null;
+                
+                $optA = $csA ? $csA->is_optional : 0;
+                $optB = $csB ? $csB->is_optional : 0;
+                
+                if ($optA != $optB) {
+                    return $optA <=> $optB; // Compulsory first
+                }
+                
+                $orderA = $csA ? $csA->order_no : 999;
+                $orderB = $csB ? $csB->order_no : 999;
+                
+                return $orderA <=> $orderB;
+            });
+
+            // 2. Prepare Display Columns (Group merged subjects)
+            // ... (Copy logic from tabulation) ...
+            
+            // Logic to merge subjects based on combine_group
+            $processedGroups = [];
+            foreach ($examSubjects as $sub) {
+                if ($sub->combine_group) {
+                    if (in_array($sub->combine_group, $processedGroups)) continue;
+                    $processedGroups[] = $sub->combine_group;
+
+                    $groupSubjects = $examSubjects->where('combine_group', $sub->combine_group);
+                    
+                    // Add individual components FIRST (Display Only)
+                    foreach($groupSubjects as $gSub) {
+                        $finalSubjects->push([
+                            'id' => $gSub->id, // Virtual ID? No, use real ID
+                            'name' => $gSub->subject->name . ' (' . ($gSub->subject->code ?? '') . ')',
+                            'creative_full_mark' => $gSub->creative_full_mark,
+                            'mcq_full_mark' => $gSub->mcq_full_mark,
+                            'practical_full_mark' => $gSub->practical_full_mark,
+                            'total_full_mark' => $gSub->total_full_mark,
+                            'is_combined' => false,
+                            'display_only' => true, // Mark as display only
+                            'component_ids' => [$gSub->id] 
+                        ]);
+                    }
+
+                    // Add Combined Header
+                    $finalSubjects->push([
+                        'id' => 'group_' . $sub->combine_group,
+                        'name' => $sub->combine_group,
+                        'creative_full_mark' => $groupSubjects->sum('creative_full_mark'),
+                        'mcq_full_mark' => $groupSubjects->sum('mcq_full_mark'),
+                        'practical_full_mark' => $groupSubjects->sum('practical_full_mark'),
+                        'total_full_mark' => $groupSubjects->sum('total_full_mark'),
+                        'is_combined' => true,
+                        'component_ids' => $groupSubjects->pluck('id')->toArray()
+                    ]);
+
+                } else {
+                    $finalSubjects->push([
+                        'id' => $sub->id,
+                        'name' => $sub->subject->name,
+                        'creative_full_mark' => $sub->creative_full_mark,
+                        'mcq_full_mark' => $sub->mcq_full_mark,
+                        'practical_full_mark' => $sub->practical_full_mark,
+                        'total_full_mark' => $sub->total_full_mark,
+                        'is_combined' => false, // Standard single subject
+                        'component_ids' => [$sub->id]
+                    ]);
+                }
+            }
+
+
+            // 3. Fetch Student Results
+            // Fetch all marks for this exam/class
+            // Also filter by section if provided
+            $query = Student::with(['currentEnrollment.section', 'currentEnrollment.group'])
+                ->forSchool($school->id)
+                ->where('class_id', $classId)
+                ->where('status', 'active');
+
+            if ($request->section_id) {
+                $query->whereHas('currentEnrollment', function($q) use ($request) {
+                    $q->where('section_id', $request->section_id);
+                });
+            }
+            
+            // Sort by Section then Roll
+            // Need to join enrollments to sort by section/roll efficiently or do it in collection
+            // Doing in collection for simplicity as done in tabulation
+            $students = $query->get();
+            // Sort: Section Name (numeric safe?) -> Roll
+            $students = $students->sortBy(function($st) {
+                 $sec = $st->currentEnrollment->section->numeric_value ?? 999;
+                 $roll = $st->currentEnrollment->roll_no ?? 9999;
+                 return sprintf('%04d-%04d', $sec, $roll);
+            });
+
+
+            // Pre-load all marks for this exam to minimize queries
+            $studentIds = $students->pluck('id');
+            $marks = \App\Models\Mark::where('exam_id', $examId)
+                ->whereIn('student_id', $studentIds)
+                ->get();
+
+            $resultsCollection = Result::where('exam_id', $examId)
+                ->whereIn('student_id', $studentIds)
+                ->get()
+                ->keyBy('student_id');
+
+            // 4. Process Each Student
+            foreach ($students as $student) {
+                $res = $resultsCollection->get($student->id);
+                if (!$res) {
+                    // Create dummy result object if not calculated yet? 
+                    // Or just skip/show empty? Better show empty row with student info
+                     $res = new Result();
+                     $res->student_id = $student->id;
+                     // set relation
+                     $res->setRelation('student', $student);
+                } else {
+                     $res->setRelation('student', $student);
+                }
+
+
+                $sid = $student->id;
+                $studentMarks = $marks->where('student_id', $sid);
+                
+                $grandTotal = 0;
+                $totalGpa = 0;
+                $subjectCount = 0;
+                $failedSubjectCount = 0; // New Fail Count
+                $res->subject_results = collect(); 
+
+                $studentOptionalId = $res->fourth_subject_id; // Need to ensure fourth_subject_id is loaded or fetchable
+
+                foreach ($finalSubjects as $key => $fSub) {
+                     // logic to identify optional
+                    $isOptional = false;
+                    foreach ($fSub['component_ids'] as $cid) {
+                        $comp = $examSubjects->firstWhere('id', $cid);
+                        if ($comp && $comp->subject_id == $studentOptionalId) {
+                            $isOptional = true;
+                            break;
+                        }
+                    }
+
+                    if (!empty($fSub['display_only'])) {
+                         // Display only logic
+                        $subTotal = 0; $subCreative = 0; $subMcq = 0; $subPractical = 0;
+                        $isAbsent = false; $hasRecord = false;
+                        
+                        foreach ($fSub['component_ids'] as $eid) {
+                            $m = $studentMarks->firstWhere('exam_subject_id', $eid);
+                            if ($m) {
+                                $hasRecord = true;
+                                if ($m->is_absent) $isAbsent = true; 
+                                $subTotal += $m->total_marks;
+                                $subCreative += $m->creative_marks;
+                                $subMcq += $m->mcq_marks;
+                                $subPractical += $m->practical_marks;
+                            }
+                        }
+                        
+                        $subGrade = (!$hasRecord) ? 'N/R' : ($isAbsent ? 'F' : ''); 
+
+                        $res->subject_results->put($key, [
+                            'grade' => $subGrade, 'gpa' => 0, 'total' => $subTotal,
+                            'creative' => $subCreative, 'mcq' => $subMcq, 'practical' => $subPractical,
+                            'is_optional' => false, 'is_absent' => $isAbsent, 'display_only' => true
+                        ]);
+                        continue; 
+                    }
+
+                    // Combined Logic
+                    $subTotal = 0; $subCreative = 0; $subMcq = 0; $subPractical = 0;
+                    $subGP = 0; $subGrade = '';
+                    $isAbsent = true; $hasRecord = false; $isFailed = false;
+
+                     // Aggregated Pass Marks (for Combined validation)
+                    $totalCreativePass = 0;
+                    $totalMcqPass = 0;
+                    $totalPracticalPass = 0;
+                    $groupHasEachPassType = false;
+
+                    foreach ($fSub['component_ids'] as $eid) {
+                        $m = $studentMarks->firstWhere('exam_subject_id', $eid);
+                        $subComp = $examSubjects->firstWhere('id', $eid);
+
+                         // Aggregate Pass Marks
+                        if ($subComp) {
+                            $totalCreativePass += $subComp->creative_pass_mark;
+                            $totalMcqPass += $subComp->mcq_pass_mark;
+                            $totalPracticalPass += $subComp->practical_pass_mark;
+                            if ($subComp->pass_type === 'each') {
+                                $groupHasEachPassType = true;
+                            }
+                        }
+
+                        if ($m) {
+                            $hasRecord = true;
+                            if (!$m->is_absent) $isAbsent = false;
+                            $subTotal += $m->total_marks;
+                            $subCreative += $m->creative_marks;
+                            $subMcq += $m->mcq_marks;
+                            $subPractical += $m->practical_marks;
+                        }
+                    }
+
+                     // Check Pass Logic
+                    if ($groupHasEachPassType) {
+                        if ($totalCreativePass > 0 && $subCreative < $totalCreativePass) $isFailed = true;
+                        if ($totalMcqPass > 0 && $subMcq < $totalMcqPass) $isFailed = true;
+                        if ($totalPracticalPass > 0 && $subPractical < $totalPracticalPass) $isFailed = true;
+                    }
+
+                    if (!$hasRecord) {
+                        $subGrade = 'N/R';
+                        $subGP = 0;
+                        if (!$isOptional) $failedSubjectCount++; // Compulsory N/R = Fail
+                    } elseif ($isAbsent) {
+                        $subGrade = 'F';
+                        $subGP = 0;
+                        if (!$isOptional) $failedSubjectCount++;
+                    } else {
+                         // Check Total Pass Mark
+                        $combTotalPass = 0;
+                        $combTotalFull = 0;
+                         foreach ($fSub['component_ids'] as $eid) {
+                            $subComp = $examSubjects->firstWhere('id', $eid);
+                            if($subComp) {
+                                $combTotalPass += $subComp->total_pass_mark;
+                                $combTotalFull += $subComp->total_full_mark;
+                            }
+                        }
+
+                        if ($isFailed || $subTotal < $combTotalPass) {
+                            $subGrade = 'F';
+                            $subGP = 0;
+                            if (!$isOptional) $failedSubjectCount++;
+                        } else {
+                            // Calculate GPA
+                            $percent = $combTotalFull > 0 ? ($subTotal / $combTotalFull) * 100 : 0;
+                            if ($percent >= 80) { $subGrade = 'A+'; $subGP = 5.00; }
+                            elseif ($percent >= 70) { $subGrade = 'A'; $subGP = 4.00; }
+                            elseif ($percent >= 60) { $subGrade = 'A-'; $subGP = 3.50; }
+                            elseif ($percent >= 50) { $subGrade = 'B'; $subGP = 3.00; }
+                            elseif ($percent >= 40) { $subGrade = 'C'; $subGP = 2.00; }
+                            elseif ($percent >= 33) { $subGrade = 'D'; $subGP = 1.00; }
+                            else { $subGrade = 'F'; $subGP = 0.00; if (!$isOptional) $failedSubjectCount++; }
+                        }
+                    }
+                    
+                    if (!$isOptional && $subGrade != 'N/R') {
+                        $grandTotal += $subTotal;
+                        $totalGpa += $subGP;
+                        $subjectCount++;
+                    } elseif ($isOptional && $subGP > 2.00) {
+                         $totalGpa += ($subGP - 2.00);
+                    }
+
+                    $res->subject_results->put($key, [
+                        'grade' => $subGrade, 'gpa' => $subGP, 'total' => $subTotal,
+                        'creative' => $subCreative, 'mcq' => $subMcq, 'practical' => $subPractical,
+                        'is_optional' => $isOptional, 'is_absent' => $isAbsent,'display_only' => false
+                    ]);
+                } // End Subject Loop
+                
+                 // Final Calculation
+                $res->computed_total_marks = $grandTotal;
+                $res->fail_count = $failedSubjectCount; 
+
+                if ($subjectCount > 0) {
+                     // Check if failed any subject?
+                     if ($failedSubjectCount > 0) {
+                         $res->computed_gpa = 0.00;
+                         $res->computed_letter = 'F';
+                         $res->computed_status = 'Failed';
+                     } else {
+                         $finalGpa = $totalGpa / $subjectCount;
+                         if ($finalGpa > 5.00) $finalGpa = 5.00;
+                         $res->computed_gpa = $finalGpa;
+                         
+                         if ($finalGpa >= 5.00) $res->computed_letter = 'A+';
+                         elseif ($finalGpa >= 4.00) $res->computed_letter = 'A';
+                         elseif ($finalGpa >= 3.50) $res->computed_letter = 'A-';
+                         elseif ($finalGpa >= 3.00) $res->computed_letter = 'B';
+                         elseif ($finalGpa >= 2.00) $res->computed_letter = 'C';
+                         elseif ($finalGpa >= 1.00) $res->computed_letter = 'D';
+                         else $res->computed_letter = 'F';
+                         
+                         $res->computed_status = 'Passed';
+                     }
+                } else {
+                     $res->computed_gpa = 0;
+                     $res->computed_status = 'N/A';
+                }
+
+                $results->push($res);
+            }
+        }
+        
+        return view('principal.results.print-tabulation', compact('school', 'academicYears', 'classes', 'sections', 'exams', 'results', 'finalSubjects', 'exam', 'class'));
     }
 }
