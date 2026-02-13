@@ -739,15 +739,10 @@ class ResultController extends Controller
         // Re-use logic from tabulation, but focused on specific exam/class
         // Simulate request parameters
         // ... (rest of method same as before but inside class) ...
-        $req = new Request([
-            'academic_year_id' => $request->academic_year_id, // Passed via query or deduced?
-            // Actually print route might just need exam_id and class_id, but tabulation logic depends on them.
-            // Let's call the tabulation method logic or extract it.
-            // For now, I will extract the core logic effectively by setting request inputs.
-            'exam_id' => $examId,
-            'class_id' => $classId,
-            'section_id' => $request->section_id
-        ]);
+        $examId = $request->exam_id ?: $examId;
+        $classId = $request->class_id ?: $classId;
+        $sectionId = $request->section_id;
+        $lang = $request->get('lang', 'bn');
         
         // Call internal or private method? 
         // Or better: Just copy-paste logic? Copy headers is safer for now to avoid refactoring risk.
@@ -1136,6 +1131,16 @@ class ResultController extends Controller
             }
         }
         
-        return view('principal.results.print-tabulation', compact('school', 'academicYears', 'classes', 'sections', 'exams', 'results', 'finalSubjects', 'exam', 'class'));
+        $printTitle = $lang === 'bn' ? 'টেবুলেশন শিট' : 'Tabulation Sheet';
+        $printSubtitle = ($lang === 'bn' ? 'পরীক্ষা: ' : 'Exam: ') . $exam->name . ' | ' . 
+                        ($lang === 'bn' ? 'শ্রেণি: ' : 'Class: ') . $class->name . ' | ' . 
+                        ($lang === 'bn' ? 'বছর: ' : 'Year: ') . $exam->academicYear->name;
+        
+        if ($sectionId) {
+            $sec = Section::find($sectionId);
+            $printSubtitle .= ' | ' . ($lang === 'bn' ? 'শাখা: ' : 'Section: ') . ($sec->name ?? $sec->section_name);
+        }
+
+        return view('principal.results.print-tabulation', compact('school', 'academicYears', 'classes', 'sections', 'exams', 'results', 'finalSubjects', 'exam', 'class', 'printTitle', 'printSubtitle', 'lang'));
     }
 }
