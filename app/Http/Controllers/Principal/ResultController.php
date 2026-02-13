@@ -12,6 +12,8 @@ use App\Models\Section;
 use App\Models\Mark;
 use App\Models\AcademicYear;
 use App\Models\ClassSubject;
+use App\Models\StudentEnrollment;
+use App\Models\StudentSubject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -49,7 +51,7 @@ class ResultController extends Controller
             ->forStudent($student->id)
             ->first();
 
-        $marks = \App\Models\Mark::with(['examSubject.subject'])
+        $marks = Mark::with(['examSubject.subject'])
             ->forExam($exam->id)
             ->forStudent($student->id)
             ->get();
@@ -195,7 +197,7 @@ class ResultController extends Controller
             $studentIdsWithMarks = $marksForExam->pluck('student_id')->unique()->values()->all();
 
             // Include students who are enrolled in this class/section (entry form uses enrollments)
-            $enrollmentQuery = \App\Models\StudentEnrollment::where('school_id', $school->id)->where('class_id', $class->id)->where('status','active');
+            $enrollmentQuery = StudentEnrollment::where('school_id', $school->id)->where('class_id', $class->id)->where('status','active');
             if ($request->filled('section_id')) {
                 $enrollmentQuery->where('section_id', $request->section_id);
             }
@@ -916,7 +918,7 @@ class ResultController extends Controller
 
             // Pre-load all marks for this exam to minimize queries
             $studentIds = $students->pluck('id');
-            $marks = \App\Models\Mark::where('exam_id', $examId)
+            $marks = Mark::where('exam_id', $examId)
                 ->whereIn('student_id', $studentIds)
                 ->get();
 
