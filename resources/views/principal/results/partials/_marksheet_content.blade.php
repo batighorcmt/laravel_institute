@@ -12,29 +12,22 @@
         if (!$res) continue;
 
         if (!empty($res['display_only'])) {
-             // We can choose to show or hide, usually show for details
-             // But in the previous view, they were skipped in the main list?
-             // "Skip display only individual parts for calculation (we show them, but don't count them as subjects)"
-             // The previous view logic loop: "if (!empty($fSub['display_only'])) continue;" - So it HID them?
-             // Wait, looking at print-marksheet.blade.php line 113: "if (!empty($fSub['display_only'])) continue;"
-             // So they were HIDDEN in the printed marksheet in the calculation loop.
-             // But were they displayed in the table? 
-             // The table iterated $mainSubjects. $mainSubjects only got items if not continue.
-             // So "display_only" items were NOT shown in the table in the current implementation.
-             // I will follow that behavior.
              continue; 
         }
+
+        $isAbsent = !empty($res['is_absent']);
+        $hasData = ($res['creative'] > 0 || $res['mcq'] > 0 || $res['practical'] > 0 || $res['total'] > 0);
 
         $subData = [
             'name' => $res['name'] ?? $fSub['name'],
             'creative' => $res['creative'] > 0 ? $res['creative'] : '-',
             'mcq' => $res['mcq'] > 0 ? $res['mcq'] : '-',
             'practical' => $res['practical'] > 0 ? $res['practical'] : '-',
-            'total' => $res['is_absent'] ? 'Abs' : ($res['total'] > 0 || $res['grade'] != 'N/R' ? $res['total'] : '-'),
-            'gp' => ($res['is_absent'] || $res['grade'] == 'F') ? '0.00' : number_format($res['gpa'], 2),
-            'grade' => $res['grade'],
+            'total' => $isAbsent ? 'Abs' : ($hasData ? $res['total'] : '-'),
+            'gp' => ($isAbsent || $res['grade'] == 'F' || !$hasData) ? '0.00' : number_format($res['gpa'], 2),
+            'grade' => $isAbsent ? 'N/R' : ($hasData ? $res['grade'] : '-'),
             'is_failed' => $res['grade'] == 'F',
-            'is_absent' => $res['is_absent']
+            'is_absent' => $isAbsent
         ];
 
         if ($res['is_optional']) {
@@ -42,21 +35,12 @@
             $optionalGP = $res['gpa']; // from controller
         } else {
             $mainSubjects->push($subData);
-            if ($res['grade'] != 'F' && $res['grade'] != 'N/R') {
+            if ($res['grade'] != 'F' && $res['grade'] != 'N/R' && $hasData) {
                  $totalGP += $res['gpa'];
                  $totalMainSubjects++;
             }
-             // Actually controller calculated final GPA, we don't need to recalc totals here for GPA
-             // But we need $totalMainSubjects for the "GPA (W/O Addl)" column if we want to show it?
-             // The view showed "GPA (W/O Addl)" column.
         }
     }
-    
-    // Recalculate Total Main GP and Count for "GPA (W/O Addl)" display
-    // Controller didn't explicitly give us "GPA without optional"
-    // We can sum it up from the loop above.
-    // Note: Controller handles "total_subjects_without_fourth" which might be different from count($mainSubjects)
-    // But for display approximation, average of displayed subjects is fine.
 @endphp
 
 <div class="print-content" style="page-break-after: always;">
@@ -67,14 +51,16 @@
     <!-- Header -->
     <div class="header-section">
         <div class="serial-no">Serial No. {{ $result->id ?? sprintf('%06d', rand(1000,99999)) }}</div>
-        <h1>{{ $school->name }}</h1>
-        <h2>{{ $school->address }}</h2>
         
-        @if($school->logo)
-            <img src="{{ asset('storage/'.$school->logo) }}" class="header-logo" alt="Logo">
-        @else
-             <div style="height:80px"></div>
-        @endif
+        <div class="header-main">
+            @if($school->logo)
+                <img src="{{ asset('storage/'.$school->logo) }}" class="header-logo" alt="Logo">
+            @endif
+            <div class="header-text">
+                <h1>{{ $school->name }}</h1>
+                <h2>{{ $school->address }}</h2>
+            </div>
+        </div>
 
         <div class="transcript-title">ACADEMIC TRANSCRIPT</div>
         <div class="exam-name-header">{{ $exam->name }} - {{ $exam->academicYear->name ?? '' }}</div>
@@ -148,7 +134,7 @@
                 <th style="width: 40px;">CQ</th>
                 <th style="width: 40px;">MCQ</th>
                 <th style="width: 40px;">PR</th>
-                <th style="width: 50px;">Total</th>
+                <th style="width: 50px;">Total Mark</th>
                 <th style="width: 50px;">Letter Grade</th>
                 <th style="width: 50px;">Grade Point</th>
                 <th style="width: 60px;">GPA<br><small>(W/O Addl)</small></th>
