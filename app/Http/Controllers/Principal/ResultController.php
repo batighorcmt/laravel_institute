@@ -44,6 +44,7 @@ class ResultController extends Controller
     }
 
     // Print individual marksheet
+    // Print individual marksheet
     public function printMarksheet(School $school, Exam $exam, Student $student)
     {
         $result = Result::with(['student', 'exam'])
@@ -51,12 +52,109 @@ class ResultController extends Controller
             ->forStudent($student->id)
             ->first();
 
-        $marks = Mark::with(['examSubject.subject'])
+        $marks = \App\Models\Mark::with(['examSubject.subject'])
             ->forExam($exam->id)
             ->forStudent($student->id)
             ->get();
 
-        return view('principal.results.print-marksheet', compact('school', 'exam', 'student', 'result', 'marks'));
+        // --- PREPARE SUBJECTS (Tabulation Logic) ---
+        $classId = ($exam && $exam->class_id) ? $exam->class_id : ($result->class_id ?? $student->class_id);
+        
+        $examSubjects = $exam->examSubjects()->orderBy('display_order')->get();
+        $classSubjects = \App\Models\ClassSubject::where('class_id', $classId)
+            ->whereIn('subject_id', $examSubjects->pluck('subject_id'))
+            ->with('group')
+            ->get()
+            ->keyBy('subject_id');
+
+        // Sort examSubjects (same logic as tabulation)
+        $examSubjects = $examSubjects->sort(function($a, $b) use ($classSubjects) {
+            $csA = $classSubjects[$a->subject_id] ?? null;
+            $csB = $classSubjects[$b->subject_id] ?? null;
+            $groupA = $csA ? strtolower($csA->group->name ?? '') : '';
+            $groupB = $csB ? strtolower($csB->group->name ?? '') : '';
+            $priority = function($gName) {
+                if (empty($gName)) return 0;
+                if (str_contains($gName, 'science') || str_contains($gName, 'বিজ্ঞান')) return 1;
+                if (str_contains($gName, 'humanities') || str_contains($gName, 'মানবিক')) return 2;
+                if (str_contains($gName, 'business') || str_contains($gName, 'ব্যবসায়')) return 3;
+                return 4;
+            };
+            $pA = $priority($groupA);
+            $pB = $priority($groupB);
+            if ($pA != $pB) return $pA <=> $pB;
+            $optA = $csA ? $csA->is_optional : 0;
+            $optB = $csB ? $csB->is_optional : 0;
+            if ($optA != $optB) return $optA <=> $optB;
+            $orderA = $csA ? $csA->order_no : 999;
+            $orderB = $csB ? $csB->order_no : 999;
+            return $orderA <=> $orderB;
+        });
+
+        // Prepare Final Subjects List (Handling Combined Subjects)
+        $finalSubjects = collect();
+        $processedGroups = [];
+
+        foreach ($examSubjects as $sub) {
+            if ($sub->combine_group) {
+                $groupName = trim($sub->combine_group);
+                
+                // Add individual parts as display only
+                $keyInd = 'ind_'.$sub->id;
+                $finalSubjects->put($keyInd, [
+                    'type' => 'individual',
+                    'subject_id' => $sub->subject_id,
+                    'name' => $sub->subject->name,
+                    'code' => $sub->subject->code ?? '',
+                    'creative_full_mark' => $sub->creative_full_mark,
+                    'mcq_full_mark' => $sub->mcq_full_mark,
+                    'practical_full_mark' => $sub->practical_full_mark,
+                    'total_full_mark' => $sub->total_full_mark,
+                    'display_only' => true,
+                    'component_ids' => [$sub->id]
+                ]);
+
+                // Check if this is the last item of the group
+                $lastItemOfGroup = $examSubjects->where('combine_group', $groupName)->last();
+                
+                if ($sub->id == $lastItemOfGroup->id && !in_array($groupName, $processedGroups)) {
+                    // Add Combined Virtual Subject
+                     $allInGroup = $examSubjects->where('combine_group', $groupName);
+                     $keyComb = 'comb_'.md5($groupName);
+                     $finalSubjects->put($keyComb, [
+                        'type' => 'combined',
+                        'subject_id' => null,
+                        'name' => $groupName, 
+                        'code' => '',
+                        'creative_full_mark' => $allInGroup->sum('creative_full_mark'),
+                        'mcq_full_mark' => $allInGroup->sum('mcq_full_mark'),
+                        'practical_full_mark' => $allInGroup->sum('practical_full_mark'),
+                        'total_full_mark' => $allInGroup->sum('total_full_mark'),
+                        'pass_type' => 'combined', 
+                        'component_ids' => $allInGroup->pluck('id')->toArray(),
+                        'is_combined_result' => true
+                    ]);
+                    $processedGroups[] = $groupName;
+                }
+
+            } else {
+                // Standalone Subject
+                $key = 's_'.$sub->id;
+                $finalSubjects->put($key, [
+                    'type' => 'single',
+                    'subject_id' => $sub->subject_id,
+                    'name' => $sub->subject->name,
+                    'code' => $sub->subject->code ?? '',
+                    'creative_full_mark' => $sub->creative_full_mark,
+                    'mcq_full_mark' => $sub->mcq_full_mark,
+                    'practical_full_mark' => $sub->practical_full_mark,
+                    'total_full_mark' => $sub->total_full_mark,
+                    'component_ids' => [$sub->id]
+                ]);
+            }
+        }
+
+        return view('principal.results.print-marksheet', compact('school', 'exam', 'student', 'result', 'marks', 'finalSubjects', 'examSubjects'));
     }
 
     // Merit List
