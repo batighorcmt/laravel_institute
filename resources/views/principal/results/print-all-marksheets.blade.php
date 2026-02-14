@@ -18,52 +18,60 @@
 
     /* Header */
     .header-section { margin-bottom: 10px; position: relative; }
-    .header-main { display: flex; align-items: center; justify-content: center; gap: 20px; }
-    .header-logo { width: 70px; height: 70px; margin: 0; }
+    .header-main { display: flex !important; align-items: center; justify-content: center; gap: 20px; text-align: center; }
+    .header-logo { width: 70px; height: 70px; margin: 0; flex-shrink: 0; }
     .header-text { text-align: center; }
     .header-section h1 { font-size: 20pt; font-weight: bold; margin: 0; text-transform: uppercase; color: #1a4d2e; line-height: 1.2; } 
-    .header-section h2 { font-size: 12pt; margin: 2px 0; font-weight: normal; }
-    .header-section .serial-no { position: absolute; top: 0; left: 0; font-size: 9pt; font-weight: bold; }
+    .header-section h2 { font-size: 11pt; margin: 2px 0; font-weight: normal; }
     
     .transcript-title { 
         text-align: center; 
-        font-size: 16pt; 
+        font-size: 15pt; 
         font-weight: bold; 
         color: #800000; /* Dark Red */
         margin: 5px 0; 
         text-transform: uppercase;
-        letter-spacing: 1px;
+        border: 1px solid #000;
+        display: inline-block;
+        padding: 2px 20px;
+        position: relative;
+        left: 50%;
+        transform: translateX(-50%);
     }
 
-    .exam-name-header { text-align: center; font-size: 12pt; font-weight: bold; margin-bottom: 10px; }
+    .exam-name-header { text-align: center; font-size: 11pt; font-weight: bold; margin-bottom: 8px; }
 
-    /* Student Info & Grading Table Container */
-    .info-grading-container { display: flex; justify-content: space-between; margin-bottom: 5px; align-items: flex-start; }
+    /* Student Info & Grading */
+    .info-grading-container { display: flex; justify-content: space-between; margin-bottom: 5px; align-items: flex-start; gap: 10px; }
     
-    .student-info { flex: 1; font-size: 10pt; line-height: 1.4; }
-    .student-info table { width: 100%; border: none; }
-    .student-info td { vertical-align: top; padding: 1px 0; }
-    .student-info .label { width: 130px; font-weight: normal; }
-    .student-info .colon { width: 15px; }
+    .student-info { flex: 1; font-size: 9.5pt; line-height: 1.3; }
+    .student-info table { width: 100%; border: none !important; }
+    .student-info td { vertical-align: top; padding: 1px 0; border: none !important; }
+    .student-info .label { width: 120px; font-weight: normal; }
+    .student-info .colon { width: 10px; }
     .student-info .value { font-weight: bold; font-style: italic; }
 
-    .grading-table { width: 220px; border-collapse: collapse; font-size: 8pt; margin-left: 20px; }
+    .grading-table { width: 200px; border-collapse: collapse; font-size: 7.5pt; }
     .grading-table th, .grading-table td { border: 1px solid #000; padding: 1px; text-align: center; }
     .grading-table th { background-color: #f0f0f0; }
 
     /* Main Result Table */
-    .result-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 10pt; }
-    .result-table th, .result-table td { border: 1px solid #000; padding: 3px; text-align: center; vertical-align: middle; }
-    .result-table th { background-color: #f9f9f9; font-weight: bold; padding: 4px; }
-    .result-table .text-left { text-align: left; padding-left: 8px; }
+    .result-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 9.5pt; }
+    .result-table th, .result-table td { border: 1px solid #000; padding: 2px; text-align: center; vertical-align: middle; }
+    .result-table th { background-color: #f4f4f4; font-weight: bold; padding: 4px; font-size: 9pt; }
+    .result-table .text-left { text-align: left; padding-left: 5px; }
     .result-table .sub-name { font-weight: bold; }
     
     /* Footer */
-    .footer-section { margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; }
+    .footer-section { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 9.5pt; }
     .signature-box { text-align: center; width: 180px; }
-    .signature-line { border-top: 1px solid #000; margin-top: 30px; padding-top: 3px; font-weight: bold; }
+    .signature-line { border-top: 1px solid #000; margin-top: 30px; padding-top: 2px; font-weight: bold; }
     
-    .date-publication { margin-top: 15px; font-size: 9pt; font-weight: bold; }
+    .date-publication { margin-top: 10px; font-size: 8.5pt; font-weight: bold; }
+
+    /* Extra activities */
+    .extra-activities-table table td { border: 1px solid #000; }
+    .extra-activities-table th { font-weight: bold; text-transform: uppercase; }
     
     @media print {
         .no-print { display: none !important; }

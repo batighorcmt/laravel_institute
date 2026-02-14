@@ -1603,7 +1603,35 @@ class ResultController extends Controller
             $res->computed_letter = $finalLetter;
             $res->computed_status = ($finalLetter == 'F') ? 'অকৃতকার্য' : 'উত্তীর্ণ';
             $res->fail_count = $failedSubjectCount;
+            // Store section_id for easier grouping
+            $res->section_id = optional(optional($stu->currentEnrollment)->section)->id;
         }
+
+        // --- MERIT RANKING LOGIC START ---
+        // 1. Class-wise Ranking
+        $classRanked = $resultsCollection->sort(function($a, $b) {
+            // First Priority: Less failures
+            if ($a->fail_count != $b->fail_count) return $a->fail_count <=> $b->fail_count;
+            // Second Priority: Higher Total Marks
+            return $b->computed_total_marks <=> $a->computed_total_marks;
+        })->values();
+
+        foreach($classRanked as $index => $r) {
+            $r->class_position = $index + 1;
+        }
+
+        // 2. Section-wise Ranking
+        $sectionsGroup = $resultsCollection->groupBy('section_id');
+        foreach($sectionsGroup as $secId => $secResults) {
+            $secRanked = $secResults->sort(function($a, $b) {
+                if ($a->fail_count != $b->fail_count) return $a->fail_count <=> $b->fail_count;
+                return $b->computed_total_marks <=> $a->computed_total_marks;
+            })->values();
+            foreach($secRanked as $index => $r) {
+                $r->section_position = $index + 1;
+            }
+        }
+        // --- MERIT RANKING LOGIC END ---
 
         $results = $resultsCollection->sortBy(function($r){
             $section = optional(optional($r->student)->currentEnrollment)->section;

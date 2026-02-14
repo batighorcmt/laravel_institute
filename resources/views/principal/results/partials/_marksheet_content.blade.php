@@ -77,7 +77,7 @@
             <table>
                 <tr>
                     <td class="label">Name of Student</td><td class="colon">:</td>
-                    <td class="value">{{ $student->student_name_en ?: $student->student_name_bn }}</td>
+                    <td class="value"><span style="font-size: 13pt; border-bottom: 1px solid #000;">{{ $student->student_name_en ?: $student->student_name_bn }}</span> ({{ $student->student_id }})</td>
                 </tr>
                 <tr>
                     <td class="label">Father's Name</td><td class="colon">:</td>
@@ -86,6 +86,10 @@
                 <tr>
                     <td class="label">Mother's Name</td><td class="colon">:</td>
                     <td class="value">{{ $student->mother_name ?: $student->mother_name_bn }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Class & Section</td><td class="colon">:</td>
+                    <td class="value">{{ $student->currentEnrollment->class->name ?? '-' }} ({{ $student->currentEnrollment->section->name ?? '-' }})</td>
                 </tr>
                 <tr>
                     <td class="label">Roll Number</td><td class="colon">:</td>
@@ -196,7 +200,57 @@
                 </tr>
             @endif
         </tbody>
+        <tfoot>
+             <tr style="background-color: #f9f9f9; font-weight: bold;">
+                <td colspan="5" class="text-right">Grand Total: <b>{{ $result->computed_total_marks }}</b></td>
+                <td colspan="5" class="text-left" style="padding-left: 15px;">
+                    Merit Position: 
+                    Class: <b>{{ $result->class_position }}</b>, 
+                    Section: <b>{{ $result->section_position }}</b>
+                </td>
+            </tr>
+        </tfoot>
     </table>
+
+    <!-- Extra Activities & Attendance Table -->
+    <table class="extra-activities-table" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 9pt;">
+        <tr>
+            <!-- Attendance Column -->
+            <td style="width: 35%; border: 1px solid #000; vertical-align: top; padding: 0;">
+                <table style="width: 100%; border-collapse: collapse; border: none;">
+                    <tr><th colspan="2" style="border-bottom: 1px solid #000; padding: 3px; background: #eee;">Attendance</th></tr>
+                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd; width: 70%;">Total School Days</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
+                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd;">Total Present</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
+                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd;">Total Absent</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
+                    <tr><td style="padding: 2px 5px;">Attendance Rate (%)</td><td style="border-left: 1px solid #ddd;"></td></tr>
+                </table>
+            </td>
+
+            <!-- Empty Column 2 -->
+            <td style="width: 10%; border: 1px solid #000;"></td>
+
+            <!-- Spacer Column 3 (Borderless) -->
+            <td style="width: 5%; border: none;"></td>
+
+            <!-- Co-curricular Column -->
+            <td style="width: 35%; border: 1px solid #000; vertical-align: top; padding: 0;">
+                <table style="width: 100%; border-collapse: collapse; border: none;">
+                    <tr><th colspan="2" style="border-bottom: 1px solid #000; padding: 3px; background: #eee;">Co-Curricular Activities</th></tr>
+                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd; width: 70%;">Moral Education</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
+                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd;">Arts & Crafts</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
+                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd;">Health & Sports</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
+                    <tr><td style="padding: 2px 5px;">Discipline</td><td style="border-left: 1px solid #ddd;"></td></tr>
+                </table>
+            </td>
+
+            <!-- Empty Column 5 -->
+            <td style="width: 15%; border: 1px solid #000;"></td>
+        </tr>
+    </table>
+
+    <div style="margin-top: 15px; font-size: 10pt;">
+        <b>Remarks:</b> ________________________________________________________________________________________________________
+    </div>
 
     <!-- Footer Signatures -->
     <div class="footer-section">
