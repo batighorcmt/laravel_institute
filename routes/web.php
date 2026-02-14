@@ -607,15 +607,4 @@ Route::middleware(['auth'])->group(function () {
 // Public document verification endpoint (QR target)
 Route::get('/verify/document/{code}', [\App\Http\Controllers\Documents\VerificationController::class, 'show'])->name('documents.verify');
 
-// Temporary migration trigger (Delete after use)
-Route::get('/run-migrations-system-secure-{key}', function ($key) {
-    if ($key !== 'halim2025') {
-        return response()->json(['message' => 'Unauthorized'], 403);
-    }
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        return response()->json(['message' => 'Migrations completed', 'output' => \Illuminate\Support\Facades\Artisan::output()]);
-    } catch (\Exception $e) {
-        return response()->json(['message' => 'Error', 'error' => $e->getMessage()]);
-    }
-});
+
