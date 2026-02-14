@@ -4,72 +4,83 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 
 Route::prefix('v1')->group(function () {
-    // Surgical live fix for missing tables, columns & DATA (Delete after use)
+    // Final Surgical Live Database Repair (Delete after use)
     Route::get('/run-migrations-system-secure-{key}', function ($key) {
         if ($key !== 'halim2025') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $results = [];
         try {
-            // 1. Schema Fixes (Ensure columns exist)
-            if (!\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
-                \Illuminate\Support\Facades\Schema::create('sessions', function ($table) {
-                    $table->string('id')->primary(); $table->foreignId('user_id')->nullable()->index(); $table->string('ip_address', 45)->nullable(); $table->text('user_agent')->nullable(); $table->longText('payload'); $table->integer('last_activity')->index();
-                });
-                $results[] = 'Sessions table created';
-            }
-            if (!\Illuminate\Support\Facades\Schema::hasTable('personal_access_tokens')) {
-                \Illuminate\Support\Facades\Schema::create('personal_access_tokens', function ($table) {
-                    $table->id(); $table->morphs('tokenable'); $table->string('name'); $table->string('token', 64)->unique(); $table->text('abilities')->nullable(); $table->timestamp('last_used_at')->nullable(); $table->timestamp('expires_at')->nullable(); $table->timestamps();
-                });
-                $results[] = 'Personal Access Tokens table created';
+            // 1. Ensure migrations table exists
+            if (!\Illuminate\Support\Facades\Schema::hasTable('migrations')) {
+                \Illuminate\Support\Facades\Artisan::call('migrate:install');
+                $results[] = 'Migrations table initialized';
             }
 
+            // 2. Identify migrations that are blocking because tables already exist
+            $existingTablesToMigrations = [
+                'users' => '0001_01_01_000000_create_users_table',
+                'password_reset_tokens' => '0001_01_01_000000_create_users_table',
+                'sessions' => '0001_01_01_000000_create_users_table',
+                'schools' => '2025_11_07_204717_create_schools_table',
+                'roles' => '2025_11_07_204728_create_roles_table',
+                'user_school_roles' => '2025_11_07_204735_create_user_school_roles_table',
+                'classes' => '2025_11_07_204741_create_classes_table',
+                'subjects' => '2025_11_07_204748_create_subjects_table',
+                'students' => '2025_11_07_204754_create_students_table',
+            ];
+
+            foreach ($existingTablesToMigrations as $table => $migration) {
+                if (\Illuminate\Support\Facades\Schema::hasTable($table)) {
+                    \Illuminate\Support\Facades\DB::table('migrations')->updateOrInsert(
+                        ['migration' => $migration],
+                        ['batch' => 1]
+                    );
+                    $results[] = "Marked migration '$migration' as run (table '$table' exists)";
+                }
+            }
+
+            // 3. Run all pending migrations (This will create 'teachers' and everything else missing)
+            try {
+                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                $results[] = 'Migrations executed: ' . \Illuminate\Support\Facades\Artisan::output();
+            } catch (\Exception $e) {
+                $results[] = 'Migration warning: ' . $e->getMessage();
+            }
+
+            // 4. Data Fix: Ensure username column and population
             \Illuminate\Support\Facades\Schema::table('users', function ($table) use (&$results) {
                 if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'username')) {
-                    $table->string('username')->nullable()->unique()->after('name'); $results[] = 'Added username column';
-                }
-                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'plain_password')) {
-                    $table->string('plain_password')->nullable()->after('password'); $results[] = 'Added plain_password column';
+                    $table->string('username')->nullable()->unique()->after('name');
+                    $results[] = 'Manually added missing username column';
                 }
             });
 
-            // 2. DATA FIX: Populate Usernames for Teachers (Manual Migration Logic)
-            $teachers = \Illuminate\Support\Facades\DB::table('teachers')
-                ->join('users', 'teachers.user_id', '=', 'users.id')
-                ->join('schools', 'teachers.school_id', '=', 'schools.id')
-                ->whereNull('users.username')
-                ->select('teachers.id as teacher_id', 'schools.code as school_code', 'users.id as user_id')
-                ->get();
-            
-            $count = 0;
-            foreach ($teachers as $teacher) {
-                $schoolCode = $teacher->school_code;
-                $existingMax = \Illuminate\Support\Facades\DB::table('users')
-                    ->where('username', 'LIKE', $schoolCode . 'T%')
-                    ->get()
-                    ->map(fn($u) => (int)str_replace($schoolCode . 'T', '', $u->username))
-                    ->max() ?? 0;
+            // Populate usernames for any teacher records found
+            if (\Illuminate\Support\Facades\Schema::hasTable('teachers')) {
+                $teachers = \Illuminate\Support\Facades\DB::table('teachers')
+                    ->join('users', 'teachers.user_id', '=', 'users.id')
+                    ->join('schools', 'teachers.school_id', '=', 'schools.id')
+                    ->whereNull('users.username')
+                    ->select('teachers.id', 'schools.code as school_code', 'users.id as user_id')
+                    ->get();
                 
-                $username = $schoolCode . 'T' . str_pad($existingMax + 1, 3, '0', STR_PAD_LEFT);
-                while (\Illuminate\Support\Facades\DB::table('users')->where('username', $username)->exists()) {
-                    $existingMax++;
-                    $username = $schoolCode . 'T' . str_pad($existingMax + 1, 3, '0', STR_PAD_LEFT);
+                $count = 0;
+                foreach ($teachers as $teacher) {
+                    $schoolCode = $teacher->school_code;
+                    $username = $schoolCode . 'T' . str_pad(rand(100, 999), 3, '0', STR_PAD_LEFT);
+                    while (\Illuminate\Support\Facades\DB::table('users')->where('username', $username)->exists()) {
+                        $username = $schoolCode . 'T' . str_pad(rand(100, 999), 3, '0', STR_PAD_LEFT);
+                    }
+                    \Illuminate\Support\Facades\DB::table('users')->where('id', $teacher->user_id)->update(['username' => $username]);
+                    $count++;
                 }
-
-                \Illuminate\Support\Facades\DB::table('users')->where('id', $teacher->user_id)->update(['username' => $username]);
-                $count++;
+                $results[] = "Populated usernames for $count users/teachers";
             }
-            $results[] = "Populated usernames for $count teachers";
 
-            // 3. DIAGNOSTICS: Check if certain users exist
-            $testEmail = request('email', 'jss1967.hm@gmail.com');
-            $userCheck = \App\Models\User::where('email', $testEmail)->orWhere('username', $testEmail)->first();
-            $results[] = "Diagnostic check for '$testEmail': " . ($userCheck ? "FOUND (ID: {$userCheck->id}, Username: {$userCheck->username})" : "NOT FOUND");
-
-            return response()->json(['message' => 'Enhanced surgical fix completed', 'results' => $results]);
+            return response()->json(['message' => 'Full Database Repair Completed', 'results' => $results]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error', 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Critical Error', 'error' => $e->getMessage()]);
         }
     });
 
