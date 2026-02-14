@@ -180,21 +180,26 @@
 
             <!-- Additional Subject -->
             @if($optionalSubject)
+                <tr>
+                    <td colspan="10" class="text-left" style="background-color: #f9f9f9; padding-left: 10px;"><b>Additional Subject:</b></td>
+                </tr>
                  <tr>
                     <td>{{ $sl++ }}</td>
-                    <td class="text-left sub-name">
-                        <span style="font-weight: normal; font-size: 9pt;">Additional Subject:</span><br>
-                        {{ $optionalSubject['name'] }}
-                    </td>
+                    <td class="text-left sub-name">{{ $optionalSubject['name'] }}</td>
                     <td>{{ $optionalSubject['creative'] }}</td>
                     <td>{{ $optionalSubject['mcq'] }}</td>
                     <td>{{ $optionalSubject['practical'] }}</td>
                     <td>{{ $optionalSubject['total'] }}</td>
                     <td>{{ $optionalSubject['grade'] }}</td>
                     <td>{{ $optionalSubject['gp'] }}</td>
-                    <td colspan="2" style="background-color: #f7f7f7;">
-                        <span style="font-size: 8pt; color: #666;">GP Above 2</span><br>
-                        <b>{{ (isset($optionalGP) && $optionalGP > 2) ? number_format($optionalGP - 2.0, 2) : '0.00' }}</b>
+                    <td colspan="2" style="background-color: #eee;">GP Above 2 Status</td>
+                </tr>
+                <tr>
+                    <td colspan="10" style="padding: 3px 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <b>GP Above 2</b>
+                            <b>{{ (isset($optionalGP) && $optionalGP > 2) ? number_format($optionalGP - 2.0, 2) : '0.00' }}</b>
+                        </div>
                     </td>
                 </tr>
             @endif
