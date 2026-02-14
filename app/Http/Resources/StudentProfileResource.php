@@ -56,7 +56,7 @@ class StudentProfileResource extends JsonResource
             'gender' => $st?->gender,
             'date_of_birth' => optional($st?->date_of_birth)->toDateString(),
             'dob' => optional($st?->date_of_birth)->toDateString(), // Alias for mobile app
-            'phone' => $st?->phone,
+            'phone' => $st?->guardian_phone,
             'email' => $st?->email ?? null,
             'blood_group' => $st?->blood_group ?? null,
             'religion' => $st?->religion ?? null,
@@ -76,7 +76,7 @@ class StudentProfileResource extends JsonResource
             'guardian_name' => $st?->guardian_name_en ?? $st?->guardian_name_bn ?? $st?->father_name ?? $st?->mother_name,
             'guardian_name_en' => $st?->guardian_name_en,
             'guardian_name_bn' => $st?->guardian_name_bn,
-            'guardian_phone' => $st?->guardian_phone ?? $st?->father_phone ?? $st?->mother_phone,
+            'guardian_phone' => $st?->guardian_phone,
             'guardian_relation' => $st?->guardian_relation ?? null,
 
             // Specific parent fields at top level for picking robustness
@@ -84,16 +84,16 @@ class StudentProfileResource extends JsonResource
             'father' => $st?->father_name,
             'mother_name' => $st?->mother_name,
             'mother' => $st?->mother_name,
-            'father_phone' => $st?->father_phone,
-            'mother_phone' => $st?->mother_phone,
+            'father_phone' => null, // Column doesn't exist in students table
+            'mother_phone' => null, // Column doesn't exist in students table
 
             'guardians' => [
                 'father_name' => $st?->father_name,
                 'father_name_bn' => $st?->father_name_bn,
-                'father_phone' => $st?->father_phone,
+                'father_phone' => null, // Column doesn't exist
                 'mother_name' => $st?->mother_name,
                 'mother_name_bn' => $st?->mother_name_bn,
-                'mother_phone' => $st?->mother_phone,
+                'mother_phone' => null, // Column doesn't exist
             ],
             // Present / Permanent addresses (composed plus BN if available)
             'present_address' => $presentAddress,
