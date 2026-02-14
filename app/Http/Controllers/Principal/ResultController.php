@@ -1324,6 +1324,11 @@ class ResultController extends Controller
             ->where('status','active');
             
         $enrolledStudentIds = $enrollmentQuery->pluck('student_id')->unique()->values()->all();
+        $allStudentIds = collect($results->pluck('student_id'))
+            ->merge($enrolledStudentIds)
+            ->unique()
+            ->values()
+            ->all();
 
         // --- ATTENDANCE CALCULATION LOGIC START ---
         $academicYear = $exam->academicYear;
@@ -1332,8 +1337,8 @@ class ResultController extends Controller
         
         $totalSchoolDays = 0;
         if ($startDate && $endDate && $startDate->lte($endDate)) {
-            $weeklyHolidays = WeeklyHoliday::forSchool($school->id)->active()->pluck('day_number')->toArray();
-            $holidays = Holiday::forSchool($school->id)->active()
+            $weeklyHolidays = WeeklyHoliday::where('school_id', $school->id)->active()->pluck('day_number')->toArray();
+            $holidays = Holiday::where('school_id', $school->id)->active()
                 ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
                 ->pluck('date')
                 ->map(fn($d) => $d->format('Y-m-d'))
@@ -1342,7 +1347,6 @@ class ResultController extends Controller
             $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
             foreach ($period as $date) {
                 $dayNum = $date->dayOfWeek; // Carbon 0=Sun, 1=Mon...
-                // Map Carbon (0=Sun) to common day numbering if needed, but WeeklyHoliday usually uses 0-6
                 if (in_array($dayNum, $weeklyHolidays)) continue;
                 if (in_array($date->format('Y-m-d'), $holidays)) continue;
                 $totalSchoolDays++;
@@ -1354,12 +1358,6 @@ class ResultController extends Controller
             ->get()
             ->groupBy('student_id');
         // --- ATTENDANCE CALCULATION LOGIC END ---
-
-        $allStudentIds = collect($results->pluck('student_id'))
-            ->merge($enrolledStudentIds)
-            ->unique()
-            ->values()
-            ->all();
 
         $marks = !empty($allStudentIds) ? Mark::forExam($exam->id)->whereIn('student_id', $allStudentIds)->get() : collect();
         
