@@ -16,28 +16,22 @@
         // Prepare data
         $subData = [
             'name' => $res['name'] ?? $fSub['name'] ?? 'Unknown',
-            'creative' => $res['creative'] > 0 ? $res['creative'] : ($hasAnyMark || $isAbsent ? '-' : '-'), 
-            'mcq' => $res['mcq'] > 0 ? $res['mcq'] : ($hasAnyMark || $isAbsent ? '-' : '-'),
-            'practical' => $res['practical'] > 0 ? $res['practical'] : ($hasAnyMark || $isAbsent ? '-' : '-'),
-            'total' => $isAbsent ? 'Ab' : ($hasAnyMark ? $res['total'] : ($isNotFound ? '-' : $res['total'])),
-            'grade' => $isAbsent ? 'F' : ($hasAnyMark ? $res['grade'] : ($isNotFound ? '-' : $res['grade'])),
-            'gp' => number_format($res['gpa'] ?? 0, 2),
+            'creative' => ($isNotFound || ($fSub['creative_full_mark'] ?? 0) <= 0) ? '-' : $res['creative'],
+            'mcq' => ($isNotFound || ($fSub['mcq_full_mark'] ?? 0) <= 0) ? '-' : $res['mcq'],
+            'practical' => ($isNotFound || ($fSub['practical_full_mark'] ?? 0) <= 0) ? '-' : $res['practical'],
+            'total' => $isNotFound ? '-' : ($isAbsent ? 'Ab' : $res['total']),
+            'grade' => $isNotFound ? '-' : ($isAbsent ? 'F' : $res['grade']),
+            'gp' => $isNotFound ? '0.00' : number_format($res['gpa'] ?? 0, 2),
             'is_part' => !empty($res['display_only']),
             'is_combined' => !empty($fSub['is_combined_result']),
-            'is_failed' => ($res['grade'] == 'F' || $res['grade'] == 'N/R' || $isAbsent)
+            'is_failed' => ($isAbsent || $res['grade'] == 'F' || $res['grade'] == 'N/R')
         ];
-
-        // Refine Creative/MCQ/PR display for combined summaries (usually they are empty on board marksheets as data is in parts)
-        if ($subData['is_combined']) {
-            $subData['creative'] = ''; $subData['mcq'] = ''; $subData['practical'] = '';
-        }
 
         if (!empty($res['is_optional'])) {
             $optionalSubject = $subData;
             $optionalGP = $res['gpa'] ?? 0;
         } else {
             $mainSubjects->push($subData);
-            // Only count "Summary" subjects for GPA (Single subjects or Combined results, but NOT individual parts)
             if (!$subData['is_part']) {
                 $totalGP += (float) ($res['gpa'] ?? 0);
             }
@@ -83,15 +77,15 @@
             <table>
                 <tr>
                     <td class="label">Name of Student</td><td class="colon">:</td>
-                    <td class="value">{{ $student->student_name_en }}</td>
+                    <td class="value">{{ $student->student_name_en ?: $student->student_name_bn }}</td>
                 </tr>
                 <tr>
                     <td class="label">Father's Name</td><td class="colon">:</td>
-                    <td class="value">{{ $student->father_name_en }}</td>
+                    <td class="value">{{ $student->father_name ?: $student->father_name_bn }}</td>
                 </tr>
                 <tr>
                     <td class="label">Mother's Name</td><td class="colon">:</td>
-                    <td class="value">{{ $student->mother_name_en }}</td>
+                    <td class="value">{{ $student->mother_name ?: $student->mother_name_bn }}</td>
                 </tr>
                 <tr>
                     <td class="label">Roll Number</td><td class="colon">:</td>
@@ -103,7 +97,7 @@
                 </tr>
                 <tr>
                     <td class="label">Date of Birth</td><td class="colon">:</td>
-                    <td class="value">{{ $student->dob ? \Carbon\Carbon::parse($student->dob)->format('d/m/Y') : '-' }}</td>
+                    <td class="value">{{ $student->date_of_birth ? $student->date_of_birth->format('d/m/Y') : '-' }}</td>
                 </tr>
                 <tr>
                     <td class="label">Result Status</td><td class="colon">:</td>

@@ -17,51 +17,53 @@
     }
 
     /* Header */
-    .header-section { text-align: center; margin-bottom: 20px; position: relative; }
-    .header-section h1 { font-size: 22pt; font-weight: bold; margin: 0; text-transform: uppercase; color: #1a4d2e; } 
-    .header-section h2 { font-size: 14pt; margin: 5px 0; font-weight: normal; }
-    .header-section .serial-no { position: absolute; top: 0; left: 0; font-size: 10pt; font-weight: bold; }
-    .header-logo { width: 80px; height: 80px; margin: 5px auto; display: block; }
+    .header-section { margin-bottom: 10px; position: relative; }
+    .header-main { display: flex; align-items: center; justify-content: center; gap: 20px; }
+    .header-logo { width: 70px; height: 70px; margin: 0; }
+    .header-text { text-align: center; }
+    .header-section h1 { font-size: 20pt; font-weight: bold; margin: 0; text-transform: uppercase; color: #1a4d2e; line-height: 1.2; } 
+    .header-section h2 { font-size: 12pt; margin: 2px 0; font-weight: normal; }
+    .header-section .serial-no { position: absolute; top: 0; left: 0; font-size: 9pt; font-weight: bold; }
     
     .transcript-title { 
         text-align: center; 
-        font-size: 18pt; 
+        font-size: 16pt; 
         font-weight: bold; 
         color: #800000; /* Dark Red */
-        margin: 10px 0; 
+        margin: 5px 0; 
         text-transform: uppercase;
         letter-spacing: 1px;
     }
 
-    .exam-name-header { text-align: center; font-size: 14pt; font-weight: bold; margin-bottom: 15px; }
+    .exam-name-header { text-align: center; font-size: 12pt; font-weight: bold; margin-bottom: 10px; }
 
     /* Student Info & Grading Table Container */
-    .info-grading-container { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: flex-start; }
+    .info-grading-container { display: flex; justify-content: space-between; margin-bottom: 5px; align-items: flex-start; }
     
-    .student-info { flex: 1; font-size: 11pt; line-height: 1.1; }
+    .student-info { flex: 1; font-size: 10pt; line-height: 1.4; }
     .student-info table { width: 100%; border: none; }
-    .student-info td { vertical-align: top; padding: 2px 0; }
-    .student-info .label { width: 140px; font-weight: normal; }
+    .student-info td { vertical-align: top; padding: 1px 0; }
+    .student-info .label { width: 130px; font-weight: normal; }
     .student-info .colon { width: 15px; }
     .student-info .value { font-weight: bold; font-style: italic; }
 
-    .grading-table { width: 220px; border-collapse: collapse; font-size: 9pt; margin-left: 20px; }
-    .grading-table th, .grading-table td { border: 1px solid #000; padding: 2px; text-align: center; }
+    .grading-table { width: 220px; border-collapse: collapse; font-size: 8pt; margin-left: 20px; }
+    .grading-table th, .grading-table td { border: 1px solid #000; padding: 1px; text-align: center; }
     .grading-table th { background-color: #f0f0f0; }
 
     /* Main Result Table */
-    .result-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10pt; }
-    .result-table th, .result-table td { border: 1px solid #000; padding: 5px; text-align: center; vertical-align: middle; }
-    .result-table th { background-color: #f9f9f9; font-weight: bold; }
+    .result-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 10pt; }
+    .result-table th, .result-table td { border: 1px solid #000; padding: 3px; text-align: center; vertical-align: middle; }
+    .result-table th { background-color: #f9f9f9; font-weight: bold; padding: 4px; }
     .result-table .text-left { text-align: left; padding-left: 8px; }
     .result-table .sub-name { font-weight: bold; }
     
     /* Footer */
-    .footer-section { margin-top: 50px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 11pt; }
-    .signature-box { text-align: center; width: 200px; }
-    .signature-line { border-top: 1px solid #000; margin-top: 40px; padding-top: 5px; font-weight: bold; }
+    .footer-section { margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; }
+    .signature-box { text-align: center; width: 180px; }
+    .signature-line { border-top: 1px solid #000; margin-top: 30px; padding-top: 3px; font-weight: bold; }
     
-    .date-publication { margin-top: 20px; font-size: 10pt; font-weight: bold; }
+    .date-publication { margin-top: 15px; font-size: 9pt; font-weight: bold; }
     
     @media print {
         .no-print { display: none !important; }
