@@ -181,7 +181,8 @@
             <!-- Additional Subject -->
             @if($optionalSubject)
                 <tr>
-                    <td colspan="8" class="text-left" style="background-color: #f9f9f9; padding-left: 10px;"><b>Additional Subject:</b> <span class="text-right" style="background-color: #f9f9f9; padding-right: 10px; color: red; font-size: 9pt;">GP Above 2</span></td>
+                    <td div class="d-flex justify-content-between"
+                     colspan="9" style="background-color: #f9f9f9; padding-left: 10px;"> <div><b>Additional Subject:</b> <div style="background-color: #f9f9f9; padding-right: 10px; color: red; font-size: 9pt;">GP Above 2</div></div></td>
                 </tr>
                  <tr>
                     <td>{{ $sl++ }}</td>
@@ -246,7 +247,7 @@
         </tr>
     </table>
 
-    <div style="margin-top: 10px; font-size: 9pt;">
+    <div style="margin-top: 20px; font-size: 9pt;">
         <b>Remarks:</b> ____________________________________________________________________________________________________
     </div>
 
@@ -254,12 +255,12 @@
     <div class="footer-section">
         <div class="signature-box">
              <div style="height: 30px;"></div>
-            <div class="signature-line">Compared by</div>
+            <div class="signature-line">Class Teacher</div>
         </div>
         <div class="signature-box">
              <!-- Empty space for signature -->
              <div style="height: 30px;"></div>
-             <div class="signature-line">Controller of Examinations</div>
+             <div class="signature-line">Head Teacher</div>
         </div>
     </div>
     
