@@ -8,12 +8,17 @@
     @page { size: A4 portrait; margin: 10mm; }
     .print-content { font-family: 'Times New Roman', serif; color: #000; position: relative; }
     
-    /* Watermark / Background Pattern */
     .bg-pattern {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background-image: url('{{ asset("images/transcript-bg.png") }}'); /* Placeholder if any */
-        opacity: 0.1; z-index: -1; pointer-events: none;
+        position: absolute; top: 15%; left: 10%; width: 80%; height: 60%;
+        background-image: url('{{ $school->logo ? asset("storage/".$school->logo) : "" }}');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        opacity: 0.08; z-index: -1; pointer-events: none;
     }
+
+    .result-status-green { color: #28a745; font-size: 14pt; font-weight: bold; }
+    .result-status-red { color: #dc3545; font-size: 14pt; font-weight: bold; }
 
     /* Header */
     .header-section { margin-bottom: 10px; position: relative; }

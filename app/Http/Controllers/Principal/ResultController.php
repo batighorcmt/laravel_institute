@@ -14,12 +14,16 @@ use App\Models\AcademicYear;
 use App\Models\ClassSubject;
 use App\Models\StudentEnrollment;
 use App\Models\StudentSubject;
+use App\Models\Attendance;
+use App\Models\Holiday;
+use App\Models\WeeklyHoliday;
 use App\Models\UserSchoolRole;
 use App\Models\Role;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ResultController extends Controller
 {
@@ -1321,6 +1325,36 @@ class ResultController extends Controller
             
         $enrolledStudentIds = $enrollmentQuery->pluck('student_id')->unique()->values()->all();
 
+        // --- ATTENDANCE CALCULATION LOGIC START ---
+        $academicYear = $exam->academicYear;
+        $startDate = $academicYear->start_date;
+        $endDate = $exam->start_date->subDay();
+        
+        $totalSchoolDays = 0;
+        if ($startDate && $endDate && $startDate->lte($endDate)) {
+            $weeklyHolidays = WeeklyHoliday::forSchool($school->id)->active()->pluck('day_number')->toArray();
+            $holidays = Holiday::forSchool($school->id)->active()
+                ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+                ->pluck('date')
+                ->map(fn($d) => $d->format('Y-m-d'))
+                ->toArray();
+            
+            $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
+            foreach ($period as $date) {
+                $dayNum = $date->dayOfWeek; // Carbon 0=Sun, 1=Mon...
+                // Map Carbon (0=Sun) to common day numbering if needed, but WeeklyHoliday usually uses 0-6
+                if (in_array($dayNum, $weeklyHolidays)) continue;
+                if (in_array($date->format('Y-m-d'), $holidays)) continue;
+                $totalSchoolDays++;
+            }
+        }
+
+        $allAttendances = Attendance::whereIn('student_id', $allStudentIds)
+            ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->get()
+            ->groupBy('student_id');
+        // --- ATTENDANCE CALCULATION LOGIC END ---
+
         $allStudentIds = collect($results->pluck('student_id'))
             ->merge($enrolledStudentIds)
             ->unique()
@@ -1598,6 +1632,14 @@ class ResultController extends Controller
             $res->fail_count = $failedSubjectCount;
             // Store section_id for easier grouping
             $res->section_id = optional(optional($stu->currentEnrollment)->section)->id;
+
+            // Attendance Summary
+            $stuAttendance = $allAttendances->get($stu->id) ?: collect();
+            $presentDays = $stuAttendance->where('status', 'P')->count();
+            $res->attendance_days = $totalSchoolDays;
+            $res->attendance_present = $presentDays;
+            $res->attendance_absent = max(0, $totalSchoolDays - $presentDays);
+            $res->attendance_rate = ($totalSchoolDays > 0) ? round(($presentDays / $totalSchoolDays) * 100, 2) : 0;
         }
 
         // --- MERIT RANKING LOGIC START ---

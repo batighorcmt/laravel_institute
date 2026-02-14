@@ -59,13 +59,16 @@
     <!-- Header -->
     <div class="header-section">
         
-        <div class="header-main">
+        <div class="header-main" style="position: relative;">
             @if($school->logo)
                 <img src="{{ asset('storage/'.$school->logo) }}" class="header-logo" alt="Logo">
             @endif
             <div class="header-text">
                 <h1>{{ $school->name }}</h1>
                 <h2>{{ $school->address }}</h2>
+            </div>
+            <div style="position: absolute; right: 0; top: 0;">
+                <img src="{{ $student->photo_url }}" style="width: 80px; height: 90px; border: 1px solid #ddd; padding: 1px; object-fit: cover;" alt="Student Photo">
             </div>
         </div>
 
@@ -236,10 +239,10 @@
             <td style="width: 48%; border: 1px solid #000; vertical-align: top; padding: 0;">
                 <table style="width: 100%; border-collapse: collapse; border: none;">
                     <tr><th colspan="2" style="border-bottom: 1px solid #000; padding: 3px; background: #eee;">Attendance</th></tr>
-                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd; width: 70%;">Total School Days</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
-                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd;">Total Present</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
-                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd;">Total Absent</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
-                    <tr><td style="padding: 2px 5px;">Attendance Rate (%)</td><td style="border-left: 1px solid #ddd;"></td></tr>
+                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd; width: 70%;">Total School Days</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd; text-align: center;">{{ $result->attendance_days }}</td></tr>
+                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd;">Total Present</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd; text-align: center;">{{ $result->attendance_present }}</td></tr>
+                    <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd;">Total Absent</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd; text-align: center;">{{ $result->attendance_absent }}</td></tr>
+                    <tr><td style="padding: 2px 5px;">Attendance Rate (%)</td><td style="border-left: 1px solid #ddd; text-align: center;">{{ $result->attendance_rate }}%</td></tr>
                 </table>
             </td>
 
