@@ -181,7 +181,8 @@
             <!-- Additional Subject -->
             @if($optionalSubject)
                 <tr>
-                    <td colspan="10" class="text-left" style="background-color: #f9f9f9; padding-left: 10px;"><b>Additional Subject:</b></td>
+                    <td colspan="8" class="text-left" style="background-color: #f9f9f9; padding-left: 10px;"><b>Additional Subject:</b></td>
+                    <td colspan="2" class="text-right" style="background-color: #f9f9f9; padding-right: 10px; color: red; font-size: 9pt;">GP Above 2</td>
                 </tr>
                  <tr>
                     <td>{{ $sl++ }}</td>
@@ -192,14 +193,8 @@
                     <td>{{ $optionalSubject['total'] }}</td>
                     <td>{{ $optionalSubject['grade'] }}</td>
                     <td>{{ $optionalSubject['gp'] }}</td>
-                    <td colspan="2" style="background-color: #eee;">GP Above 2 Status</td>
-                </tr>
-                <tr>
-                    <td colspan="10" style="padding: 3px 10px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <b>GP Above 2</b>
-                            <b>{{ (isset($optionalGP) && $optionalGP > 2) ? number_format($optionalGP - 2.0, 2) : '0.00' }}</b>
-                        </div>
+                    <td colspan="2" class="text-center" style="color: red; font-weight: bold;">
+                        {{ (isset($optionalGP) && $optionalGP > 2) ? number_format($optionalGP - 2.0, 2) : '0.00' }}
                     </td>
                 </tr>
             @endif
@@ -210,15 +205,15 @@
     <div class="summary-cards">
         <div class="card-item">
             <div class="card-label">Grand Total Marks</div>
-            <b>{{ $result->computed_total_marks }}</b>
+            <span class="card-highlight">{{ $result->computed_total_marks }}</span>
         </div>
         <div class="card-item">
             <div class="card-label">Merit Position (Class)</div>
-            <b>{{ $result->class_position }}</b>
+            <span class="card-highlight">{{ $result->class_position }}</span>
         </div>
         <div class="card-item">
             <div class="card-label">Merit Position (Section)</div>
-            <b>{{ $result->section_position }}</b>
+            <span class="card-highlight">{{ $result->section_position }}</span>
         </div>
     </div>
 

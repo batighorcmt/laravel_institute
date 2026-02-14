@@ -39,7 +39,7 @@
         transform: translateX(-50%);
     }
 
-    .exam-name-header { text-align: center; font-size: 11pt; font-weight: bold; margin-bottom: 8px; }
+    .exam-name-header { text-align: center; font-size: 13pt; font-weight: bold; margin-bottom: 5px; }
 
     /* Student Info & Grading */
     .info-grading-container { display: flex; justify-content: space-between; margin-bottom: 5px; align-items: flex-start; gap: 10px; }
@@ -57,15 +57,15 @@
 
     /* Main Result Table */
     .result-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 9.5pt; }
-    .result-table th, .result-table td { border: 1px solid #000; padding: 2px; text-align: center; vertical-align: middle; }
-    .result-table th { background-color: #f4f4f4; font-weight: bold; padding: 4px; font-size: 9pt; }
+    .result-table th, .result-table td { border: 1px solid #000; padding: 1px; text-align: center; vertical-align: middle; }
+    .result-table th { background-color: #f4f4f4; font-weight: bold; padding: 2px; font-size: 9pt; }
     .result-table .text-left { text-align: left; padding-left: 5px; }
     .result-table .sub-name { font-weight: bold; }
     
     /* Cards */
     .summary-cards { display: flex; justify-content: space-around; gap: 10px; margin: 10px 0; }
     .card-item { flex: 1; border: 1px dashed #444; padding: 5px 10px; text-align: center; background: #fff; }
-    .card-item b { font-size: 11pt; color: #1a4d2e; }
+    .card-highlight { font-size: 14pt; font-weight: bold; color: #000; background-color: #ffff00; padding: 2px 15px; display: inline-block; margin-top: 3px; -webkit-print-color-adjust: exact; }
     .card-label { font-size: 8.5pt; font-weight: bold; color: #333; text-transform: uppercase; margin-bottom: 2px; }
 
     /* Footer */
@@ -76,8 +76,8 @@
     .date-publication { margin-top: 15px; font-size: 9pt; font-weight: bold; }
 
     /* Extra activities */
-    .extra-activities-table table td { border: 1px solid #000; }
-    .extra-activities-table th { font-weight: bold; text-transform: uppercase; }
+    .extra-activities-table table td { border: 1px solid #000 !important; }
+    .extra-activities-table th { font-weight: bold; text-transform: uppercase; border: 1px solid #000 !important; }
     
     @media print {
         .no-print { display: none !important; }
