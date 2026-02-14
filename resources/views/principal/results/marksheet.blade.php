@@ -28,10 +28,10 @@
             <div class="card-body">
                 <form method="GET" action="{{ route('principal.institute.results.marksheet', $school) }}">
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="form-group">
                                 <label>শিক্ষাবর্ষ</label>
-                                <select name="academic_year_id" class="form-control" required>
+                                <select name="academic_year_id" id="academic_year_id" class="form-control" required>
                                     <option value="">-- নির্বাচন করুন --</option>
                                     @foreach($academicYears as $year)
                                         <option value="{{ $year->id }}" {{ request('academic_year_id') == $year->id ? 'selected' : '' }}>
@@ -42,10 +42,10 @@
                             </div>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="form-group">
                                 <label>শ্রেণি</label>
-                                <select name="class_id" class="form-control" required id="class_selector">
+                                <select name="class_id" id="class_id" class="form-control" required>
                                     <option value="">-- নির্বাচন করুন --</option>
                                     @foreach($classes as $cls)
                                         <option value="{{ $cls->id }}" {{ request('class_id') == $cls->id ? 'selected' : '' }}>
@@ -56,10 +56,10 @@
                             </div>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <div class="form-group">
                                 <label>শাখা (অপশনাল)</label>
-                                <select name="section_id" class="form-control" id="section_selector">
+                                <select name="section_id" id="section_id" class="form-control">
                                     <option value="">-- সকল শাখা --</option>
                                     @foreach($sections as $sec)
                                         <option value="{{ $sec->id }}" {{ request('section_id') == $sec->id ? 'selected' : '' }}>
@@ -73,13 +73,33 @@
                         <div class="col-md-3">
                             <div class="form-group">
                                 <label>পরীক্ষা</label>
-                                <select name="exam_id" class="form-control" required>
+                                <select name="exam_id" id="exam_id" class="form-control" required>
                                     <option value="">-- নির্বাচন করুন --</option>
                                     @foreach($exams as $ex)
                                         <option value="{{ $ex->id }}" {{ request('exam_id') == $ex->id ? 'selected' : '' }}>
                                             {{ $ex->name }}
                                         </option>
                                     @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>শিক্ষার্থী (অপশনাল)</label>
+                                <select name="student_id" id="student_id" class="form-control select2">
+                                    <option value="">-- সকল শিক্ষার্থী --</option>
+                                    {{-- Populated via AJAX --}}
+                                    @if(request('student_id') && isset($results))
+                                        @foreach($results as $res)
+                                            @if($res->student->id == request('student_id'))
+                                               <option value="{{ $res->student->id }}" selected>
+                                                    {{ $res->student->currentEnrollment->roll_no ?? '-' }} - 
+                                                    {{ $res->student->student_name_en ?: $res->student->student_name_bn }}
+                                               </option>
+                                            @endif
+                                        @endforeach
+                                    @endif
                                 </select>
                             </div>
                         </div>
@@ -96,10 +116,17 @@
 
         @if(isset($results) && $results->count() > 0)
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title">
                         ফলাফল তালিকা ({{ $exam->name }} - {{ $class->name }})
                     </h3>
+                    
+                    {{-- Print All Button --}}
+                    <div>
+                        <a href="{{ route('principal.institute.results.marksheet', [$school] + request()->all() + ['print_all' => 1]) }}" target="_blank" class="btn btn-success btn-sm">
+                            <i class="fas fa-print"></i> সব মার্কশিট প্রিন্ট করুন
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-bordered table-striped">
@@ -116,6 +143,11 @@
                         </thead>
                         <tbody>
                             @foreach($results as $res)
+                                {{-- Filter logic in view if student_id was selected but controller returned all (just in case), though controller should filter --}}
+                                @if(request('student_id') && $res->student->id != request('student_id'))
+                                    @continue
+                                @endif
+
                                 <tr>
                                     <td>{{ $res->student->currentEnrollment->roll_no ?? '-' }}</td>
                                     <td>
@@ -157,23 +189,123 @@
 
 @push('js')
 <script>
-    $('#class_selector').change(function(){
-        var classId = $(this).val();
-        var sectionSelector = $('#section_selector');
-        sectionSelector.html('<option value="">লোড হচ্ছে...</option>');
+    // Initialize cascading dropdowns
+    const examsUrl = "{{ route('principal.institute.results.exams-by-year', $school) }}";
+    const sectionsUrl = "{{ route('principal.institute.results.sections-by-class', $school) }}";
+    const studentsUrl = "{{ route('principal.institute.results.students-by-class', $school) }}";
+
+    const academicYearSelect = $('#academic_year_id');
+    const classSelect = $('#class_id');
+    const sectionsSelect = $('#section_id');
+    const examSelect = $('#exam_id');
+    const studentSelect = $('#student_id');
+
+    // Helper to load exams
+    function loadExams() {
+        const yearId = academicYearSelect.val();
+        const classId = classSelect.val();
         
-        if(classId) {
-            $.get("{{ route('principal.institute.meta.sections', $school) }}", { class_id: classId }, function(data){
-                var options = '<option value="">-- সকল শাখা --</option>';
-                data.forEach(function(sec){
-                    options += '<option value="'+sec.id+'">'+sec.name+'</option>';
+        examSelect.html('<option value="">লোড হচ্ছে...</option>');
+        
+        if (yearId && classId) {
+             $.get(examsUrl, { academic_year_id: yearId, class_id: classId }, function(data){
+                let options = '<option value="">-- নির্বাচন করুন --</option>';
+                data.forEach(function(item){
+                    options += `<option value="${item.id}">${item.name}</option>`;
                 });
-                sectionSelector.html(options);
+                examSelect.html(options);
+                
+                // Keep selected value if exists (from PHP rendering)
+                const preSelected = "{{ request('exam_id') }}";
+                if(preSelected) examSelect.val(preSelected);
             });
         } else {
-            sectionSelector.html('<option value="">-- সকল শাখা --</option>');
+             examSelect.html('<option value="">-- নির্বাচন করুন --</option>');
         }
+    }
+
+    // Helper to load sections
+    function loadSections() {
+        const classId = classSelect.val();
+        sectionsSelect.html('<option value="">লোড হচ্ছে...</option>');
+
+        if (classId) {
+             $.get(sectionsUrl, { class_id: classId }, function(data){
+                let options = '<option value="">-- সকল শাখা --</option>';
+                data.forEach(function(item){
+                    options += `<option value="${item.id}">${item.name || item.section_name}</option>`;
+                });
+                sectionsSelect.html(options);
+
+                const preSelected = "{{ request('section_id') }}";
+                if(preSelected) sectionsSelect.val(preSelected);
+            });
+        } else {
+             sectionsSelect.html('<option value="">-- সকল শাখা --</option>');
+        }
+    }
+
+    // Helper to load students
+    function loadStudents() {
+        const yearId = academicYearSelect.val();
+        const classId = classSelect.val();
+        const sectionId = sectionsSelect.val();
+
+        studentSelect.html('<option value="">লোড হচ্ছে...</option>');
+
+        if (yearId && classId) {
+            $.get(studentsUrl, { 
+                academic_year_id: yearId, 
+                class_id: classId, 
+                section_id: sectionId 
+            }, function(data){
+                let options = '<option value="">-- সকল শিক্ষার্থী --</option>';
+                data.forEach(function(item){
+                    options += `<option value="${item.id}">${item.text}</option>`;
+                });
+                studentSelect.html(options);
+                 
+                const preSelected = "{{ request('student_id') }}";
+                if(preSelected) studentSelect.val(preSelected);
+            });
+        } else {
+            studentSelect.html('<option value="">-- সকল শিক্ষার্থী --</option>');
+        }
+    }
+
+    // Event Listeners
+    academicYearSelect.change(function() {
+        loadExams();
+        loadStudents(); 
     });
+
+    classSelect.change(function() {
+        loadSections();
+        loadExams();
+        loadStudents();
+    });
+
+    sectionsSelect.change(function() {
+        loadStudents();
+    });
+
+    // Initial Load Logic (if re-loading page with selections)
+    // We only trigger AJAX if the dropdowns are empty or need refresh logic.
+    // However, PHP blade loop populates them on page load. 
+    // AJAX is needed when changing selections.
+    // But verify if "Exams" need to be re-fetched to filter by Class ID properly if they rely on it?
+    // Current Blade loop loads ALL exams/classes.
+    // If specific logic is needed, trigger change.
+    // Let's attach events but check if values exist.
+    
+    // Note: The controller passes $exams which might be ALL exams. 
+    // If we want filtering, we might want to run loadExams() on page load if values set?
+    // Or simpler: just let blade handle initial render and use AJAX for changes.
+    // BUT: The blade view only has `request('exam_id')` check.
+    // If we want cascading behavior strictly, we can trigger change.
+    
+    // Let's rely on manual change triggering for dynamic behavior.
+    
 </script>
 @endpush
 @endsection

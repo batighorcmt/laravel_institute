@@ -1,12 +1,13 @@
 @extends('layouts.print')
 
-@section('title', 'Academic Transcript')
+@section('title', 'Academic Transcripts - Bulk Print')
 
 @push('print_head')
 <style>
-    .print-header, .fixed-footer, .logo-overlay { display: none !important; }
+    .print-header, .fixed-footer, .logo-overlay { display: none !important; } /* Hide default layout elements */
     @page { size: A4 portrait; margin: 10mm; }
-    .print-content { font-family: 'Times New Roman', serif; color: #000; position: relative; }
+    .print-content { font-family: 'Times New Roman', serif; color: #000; position: relative; page-break-after: always; }
+    .print-content:last-child { page-break-after: auto; }
     
     /* Watermark / Background Pattern */
     .bg-pattern {
@@ -70,5 +71,13 @@
 @endpush
 
 @section('content')
-    @include('principal.results.partials._marksheet_content', ['student' => $student, 'result' => $result, 'school' => $school, 'exam' => $exam, 'finalSubjects' => $finalSubjects])
+    @foreach($results as $result)
+        @include('principal.results.partials._marksheet_content', [
+            'student' => $result->student, 
+            'result' => $result, 
+            'school' => $school, 
+            'exam' => $exam, 
+            'finalSubjects' => $finalSubjects
+        ])
+    @endforeach
 @endsection
