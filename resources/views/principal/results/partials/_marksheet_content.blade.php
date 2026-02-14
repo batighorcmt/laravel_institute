@@ -109,9 +109,9 @@
                     <td class="label">Result Status</td><td class="colon">:</td>
                     <td class="value">
                         @if($result->fail_count > 0)
-                          <div class="result-status-red"  Failed (Failed in {{ $result->fail_count }} subjects) </div>
+                          <span class="result-status-red">Failed (Failed in {{ $result->fail_count }} subjects)</span>
                         @else
-                            <div class="result-status-green">Passed</div>
+                            <span class="result-status-green">Passed</span>
                         @endif
                     </td>
                 </tr>
