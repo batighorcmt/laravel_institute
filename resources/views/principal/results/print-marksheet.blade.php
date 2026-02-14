@@ -17,8 +17,8 @@
         opacity: 0.08; z-index: -1; pointer-events: none;
     }
 
-    .result-status-green { color: #28a745; font-size: 11pt; font-weight: bold; text-transform: uppercase; }
-    .result-status-red { color: #dc3545; font-size: 11pt; font-weight: bold; text-transform: uppercase; }
+    .result-status-green { color: #28a745; font-size: 11pt; font-weight: bold; }
+    .result-status-red { color: #dc3545; font-size: 11pt; font-weight: bold; }
 
     /* Header */
     .header-section { margin-bottom: 25px; position: relative; min-height: 100px; display: block; width: 100%; border-bottom: 2px solid #1a4d2e; padding-bottom: 10px; }
