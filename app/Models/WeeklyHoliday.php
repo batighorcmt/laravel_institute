@@ -14,5 +14,6 @@ class WeeklyHoliday extends Model
     ];
 
     public function scopeActive($query){ return $query->where('status','active'); }
+    public function scopeForSchool($query, $schoolId) { return $query->where('school_id', $schoolId); }
     public function school(){ return $this->belongsTo(School::class); }
 }
