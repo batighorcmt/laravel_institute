@@ -16,7 +16,16 @@ Route::prefix('v1')->group(function () {
 
     // Principal reports
     Route::get('principal/reports/attendance-summary', [\App\Http\Controllers\Api\PrincipalReportController::class, 'attendanceSummary'])->middleware('role:principal');
+    Route::get('principal/reports/attendance-details', [\App\Http\Controllers\Api\PrincipalReportController::class, 'attendanceDetails'])->middleware('role:principal');
+    Route::get('principal/reports/lesson-evaluations', [\App\Http\Controllers\Api\PrincipalReportController::class, 'lessonEvaluations'])->middleware('role:principal');
     Route::get('principal/reports/exam-results-summary', [\App\Http\Controllers\Api\PrincipalReportController::class, 'examResultsSummary'])->middleware('role:principal');
+    Route::get('principal/reports/homework-summary', [\App\Http\Controllers\Api\PrincipalReportController::class, 'homeworkSummary'])->middleware('role:principal');
+    Route::get('principal/reports/homework-details', [\App\Http\Controllers\Api\PrincipalReportController::class, 'homeworkDetails'])->middleware('role:principal');
+    Route::get('principal/reports/leaves-summary', [\App\Http\Controllers\Api\PrincipalReportController::class, 'leavesSummary'])->middleware('role:principal');
+    Route::get('principal/reports/leaves-details', [\App\Http\Controllers\Api\PrincipalReportController::class, 'leavesDetails'])->middleware('role:principal');
+    Route::get('principal/reports/students-attendance', [\App\Http\Controllers\Api\PrincipalReportController::class, 'studentsAttendance'])->middleware('role:principal');
+    Route::get('principal/reports/students-attendance/details', [\App\Http\Controllers\Api\PrincipalReportController::class, 'studentsAttendanceDetails'])->middleware('role:principal');
+    Route::get('principal/reports/students-attendance/summary', [\App\Http\Controllers\Api\PrincipalReportController::class, 'studentsAttendanceSummary'])->middleware('role:principal');
 
     // Teacher attendance & academic actions
     Route::post('teacher/attendance', [\App\Http\Controllers\Api\TeacherAttendanceController::class, 'store'])->middleware('role:teacher');
