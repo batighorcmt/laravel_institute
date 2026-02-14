@@ -26,8 +26,8 @@
                 <div class="card-header bg-info">
                     <h3 class="card-title">
                         @php 
-                            $eName = ($exam && $exam->name_bn) ? $exam->name_bn : (optional($exam)->name ?? 'ট্যাবুলেশন শীট');
-                            $cName = (optional($exam)->class->name_bn) ? optional($exam)->class->name_bn : optional($exam)->class->name;
+                            $eName = optional($exam)->name_bn ?? optional($exam)->name ?? 'ট্যাবুলেশন শীট';
+                            $cName = optional(optional($exam)->class)->name_bn ?? optional(optional($exam)->class)->name;
                         @endphp
                         {{ $eName }} @if($cName) - {{ $cName }} @endif
                     </h3>
