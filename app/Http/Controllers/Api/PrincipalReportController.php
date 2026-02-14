@@ -341,4 +341,77 @@ class PrincipalReportController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Return a single lesson evaluation with all student records.
+     * Used by mobile app details page to show the list of students.
+     */
+    public function lessonEvaluationDetail(Request $request, $id)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id')
+            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
+            ?? ($user->primarySchool()?->id ?? null);
+        
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+
+        $evaluation = \App\Models\LessonEvaluation::with([
+            'teacher.user',
+            'class',
+            'section',
+            'subject',
+            'records' => function($q) {
+                $q->whereHas('student', function($s) {
+                    $s->where('status', 'active');
+                })->with(['student' => function($ss) {
+                    $ss->where('status', 'active');
+                }]);
+            }
+        ])
+        ->where('school_id', $schoolId)
+        ->find($id);
+
+        if (!$evaluation) {
+            return response()->json(['message' => 'Evaluation not found'], 404);
+        }
+
+        $teacherName = null;
+        try {
+            $teacherName = $evaluation->teacher?->user?->name ?? $evaluation->teacher?->name ?? null;
+        } catch (\Throwable $_) {}
+
+        $records = $evaluation->records->map(function($record) {
+            $student = $record->student;
+            return [
+                'id' => $record->id,
+                'student_id' => $student?->id,
+                'name' => $student?->name,
+                'roll_no' => $student?->roll_no,
+                'status' => $record->status,
+                'photo_url' => $student?->photo_url,
+                'father_name' => $student?->father_name,
+                'mother_name' => $student?->mother_name,
+                'guardian_phone' => $student?->guardian_phone,
+            ];
+        })->toArray();
+
+        return response()->json([
+            'evaluation' => [
+                'id' => $evaluation->id,
+                'evaluation_date' => $evaluation->evaluation_date?->toDateString(),
+                'evaluation_time' => $evaluation->evaluation_time?->format('H:i'),
+                'teacher_name' => $teacherName,
+                'class_name' => $evaluation->class?->name,
+                'section_name' => $evaluation->section?->name,
+                'subject_name' => $evaluation->subject?->name,
+                'notes' => $evaluation->notes,
+                'status' => $evaluation->status,
+                'stats' => $evaluation->getCompletionStats(),
+                'records' => $records,
+            ]
+        ]);
+    }
 }
+
