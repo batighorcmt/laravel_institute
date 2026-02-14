@@ -14,6 +14,10 @@ use App\Models\AcademicYear;
 use App\Models\ClassSubject;
 use App\Models\StudentEnrollment;
 use App\Models\StudentSubject;
+use App\Models\UserSchoolRole;
+use App\Models\Role;
+use App\Models\Teacher;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -57,7 +61,8 @@ class ResultController extends Controller
         
         // Handle Print All
         if ($request->filled('print_all') && $results->count() > 0) {
-             return view('principal.results.print-all-marksheets', compact('school', 'exam', 'class', 'results', 'finalSubjects'));
+             $principalTeacher = $this->getPrincipalTeacher($school);
+             return view('principal.results.print-all-marksheets', compact('school', 'exam', 'class', 'results', 'finalSubjects', 'principalTeacher'));
         }
 
         return view('principal.results.marksheet', compact('school', 'classes', 'academicYears', 'sections', 'exams', 'results', 'exam', 'class', 'finalSubjects'));
@@ -88,10 +93,9 @@ class ResultController extends Controller
 
         $result = $calcData['results']->first();
         $finalSubjects = $calcData['finalSubjects'];
+        $principalTeacher = $this->getPrincipalTeacher($school);
         
-        // We don't need $marks separately because result has subject_results
-        
-        return view('principal.results.print-marksheet', compact('school', 'exam', 'student', 'result', 'finalSubjects'));
+        return view('principal.results.print-marksheet', compact('school', 'exam', 'student', 'result', 'finalSubjects', 'principalTeacher'));
     }
 
     // Merit List
@@ -1633,6 +1637,32 @@ class ResultController extends Controller
         }
         // --- MERIT RANKING LOGIC END ---
 
+        // PASS 2: Calculate Highest Marks across all results in the collection
+        $highestMarksMap = [];
+        foreach ($resultsCollection as $res) {
+            foreach ($res->subject_results as $key => $sData) {
+                // Only consider valid numeric scores
+                if (isset($sData['total']) && is_numeric($sData['total'])) {
+                    $score = (float) $sData['total'];
+                    if (!isset($highestMarksMap[$key]) || $score > $highestMarksMap[$key]) {
+                        $highestMarksMap[$key] = $score;
+                    }
+                }
+            }
+        }
+
+        // PASS 3: Assign full_mark and highest_mark to each result entry
+        foreach ($resultsCollection as $res) {
+            $updatedResults = collect();
+            foreach ($res->subject_results as $key => $sData) {
+                $fSub = $finalSubjects->get($key);
+                $sData['full_mark'] = $fSub['total_full_mark'] ?? 0;
+                $sData['highest_mark'] = $highestMarksMap[$key] ?? 0;
+                $updatedResults->put($key, $sData);
+            }
+            $res->subject_results = $updatedResults;
+        }
+
         $results = $resultsCollection->sortBy(function($r){
             $section = optional(optional($r->student)->currentEnrollment)->section;
             $secOrder = $section ? ($section->numeric_value ?? $section->id) : 999999;
@@ -1641,6 +1671,21 @@ class ResultController extends Controller
         })->values();
 
         return compact('results', 'finalSubjects', 'exam', 'class', 'examSubjects');
+    }
+
+    private function getPrincipalTeacher(School $school)
+    {
+        $principalRole = Role::where('name', Role::PRINCIPAL)->first();
+        if (!$principalRole) return null;
+
+        $principalPivot = UserSchoolRole::where('school_id', $school->id)
+            ->where('role_id', $principalRole->id)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$principalPivot) return null;
+
+        return Teacher::where('user_id', $principalPivot->user_id)->first();
     }
 }
 

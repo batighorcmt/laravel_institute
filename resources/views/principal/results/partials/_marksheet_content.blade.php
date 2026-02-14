@@ -142,6 +142,8 @@
             <tr>
                 <th style="width: 40px;">Sl. No.</th>
                 <th class="text-left">Name of Subjects</th>
+                <th style="width: 40px;">Full Marks</th>
+                <th style="width: 40px;">Highest Mark</th>
                 <th style="width: 40px;">CQ</th>
                 <th style="width: 40px;">MCQ</th>
                 <th style="width: 40px;">PR</th>
@@ -160,6 +162,8 @@
                     <td class="text-left sub-name" style="{{ $sub['is_part'] ? 'padding-left: 20px; font-weight: normal; font-style: italic;' : '' }}">
                         {{ $sub['name'] }}
                     </td>
+                    <td>{{ $sub['is_part'] ? '' : ($sub['full_mark'] ?? '-') }}</td>
+                    <td>{{ $sub['is_part'] ? '' : ($sub['highest_mark'] ?? '-') }}</td>
                     <td>{{ $sub['creative'] }}</td>
                     <td>{{ $sub['mcq'] }}</td>
                     <td>{{ $sub['practical'] }}</td>
@@ -181,7 +185,7 @@
             <!-- Additional Subject -->
             @if($optionalSubject)
                 <tr>
-                    <td colspan="9" style="background-color: #f9f9f9; padding: 2px 10px; border-bottom: none;">
+                    <td colspan="11" style="background-color: #f9f9f9; padding: 2px 10px; border-bottom: none;">
                         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                             <b>Additional Subject:</b>
                             <span style="color: red; font-size: 9pt; font-weight: bold;">GP Above 2</span>
@@ -191,6 +195,8 @@
                  <tr>
                     <td>{{ $sl++ }}</td>
                     <td class="text-left sub-name">{{ $optionalSubject['name'] }}</td>
+                    <td>{{ $optionalSubject['full_mark'] ?? '-' }}</td>
+                    <td>{{ $optionalSubject['highest_mark'] ?? '-' }}</td>
                     <td>{{ $optionalSubject['creative'] }}</td>
                     <td>{{ $optionalSubject['mcq'] }}</td>
                     <td>{{ $optionalSubject['practical'] }}</td>
@@ -262,8 +268,11 @@
             <div class="signature-line">Class Teacher</div>
         </div>
         <div class="signature-box">
-             <!-- Empty space for signature -->
-             <div style="height: 30px;"></div>
+             <div style="height: 30px; display: flex; align-items: flex-end; justify-content: center;">
+                @if(isset($principalTeacher) && $principalTeacher->signature)
+                    <img src="{{ asset('storage/' . $principalTeacher->signature) }}" alt="Signature" style="max-height: 40px; max-width: 150px; margin-bottom: 2px;">
+                @endif
+             </div>
              <div class="signature-line">Head Teacher</div>
         </div>
     </div>
