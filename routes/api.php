@@ -4,80 +4,70 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 
 Route::prefix('v1')->group(function () {
-    // Surgical live fix for missing tables & columns (Delete after use)
+    // Surgical live fix for missing tables, columns & DATA (Delete after use)
     Route::get('/run-migrations-system-secure-{key}', function ($key) {
         if ($key !== 'halim2025') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $results = [];
         try {
-            // 1. Check & Create sessions & personal_access_tokens
+            // 1. Schema Fixes (Ensure columns exist)
             if (!\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
                 \Illuminate\Support\Facades\Schema::create('sessions', function ($table) {
-                    $table->string('id')->primary();
-                    $table->foreignId('user_id')->nullable()->index();
-                    $table->string('ip_address', 45)->nullable();
-                    $table->text('user_agent')->nullable();
-                    $table->longText('payload');
-                    $table->integer('last_activity')->index();
+                    $table->string('id')->primary(); $table->foreignId('user_id')->nullable()->index(); $table->string('ip_address', 45)->nullable(); $table->text('user_agent')->nullable(); $table->longText('payload'); $table->integer('last_activity')->index();
                 });
                 $results[] = 'Sessions table created';
             }
             if (!\Illuminate\Support\Facades\Schema::hasTable('personal_access_tokens')) {
                 \Illuminate\Support\Facades\Schema::create('personal_access_tokens', function ($table) {
-                    $table->id();
-                    $table->morphs('tokenable');
-                    $table->string('name');
-                    $table->string('token', 64)->unique();
-                    $table->text('abilities')->nullable();
-                    $table->timestamp('last_used_at')->nullable();
-                    $table->timestamp('expires_at')->nullable();
-                    $table->timestamps();
+                    $table->id(); $table->morphs('tokenable'); $table->string('name'); $table->string('token', 64)->unique(); $table->text('abilities')->nullable(); $table->timestamp('last_used_at')->nullable(); $table->timestamp('expires_at')->nullable(); $table->timestamps();
                 });
                 $results[] = 'Personal Access Tokens table created';
             }
 
-            // 2. Surgical Update for users table
             \Illuminate\Support\Facades\Schema::table('users', function ($table) use (&$results) {
                 if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'username')) {
-                    $table->string('username')->nullable()->unique()->after('name');
-                    $results[] = 'Added username column to users';
+                    $table->string('username')->nullable()->unique()->after('name'); $results[] = 'Added username column';
                 }
                 if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'plain_password')) {
-                    $table->string('plain_password')->nullable()->after('password');
-                    $results[] = 'Added plain_password column to users';
-                }
-                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'phone')) {
-                    $table->string('phone')->nullable()->after('email');
-                    $results[] = 'Added phone column to users';
-                }
-                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'status')) {
-                    $table->string('status')->default('active')->after('email');
-                    $results[] = 'Added status column to users';
-                }
-                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'first_name')) {
-                    $table->string('first_name')->nullable()->after('name');
-                    $results[] = 'Added first_name column to users';
-                }
-                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'last_name')) {
-                    $table->string('last_name')->nullable()->after('first_name');
-                    $results[] = 'Added last_name column to users';
-                }
-                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'avatar')) {
-                    $table->string('avatar')->nullable();
-                    $results[] = 'Added avatar column to users';
+                    $table->string('plain_password')->nullable()->after('password'); $results[] = 'Added plain_password column';
                 }
             });
 
-            // 3. Try to run standard migrations (force) to catch anything else
-            try {
-                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-                $results[] = 'Standard migrations run attempt: ' . \Illuminate\Support\Facades\Artisan::output();
-            } catch (\Exception $e) {
-                $results[] = 'Standard migration failed (this is expected if some migrations were partially run): ' . $e->getMessage();
-            }
+            // 2. DATA FIX: Populate Usernames for Teachers (Manual Migration Logic)
+            $teachers = \Illuminate\Support\Facades\DB::table('teachers')
+                ->join('users', 'teachers.user_id', '=', 'users.id')
+                ->join('schools', 'teachers.school_id', '=', 'schools.id')
+                ->whereNull('users.username')
+                ->select('teachers.id as teacher_id', 'schools.code as school_code', 'users.id as user_id')
+                ->get();
+            
+            $count = 0;
+            foreach ($teachers as $teacher) {
+                $schoolCode = $teacher->school_code;
+                $existingMax = \Illuminate\Support\Facades\DB::table('users')
+                    ->where('username', 'LIKE', $schoolCode . 'T%')
+                    ->get()
+                    ->map(fn($u) => (int)str_replace($schoolCode . 'T', '', $u->username))
+                    ->max() ?? 0;
+                
+                $username = $schoolCode . 'T' . str_pad($existingMax + 1, 3, '0', STR_PAD_LEFT);
+                while (\Illuminate\Support\Facades\DB::table('users')->where('username', $username)->exists()) {
+                    $existingMax++;
+                    $username = $schoolCode . 'T' . str_pad($existingMax + 1, 3, '0', STR_PAD_LEFT);
+                }
 
-            return response()->json(['message' => 'Comprehensive surgical fix completed', 'results' => $results]);
+                \Illuminate\Support\Facades\DB::table('users')->where('id', $teacher->user_id)->update(['username' => $username]);
+                $count++;
+            }
+            $results[] = "Populated usernames for $count teachers";
+
+            // 3. DIAGNOSTICS: Check if certain users exist
+            $testEmail = request('email', 'jss1967.hm@gmail.com');
+            $userCheck = \App\Models\User::where('email', $testEmail)->orWhere('username', $testEmail)->first();
+            $results[] = "Diagnostic check for '$testEmail': " . ($userCheck ? "FOUND (ID: {$userCheck->id}, Username: {$userCheck->username})" : "NOT FOUND");
+
+            return response()->json(['message' => 'Enhanced surgical fix completed', 'results' => $results]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error', 'error' => $e->getMessage()]);
         }
