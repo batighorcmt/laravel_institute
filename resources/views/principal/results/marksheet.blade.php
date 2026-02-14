@@ -187,125 +187,136 @@
     </div>
 </section>
 
-@push('js')
+@push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', function() {
     // Initialize cascading dropdowns
     const examsUrl = "{{ route('principal.institute.results.exams-by-year', $school) }}";
     const sectionsUrl = "{{ route('principal.institute.results.sections-by-class', $school) }}";
     const studentsUrl = "{{ route('principal.institute.results.students-by-class', $school) }}";
 
-    const academicYearSelect = $('#academic_year_id');
-    const classSelect = $('#class_id');
-    const sectionsSelect = $('#section_id');
-    const examSelect = $('#exam_id');
-    const studentSelect = $('#student_id');
+    const academicYearSelect = document.getElementById('academic_year_id');
+    const classSelect = document.getElementById('class_id');
+    const sectionsSelect = document.getElementById('section_id');
+    const examSelect = document.getElementById('exam_id');
+    const studentSelect = document.getElementById('student_id');
+
+    function clearSelect(sel, placeholder) {
+        if (!sel) return;
+        sel.innerHTML = '';
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = placeholder;
+        sel.appendChild(opt);
+    }
 
     // Helper to load exams
-    function loadExams() {
-        const yearId = academicYearSelect.val();
-        const classId = classSelect.val();
-        
-        examSelect.html('<option value="">লোড হচ্ছে...</option>');
+    function loadExams(yearId, classId, selected) {
+        if (!examSelect) return;
+        clearSelect(examSelect, '-- নির্বাচন করুন --');
         
         if (yearId && classId) {
-             $.get(examsUrl, { academic_year_id: yearId, class_id: classId }, function(data){
-                let options = '<option value="">-- নির্বাচন করুন --</option>';
-                data.forEach(function(item){
-                    options += `<option value="${item.id}">${item.name}</option>`;
-                });
-                examSelect.html(options);
-                
-                // Keep selected value if exists (from PHP rendering)
-                const preSelected = "{{ request('exam_id') }}";
-                if(preSelected) examSelect.val(preSelected);
-            });
-        } else {
-             examSelect.html('<option value="">-- নির্বাচন করুন --</option>');
+            fetch(examsUrl + '?academic_year_id=' + encodeURIComponent(yearId) + '&class_id=' + encodeURIComponent(classId))
+                .then(r => r.json())
+                .then(data => {
+                    data.forEach(function(item) {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.name;
+                        if (selected && String(selected) === String(item.id)) opt.selected = true;
+                        examSelect.appendChild(opt);
+                    });
+                }).catch(() => {});
         }
     }
 
     // Helper to load sections
-    function loadSections() {
-        const classId = classSelect.val();
-        sectionsSelect.html('<option value="">লোড হচ্ছে...</option>');
+    function loadSections(classId, selected) {
+        if (!sectionsSelect) return;
+        clearSelect(sectionsSelect, '-- সকল শাখা --');
 
         if (classId) {
-             $.get(sectionsUrl, { class_id: classId }, function(data){
-                let options = '<option value="">-- সকল শাখা --</option>';
-                data.forEach(function(item){
-                    options += `<option value="${item.id}">${item.name || item.section_name}</option>`;
-                });
-                sectionsSelect.html(options);
-
-                const preSelected = "{{ request('section_id') }}";
-                if(preSelected) sectionsSelect.val(preSelected);
-            });
-        } else {
-             sectionsSelect.html('<option value="">-- সকল শাখা --</option>');
+            fetch(sectionsUrl + '?class_id=' + encodeURIComponent(classId))
+                .then(r => r.json())
+                .then(data => {
+                    data.forEach(function(item) {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.name || item.section_name;
+                        if (selected && String(selected) === String(item.id)) opt.selected = true;
+                        sectionsSelect.appendChild(opt);
+                    });
+                }).catch(() => {});
         }
     }
 
     // Helper to load students
-    function loadStudents() {
-        const yearId = academicYearSelect.val();
-        const classId = classSelect.val();
-        const sectionId = sectionsSelect.val();
-
-        studentSelect.html('<option value="">লোড হচ্ছে...</option>');
+    function loadStudents(yearId, classId, sectionId, selected) {
+        if (!studentSelect) return;
+        clearSelect(studentSelect, '-- সকল শিক্ষার্থী --');
 
         if (yearId && classId) {
-            $.get(studentsUrl, { 
-                academic_year_id: yearId, 
-                class_id: classId, 
-                section_id: sectionId 
-            }, function(data){
-                let options = '<option value="">-- সকল শিক্ষার্থী --</option>';
-                data.forEach(function(item){
-                    options += `<option value="${item.id}">${item.text}</option>`;
-                });
-                studentSelect.html(options);
-                 
-                const preSelected = "{{ request('student_id') }}";
-                if(preSelected) studentSelect.val(preSelected);
-            });
-        } else {
-            studentSelect.html('<option value="">-- সকল শিক্ষার্থী --</option>');
+            let url = studentsUrl + '?academic_year_id=' + encodeURIComponent(yearId) + '&class_id=' + encodeURIComponent(classId);
+            if (sectionId) url += '&section_id=' + encodeURIComponent(sectionId);
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    data.forEach(function(item) {
+                        const opt = document.createElement('option');
+                        opt.value = item.id;
+                        opt.textContent = item.text;
+                        if (selected && String(selected) === String(item.id)) opt.selected = true;
+                        studentSelect.appendChild(opt);
+                    });
+                }).catch(() => {});
         }
     }
 
+    // Initial Load Logic
+    const initYear = academicYearSelect ? academicYearSelect.value : '';
+    const initClass = classSelect ? classSelect.value : '';
+    const initSection = "{{ request('section_id') }}";
+    const initExam = "{{ request('exam_id') }}";
+    const initStudent = "{{ request('student_id') }}";
+
+    if (initYear && initClass) {
+        loadExams(initYear, initClass, initExam);
+        loadStudents(initYear, initClass, initSection, initStudent);
+    }
+    if (initClass) {
+        loadSections(initClass, initSection);
+    }
+
     // Event Listeners
-    academicYearSelect.change(function() {
-        loadExams();
-        loadStudents(); 
-    });
+    if (academicYearSelect) {
+        academicYearSelect.addEventListener('change', function() {
+            const yearId = this.value;
+            const classId = classSelect ? classSelect.value : '';
+            loadExams(yearId, classId, null);
+            loadStudents(yearId, classId, sectionsSelect ? sectionsSelect.value : '', null);
+        });
+    }
 
-    classSelect.change(function() {
-        loadSections();
-        loadExams();
-        loadStudents();
-    });
+    if (classSelect) {
+        classSelect.addEventListener('change', function() {
+            const classId = this.value;
+            const yearId = academicYearSelect ? academicYearSelect.value : '';
+            loadSections(classId, null);
+            loadExams(yearId, classId, null);
+            loadStudents(yearId, classId, '', null);
+        });
+    }
 
-    sectionsSelect.change(function() {
-        loadStudents();
-    });
-
-    // Initial Load Logic (if re-loading page with selections)
-    // We only trigger AJAX if the dropdowns are empty or need refresh logic.
-    // However, PHP blade loop populates them on page load. 
-    // AJAX is needed when changing selections.
-    // But verify if "Exams" need to be re-fetched to filter by Class ID properly if they rely on it?
-    // Current Blade loop loads ALL exams/classes.
-    // If specific logic is needed, trigger change.
-    // Let's attach events but check if values exist.
-    
-    // Note: The controller passes $exams which might be ALL exams. 
-    // If we want filtering, we might want to run loadExams() on page load if values set?
-    // Or simpler: just let blade handle initial render and use AJAX for changes.
-    // BUT: The blade view only has `request('exam_id')` check.
-    // If we want cascading behavior strictly, we can trigger change.
-    
-    // Let's rely on manual change triggering for dynamic behavior.
-    
+    if (sectionsSelect) {
+        sectionsSelect.addEventListener('change', function() {
+            const sectionId = this.value;
+            const yearId = academicYearSelect ? academicYearSelect.value : '';
+            const classId = classSelect ? classSelect.value : '';
+            loadStudents(yearId, classId, sectionId, null);
+        });
+    }
+});
 </script>
 @endpush
 @endsection
