@@ -18,8 +18,8 @@
         opacity: 0.08; z-index: -1; pointer-events: none;
     }
 
-    .result-status-green { color: #28a745; font-size: 14pt; font-weight: bold; }
-    .result-status-red { color: #dc3545; font-size: 14pt; font-weight: bold; }
+    .result-status-green { color: #28a745; font-size: 12pt; font-weight: bold; }
+    .result-status-red { color: #dc3545; font-size: 12pt; font-weight: bold; }
 
     /* Header */
     .header-section { margin-bottom: 10px; position: relative; }
