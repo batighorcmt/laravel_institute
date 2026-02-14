@@ -80,6 +80,9 @@ class TeacherStudentsRepository {
         } catch (_) {}
         return true;
       }());
+      if (data.containsKey('data') && data['data'] is Map<String, dynamic>) {
+        return data['data'] as Map<String, dynamic>;
+      }
       return data;
     } on DioException catch (e) {
       final status = e.response?.statusCode;

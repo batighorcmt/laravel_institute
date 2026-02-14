@@ -798,6 +798,10 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     final session = _pick(d, const ['session', 'academic_session']);
     final year = _pick(d, const ['academic_year', 'year']);
 
+    final att = d['attendance_stats'] is Map ? Map<String, dynamic>.from(d['attendance_stats'] as Map) : null;
+    final history = d['enrollment_history'] is List ? d['enrollment_history'] as List : [];
+    final memberships = d['memberships'] is List ? d['memberships'] as List : [];
+
     final gender = _tc(_pick(d, const ['gender', 'gender_name']));
     final bloodGroup = _tc(_pick(d, const ['blood_group']));
     final dob = _pick(d, const ['date_of_birth', 'dob']);
@@ -1221,6 +1225,100 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       ),
                     ],
                   ),
+
+                  const SizedBox(height: 12),
+
+                  // Attendance Summary
+                  if (att != null || d.containsKey('working_days'))
+                    _sectionCard(
+                      title: 'Attendance Summary',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00b09b), Color(0xFF96c93d)],
+                      ),
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _attendanceMiniCard('Present', (att?['present'] ?? '0').toString(), Colors.green),
+                            _attendanceMiniCard('Absent', (att?['absent'] ?? '0').toString(), Colors.red),
+                            _attendanceMiniCard('Late', (att?['late'] ?? '0').toString(), Colors.orange),
+                            _attendanceMiniCard('Leave', (att?['leave'] ?? '0').toString(), Colors.blue),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Center(
+                          child: Text(
+                            'Total Working Days: ${_pick(d, const ['working_days']).isEmpty ? '0' : _pick(d, const ['working_days'])}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  const SizedBox(height: 12),
+
+                  // Enrollment History
+                  if (history.isNotEmpty)
+                    _sectionCard(
+                      title: 'Enrollment History',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF4e54c8), Color(0xFF8f94fb)],
+                      ),
+                      children: [
+                        Theme(
+                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: DataTable(
+                              columnSpacing: 24,
+                              horizontalMargin: 0,
+                              headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                              columns: const [
+                                DataColumn(label: Text('Year')),
+                                DataColumn(label: Text('Class')),
+                                DataColumn(label: Text('Section')),
+                                DataColumn(label: Text('Roll')),
+                              ],
+                              rows: history.map((en) {
+                                final Map<String, dynamic> row = en is Map ? Map<String, dynamic>.from(en as Map) : {};
+                                return DataRow(cells: [
+                                  DataCell(Text(_pick(row, const ['academic_year', 'year', 'session']))),
+                                  DataCell(Text(_pick(row, const ['class', 'class_name']))),
+                                  DataCell(Text(_pick(row, const ['section', 'section_name']))),
+                                  DataCell(Text(_pick(row, const ['roll', 'roll_no']))),
+                                ]);
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  const SizedBox(height: 12),
+
+                  // Teams & Activities
+                  if (memberships.isNotEmpty)
+                    _sectionCard(
+                      title: 'Teams & Activities',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFf857a6), Color(0xFFff5858)],
+                      ),
+                      children: memberships.map((tm) {
+                        final Map<String, dynamic> row = tm is Map ? Map<String, dynamic>.from(tm as Map) : {};
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.pink.withOpacity(0.1),
+                            child: const Icon(Icons.group, color: Colors.pink),
+                          ),
+                          title: Text(_pick(row, const ['name', 'team_name']), style: const TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: Text('Status: ${_pick(row, const ['status'])}'),
+                          trailing: _pick(row, const ['joined_at']).isNotEmpty 
+                            ? Text(_pick(row, const ['joined_at']).split(' ').first, style: const TextStyle(fontSize: 12, color: Colors.grey)) 
+                            : null,
+                        );
+                      }).toList(),
+                    ),
 
                   const SizedBox(height: 24),
                 ],
@@ -1758,5 +1856,29 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       district,
     ].where((e) => e.trim().isNotEmpty).toList();
     return parts.join(', ');
+  }
+
+  Widget _attendanceMiniCard(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.black54,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
   }
 }

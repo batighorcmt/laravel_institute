@@ -133,7 +133,27 @@ class StudentDirectoryController extends Controller
         }
 
         // Also eager-load primary student relations used by the resource
-        $student->loadMissing(['class', 'optionalSubject']);
+        $student->loadMissing([
+            'class', 
+            'optionalSubject',
+            'enrollments.class', 
+            'enrollments.section', 
+            'enrollments.group', 
+            'enrollments.academicYear',
+            'teams' => function($q) {
+                $q->withPivot('joined_at', 'status');
+            }
+        ]);
+
+        // Calculate attendance stats for the current academic year or school
+        $attendanceStats = [
+            'present' => \App\Models\Attendance::where('student_id', $student->id)->where('school_id', $schoolId)->where('status', 'present')->count(),
+            'absent' => \App\Models\Attendance::where('student_id', $student->id)->where('school_id', $schoolId)->where('status', 'absent')->count(),
+            'late' => \App\Models\Attendance::where('student_id', $student->id)->where('school_id', $schoolId)->where('status', 'late')->count(),
+            'leave' => \App\Models\Attendance::where('student_id', $student->id)->where('school_id', $schoolId)->where('status', 'leave')->count(),
+        ];
+        $student->setAttribute('attendance_stats', $attendanceStats);
+        $student->setAttribute('working_days', array_sum($attendanceStats));
 
         return (new StudentProfileResource($student));
     }
