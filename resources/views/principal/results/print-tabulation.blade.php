@@ -178,22 +178,25 @@
     
                             <td class="text-center small summary-col">{{ $result->fourth_subject_code ?? '-' }}</td>
                             <td class="text-center summary-col"><strong>{{ toBn(number_format($result->computed_total_marks ?? 0, 0), $lang) }}</strong></td>
-                            <td class="text-center summary-col"><strong>{{ toBn(number_format($result->computed_gpa ?? 0, 2), $lang) }}</strong></td>
-                            <td class="text-center summary-col">
-                                @php $letter = $result->computed_letter ?? 'F'; @endphp
+                            @php
+                                $letter = $result->computed_letter ?? 'F';
+                                $status = $result->computed_status;
+                                $isFail = ($status === 'অকৃতকার্য' || $letter === 'F');
+                                $colorStyle = $isFail ? 'color: red !important;' : 'color: green !important;';
+                            @endphp
+                            <td class="text-center summary-col" style="{{ $colorStyle }}"><strong>{{ toBn(number_format($result->computed_gpa ?? 0, 2), $lang) }}</strong></td>
+                            <td class="text-center summary-col" style="{{ $colorStyle }}">
                                 <strong>{{ $letter }}</strong>
                             </td>
-                            <td class="text-center small summary-col">
+                            <td class="text-center small summary-col" style="{{ $colorStyle }}">
                                 @php 
-                                    $status = $result->computed_status;
                                     if ($lang === 'bn') {
-                                        $status = ($status === 'অকৃতকার্য' || $letter === 'F') ? 'Failed' : 'Passed';
-                                        $status = ($status === 'অকৃতকার্য' || $letter === 'F') ? 'ফেল' : 'পাস';
+                                        $statusText = $isFail ? 'ফেল' : 'পাস';
                                     } else {
-                                        $status = ($status === 'অকৃতকার্য' || $letter === 'F') ? 'Failed' : 'Passed';
+                                        $statusText = $isFail ? 'Failed' : 'Passed';
                                     }
                                 @endphp
-                                {{ $status }}
+                                {{ $statusText }}
                             </td>
                             <td class="text-center fail-count summary-col">
                                 {{ $result->fail_count > 0 ? toBn($result->fail_count, $lang) : '-' }}
