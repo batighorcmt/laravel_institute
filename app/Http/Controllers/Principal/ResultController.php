@@ -1569,10 +1569,11 @@ class ResultController extends Controller
                     'name' => $fSub['name']
                 ]);
 
+                $grandTotal += $subTotal;
                 if ($isOptional) {
                     if ($subGP > 2.00) { $totalGpa += ($subGP - 2.00); }
                 } else {
-                    $grandTotal += $subTotal; $totalGpa += $subGP; $subjectCount++;
+                    $totalGpa += $subGP; $subjectCount++;
                     if ($subGrade == 'F' || $subGrade == 'N/R') $failedSubjectCount++;
                 }
             }
