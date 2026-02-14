@@ -17,46 +17,46 @@ Route::prefix('v1')->group(function () {
                 $results[] = 'Migrations table initialized';
             }
 
-            // 2. Identify migrations that are blocking because tables already exist
-            $existingTablesToMigrations = [
+            // 2. Comprehensive mapping of existing tables to their migrations
+            $mappings = [
                 'users' => '0001_01_01_000000_create_users_table',
                 'password_reset_tokens' => '0001_01_01_000000_create_users_table',
                 'sessions' => '0001_01_01_000000_create_users_table',
+                'cache' => '0001_01_01_000001_create_cache_table',
+                'cache_locks' => '0001_01_01_000001_create_cache_table',
+                'jobs' => '0001_01_01_000002_create_jobs_table',
+                'failed_jobs' => '0001_01_01_000002_create_jobs_table',
+                'job_batches' => '0001_01_01_000002_create_jobs_table',
                 'schools' => '2025_11_07_204717_create_schools_table',
                 'roles' => '2025_11_07_204728_create_roles_table',
-                'user_school_roles' => '2025_11_07_204735_create_user_school_roles_table',
-                'classes' => '2025_11_07_204741_create_classes_table',
-                'subjects' => '2025_11_07_204748_create_subjects_table',
-                'students' => '2025_11_07_204754_create_students_table',
             ];
 
-            foreach ($existingTablesToMigrations as $table => $migration) {
+            foreach ($mappings as $table => $migration) {
                 if (\Illuminate\Support\Facades\Schema::hasTable($table)) {
                     \Illuminate\Support\Facades\DB::table('migrations')->updateOrInsert(
                         ['migration' => $migration],
                         ['batch' => 1]
                     );
-                    $results[] = "Marked migration '$migration' as run (table '$table' exists)";
+                    $results[] = "Marked '$migration' as run (table '$table' detected)";
                 }
             }
 
-            // 3. Run all pending migrations (This will create 'teachers' and everything else missing)
+            // 3. Try to run standard migrations (force) - this should catch teachers, etc.
             try {
                 \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
                 $results[] = 'Migrations executed: ' . \Illuminate\Support\Facades\Artisan::output();
             } catch (\Exception $e) {
-                $results[] = 'Migration warning: ' . $e->getMessage();
+                $results[] = 'Migration notice: ' . $e->getMessage();
             }
 
-            // 4. Data Fix: Ensure username column and population
+            // 4. Final Schema Check & Username Population
             \Illuminate\Support\Facades\Schema::table('users', function ($table) use (&$results) {
                 if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'username')) {
                     $table->string('username')->nullable()->unique()->after('name');
-                    $results[] = 'Manually added missing username column';
+                    $results[] = 'Added username column manually';
                 }
             });
 
-            // Populate usernames for any teacher records found
             if (\Illuminate\Support\Facades\Schema::hasTable('teachers')) {
                 $teachers = \Illuminate\Support\Facades\DB::table('teachers')
                     ->join('users', 'teachers.user_id', '=', 'users.id')
@@ -76,11 +76,13 @@ Route::prefix('v1')->group(function () {
                     $count++;
                 }
                 $results[] = "Populated usernames for $count users/teachers";
+            } else {
+                $results[] = 'Teachers table still not found, check migration output above';
             }
 
-            return response()->json(['message' => 'Full Database Repair Completed', 'results' => $results]);
+            return response()->json(['message' => 'Comprehensive Database Repair Executed', 'results' => $results]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Critical Error', 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Critical Failure', 'error' => $e->getMessage()]);
         }
     });
 
