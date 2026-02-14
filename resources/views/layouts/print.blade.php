@@ -5,13 +5,9 @@
     <meta charset="utf-8">
     <title>@yield('title', (isset($printTitle)?$printTitle:'Print'))</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    @php
-        $faviconUrl = asset('images/default-logo.png');
-        if(isset($school) && $school && $school->logo){
-            $faviconUrl = asset('storage/'.$school->logo);
-        }
-    @endphp
-    <link rel="icon" type="image/x-icon" href="{{ $faviconUrl }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicon-16x16.png') }}">
+    <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}">
     <!-- Use same font stack as admin dashboard (Kalpurush primary) for both languages -->
     <style>
         @font-face { font-family:'Kalpurush'; font-weight:400; font-display:swap; src: url('/fonts/kalpurush/kalpurush.woff2') format('woff2'), url('/fonts/kalpurush/kalpurush.ttf') format('truetype'); }
