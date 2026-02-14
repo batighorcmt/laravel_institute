@@ -1270,9 +1270,9 @@ class ResultController extends Controller
     /**
      * Helper to calculate results for marksheet/tabulation
      */
-    private function getCalculatedResults(School $school, $examId, $classId, $sectionId = null, $studentId = null)
+    protected function getCalculatedResults(School $school, $examId, $classId, $sectionId = null, $studentId = null, $academicYearId = null)
     {
-        $exam = Exam::with(['examSubjects.subject', 'academicYear'])->find($examId);
+        $exam = Exam::with(['academicYear', 'class'])->findOrFail($examId);
         if(!$exam) return null;
         
         $class = SchoolClass::find($classId);
@@ -1317,15 +1317,26 @@ class ResultController extends Controller
             
         $results = $resultQuery->get();
         
-        // Fetch students enrolled
+        // Fetch students enrolled - for attendance, we need all enrolled students in this class
+        // regardless of academic year, as students may have results but be enrolled in different AY
+        $enrollmentQueryForAttendance = StudentEnrollment::where('school_id', $school->id)
+            ->where('class_id', $classId)
+            ->where('status','active');
+            
+        $enrolledStudentIdsForAttendance = $enrollmentQueryForAttendance->pluck('student_id')->unique()->values()->all();
+        
+        // For other operations, we still need the AY-specific enrollments
         $enrollmentQuery = StudentEnrollment::where('school_id', $school->id)
             ->where('class_id', $classId)
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('status','active');
             
         $enrolledStudentIds = $enrollmentQuery->pluck('student_id')->unique()->values()->all();
+        
+        // Combine results students with enrolled students for comprehensive list
         $allStudentIds = collect($results->pluck('student_id'))
             ->merge($enrolledStudentIds)
+            ->merge($enrolledStudentIdsForAttendance)
             ->unique()
             ->values()
             ->all();
@@ -1365,7 +1376,8 @@ class ResultController extends Controller
         $activeStudentIds = Student::whereIn('id', $allStudentIds)->where('status','active')->pluck('id')->unique()->values()->all();
         
         $allEnrollmentIds = StudentEnrollment::whereIn('student_id', $activeStudentIds)
-            ->where('academic_year_id', $exam->academic_year_id)
+            // Remove academic_year_id filter to include students from any AY (e.g. transfer/mismatch)
+            // ->where('academic_year_id', $exam->academic_year_id) 
             ->where('class_id', $classId) // Ensure class matches
             ->pluck('id');
         
@@ -1394,8 +1406,14 @@ class ResultController extends Controller
 
         foreach ($studentsToProcess as $stu) {
             $sid = $stu->id;
+            
+            // DIRECT FILE DEBUG - LOOP START
+            $assigned = $studentAssignedSubjectIds[$sid] ?? [];
+            $intersectCount = count(array_intersect($assigned, $examSubjectIds));
+            $loopLog = "Loop: {$stu->id} | Assigned: ".count($assigned)." | Intersect: $intersectCount\n";
+            file_put_contents(base_path('loop_debug.log'), $loopLog, FILE_APPEND);
+            
             // Filter inactive/irrelevant
-             $assigned = $studentAssignedSubjectIds[$sid] ?? [];
              if(empty(array_intersect($assigned, $examSubjectIds))) continue;
 
             $existing = $results->where('student_id', $sid)->first();
@@ -1632,8 +1650,10 @@ class ResultController extends Controller
             $res->section_id = optional(optional($stu->currentEnrollment)->section)->id;
 
             // Attendance Summary
-            $stuAttendance = $allAttendances->get($stu->id) ?: collect();
-            $presentDays = $stuAttendance->whereIn('status', ['present', 'late', 'P', 'L'])->count();
+            $stuAttendance = $allAttendances->get($sid) ?: collect();
+            $presentArray = ['present', 'late', 'P', 'L'];
+            $presentDays = $stuAttendance->whereIn('status', $presentArray)->count();
+            
             $res->attendance_days = $totalSchoolDays;
             $res->attendance_present = $presentDays;
             $res->attendance_absent = max(0, $totalSchoolDays - $presentDays);
