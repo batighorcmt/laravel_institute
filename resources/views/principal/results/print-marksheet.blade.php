@@ -61,8 +61,14 @@
     .result-table .text-left { text-align: left; padding-left: 5px; }
     .result-table .sub-name { font-weight: bold; }
     
+    /* Cards */
+    .summary-cards { display: flex; justify-content: space-around; gap: 10px; margin: 10px 0; }
+    .card-item { flex: 1; border: 1px dashed #444; padding: 5px 10px; text-align: center; background: #fff; }
+    .card-item b { font-size: 11pt; color: #1a4d2e; }
+    .card-label { font-size: 8.5pt; font-weight: bold; color: #333; text-transform: uppercase; margin-bottom: 2px; }
+
     /* Footer */
-    .footer-section { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 9.5pt; }
+    .footer-section { margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 9.5pt; }
     .signature-box { text-align: center; width: 180px; }
     .signature-line { border-top: 1px solid #000; margin-top: 30px; padding-top: 2px; font-weight: bold; }
     

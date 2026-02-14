@@ -77,7 +77,7 @@
             <table>
                 <tr>
                     <td class="label">Name of Student</td><td class="colon">:</td>
-                    <td class="value"><span style="font-size: 13pt; border-bottom: 1px solid #000;">{{ $student->student_name_en ?: $student->student_name_bn }}</span> ({{ $student->student_id }})</td>
+                    <td class="value"><span style="font-size: 13pt;">{{ $student->student_name_en ?: $student->student_name_bn }}</span> ({{ $student->student_id }})</td>
                 </tr>
                 <tr>
                     <td class="label">Father's Name</td><td class="colon">:</td>
@@ -180,43 +180,48 @@
 
             <!-- Additional Subject -->
             @if($optionalSubject)
-                <tr>
-                    <td colspan="9" class="text-left" style="background-color: #f0f0f0; font-weight: bold; padding-left: 10px;">Additional Subject:</td>
-                </tr>
                  <tr>
                     <td>{{ $sl++ }}</td>
-                    <td class="text-left sub-name">{{ $optionalSubject['name'] }}</td>
+                    <td class="text-left sub-name">
+                        <span style="font-weight: normal; font-size: 9pt;">Additional Subject:</span><br>
+                        {{ $optionalSubject['name'] }}
+                    </td>
                     <td>{{ $optionalSubject['creative'] }}</td>
                     <td>{{ $optionalSubject['mcq'] }}</td>
                     <td>{{ $optionalSubject['practical'] }}</td>
                     <td>{{ $optionalSubject['total'] }}</td>
                     <td>{{ $optionalSubject['grade'] }}</td>
                     <td>{{ $optionalSubject['gp'] }}</td>
-                    <td style="background-color: #eee;">GP Above 2</td>
-                </tr>
-                <tr>
-                    <td colspan="8" class="text-right" style="padding-right: 10px;"><b>GP Above 2.00:</b></td>
-                    <td>{{ (isset($optionalGP) && $optionalGP > 2) ? number_format($optionalGP - 2.0, 2) : '0.00' }}</td>
+                    <td colspan="2" style="background-color: #f7f7f7;">
+                        <span style="font-size: 8pt; color: #666;">GP Above 2</span><br>
+                        <b>{{ (isset($optionalGP) && $optionalGP > 2) ? number_format($optionalGP - 2.0, 2) : '0.00' }}</b>
+                    </td>
                 </tr>
             @endif
         </tbody>
-        <tfoot>
-             <tr style="background-color: #f9f9f9; font-weight: bold;">
-                <td colspan="5" class="text-right">Grand Total: <b>{{ $result->computed_total_marks }}</b></td>
-                <td colspan="5" class="text-left" style="padding-left: 15px;">
-                    Merit Position: 
-                    Class: <b>{{ $result->class_position }}</b>, 
-                    Section: <b>{{ $result->section_position }}</b>
-                </td>
-            </tr>
-        </tfoot>
     </table>
 
+    <!-- Merit position Cards -->
+    <div class="summary-cards">
+        <div class="card-item">
+            <div class="card-label">Grand Total Marks</div>
+            <b>{{ $result->computed_total_marks }}</b>
+        </div>
+        <div class="card-item">
+            <div class="card-label">Merit Position (Class)</div>
+            <b>{{ $result->class_position }}</b>
+        </div>
+        <div class="card-item">
+            <div class="card-label">Merit Position (Section)</div>
+            <b>{{ $result->section_position }}</b>
+        </div>
+    </div>
+
     <!-- Extra Activities & Attendance Table -->
-    <table class="extra-activities-table" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 9pt;">
+    <table class="extra-activities-table" style="width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 8.5pt;">
         <tr>
             <!-- Attendance Column -->
-            <td style="width: 35%; border: 1px solid #000; vertical-align: top; padding: 0;">
+            <td style="width: 48%; border: 1px solid #000; vertical-align: top; padding: 0;">
                 <table style="width: 100%; border-collapse: collapse; border: none;">
                     <tr><th colspan="2" style="border-bottom: 1px solid #000; padding: 3px; background: #eee;">Attendance</th></tr>
                     <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd; width: 70%;">Total School Days</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
@@ -226,14 +231,11 @@
                 </table>
             </td>
 
-            <!-- Empty Column 2 -->
-            <td style="width: 10%; border: 1px solid #000;"></td>
-
-            <!-- Spacer Column 3 (Borderless) -->
-            <td style="width: 5%; border: none;"></td>
+            <!-- Spacer -->
+            <td style="width: 4%; border: none;"></td>
 
             <!-- Co-curricular Column -->
-            <td style="width: 35%; border: 1px solid #000; vertical-align: top; padding: 0;">
+            <td style="width: 48%; border: 1px solid #000; vertical-align: top; padding: 0;">
                 <table style="width: 100%; border-collapse: collapse; border: none;">
                     <tr><th colspan="2" style="border-bottom: 1px solid #000; padding: 3px; background: #eee;">Co-Curricular Activities</th></tr>
                     <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd; width: 70%;">Moral Education</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
@@ -242,14 +244,11 @@
                     <tr><td style="padding: 2px 5px;">Discipline</td><td style="border-left: 1px solid #ddd;"></td></tr>
                 </table>
             </td>
-
-            <!-- Empty Column 5 -->
-            <td style="width: 15%; border: 1px solid #000;"></td>
         </tr>
     </table>
 
-    <div style="margin-top: 15px; font-size: 10pt;">
-        <b>Remarks:</b> ________________________________________________________________________________________________________
+    <div style="margin-top: 10px; font-size: 9pt;">
+        <b>Remarks:</b> ____________________________________________________________________________________________________
     </div>
 
     <!-- Footer Signatures -->
