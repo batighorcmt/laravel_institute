@@ -22,6 +22,8 @@
             'total' => $isNotFound ? '-' : ($isAbsent ? 'Ab' : $res['total']),
             'grade' => $isNotFound ? '-' : ($isAbsent ? 'F' : $res['grade']),
             'gp' => $isNotFound ? '0.00' : number_format($res['gpa'] ?? 0, 2),
+            'full_mark' => $res['full_mark'] ?? ($fSub['total_full_mark'] ?? '-'),
+            'highest_mark' => $res['highest_mark'] ?? '-',
             'is_part' => !empty($res['display_only']),
             'is_combined' => !empty($fSub['is_combined_result']),
             'is_failed' => ($isAbsent || $res['grade'] == 'F' || $res['grade'] == 'N/R')
@@ -162,8 +164,8 @@
                     <td class="text-left sub-name" style="{{ $sub['is_part'] ? 'padding-left: 20px; font-weight: normal; font-style: italic;' : '' }}">
                         {{ $sub['name'] }}
                     </td>
-                    <td>{{ $sub['is_part'] ? '' : ($sub['full_mark'] ?? '-') }}</td>
-                    <td>{{ $sub['is_part'] ? '' : ($sub['highest_mark'] ?? '-') }}</td>
+                    <td>{{ $sub['full_mark'] ?? '-' }}</td>
+                    <td>{{ $sub['highest_mark'] ?? '-' }}</td>
                     <td>{{ $sub['creative'] }}</td>
                     <td>{{ $sub['mcq'] }}</td>
                     <td>{{ $sub['practical'] }}</td>
@@ -268,7 +270,7 @@
             <div class="signature-line">Class Teacher</div>
         </div>
         <div class="signature-box">
-             <div style="height: 30px; display: flex; align-items: flex-end; justify-content: center;">
+             <div style="height: 5px; display: flex; align-items: flex-end; justify-content: center;">
                 @if(isset($principalTeacher) && $principalTeacher->signature)
                     <img src="{{ asset('storage/' . $principalTeacher->signature) }}" alt="Signature" style="max-height: 40px; max-width: 150px; margin-bottom: 2px;">
                 @endif

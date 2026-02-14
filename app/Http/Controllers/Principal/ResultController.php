@@ -1311,12 +1311,6 @@ class ResultController extends Controller
             ->forExam($exam->id)
             ->forClass($classId);
             
-        if ($studentId) {
-            $resultQuery->where('student_id', $studentId);
-        } elseif ($sectionId) {
-            $resultQuery->where('section_id', $sectionId);
-        }
-        
         $results = $resultQuery->get();
         
         // Fetch students enrolled
@@ -1325,12 +1319,6 @@ class ResultController extends Controller
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('status','active');
             
-        if ($studentId) {
-            $enrollmentQuery->where('student_id', $studentId);
-        } elseif ($sectionId) {
-            $enrollmentQuery->where('section_id', $sectionId);
-        }
-        
         $enrolledStudentIds = $enrollmentQuery->pluck('student_id')->unique()->values()->all();
 
         $allStudentIds = collect($results->pluck('student_id'))
@@ -1669,6 +1657,12 @@ class ResultController extends Controller
             $roll = optional(optional($r->student)->currentEnrollment)->roll_no ?? 999999;
             return sprintf('%09d-%09d', $secOrder, $roll);
         })->values();
+
+        if ($studentId) {
+            $results = $results->where('student_id', $studentId)->values();
+        } elseif ($sectionId) {
+            $results = $results->where('section_id', $sectionId)->values();
+        }
 
         return compact('results', 'finalSubjects', 'exam', 'class', 'examSubjects');
     }
