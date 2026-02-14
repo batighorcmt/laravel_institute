@@ -24,6 +24,7 @@ class StudentDirectoryResource extends JsonResource
         }
         return [
             'id' => $st?->id,
+            'student_id' => $st?->student_id,
             'name' => $st?->full_name,
             'roll' => $en->roll_no,
             'class' => $en->class?->name,

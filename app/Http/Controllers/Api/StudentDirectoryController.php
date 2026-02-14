@@ -147,10 +147,10 @@ class StudentDirectoryController extends Controller
 
         // Calculate attendance stats for the current academic year or school
         $attendanceStats = [
-            'present' => \App\Models\Attendance::where('student_id', $student->id)->where('school_id', $schoolId)->where('status', 'present')->count(),
-            'absent' => \App\Models\Attendance::where('student_id', $student->id)->where('school_id', $schoolId)->where('status', 'absent')->count(),
-            'late' => \App\Models\Attendance::where('student_id', $student->id)->where('school_id', $schoolId)->where('status', 'late')->count(),
-            'leave' => \App\Models\Attendance::where('student_id', $student->id)->where('school_id', $schoolId)->where('status', 'leave')->count(),
+            'present' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'present')->count(),
+            'absent' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'absent')->count(),
+            'late' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'late',)->count(),
+            'leave' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'leave')->count(),
         ];
         $student->setAttribute('attendance_stats', $attendanceStats);
         $student->setAttribute('working_days', array_sum($attendanceStats));

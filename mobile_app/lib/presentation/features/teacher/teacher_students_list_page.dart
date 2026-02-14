@@ -915,6 +915,7 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     final guardianRelation = _tc(_pick(d, const ['guardian_relation']));
     final guardianPhone = _pick(d, const [
       'guardian_phone',
+      'phone',
       'guardian_mobile',
       'local_guardian_mobile',
       'guardian_contact',
