@@ -387,7 +387,7 @@ class PrincipalReportController extends Controller
             return [
                 'id' => $record->id,
                 'student_id' => $student?->id,
-                'name' => $student?->name,
+                'name' => $student?->full_name ?? $student?->student_name_bn ?? $student?->student_name_en,
                 'roll_no' => $student?->roll_no,
                 'status' => $record->status,
                 'photo_url' => $student?->photo_url,
