@@ -38,7 +38,7 @@
     /* Student Info & Grading Table Container */
     .info-grading-container { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: flex-start; }
     
-    .student-info { flex: 1; font-size: 11pt; line-height: 1.6; }
+    .student-info { flex: 1; font-size: 11pt; line-height: 1.1; }
     .student-info table { width: 100%; border: none; }
     .student-info td { vertical-align: top; padding: 2px 0; }
     .student-info .label { width: 140px; font-weight: normal; }

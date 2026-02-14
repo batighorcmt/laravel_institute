@@ -3,10 +3,8 @@
     $mainSubjects = collect();
     $optionalSubject = null;
     $totalGP = 0;
-    $totalMainSubjects = 0;
     
-    // Sort finalSubjects to ensure display order if needed, or rely on controller order
-    // We iterate finalSubjects to preserve order
+    // Iterate finalSubjects to prepare data for display
     foreach($finalSubjects as $key => $fSub) {
         $res = $subjectResults->get($key);
         if (!$res) continue;
@@ -16,30 +14,58 @@
         }
 
         $isAbsent = !empty($res['is_absent']);
-        $hasData = ($res['creative'] > 0 || $res['mcq'] > 0 || $res['practical'] > 0 || $res['total'] > 0);
+        $isNotFound = ($res['grade'] == 'N/R');
+        $hasAnyMark = ($res['creative'] > 0 || $res['mcq'] > 0 || $res['practical'] > 0 || $res['total'] > 0);
 
-        $subData = [
-            'name' => $res['name'] ?? $fSub['name'],
-            'creative' => $res['creative'] > 0 ? $res['creative'] : '-',
-            'mcq' => $res['mcq'] > 0 ? $res['mcq'] : '-',
-            'practical' => $res['practical'] > 0 ? $res['practical'] : '-',
-            'total' => $isAbsent ? 'Abs' : ($hasData ? $res['total'] : '-'),
-            'gp' => ($isAbsent || $res['grade'] == 'F' || !$hasData) ? '0.00' : number_format($res['gpa'], 2),
-            'grade' => $isAbsent ? 'N/R' : ($hasData ? $res['grade'] : '-'),
-            'is_failed' => $res['grade'] == 'F',
-            'is_absent' => $isAbsent
-        ];
+        if ($isNotFound && !$hasAnyMark) {
+            // Case 1: No data found in database
+            $subData = [
+                'name' => $res['name'] ?? $fSub['name'] ?? 'Unknown',
+                'creative' => '-', 'mcq' => '-', 'practical' => '-',
+                'total' => '-', 'grade' => '-', 'gp' => '0.00',
+                'is_failed' => true, // Treat as failed for GPA (W/O Addl) purpose
+                'is_absent' => false, 'is_not_found' => true
+            ];
+        } elseif ($isAbsent) {
+            // Case 2: Student marked absent
+            $subData = [
+                'name' => $res['name'] ?? $fSub['name'] ?? 'Unknown',
+                'creative' => '-', 'mcq' => '-', 'practical' => '-',
+                'total' => 'Ab', 'grade' => 'N/R', 'gp' => '0.00',
+                'is_failed' => true, 'is_absent' => true, 'is_not_found' => false
+            ];
+        } else {
+            // Case 3: Marks exist
+            $subData = [
+                'name' => $res['name'] ?? $fSub['name'] ?? 'Unknown',
+                'creative' => $res['creative'] > 0 ? $res['creative'] : '-',
+                'mcq' => $res['mcq'] > 0 ? $res['mcq'] : '-',
+                'practical' => $res['practical'] > 0 ? $res['practical'] : '-',
+                'total' => $res['total'],
+                'grade' => $res['grade'],
+                'gp' => number_format($res['gpa'], 2),
+                'is_failed' => ($res['grade'] == 'F' || $res['grade'] == 'N/R'),
+                'is_absent' => false, 'is_not_found' => false
+            ];
+        }
 
-        if ($res['is_optional']) {
+        if (!empty($res['is_optional'])) {
             $optionalSubject = $subData;
-            $optionalGP = $res['gpa']; // from controller
+            $optionalGP = $res['gpa'] ?? 0;
         } else {
             $mainSubjects->push($subData);
-            if ($res['grade'] != 'F' && $res['grade'] != 'N/R' && $hasData) {
-                 $totalGP += $res['gpa'];
-                 $totalMainSubjects++;
-            }
+            $totalGP += (float) ($res['gpa'] ?? 0);
         }
+    }
+
+    $totalMainSubjectsCount = $mainSubjects->count();
+    $hasAnyCompulsoryFail = ($result->fail_count > 0);
+    // User requirement: GPA (W/O Addl) = Total Compulsory GP / Total Compulsory Subjects
+    // But only if passed all compulsory subjects.
+    if ($hasAnyCompulsoryFail || $totalMainSubjectsCount == 0) {
+        $gpaWithoutAdditional = '0.00';
+    } else {
+        $gpaWithoutAdditional = number_format($totalGP / $totalMainSubjectsCount, 2);
     }
 @endphp
 
@@ -50,7 +76,6 @@
 
     <!-- Header -->
     <div class="header-section">
-        <div class="serial-no">Serial No. {{ $result->id ?? sprintf('%06d', rand(1000,99999)) }}</div>
         
         <div class="header-main">
             @if($school->logo)
@@ -63,7 +88,7 @@
         </div>
 
         <div class="transcript-title">ACADEMIC TRANSCRIPT</div>
-        <div class="exam-name-header">{{ $exam->name }} - {{ $exam->academicYear->name ?? '' }}</div>
+        <div class="exam-name-header">{{ $exam->name }} </div>
     </div>
 
     <!-- Info & Grading -->
@@ -81,10 +106,6 @@
                 <tr>
                     <td class="label">Mother's Name</td><td class="colon">:</td>
                     <td class="value">{{ $student->mother_name_en }}</td>
-                </tr>
-                <tr>
-                    <td class="label">Institute</td><td class="colon">:</td>
-                    <td class="value">{{ $school->name }} ({{ $school->code ?? '12345' }})</td>
                 </tr>
                 <tr>
                     <td class="label">Roll Number</td><td class="colon">:</td>
@@ -156,7 +177,7 @@
                     
                     @if($index === 0)
                         <td rowspan="{{ count($mainSubjects) }}" style="vertical-align: middle;">
-                             {{ $totalMainSubjects > 0 ? number_format($totalGP / $totalMainSubjects, 2) : '0.00' }}
+                             {{ $gpaWithoutAdditional }}
                         </td>
                         <td rowspan="{{ count($mainSubjects) + ($optionalSubject ? 2 : 0) + 1 }}" style="vertical-align: middle; font-weight: bold; font-size: 14pt;">
                             {{ number_format($result->computed_gpa, 2) }}
