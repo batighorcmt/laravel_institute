@@ -181,8 +181,8 @@
             <!-- Additional Subject -->
             @if($optionalSubject)
                 <tr>
-                    <td colspan="8" class="text-left" style="background-color: #f9f9f9; padding-left: 10px;"><b>Additional Subject:</b></td>
-                    <td colspan="2" class="text-right" style="background-color: #f9f9f9; padding-right: 10px; color: red; font-size: 9pt;">GP Above 2</td>
+                    <td colspan="9" class="text-left" style="background-color: #f9f9f9; padding-left: 10px;"><b>Additional Subject:</b></td>
+                    <td class="text-right" style="background-color: #f9f9f9; padding-right: 10px; color: red; font-size: 9pt;">GP Above 2</td>
                 </tr>
                  <tr>
                     <td>{{ $sl++ }}</td>
@@ -193,7 +193,7 @@
                     <td>{{ $optionalSubject['total'] }}</td>
                     <td>{{ $optionalSubject['grade'] }}</td>
                     <td>{{ $optionalSubject['gp'] }}</td>
-                    <td colspan="2" class="text-center" style="color: red; font-weight: bold;">
+                    <td class="text-center" style="color: red; font-weight: bold;">
                         {{ (isset($optionalGP) && $optionalGP > 2) ? number_format($optionalGP - 2.0, 2) : '0.00' }}
                     </td>
                 </tr>
