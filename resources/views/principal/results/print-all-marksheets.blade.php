@@ -18,14 +18,14 @@
         opacity: 0.08; z-index: -1; pointer-events: none;
     }
 
-    .result-status-green { color: #28a745; font-size: 16pt; font-weight: bold; }
-    .result-status-red { color: #dc3545; font-size: 16pt; font-weight: bold; }
+    .result-status-green { color: #28a745; font-size: 14pt; font-weight: bold; }
+    .result-status-red { color: #dc3545; font-size: 14pt; font-weight: bold; }
 
     /* Header */
-    .header-section { margin-bottom: 25px; position: relative; min-height: 100px; display: block; width: 100%; }
-    .header-logo { position: absolute; left: 0; top: 0; max-height: 85px; max-width: 100px; z-index: 5; }
-    .header-student-photo { position: absolute; right: 0; top: 0; width: 85px; height: 100px; border: 1px solid #ddd; padding: 1px; object-fit: cover; z-index: 5; }
-    .header-text { text-align: center; width: 100%; padding: 0 110px; box-sizing: border-box; }
+    .header-section { margin-bottom: 10px; position: relative; }
+    .header-main { display: flex !important; align-items: center; justify-content: center; gap: 20px; text-align: center; }
+    .header-logo { width: 70px; height: 70px; margin: 0; flex-shrink: 0; }
+    .header-text { text-align: center; }
     .header-section h1 { font-size: 20pt; font-weight: bold; margin: 0; text-transform: uppercase; color: #1a4d2e; line-height: 1.2; } 
     .header-section h2 { font-size: 11pt; margin: 2px 0; font-weight: normal; }
     
