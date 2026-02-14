@@ -70,7 +70,7 @@
     /* Footer */
     .footer-section { margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 9.5pt; }
     .signature-box { text-align: center; width: 180px; }
-    .signature-line { border-top: 1px solid #000; margin-top: 30px; padding-top: 2px; font-weight: bold; }
+    .signature-line { border-top: 1px solid #000; margin-top: 5px; padding-top: 2px; font-weight: bold; }
     
     .date-publication { margin-top: 10px; font-size: 8.5pt; font-weight: bold; }
 

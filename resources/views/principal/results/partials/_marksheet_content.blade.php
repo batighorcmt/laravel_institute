@@ -263,16 +263,15 @@
         <b>Remarks:</b> ____________________________________________________________________________________________________
     </div>
 
-    <!-- Footer Signatures -->
     <div class="footer-section">
         <div class="signature-box">
-             <div style="height: 30px;"></div>
+             <div style="height: 40px;"></div>
             <div class="signature-line">Class Teacher</div>
         </div>
         <div class="signature-box">
-             <div style="height: 5px; display: flex; align-items: flex-end; justify-content: center;">
+             <div style="display: flex; align-items: flex-end; justify-content: center; min-height: 40px;">
                 @if(isset($principalTeacher) && $principalTeacher->signature)
-                    <img src="{{ asset('storage/' . $principalTeacher->signature) }}" alt="Signature" style="max-height: 40px; max-width: 150px; margin-bottom: 2px;">
+                    <img src="{{ asset('storage/' . $principalTeacher->signature) }}" alt="Signature" style="max-height: 45px; max-width: 150px; margin-bottom: 2px;">
                 @endif
              </div>
              <div class="signature-line">Head Teacher</div>
