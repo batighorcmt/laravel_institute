@@ -1346,7 +1346,7 @@ class ResultController extends Controller
             
             $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
             foreach ($period as $date) {
-                $dayNum = $date->dayOfWeek; // Carbon 0=Sun, 1=Mon...
+                $dayNum = ($date->dayOfWeek == 0) ? 7 : $date->dayOfWeek;
                 if (in_array($dayNum, $weeklyHolidays)) continue;
                 if (in_array($date->format('Y-m-d'), $holidays)) continue;
                 $totalSchoolDays++;
@@ -1633,7 +1633,7 @@ class ResultController extends Controller
 
             // Attendance Summary
             $stuAttendance = $allAttendances->get($stu->id) ?: collect();
-            $presentDays = $stuAttendance->where('status', 'P')->count();
+            $presentDays = $stuAttendance->whereIn('status', ['present', 'late', 'P', 'L'])->count();
             $res->attendance_days = $totalSchoolDays;
             $res->attendance_present = $presentDays;
             $res->attendance_absent = max(0, $totalSchoolDays - $presentDays);

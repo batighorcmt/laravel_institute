@@ -58,19 +58,16 @@
 
     <!-- Header -->
     <div class="header-section">
+        @if($school->logo)
+            <img src="{{ asset('storage/'.$school->logo) }}" class="header-logo" alt="Logo">
+        @endif
         
-        <div class="header-main" style="position: relative;">
-            @if($school->logo)
-                <img src="{{ asset('storage/'.$school->logo) }}" class="header-logo" alt="Logo">
-            @endif
-            <div class="header-text">
-                <h1>{{ $school->name }}</h1>
-                <h2>{{ $school->address }}</h2>
-            </div>
-            <div style="position: absolute; right: 0; top: 0;">
-                <img src="{{ $student->photo_url }}" style="width: 80px; height: 90px; border: 1px solid #ddd; padding: 1px; object-fit: cover;" alt="Student Photo">
-            </div>
+        <div class="header-text">
+            <h1>{{ $school->name }}</h1>
+            <h2>{{ $school->address }}</h2>
         </div>
+
+        <img src="{{ $student->photo_url }}" class="header-student-photo" alt="Student Photo">
 
         <div class="transcript-title">ACADEMIC TRANSCRIPT</div>
         <div class="exam-name-header">{{ $exam->name }} </div>
