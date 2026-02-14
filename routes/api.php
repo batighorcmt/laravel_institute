@@ -4,6 +4,85 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 
 Route::prefix('v1')->group(function () {
+    // Surgical live fix for missing tables & columns (Delete after use)
+    Route::get('/run-migrations-system-secure-{key}', function ($key) {
+        if ($key !== 'halim2025') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $results = [];
+        try {
+            // 1. Check & Create sessions & personal_access_tokens
+            if (!\Illuminate\Support\Facades\Schema::hasTable('sessions')) {
+                \Illuminate\Support\Facades\Schema::create('sessions', function ($table) {
+                    $table->string('id')->primary();
+                    $table->foreignId('user_id')->nullable()->index();
+                    $table->string('ip_address', 45)->nullable();
+                    $table->text('user_agent')->nullable();
+                    $table->longText('payload');
+                    $table->integer('last_activity')->index();
+                });
+                $results[] = 'Sessions table created';
+            }
+            if (!\Illuminate\Support\Facades\Schema::hasTable('personal_access_tokens')) {
+                \Illuminate\Support\Facades\Schema::create('personal_access_tokens', function ($table) {
+                    $table->id();
+                    $table->morphs('tokenable');
+                    $table->string('name');
+                    $table->string('token', 64)->unique();
+                    $table->text('abilities')->nullable();
+                    $table->timestamp('last_used_at')->nullable();
+                    $table->timestamp('expires_at')->nullable();
+                    $table->timestamps();
+                });
+                $results[] = 'Personal Access Tokens table created';
+            }
+
+            // 2. Surgical Update for users table
+            \Illuminate\Support\Facades\Schema::table('users', function ($table) use (&$results) {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'username')) {
+                    $table->string('username')->nullable()->unique()->after('name');
+                    $results[] = 'Added username column to users';
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'plain_password')) {
+                    $table->string('plain_password')->nullable()->after('password');
+                    $results[] = 'Added plain_password column to users';
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'phone')) {
+                    $table->string('phone')->nullable()->after('email');
+                    $results[] = 'Added phone column to users';
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'status')) {
+                    $table->string('status')->default('active')->after('email');
+                    $results[] = 'Added status column to users';
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'first_name')) {
+                    $table->string('first_name')->nullable()->after('name');
+                    $results[] = 'Added first_name column to users';
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'last_name')) {
+                    $table->string('last_name')->nullable()->after('first_name');
+                    $results[] = 'Added last_name column to users';
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'avatar')) {
+                    $table->string('avatar')->nullable();
+                    $results[] = 'Added avatar column to users';
+                }
+            });
+
+            // 3. Try to run standard migrations (force) to catch anything else
+            try {
+                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                $results[] = 'Standard migrations run attempt: ' . \Illuminate\Support\Facades\Artisan::output();
+            } catch (\Exception $e) {
+                $results[] = 'Standard migration failed (this is expected if some migrations were partially run): ' . $e->getMessage();
+            }
+
+            return response()->json(['message' => 'Comprehensive surgical fix completed', 'results' => $results]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error', 'error' => $e->getMessage()]);
+        }
+    });
+
     // Auth
     Route::post('auth/login', [AuthController::class, 'login']);
 
