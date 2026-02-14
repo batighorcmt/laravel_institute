@@ -4,49 +4,32 @@
     $optionalSubject = null;
     $totalGP = 0;
     
-    // Iterate finalSubjects to prepare data for display
+    // Group subjects to handle combined parts
     foreach($finalSubjects as $key => $fSub) {
         $res = $subjectResults->get($key);
         if (!$res) continue;
-
-        if (!empty($res['display_only'])) {
-             continue; 
-        }
 
         $isAbsent = !empty($res['is_absent']);
         $isNotFound = ($res['grade'] == 'N/R');
         $hasAnyMark = ($res['creative'] > 0 || $res['mcq'] > 0 || $res['practical'] > 0 || $res['total'] > 0);
 
-        if ($isNotFound && !$hasAnyMark) {
-            // Case 1: No data found in database
-            $subData = [
-                'name' => $res['name'] ?? $fSub['name'] ?? 'Unknown',
-                'creative' => '-', 'mcq' => '-', 'practical' => '-',
-                'total' => '-', 'grade' => '-', 'gp' => '0.00',
-                'is_failed' => true, // Treat as failed for GPA (W/O Addl) purpose
-                'is_absent' => false, 'is_not_found' => true
-            ];
-        } elseif ($isAbsent) {
-            // Case 2: Student marked absent
-            $subData = [
-                'name' => $res['name'] ?? $fSub['name'] ?? 'Unknown',
-                'creative' => '-', 'mcq' => '-', 'practical' => '-',
-                'total' => 'Ab', 'grade' => 'N/R', 'gp' => '0.00',
-                'is_failed' => true, 'is_absent' => true, 'is_not_found' => false
-            ];
-        } else {
-            // Case 3: Marks exist
-            $subData = [
-                'name' => $res['name'] ?? $fSub['name'] ?? 'Unknown',
-                'creative' => $res['creative'] > 0 ? $res['creative'] : '-',
-                'mcq' => $res['mcq'] > 0 ? $res['mcq'] : '-',
-                'practical' => $res['practical'] > 0 ? $res['practical'] : '-',
-                'total' => $res['total'],
-                'grade' => $res['grade'],
-                'gp' => number_format($res['gpa'], 2),
-                'is_failed' => ($res['grade'] == 'F' || $res['grade'] == 'N/R'),
-                'is_absent' => false, 'is_not_found' => false
-            ];
+        // Prepare data
+        $subData = [
+            'name' => $res['name'] ?? $fSub['name'] ?? 'Unknown',
+            'creative' => $res['creative'] > 0 ? $res['creative'] : ($hasAnyMark || $isAbsent ? '-' : '-'), 
+            'mcq' => $res['mcq'] > 0 ? $res['mcq'] : ($hasAnyMark || $isAbsent ? '-' : '-'),
+            'practical' => $res['practical'] > 0 ? $res['practical'] : ($hasAnyMark || $isAbsent ? '-' : '-'),
+            'total' => $isAbsent ? 'Ab' : ($hasAnyMark ? $res['total'] : ($isNotFound ? '-' : $res['total'])),
+            'grade' => $isAbsent ? 'F' : ($hasAnyMark ? $res['grade'] : ($isNotFound ? '-' : $res['grade'])),
+            'gp' => number_format($res['gpa'] ?? 0, 2),
+            'is_part' => !empty($res['display_only']),
+            'is_combined' => !empty($fSub['is_combined_result']),
+            'is_failed' => ($res['grade'] == 'F' || $res['grade'] == 'N/R' || $isAbsent)
+        ];
+
+        // Refine Creative/MCQ/PR display for combined summaries (usually they are empty on board marksheets as data is in parts)
+        if ($subData['is_combined']) {
+            $subData['creative'] = ''; $subData['mcq'] = ''; $subData['practical'] = '';
         }
 
         if (!empty($res['is_optional'])) {
@@ -54,18 +37,21 @@
             $optionalGP = $res['gpa'] ?? 0;
         } else {
             $mainSubjects->push($subData);
-            $totalGP += (float) ($res['gpa'] ?? 0);
+            // Only count "Summary" subjects for GPA (Single subjects or Combined results, but NOT individual parts)
+            if (!$subData['is_part']) {
+                $totalGP += (float) ($res['gpa'] ?? 0);
+            }
         }
     }
 
-    $totalMainSubjectsCount = $mainSubjects->count();
+    // Recount "Summary" main subjects
+    $totalSummaryCompulsory = $mainSubjects->where('is_part', false)->count();
     $hasAnyCompulsoryFail = ($result->fail_count > 0);
-    // User requirement: GPA (W/O Addl) = Total Compulsory GP / Total Compulsory Subjects
-    // But only if passed all compulsory subjects.
-    if ($hasAnyCompulsoryFail || $totalMainSubjectsCount == 0) {
+    
+    if ($hasAnyCompulsoryFail || $totalSummaryCompulsory == 0) {
         $gpaWithoutAdditional = '0.00';
     } else {
-        $gpaWithoutAdditional = number_format($totalGP / $totalMainSubjectsCount, 2);
+        $gpaWithoutAdditional = number_format($totalGP / $totalSummaryCompulsory, 2);
     }
 @endphp
 
@@ -166,14 +152,16 @@
             @php $sl = 1; @endphp
             @foreach($mainSubjects as $index => $sub)
                 <tr>
-                    <td>{{ $sl++ }}</td>
-                    <td class="text-left sub-name">{{ $sub['name'] }}</td>
+                    <td>{{ $sub['is_part'] ? '' : $sl++ }}</td>
+                    <td class="text-left sub-name" style="{{ $sub['is_part'] ? 'padding-left: 20px; font-weight: normal; font-style: italic;' : '' }}">
+                        {{ $sub['name'] }}
+                    </td>
                     <td>{{ $sub['creative'] }}</td>
                     <td>{{ $sub['mcq'] }}</td>
                     <td>{{ $sub['practical'] }}</td>
                     <td>{{ $sub['total'] }}</td>
-                    <td>{{ $sub['grade'] }}</td>
-                    <td>{{ $sub['gp'] }}</td>
+                    <td>{{ $sub['is_part'] ? '' : $sub['grade'] }}</td>
+                    <td>{{ $sub['is_part'] ? '' : $sub['gp'] }}</td>
                     
                     @if($index === 0)
                         <td rowspan="{{ count($mainSubjects) }}" style="vertical-align: middle;">
@@ -204,7 +192,7 @@
                 </tr>
                 <tr>
                     <td colspan="8" class="text-right" style="padding-right: 10px;"><b>GP Above 2.00:</b></td>
-                    <td>{{ ($optionalGP > 2) ? number_format($optionalGP - 2.0, 2) : '0.00' }}</td>
+                    <td>{{ (isset($optionalGP) && $optionalGP > 2) ? number_format($optionalGP - 2.0, 2) : '0.00' }}</td>
                 </tr>
             @endif
         </tbody>
