@@ -101,7 +101,13 @@
                 </tr>
                 <tr>
                     <td class="label">Result Status</td><td class="colon">:</td>
-                    <td class="value">{{ $result->computed_status }}</td>
+                    <td class="value">
+                        @if($result->fail_count > 0)
+                            Failed (Failed in {{ $result->fail_count }} subjects)
+                        @else
+                            Passed
+                        @endif
+                    </td>
                 </tr>
             </table>
         </div>
