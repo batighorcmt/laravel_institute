@@ -365,6 +365,7 @@ Route::middleware(['auth'])->group(function () {
                 // AJAX helpers for tabulation cascading selects
                 Route::get('/exams-by-year', [App\Http\Controllers\Principal\ResultController::class,'examsByYear'])->name('exams-by-year');
                 Route::get('/sections-by-class', [App\Http\Controllers\Principal\ResultController::class,'sectionsByClass'])->name('sections-by-class');
+                Route::get('/students-by-class', [App\Http\Controllers\Principal\ResultController::class,'studentsByClass'])->name('students-by-class');
 
                 // Statistics
                 Route::get('/statistics', [App\Http\Controllers\Principal\ResultController::class,'statistics'])->name('statistics');
