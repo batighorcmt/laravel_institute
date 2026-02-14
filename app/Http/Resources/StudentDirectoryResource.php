@@ -31,6 +31,8 @@ class StudentDirectoryResource extends JsonResource
             'section' => $en->section?->name,
             'group' => $en->group?->name,
             'gender' => $st?->gender,
+            'date_of_birth' => $st?->date_of_birth?->format('Y-m-d'),
+            'religion' => $st?->religion,
             'phone' => $st?->guardian_phone,
             'photo_url' => $photoUrl,
         ];

@@ -1005,6 +1005,8 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                   // Info grid pills (colorful mini-cards)
                   _buildInfoPills(context, {
                     'Student ID': studentCode,
+                    'Date of Birth': dob,
+                    'Religion': religion,
                     'Class': cls,
                     'Section': section,
                     'Roll': roll,
