@@ -181,8 +181,7 @@
             <!-- Additional Subject -->
             @if($optionalSubject)
                 <tr>
-                    <td colspan="9" class="text-left" style="background-color: #f9f9f9; padding-left: 10px;"><b>Additional Subject:</b></td>
-                    <td class="text-right" style="background-color: #f9f9f9; padding-right: 10px; color: red; font-size: 9pt;">GP Above 2</td>
+                    <td colspan="8" class="text-left" style="background-color: #f9f9f9; padding-left: 10px;"><b>Additional Subject:</b> <span class="text-right" style="background-color: #f9f9f9; padding-right: 10px; color: red; font-size: 9pt;">GP Above 2</span></td>
                 </tr>
                  <tr>
                     <td>{{ $sl++ }}</td>
