@@ -1,5 +1,3 @@
-@extends('layouts.print')
-
 @section('title', 'Academic Transcript')
 
 @push('print_head')
