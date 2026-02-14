@@ -197,7 +197,7 @@
                     <td>{{ $optionalSubject['total'] }}</td>
                     <td>{{ $optionalSubject['grade'] }}</td>
                     <td>{{ $optionalSubject['gp'] }}</td>
-                    <td class="text-center" style="color: red; font-weight: bold;">
+                    <td class="text-center" style="font-weight: bold;">
                         {{ (isset($optionalGP) && $optionalGP > 2) ? number_format($optionalGP - 2.0, 2) : '0.00' }}
                     </td>
                 </tr>
