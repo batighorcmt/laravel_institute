@@ -6,7 +6,7 @@
 <style>
     .print-header, .fixed-footer, .logo-overlay { display: none !important; }
     @page { size: A4 portrait; margin: 10mm; }
-    .print-content { font-family: 'Times New Roman', serif; color: #000; position: relative; }
+    .print-content { font-family: 'Kalpurush', Arial, sans-serif !important; color: #000; position: relative; }
     
     .bg-pattern {
         position: absolute; top: 15%; left: 10%; width: 80%; height: 60%;

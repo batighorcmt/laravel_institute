@@ -12,10 +12,10 @@
     <link href="https://fonts.maateen.me/kalpurush/font.css" rel="stylesheet">
     <style>
         :root{ --print-accent:#222; --print-border:#444; }
-        /* Default page setup - can be overridden in @push('print_head') */
+        /* Default page setup */
         @page{ size:A4 portrait; margin:12mm 12mm 18mm 12mm; }
         *{ box-sizing:border-box; }
-        body{ font-family:'Kalpurush', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; margin:0; color:#000; font-size:14px; line-height:1.4; }
+        body{ font-family: 'Kalpurush', Arial, sans-serif !important; margin:0; color:#000; font-size:14px; line-height:1.4; }
         /* Wrapper simplified to avoid forcing extra blank print page */
         .print-wrapper{display:block;position:relative;}
         .print-main{padding:4px 0 0;position:relative;}

@@ -6,7 +6,7 @@
 <style>
     .print-header, .fixed-footer, .logo-overlay { display: none !important; } /* Hide default layout elements */
     @page { size: A4 portrait; margin: 10mm; }
-    .print-content { font-family: 'Times New Roman', serif; color: #000; position: relative; page-break-after: always; }
+    .print-content { font-family: 'Kalpurush', Arial, sans-serif !important; color: #000; position: relative; page-break-after: always; }
     .print-content:last-child { page-break-after: auto; }
     
     .bg-pattern {
