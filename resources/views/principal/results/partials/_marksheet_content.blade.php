@@ -86,7 +86,7 @@
         <img src="{{ $student->photo_url }}" class="header-student-photo" alt="Student Photo">
 
         <div class="transcript-title">{{ t('ACADEMIC TRANSCRIPT', 'একাডেমিক ট্রান্সক্রিপ্ট') }}</div>
-        <div class="exam-name-header">{{ $exam->name }} </div>
+        <div class="exam-name-header">{{ t($exam->name, $exam->name_bn ?: $exam->name) }}</div>
     </div>
 
     <!-- Info & Grading -->

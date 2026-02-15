@@ -8,13 +8,8 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicon-16x16.png') }}">
     <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}">
-    <!-- Use same font stack as admin dashboard (Kalpurush primary) for both languages -->
-    <style>
-        @font-face { font-family:'Kalpurush'; font-weight:400; font-display:swap; src: url('/fonts/kalpurush/kalpurush.woff2') format('woff2'), url('/fonts/kalpurush/kalpurush.ttf') format('truetype'); }
-        @font-face { font-family:'Kalpurush'; font-weight:600; font-display:swap; src: url('/fonts/kalpurush/kalpurush-bold.woff2') format('woff2'); }
-        @font-face { font-family:'Kalpurush'; font-weight:700; font-display:swap; src: url('/fonts/kalpurush/kalpurush-bold.woff2') format('woff2'); }
-        @font-face { font-family:'Kalpurush'; font-weight:800; font-display:swap; src: url('/fonts/kalpurush/kalpurush-bold.woff2') format('woff2'); }
-    </style>
+    <!-- Fonts -->
+    <link href="https://fonts.maateen.me/kalpurush/font.css" rel="stylesheet">
     <style>
         :root{ --print-accent:#222; --print-border:#444; }
         /* Default page setup - can be overridden in @push('print_head') */
