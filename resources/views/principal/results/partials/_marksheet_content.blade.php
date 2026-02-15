@@ -185,6 +185,7 @@
             @endforeach
 
             <!-- Additional Subject -->
+            @if($optionalSubject)
                 <tr>
                     <td colspan="11" style="background-color: #f9f9f9; padding: 2px 10px; border-bottom: none;">
                         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
