@@ -22,7 +22,7 @@
     .result-status-red { color: #dc3545; font-size: 11pt; font-weight: bold; }
 
     /* Header */
-    .header-section { margin-bottom: 25px; position: relative; min-height: 100px; display: block; width: 100%; border-bottom: 2px solid #1a4d2e; padding-bottom: 10px; }
+    .header-section { margin-bottom: 5px; position: relative; min-height: 85px; display: block; width: 100%; border-bottom: none; padding-bottom: 0; }
     .header-logo { position: absolute; left: 0; top: 0; max-height: 85px; max-width: 100px; z-index: 5; }
     .header-student-photo { position: absolute; right: 0; top: 0; width: 85px; height: 100px; border: 1px solid #ddd; padding: 1px; object-fit: cover; z-index: 5; }
     .header-text { text-align: center; width: 100%; padding: 0 110px; box-sizing: border-box; }
