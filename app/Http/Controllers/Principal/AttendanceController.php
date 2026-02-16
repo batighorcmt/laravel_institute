@@ -445,6 +445,9 @@ class AttendanceController extends Controller
             ->where('class_id', $classId)
             ->where('section_id', $sectionId)
             ->where('status', 'active')
+            ->whereHas('student', function($q){
+                $q->where('status', 'active');
+            })
             ->when($yearVal, function($q) use ($yearVal){ $q->where('academic_year_id', $yearVal); })
             ->orderBy('roll_no')
             ->get();
@@ -497,6 +500,9 @@ class AttendanceController extends Controller
         $enrollments = StudentEnrollment::where('class_id', $classId)
             ->where('section_id', $sectionId)
             ->where('status', 'active')
+            ->whereHas('student', function($q){
+                $q->where('status', 'active');
+            })
             ->when($yearVal, fn($q)=>$q->where('academic_year_id', $yearVal))
             ->orderBy('roll_no')
             ->pluck('student_id')

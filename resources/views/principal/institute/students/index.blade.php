@@ -433,7 +433,7 @@
 
   // Function to select a student from search results
   window.selectStudent = function(studentId, fullName) {
-    searchInput.value = fullName + ' (' + studentId + ')';
+    searchInput.value = fullName;
     searchResults.style.display = 'none';
   };
 

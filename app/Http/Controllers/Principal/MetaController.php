@@ -87,7 +87,8 @@ class MetaController extends Controller
         if (!$yearId && $currentYear) { $yearId = $currentYear->id; }
 
         $q = StudentEnrollment::select(
-            'student_enrollments.student_id', 'student_enrollments.roll_no',
+            'student_enrollments.student_id as record_id', 'student_enrollments.roll_no',
+            'students.student_id as student_code',
             'students.student_name_bn','students.student_name_en','students.guardian_phone',
             'classes.name as class_name','sections.name as section_name'
         )
@@ -112,7 +113,8 @@ class MetaController extends Controller
 
         $rows = $q->get()->map(function($r){
             return [
-                'student_id' => (int)$r->student_id,
+                'record_id' => (int)$r->record_id,
+                'student_id' => $r->student_code,
                 'name' => $r->student_name_bn ?: $r->student_name_en,
                 'phone' => $r->guardian_phone,
                 'roll_no' => $r->roll_no,
