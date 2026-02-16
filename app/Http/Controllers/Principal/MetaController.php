@@ -102,6 +102,7 @@ class MetaController extends Controller
             $qq->where(function($sub) use ($qText){
                 $sub->where('students.student_name_en','like','%'.$qText.'%')
                     ->orWhere('students.student_name_bn','like','%'.$qText.'%')
+                    ->orWhere('students.student_id','like','%'.$qText.'%')
                     ->orWhere('student_enrollments.roll_no','like','%'.$qText.'%');
             });
         })

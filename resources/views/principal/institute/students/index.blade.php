@@ -36,9 +36,12 @@
     </button>
   </div>
   <form id="filtersCollapse" class="form-inline" method="get" style="display:flex; flex-wrap:wrap; gap:.5rem; align-items:flex-start;">
-  <div class="position-relative mr-2" style="min-width: 250px;">
-    <input type="text" id="student-search" name="q" value="{{ $q }}" class="form-control" placeholder="নাম / আইডি সার্চ..." autocomplete="off">
+  <div class="mr-2" style="min-width: 150px;">
+    <input type="text" id="student-search" name="q" value="{{ $q }}" class="form-control" placeholder="নাম / আইডি / রোল সার্চ..." autocomplete="off">
     <div id="search-results" class="position-absolute bg-white border rounded shadow-sm" style="top: 100%; left: 0; right: 0; z-index: 1000; display: none; max-height: 300px; overflow-y: auto;"></div>
+  </div>
+  <div class="mr-2" style="max-width: 100px;">
+    <input type="number" name="roll_no" value="{{ request('roll_no') }}" class="form-control" placeholder="রোল নং" min="1">
   </div>
   <select name="year_id" class="form-control mr-2">
     <option value="">-- বছর নির্বাচন --</option>
@@ -104,9 +107,9 @@
         <th style="width:60px">ক্রমিক</th>
         <th>আইডি নং</th>
         <th>নাম</th>
-        <th>পিতার নাম</th>
-        <th>শ্রেণি</th>
-        <th>শাখা</th>
+        <th class="d-none d-lg-table-cell">পিতার নাম</th>
+        <th class="d-none d-md-table-cell">শ্রেণি</th>
+        <th class="d-none d-sm-table-cell">শাখা</th>
         <th>রোল</th>
         <th class="d-none d-md-table-cell">গ্রুপ</th>
         <th class="d-none d-lg-table-cell">মোবাইল নং</th>
@@ -144,10 +147,15 @@
       <tr>
         <td>{{ $students->firstItem() + $idx }}</td>
         <td>{{ $stu->student_id }}</td>
-        <td>{{ $stu->full_name }}</td>
-        <td>{{ $stu->father_name_bn ?: $stu->father_name }}</td>
-        <td>{{ $en? $en->{'class'}?->name : '-' }}</td>
-        <td>{{ $en? $en->section?->name : '-' }}</td>
+        <td>
+            <div class="font-weight-bold">{{ $stu->full_name }}</div>
+            <div class="d-sm-none small text-muted">
+                {{ $en? $en->{'class'}?->name : '-' }} | {{ $en? $en->section?->name : '-' }}
+            </div>
+        </td>
+        <td class="d-none d-lg-table-cell">{{ $stu->father_name_bn ?: $stu->father_name }}</td>
+        <td class="d-none d-md-table-cell">{{ $en? $en->{'class'}?->name : '-' }}</td>
+        <td class="d-none d-sm-table-cell">{{ $en? $en->section?->name : '-' }}</td>
         <td>{{ $en? $en->roll_no : '-' }}</td>
         <td class="d-none d-md-table-cell">{{ $en? $en->group?->name : '-' }}</td>
         <td class="d-none d-lg-table-cell">{{ $stu->guardian_phone }}</td>
@@ -164,7 +172,7 @@
         <td class="small d-none d-xl-table-cell">{!! $subsHtml ?: '-' !!}</td>
         <td class="text-nowrap">
           <div class="dropdown">
-            <button class="btn btn-outline-secondary btn-sm dropdown-toggle student-action-dd" type="button" data-toggle="dropdown" data-boundary="window" aria-haspopup="true" aria-expanded="false">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle student-action-dd" type="button" data-toggle="dropdown" data-boundary="viewport" aria-haspopup="true" aria-expanded="false">
               Action
             </button>
             <div class="dropdown-menu dropdown-menu-right">
@@ -399,7 +407,7 @@
             const html = data.map(student => `
               <div class="p-2 border-bottom hover-bg-light cursor-pointer" onclick="selectStudent('${student.student_id}', '${student.name}')">
                 <div class="font-weight-bold">${student.name}</div>
-                <small class="text-muted">ID: ${student.student_id} | Class: ${student.class_name || 'N/A'} | Phone: ${student.phone || 'N/A'}</small>
+                <small class="text-muted">ID: ${student.student_id} | Roll: ${student.roll_no} | Class: ${student.class_name || 'N/A'} | Phone: ${student.phone || 'N/A'}</small>
               </div>
             `).join('');
             searchResults.innerHTML = html;

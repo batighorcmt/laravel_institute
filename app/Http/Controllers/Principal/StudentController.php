@@ -55,6 +55,7 @@ class StudentController extends Controller
         $gender = $request->get('gender');
         $religion = $request->get('religion');
         $village = $request->get('village');
+        $rollNo = $request->get('roll_no');
 
         $students = Student::forSchool($school->id)
             ->when($q, function($x) use ($q){
@@ -76,12 +77,13 @@ class StudentController extends Controller
             ->when($village, function($x) use ($village){
                 $x->where('present_village', $village);
             })
-            ->whereHas('enrollments', function($en) use ($selectedYearId, $classId, $sectionId, $groupId){
+            ->whereHas('enrollments', function($en) use ($selectedYearId, $classId, $sectionId, $groupId, $rollNo){
                 if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
                 else { $en->whereRaw('1=0'); }
                 if ($classId) { $en->where('class_id', $classId); }
                 if ($sectionId) { $en->where('section_id', $sectionId); }
                 if ($groupId) { $en->where('group_id', $groupId); }
+                if ($rollNo) { $en->where('roll_no', $rollNo); }
             })
             ->with(['enrollments' => function($en) use ($selectedYearId){
                 if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
