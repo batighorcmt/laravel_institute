@@ -236,11 +236,11 @@
             <span class="card-highlight">{{ bnNum($result->computed_total_marks) }}</span>
         </div>
         <div class="card-item">
-            <div class="card-label">{{ t('Merit Position (Class)', 'মেধা স্থান (শ্রেণি)') }}</div>
+            <div class="card-label">{{ t('Merit Position (Class)', 'স্থান (শ্রেণি)') }}</div>
             <span class="card-highlight">{{ bnNum($result->class_position) }}</span>
         </div>
         <div class="card-item">
-            <div class="card-label">{{ t('Merit Position (Section)', 'মেধা স্থান (শাখা)') }}</div>
+            <div class="card-label">{{ t('Merit Position (Section)', 'স্থান (শাখা)') }}</div>
             <span class="card-highlight">{{ bnNum($result->section_position) }}</span>
         </div>
     </div>
@@ -265,7 +265,7 @@
             <!-- Co-curricular Column -->
             <td style="width: 48%; border: 1px solid #000; vertical-align: top; padding: 0;">
                 <table style="width: 100%; border-collapse: collapse; border: none;">
-                    <tr><th colspan="2" style="border-bottom: 1px solid #000; padding: 3px; background: #eee;">{{ t('Co-Curricular Activities', 'সহ-পাঠक्रमিক কার্যাবলী') }}</th></tr>
+                    <tr><th colspan="2" style="border-bottom: 1px solid #000; padding: 3px; background: #eee;">{{ t('Co-Curricular Activities', 'সহ-পাঠক্রমিক কার্যাবলী') }}</th></tr>
                     <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd; width: 70%;">{{ t('Moral Education', 'নৈতিক শিক্ষা') }}</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
                     <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd;">{{ t('Arts & Crafts', 'চারু ও কারুকলা') }}</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
                     <tr><td style="padding: 2px 5px; border-bottom: 1px solid #ddd;">{{ t('Health & Sports', 'স্বাস্থ্য ও খেলাধুলা') }}</td><td style="border-left: 1px solid #ddd; border-bottom: 1px solid #ddd;"></td></tr>
