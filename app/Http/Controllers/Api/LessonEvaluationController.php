@@ -138,7 +138,7 @@ class LessonEvaluationController extends Controller
             try {
                 $smsService = app(\App\Services\LessonEvaluationSmsService::class);
                 $smsService->sendEvaluationSms($evaluation, $evaluationRecords, $user->id, $previousStatuses);
-            } catch (\Exception $smsEx) {
+            } catch (\Throwable $smsEx) {
                 \Log::error("Lesson Evaluation SMS Error: " . $smsEx->getMessage());
             }
 

@@ -98,20 +98,20 @@ class LessonEvaluationSmsService
                 'absent' => 'অনুপস্থিত',
             ];
             $statusLabel = $statusLabels[$status] ?? $status;
+            $evalDate = $evaluation->evaluation_date ? $evaluation->evaluation_date->format('d-m-Y') : date('d-m-Y');
 
             if ($template && !empty($template->content)) {
                 $message = str_replace(
                     ['{student_name}', '{status}', '{subject}', '{date}'],
-                    [$student->full_name, $statusLabel, $evaluation->subject?->name, $evaluation->evaluation_date],
+                    [$student->full_name, $statusLabel, $evaluation->subject?->name ?? 'N/A', $evalDate],
                     $template->content
                 );
             } else {
                 // Default message
-                $subjectName = $evaluation->subject?->name;
-                $date = $evaluation->evaluation_date;
+                $subjectName = $evaluation->subject?->name ?? 'N/A';
                 $studentName = $student->full_name_bn ?? $student->full_name;
                 
-                $message = "প্রিয় অভিভাবক, আজ ({$date}) '{$subjectName}' বিষয়ে আপনার সন্তান {$studentName}-এর লেসন ইভ্যালুয়েশন রিপোর্ট: {$statusLabel}। - {$school->name}";
+                $message = "প্রিয় অভিভাবক, আজ ({$evalDate}) '{$subjectName}' বিষয়ে আপনার সন্তান {$studentName}-এর লেসন ইভ্যালুয়েশন রিপোর্ট: {$statusLabel}। - {$school->name}";
             }
 
             $payloads[] = [
@@ -122,11 +122,11 @@ class LessonEvaluationSmsService
                     'recipient_category' => 'lesson evaluation',
                     'recipient_id' => $student->id,
                     'recipient_name' => $student->full_name,
-                    'roll_number' => $student->roll,
-                    'class_name' => $evaluation->class?->name,
-                    'section_name' => $evaluation->section?->name,
-                    'subject' => $evaluation->subject?->name,
-                    'date' => $evaluation->evaluation_date,
+                    'roll_number' => $student->roll ?? 'N/A',
+                    'class_name' => $evaluation->class?->name ?? 'N/A',
+                    'section_name' => $evaluation->section?->name ?? 'N/A',
+                    'subject' => $evaluation->subject?->name ?? 'N/A',
+                    'date' => $evaluation->evaluation_date ? $evaluation->evaluation_date->toDateString() : date('Y-m-d'),
                     'message_type' => 'lesson_evaluation',
                 ]
             ];
