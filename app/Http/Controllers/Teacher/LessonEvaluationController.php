@@ -155,7 +155,11 @@ class LessonEvaluationController extends Controller
                 ->where('routine_entry_id', $validated['routine_entry_id'])
                 ->first();
 
+            $previousStatuses = [];
             if ($evaluation) {
+                // Capture old statuses for SMS delta check
+                $previousStatuses = $evaluation->records->pluck('status', 'student_id')->toArray();
+
                 // Update existing evaluation
                 $evaluation->update([
                     'evaluation_time' => $validated['evaluation_time'] ?? now()->format('H:i'),
@@ -196,7 +200,7 @@ class LessonEvaluationController extends Controller
             // Send SMS asynchronously
             try {
                 $smsService = app(\App\Services\LessonEvaluationSmsService::class);
-                $smsService->sendEvaluationSms($evaluation, $evaluationRecords, Auth::id());
+                $smsService->sendEvaluationSms($evaluation, $evaluationRecords, Auth::id(), $previousStatuses);
             } catch (\Exception $smsEx) {
                 \Log::error("Lesson Evaluation SMS Error (Teacher Web): " . $smsEx->getMessage());
             }

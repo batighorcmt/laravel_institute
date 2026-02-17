@@ -20,9 +20,10 @@ class LessonEvaluationSmsService
      * @param LessonEvaluation $evaluation
      * @param array $records Array of LessonEvaluationRecord models
      * @param int|null $sentByUserId
+     * @param array $previousStatuses Map of student_id => previous_status
      * @return array{sent:int, skipped:array}
      */
-    public function sendEvaluationSms(LessonEvaluation $evaluation, $records, $sentByUserId = null)
+    public function sendEvaluationSms(LessonEvaluation $evaluation, $records, $sentByUserId = null, array $previousStatuses = [])
     {
         $school = $evaluation->school;
         if (!$school) return ['sent' => 0, 'skipped' => []];
@@ -32,19 +33,19 @@ class LessonEvaluationSmsService
             ->where('key', 'like', 'sms_lesson_evaluation_%')
             ->pluck('value', 'key');
 
-        // Fetch templates. Fallback to general type if lesson_evaluation type doesn't exist yet/fails.
-        $template = SmsTemplate::forSchool($school->id)
-            ->whereIn('type', ['lesson_evaluation', 'general'])
-            ->orderByRaw("FIELD(type, 'lesson_evaluation', 'general')")
-            ->latest()
-            ->first();
-
         $payloads = [];
         $skipped = [];
 
         foreach ($records as $record) {
             $status = $record->status;
             
+            // IF update: only send if status changed
+            if (isset($previousStatuses[$record->student_id])) {
+                if ($previousStatuses[$record->student_id] === $status) {
+                    continue; // Skip if status unchanged during update
+                }
+            }
+
             // Check if SMS is enabled for this status
             $settingKey = 'sms_lesson_evaluation_' . $status;
             $isEnabled = ($settings[$settingKey] ?? '0') === '1';
@@ -80,6 +81,14 @@ class LessonEvaluationSmsService
                 $skipped[] = ['student_id' => $student->id, 'reason' => empty($recipientNumber) ? 'no_phone' : 'invalid_phone'];
                 continue;
             }
+
+            // Fetch template for this specific status
+            $template = SmsTemplate::forSchool($school->id)
+                ->whereIn('type', ['lesson_evaluation', 'general'])
+                ->where('title', $status)
+                ->orderByRaw("FIELD(type, 'lesson_evaluation', 'general')")
+                ->latest()
+                ->first();
 
             // Prepare Message
             $statusLabels = [

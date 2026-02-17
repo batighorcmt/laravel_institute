@@ -95,7 +95,9 @@ class LessonEvaluationController extends Controller
                 })
                 ->first();
 
+            $previousStatuses = [];
             if ($evaluation) {
+                $previousStatuses = $evaluation->records->pluck('status', 'student_id')->toArray();
                 $evaluation->update([
                     'evaluation_time' => $validated['evaluation_time'] ? Carbon::parse($validated['evaluation_time']) : now(),
                     'notes' => $validated['notes'] ?? null,
@@ -121,7 +123,6 @@ class LessonEvaluationController extends Controller
                 ]);
             }
 
-            // Create records
             $evaluationRecords = [];
             foreach ($validated['student_ids'] as $i => $studentId) {
                 $evaluationRecords[] = LessonEvaluationRecord::create([
@@ -136,7 +137,7 @@ class LessonEvaluationController extends Controller
             // Send SMS asynchronously
             try {
                 $smsService = app(\App\Services\LessonEvaluationSmsService::class);
-                $smsService->sendEvaluationSms($evaluation, $evaluationRecords, $user->id);
+                $smsService->sendEvaluationSms($evaluation, $evaluationRecords, $user->id, $previousStatuses);
             } catch (\Exception $smsEx) {
                 \Log::error("Lesson Evaluation SMS Error: " . $smsEx->getMessage());
             }
