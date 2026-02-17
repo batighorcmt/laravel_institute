@@ -127,6 +127,11 @@ class Student extends Model
         return $this->belongsToMany(Team::class,'team_student')->withTimestamps()->withPivot(['joined_at','status']);
     }
 
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
     /**
      * Generate unique student ID
      * New Format: <school_code>S<sequential_5digits>

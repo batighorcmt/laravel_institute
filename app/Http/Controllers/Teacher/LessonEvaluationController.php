@@ -84,12 +84,21 @@ class LessonEvaluationController extends Controller
         // Get students enrolled in this class and section
         $students = collect();
         if ($routineEntry) {
-            // Get students who have this subject assigned (or all if no subject assignment system)
+            // Only filter by student status and attendance
             $query = StudentEnrollment::with('student')
                 ->where('school_id', $school->id)
                 ->where('class_id', $routineEntry->class_id)
                 ->where('section_id', $routineEntry->section_id)
-                ->where('status', 'active');
+                ->where('status', 'active')
+                ->whereHas('student', function($q) {
+                    $q->where('status', 'active');
+                })
+                ->whereDoesntHave('student.attendances', function($q) use ($today, $routineEntry) {
+                    $q->where('date', $today->toDateString())
+                      ->where('class_id', $routineEntry->class_id)
+                      ->where('section_id', $routineEntry->section_id)
+                      ->where('status', 'absent');
+                });
             
             // Only filter by subject if there are any subject assignments
             $hasSubjectAssignments = \DB::table('student_subjects')
