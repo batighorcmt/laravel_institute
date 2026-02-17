@@ -44,8 +44,12 @@ class StudentController extends Controller
         $school->load(['classes', 'sections', 'groups']);
         // Also fetch lists explicitly to avoid reliance on eager loading in views
         $classes = SchoolClass::forSchool($school->id)->ordered()->get();
-        $sections = Section::forSchool($school->id)->ordered()->get();
-        $groups = Group::forSchool($school->id)->orderBy('name')->get();
+        $sections = $classId 
+            ? Section::where('school_id', $school->id)->where('class_id', $classId)->ordered()->get()
+            : collect();
+        $groups = ($classId && ($cls = SchoolClass::find($classId)) && $cls->usesGroups())
+            ? Group::where('school_id', $school->id)->orderBy('name')->get()
+            : collect();
 
         // Get filter parameters
         $classId = $request->get('class_id');
@@ -57,39 +61,51 @@ class StudentController extends Controller
         $village = $request->get('village');
         $rollNo = $request->get('roll_no');
 
-        $students = Student::forSchool($school->id)
+        $students = Student::select('students.*')
+            ->join('student_enrollments', 'student_enrollments.student_id', '=', 'students.id')
+            ->join('classes', 'classes.id', '=', 'student_enrollments.class_id')
+            ->leftJoin('sections', 'sections.id', '=', 'student_enrollments.section_id')
+            ->where('students.school_id', $school->id)
+            ->where('student_enrollments.academic_year_id', $selectedYearId)
             ->when($q, function($x) use ($q){
                 $x->where(function($inner) use ($q){
-                    $inner->where('student_name_en','like',"%$q%")
-                          ->orWhere('student_name_bn','like',"%$q%")
-                          ->orWhere('student_id','like',"%$q%");
+                    $inner->where('students.student_name_en','like',"%$q%")
+                          ->orWhere('students.student_name_bn','like',"%$q%")
+                          ->orWhere('students.student_id','like',"%$q%");
                 });
             })
             ->when($status, function($x) use ($status){
-                $x->where('status', $status);
+                $x->where('students.status', $status);
             })
             ->when($gender, function($x) use ($gender){
-                $x->where('gender', $gender);
+                $x->where('students.gender', $gender);
             })
             ->when($religion, function($x) use ($religion){
-                $x->where('religion', $religion);
+                $x->where('students.religion', $religion);
             })
             ->when($village, function($x) use ($village){
-                $x->where('present_village', $village);
+                $x->where('students.present_village', $village);
             })
-            ->whereHas('enrollments', function($en) use ($selectedYearId, $classId, $sectionId, $groupId, $rollNo){
-                if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
-                else { $en->whereRaw('1=0'); }
-                if ($classId) { $en->where('class_id', $classId); }
-                if ($sectionId) { $en->where('section_id', $sectionId); }
-                if ($groupId) { $en->where('group_id', $groupId); }
-                if ($rollNo) { $en->where('roll_no', $rollNo); }
+            ->when($classId, function($x) use ($classId){
+                $x->where('student_enrollments.class_id', $classId);
+            })
+            ->when($sectionId, function($x) use ($sectionId){
+                $x->where('student_enrollments.section_id', $sectionId);
+            })
+            ->when($groupId, function($x) use ($groupId){
+                $x->where('student_enrollments.group_id', $groupId);
+            })
+            ->when($rollNo, function($x) use ($rollNo){
+                $x->where('student_enrollments.roll_no', $rollNo);
             })
             ->with(['enrollments' => function($en) use ($selectedYearId){
                 if ($selectedYearId) { $en->where('academic_year_id', $selectedYearId); }
                 $en->with(['class','section','group','subjects.subject','academicYear']);
             }])
-            ->orderBy('id','desc')->paginate($request->get('per_page', 10))->withQueryString();
+            ->orderBy('classes.numeric_value')
+            ->orderBy('sections.name')
+            ->orderBy('student_enrollments.roll_no')
+            ->paginate($request->get('per_page', 10))->withQueryString();
 
         return view('principal.institute.students.index',[
             'school'=>$school,

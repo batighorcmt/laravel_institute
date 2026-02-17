@@ -57,13 +57,13 @@
   </select>
   <select name="section_id" class="form-control mr-2">
     <option value="">-- শাখা নির্বাচন --</option>
-    @foreach(($sections ?? ($school->sections ?? collect())) as $section)
+    @foreach(($sections ?? collect()) as $section)
       <option value="{{ $section->id }}" {{ request('section_id') == $section->id ? 'selected' : '' }}>{{ $section->name }}</option>
     @endforeach
   </select>
   <select name="group_id" class="form-control mr-2">
     <option value="">-- গ্রুপ নির্বাচন --</option>
-    @foreach(($groups ?? ($school->groups ?? collect())) as $group)
+    @foreach(($groups ?? collect()) as $group)
       <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
     @endforeach
   </select>
