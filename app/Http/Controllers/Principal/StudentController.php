@@ -42,15 +42,6 @@ class StudentController extends Controller
 
         // Load school relationships for filter options
         $school->load(['classes', 'sections', 'groups']);
-        // Also fetch lists explicitly to avoid reliance on eager loading in views
-        $classes = SchoolClass::forSchool($school->id)->ordered()->get();
-        $sections = $classId 
-            ? Section::where('school_id', $school->id)->where('class_id', $classId)->ordered()->get()
-            : collect();
-        $groups = ($classId && ($cls = SchoolClass::find($classId)) && $cls->usesGroups())
-            ? Group::where('school_id', $school->id)->orderBy('name')->get()
-            : collect();
-
         // Get filter parameters
         $classId = $request->get('class_id');
         $sectionId = $request->get('section_id');
@@ -60,6 +51,15 @@ class StudentController extends Controller
         $religion = $request->get('religion');
         $village = $request->get('village');
         $rollNo = $request->get('roll_no');
+
+        // Also fetch lists explicitly to avoid reliance on eager loading in views
+        $classes = SchoolClass::forSchool($school->id)->ordered()->get();
+        $sections = $classId 
+            ? Section::where('school_id', $school->id)->where('class_id', $classId)->ordered()->get()
+            : collect();
+        $groups = ($classId && ($cls = SchoolClass::find($classId)) && $cls->usesGroups())
+            ? Group::where('school_id', $school->id)->orderBy('name')->get()
+            : collect();
 
         $students = Student::select('students.*')
             ->join('student_enrollments', 'student_enrollments.student_id', '=', 'students.id')
