@@ -15,6 +15,7 @@
     <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#api">API Settings</a></li>
     <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#class-attendance">Class Attendance SMS</a></li>
     <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#extra-class-attendance">Extra Class Attendance SMS</a></li>
+    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#lesson-evaluation">Lesson Evaluation SMS</a></li>
     <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#templates">SMS Templates</a></li>
 </ul>
 
@@ -101,6 +102,32 @@
         </div>
     </div>
 
+    {{-- LESSON EVALUATION --}}
+    <div class="tab-pane fade" id="lesson-evaluation">
+        <div class="card p-4">
+            <h5>লেসন ইভেলুশন SMS সেটিংস</h5>
+            <form method="post" action="{{ route('principal.institute.sms.lesson-evaluation.save',$school) }}">
+                @csrf
+                @foreach([
+                    'completed' => 'পড়া হয়েছে',
+                    'partial' => 'আংশিক হয়েছে',
+                    'not_done' => 'হয় নাই',
+                    'absent' => 'অনুপস্থিত'
+                ] as $k => $label)
+                <div class="custom-control custom-switch mb-2">
+                    <input type="checkbox"
+                           class="custom-control-input"
+                           id="sms_eval_{{ $k }}"
+                           name="sms_lesson_evaluation_{{ $k }}"
+                           {{ ($lessonEvaluation['sms_lesson_evaluation_'.$k] ?? 0) == 1 ? 'checked' : '' }}>
+                    <label class="custom-control-label" for="sms_eval_{{ $k }}">{{ $label }} ({{ ucfirst(str_replace('_',' ',$k)) }})</label>
+                </div>
+                @endforeach
+                <button class="btn btn-primary mt-3"><i class="fa fa-save mr-1"></i> সংরক্ষণ</button>
+            </form>
+        </div>
+    </div>
+
     {{-- TEMPLATES --}}
     <div class="tab-pane fade" id="templates">
         <div class="d-flex justify-content-between mb-2">
@@ -123,8 +150,24 @@
             @forelse($templates as $t)
                 <tr>
                     <td>
-                        <span class="badge badge-{{ $t->type=='general'?'secondary':($t->type=='class'?'primary':'warning') }}">
-                            {{ $t->type }}
+                        @php
+                            $badgeClass = match($t->type) {
+                                'general' => 'secondary',
+                                'class' => 'primary',
+                                'extra_class' => 'warning',
+                                'lesson_evaluation' => 'info',
+                                default => 'dark'
+                            };
+                            $typeLabel = match($t->type) {
+                                'general' => 'সাধারণ',
+                                'class' => 'ক্লাস হাজিরা',
+                                'extra_class' => 'এক্সট্রা ক্লাস',
+                                'lesson_evaluation' => 'লেসন ইভেলুশন',
+                                default => $t->type
+                            };
+                        @endphp
+                        <span class="badge badge-{{ $badgeClass }}">
+                            {{ $typeLabel }}
                         </span>
                     </td>
                     <td>{{ $t->title }}</td>
@@ -178,6 +221,7 @@
                             <option value="general">সাধারণ</option>
                             <option value="class">ক্লাস হাজিরা</option>
                             <option value="extra_class">এক্সট্রা ক্লাস হাজিরা</option>
+                            <option value="lesson_evaluation">লেসন ইভেলুশন</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -214,6 +258,7 @@
                             <option value="general">সাধারণ</option>
                             <option value="class">ক্লাস হাজিরা</option>
                             <option value="extra_class">এক্সট্রা ক্লাস হাজিরা</option>
+                            <option value="lesson_evaluation">লেসন ইভেলুশন</option>
                         </select>
                     </div>
                     <div class="form-group">

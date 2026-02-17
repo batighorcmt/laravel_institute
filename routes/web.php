@@ -388,6 +388,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::match(['post', 'patch'], 'sms/api', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveApi'])->name('sms.api.save');
                 Route::match(['post', 'patch'], 'sms/class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveClassAttendance'])->name('sms.class-attendance.save');
                 Route::match(['post', 'patch'], 'sms/extra-class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveExtraClassAttendance'])->name('sms.extra-class-attendance.save');
+                Route::match(['post', 'patch'], 'sms/lesson-evaluation', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveLessonEvaluation'])->name('sms.lesson-evaluation.save');
                 Route::post('sms/templates', [\App\Http\Controllers\Principal\SmsSettingsController::class,'storeTemplate'])->name('sms.templates.store');
                 Route::match(['post', 'patch'], 'sms/templates/{template}', [\App\Http\Controllers\Principal\SmsSettingsController::class,'updateTemplate'])->name('sms.templates.update');
                 Route::delete('sms/templates/{template}', [\App\Http\Controllers\Principal\SmsSettingsController::class,'destroyTemplate'])->name('sms.templates.destroy');

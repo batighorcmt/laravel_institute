@@ -19,6 +19,9 @@ class SmsSettingsController extends Controller
     protected array $extraClassAttendanceKeys = [
         'sms_extra_class_attendance_present','sms_extra_class_attendance_absent','sms_extra_class_attendance_late','sms_extra_class_attendance_half_day'
     ];
+    protected array $lessonEvaluationKeys = [
+        'sms_lesson_evaluation_completed','sms_lesson_evaluation_partial','sms_lesson_evaluation_not_done','sms_lesson_evaluation_absent'
+    ];
 
     public function index(School $school)
     {
@@ -46,6 +49,12 @@ class SmsSettingsController extends Controller
             'sms_extra_class_attendance_late' => $settings['sms_extra_class_attendance_late'] ?? '1',
             'sms_extra_class_attendance_half_day' => $settings['sms_extra_class_attendance_half_day'] ?? '0',
         ];
+        $lessonEvaluation = [
+            'sms_lesson_evaluation_completed' => $settings['sms_lesson_evaluation_completed'] ?? '0',
+            'sms_lesson_evaluation_partial' => $settings['sms_lesson_evaluation_completed'] ?? '0',
+            'sms_lesson_evaluation_not_done' => $settings['sms_lesson_evaluation_completed'] ?? '0',
+            'sms_lesson_evaluation_absent' => $settings['sms_lesson_evaluation_completed'] ?? '0',
+        ];
 
         $templates = SmsTemplate::forSchool($school->id)->orderByDesc('id')->get();
 
@@ -54,6 +63,7 @@ class SmsSettingsController extends Controller
             'api' => $api,
             'classAttendance' => $classAttendance,
             'extraClassAttendance' => $extraClassAttendance,
+            'lessonEvaluation' => $lessonEvaluation,
             'templates' => $templates,
         ]);
     }
@@ -90,12 +100,22 @@ class SmsSettingsController extends Controller
         return back()->with('success','এক্সট্রা ক্লাস হাজিরা SMS সেটিংস আপডেট হয়েছে');
     }
 
+    public function saveLessonEvaluation(Request $request, School $school)
+    {
+        $payload = [];
+        foreach ($this->lessonEvaluationKeys as $k) {
+            $payload[$k] = $request->has($k) ? '1' : '0';
+        }
+        $this->upsertSettings($school->id, $payload);
+        return back()->with('success','লেসন ইভেলুশন SMS সেটিংস আপডেট হয়েছে');
+    }
+
     public function storeTemplate(Request $request, School $school)
     {
         $data = $request->validate([
             'title' => 'required|string|max:100',
             'content' => 'required|string',
-            'type' => 'required|string|in:general,class,extra_class',
+            'type' => 'required|string|in:general,class,extra_class,lesson_evaluation',
         ]);
         $data['school_id'] = $school->id;
         SmsTemplate::create($data);
@@ -108,7 +128,7 @@ class SmsSettingsController extends Controller
         $data = $request->validate([
             'title' => 'required|string|max:100',
             'content' => 'required|string',
-            'type' => 'required|string|in:general,class,extra_class',
+            'type' => 'required|string|in:general,class,extra_class,lesson_evaluation',
         ]);
         $template->update($data);
         return back()->with('success','টেমপ্লেট আপডেট হয়েছে');
