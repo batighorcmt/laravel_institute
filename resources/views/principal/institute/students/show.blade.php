@@ -326,14 +326,13 @@
                         <i class="fas fa-calendar-alt mr-2 text-primary"></i> Attendance
                     </h6>
                     <div class="d-flex align-items-center">
-                        <button class="btn btn-sm btn-outline-secondary">
+                        <a href="{{ route('principal.institute.students.show', [$school, $student, 'month' => $carbonDate->copy()->subMonth()->month, 'year' => $carbonDate->copy()->subMonth()->year]) }}" class="btn btn-sm btn-outline-secondary">
                             <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <span class="mx-3 font-weight-bold">October 2024</span>
-                        <button class="btn btn-sm btn-outline-secondary">
+                        </a>
+                        <span class="mx-3 font-weight-bold">{{ $carbonDate->translatedFormat('F Y') }}</span>
+                        <a href="{{ route('principal.institute.students.show', [$school, $student, 'month' => $carbonDate->copy()->addMonth()->month, 'year' => $carbonDate->copy()->addMonth()->year]) }}" class="btn btn-sm btn-outline-secondary">
                             <i class="fas fa-chevron-right"></i>
-                        </button>
-                        <button class="btn btn-sm btn-primary ml-2">View All</button>
+                        </a>
                     </div>
                 </div>
                 
@@ -351,45 +350,54 @@
                 
                 <div>
                     @php
-                        $calendar = [
-                            ['', '', '', '', '', '', 1],
-                            [2, 3, 4, 5, 6, 7, 8],
-                            [9, 10, 11, 12, 13, 14, 15],
-                            [16, 17, 18, 19, 20, 21, 22],
-                            [23, 24, 25, 26, 27, 28, 29],
-                            [30, 31, '', '', '', '', '']
-                        ];
-                        $statuses = [
-                            1 => 'present', 2 => 'present', 3 => 'absent', 4 => 'holiday', 5 => 'holiday',
-                            6 => 'present', 7 => 'present', 8 => 'present', 9 => 'late', 10 => 'present',
-                            11 => 'holiday', 12 => 'holiday', 13 => 'present', 14 => 'present', 15 => 'leave',
-                            16 => 'present', 17 => 'present', 18 => 'holiday', 19 => 'holiday', 20 => 'present',
-                            21 => 'present', 22 => 'present', 23 => 'present', 24 => 'absent', 25 => 'holiday',
-                            26 => 'holiday', 27 => 'present', 28 => 'present', 29 => 'present', 30 => 'present', 31 => 'absent'
-                        ];
+                        $daysInMonth = $carbonDate->daysInMonth;
+                        $firstDayOfMonth = $carbonDate->dayOfWeek; // 0 (Sun) to 6 (Sat)
+                        $dayCount = 1;
                     @endphp
-                    @foreach($calendar as $week)
+                    @for($i = 0; $i < 6; $i++)
                         <div class="row text-center mb-1">
-                            @foreach($week as $day)
+                            @for($j = 0; $j < 7; $j++)
                                 <div class="col p-1">
-                                    @if($day)
-                                        @php $status = $statuses[$day] ?? 'present'; @endphp
-                                        <div class="calendar-day day-{{ $status }}">{{ $day }}</div>
-                                    @else
+                                    @if(($i == 0 && $j < $firstDayOfMonth) || $dayCount > $daysInMonth)
                                         <div style="height: 35px;"></div>
+                                    @else
+                                        @php
+                                            $currentDate = $carbonDate->copy()->day($dayCount);
+                                            $isHoliday = isset($holidays[$dayCount]);
+                                            $isWeeklyHoliday = in_array($j, $weeklyHolidays);
+                                            $attendance = $attendances[$dayCount] ?? null;
+                                            
+                                            $statusClass = 'day-holiday';
+                                            if ($attendance) {
+                                                $statusClass = 'day-'.$attendance->status;
+                                            } elseif ($isHoliday || $isWeeklyHoliday) {
+                                                $statusClass = 'day-holiday';
+                                            } else {
+                                                $statusClass = ''; // Default gray/empty
+                                            }
+                                            
+                                            $canClick = ($attendance && $attendance->status == 'present');
+                                        @endphp
+                                        <div class="calendar-day {{ $statusClass }}" 
+                                             style="{{ $canClick ? 'cursor: pointer;' : '' }}"
+                                             @if($canClick) onclick="showEvaluation('{{ $currentDate->format('Y-m-d') }}')" @endif>
+                                            {{ $dayCount }}
+                                        </div>
+                                        @php $dayCount++; @endphp
                                     @endif
                                 </div>
-                            @endforeach
+                            @endfor
                         </div>
-                    @endforeach
+                        @if($dayCount > $daysInMonth) @break @endif
+                    @endfor
                 </div>
 
-                <div class="mt-3 d-flex justify-content-center flex-wrap small">
-                    <span class="mr-3"><span class="badge day-present" style="width: 15px; height: 15px; display: inline-block;"></span> Present</span>
-                    <span class="mr-3"><span class="badge day-absent" style="width: 15px; height: 15px; display: inline-block;"></span> Absent</span>
-                    <span class="mr-3"><span class="badge day-late" style="width: 15px; height: 15px; display: inline-block;"></span> Late</span>
-                    <span class="mr-3"><span class="badge day-leave" style="width: 15px; height: 15px; display: inline-block;"></span> Leave</span>
-                    <span><span class="badge day-holiday" style="width: 15px; height: 15px; display: inline-block;"></span> Holiday</span>
+                <div class="mt-3 d-flex justify-content-center flex-wrap small text-muted">
+                    <span class="mr-3"><span class="badge day-present" style="width: 12px; height: 12px; display: inline-block;"></span> উপস্থিত</span>
+                    <span class="mr-3"><span class="badge day-absent" style="width: 12px; height: 12px; display: inline-block;"></span> অনুপস্থিত</span>
+                    <span class="mr-3"><span class="badge day-late" style="width: 12px; height: 12px; display: inline-block;"></span> দেরিতে</span>
+                    <span class="mr-3"><span class="badge day-leave" style="width: 12px; height: 12px; display: inline-block;"></span> ছুটি</span>
+                    <span><span class="badge day-holiday" style="width: 12px; height: 12px; display: inline-block;"></span> বন্ধ</span>
                 </div>
             </div>
 
@@ -560,6 +568,91 @@
     </div>
 </div>
 
+<!-- Lesson Evaluation Modal -->
+<div class="modal fade" id="evaluationModal" tabindex="-1" role="dialog" aria-labelledby="evaluationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+            <div class="modal-header bg-primary text-white" style="border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="evaluationModalLabel">
+                    <i class="fas fa-book-reader mr-2"></i> লেসন ইভেলুশন রিপোর্ট (<span id="evalDate"></span>)
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>বিষয়ের নাম</th>
+                                <th>শিক্ষকের নাম</th>
+                                <th class="text-center">স্ট্যাটাস</th>
+                            </tr>
+                        </thead>
+                        <tbody id="evaluationBody">
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-4 p-3 bg-light rounded" id="evaluationSummary">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h5 mb-0 text-success font-weight-bold" id="totalRead">0</div>
+                            <div class="small text-muted">মোট পড়া হয়েছে</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h5 mb-0 text-danger font-weight-bold" id="totalNotRead">0</div>
+                            <div class="small text-muted">পড়া হয় নাই</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
+<script>
+    function showEvaluation(date) {
+        $('#evalDate').text(date);
+        $('#evaluationBody').html('<tr><td colspan="3" class="text-center"><i class="fas fa-spinner fa-spin mr-2"></i> লোড হচ্ছে...</td></tr>');
+        $('#totalRead').text('0');
+        $('#totalNotRead').text('0');
+        $('#evaluationModal').modal('show');
+
+        const url = `{{ route('principal.institute.students.lesson-evaluation-details', [$school, $student]) }}?date=${date}`;
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                let html = '';
+                if (data.evaluations.length === 0) {
+                    html = '<tr><td colspan="3" class="text-center text-muted">কোন তথ্য পাওয়া যায়নি</td></tr>';
+                } else {
+                    data.evaluations.forEach(ev => {
+                        const statusColor = ev.status_raw === 'completed' ? 'success' : (ev.status_raw === 'partial' ? 'warning' : 'danger');
+                        html += `
+                            <tr>
+                                <td class="font-weight-bold">${ev.subject}</td>
+                                <td>${ev.teacher}</td>
+                                <td class="text-center">
+                                    <span class="badge badge-${statusColor} badge-modern">${ev.status}</span>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+                $('#evaluationBody').html(html);
+                $('#totalRead').text(data.summary.completed);
+                $('#totalNotRead').text(data.summary.not_done);
+            })
+            .catch(error => {
+                $('#evaluationBody').html('<tr><td colspan="3" class="text-center text-danger">তথ্য লোড করতে সমস্যা হয়েছে</td></tr>');
+                console.error('Error:', error);
+            });
+    }
+</script>
 @endpush
 @endsection

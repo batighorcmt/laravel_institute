@@ -449,6 +449,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('students/{student}/enrollments/{enrollment}', [\App\Http\Controllers\Principal\StudentController::class,'removeEnrollment'])->name('students.enrollments.remove');
             Route::post('students/{student}/teams', [\App\Http\Controllers\Principal\StudentController::class,'attachTeam'])->name('students.teams.attach');
             Route::delete('students/{student}/teams/{team}', [\App\Http\Controllers\Principal\StudentController::class,'detachTeam'])->name('students.teams.detach');
+            Route::get('students/{student}/lesson-evaluation-details', [\App\Http\Controllers\Principal\StudentController::class,'lessonEvaluationDetails'])->name('students.lesson-evaluation-details');
             // Student subject assignment
             Route::get('enrollments/{enrollment}/subjects', [\App\Http\Controllers\Principal\StudentSubjectController::class,'edit'])->name('enrollments.subjects.edit');
             Route::post('enrollments/{enrollment}/subjects', [\App\Http\Controllers\Principal\StudentSubjectController::class,'update'])->name('enrollments.subjects.update');

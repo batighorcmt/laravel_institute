@@ -11,6 +11,10 @@ use App\Models\Section;
 use App\Models\Group;
 use App\Models\Team;
 use App\Models\AcademicYear;
+use App\Models\Attendance;
+use App\Models\Holiday;
+use App\Models\WeeklyHoliday;
+use App\Models\LessonEvaluation;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -258,7 +262,7 @@ class StudentController extends Controller
         return redirect()->route('principal.institute.students.show',[$school,$student])->with('success','শিক্ষার্থী যুক্ত হয়েছে');
     }
 
-    public function show(School $school, Student $student)
+    public function show(School $school, Student $student, Request $request)
     {
         $this->authorizePrincipal($school);
         abort_unless($student->school_id===$school->id,404);
@@ -326,10 +330,66 @@ class StudentController extends Controller
         ];
         $workingDays = array_sum($attendanceStats);
 
+        // Calendar Data
+        $selectedMonth = $request->get('month', date('n'));
+        $selectedYearVal = $request->get('year', date('Y'));
+        $carbonDate = Carbon::createFromDate($selectedYearVal, $selectedMonth, 1);
+        
+        $attendances = Attendance::where('student_id', $student->id)
+            ->whereYear('date', $selectedYearVal)
+            ->whereMonth('date', $selectedMonth)
+            ->get()
+            ->keyBy(fn($a) => $a->date->format('j'));
+
+        $holidays = Holiday::forSchool($school->id)
+            ->active()
+            ->whereYear('date', $selectedYearVal)
+            ->whereMonth('date', $selectedMonth)
+            ->get()
+            ->keyBy(fn($h) => $h->date->format('j'));
+
+        $weeklyHolidays = WeeklyHoliday::forSchool($school->id)
+            ->active()
+            ->pluck('day_number')
+            ->toArray(); // 0 (Sun) to 6 (Sat)
+
         return view('principal.institute.students.show',compact(
             'school','student','enrollments','memberships','allTeams','currentYear','activeEnrollment','currentSubjects','totalYears','timeline','years',
-            'attendanceStats','workingDays'
+            'attendanceStats','workingDays', 'attendances', 'holidays', 'weeklyHolidays', 'carbonDate'
         ));
+    }
+
+    public function lessonEvaluationDetails(School $school, Student $student, Request $request)
+    {
+        $this->authorizePrincipal($school);
+        $date = $request->get('date');
+        
+        $evaluations = LessonEvaluation::with(['subject', 'teacher', 'records' => function($q) use ($student) {
+                $q->where('student_id', $student->id);
+            }])
+            ->where('school_id', $school->id)
+            ->whereDate('evaluation_date', $date)
+            ->get();
+
+        $data = $evaluations->map(function($ev) {
+            $record = $ev->records->first();
+            return [
+                'subject' => $ev->subject?->name,
+                'teacher' => $ev->teacher?->full_name,
+                'status' => $record?->status_label ?? 'N/A',
+                'status_raw' => $record?->status
+            ];
+        });
+
+        return response()->json([
+            'date' => Carbon::parse($date)->format('d-m-Y'),
+            'evaluations' => $data,
+            'summary' => [
+                'total' => $data->count(),
+                'completed' => $data->where('status_raw', 'completed')->count(),
+                'not_done' => $data->where('status_raw', 'not_done')->count()
+            ]
+        ]);
     }
 
     public function edit(School $school, Student $student)
