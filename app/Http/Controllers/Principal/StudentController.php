@@ -55,7 +55,7 @@ class StudentController extends Controller
         // Also fetch lists explicitly to avoid reliance on eager loading in views
         $classes = SchoolClass::forSchool($school->id)->ordered()->get();
         $sections = $classId 
-            ? Section::where('school_id', $school->id)->where('class_id', $classId)->ordered()->get()
+            ? Section::where('sections.school_id', $school->id)->where('sections.class_id', $classId)->ordered()->get()
             : collect();
         $groups = ($classId && ($cls = SchoolClass::find($classId)) && $cls->usesGroups())
             ? Group::where('school_id', $school->id)->orderBy('name')->get()
