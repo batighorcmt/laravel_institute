@@ -404,7 +404,7 @@
 
             <!-- Enrollment History -->
             @if(isset($enrollments) && count($enrollments) > 0)
-                <div class="profile-info-card">
+                <div class="profile-info-card mb-3">
                     <h6 class="mb-3 font-weight-bold text-primary">
                         <i class="fas fa-history mr-2"></i> ভর্তির ইতিহাস
                     </h6>
@@ -427,6 +427,43 @@
                                         <td>{{ $enroll->section?->name ?? '—' }}</td>
                                         <td><strong>{{ $enroll->roll_no }}</strong></td>
                                         <td>{{ $enroll->group?->name ?? '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Subject-wise Evaluation Summary -->
+            @if(isset($subjectStats) && $subjectStats->count() > 0)
+                <div class="profile-info-card mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 font-weight-bold text-primary">
+                            <i class="fas fa-clipboard-check mr-2"></i> লেসন ইভেলুশন রিপোর্ট ({{ $currentYear?->name }})
+                        </h6>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;">
+                            <thead class="thead-light text-center">
+                                <tr>
+                                    <th class="text-left">বিষয়ের নাম</th>
+                                    <th class="text-left">শিক্ষকের নাম</th>
+                                    <th>পড়া হয়েছে</th>
+                                    <th>আংশিক হয়েছে</th>
+                                    <th>হয় নাই</th>
+                                    <th>অনুপস্থিত</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-center">
+                                @foreach($subjectStats as $stat)
+                                    <tr>
+                                        <td class="text-left font-weight-bold">{{ $stat['subject'] }}</td>
+                                        <td class="text-left small">{{ $stat['teacher'] }}</td>
+                                        <td><span class="badge badge-success px-2">{{ $stat['completed'] }}</span></td>
+                                        <td><span class="badge badge-warning px-2">{{ $stat['partial'] }}</span></td>
+                                        <td><span class="badge badge-danger px-2">{{ $stat['not_done'] }}</span></td>
+                                        <td><span class="badge badge-secondary px-2">{{ $stat['absent'] }}</span></td>
                                     </tr>
                                 @endforeach
                             </tbody>

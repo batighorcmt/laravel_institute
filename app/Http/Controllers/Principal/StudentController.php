@@ -321,20 +321,20 @@ class StudentController extends Controller
         }
         $timeline = $timeline->filter(fn($e)=>!empty($e['date']))->sortByDesc('date')->values();
 
-        // Attendance statistics for pie chart
-        $attendanceStats = [
-            'present' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'present')->count(),
-            'absent' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'absent')->count(),
-            'late' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'late')->count(),
-            'leave' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'leave')->count(),
-        ];
-        $workingDays = array_sum($attendanceStats);
-
         // Calendar Data
         $selectedMonth = $request->get('month', date('n'));
         $selectedYearVal = $request->get('year', date('Y'));
         $carbonDate = Carbon::createFromDate($selectedYearVal, $selectedMonth, 1);
         
+        // Attendance statistics for top cards (Dynamic based on selected month/year)
+        $attendanceStats = [
+            'present' => Attendance::where('student_id', $student->id)->where('status', 'present')->whereYear('date', $selectedYearVal)->whereMonth('date', $selectedMonth)->count(),
+            'absent' => Attendance::where('student_id', $student->id)->where('status', 'absent')->whereYear('date', $selectedYearVal)->whereMonth('date', $selectedMonth)->count(),
+            'late' => Attendance::where('student_id', $student->id)->where('status', 'late')->whereYear('date', $selectedYearVal)->whereMonth('date', $selectedMonth)->count(),
+            'leave' => Attendance::where('student_id', $student->id)->where('status', 'leave')->whereYear('date', $selectedYearVal)->whereMonth('date', $selectedMonth)->count(),
+        ];
+        $workingDays = array_sum($attendanceStats);
+
         $attendances = Attendance::where('student_id', $student->id)
             ->whereYear('date', $selectedYearVal)
             ->whereMonth('date', $selectedMonth)
@@ -353,9 +353,36 @@ class StudentController extends Controller
             ->pluck('day_number')
             ->toArray(); // 0 (Sun) to 6 (Sat)
 
+        // Subject-wise Evaluation Summary for current academic year
+        $subjectStats = collect();
+        if ($activeEnrollment) {
+            $evaluations = LessonEvaluation::with(['subject', 'teacher', 'records' => function($q) use ($student) {
+                    $q->where('student_id', $student->id);
+                }])
+                ->where('school_id', $school->id)
+                ->where('class_id', $activeEnrollment->class_id)
+                ->where('section_id', $activeEnrollment->section_id)
+                ->whereHas('records', function($q) use ($student) {
+                    $q->where('student_id', $student->id);
+                })
+                ->get();
+
+            $subjectStats = $evaluations->groupBy('subject_id')->map(function($group) {
+                $first = $group->first();
+                return [
+                    'subject' => $first->subject?->name,
+                    'teacher' => $first->teacher?->full_name,
+                    'completed' => $group->filter(fn($ev) => $ev->records->first()?->status === 'completed')->count(),
+                    'partial' => $group->filter(fn($ev) => $ev->records->first()?->status === 'partial')->count(),
+                    'not_done' => $group->filter(fn($ev) => $ev->records->first()?->status === 'not_done')->count(),
+                    'absent' => $group->filter(fn($ev) => $ev->records->first()?->status === 'absent')->count(),
+                ];
+            });
+        }
+
         return view('principal.institute.students.show',compact(
             'school','student','enrollments','memberships','allTeams','currentYear','activeEnrollment','currentSubjects','totalYears','timeline','years',
-            'attendanceStats','workingDays', 'attendances', 'holidays', 'weeklyHolidays', 'carbonDate'
+            'attendanceStats','workingDays', 'attendances', 'holidays', 'weeklyHolidays', 'carbonDate', 'subjectStats'
         ));
     }
 
