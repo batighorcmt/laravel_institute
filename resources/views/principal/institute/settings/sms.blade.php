@@ -230,6 +230,13 @@
                     </div>
                     <div class="form-group">
                         <label>বডি</label>
+                        <div class="mb-2">
+                            <small class="text-muted d-block mb-1">কিওয়ার্ডগুলি ক্লিক করে ইনসার্ট করুন:</small>
+                            <span class="badge badge-light border keyword-chip cursor-pointer" onclick="insertKeyword('addTemplateContent', '{student_name}')">{student_name}</span>
+                            <span class="badge badge-light border keyword-chip cursor-pointer" onclick="insertKeyword('addTemplateContent', '{status}')">{status}</span>
+                            <span class="badge badge-light border keyword-chip cursor-pointer" onclick="insertKeyword('addTemplateContent', '{subject}')">{subject}</span>
+                            <span class="badge badge-light border keyword-chip cursor-pointer" onclick="insertKeyword('addTemplateContent', '{date}')">{date}</span>
+                        </div>
                         <textarea id="addTemplateContent" name="content" rows="4" class="form-control"></textarea>
                     </div>
                 </div>
@@ -267,6 +274,13 @@
                     </div>
                     <div class="form-group">
                         <label>বডি</label>
+                        <div class="mb-2">
+                            <small class="text-muted d-block mb-1">কিওয়ার্ডগুলি ক্লিক করে ইনসার্ট করুন:</small>
+                            <span class="badge badge-light border keyword-chip cursor-pointer" onclick="insertKeyword('editTemplateContent', '{student_name}')">{student_name}</span>
+                            <span class="badge badge-light border keyword-chip cursor-pointer" onclick="insertKeyword('editTemplateContent', '{status}')">{status}</span>
+                            <span class="badge badge-light border keyword-chip cursor-pointer" onclick="insertKeyword('editTemplateContent', '{subject}')">{subject}</span>
+                            <span class="badge badge-light border keyword-chip cursor-pointer" onclick="insertKeyword('editTemplateContent', '{date}')">{date}</span>
+                        </div>
                         <textarea id="editTemplateContent" name="content" rows="4" class="form-control"></textarea>
                     </div>
                 </div>
@@ -340,11 +354,42 @@ $('#addTemplateModal').on('show.bs.modal', function () {
     const form = document.getElementById('addTemplateForm');
     if (form) { form.reset(); }
 });
+
+function insertKeyword(elementId, keyword) {
+    const textarea = document.getElementById(elementId);
+    if (!textarea) return;
+
+    const startPos = textarea.selectionStart;
+    const endPos = textarea.selectionEnd;
+    const text = textarea.value;
+
+    textarea.value = text.substring(0, startPos) + keyword + text.substring(endPos);
+    
+    // Set cursor position after the inserted keyword
+    const newPos = startPos + keyword.length;
+    textarea.focus();
+    textarea.setSelectionRange(newPos, newPos);
+}
 </script>
 @endpush
 
 <style>
 @media print {
     .nav-tabs, .modal, button { display:none !important; }
+}
+.keyword-chip {
+    padding: 5px 10px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.keyword-chip:hover {
+    background-color: #e2e6ea;
+    border-color: #adb5bd;
+}
+.cursor-pointer {
+    cursor: pointer !important;
 }
 </style>
