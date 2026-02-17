@@ -173,8 +173,9 @@ class LessonEvaluationController extends Controller
             }
 
             // Create evaluation records for each student
+            $evaluationRecords = [];
             foreach ($validated['student_ids'] as $index => $studentId) {
-                LessonEvaluationRecord::create([
+                $evaluationRecords[] = LessonEvaluationRecord::create([
                     'lesson_evaluation_id' => $evaluation->id,
                     'student_id' => $studentId,
                     'status' => $validated['statuses'][$index],
@@ -182,6 +183,14 @@ class LessonEvaluationController extends Controller
             }
 
             DB::commit();
+
+            // Send SMS asynchronously
+            try {
+                $smsService = app(\App\Services\LessonEvaluationSmsService::class);
+                $smsService->sendEvaluationSms($evaluation, $evaluationRecords, Auth::id());
+            } catch (\Exception $smsEx) {
+                \Log::error("Lesson Evaluation SMS Error (Teacher Web): " . $smsEx->getMessage());
+            }
 
             return redirect()
                 ->route('teacher.institute.lesson-evaluation.index', $school)

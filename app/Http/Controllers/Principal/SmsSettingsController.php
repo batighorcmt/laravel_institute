@@ -118,7 +118,23 @@ class SmsSettingsController extends Controller
             'type' => 'required|string|in:general,class,extra_class,lesson_evaluation',
         ]);
         $data['school_id'] = $school->id;
-        SmsTemplate::create($data);
+
+        try {
+            SmsTemplate::create($data);
+        } catch (\Exception $e) {
+            // If it's a truncation error (1265), try to fix the column and retry
+            if (str_contains($e->getMessage(), '1265') || str_contains($e->getMessage(), 'Data truncated')) {
+                try {
+                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE sms_templates MODIFY COLUMN type ENUM('general', 'class', 'extra_class', 'lesson_evaluation') DEFAULT 'general'");
+                    SmsTemplate::create($data); // Retry
+                } catch (\Exception $fixEx) {
+                    return back()->with('error', 'ডেটাবেস আপডেট করা যায়নি। অনুগ্রহ করে ডেভেলপারকে জানান। (Error: ' . $fixEx->getMessage() . ')');
+                }
+            } else {
+                throw $e;
+            }
+        }
+
         return back()->with('success','টেমপ্লেট যুক্ত হয়েছে');
     }
 
@@ -130,7 +146,22 @@ class SmsSettingsController extends Controller
             'content' => 'required|string',
             'type' => 'required|string|in:general,class,extra_class,lesson_evaluation',
         ]);
-        $template->update($data);
+
+        try {
+            $template->update($data);
+        } catch (\Exception $e) {
+            if (str_contains($e->getMessage(), '1265') || str_contains($e->getMessage(), 'Data truncated')) {
+                try {
+                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE sms_templates MODIFY COLUMN type ENUM('general', 'class', 'extra_class', 'lesson_evaluation') DEFAULT 'general'");
+                    $template->update($data); // Retry
+                } catch (\Exception $fixEx) {
+                    return back()->with('error', 'ডেটাবেস আপডেট করা যায়নি। (Error: ' . $fixEx->getMessage() . ')');
+                }
+            } else {
+                throw $e;
+            }
+        }
+
         return back()->with('success','টেমপ্লেট আপডেট হয়েছে');
     }
 
