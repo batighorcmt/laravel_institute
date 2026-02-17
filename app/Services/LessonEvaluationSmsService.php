@@ -122,8 +122,12 @@ class LessonEvaluationSmsService
                     'recipient_category' => 'lesson evaluation',
                     'recipient_id' => $student->id,
                     'recipient_name' => $student->full_name,
+                    'roll_number' => $student->roll,
+                    'class_name' => $evaluation->class?->name,
+                    'section_name' => $evaluation->section?->name,
                     'subject' => $evaluation->subject?->name,
                     'date' => $evaluation->evaluation_date,
+                    'message_type' => 'lesson_evaluation',
                 ]
             ];
         }

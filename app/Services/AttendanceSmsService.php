@@ -154,6 +154,7 @@ class AttendanceSmsService
                 'roll_number' => $enrollment ? $enrollment->roll_no : null,
                 'class_name' => $class?->name ?? null,
                 'section_name' => $section?->name ?? null,
+                'message_type' => 'attendance',
             ];
 
             $payloads[] = ['mobile' => $recipientNumber, 'message' => $message, 'meta' => $meta];

@@ -74,7 +74,7 @@ class SendSmsChunkJob implements \Illuminate\Contracts\Queue\ShouldQueue
                     'message' => $message,
                     'status' => $ok ? 'sent' : 'failed',
                     'response' => ($respMsg ?: '') . (isset($respBody) ? ' | ' . substr((string)$respBody, 0, 200) : ''),
-                    'message_type' => 'result_notification',
+                    'message_type' => $meta['message_type'] ?? 'result_notification',
                 ]);
 
                 if (!$ok) {
@@ -100,7 +100,7 @@ class SendSmsChunkJob implements \Illuminate\Contracts\Queue\ShouldQueue
                     'message' => $message,
                     'status' => 'failed',
                     'response' => 'Exception: ' . $e->getMessage(),
-                    'message_type' => 'result_notification',
+                    'message_type' => $meta['message_type'] ?? 'result_notification',
                 ]);
                 $failedItems[] = $item;
             }
