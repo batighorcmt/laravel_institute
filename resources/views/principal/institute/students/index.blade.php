@@ -435,6 +435,7 @@
   window.selectStudent = function(studentId, fullName) {
     searchInput.value = fullName;
     searchResults.style.display = 'none';
+    document.getElementById('filtersCollapse').submit();
   };
 
   // Function to change per page
