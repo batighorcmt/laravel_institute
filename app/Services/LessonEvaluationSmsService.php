@@ -93,9 +93,9 @@ class LessonEvaluationSmsService
             // Prepare Message
             $statusLabels = [
                 'completed' => 'পড়া হয়েছে',
-                'partial' => 'আংশিক হয়েছে',
-                'not_done' => 'হয় নাই',
-                'absent' => 'অনুপস্থিত',
+                'partial' => 'আংশিক পড়া হয়েছে',
+                'not_done' => 'পড়া হয় নাই',
+                'absent' => 'শ্রেণিতে অনুপস্থিত রয়েছে',
             ];
             $statusLabel = $statusLabels[$status] ?? $status;
             $evalDate = $evaluation->evaluation_date ? $evaluation->evaluation_date->format('d-m-Y') : date('d-m-Y');
