@@ -71,6 +71,10 @@
       print-color-adjust: exact !important;
       color-adjust: exact !important;
     }
+    /* Hide the global footer for this print page as requested */
+    .fixed-footer {
+      display: none !important;
+    }
   }
   
   table.print-table{width:100%;border-collapse:collapse;margin-top:8px;margin-bottom:15mm;}
