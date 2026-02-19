@@ -167,6 +167,9 @@
                 </p>
             </div>
             <div class="col-auto text-right">
+                <a href="{{ route('principal.institute.students.print-cv', [$school, $student]) }}" target="_blank" class="btn btn-light btn-sm mr-2">
+                    <i class="fas fa-print mr-1"></i> প্রোফাইল প্রিন্ট
+                </a>
                 <a href="{{ route('principal.institute.students.edit',[$school,$student]) }}" class="btn btn-light btn-sm mr-2">
                     <i class="fas fa-edit mr-1"></i> সম্পাদনা
                 </a>

@@ -1138,4 +1138,27 @@ class StudentController extends Controller
             'lang' => $lang,
         ]);
     }
+
+    /**
+     * Print Student CV (Profile)
+     */
+    public function printCv(School $school, Student $student)
+    {
+        $this->authorizePrincipal($school);
+        abort_unless($student->school_id === $school->id, 404);
+
+        $currentYear = AcademicYear::forSchool($school->id)->current()->first();
+        $activeEnrollment = $currentYear ? $student->enrollments()->where('academic_year_id', $currentYear->id)->first() : null;
+        
+        // If no active enrollment, just get the latest one
+        if (!$activeEnrollment) {
+            $activeEnrollment = $student->enrollments()->with(['class', 'section', 'group', 'academicYear'])->latest()->first();
+        } else {
+            $activeEnrollment->load(['class', 'section', 'group', 'subjects.subject', 'academicYear']);
+        }
+
+        $enrollments = $student->enrollments()->with(['class', 'section', 'group', 'academicYear'])->orderByDesc('academic_year_id')->get();
+
+        return view('principal.institute.students.print_cv', compact('school', 'student', 'activeEnrollment', 'enrollments', 'currentYear'));
+    }
 }
