@@ -7,52 +7,65 @@
     <style>
         @page {
             size: A4;
-            margin: 10mm;
+            margin: 8mm;
         }
         body {
             font-family: 'SolaimanLipi', Arial, sans-serif;
-            line-height: 1.3;
-            color: #333;
+            line-height: 1.4;
+            color: #000;
             margin: 0;
             padding: 0;
             background: #fff;
-            font-size: 13px;
+            font-size: 15px; /* Increased from 13px/14px */
         }
         .container {
             width: 100%;
             margin: 0 auto;
         }
-        .header {
-            text-align: center;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
+        .header-container {
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid #1a56db;
+            padding-bottom: 8px;
             margin-bottom: 15px;
         }
-        .header h1 {
-            margin: 0;
-            font-size: 20px;
-            color: #1a56db;
+        .school-logo {
+            width: 85px;
+            height: 85px;
+            margin-right: 15px;
+            object-fit: contain;
         }
-        .header p {
+        .header-content {
+            flex-grow: 1;
+            text-align: center;
+        }
+        .header-content h1 {
+            margin: 0;
+            font-size: 24px; /* Equal font size */
+            color: #1a56db;
+            line-height: 1.2;
+        }
+        .header-content p {
             margin: 2px 0;
-            font-size: 12px;
+            font-size: 14px;
         }
         .cv-title {
             text-align: center;
             text-transform: uppercase;
             font-weight: bold;
-            font-size: 16px;
-            margin-bottom: 10px;
-            text-decoration: underline;
+            font-size: 18px;
+            margin-bottom: 8px;
+            background: #f0f4ff;
+            padding: 3px;
         }
         .profile-row {
             display: flex;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .profile-photo {
-            width: 100px;
-            height: 110px;
-            border: 1px solid #ddd;
+            width: 110px;
+            height: 120px;
+            border: 2px solid #1a56db;
             padding: 2px;
             margin-right: 20px;
         }
@@ -67,31 +80,32 @@
         .info-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         .info-table th, .info-table td {
             text-align: left;
-            padding: 5px 8px;
-            border-bottom: 1px solid #eee;
+            padding: 4px 10px;
+            border-bottom: 1px solid #ddd;
         }
         .info-table th {
             width: 35%;
             font-weight: bold;
-            color: #555;
-            background: #fdfdfd;
+            color: #333;
+            background: #f9f9f9;
         }
         .section-title {
-            background: #f5f5f5;
-            padding: 4px 12px;
+            background: #1a56db;
+            color: #white;
+            padding: 3px 12px;
             font-weight: bold;
             margin: 10px 0 5px 0;
-            border-left: 3px solid #1a56db;
-            font-size: 13px;
+            font-size: 15px;
+            color: #fff;
         }
         .grid-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 15px;
         }
         .footer {
             margin-top: 30px;
@@ -100,10 +114,10 @@
         }
         .signature {
             border-top: 1px solid #333;
-            width: 160px;
+            width: 180px;
             text-align: center;
             padding-top: 3px;
-            font-size: 12px;
+            font-size: 14px;
         }
         @media print {
             .no-print {
@@ -122,21 +136,27 @@
         }
         .en-name {
             font-style: italic;
-            color: #666;
-            font-size: 0.9em;
+            color: #444;
+            font-size: 0.95em;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Institute Header -->
-        <div class="header">
-            <h1>{{ $school->name_bn ?: $school->name }}</h1>
-            @if($school->name_bn && $school->name)
-                <p><strong>{{ $school->name }}</strong></p>
+        <div class="header-container">
+            @if($school->logo)
+                <img src="{{ asset('storage/'.$school->logo) }}" alt="Logo" class="school-logo">
+            @else
+                <div class="school-logo" style="display: flex; align-items: center; justify-content: center; background: #f0f0f0; border: 1px solid #ddd;">Logo</div>
             @endif
-            <p>{{ $school->address_bn ?: $school->address }}</p>
-            <p>Phone: {{ $school->phone }} | Email: {{ $school->email }}</p>
+            <div class="header-content">
+                <h1>{{ $school->name_bn }}</h1>
+                <h1>{{ $school->name }}</h1>
+                <p>{{ $school->address_bn ?: $school->address }}</p>
+                <p>Phone: {{ $school->phone }} | Email: {{ $school->email }}</p>
+            </div>
+            <div style="width: 85px;"></div> {{-- Spacer to balance logo --}}
         </div>
 
         <div class="cv-title">Student Profile (CV)</div>
@@ -165,7 +185,7 @@
                     </tr>
                     <tr>
                         <th>রোল নম্বর (Roll No)</th>
-                        <td>{{ $activeEnrollment->roll_no }}</td>
+                        <td><strong>{{ $activeEnrollment->roll_no }}</strong></td>
                     </tr>
                     @endif
                 </table>
@@ -225,16 +245,16 @@
                 </tr>
                 <tr>
                     <th>ফোন নম্বর (Phone)</th>
-                    <td>{{ $student->guardian_phone ?: '—' }}</td>
+                    <td><strong>{{ $student->guardian_phone ?: '—' }}</strong></td>
                 </tr>
             </table>
         </div>
 
         <div class="section-title">ঠিকানা (Address)</div>
         <div class="grid-row">
-            <div style="font-size: 12px;">
+            <div style="font-size: 14px;">
                 <p><strong>বর্তমান ঠিকানা (Present Address):</strong></p>
-                <p>
+                <p style="margin-left: 10px;">
                     {{ $student->present_village ? 'গ্রাম: '.$student->present_village.', ' : '' }}
                     {{ $student->present_para_moholla ? 'পাড়া: '.$student->present_para_moholla.', ' : '' }}
                     {{ $student->present_post_office ? 'ডাকঘর: '.$student->present_post_office : '' }}<br>
@@ -242,9 +262,9 @@
                     {{ $student->present_district ? 'জেলা: '.$student->present_district : '' }}
                 </p>
             </div>
-            <div style="font-size: 12px;">
+            <div style="font-size: 14px;">
                 <p><strong>স্থায়ী ঠিকানা (Permanent Address):</strong></p>
-                <p>
+                <p style="margin-left: 10px;">
                     {{ $student->permanent_village ? 'গ্রাম: '.$student->permanent_village.', ' : '' }}
                     {{ $student->permanent_para_moholla ? 'পাড়া: '.$student->permanent_para_moholla.', ' : '' }}
                     {{ $student->permanent_post_office ? 'ডাকঘর: '.$student->permanent_post_office : '' }}<br>
@@ -272,7 +292,7 @@
         </div>
 
         <div class="no-print" style="text-align: center; margin-top: 20px;">
-            <button onclick="window.print()" style="padding: 10px 20px; background: #1a56db; color: #fff; border: none; border-radius: 5px; cursor: pointer;">Print Profile</button>
+            <button onclick="window.print()" style="padding: 10px 20px; background: #1a56db; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">Print Profile</button>
         </div>
     </div>
 </body>
