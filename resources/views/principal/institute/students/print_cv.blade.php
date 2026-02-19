@@ -7,54 +7,54 @@
     <style>
         @page {
             size: A4;
-            margin: 20mm;
+            margin: 10mm;
         }
         body {
             font-family: 'SolaimanLipi', Arial, sans-serif;
-            line-height: 1.6;
+            line-height: 1.3;
             color: #333;
             margin: 0;
             padding: 0;
             background: #fff;
+            font-size: 13px;
         }
         .container {
             width: 100%;
-            max-width: 800px;
             margin: 0 auto;
         }
         .header {
             text-align: center;
-            border-bottom: 2px solid #333;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
         }
         .header h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 20px;
             color: #1a56db;
         }
         .header p {
-            margin: 5px 0;
-            font-size: 14px;
+            margin: 2px 0;
+            font-size: 12px;
         }
         .cv-title {
             text-align: center;
             text-transform: uppercase;
             font-weight: bold;
-            font-size: 20px;
-            margin-bottom: 20px;
+            font-size: 16px;
+            margin-bottom: 10px;
             text-decoration: underline;
         }
         .profile-row {
             display: flex;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         .profile-photo {
-            width: 150px;
-            height: 150px;
+            width: 100px;
+            height: 110px;
             border: 1px solid #ddd;
             padding: 2px;
-            margin-right: 30px;
+            margin-right: 20px;
         }
         .profile-photo img {
             width: 100%;
@@ -67,42 +67,43 @@
         .info-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         .info-table th, .info-table td {
             text-align: left;
-            padding: 8px;
+            padding: 5px 8px;
             border-bottom: 1px solid #eee;
         }
         .info-table th {
             width: 35%;
             font-weight: bold;
             color: #555;
-            background: #f9f9f9;
+            background: #fdfdfd;
         }
         .section-title {
-            background: #f0f0f0;
-            padding: 8px 15px;
+            background: #f5f5f5;
+            padding: 4px 12px;
             font-weight: bold;
-            margin: 20px 0 10px 0;
-            border-left: 4px solid #1a56db;
+            margin: 10px 0 5px 0;
+            border-left: 3px solid #1a56db;
+            font-size: 13px;
         }
         .grid-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 10px;
         }
         .footer {
-            margin-top: 50px;
+            margin-top: 30px;
             display: flex;
             justify-content: space-between;
         }
         .signature {
             border-top: 1px solid #333;
-            width: 200px;
+            width: 160px;
             text-align: center;
-            padding-top: 5px;
-            font-size: 14px;
+            padding-top: 3px;
+            font-size: 12px;
         }
         @media print {
             .no-print {
@@ -110,7 +111,19 @@
             }
             body {
                 -webkit-print-color-adjust: exact;
+                margin: 0;
             }
+            .container {
+                width: 100%;
+            }
+        }
+        .name-pair {
+            display: block;
+        }
+        .en-name {
+            font-style: italic;
+            color: #666;
+            font-size: 0.9em;
         }
     </style>
 </head>
@@ -118,15 +131,12 @@
     <div class="container">
         <!-- Institute Header -->
         <div class="header">
-            @if($school->logo)
-                {{-- Assuming logo path is handled correctly in the system --}}
-            @endif
             <h1>{{ $school->name_bn ?: $school->name }}</h1>
             @if($school->name_bn && $school->name)
                 <p><strong>{{ $school->name }}</strong></p>
             @endif
             <p>{{ $school->address_bn ?: $school->address }}</p>
-            <p>Phone: {{ $school->phone }}, Email: {{ $school->email }}</p>
+            <p>Phone: {{ $school->phone }} | Email: {{ $school->email }}</p>
         </div>
 
         <div class="cv-title">Student Profile (CV)</div>
@@ -138,20 +148,19 @@
             <div class="student-basic-info">
                 <table class="info-table">
                     <tr>
-                        <th>শিক্ষার্থীর নাম (বাংলা)</th>
-                        <td>{{ $student->student_name_bn ?: '—' }}</td>
+                        <th>শিক্ষার্থীর নাম</th>
+                        <td>
+                            <span class="name-pair"><strong>{{ $student->student_name_bn }}</strong></span>
+                            @if($student->student_name_en) <span class="en-name">{{ $student->student_name_en }}</span> @endif
+                        </td>
                     </tr>
                     <tr>
-                        <th>Student Name (English)</th>
-                        <td>{{ $student->student_name_en ?: '—' }}</td>
-                    </tr>
-                    <tr>
-                        <th>শিক্ষার্থী আইডি (Student ID)</th>
+                        <th>শিক্ষার্থী আইডি (ID)</th>
                         <td><strong>{{ $student->student_id }}</strong></td>
                     </tr>
                     @if($activeEnrollment)
                     <tr>
-                        <th>বর্তমান শ্রেণি (Current Class)</th>
+                        <th>শ্রেণি ও শাখা (Class/Sec)</th>
                         <td>{{ $activeEnrollment->class?->name }} ({{ $activeEnrollment->section?->name }})</td>
                     </tr>
                     <tr>
@@ -163,78 +172,82 @@
             </div>
         </div>
 
-        <div class="section-title">ব্যক্তিগত তথ্য (Personal Information)</div>
+        <div class="section-title">পিতা ও মাতার তথ্য (Parental Information)</div>
         <div class="grid-row">
             <table class="info-table">
                 <tr>
-                    <th>পিতার নাম (Father's Name)</th>
-                    <td>{{ $student->father_name_bn ?: $student->father_name }}</td>
+                    <th>পিতার নাম (Father)</th>
+                    <td>
+                        <span class="name-pair">{{ $student->father_name_bn }}</span>
+                        @if($student->father_name) <span class="en-name">{{ $student->father_name }}</span> @endif
+                    </td>
                 </tr>
                 <tr>
-                    <th>মাতার নাম (Mother's Name)</th>
-                    <td>{{ $student->mother_name_bn ?: $student->mother_name }}</td>
+                    <th>মাতার নাম (Mother)</th>
+                    <td>
+                        <span class="name-pair">{{ $student->mother_name_bn }}</span>
+                        @if($student->mother_name) <span class="en-name">{{ $student->mother_name }}</span> @endif
+                    </td>
                 </tr>
+            </table>
+            <table class="info-table">
                 <tr>
                     <th>জন্ম তারিখ (DOB)</th>
                     <td>{{ $student->date_of_birth ? $student->date_of_birth->format('d/m/Y') : '—' }}</td>
                 </tr>
                 <tr>
                     <th>লিঙ্গ (Gender)</th>
-                    <td>{{ $student->gender == 'male' ? 'ছেলে (Male)' : 'মেয়ে (Female)' }}</td>
+                    <td>{{ $student->gender == 'male' ? 'ছেলে' : 'মেয়ে' }}</td>
                 </tr>
             </table>
+        </div>
+
+        <div class="section-title">ব্যক্তিগত ও অভিভাবকের তথ্য (Personal & Guardian)</div>
+        <div class="grid-row">
             <table class="info-table">
                 <tr>
                     <th>ধর্ম (Religion)</th>
                     <td>{{ $student->religion ?: '—' }}</td>
                 </tr>
                 <tr>
-                    <th>রক্তের গ্রুপ (Blood Group)</th>
+                    <th>রক্ত (Blood Group)</th>
                     <td>{{ $student->blood_group ?: '—' }}</td>
                 </tr>
+            </table>
+            <table class="info-table">
                 <tr>
-                    <th>ভর্তির তারিখ (Admission Date)</th>
-                    <td>{{ $student->admission_date ? $student->admission_date->format('d/m/Y') : '—' }}</td>
+                    <th>অভিভাবক (Guardian)</th>
+                    <td>
+                        <span class="name-pair">{{ $student->guardian_name_bn ?: '—' }}</span>
+                        @if($student->guardian_name_en) <span class="en-name">{{ $student->guardian_name_en }}</span> @endif
+                        <small>({{ $student->guardian_relation }})</small>
+                    </td>
                 </tr>
                 <tr>
-                    <th>অবস্থা (Status)</th>
-                    <td>{{ ucfirst($student->status) }}</td>
+                    <th>ফোন নম্বর (Phone)</th>
+                    <td>{{ $student->guardian_phone ?: '—' }}</td>
                 </tr>
             </table>
         </div>
 
-        <div class="section-title">অভিভাবকের তথ্য (Guardian Information)</div>
-        <table class="info-table">
-            <tr>
-                <th style="width: 25%">অভিভাবকের নাম</th>
-                <td>{{ $student->guardian_name_bn ?: ($student->guardian_name_en ?: '—') }}</td>
-                <th style="width: 25%">সম্পর্ক (Relation)</th>
-                <td>{{ $student->guardian_relation ?: '—' }}</td>
-            </tr>
-            <tr>
-                <th>ফোন নম্বর (Phone)</th>
-                <td colspan="3">{{ $student->guardian_phone ?: '—' }}</td>
-            </tr>
-        </table>
-
         <div class="section-title">ঠিকানা (Address)</div>
         <div class="grid-row">
-            <div>
+            <div style="font-size: 12px;">
                 <p><strong>বর্তমান ঠিকানা (Present Address):</strong></p>
                 <p>
                     {{ $student->present_village ? 'গ্রাম: '.$student->present_village.', ' : '' }}
-                    {{ $student->present_para_moholla ? 'পাড়া/মহল্লা: '.$student->present_para_moholla.', ' : '' }}
-                    {{ $student->present_post_office ? 'ডাকঘর: '.$student->present_post_office.', ' : '' }}<br>
+                    {{ $student->present_para_moholla ? 'পাড়া: '.$student->present_para_moholla.', ' : '' }}
+                    {{ $student->present_post_office ? 'ডাকঘর: '.$student->present_post_office : '' }}<br>
                     {{ $student->present_upazilla ? 'উপজেলা: '.$student->present_upazilla.', ' : '' }}
                     {{ $student->present_district ? 'জেলা: '.$student->present_district : '' }}
                 </p>
             </div>
-            <div>
+            <div style="font-size: 12px;">
                 <p><strong>স্থায়ী ঠিকানা (Permanent Address):</strong></p>
                 <p>
                     {{ $student->permanent_village ? 'গ্রাম: '.$student->permanent_village.', ' : '' }}
-                    {{ $student->permanent_para_moholla ? 'পাড়া/মহল্লা: '.$student->permanent_para_moholla.', ' : '' }}
-                    {{ $student->permanent_post_office ? 'ডাকঘর: '.$student->permanent_post_office.', ' : '' }}<br>
+                    {{ $student->permanent_para_moholla ? 'পাড়া: '.$student->permanent_para_moholla.', ' : '' }}
+                    {{ $student->permanent_post_office ? 'ডাকঘর: '.$student->permanent_post_office : '' }}<br>
                     {{ $student->permanent_upazilla ? 'উপজেলা: '.$student->permanent_upazilla.', ' : '' }}
                     {{ $student->permanent_district ? 'জেলা: '.$student->permanent_district : '' }}
                 </p>
@@ -242,14 +255,12 @@
         </div>
 
         @if($student->previous_school)
-        <div class="section-title">পূর্ববর্তী বিদ্যালয়ের তথ্য (Previous School Info)</div>
+        <div class="section-title">পূর্ববর্তী বিদ্যালয় (Previous School)</div>
         <table class="info-table">
             <tr>
-                <th>বিদ্যালয়ের নাম</th>
+                <th style="width: 20%">বিদ্যালয়</th>
                 <td>{{ $student->previous_school }}</td>
-            </tr>
-            <tr>
-                <th>পাশের বছর ও ফলাফল</th>
+                <th style="width: 20%">ফলাফল</th>
                 <td>{{ $student->pass_year ?: '—' }} ({{ $student->previous_result ?: '—' }})</td>
             </tr>
         </table>
@@ -257,11 +268,11 @@
 
         <div class="footer">
             <div class="signature">অফিস সহকারী</div>
-            <div class="signature">প্রধান শিক্ষক</div>
+            <div class="signature">অধ্যক্ষ/প্রধান শিক্ষক</div>
         </div>
 
-        <div class="no-print" style="text-align: center; margin-top: 30px;">
-            <button onclick="window.print()" style="padding: 10px 20px; background: #1a56db; color: #fff; border: none; border-radius: 5px; cursor: pointer;">Print This Page</button>
+        <div class="no-print" style="text-align: center; margin-top: 20px;">
+            <button onclick="window.print()" style="padding: 10px 20px; background: #1a56db; color: #fff; border: none; border-radius: 5px; cursor: pointer;">Print Profile</button>
         </div>
     </div>
 </body>
