@@ -213,7 +213,7 @@
             <table class="info-table">
                 <tr>
                     <th>জন্ম তারিখ (DOB)</th>
-                    <td>{{ $student->date_of_birth ? $student->date_of_birth->format('d/m/Y') : '—' }}</td>
+                    <td>{{ $student->date_of_birth ? $student->date_of_birth->format('Y-m-d') : '—' }}</td>
                 </tr>
                 <tr>
                     <th>লিঙ্গ (Gender)</th>

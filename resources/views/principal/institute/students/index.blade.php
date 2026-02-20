@@ -177,6 +177,7 @@
             </button>
             <div class="dropdown-menu dropdown-menu-right">
               <a class="dropdown-item" href="{{ route('principal.institute.students.show',[$school,$stu]) }}"><i class="fas fa-id-card mr-1"></i> প্রোফাইল</a>
+              <a class="dropdown-item" href="{{ route('principal.institute.students.print-cv', [$school, $stu]) }}" target="_blank"><i class="fas fa-print mr-1"></i> প্রোফাইল প্রিন্ট</a>
               <a class="dropdown-item" href="{{ route('principal.institute.students.edit',[$school,$stu]) }}"><i class="fas fa-edit mr-1"></i> সম্পাদনা</a>
               @if($en)
                 <a class="dropdown-item" href="{{ route('principal.institute.enrollments.subjects.edit',[$school,$en]) }}"><i class="fas fa-book mr-1"></i> বিষয় নির্বাচন</a>
