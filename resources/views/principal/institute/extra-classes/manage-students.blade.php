@@ -83,6 +83,16 @@
                                             $isEnrolled = $enrollment !== null;
                                         @endphp
                                         <tr class="student-row">
+                                            @php
+                                                $groupName = $student->currentEnrollment->group->name ?? 'N/A';
+                                                $badgeClass = match(trim($groupName)) {
+                                                    'Science', 'বিজ্ঞান' => 'badge-info',
+                                                    'Humanities', 'Humanity', 'মানবিক' => 'badge-success',
+                                                    'Business Studies', 'Business', 'Commerce', 'ব্যবসায় শিক্ষা' => 'badge-warning',
+                                                    'Vocational', 'ভোকেশনাল' => 'badge-danger',
+                                                    default => 'badge-secondary',
+                                                };
+                                            @endphp
                                             <td>
                                                 <input type="checkbox" 
                                                        class="student-checkbox" 
@@ -93,8 +103,8 @@
                                             <td>{{ $student->currentEnrollment->roll_no ?? 'N/A' }}</td>
                                             <td>{{ $student->student_name_en ?? $student->full_name ?? $student->name }}</td>
                                             <td>
-                                                <span class="badge badge-info">
-                                                    {{ $student->currentEnrollment->group->name ?? 'N/A' }}
+                                                <span class="badge {{ $badgeClass }}">
+                                                    {{ $groupName }}
                                                 </span>
                                             </td>
                                             <td>
