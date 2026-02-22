@@ -118,18 +118,18 @@ class ExtraClassController extends Controller
         if ($extraClass->school_id !== $school->id) abort(404);
 
         // Fetch students from active enrollments for this class/academic year
-        $students = Student::where('school_id', $school->id)
-            ->where('status', 'active')
-            ->whereHas('enrollments', function($q) use ($extraClass, $school) {
-                $q->where('school_id', $school->id)
-                  ->where('class_id', $extraClass->class_id)
-                  ->where('status', 'active');
-                if ($extraClass->academic_year_id) {
-                    $q->where('academic_year_id', $extraClass->academic_year_id);
-                }
+        $students = Student::query()
+            ->select('students.*')
+            ->join('student_enrollments', 'students.id', '=', 'student_enrollments.student_id')
+            ->where('students.school_id', $school->id)
+            ->where('students.status', 'active')
+            ->where('student_enrollments.status', 'active')
+            ->where('student_enrollments.class_id', $extraClass->class_id)
+            ->when($extraClass->academic_year_id, function($q) use ($extraClass) {
+                $q->where('student_enrollments.academic_year_id', $extraClass->academic_year_id);
             })
             ->with(['currentEnrollment.section'])
-            ->orderBy('student_name_bn')
+            ->orderBy('student_enrollments.roll_no')
             ->get();
 
         $enrollments = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
