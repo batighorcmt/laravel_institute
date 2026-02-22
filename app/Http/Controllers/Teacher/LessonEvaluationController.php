@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attendance;
 use App\Models\LessonEvaluation;
 use App\Models\LessonEvaluationRecord;
 use App\Models\RoutineEntry;
@@ -81,6 +82,20 @@ class LessonEvaluationController extends Controller
             }
         }
 
+        // Check if attendance has been taken for this class and section today
+        $attendanceMissing = false;
+        if ($routineEntry) {
+            $attendanceExists = Attendance::where('school_id', $school->id)
+                ->where('class_id', $routineEntry->class_id)
+                ->where('section_id', $routineEntry->section_id)
+                ->whereDate('date', $today)
+                ->exists();
+            
+            if (!$attendanceExists) {
+                $attendanceMissing = true;
+            }
+        }
+
         // Get students enrolled in this class and section
         $students = collect();
         if ($routineEntry) {
@@ -121,7 +136,7 @@ class LessonEvaluationController extends Controller
             $students = $query->orderBy('roll_no')->get();
         }
 
-        return view('teacher.lesson-evaluation.create', compact('school', 'teacher', 'routineEntry', 'students', 'lessonEvaluation', 'existingRecords'));
+        return view('teacher.lesson-evaluation.create', compact('school', 'teacher', 'routineEntry', 'students', 'lessonEvaluation', 'existingRecords', 'attendanceMissing'));
     }
 
     public function store(School $school, Request $request)

@@ -19,7 +19,17 @@
     </a>
 </div>
 
-@if($students->count() > 0)
+@if(isset($attendanceMissing) && $attendanceMissing)
+    <div class="alert alert-warning text-center">
+        <h4><i class="fas fa-exclamation-triangle mr-2"></i>এটেনডেন্স বাকি</h4>
+        <p class="mb-0">এই শাখার হাজিরা গ্রহণ করা না হলে লেসন ইভ্যালুয়েশন দেওয়া যাবে না। আগে হাজিরা সম্পন্ন করুন।</p>
+        <div class="mt-3">
+            <a href="{{ route('teacher.institute.attendance.index', $school) }}" class="btn btn-primary">
+                <i class="fas fa-clipboard-list mr-1"></i> হাজিরা দিতে যান
+            </a>
+        </div>
+    </div>
+@elseif($students->count() > 0)
     @if($lessonEvaluation)
         <div class="alert alert-info">
             <i class="fas fa-info-circle"></i> You already evaluated this class. You can update below.
