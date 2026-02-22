@@ -10,6 +10,7 @@ use App\Http\Resources\LessonEvaluationResource;
 use Illuminate\Support\Carbon;
 use App\Models\RoutineEntry;
 use App\Models\Attendance;
+use App\Models\Teacher;
 use App\Models\StudentEnrollment;
 use Illuminate\Support\Facades\DB;
 
@@ -19,17 +20,25 @@ class LessonEvaluationController extends Controller
     {
         $user = $request->user();
         $query = LessonEvaluation::query();
-        $schoolId = $request->attributes->get('current_school_id');
+        $schoolId = $request->attributes->get('current_school_id')
+            ?? $user->primarySchool()?->id 
+            ?? $user->firstTeacherSchoolId();
+
         if ($schoolId) {
             $query->forSchool($schoolId);
         }
+
         // Teacher scope
-        if ($user->isTeacher($schoolId) && $user->teacher) {
-            $query->forTeacher($user->teacher->id);
+        if ($schoolId && $user->isTeacher($schoolId)) {
+            $teacher = Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->where('status', 'active')->first();
+            if ($teacher) {
+                $query->forTeacher($teacher->id);
+            }
         }
+
         // Filters
         if ($request->filled('date')) {
-            $query->forDate($request->get('date'));
+            $query->where('evaluation_date', $request->get('date'));
         }
         if ($request->filled('class_id')) {
             $query->where('class_id', $request->get('class_id'));
@@ -73,7 +82,7 @@ class LessonEvaluationController extends Controller
             'statuses.*' => ['required','string','in:completed,partial,not_done,absent'],
         ]);
 
-        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
+        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }
@@ -85,10 +94,9 @@ class LessonEvaluationController extends Controller
         }
 
         // Attendance check
-        $attendanceExists = Attendance::where('school_id', $schoolId)
-            ->where('class_id', $validated['class_id'])
+        $attendanceExists = Attendance::where('class_id', $validated['class_id'])
             ->where('section_id', $validated['section_id'] ?? null)
-            ->whereDate('date', $validated['evaluation_date'])
+            ->where('date', $validated['evaluation_date'])
             ->exists();
         
         if (!$attendanceExists) {
@@ -168,7 +176,7 @@ class LessonEvaluationController extends Controller
     public function todayRoutine(Request $request)
     {
         $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id');
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->primarySchool()?->id;
         if (! $schoolId) {
             $schoolId = $user->firstTeacherSchoolId();
         }
@@ -176,7 +184,7 @@ class LessonEvaluationController extends Controller
             return response()->json(['message' => 'শুধুমাত্র শিক্ষক'], 403);
         }
 
-        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
+        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }
@@ -228,7 +236,7 @@ class LessonEvaluationController extends Controller
         if (! $schoolId || ! $user->isTeacher($schoolId)) {
             return response()->json(['message' => 'শুধুমাত্র শিক্ষক'], 403);
         }
-        $teacher = \App\Models\Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
+        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
         if (! $teacher) {
             return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
         }
@@ -246,22 +254,44 @@ class LessonEvaluationController extends Controller
         $entry = RoutineEntry::with(['class','section','subject'])
             ->where('school_id', $schoolId)
             ->where('teacher_id', $teacherId)
-            ->findOrFail($routineEntryId);
+            ->where('id', $routineEntryId)
+            ->first();
+
+        if (!$entry) {
+            return response()->json(['message' => 'রুটিন এন্ট্রি পাওয়া যায়নি বা আপনার জন্য অনুমোদিত নয়'], 404);
+        }
 
         // Attendance check
-        $attendanceExists = Attendance::where('school_id', $schoolId)
-            ->where('class_id', $entry->class_id)
+        $attendanceExists = Attendance::where('class_id', $entry->class_id)
             ->where('section_id', $entry->section_id)
-            ->whereDate('date', $date->toDateString())
+            ->where('date', $date->toDateString())
             ->exists();
         
         if (!$attendanceExists) {
-            return response()->json(['message' => 'এই শাখার হাজিরা গ্রহণ করা না হলে লেসন ইভ্যালুয়েশন দেওয়া যাবে না। আগে হাজিরা সম্পন্ন করুন।'], 422);
+            return response()->json([
+                'date' => $date->toDateString(),
+                'routine_entry' => [
+                    'id' => $entry->id,
+                    'class_id' => $entry->class_id,
+                    'section_id' => $entry->section_id,
+                    'subject_id' => $entry->subject_id,
+                    'class_name' => $entry->class?->name,
+                    'section_name' => $entry->section?->name,
+                    'subject_name' => $entry->subject?->name,
+                    'period_number' => $entry->period_number,
+                ],
+                'students' => [],
+                'allowed_statuses' => ['completed','partial','not_done','absent'],
+                'stats' => ['total' => 0, 'completed' => 0, 'partial' => 0, 'not_done' => 0, 'absent' => 0],
+                'message' => 'এই শাখার হাজিরা গ্রহণ করা না হলে লেসন ইভ্যালুয়েশন দেওয়া যাবে না। আগে হাজিরা সম্পন্ন করুন।',
+                'attendance_missing' => true,
+                'read_only' => ! $isToday,
+            ], 200);
         }
 
         $evaluation = LessonEvaluation::forSchool($schoolId)
             ->forTeacher($teacherId)
-            ->forDate($date->toDateString())
+            ->where('evaluation_date', $date->toDateString())
             ->where('routine_entry_id', $entry->id)
             ->with('records')
             ->first();
@@ -301,6 +331,7 @@ class LessonEvaluationController extends Controller
                 'id' => $st?->id,
                 'name' => $st?->full_name,
                 'roll' => $en->roll_no,
+                'photo_url' => $st?->photo_url,
                 'status' => $existing[$st?->id] ?? null,
             ];
         })->values();

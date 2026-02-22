@@ -73,7 +73,7 @@ class LessonEvaluation extends Model
 
     public function scopeForDate($query, $date)
     {
-        return $query->whereDate('evaluation_date', $date);
+        return $query->where('evaluation_date', $date);
     }
 
     // Get completion statistics

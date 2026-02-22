@@ -87,7 +87,7 @@ class LessonEvaluationController extends Controller
         if ($routineEntry) {
             $attendanceExists = Attendance::where('class_id', $routineEntry->class_id)
                 ->where('section_id', $routineEntry->section_id)
-                ->whereDate('date', $today)
+                ->where('date', $today->toDateString())
                 ->exists();
             
             if (!$attendanceExists) {
