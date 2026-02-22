@@ -85,8 +85,7 @@ class LessonEvaluationController extends Controller
         // Check if attendance has been taken for this class and section today
         $attendanceMissing = false;
         if ($routineEntry) {
-            $attendanceExists = Attendance::where('school_id', $school->id)
-                ->where('class_id', $routineEntry->class_id)
+            $attendanceExists = Attendance::where('class_id', $routineEntry->class_id)
                 ->where('section_id', $routineEntry->section_id)
                 ->whereDate('date', $today)
                 ->exists();
