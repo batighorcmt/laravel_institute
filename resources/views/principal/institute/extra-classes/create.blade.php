@@ -226,22 +226,32 @@ $(document).ready(function() {
                     });
                 }
             });
+            console.log('Select2 initialized');
+        } else {
+            console.log('Select2 not yet available');
         }
     }
 
     // Initial init
     initSelect2();
-    // Fallback in case Select2 loads late
+    // Fallback in case Select2 loads late (CDN fallback)
     setTimeout(initSelect2, 1000);
+    setTimeout(initSelect2, 3000);
 
     $('#class_id').on('change', function() {
         var classId = $(this).val();
+        console.log('Class changed to:', classId);
+        
         var sectionSelect = $('#section_id');
         var subjectSelect = $('#subject_id');
         
         // Clear existing options
         sectionSelect.empty().append('<option value="">Select Section</option>');
         subjectSelect.empty().append('<option value="">Select Subject</option>');
+        
+        // Trigger Select2 to show updated empty state
+        sectionSelect.trigger('change');
+        subjectSelect.trigger('change');
         
         if (classId) {
             // Fetch Sections
@@ -250,10 +260,15 @@ $(document).ready(function() {
                 type: 'GET',
                 data: { class_id: classId },
                 success: function(data) {
+                    console.log('Sections received:', data);
                     $.each(data, function(index, section) {
                         sectionSelect.append('<option value="' + section.id + '">' + section.name + '</option>');
                     });
-                    sectionSelect.trigger('change.select2');
+                    sectionSelect.trigger('change');
+                },
+                error: function(xhr, status, error) {
+                    console.error('Failed to fetch sections:', error);
+                    alert('Error: Failed to fetch sections. Please refresh the page.');
                 }
             });
 
@@ -263,10 +278,15 @@ $(document).ready(function() {
                 type: 'GET',
                 data: { class_id: classId },
                 success: function(data) {
+                    console.log('Subjects received:', data);
                     $.each(data, function(index, subject) {
                         subjectSelect.append('<option value="' + subject.id + '">' + subject.name + '</option>');
                     });
-                    subjectSelect.trigger('change.select2');
+                    subjectSelect.trigger('change');
+                },
+                error: function(xhr, status, error) {
+                    console.error('Failed to fetch subjects:', error);
+                    alert('Error: Failed to fetch subjects. Please refresh the page.');
                 }
             });
         }
@@ -275,6 +295,7 @@ $(document).ready(function() {
     // Handle initial class selection (for old input or pre-selected)
     var initialClass = $('#class_id').val();
     if (initialClass && $('#section_id option').length <= 1) {
+         console.log('Triggering initial class change');
          $('#class_id').trigger('change');
     }
 });

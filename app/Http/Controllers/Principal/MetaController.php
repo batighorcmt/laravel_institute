@@ -40,6 +40,9 @@ class MetaController extends Controller
             ->where('class_id', $classId)
             ->with('subject')
             ->get()
+            ->filter(function($mapping) {
+                return $mapping->subject !== null;
+            })
             ->map(function($mapping) {
                 return [
                     'id' => $mapping->subject->id,
