@@ -220,23 +220,36 @@
         </div>
     </div>
 </section>
+@endsection
+
 @section('scripts')
 <script>
 $(document).ready(function() {
-    // Initialize Select2
-    $('.select2').select2({
-        theme: 'bootstrap4',
-        width: '100%'
-    });
+    function initSelect2() {
+        if ($.fn.select2) {
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+        }
+    }
+
+    // Initial init
+    initSelect2();
+    // Fallback in case Select2 loads late
+    setTimeout(initSelect2, 1000);
 
     $('#class_id').on('change', function() {
         var classId = $(this).val();
         var sectionSelect = $('#section_id');
+        var subjectSelect = $('#subject_id');
         
         // Clear existing options
         sectionSelect.empty().append('<option value="">Select Section</option>');
+        subjectSelect.empty().append('<option value="">Select Subject</option>');
         
         if (classId) {
+            // Fetch Sections
             $.ajax({
                 url: "{{ route('principal.institute.meta.sections', $school) }}",
                 type: 'GET',
@@ -245,10 +258,20 @@ $(document).ready(function() {
                     $.each(data, function(index, section) {
                         sectionSelect.append('<option value="' + section.id + '">' + section.name + '</option>');
                     });
-                    sectionSelect.trigger('change');
-                },
-                error: function() {
-                    console.error('Failed to fetch sections');
+                    sectionSelect.trigger('change.select2');
+                }
+            });
+
+            // Fetch Subjects
+            $.ajax({
+                url: "{{ route('principal.institute.meta.subjects', $school) }}",
+                type: 'GET',
+                data: { class_id: classId },
+                success: function(data) {
+                    $.each(data, function(index, subject) {
+                        subjectSelect.append('<option value="' + subject.id + '">' + subject.name + '</option>');
+                    });
+                    subjectSelect.trigger('change.select2');
                 }
             });
         }

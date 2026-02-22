@@ -31,6 +31,27 @@ class MetaController extends Controller
         return response()->json($sections);
     }
 
+    public function subjects(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+        $classId = (int) $request->query('class_id');
+        
+        $subjects = \App\Models\ClassSubject::where('school_id', $school->id)
+            ->where('class_id', $classId)
+            ->with('subject')
+            ->get()
+            ->map(function($mapping) {
+                return [
+                    'id' => $mapping->subject->id,
+                    'name' => $mapping->subject->name
+                ];
+            })
+            ->unique('id')
+            ->values();
+            
+        return response()->json($subjects);
+    }
+
     public function groups(School $school, Request $request)
     {
         $this->authorizePrincipal($school);
