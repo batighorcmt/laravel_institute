@@ -224,9 +224,23 @@
 
 @section('scripts')
 <script>
-$(document).ready(function() {
-    function initSelect2() {
-        if ($.fn.select2) {
+(function() {
+    var checkCount = 0;
+    function startApp() {
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
+            setupPage(window.jQuery);
+        } else if (checkCount < 50) {
+            checkCount++;
+            setTimeout(startApp, 100);
+        } else {
+            console.error('Dependencies (jQuery/Select2) failed to load after 5 seconds.');
+        }
+    }
+
+    function setupPage($) {
+        console.log('Dependencies loaded. Initializing page scripts.');
+        
+        function initSelect2() {
             $('.select2').each(function() {
                 if (!$(this).hasClass('select2-hidden-accessible')) {
                     $(this).select2({
@@ -235,76 +249,62 @@ $(document).ready(function() {
                     });
                 }
             });
-            console.log('Select2 initialized');
-        } else {
-            console.log('Select2 not yet available');
+        }
+
+        initSelect2();
+
+        $('#class_id').on('change', function() {
+            var classId = $(this).val();
+            var sectionSelect = $('#section_id');
+            var subjectSelect = $('#subject_id');
+            
+            sectionSelect.empty().append('<option value="">Select Section</option>');
+            subjectSelect.empty().append('<option value="">Select Subject</option>');
+            
+            sectionSelect.trigger('change');
+            subjectSelect.trigger('change');
+            
+            if (classId) {
+                $.ajax({
+                    url: "{{ route('principal.institute.meta.sections', $school) }}",
+                    type: 'GET',
+                    data: { class_id: classId },
+                    success: function(data) {
+                        $.each(data, function(index, section) {
+                            sectionSelect.append('<option value="' + section.id + '">' + section.name + '</option>');
+                        });
+                        sectionSelect.trigger('change');
+                    },
+                    error: function(xhr) {
+                        console.error('Failed to fetch sections:', xhr);
+                    }
+                });
+
+                $.ajax({
+                    url: "{{ route('principal.institute.meta.subjects', $school) }}",
+                    type: 'GET',
+                    data: { class_id: classId },
+                    success: function(data) {
+                        $.each(data, function(index, subject) {
+                            subjectSelect.append('<option value="' + subject.id + '">' + subject.name + '</option>');
+                        });
+                        subjectSelect.trigger('change');
+                    },
+                    error: function(xhr) {
+                        console.error('Failed to fetch subjects:', xhr);
+                    }
+                });
+            }
+        });
+
+        // Trigger initial state if pre-selected
+        var initialClass = $('#class_id').val();
+        if (initialClass && $('#section_id option').length <= 1) {
+             $('#class_id').trigger('change');
         }
     }
 
-    // Initial init
-    initSelect2();
-    // Fallback in case Select2 loads late
-    setTimeout(initSelect2, 1000);
-    setTimeout(initSelect2, 3000);
-
-    $('#class_id').on('change', function() {
-        var classId = $(this).val();
-        console.log('Class changed to:', classId);
-        
-        var sectionSelect = $('#section_id');
-        var subjectSelect = $('#subject_id');
-        
-        // Clear existing options
-        sectionSelect.empty().append('<option value="">Select Section</option>');
-        subjectSelect.empty().append('<option value="">Select Subject</option>');
-        
-        // Trigger Select2 to show updated empty state
-        sectionSelect.trigger('change');
-        subjectSelect.trigger('change');
-        
-        if (classId) {
-            // Fetch Sections
-            $.ajax({
-                url: "{{ route('principal.institute.meta.sections', $school) }}",
-                type: 'GET',
-                data: { class_id: classId },
-                success: function(data) {
-                    console.log('Sections received:', data);
-                    $.each(data, function(index, section) {
-                        sectionSelect.append('<option value="' + section.id + '">' + section.name + '</option>');
-                    });
-                    sectionSelect.trigger('change');
-                },
-                error: function(xhr, status, error) {
-                    console.error('Failed to fetch sections:', error);
-                }
-            });
-
-            // Fetch Subjects
-            $.ajax({
-                url: "{{ route('principal.institute.meta.subjects', $school) }}",
-                type: 'GET',
-                data: { class_id: classId },
-                success: function(data) {
-                    console.log('Subjects received:', data);
-                    $.each(data, function(index, subject) {
-                        subjectSelect.append('<option value="' + subject.id + '">' + subject.name + '</option>');
-                    });
-                    subjectSelect.trigger('change');
-                },
-                error: function(xhr, status, error) {
-                    console.error('Failed to fetch subjects:', error);
-                }
-            });
-        }
-    });
-
-    // Handle initial state if pre-selected
-    var initialClass = $('#class_id').val();
-    if (initialClass && $('#section_id option').length <= 1) {
-         console.log('Triggering initial class change');
-         $('#class_id').trigger('change');
-    }
-});
+    startApp();
+})();
 </script>
 @endsection
