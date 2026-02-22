@@ -396,6 +396,9 @@ class StudentController extends Controller
             }])
             ->where('school_id', $school->id)
             ->whereDate('evaluation_date', $date)
+            ->whereHas('records', function($q) use ($student) {
+                $q->where('student_id', $student->id);
+            })
             ->get();
 
         $data = $evaluations->map(function($ev) {
