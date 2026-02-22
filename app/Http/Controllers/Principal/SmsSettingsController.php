@@ -51,9 +51,9 @@ class SmsSettingsController extends Controller
         ];
         $lessonEvaluation = [
             'sms_lesson_evaluation_completed' => $settings['sms_lesson_evaluation_completed'] ?? '0',
-            'sms_lesson_evaluation_partial' => $settings['sms_lesson_evaluation_completed'] ?? '0',
-            'sms_lesson_evaluation_not_done' => $settings['sms_lesson_evaluation_completed'] ?? '0',
-            'sms_lesson_evaluation_absent' => $settings['sms_lesson_evaluation_completed'] ?? '0',
+            'sms_lesson_evaluation_partial' => $settings['sms_lesson_evaluation_partial'] ?? '0',
+            'sms_lesson_evaluation_not_done' => $settings['sms_lesson_evaluation_not_done'] ?? '0',
+            'sms_lesson_evaluation_absent' => $settings['sms_lesson_evaluation_absent'] ?? '0',
         ];
 
         $templates = SmsTemplate::forSchool($school->id)->orderByDesc('id')->get();
