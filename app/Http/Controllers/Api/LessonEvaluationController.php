@@ -79,6 +79,7 @@ class LessonEvaluationController extends Controller
         }
 
         // Today-only enforcement
+        $today = Carbon::today()->toDateString();
         if ($validated['evaluation_date'] !== $today) {
             return response()->json(['message' => 'শুধু আজকের তারিখে মূল্যায়ন রেকর্ড করা যাবে'], 422);
         }
@@ -242,6 +243,11 @@ class LessonEvaluationController extends Controller
         $isToday = $date->isSameDay($today);
         if (! $routineEntryId) return response()->json(['message' => 'রুটিন নির্বাচন করুন'], 422);
 
+        $entry = RoutineEntry::with(['class','section','subject'])
+            ->where('school_id', $schoolId)
+            ->where('teacher_id', $teacherId)
+            ->findOrFail($routineEntryId);
+
         // Attendance check
         $attendanceExists = Attendance::where('school_id', $schoolId)
             ->where('class_id', $entry->class_id)
@@ -252,11 +258,6 @@ class LessonEvaluationController extends Controller
         if (!$attendanceExists) {
             return response()->json(['message' => 'এই শাখার হাজিরা গ্রহণ করা না হলে লেসন ইভ্যালুয়েশন দেওয়া যাবে না। আগে হাজিরা সম্পন্ন করুন।'], 422);
         }
-
-        $entry = RoutineEntry::with(['class','section','subject'])
-            ->where('school_id', $schoolId)
-            ->where('teacher_id', $teacherId)
-            ->findOrFail($routineEntryId);
 
         $evaluation = LessonEvaluation::forSchool($schoolId)
             ->forTeacher($teacherId)
