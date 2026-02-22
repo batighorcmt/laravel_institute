@@ -128,7 +128,7 @@ class ExtraClassController extends Controller
             ->when($extraClass->academic_year_id, function($q) use ($extraClass) {
                 $q->where('student_enrollments.academic_year_id', $extraClass->academic_year_id);
             })
-            ->with(['currentEnrollment.section'])
+            ->with(['currentEnrollment.section', 'currentEnrollment.group'])
             ->orderBy('student_enrollments.roll_no')
             ->get();
 

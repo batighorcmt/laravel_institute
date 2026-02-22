@@ -71,6 +71,7 @@
                                         </th>
                                         <th>Roll</th>
                                         <th>Student Name (EN)</th>
+                                        <th>Group</th>
                                         <th>Regular Section</th>
                                         <th>Assign to Section <span class="text-danger">*</span></th>
                                     </tr>
@@ -91,6 +92,11 @@
                                             </td>
                                             <td>{{ $student->currentEnrollment->roll_no ?? 'N/A' }}</td>
                                             <td>{{ $student->student_name_en ?? $student->full_name ?? $student->name }}</td>
+                                            <td>
+                                                <span class="badge badge-info">
+                                                    {{ $student->currentEnrollment->group->name ?? 'N/A' }}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <span class="badge badge-secondary">
                                                     {{ $student->currentEnrollment->section->name ?? 'N/A' }}

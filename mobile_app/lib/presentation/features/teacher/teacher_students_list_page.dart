@@ -1051,9 +1051,9 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
 
                   const SizedBox(height: 12),
 
-                  // Guardian Information - mini cards within
+                  // Family Information
                   _sectionCard(
-                    title: 'Guardian Information',
+                    title: 'Family Information',
                     gradient: const LinearGradient(
                       colors: [Color(0xFF56ab2f), Color(0xFFa8e063)],
                     ),
@@ -1089,38 +1089,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       ),
                       _infoRow(
                         icon: Icons.call,
-                        label: 'Father Phone',
-                        value: fatherPhone,
-                        onTap: fatherPhone.trim().isEmpty
-                            ? null
-                            : () async {
-                                final uri = Uri(
-                                  scheme: 'tel',
-                                  path: fatherPhone,
-                                );
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri);
-                                }
-                              },
-                      ),
-                      _infoRow(
-                        icon: Icons.call,
-                        label: 'Mother Phone',
-                        value: motherPhone,
-                        onTap: motherPhone.trim().isEmpty
-                            ? null
-                            : () async {
-                                final uri = Uri(
-                                  scheme: 'tel',
-                                  path: motherPhone,
-                                );
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri);
-                                }
-                              },
-                      ),
-                      _infoRow(
-                        icon: Icons.call,
                         label: 'Guardian Phone',
                         value: guardianPhone,
                         onTap: guardianPhone.trim().isEmpty
@@ -1145,39 +1113,101 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
 
                   const SizedBox(height: 12),
 
-                  // Contact Information
+                  // Address Information - New detailed card
                   _sectionCard(
-                    title: 'Contact Information',
+                    title: 'Address Information',
                     gradient: const LinearGradient(
                       colors: [Color(0xFF36d1dc), Color(0xFF5b86e5)],
                     ),
                     children: [
-                      _infoRow(
-                        icon: Icons.call,
-                        label: 'Phone',
-                        value: guardianPhone,
-                        onTap: guardianPhone.trim().isEmpty
-                            ? null
-                            : () async {
-                                final uri = Uri(
-                                  scheme: 'tel',
-                                  path: guardianPhone,
-                                );
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri);
-                                }
-                              },
-                      ),
-                      _infoRow(icon: Icons.email, label: 'Email', value: email),
-                      _infoRow(
-                        icon: Icons.place,
-                        label: 'Present Address',
-                        value: presentAddress,
+                      // Present Address
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.place, size: 20, color: Colors.blue.shade700),
+                            const SizedBox(width: 8),
+                            Text(
+                              'বর্তমান ঠিকানা',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       _infoRow(
-                        icon: Icons.home,
-                        label: 'Permanent Address',
-                        value: permanentAddress,
+                        icon: Icons.location_city,
+                        label: 'গ্রাম',
+                        value: _pick(d, const ['present_village']),
+                      ),
+                      _infoRow(
+                        icon: Icons.home_work,
+                        label: 'পাড়া/মহল্লা',
+                        value: _pick(d, const ['present_para_moholla']),
+                      ),
+                      _infoRow(
+                        icon: Icons.local_post_office,
+                        label: 'ডাকঘর',
+                        value: _pick(d, const ['present_post_office']),
+                      ),
+                      _infoRow(
+                        icon: Icons.map,
+                        label: 'উপজেলা',
+                        value: _pick(d, const ['present_upazilla']),
+                      ),
+                      _infoRow(
+                        icon: Icons.location_on,
+                        label: 'জেলা',
+                        value: _pick(d, const ['present_district']),
+                      ),
+                      
+                      const Divider(height: 24),
+                      
+                      // Permanent Address
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.home, size: 20, color: Colors.green.shade700),
+                            const SizedBox(width: 8),
+                            Text(
+                              'স্থায়ী ঠিকানা',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 15,
+                                color: Colors.green.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _infoRow(
+                        icon: Icons.location_city,
+                        label: 'গ্রাম',
+                        value: _pick(d, const ['permanent_village']),
+                      ),
+                      _infoRow(
+                        icon: Icons.home_work,
+                        label: 'পাড়া/মহল্লা',
+                        value: _pick(d, const ['permanent_para_moholla']),
+                      ),
+                      _infoRow(
+                        icon: Icons.local_post_office,
+                        label: 'ডাকঘর',
+                        value: _pick(d, const ['permanent_post_office']),
+                      ),
+                      _infoRow(
+                        icon: Icons.map,
+                        label: 'উপজেলা',
+                        value: _pick(d, const ['permanent_upazilla']),
+                      ),
+                      _infoRow(
+                        icon: Icons.location_on,
+                        label: 'জেলা',
+                        value: _pick(d, const ['permanent_district']),
                       ),
                     ],
                   ),
