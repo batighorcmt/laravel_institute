@@ -31,20 +31,14 @@ class ExtraClassController extends Controller
     {
         $currentYear = AcademicYear::forSchool($school->id)->current()->first();
         $classes = SchoolClass::where('school_id', $school->id)->orderBy('numeric_value')->get();
-        $sections = collect(); // Initial empty sections for create
+        $sections = Section::where('school_id', $school->id)->orderBy('name')->get();
         $subjects = Subject::where('school_id', $school->id)->orderBy('name')->get();
         $teachers = User::whereHas('schoolRoles', function($q) use ($school) {
             $q->where('school_id', $school->id)
               ->whereHas('role', function($q2) {
                   $q2->where('name', 'Teacher');
               });
-        })
-        ->leftJoin('teachers', 'users.id', '=', 'teachers.user_id')
-        ->where('teachers.school_id', $school->id)
-        ->orderByRaw('CAST(teachers.serial_number AS UNSIGNED) ASC')
-        ->orderBy('users.name')
-        ->select('users.*')
-        ->get();
+        })->orderBy('name')->get();
 
         return view('principal.institute.extra-classes.create', compact('school', 'currentYear', 'classes', 'sections', 'subjects', 'teachers'));
     }
@@ -76,23 +70,14 @@ class ExtraClassController extends Controller
 
         $academicYears = AcademicYear::forSchool($school->id)->orderBy('start_date', 'desc')->get();
         $classes = SchoolClass::where('school_id', $school->id)->orderBy('numeric_value')->get();
-        $sections = Section::where('school_id', $school->id)
-            ->where('class_id', $extraClass->class_id)
-            ->orderBy('name')
-            ->get();
+        $sections = Section::where('school_id', $school->id)->orderBy('name')->get();
         $subjects = Subject::where('school_id', $school->id)->orderBy('name')->get();
         $teachers = User::whereHas('schoolRoles', function($q) use ($school) {
             $q->where('school_id', $school->id)
               ->whereHas('role', function($q2) {
                   $q2->where('name', 'Teacher');
               });
-        })
-        ->leftJoin('teachers', 'users.id', '=', 'teachers.user_id')
-        ->where('teachers.school_id', $school->id)
-        ->orderByRaw('CAST(teachers.serial_number AS UNSIGNED) ASC')
-        ->orderBy('users.name')
-        ->select('users.*')
-        ->get();
+        })->orderBy('name')->get();
 
         return view('principal.institute.extra-classes.edit', compact('school', 'extraClass', 'academicYears', 'classes', 'sections', 'subjects', 'teachers'));
     }
@@ -132,12 +117,6 @@ class ExtraClassController extends Controller
     {
         if ($extraClass->school_id !== $school->id) abort(404);
 
-        $academicYearId = $extraClass->academic_year_id;
-        if (!$academicYearId) {
-            $currentYear = AcademicYear::forSchool($school->id)->current()->first();
-            $academicYearId = $currentYear ? $currentYear->id : null;
-        }
-
         // Fetch students from active enrollments for this class/academic year
         $students = Student::query()
             ->select('students.*')
@@ -146,8 +125,8 @@ class ExtraClassController extends Controller
             ->where('students.status', 'active')
             ->where('student_enrollments.status', 'active')
             ->where('student_enrollments.class_id', $extraClass->class_id)
-            ->when($academicYearId, function($q) use ($academicYearId) {
-                $q->where('student_enrollments.academic_year_id', $academicYearId);
+            ->when($extraClass->academic_year_id, function($q) use ($extraClass) {
+                $q->where('student_enrollments.academic_year_id', $extraClass->academic_year_id);
             })
             ->with(['currentEnrollment.section'])
             ->orderBy('student_enrollments.roll_no')

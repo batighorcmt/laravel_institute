@@ -457,7 +457,6 @@ Route::middleware(['auth'])->group(function () {
             Route::post('enrollments/{enrollment}/subjects', [\App\Http\Controllers\Principal\StudentSubjectController::class,'update'])->name('enrollments.subjects.update');
             // Meta endpoints for dynamic dropdowns
             Route::get('meta/sections', [\App\Http\Controllers\Principal\MetaController::class,'sections'])->name('meta.sections');
-            Route::get('meta/subjects', [\App\Http\Controllers\Principal\MetaController::class,'subjects'])->name('meta.subjects');
             Route::get('meta/students', [\App\Http\Controllers\Principal\MetaController::class,'students'])->name('meta.students');
             Route::get('meta/groups', [\App\Http\Controllers\Principal\MetaController::class,'groups'])->name('meta.groups');
             Route::get('meta/next-roll', [\App\Http\Controllers\Principal\MetaController::class,'nextRoll'])->name('meta.next-roll');

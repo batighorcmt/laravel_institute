@@ -60,7 +60,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="academic_year_id">Academic Year</label>
-                                <select class="form-control select2 @error('academic_year_id') is-invalid @enderror" 
+                                <select class="form-control @error('academic_year_id') is-invalid @enderror" 
                                         id="academic_year_id" 
                                         name="academic_year_id">
                                     <option value="">Select Academic Year</option>
@@ -79,7 +79,7 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="class_id">Class <span class="text-danger">*</span></label>
-                                <select class="form-control select2 @error('class_id') is-invalid @enderror" 
+                                <select class="form-control @error('class_id') is-invalid @enderror" 
                                         id="class_id" 
                                         name="class_id" 
                                         required>
@@ -99,7 +99,7 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="section_id">Default Section <span class="text-danger">*</span></label>
-                                <select class="form-control select2 @error('section_id') is-invalid @enderror" 
+                                <select class="form-control @error('section_id') is-invalid @enderror" 
                                         id="section_id" 
                                         name="section_id" 
                                         required>
@@ -115,7 +115,7 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="subject_id">Subject</label>
-                                <select class="form-control select2 @error('subject_id') is-invalid @enderror" 
+                                <select class="form-control @error('subject_id') is-invalid @enderror" 
                                         id="subject_id" 
                                         name="subject_id">
                                     <option value="">Select Subject</option>
@@ -136,7 +136,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="teacher_id">Teacher</label>
-                                <select class="form-control select2 @error('teacher_id') is-invalid @enderror" 
+                                <select class="form-control @error('teacher_id') is-invalid @enderror" 
                                         id="teacher_id" 
                                         name="teacher_id">
                                     <option value="">Select Teacher</option>
@@ -172,7 +172,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="status">Status <span class="text-danger">*</span></label>
-                                <select class="form-control select2 @error('status') is-invalid @enderror" 
+                                <select class="form-control @error('status') is-invalid @enderror" 
                                         id="status" 
                                         name="status" 
                                         required>
@@ -213,89 +213,59 @@
 </section>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
-(function() {
-    var checkCount = 0;
-    function startApp() {
-        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
-            setupPage(window.jQuery);
-        } else if (checkCount < 50) {
-            checkCount++;
-            setTimeout(startApp, 100);
-        } else {
-            console.error('Dependencies (jQuery/Select2) failed to load after 5 seconds.');
-        }
-    }
+(function(){
+    function initDependentSections(){
+        const classSelect = document.getElementById('class_id');
+        const sectionSelect = document.getElementById('section_id');
+        if (!classSelect || !sectionSelect) return;
 
-    function setupPage($) {
-        console.log('Dependencies loaded. Initializing page scripts.');
-        
-        function initSelect2() {
-            $('.select2').each(function() {
-                if (!$(this).hasClass('select2-hidden-accessible')) {
-                    $(this).select2({
-                        theme: 'bootstrap4',
-                        width: '100%'
-                    });
-                }
-            });
+        const metaUrl = "{{ route('principal.institute.meta.sections', $school) }}";
+        const oldSection = "{{ old('section_id') }}";
+
+        function clearSections(){
+            sectionSelect.innerHTML = '<option value="">Select Section</option>';
         }
 
-        initSelect2();
-
-        $('#class_id').on('change', function() {
-            var classId = $(this).val();
-            var sectionSelect = $('#section_id');
-            var subjectSelect = $('#subject_id');
-            
-            sectionSelect.empty().append('<option value="">Select Section</option>');
-            subjectSelect.empty().append('<option value="">Select Subject</option>');
-            
-            sectionSelect.trigger('change');
-            subjectSelect.trigger('change');
-            
-            if (classId) {
-                $.ajax({
-                    url: "{{ route('principal.institute.meta.sections', $school) }}",
-                    type: 'GET',
-                    data: { class_id: classId },
-                    success: function(data) {
-                        $.each(data, function(index, section) {
-                            sectionSelect.append('<option value="' + section.id + '">' + section.name + '</option>');
-                        });
-                        sectionSelect.trigger('change');
-                    },
-                    error: function(xhr) {
-                        console.error('Failed to fetch sections:', xhr);
-                    }
+        async function loadSectionsFor(classId, preselect){
+            if (!classId){ clearSections(); return; }
+            try{
+                const res = await fetch(metaUrl + '?class_id=' + encodeURIComponent(classId), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
-
-                $.ajax({
-                    url: "{{ route('principal.institute.meta.subjects', $school) }}",
-                    type: 'GET',
-                    data: { class_id: classId },
-                    success: function(data) {
-                        $.each(data, function(index, subject) {
-                            subjectSelect.append('<option value="' + subject.id + '">' + subject.name + '</option>');
-                        });
-                        subjectSelect.trigger('change');
-                    },
-                    error: function(xhr) {
-                        console.error('Failed to fetch subjects:', xhr);
-                    }
+                const data = await res.json();
+                clearSections();
+                data.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    if (preselect && String(preselect) === String(s.id)) opt.selected = true;
+                    sectionSelect.appendChild(opt);
                 });
+            }catch(e){
+                clearSections();
             }
+        }
+
+        classSelect.addEventListener('change', function(){
+            loadSectionsFor(this.value, null);
         });
 
-        // Trigger initial if pre-selected
-        var initialClass = $('#class_id').val();
-        if (initialClass && $('#section_id option').length <= 1) {
-             $('#class_id').trigger('change');
+        // Initial population if a class is already selected
+        const initialClass = classSelect.value;
+        if (initialClass){
+            loadSectionsFor(initialClass, oldSection);
+        } else {
+            clearSections();
         }
     }
 
-    startApp();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initDependentSections);
+    } else {
+        initDependentSections();
+    }
 })();
 </script>
-@endsection
+@endpush
