@@ -31,14 +31,20 @@ class ExtraClassController extends Controller
     {
         $currentYear = AcademicYear::forSchool($school->id)->current()->first();
         $classes = SchoolClass::where('school_id', $school->id)->orderBy('numeric_value')->get();
-        $sections = Section::where('school_id', $school->id)->orderBy('name')->get();
+        $sections = collect(); // Initial empty sections for create
         $subjects = Subject::where('school_id', $school->id)->orderBy('name')->get();
         $teachers = User::whereHas('schoolRoles', function($q) use ($school) {
             $q->where('school_id', $school->id)
               ->whereHas('role', function($q2) {
                   $q2->where('name', 'Teacher');
               });
-        })->orderBy('name')->get();
+        })
+        ->leftJoin('teachers', 'users.id', '=', 'teachers.user_id')
+        ->where('teachers.school_id', $school->id)
+        ->orderByRaw('CAST(teachers.serial_number AS UNSIGNED) ASC')
+        ->orderBy('users.name')
+        ->select('users.*')
+        ->get();
 
         return view('principal.institute.extra-classes.create', compact('school', 'currentYear', 'classes', 'sections', 'subjects', 'teachers'));
     }
@@ -70,14 +76,23 @@ class ExtraClassController extends Controller
 
         $academicYears = AcademicYear::forSchool($school->id)->orderBy('start_date', 'desc')->get();
         $classes = SchoolClass::where('school_id', $school->id)->orderBy('numeric_value')->get();
-        $sections = Section::where('school_id', $school->id)->orderBy('name')->get();
+        $sections = Section::where('school_id', $school->id)
+            ->where('class_id', $extraClass->class_id)
+            ->orderBy('name')
+            ->get();
         $subjects = Subject::where('school_id', $school->id)->orderBy('name')->get();
         $teachers = User::whereHas('schoolRoles', function($q) use ($school) {
             $q->where('school_id', $school->id)
               ->whereHas('role', function($q2) {
                   $q2->where('name', 'Teacher');
               });
-        })->orderBy('name')->get();
+        })
+        ->leftJoin('teachers', 'users.id', '=', 'teachers.user_id')
+        ->where('teachers.school_id', $school->id)
+        ->orderByRaw('CAST(teachers.serial_number AS UNSIGNED) ASC')
+        ->orderBy('users.name')
+        ->select('users.*')
+        ->get();
 
         return view('principal.institute.extra-classes.edit', compact('school', 'extraClass', 'academicYears', 'classes', 'sections', 'subjects', 'teachers'));
     }

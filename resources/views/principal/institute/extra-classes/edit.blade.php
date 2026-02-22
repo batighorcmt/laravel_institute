@@ -60,7 +60,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="academic_year_id">Academic Year</label>
-                                <select class="form-control @error('academic_year_id') is-invalid @enderror" 
+                                <select class="form-control select2 @error('academic_year_id') is-invalid @enderror" 
                                         id="academic_year_id" 
                                         name="academic_year_id">
                                     <option value="">Select Academic Year</option>
@@ -82,7 +82,7 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="class_id">Class <span class="text-danger">*</span></label>
-                                <select class="form-control @error('class_id') is-invalid @enderror" 
+                                <select class="form-control select2 @error('class_id') is-invalid @enderror" 
                                         id="class_id" 
                                         name="class_id" 
                                         required>
@@ -103,7 +103,7 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="section_id">Default Section <span class="text-danger">*</span></label>
-                                <select class="form-control @error('section_id') is-invalid @enderror" 
+                                <select class="form-control select2 @error('section_id') is-invalid @enderror" 
                                         id="section_id" 
                                         name="section_id" 
                                         required>
@@ -124,7 +124,7 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="subject_id">Subject</label>
-                                <select class="form-control @error('subject_id') is-invalid @enderror" 
+                                <select class="form-control select2 @error('subject_id') is-invalid @enderror" 
                                         id="subject_id" 
                                         name="subject_id">
                                     <option value="">Select Subject</option>
@@ -146,7 +146,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="teacher_id">Teacher</label>
-                                <select class="form-control @error('teacher_id') is-invalid @enderror" 
+                                <select class="form-control select2 @error('teacher_id') is-invalid @enderror" 
                                         id="teacher_id" 
                                         name="teacher_id">
                                     <option value="">Select Teacher</option>
@@ -182,7 +182,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="status">Status <span class="text-danger">*</span></label>
-                                <select class="form-control @error('status') is-invalid @enderror" 
+                                <select class="form-control select2 @error('status') is-invalid @enderror" 
                                         id="status" 
                                         name="status" 
                                         required>
@@ -220,4 +220,39 @@
         </div>
     </div>
 </section>
+@section('scripts')
+<script>
+$(document).ready(function() {
+    // Initialize Select2
+    $('.select2').select2({
+        theme: 'bootstrap4',
+        width: '100%'
+    });
+
+    $('#class_id').on('change', function() {
+        var classId = $(this).val();
+        var sectionSelect = $('#section_id');
+        
+        // Clear existing options
+        sectionSelect.empty().append('<option value="">Select Section</option>');
+        
+        if (classId) {
+            $.ajax({
+                url: "{{ route('principal.institute.meta.sections', $school) }}",
+                type: 'GET',
+                data: { class_id: classId },
+                success: function(data) {
+                    $.each(data, function(index, section) {
+                        sectionSelect.append('<option value="' + section.id + '">' + section.name + '</option>');
+                    });
+                    sectionSelect.trigger('change');
+                },
+                error: function() {
+                    console.error('Failed to fetch sections');
+                }
+            });
+        }
+    });
+});
+</script>
 @endsection
