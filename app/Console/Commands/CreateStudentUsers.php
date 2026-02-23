@@ -26,6 +26,7 @@ class CreateStudentUsers extends Command
     public function handle()
     {
         $students = \App\Models\Student::whereNull('user_id')->active()->get();
+        $total = $students->count();
         $count = 0;
         $parentRole = \App\Models\Role::where('name', \App\Models\Role::PARENT)->first();
 
@@ -34,12 +35,16 @@ class CreateStudentUsers extends Command
             return 1;
         }
 
-        $this->info("Found " . $students->count() . " students without user accounts.");
+        if ($total === 0) {
+            $this->info("No active students found without user accounts.");
+            return 0;
+        }
 
-        foreach ($students as $student) {
+        $this->info("Found {$total} students without user accounts. Processing...");
+
+        $this->withProgressBar($students, function ($student) use ($parentRole, &$count) {
             if (!$student->student_id) {
-                $this->warn("Skipping student ID {$student->id}: No student_id assigned.");
-                continue;
+                return;
             }
 
             \Illuminate\Support\Facades\DB::transaction(function () use ($student, $parentRole, &$count) {
@@ -60,7 +65,7 @@ class CreateStudentUsers extends Command
                 $student->save();
 
                 // Assign role for the student's school
-                \App\Models\UserSchoolRole::firstOrCreate([
+                \App\Models\UserSchoolRole::updateOrCreate([
                     'user_id' => $user->id,
                     'school_id' => $student->school_id,
                     'role_id' => $parentRole->id,
@@ -70,8 +75,9 @@ class CreateStudentUsers extends Command
 
                 $count++;
             });
-        }
+        });
 
+        $this->newLine();
         $this->info("Successfully created/linked {$count} user accounts.");
         return 0;
     }
