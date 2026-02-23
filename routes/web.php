@@ -428,6 +428,7 @@ Route::middleware(['auth'])->group(function () {
                     Route::post('/store', [\App\Http\Controllers\Principal\ExtraClassAttendanceController::class, 'store'])->name('store');
                     Route::get('/daily-report', [\App\Http\Controllers\Principal\ExtraClassAttendanceController::class, 'dailyReport'])->name('daily-report');
                     Route::get('/monthly-report', [\App\Http\Controllers\Principal\ExtraClassAttendanceController::class, 'monthlyReport'])->name('monthly-report');
+                    Route::get('/dashboard', [\App\Http\Controllers\Principal\ExtraClassAttendanceController::class, 'dashboard'])->name('dashboard');
                 });
             });
 
