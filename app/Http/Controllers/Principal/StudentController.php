@@ -511,26 +511,35 @@ class StudentController extends Controller
                 $enrollData['enroll_group_id'] = null;
             }
             
-            if ($enrollment) {
-                // Update existing enrollment
-                $enrollment->update([
-                    'class_id' => $enrollData['enroll_class_id'],
-                    'section_id' => $enrollData['enroll_section_id'] ?? null,
-                    'group_id' => $enrollData['enroll_group_id'] ?? null,
-                    'roll_no' => $enrollData['enroll_roll_no'],
-                ]);
-            } else {
-                // Create new enrollment
-                StudentEnrollment::create([
-                    'student_id' => $student->id,
-                    'school_id' => $school->id,
-                    'academic_year_id' => $enrollData['enroll_academic_year_id'],
-                    'class_id' => $enrollData['enroll_class_id'],
-                    'section_id' => $enrollData['enroll_section_id'] ?? null,
-                    'group_id' => $enrollData['enroll_group_id'] ?? null,
-                    'roll_no' => $enrollData['enroll_roll_no'],
-                    'status' => 'active'
-                ]);
+            try {
+                if ($enrollment) {
+                    // Update existing enrollment
+                    $enrollment->update([
+                        'class_id' => $enrollData['enroll_class_id'],
+                        'section_id' => $enrollData['enroll_section_id'] ?? null,
+                        'group_id' => $enrollData['enroll_group_id'] ?? null,
+                        'roll_no' => $enrollData['enroll_roll_no'],
+                    ]);
+                } else {
+                    // Create new enrollment
+                    StudentEnrollment::create([
+                        'student_id' => $student->id,
+                        'school_id' => $school->id,
+                        'academic_year_id' => $enrollData['enroll_academic_year_id'],
+                        'class_id' => $enrollData['enroll_class_id'],
+                        'section_id' => $enrollData['enroll_section_id'] ?? null,
+                        'group_id' => $enrollData['enroll_group_id'] ?? null,
+                        'roll_no' => $enrollData['enroll_roll_no'],
+                        'status' => 'active'
+                    ]);
+                }
+            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                return back()->withInput()->withErrors(['enroll_roll_no' => 'এই রোল নম্বরটি এই শ্রেণি/শাখায় ইতিপূর্বে অন্য একজন শিক্ষার্থীকে প্রদান করা হয়েছে।']);
+            } catch (\Illuminate\Database\QueryException $e) {
+                if ($e->getCode() == 23000) {
+                    return back()->withInput()->withErrors(['enroll_roll_no' => 'এই রোল নম্বরটি এই শ্রেণি/শাখায় ইতিপূর্বে অন্য একজন শিক্ষার্থীকে প্রদান করা হয়েছে।']);
+                }
+                throw $e;
             }
         }
             
