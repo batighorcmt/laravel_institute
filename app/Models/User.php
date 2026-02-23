@@ -145,4 +145,12 @@ class User extends Authenticatable
             ->whereHas('role', function ($q) { $q->where('name','teacher'); })
             ->value('school_id');
     }
+
+    /**
+     * Student associated with this user
+     */
+    public function student()
+    {
+        return $this->hasOne(Student::class);
+    }
 }

@@ -8,33 +8,31 @@ use App\Models\Student;
 use App\Models\Homework;
 use App\Models\Attendance;
 use App\Models\Result;
-use App\Models\TeacherLeave; // legacy teacher leave
-use App\Models\StudentLeave; // new student leave
+use App\Models\StudentLeave;
+use App\Models\RoutineEntry;
+use App\Models\ExtraClassAttendance;
+use App\Models\LessonEvaluationRecord;
+use App\Models\ParentFeedback;
+use App\Models\Teacher;
+use App\Models\ClassSubject;
 use App\Http\Resources\StudentResource;
 use App\Http\Resources\HomeworkResource;
 use App\Http\Resources\StudentAttendanceResource;
 use App\Http\Resources\ResultResource;
 use App\Http\Resources\TeacherLeaveResource;
+use App\Http\Resources\StudentProfileResource;
+use App\Http\Resources\RoutineResource;
+use App\Http\Resources\ParentFeedbackResource;
+use App\Http\Resources\TeacherResource;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ParentController extends Controller
 {
     public function children(Request $request)
     {
-        $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id');
-
-        // অনুমান: guardian_phone ফিল্ডে parent user এর username বা email রাখা আছে
-        $query = Student::query()->active();
-        if ($schoolId) {
-            $query->forSchool($schoolId);
-        }
-        $query->where(function($q) use ($user) {
-            $q->where('guardian_phone', $user->username)
-              ->orWhere('guardian_phone', $user->email);
-        });
-
-        $students = $query->limit(100)->get();
+        $students = $this->resolveChildren($request);
+        
         return StudentResource::collection($students)->additional([
             'count' => $students->count(),
             'message' => 'সন্তান তালিকা',
@@ -144,11 +142,209 @@ class ParentController extends Controller
         ]);
     }
 
+    public function profile(Request $request)
+    {
+        $studentId = $request->get('student_id');
+        $children = $this->resolveChildren($request);
+        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        return new StudentProfileResource($student);
+    }
+
+    public function subjects(Request $request)
+    {
+        $studentId = $request->get('student_id');
+        $children = $this->resolveChildren($request);
+        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        $subjects = ClassSubject::where('class_id', $student->class_id)
+            ->where('school_id', $student->school_id)
+            ->with('subject')
+            ->get();
+
+        return response()->json([
+            'data' => $subjects->map(fn($s) => [
+                'id' => $s->subject->id,
+                'name' => $s->subject->name,
+                'code' => $s->subject->code,
+                'is_optional' => $s->is_optional,
+            ]),
+            'message' => 'পঠিত বিষয় সমূহ',
+        ]);
+    }
+
+    public function classRoutine(Request $request)
+    {
+        $studentId = $request->get('student_id');
+        $children = $this->resolveChildren($request);
+        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        // We need section_id from enrollment
+        $enrollment = $student->enrollments()->latest()->first();
+        if (!$enrollment) {
+            return response()->json(['message' => 'এনরোলমেন্ট পাওয়া যায়নি'], 404);
+        }
+
+        $routine = RoutineEntry::where('class_id', $enrollment->class_id)
+            ->where('section_id', $enrollment->section_id)
+            ->with(['subject', 'teacher'])
+            ->orderBy('day_of_week')
+            ->orderBy('period_number')
+            ->get();
+
+        return RoutineResource::collection($routine)->additional([
+            'message' => 'ক্লাস রুটিন',
+        ]);
+    }
+
+    public function extraAttendance(Request $request)
+    {
+        $studentId = $request->get('student_id');
+        $children = $this->resolveChildren($request);
+        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        $attendance = ExtraClassAttendance::where('student_id', $student->id)
+            ->with('extraClass.subject')
+            ->orderByDesc('date')
+            ->limit(100)
+            ->get();
+
+        return response()->json([
+            'data' => $attendance->map(fn($a) => [
+                'id' => $a->id,
+                'date' => $a->date->toDateString(),
+                'status' => $a->status,
+                'class_name' => $a->extraClass->name,
+                'subject' => $a->extraClass->subject->name ?? 'N/A',
+            ]),
+            'message' => 'এক্সট্রা ক্লাস হাজিরা',
+        ]);
+    }
+
+    public function lessonEvaluations(Request $request)
+    {
+        $studentId = $request->get('student_id');
+        $children = $this->resolveChildren($request);
+        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        $records = LessonEvaluationRecord::where('student_id', $student->id)
+            ->with(['lessonEvaluation.subject', 'lessonEvaluation.teacher'])
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get();
+
+        return response()->json([
+            'data' => $records->map(fn($r) => [
+                'id' => $r->id,
+                'date' => $r->lessonEvaluation->date,
+                'subject' => $r->lessonEvaluation->subject->name ?? 'N/A',
+                'teacher' => $r->lessonEvaluation->teacher->name ?? 'N/A',
+                'lesson' => $r->lessonEvaluation->lesson_name,
+                'status' => $r->status_label,
+                'remarks' => $r->remarks,
+            ]),
+            'message' => 'লেসন ইভ্যালুয়েশন রিপোর্ট',
+        ]);
+    }
+
+    public function teachers(Request $request)
+    {
+        $studentId = $request->get('student_id');
+        $children = $this->resolveChildren($request);
+        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        // Teachers assigned to this student's class routine
+        $enrollment = $student->enrollments()->latest()->first();
+        if (!$enrollment) {
+            return response()->json(['message' => 'এনরোলমেন্ট পাওয়া যায়নি'], 404);
+        }
+
+        $teacherIds = RoutineEntry::where('class_id', $enrollment->class_id)
+            ->where('section_id', $enrollment->section_id)
+            ->pluck('teacher_id')
+            ->unique();
+
+        $teachers = Teacher::whereIn('id', $teacherIds)->get();
+
+        return TeacherResource::collection($teachers)->additional([
+            'message' => 'শিক্ষক তালিকা',
+        ]);
+    }
+
+    public function feedbackIndex(Request $request)
+    {
+        $user = $request->user();
+        $feedbacks = ParentFeedback::where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return ParentFeedbackResource::collection($feedbacks)->additional([
+            'message' => 'মতামত/অভিযোগ তালিকা',
+        ]);
+    }
+
+    public function feedbackStore(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id');
+        
+        $children = $this->resolveChildren($request);
+        $studentId = $request->get('student_id', $children->first()?->id);
+
+        $validated = $request->validate([
+            'subject' => 'required|string|max:255',
+            'message' => 'required|string',
+        ]);
+
+        $feedback = ParentFeedback::create([
+            'school_id' => $schoolId,
+            'user_id' => $user->id,
+            'student_id' => $studentId,
+            'subject' => $validated['subject'],
+            'message' => $validated['message'],
+            'status' => 'pending',
+        ]);
+
+        return new ParentFeedbackResource($feedback);
+    }
+
     /* Utility: resolve parent children set */
     private function resolveChildren(Request $request)
     {
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id');
+        
+        // ১. সরাসরি ইউজার আইডির সাথে যুক্ত শিক্ষার্থী (যদি শিক্ষার্থী নিজে লগইন করে)
+        $directStudent = Student::active()->where('user_id', $user->id)->first();
+        if ($directStudent) {
+            return collect([$directStudent]);
+        }
+
+        // ২. অভিভাবক হিসেবে যুক্ত শিক্ষার্থী (guardian_phone দিয়ে)
         $query = Student::query()->active();
         if ($schoolId) { $query->forSchool($schoolId); }
         $query->where(function($q) use ($user) {

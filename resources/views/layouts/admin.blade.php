@@ -503,6 +503,91 @@
                             </a>
                         </li>
                         @endif
+                    @elseif($u && $u->isParent())
+                        {{-- Parent Menu --}}
+                        <li class="nav-item">
+                            <a href="{{ route('parent.dashboard') }}" class="nav-link {{ request()->routeIs('parent.dashboard') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-tachometer-alt"></i>
+                                <p>ড্যাশবোর্ড</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('parent.profile') }}" class="nav-link {{ request()->routeIs('parent.profile') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-user-graduate"></i>
+                                <p>শিক্ষার্থীর প্রোফাইল</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('parent.subjects') }}" class="nav-link {{ request()->routeIs('parent.subjects') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-book"></i>
+                                <p>পঠিত বিষয়</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('parent.routine') }}" class="nav-link {{ request()->routeIs('parent.routine') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-calendar-alt"></i>
+                                <p>ক্লাস রুটিন</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('parent.homework') }}" class="nav-link {{ request()->routeIs('parent.homework') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-edit"></i>
+                                <p>হোমওয়ার্ক</p>
+                            </a>
+                        </li>
+                        <li class="nav-item {{ request()->routeIs('parent.attendance*') ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->routeIs('parent.attendance*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-user-check"></i>
+                                <p>
+                                    হাজিরা রিপোর্ট
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('parent.attendance.class') }}" class="nav-link {{ request()->routeIs('parent.attendance.class') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>ক্লাস হাজিরা</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('parent.attendance.extra') }}" class="nav-link {{ request()->routeIs('parent.attendance.extra') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>এক্সট্রা ক্লাস হাজিরা</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('parent.evaluations') }}" class="nav-link {{ request()->routeIs('parent.evaluations') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-chart-line"></i>
+                                <p>লেসন ইভ্যালুয়েশন</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('parent.leaves') }}" class="nav-link {{ request()->routeIs('parent.leaves') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-envelope-open-text"></i>
+                                <p>ছুটির আবেদন</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('parent.notices') }}" class="nav-link {{ request()->routeIs('parent.notices') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-bullhorn"></i>
+                                <p>নোটিস বোর্ড</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('parent.teachers') }}" class="nav-link {{ request()->routeIs('parent.teachers') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-user-tie"></i>
+                                <p>শিক্ষক তালিকা</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('parent.feedback') }}" class="nav-link {{ request()->routeIs('parent.feedback') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-comment-dots"></i>
+                                <p>মতামত ও অভিযোগ</p>
+                            </a>
+                        </li>
                     @else
                         <li class="nav-item">
                             <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">

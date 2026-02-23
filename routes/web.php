@@ -584,6 +584,19 @@ Route::middleware(['auth'])->group(function () {
     // Parent Routes (role-protected)
     Route::prefix('parent')->name('parent.')->middleware(['role:parent'])->group(function () {
         Route::get('/dashboard', [ParentController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [ParentController::class, 'profile'])->name('profile');
+        Route::get('/subjects', [ParentController::class, 'subjects'])->name('subjects');
+        Route::get('/routine', [ParentController::class, 'routine'])->name('routine');
+        Route::get('/homework', [ParentController::class, 'homework'])->name('homework');
+        Route::get('/attendance/class', [ParentController::class, 'classAttendance'])->name('attendance.class');
+        Route::get('/attendance/extra', [ParentController::class, 'extraAttendanceReport'])->name('attendance.extra');
+        Route::get('/evaluations', [ParentController::class, 'evaluations'])->name('evaluations');
+        Route::get('/leaves', [ParentController::class, 'leaves'])->name('leaves');
+        Route::post('/leaves', [ParentController::class, 'submitLeave'])->name('leaves.store');
+        Route::get('/notices', [ParentController::class, 'notices'])->name('notices');
+        Route::get('/teachers', [ParentController::class, 'teachers'])->name('teachers');
+        Route::get('/feedback', [ParentController::class, 'feedback'])->name('feedback');
+        Route::post('/feedback', [ParentController::class, 'submitFeedback'])->name('feedback.store');
     });
 
     // Billing blades (simple views; access limited by nav visibility and auth)

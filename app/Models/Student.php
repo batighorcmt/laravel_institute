@@ -47,7 +47,7 @@ use Illuminate\Support\Facades\Storage;
 class Student extends Model
 {
     protected $fillable = [
-        'school_id', 'class_id', 'optional_subject_id', 'admission_id', 'student_id', 'student_name_en','student_name_bn',
+        'school_id', 'user_id', 'class_id', 'optional_subject_id', 'admission_id', 'student_id', 'student_name_en','student_name_bn',
         'date_of_birth', 'gender', 'religion', 'father_name', 'mother_name','father_name_bn','mother_name_bn', 'guardian_phone',
         'guardian_relation','guardian_name_en','guardian_name_bn',
         'present_village','present_para_moholla','present_post_office','present_upazilla','present_district',
@@ -68,6 +68,11 @@ class Student extends Model
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function class(): BelongsTo

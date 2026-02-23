@@ -26,6 +26,11 @@ use App\Jobs\ProcessStudentBulkImport;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\StudentBulkTemplateExport;
+use App\Models\User;
+use App\Models\Role;
+use App\Models\UserSchoolRole;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
@@ -212,6 +217,9 @@ class StudentController extends Controller
         if (!$student) {
             return back()->withInput()->withErrors(['error' => 'শিক্ষার্থী তৈরি করতে ব্যর্থ। আবার চেষ্টা করুন।']);
         }
+
+        // Automated User Creation
+        $this->ensureStudentUser($student);
 
         // Inline enrollment (optional but if provided, validate properly)
         $enrollData = $request->validate([
@@ -737,6 +745,7 @@ class StudentController extends Controller
 
             try {
                 $student = Student::create($studentData);
+                $this->ensureStudentUser($student);
                 
                 // Add to imported students list
                 $importedStudents[] = [
@@ -1172,5 +1181,41 @@ class StudentController extends Controller
         $enrollments = $student->enrollments()->with(['class', 'section', 'group', 'academicYear'])->orderByDesc('academic_year_id')->get();
 
         return view('principal.institute.students.print_cv', compact('school', 'student', 'activeEnrollment', 'enrollments', 'currentYear'));
+    }
+
+    /**
+     * Ensure student has a user account for login.
+     */
+    protected function ensureStudentUser(Student $student): void
+    {
+        if (!$student->student_id) return;
+
+        DB::transaction(function () use ($student) {
+            $user = User::where('username', $student->student_id)->first();
+            
+            if (!$user) {
+                $user = User::create([
+                    'name' => $student->student_name_en ?: $student->student_name_bn ?: 'Student',
+                    'username' => $student->student_id,
+                    'email' => $student->student_id . '@institute.local',
+                    'password' => Hash::make('123456'),
+                ]);
+            }
+
+            // Link student to user
+            $student->update(['user_id' => $user->id]);
+
+            // Assign parent role
+            $parentRole = Role::where('name', Role::PARENT)->first();
+            if ($parentRole) {
+                UserSchoolRole::firstOrCreate([
+                    'user_id' => $user->id,
+                    'school_id' => $student->school_id,
+                    'role_id' => $parentRole->id,
+                ], [
+                    'status' => 'active',
+                ]);
+            }
+        });
     }
 }
