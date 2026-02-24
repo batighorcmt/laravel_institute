@@ -332,7 +332,12 @@ class SeatPlanController extends Controller
     // Print Seat Plan
     public function printRoom(School $school, SeatPlan $seatPlan, SeatPlanRoom $room)
     {
-        $room->load(['allocations.student.currentEnrollment', 'allocations.student.class']);
+        $room->load([
+            'allocations.student.currentEnrollment.class', 
+            'allocations.student.currentEnrollment.group',
+            'allocations.student.currentEnrollment.subjects.subject',
+            'allocations.student.class'
+        ]);
 
         return view('principal.seat-plans.print-room', compact('school', 'seatPlan', 'room'));
     }

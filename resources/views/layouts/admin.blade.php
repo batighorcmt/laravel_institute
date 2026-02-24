@@ -351,7 +351,8 @@
                                     <p>Manage Exam <i class="right fas fa-angle-left"></i></p>
                                 </a>
                                 <ul class="nav nav-treeview">
-                                    <li class="nav-item"><a href="{{ route('principal.institute.exams.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.exams.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>পরীক্ষা তালিকা</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.exams.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.exams.index') || request()->routeIs('principal.institute.exams.create') || request()->routeIs('principal.institute.exams.edit') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>পরীক্ষা তালিকা</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.exams.invigilations.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.exams.invigilations.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>কক্ষ পরিদর্শক</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.seat-plans.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.seat-plans.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>সিট প্ল্যান</p></a></li>
                                 </ul>
                             </li>
@@ -363,6 +364,7 @@
                                     <p>Manage Results <i class="right fas fa-angle-left"></i></p>
                                 </a>
                                 <ul class="nav nav-treeview">
+                                    <li class="nav-item"><a href="{{ route('principal.institute.results.exams', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.results.exams') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>পরীক্ষা তালিকা</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.results.marksheet', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.results.marksheet') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>মার্কশিট</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.marks.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.marks.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>নম্বর Entry</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.results.tabulation', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.results.tabulation') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>ট্যাবুলেশন শীট</p></a></li>

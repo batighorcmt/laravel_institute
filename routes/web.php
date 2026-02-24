@@ -293,6 +293,14 @@ Route::middleware(['auth'])->group(function () {
             // Exam Management Routes
             Route::prefix('exams')->name('exams.')->group(function(){
                 Route::get('/', [App\Http\Controllers\Principal\ExamController::class,'index'])->name('index');
+
+                // Invigilation routes
+                Route::prefix('invigilations')->name('invigilations.')->group(function() {
+                    Route::get('/', [App\Http\Controllers\Principal\InvigilationController::class, 'index'])->name('index');
+                    Route::post('/controller', [App\Http\Controllers\Principal\InvigilationController::class, 'setController'])->name('controller.set');
+                    Route::post('/', [App\Http\Controllers\Principal\InvigilationController::class, 'store'])->name('store');
+                });
+
                 Route::get('/create', [App\Http\Controllers\Principal\ExamController::class,'create'])->name('create');
                 Route::get('/fetch-subjects', [App\Http\Controllers\Principal\ExamController::class,'fetchSubjects'])->name('fetch-subjects');
                 Route::post('/', [App\Http\Controllers\Principal\ExamController::class,'store'])->name('store');
@@ -351,6 +359,10 @@ Route::middleware(['auth'])->group(function () {
 
             // Result Management Routes
             Route::prefix('results')->name('results.')->group(function(){
+                // Exam List
+                Route::get('/exams', [App\Http\Controllers\Principal\ResultController::class,'examList'])->name('exams');
+                Route::get('/exams/{exam}/result-sheet/print', [App\Http\Controllers\Principal\ResultController::class,'printResultSheet'])->name('exams.result-sheet.print');
+
                 // Marksheet
                 Route::get('/marksheet', [App\Http\Controllers\Principal\ResultController::class,'marksheet'])->name('marksheet');
                 Route::get('/marksheet/{exam}/{student}/print', [App\Http\Controllers\Principal\ResultController::class,'printMarksheet'])->name('marksheet.print');

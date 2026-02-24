@@ -27,6 +27,46 @@ use Carbon\Carbon;
 
 class ResultController extends Controller
 {
+    // Exam List for Result Management
+    public function examList(Request $request, School $school)
+    {
+        $status = $request->get('status', 'active');
+        $query = Exam::forSchool($school->id)->orderBy('created_at', 'desc');
+        
+        if ($status == 'completed') {
+            $query->where('status', 'completed');
+        } else {
+            $query->where('status', 'active');
+        }
+        
+        $exams = $query->paginate(20);
+
+        return view('principal.results.exams', compact('school', 'exams', 'status'));
+    }
+
+    // Print Result Sheet (based on tabulation logic)
+    public function printResultSheet(School $school, Exam $exam)
+    {
+        $classId = $exam->class_id;
+        if (!$classId) abort(404, 'Class not found for exam');
+
+        $calcData = $this->getCalculatedResults($school, $exam->id, $classId);
+        
+        if (!$calcData || $calcData['results']->isEmpty()) {
+            return back()->with('error', 'কোন ফলাফল পাওয়া যায়নি।');
+        }
+
+        $results = $calcData['results'];
+        $class = SchoolClass::find($classId);
+        
+        // Ensure merit positions are updated properly
+        $results = $results->sortByDesc('computed_gpa')->sortByDesc('computed_total_marks')->values();
+        
+        $principalTeacher = $this->getPrincipalTeacher($school);
+
+        return view('principal.results.print-result-sheet', compact('school', 'exam', 'class', 'results', 'principalTeacher'));
+    }
+
     // Marksheet
     public function marksheet(Request $request, School $school)
     {
@@ -704,15 +744,69 @@ class ResultController extends Controller
         $stats = null;
         $exam = null;
         $class = null;
+        $totalStudents = 0;
+        $passedStudents = 0;
+        $failedStudents = 0;
+        $averageGPA = 0;
+        $gradeDistribution = [];
+        $subjectStats = [];
+        $topPerformers = collect();
 
         if ($request->has('exam_id') && $request->has('class_id')) {
             $exam = Exam::find($request->exam_id);
             $class = SchoolClass::find($request->class_id);
 
             $stats = $this->calculateStatistics($exam->id, $class->id);
+
+            if ($stats) {
+                $totalStudents = $stats['total_students'] ?? 0;
+                $passedStudents = $stats['passed_students'] ?? 0;
+                $failedStudents = $stats['failed_students'] ?? 0;
+                $averageGPA = $stats['gpa_stats']['average'] ?? 0;
+                $gradeDistribution = $stats['grade_distribution'] ?? [];
+            }
+
+            // Generate Top Performers
+            $topPerformers = Result::with('student')
+                ->forExam($exam->id)
+                ->forClass($class->id)
+                ->passed()
+                ->orderByMerit()
+                ->take(10)
+                ->get();
+
+            // Generate Subject Stats
+            $examSubjects = $exam->examSubjects()->with('subject')->get();
+            $marks = Mark::forExam($exam->id)->get();
+            
+            foreach ($examSubjects as $es) {
+                $subMarks = $marks->where('exam_subject_id', $es->id);
+                $passMark = $es->creative_pass_mark + $es->mcq_pass_mark + $es->practical_pass_mark;
+                
+                $subPassed = $subMarks->filter(function($m) use ($passMark) {
+                    return !$m->is_absent && $m->total_marks >= $passMark;
+                })->count();
+                
+                $subFailed = $subMarks->count() - $subPassed;
+                
+                $subjectStats[] = [
+                    'subject' => $es->subject->name ?? 'Unknown',
+                    'full_marks' => $es->total_full_mark,
+                    'highest' => $subMarks->max('total_marks') ?? 0,
+                    'lowest' => $subMarks->min('total_marks') ?? 0,
+                    'average' => $subMarks->count() > 0 ? round($subMarks->avg('total_marks'), 2) : 0,
+                    'passed' => $subPassed,
+                    'failed' => $subFailed,
+                    'pass_rate' => $subMarks->count() > 0 ? round(($subPassed / $subMarks->count()) * 100, 2) : 0
+                ];
+            }
         }
 
-        return view('principal.results.statistics', compact('school', 'classes', 'exams', 'stats', 'exam', 'class'));
+        return view('principal.results.statistics', compact(
+            'school', 'classes', 'exams', 'stats', 'exam', 'class',
+            'totalStudents', 'passedStudents', 'failedStudents',
+            'averageGPA', 'gradeDistribution', 'subjectStats', 'topPerformers'
+        ));
     }
 
     private function calculateStatistics($examId, $classId)

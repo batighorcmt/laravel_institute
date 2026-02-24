@@ -138,8 +138,11 @@
                     <div class="bench">
                         <!-- Left Seat -->
                         @php
-                            $leftGrade = $leftAllocation && $leftAllocation->student && $leftAllocation->student->class 
-                                ? detectGradeFromClass($leftAllocation->student->class->name) 
+                            $leftClass = $leftAllocation && $leftAllocation->student && $leftAllocation->student->currentEnrollment && $leftAllocation->student->currentEnrollment->class 
+                                ? $leftAllocation->student->currentEnrollment->class->name 
+                                : null;
+                            $leftGrade = $leftClass 
+                                ? detectGradeFromClass($leftClass) 
                                 : null;
                             $leftGradeClass = $leftGrade ? ' grade-'.$leftGrade : '';
                         @endphp
@@ -153,8 +156,8 @@
                                     if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                 @endphp
                                 <div class="roll">{{ $rollDisplay }}</div>
-                                <div class="name">{{ Str::limit($leftAllocation->student->student_name_en, 15) }}</div>
-                                <div class="class">{{ $leftAllocation->student->class->name ?? '' }}</div>
+                                <div class="name">{{ ucwords(strtolower($leftAllocation->student->student_name_en)) }}</div>
+                                <div class="class">{{ $leftClass ?? '' }}</div>
                             @else
                                 --
                             @endif
@@ -162,8 +165,11 @@
                         
                         <!-- Right Seat -->
                         @php
-                            $rightGrade = $rightAllocation && $rightAllocation->student && $rightAllocation->student->class 
-                                ? detectGradeFromClass($rightAllocation->student->class->name) 
+                            $rightClass = $rightAllocation && $rightAllocation->student && $rightAllocation->student->currentEnrollment && $rightAllocation->student->currentEnrollment->class 
+                                ? $rightAllocation->student->currentEnrollment->class->name 
+                                : null;
+                            $rightGrade = $rightClass 
+                                ? detectGradeFromClass($rightClass) 
                                 : null;
                             $rightGradeClass = $rightGrade ? ' grade-'.$rightGrade : '';
                         @endphp
@@ -177,8 +183,8 @@
                                     if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                 @endphp
                                 <div class="roll">{{ $rollDisplay }}</div>
-                                <div class="name">{{ Str::limit($rightAllocation->student->student_name_en, 15) }}</div>
-                                <div class="class">{{ $rightAllocation->student->class->name ?? '' }}</div>
+                                <div class="name">{{ ucwords(strtolower($rightAllocation->student->student_name_en)) }}</div>
+                                <div class="class">{{ $rightClass ?? '' }}</div>
                             @else
                                 --
                             @endif
@@ -191,12 +197,32 @@
 
     @php
         $classCounts = [];
+        $groupCounts = [];
+        $optionalCounts = [];
         $totalAssigned = 0;
         foreach($room->allocations as $allocation){
-            if($allocation->student && $allocation->student->class){
-                $className = $allocation->student->class->name;
+            if($allocation->student && $allocation->student->currentEnrollment && $allocation->student->currentEnrollment->class){
+                $className = $allocation->student->currentEnrollment->class->name;
                 $classCounts[$className] = ($classCounts[$className] ?? 0) + 1;
                 $totalAssigned++;
+
+                $grade = detectGradeFromClass($className);
+                if ($grade == 9 || $grade == 10) {
+                    if (!isset($groupCounts[$className])) $groupCounts[$className] = [];
+                    if (!isset($optionalCounts[$className])) $optionalCounts[$className] = [];
+
+                    if ($allocation->student->currentEnrollment->group) {
+                        $groupName = $allocation->student->currentEnrollment->group->name;
+                        $groupCounts[$className][$groupName] = ($groupCounts[$className][$groupName] ?? 0) + 1;
+                    }
+
+                    foreach($allocation->student->currentEnrollment->subjects as $sub) {
+                        if ($sub->is_optional && $sub->subject) {
+                            $optName = $sub->subject->name;
+                            $optionalCounts[$className][$optName] = ($optionalCounts[$className][$optName] ?? 0) + 1;
+                        }
+                    }
+                }
             }
         }
     @endphp
@@ -222,12 +248,38 @@
                 @endif
             </div>
             <div class="stat-col">
-                <h5>{{ $lang === 'bn' ? 'গ্রুপভিত্তিক (৯-১০)' : 'Group-wise (9-10)' }}</h5>
-                <div style="color:#666;">{{ $lang === 'bn' ? 'প্রযোজ্য নয়' : 'Not applicable' }}</div>
+                <h5>{{ $lang === 'bn' ? 'গ্রুপভিত্তিক' : 'Group-wise' }}</h5>
+                @if(empty($groupCounts))
+                    <div style="color:#666;">{{ $lang === 'bn' ? 'প্রযোজ্য নয়' : 'Not applicable' }}</div>
+                @else
+                    @foreach($groupCounts as $className => $counts)
+                        @if(!empty($counts))
+                            <strong style="margin-top: 6px; display: block;">{{ $className }}:</strong>
+                            <ul style="margin-bottom: 5px;">
+                                @foreach($counts as $gn => $cnt)
+                                    <li>{{ $gn }} — {{ $lang === 'bn' ? toBengaliNumber($cnt) : $cnt }}</li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    @endforeach
+                @endif
             </div>
             <div class="stat-col">
-                <h5>{{ $lang === 'bn' ? 'ঐচ্ছিক বিষয় (৯-১০)' : 'Optional subjects (9-10)' }}</h5>
-                <div style="color:#666;">{{ $lang === 'bn' ? 'প্রযোজ্য নয়' : 'Not applicable' }}</div>
+                <h5>{{ $lang === 'bn' ? 'ঐচ্ছিক বিষয়' : 'Optional subjects' }}</h5>
+                @if(empty($optionalCounts))
+                    <div style="color:#666;">{{ $lang === 'bn' ? 'প্রযোজ্য নয়' : 'Not applicable' }}</div>
+                @else
+                    @foreach($optionalCounts as $className => $counts)
+                        @if(!empty($counts))
+                            <strong style="margin-top: 6px; display: block;">{{ $className }}:</strong>
+                            <ul style="margin-bottom: 5px;">
+                                @foreach($counts as $on => $cnt)
+                                    <li>{{ $on }} — {{ $lang === 'bn' ? toBengaliNumber($cnt) : $cnt }}</li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    @endforeach
+                @endif
             </div>
         </div>
     </div>
