@@ -32,13 +32,13 @@ class ResultController extends Controller
     {
         $status = $request->get('status', 'active');
         $query = Exam::forSchool($school->id)->orderBy('created_at', 'desc');
-        
+
         if ($status == 'completed') {
             $query->where('status', 'completed');
         } else {
             $query->where('status', 'active');
         }
-        
+
         $exams = $query->paginate(20);
 
         return view('principal.results.exams', compact('school', 'exams', 'status'));
@@ -51,20 +51,33 @@ class ResultController extends Controller
         if (!$classId) abort(404, 'Class not found for exam');
 
         $calcData = $this->getCalculatedResults($school, $exam->id, $classId);
-        
+
         if (!$calcData || $calcData['results']->isEmpty()) {
             return back()->with('error', 'কোন ফলাফল পাওয়া যায়নি।');
         }
 
         $results = $calcData['results'];
         $class = SchoolClass::find($classId);
-        
+
         // Ensure merit positions are updated properly
         $results = $results->sortByDesc('computed_gpa')->sortByDesc('computed_total_marks')->values();
-        
-        $principalTeacher = $this->getPrincipalTeacher($school);
 
-        return view('principal.results.print-result-sheet', compact('school', 'exam', 'class', 'results', 'principalTeacher'));
+        // Add section-wise positions for each result
+        $sectionGroups = $results->groupBy(function($result) {
+            return optional($result->student->currentEnrollment)->section_id;
+        });
+
+        foreach ($sectionGroups as $sectionId => $sectionResults) {
+            foreach ($sectionResults as $index => $result) {
+                $result->section_position = $index + 1;
+                $result->section_id = $sectionId;
+            }
+        }
+
+        $principalTeacher = $this->getPrincipalTeacher($school);
+        $sections = Section::forSchool($school->id)->where('class_id', $classId)->get();
+
+        return view('principal.results.print-result-sheet', compact('school', 'exam', 'class', 'results', 'principalTeacher', 'sections'));
     }
 
     // Marksheet
@@ -72,19 +85,19 @@ class ResultController extends Controller
     {
         $classes = SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get();
         $academicYears = AcademicYear::forSchool($school->id)->orderBy('start_date', 'desc')->get();
-        
+
         $results = collect();
         $finalSubjects = collect();
         $marks = collect();
         $examSubjects = collect();
-        $exam = null; $class = null; 
-        
+        $exam = null; $class = null;
+
         $sections = collect();
         $exams = collect();
 
         if ($request->filled('exam_id') && $request->filled('class_id')) {
             $calcData = $this->getCalculatedResults($school, $request->exam_id, $request->class_id, $request->section_id, $request->student_id);
-            
+
             if ($calcData) {
                 $results = $calcData['results'];
                 $finalSubjects = $calcData['finalSubjects'];
@@ -92,7 +105,7 @@ class ResultController extends Controller
                 $class = $calcData['class'];
                 $examSubjects = $calcData['examSubjects'];
             }
-            
+
             // Populate dropdowns for view
             $sections = Section::forSchool($school->id)->where('class_id', $request->class_id)->ordered()->get();
             $exams = Exam::forSchool($school->id)->forAcademicYear($request->academic_year_id)->orderBy('created_at', 'desc')->get();
@@ -102,7 +115,7 @@ class ResultController extends Controller
                 $exams = Exam::forSchool($school->id)->forAcademicYear($request->academic_year_id)->orderBy('created_at', 'desc')->get();
              }
         }
-        
+
         // Handle Print All
         if ($request->filled('print_all') && $results->count() > 0) {
              $principalTeacher = $this->getPrincipalTeacher($school);
@@ -117,10 +130,10 @@ class ResultController extends Controller
     {
         // Use helper to get calculated result for this student
         // We need class_id. Exam usually has class_id, or we get it from student
-        $classId = $exam->class_id; 
+        $classId = $exam->class_id;
         if (!$classId) {
              // Fallback if exam doesn't have class_id? unique exams are usually per class.
-             // If not, we might need to find it. 
+             // If not, we might need to find it.
              $enrollment = $student->enrollments()->where('academic_year_id', $exam->academic_year_id)->first();
              $classId = $enrollment ? $enrollment->class_id : null;
         }
@@ -128,7 +141,7 @@ class ResultController extends Controller
         if (!$classId) abort(404, 'Class not found for student');
 
         $calcData = $this->getCalculatedResults($school, $exam->id, $classId, null, $student->id);
-        
+
         if (!$calcData || $calcData['results']->isEmpty()) {
              // If no result computed (e.g. absent or strictly no record), we might still want to print "Not Found" or empty
              // But usually we want to show what we have.
@@ -138,7 +151,7 @@ class ResultController extends Controller
         $result = $calcData['results']->first();
         $finalSubjects = $calcData['finalSubjects'];
         $principalTeacher = $this->getPrincipalTeacher($school);
-        
+
         return view('principal.results.print-marksheet', compact('school', 'exam', 'student', 'result', 'finalSubjects', 'principalTeacher'));
     }
 
@@ -211,7 +224,7 @@ class ResultController extends Controller
             // Safety: If exam is linked to a class, always use THAT class_id
             $classId = ($exam && $exam->class_id) ? $exam->class_id : $request->class_id;
             $class = SchoolClass::find($classId);
-            
+
             $examSubjects = $exam ? $exam->examSubjects()->orderBy('display_order')->get() : collect();
             $examSubjectIds = $examSubjects->pluck('subject_id')->toArray();
             // Fetch Class Subjects with Group info for sorting
@@ -225,11 +238,11 @@ class ResultController extends Controller
             $examSubjects = $examSubjects->sort(function($a, $b) use ($classSubjects) {
                 $csA = $classSubjects[$a->subject_id] ?? null;
                 $csB = $classSubjects[$b->subject_id] ?? null;
-                
+
                 // Group Priority
                 $groupA = $csA ? strtolower($csA->group->name ?? '') : '';
                 $groupB = $csB ? strtolower($csB->group->name ?? '') : '';
-                
+
                 // Define priority map (lower is first)
                 $priority = function($gName) {
                     if (empty($gName)) return 0; // Common
@@ -238,22 +251,22 @@ class ResultController extends Controller
                     if (str_contains($gName, 'business') || str_contains($gName, 'ব্যবসায়')) return 3;
                     return 4; // Other
                 };
-                
+
                 $pA = $priority($groupA);
                 $pB = $priority($groupB);
-                
+
                 if ($pA != $pB) return $pA <=> $pB;
-                
+
                 // Optional Priority
                 $optA = $csA ? $csA->is_optional : 0;
                 $optB = $csB ? $csB->is_optional : 0;
-                
+
                 if ($optA != $optB) return $optA <=> $optB;
-                
+
                 // Order No Priority
                 $orderA = $csA ? $csA->order_no : 999;
                 $orderB = $csB ? $csB->order_no : 999;
-                
+
                 return $orderA <=> $orderB;
             });
 
@@ -277,11 +290,11 @@ class ResultController extends Controller
                 ->where('class_id', $classId)
                 ->where('academic_year_id', $exam->academic_year_id)
                 ->where('status','active');
-                
+
             if ($request->filled('section_id')) {
                 $enrollmentQuery->where('section_id', $request->section_id);
             }
-            
+
             $enrolledStudentIds = $enrollmentQuery->pluck('student_id')->unique()->values()->all();
 
             // Union all student ids we want to show (Results + Enrolled)
@@ -301,13 +314,13 @@ class ResultController extends Controller
             $allEnrollmentIds = StudentEnrollment::whereIn('student_id', $activeStudentIds)
                 ->where('academic_year_id', $exam->academic_year_id)
                 ->pluck('id');
-            
+
             $assignedSubjectsMap = StudentSubject::with('enrollment')->whereIn('student_enrollment_id', $allEnrollmentIds)
                 ->get()
                 ->groupBy(function($item) {
                     return $item->enrollment->student_id;
                 });
-            
+
             $studentAssignedSubjectIds = $assignedSubjectsMap->map(function($items) {
                 return $items->pluck('subject_id')->unique()->toArray();
             });
@@ -368,7 +381,7 @@ class ResultController extends Controller
             foreach ($examSubjects as $sub) {
                 if ($sub->combine_group) {
                     $groupName = trim($sub->combine_group);
-                    
+
                     // Add individual subject as 'display only'
                     $keyInd = 'ind_'.$sub->id;
                     $finalSubjects->put($keyInd, [
@@ -390,20 +403,20 @@ class ResultController extends Controller
                     // We need to know if this is the last subject of this group traversing in order.
                     // Let's check remaining subjects in examSubjects.
                     $remainingInGroup = $examSubjects->where('combine_group', $groupName)->where('id', '>', $sub->id)->count();
-                    
+
                     if ($remainingInGroup == 0 && !in_array($groupName, $processedGroups)) {
                         // This is the last one, so add the Combined Virtual Subject
                         $allInGroup = $examSubjects->where('combine_group', $groupName);
-                        
+
                         $groupTotalFull = $allInGroup->sum('total_full_mark');
                         $groupPassFull = $allInGroup->sum(function($s){
                             return $s->creative_pass_mark + $s->mcq_pass_mark + $s->practical_pass_mark;
                         });
 
                         $compIds = $allInGroup->pluck('id')->toArray();
-                        
+
                         $keyComb = 'comb_'.md5($groupName);
-                        
+
                         $finalSubjects->put($keyComb, [
                             'type' => 'combined',
                             'subject_id' => null, // Virtual
@@ -414,7 +427,7 @@ class ResultController extends Controller
                             'practical_full_mark' => $allInGroup->sum('practical_full_mark'),
                             'total_full_mark' => $groupTotalFull,
                             'total_pass_mark' => $groupPassFull,
-                            'pass_type' => 'combined', 
+                            'pass_type' => 'combined',
                             'component_ids' => $compIds,
                             'is_combined_result' => true
                         ]);
@@ -446,7 +459,7 @@ class ResultController extends Controller
             foreach ($resultsCollection as $res) {
                 $sid = $res->student_id;
                 $studentMarks = $marks->where('student_id', $sid);
-                
+
                 $grandTotal = 0;
                 $totalGpa = 0;
                 $subjectCount = 0;
@@ -464,7 +477,7 @@ class ResultController extends Controller
                     // --- APPLICABILITY CHECK START ---
                     $isApplicable = false;
                     $subjId = $fSub['subject_id'] ?? null;
-                    
+
                     if ($subjId) {
                         // Check if this subject_id is assigned to the student
                         $isApplicable = in_array($subjId, $assignedSubIds);
@@ -487,11 +500,11 @@ class ResultController extends Controller
                          }
                          if ($hasAnyMark) $isApplicable = true;
                     }
-                    
+
                     if (!$isApplicable) {
                          $res->subject_results->put($key, [
-                            'grade' => '', 
-                            'gpa' => '', 
+                            'grade' => '',
+                            'gpa' => '',
                             'total' => '',
                             'display_only' => true, // Treat as display only (empty)
                             'is_not_applicable' => true // Custom flag for view
@@ -519,27 +532,27 @@ class ResultController extends Controller
                         $subPractical = 0;
                         $isAbsent = false;
                         $hasRecord = false;
-                        
+
                         foreach ($fSub['component_ids'] as $eid) {
                             $m = $studentMarks->firstWhere('exam_subject_id', $eid);
                             if ($m) {
                                 $hasRecord = true;
                                 if ($m->is_absent) $isAbsent = true;
-                                
+
                                 $subTotal += $m->total_marks;
                                 $subCreative += $m->creative_marks;
                                 $subMcq += $m->mcq_marks;
                                 $subPractical += $m->practical_marks;
                             }
                         }
-                        
+
                         if (!$hasRecord) $subGrade = 'N/R';
-                        elseif ($isAbsent) $subGrade = 'F'; 
-                        else $subGrade = ''; 
+                        elseif ($isAbsent) $subGrade = 'F';
+                        else $subGrade = '';
 
                         $res->subject_results->put($key, [
                             'grade' => $subGrade,
-                            'gpa' => 0, 
+                            'gpa' => 0,
                             'total' => $subTotal,
                             'creative' => $subCreative,
                             'mcq' => $subMcq,
@@ -548,7 +561,7 @@ class ResultController extends Controller
                             'is_absent' => $isAbsent,
                             'display_only' => true
                         ]);
-                        continue; 
+                        continue;
                     }
 
                     // Standard Calculation for Single or Combined Virtual Subject
@@ -556,7 +569,7 @@ class ResultController extends Controller
                     $subCreative = 0;
                     $subMcq = 0;
                     $subPractical = 0;
-                    
+
                     $totalCreativePass = 0;
                     $totalMcqPass = 0;
                     $totalPracticalPass = 0;
@@ -564,14 +577,14 @@ class ResultController extends Controller
 
                     $subGP = 0;
                     $subGrade = '';
-                    $isAbsent = true; 
+                    $isAbsent = true;
                     $hasRecord = false;
                     $isFailed = false;
 
                     foreach ($fSub['component_ids'] as $eid) {
                         $m = $studentMarks->firstWhere('exam_subject_id', $eid);
-                        $subComp = $examSubjects->firstWhere('id', $eid); 
-                        
+                        $subComp = $examSubjects->firstWhere('id', $eid);
+
                         if ($subComp) {
                             $totalCreativePass += $subComp->creative_pass_mark;
                             $totalMcqPass += $subComp->mcq_pass_mark;
@@ -603,10 +616,10 @@ class ResultController extends Controller
                         $subGrade = 'N/R';
                         $subGP = 0.00;
                     } elseif ($isAbsent) {
-                        $subGrade = 'F'; 
-                        $subGP = 0.00;   
+                        $subGrade = 'F';
+                        $subGP = 0.00;
                         $hasAbsent = true;
-                        $isFailed = true; 
+                        $isFailed = true;
                     } else {
                         $percent = ($fSub['total_full_mark'] > 0) ? ($subTotal / $fSub['total_full_mark']) * 100 : 0;
                         if ($isFailed || $subTotal < $fSub['total_pass_mark']) {
@@ -626,7 +639,7 @@ class ResultController extends Controller
                     $res->subject_results->put($key, [
                         'grade' => $subGrade,
                         'gpa' => $subGP,
-                        'total' => $subTotal, 
+                        'total' => $subTotal,
                         'creative' => $subCreative,
                         'mcq' => $subMcq,
                         'practical' => $subPractical,
@@ -643,7 +656,7 @@ class ResultController extends Controller
                         $grandTotal += $subTotal;
                         $totalGpa += $subGP;
                         $subjectCount++; // Dynamic count of compulsory applicable subjects
-                        
+
                         if ($subGrade == 'F' || $subGrade == 'N/R') {
                             $failedSubjectCount++;
                         }
@@ -651,7 +664,7 @@ class ResultController extends Controller
                 }
 
                 // Final Calculation
-                $divisor = $exam->total_subjects_without_fourth > 0 
+                $divisor = $exam->total_subjects_without_fourth > 0
                     ? min($exam->total_subjects_without_fourth, $subjectCount)
                     : $subjectCount;
 
@@ -661,7 +674,7 @@ class ResultController extends Controller
                 $finalLetter = '';
                 if ($failedSubjectCount > 0) {
                     $finalLetter = 'F';
-                    $finalGpa = 0.00; 
+                    $finalGpa = 0.00;
                 } elseif ($finalGpa >= 5.00) $finalLetter = 'A+';
                 elseif ($finalGpa >= 4.00) $finalLetter = 'A';
                 elseif ($finalGpa >= 3.50) $finalLetter = 'A-';
@@ -682,9 +695,9 @@ class ResultController extends Controller
                 // Section order: Try to get numeric order from section object if available, else name
                 $section = optional(optional($r->student)->currentEnrollment)->section;
                 $secOrder = $section ? ($section->numeric_value ?? $section->id) : 999999;
-                
+
                 $roll = optional(optional($r->student)->currentEnrollment)->roll_no ?? 999999;
-                
+
                 // Return a string that sorts naturally: padded section order + padded roll
                 return sprintf('%09d-%09d', $secOrder, $roll);
             })->values();
@@ -708,17 +721,17 @@ class ResultController extends Controller
     {
         $yearId = $request->get('academic_year_id');
         $classId = $request->get('class_id');
-        
+
         if (! $yearId) {
             return response()->json([], 200);
         }
 
         $query = Exam::forSchool($school->id)->forAcademicYear($yearId);
-        
+
         if ($classId) {
             $query->where('class_id', $classId);
         }
-        
+
         $exams = $query->orderBy('created_at','desc')->get(['id','name']);
         return response()->json($exams);
     }
@@ -778,17 +791,17 @@ class ResultController extends Controller
             // Generate Subject Stats
             $examSubjects = $exam->examSubjects()->with('subject')->get();
             $marks = Mark::forExam($exam->id)->get();
-            
+
             foreach ($examSubjects as $es) {
                 $subMarks = $marks->where('exam_subject_id', $es->id);
                 $passMark = $es->creative_pass_mark + $es->mcq_pass_mark + $es->practical_pass_mark;
-                
+
                 $subPassed = $subMarks->filter(function($m) use ($passMark) {
                     return !$m->is_absent && $m->total_marks >= $passMark;
                 })->count();
-                
+
                 $subFailed = $subMarks->count() - $subPassed;
-                
+
                 $subjectStats[] = [
                     'subject' => $es->subject->name ?? 'Unknown',
                     'full_marks' => $es->total_full_mark,
@@ -873,7 +886,7 @@ class ResultController extends Controller
         // Assuming status 'active' means not published/completed.
         // Or if there is a 'published' status.
         // Let's assume 'active'.
-        
+
         return back()->with('success', 'ফলাফল সফলভাবে আনপাবলিশ করা হয়েছে');
     }
 
@@ -887,11 +900,11 @@ class ResultController extends Controller
         $classId = $request->class_id ?: $classId;
         $sectionId = $request->section_id;
         $lang = $request->get('lang', 'bn');
-        
-        // Call internal or private method? 
+
+        // Call internal or private method?
         // Or better: Just copy-paste logic? Copy headers is safer for now to avoid refactoring risk.
         // Wait, I can just include the logic here.
-        
+
         $academicYears = AcademicYear::forSchool($school->id)->get();
         $classes = SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get();
         $exams = Exam::forSchool($school->id)->orderBy('created_at', 'desc')->get();
@@ -901,17 +914,17 @@ class ResultController extends Controller
         // Safety: If exam is linked to a class, always use THAT class_id
         $classId = ($exam && $exam->class_id) ? $exam->class_id : $classId;
         $class = SchoolClass::find($classId);
-        
+
         // --- CORE TABULATION LOGIC COPY START ---
         // (Simplified version of what is in tabulation method)
-        
+
         $results = collect();
         $finalSubjects = collect();
 
         if ($exam && $class) {
             // 1. Get Exam Subjects
             $examSubjects = $exam->examSubjects()->with('subject')->get();
-            
+
             // Fetch Class Subjects with Group info for sorting
             $classSubjects = ClassSubject::where('class_id', $classId)
                 ->whereIn('subject_id', $examSubjects->pluck('subject_id'))
@@ -923,11 +936,11 @@ class ResultController extends Controller
             $examSubjects = $examSubjects->sort(function($a, $b) use ($classSubjects) {
                 $csA = $classSubjects[$a->subject_id] ?? null;
                 $csB = $classSubjects[$b->subject_id] ?? null;
-                
+
                 // Group Priority
                 $groupA = $csA ? strtolower($csA->group->name ?? '') : '';
                 $groupB = $csB ? strtolower($csB->group->name ?? '') : '';
-                
+
                 // Define priority map (lower is first)
                 $priority = function($gName) {
                     if (empty($gName)) return 0; // Common
@@ -936,22 +949,22 @@ class ResultController extends Controller
                     if (str_contains($gName, 'business') || str_contains($gName, 'ব্যবসায়')) return 3;
                     return 4; // Other
                 };
-                
+
                 $pA = $priority($groupA);
                 $pB = $priority($groupB);
-                
+
                 if ($pA != $pB) return $pA <=> $pB;
-                
+
                 // Optional Priority
                 $optA = $csA ? $csA->is_optional : 0;
                 $optB = $csB ? $csB->is_optional : 0;
-                
+
                 if ($optA != $optB) return $optA <=> $optB;
-                
+
                 // Order No Priority
                 $orderA = $csA ? $csA->order_no : 999;
                 $orderB = $csB ? $csB->order_no : 999;
-                
+
                 return $orderA <=> $orderB;
             });
 
@@ -964,19 +977,19 @@ class ResultController extends Controller
                     $processedGroups[] = $sub->combine_group;
 
                     $groupSubjects = $examSubjects->where('combine_group', $sub->combine_group);
-                    
+
                     // Add individual components FIRST (Display Only)
                     foreach($groupSubjects as $gSub) {
                         $finalSubjects->push([
-                            'id' => $gSub->id, 
+                            'id' => $gSub->id,
                             'name' => $gSub->subject->name . ' (' . ($gSub->subject->code ?? '') . ')',
                             'creative_full_mark' => $gSub->creative_full_mark,
                             'mcq_full_mark' => $gSub->mcq_full_mark,
                             'practical_full_mark' => $gSub->practical_full_mark,
                             'total_full_mark' => $gSub->total_full_mark,
                             'is_combined' => false,
-                            'display_only' => true, 
-                            'component_ids' => [$gSub->id] 
+                            'display_only' => true,
+                            'component_ids' => [$gSub->id]
                         ]);
                     }
 
@@ -1000,7 +1013,7 @@ class ResultController extends Controller
                         'mcq_full_mark' => $sub->mcq_full_mark,
                         'practical_full_mark' => $sub->practical_full_mark,
                         'total_full_mark' => $sub->total_full_mark,
-                        'is_combined' => false, 
+                        'is_combined' => false,
                         'component_ids' => [$sub->id]
                     ]);
                 }
@@ -1013,22 +1026,22 @@ class ResultController extends Controller
                 ->where('class_id', $classId)
                 ->where('academic_year_id', $exam->academic_year_id)
                 ->where('status','active');
-                
+
             if ($request->section_id) {
                 $enrollmentQuery->where('section_id', $request->section_id);
             }
-            
+
             $enrolledStudentIds = $enrollmentQuery->pluck('student_id')->unique()->values()->all();
 
             // Union all student ids (Existing Results + Enrolled)
             $existingResults = Result::where('exam_id', $examId)->whereIn('student_id', $enrolledStudentIds)->get();
-            
+
             $allStudentIds = collect($existingResults->pluck('student_id'))
                 ->merge($enrolledStudentIds)
                 ->unique()
                 ->values()
                 ->all();
-            
+
             $students = Student::with(['currentEnrollment.section', 'currentEnrollment.group'])
                 ->whereIn('id', $allStudentIds)
                 ->get();
@@ -1038,11 +1051,11 @@ class ResultController extends Controller
                 ->where('academic_year_id', $exam->academic_year_id)
                 ->where('class_id', $classId)
                 ->pluck('id');
-            
+
             $assignedSubjectsMap = StudentSubject::with('enrollment')->whereIn('student_enrollment_id', $allEnrollmentIds)
                 ->get()
                 ->groupBy('enrollment.student_id');
-            
+
             $studentAssignedSubjectIds = $assignedSubjectsMap->map(function($items) {
                 return $items->pluck('subject_id')->unique()->toArray();
             });
@@ -1090,7 +1103,7 @@ class ResultController extends Controller
 
                 $res = $resultsCollection->get($student->id);
                 if (!$res) {
-                    // Create dummy result object if not calculated yet? 
+                    // Create dummy result object if not calculated yet?
                     // Or just skip/show empty? Better show empty row with student info
                      $res = new Result();
                      $res->student_id = $student->id;
@@ -1107,12 +1120,12 @@ class ResultController extends Controller
 
                 $sid = $student->id;
                 $studentMarks = $marks->where('student_id', $sid);
-                
+
                 $grandTotal = 0;
                 $totalGpa = 0;
                 $subjectCount = 0;
                 $failedSubjectCount = 0; // New Fail Count
-                $res->subject_results = collect(); 
+                $res->subject_results = collect();
 
                 $studentOptionalId = $res->fourth_subject_id; // Need to ensure fourth_subject_id is loaded or fetchable
 
@@ -1125,7 +1138,7 @@ class ResultController extends Controller
                     // --- APPLICABILITY CHECK START ---
                     $isApplicable = false;
                     $subjId = $fSub['subject_id'] ?? null;
-                    
+
                     if ($subjId) {
                         // Check if this subject_id is assigned to the student
                         $isApplicable = in_array($subjId, $assignedSubIds);
@@ -1148,11 +1161,11 @@ class ResultController extends Controller
                          }
                          if ($hasAnyMark) $isApplicable = true;
                     }
-                    
+
                     if (!$isApplicable) {
                          $res->subject_results->put($key, [
-                            'grade' => '', 
-                            'gpa' => '', 
+                            'grade' => '',
+                            'gpa' => '',
                             'total' => '',
                             'display_only' => true, // Treat as display only (empty)
                             'is_not_applicable' => true // Custom flag for view
@@ -1175,29 +1188,29 @@ class ResultController extends Controller
                          // Display only logic
                         $subTotal = 0; $subCreative = 0; $subMcq = 0; $subPractical = 0;
                         $isAbsent = false; $hasRecord = false;
-                        
+
                         foreach ($fSub['component_ids'] as $eid) {
                             $m = $studentMarks->firstWhere('exam_subject_id', $eid);
                             if ($m) {
                                 $hasRecord = true;
-                                if ($m->is_absent) $isAbsent = true; 
+                                if ($m->is_absent) $isAbsent = true;
                                 $subTotal += $m->total_marks;
                                 $subCreative += $m->creative_marks;
                                 $subMcq += $m->mcq_marks;
                                 $subPractical += $m->practical_marks;
                             }
                         }
-                        
+
                         if (!$hasRecord) $subGrade = 'N/R';
-                        elseif ($isAbsent) $subGrade = 'F'; 
-                        else $subGrade = ''; 
+                        elseif ($isAbsent) $subGrade = 'F';
+                        else $subGrade = '';
 
                         $res->subject_results->put($key, [
                             'grade' => $subGrade, 'gpa' => 0, 'total' => $subTotal,
                             'creative' => $subCreative, 'mcq' => $subMcq, 'practical' => $subPractical,
                             'is_optional' => false, 'is_absent' => $isAbsent, 'display_only' => true
                         ]);
-                        continue; 
+                        continue;
                     }
 
                     // Combined Logic
@@ -1255,7 +1268,7 @@ class ResultController extends Controller
                             else { $subGrade = 'F'; $subGP = 0.00; }
                         }
                     }
-                    
+
                     $res->subject_results->put($key, [
                         'grade' => $subGrade, 'gpa' => $subGP, 'total' => $subTotal,
                         'creative' => $subCreative, 'mcq' => $subMcq, 'practical' => $subPractical,
@@ -1273,7 +1286,7 @@ class ResultController extends Controller
                 }
 
                 // Final Calculation
-                $divisor = $exam->total_subjects_without_fourth > 0 
+                $divisor = $exam->total_subjects_without_fourth > 0
                     ? min($exam->total_subjects_without_fourth, $subjectCount)
                     : $subjectCount;
 
@@ -1282,7 +1295,7 @@ class ResultController extends Controller
 
                 $finalLetter = '';
                 if ($failedSubjectCount > 0) {
-                    $finalLetter = 'F'; $finalGpa = 0.00; 
+                    $finalLetter = 'F'; $finalGpa = 0.00;
                 } elseif ($finalGpa >= 5.00) $finalLetter = 'A+';
                 elseif ($finalGpa >= 4.00) $finalLetter = 'A';
                 elseif ($finalGpa >= 3.50) $finalLetter = 'A-';
@@ -1300,16 +1313,16 @@ class ResultController extends Controller
                 $results->push($res);
             }
         }
-        
+
         $printTitle = $lang === 'bn' ? 'টেবুলেশন শিট' : 'Tabulation Sheet';
-        
+
         $eName = ($lang === 'bn' && $exam->name_bn) ? $exam->name_bn : $exam->name;
         $cName = ($lang === 'bn' && $class->name_bn) ? $class->name_bn : $class->name;
-        
-        $printSubtitle = ($lang === 'bn' ? 'পরীক্ষা: ' : 'Exam: ') . $eName . ' | ' . 
-                        ($lang === 'bn' ? 'শ্রেণি: ' : 'Class: ') . $cName . ' | ' . 
+
+        $printSubtitle = ($lang === 'bn' ? 'পরীক্ষা: ' : 'Exam: ') . $eName . ' | ' .
+                        ($lang === 'bn' ? 'শ্রেণি: ' : 'Class: ') . $cName . ' | ' .
                         ($lang === 'bn' ? 'বছর: ' : 'Year: ') . $exam->academicYear->name;
-        
+
         if ($sectionId) {
             $sec = Section::find($sectionId);
             $printSubtitle .= ' | ' . ($lang === 'bn' ? 'শাখা: ' : 'Section: ') . ($sec->name ?? $sec->section_name);
@@ -1320,35 +1333,35 @@ class ResultController extends Controller
 
     // AJAX helpers for tabulation cascading selects
     // Note: examsByYear and sectionsByClass are already defined earlier in the file.
-    
 
-    
+
+
     public function studentsByClass(Request $request, School $school)
     {
         $classId = $request->class_id;
         $sectionId = $request->section_id;
         $yearId = $request->academic_year_id;
-        
+
         if(!$classId || !$yearId) return response()->json([]);
-        
+
         $query = StudentEnrollment::where('school_id', $school->id)
             ->where('class_id', $classId)
             ->where('academic_year_id', $yearId)
             ->where('status', 'active');
-            
+
         if($sectionId) {
             $query->where('section_id', $sectionId);
         }
-        
-        // Sorting logic: 
+
+        // Sorting logic:
         // 1. Sort by roll_no (numeric or string handling needs care)
         // 2. Fallback to name
-        
+
         $enrollments = $query->with('student')->get();
-        
+
         $students = $enrollments->sortBy(function($e){
             // Ensure roll is treated numerically if possible
-            return (int) $e->roll_no; 
+            return (int) $e->roll_no;
         })->map(function($enrollment){
              $roll = $enrollment->roll_no ?? '-';
              $name = $enrollment->student->student_name_en ?: $enrollment->student->student_name_bn;
@@ -1368,12 +1381,12 @@ class ResultController extends Controller
     {
         $exam = Exam::with(['academicYear', 'class'])->findOrFail($examId);
         if(!$exam) return null;
-        
+
         $class = SchoolClass::find($classId);
-        
+
         $examSubjects = $exam->examSubjects()->orderBy('display_order')->get();
         $examSubjectIds = $examSubjects->pluck('subject_id')->toArray();
-        
+
         $classSubjects = ClassSubject::where('class_id', $classId)
             ->whereIn('subject_id', $examSubjectIds)
             ->with('group')
@@ -1408,25 +1421,25 @@ class ResultController extends Controller
         $resultQuery = Result::with(['student'])
             ->forExam($exam->id)
             ->forClass($classId);
-            
+
         $results = $resultQuery->get();
-        
+
         // Fetch students enrolled - for attendance, we need all enrolled students in this class
         // regardless of academic year, as students may have results but be enrolled in different AY
         $enrollmentQueryForAttendance = StudentEnrollment::where('school_id', $school->id)
             ->where('class_id', $classId)
             ->where('status','active');
-            
+
         $enrolledStudentIdsForAttendance = $enrollmentQueryForAttendance->pluck('student_id')->unique()->values()->all();
-        
+
         // For other operations, we still need the AY-specific enrollments
         $enrollmentQuery = StudentEnrollment::where('school_id', $school->id)
             ->where('class_id', $classId)
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('status','active');
-            
+
         $enrolledStudentIds = $enrollmentQuery->pluck('student_id')->unique()->values()->all();
-        
+
         // Combine results students with enrolled students for comprehensive list
         $allStudentIds = collect($results->pluck('student_id'))
             ->merge($enrolledStudentIds)
@@ -1439,7 +1452,7 @@ class ResultController extends Controller
         $academicYear = $exam->academicYear;
         $startDate = $academicYear->start_date;
         $endDate = $exam->start_date->subDay();
-        
+
         $totalSchoolDays = 0;
         if ($startDate && $endDate && $startDate->lte($endDate)) {
             $weeklyHolidays = WeeklyHoliday::where('school_id', $school->id)->active()->pluck('day_number')->toArray();
@@ -1448,7 +1461,7 @@ class ResultController extends Controller
                 ->pluck('date')
                 ->map(fn($d) => $d->format('Y-m-d'))
                 ->toArray();
-            
+
             $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
             foreach ($period as $date) {
                 $dayNum = ($date->dayOfWeek == 0) ? 7 : $date->dayOfWeek;
@@ -1465,22 +1478,22 @@ class ResultController extends Controller
         // --- ATTENDANCE CALCULATION LOGIC END ---
 
         $marks = !empty($allStudentIds) ? Mark::forExam($exam->id)->whereIn('student_id', $allStudentIds)->get() : collect();
-        
+
         // Pre-load assigned subjects
         $activeStudentIds = Student::whereIn('id', $allStudentIds)->where('status','active')->pluck('id')->unique()->values()->all();
-        
+
         $allEnrollmentIds = StudentEnrollment::whereIn('student_id', $activeStudentIds)
             // Remove academic_year_id filter to include students from any AY (e.g. transfer/mismatch)
-            // ->where('academic_year_id', $exam->academic_year_id) 
+            // ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $classId) // Ensure class matches
             ->pluck('id');
-        
+
         $assignedSubjectsMap = StudentSubject::with('enrollment')->whereIn('student_enrollment_id', $allEnrollmentIds)
             ->get()
             ->groupBy(function($item) {
                 return $item->enrollment->student_id;
             });
-        
+
         $studentAssignedSubjectIds = $assignedSubjectsMap->map(function($items) {
             return $items->pluck('subject_id')->unique()->toArray();
         });
@@ -1495,18 +1508,18 @@ class ResultController extends Controller
             });
 
         $resultsCollection = collect();
-        
+
         $studentsToProcess = Student::with(['currentEnrollment.section','currentEnrollment.group'])->whereIn('id', $activeStudentIds)->get();
 
         foreach ($studentsToProcess as $stu) {
             $sid = $stu->id;
-            
+
             // DIRECT FILE DEBUG - LOOP START
             $assigned = $studentAssignedSubjectIds[$sid] ?? [];
             $intersectCount = count(array_intersect($assigned, $examSubjectIds));
             $loopLog = "Loop: {$stu->id} | Assigned: ".count($assigned)." | Intersect: $intersectCount\n";
             file_put_contents(base_path('loop_debug.log'), $loopLog, FILE_APPEND);
-            
+
             // Filter inactive/irrelevant
              if(empty(array_intersect($assigned, $examSubjectIds))) continue;
 
@@ -1531,7 +1544,7 @@ class ResultController extends Controller
             $existing->fourth_subject_code = $optSubRecord ? $optSubRecord->subject->code : null;
             $existing->fourth_subject_id = $optSubRecord ? $optSubRecord->subject_id : null;
             $existing->assigned_subject_ids = $assigned;
-            
+
             $resultsCollection->push($existing);
         }
 
@@ -1557,7 +1570,7 @@ class ResultController extends Controller
                 ]);
 
                  $remainingInGroup = $examSubjects->where('combine_group', $groupName)->where('id', '>', $sub->id)->count();
-                
+
                 if ($remainingInGroup == 0 && !in_array($groupName, $processedGroups)) {
                     $allInGroup = $examSubjects->where('combine_group', $groupName);
                     $groupTotalFull = $allInGroup->sum('total_full_mark');
@@ -1574,7 +1587,7 @@ class ResultController extends Controller
                         'practical_full_mark' => $allInGroup->sum('practical_full_mark'),
                         'total_full_mark' => $groupTotalFull,
                         'total_pass_mark' => $groupPassFull,
-                        'pass_type' => 'combined', 
+                        'pass_type' => 'combined',
                         'component_ids' => $compIds,
                         'is_combined_result' => true
                     ]);
@@ -1614,7 +1627,7 @@ class ResultController extends Controller
             foreach ($finalSubjects as $key => $fSub) {
                 $isApplicable = false;
                 $subjId = $fSub['subject_id'] ?? null;
-                if ($subjId) { $isApplicable = in_array($subjId, $assignedSubIds); } 
+                if ($subjId) { $isApplicable = in_array($subjId, $assignedSubIds); }
                 else if (!empty($fSub['component_ids'])) {
                     foreach ($fSub['component_ids'] as $cid) {
                         $comp = $examSubjects->firstWhere('id', $cid);
@@ -1628,7 +1641,7 @@ class ResultController extends Controller
                      }
                      if ($hasAnyMark) $isApplicable = true;
                 }
-                
+
                 if (!$isApplicable) continue;
 
                 $isOptional = false;
@@ -1644,7 +1657,7 @@ class ResultController extends Controller
                     foreach ($fSub['component_ids'] as $eid) {
                         $m = $studentMarks->firstWhere('exam_subject_id', $eid);
                         if ($m) {
-                            $hasRecord = true; if ($m->is_absent) $isAbsent = true; 
+                            $hasRecord = true; if ($m->is_absent) $isAbsent = true;
                             $subTotal += $m->total_marks; $subCreative += $m->creative_marks;
                             $subMcq += $m->mcq_marks; $subPractical += $m->practical_marks;
                         }
@@ -1656,7 +1669,7 @@ class ResultController extends Controller
                         'is_optional' => false, 'is_absent' => $isAbsent, 'display_only' => true,
                         'name' => $fSub['name']
                     ]);
-                    continue; 
+                    continue;
                 }
 
                 $subTotal = 0; $subCreative = 0; $subMcq = 0; $subPractical = 0;
@@ -1667,7 +1680,7 @@ class ResultController extends Controller
 
                 foreach ($fSub['component_ids'] as $eid) {
                     $m = $studentMarks->firstWhere('exam_subject_id', $eid);
-                    $subComp = $examSubjects->firstWhere('id', $eid); 
+                    $subComp = $examSubjects->firstWhere('id', $eid);
                     if ($subComp) {
                         $totalCreativePass += $subComp->creative_pass_mark;
                         $totalMcqPass += $subComp->mcq_pass_mark;
@@ -1690,11 +1703,11 @@ class ResultController extends Controller
                     if ($totalPracticalPass > 0 && $subPractical < $totalPracticalPass) $isFailed = true;
                 }
 
-                if (!$hasRecord) { $subGrade = 'N/R'; $subGP = 0.00; } 
-                elseif ($isAbsent) { $subGrade = 'F'; $subGP = 0.00; $hasAbsent = true; $isFailed = true; } 
+                if (!$hasRecord) { $subGrade = 'N/R'; $subGP = 0.00; }
+                elseif ($isAbsent) { $subGrade = 'F'; $subGP = 0.00; $hasAbsent = true; $isFailed = true; }
                 else {
                     $percent = ($fSub['total_full_mark'] > 0) ? ($subTotal / $fSub['total_full_mark']) * 100 : 0;
-                    if ($isFailed || $subTotal < $fSub['total_pass_mark']) { $subGrade = 'F'; $subGP = 0.00; } 
+                    if ($isFailed || $subTotal < $fSub['total_pass_mark']) { $subGrade = 'F'; $subGP = 0.00; }
                     else {
                         if ($percent >= 80) { $subGrade = 'A+'; $subGP = 5.00; }
                         elseif ($percent >= 70) { $subGrade = 'A'; $subGP = 4.00; }
@@ -1726,7 +1739,7 @@ class ResultController extends Controller
             $finalGpa = ($divisor > 0) ? round($totalGpa / $divisor, 2) : 0.00;
             if ($finalGpa > 5.00) $finalGpa = 5.00;
             $finalLetter = '';
-            if ($failedSubjectCount > 0) { $finalLetter = 'F'; $finalGpa = 0.00; } 
+            if ($failedSubjectCount > 0) { $finalLetter = 'F'; $finalGpa = 0.00; }
             elseif ($finalGpa >= 5.00) $finalLetter = 'A+';
             elseif ($finalGpa >= 4.00) $finalLetter = 'A';
             elseif ($finalGpa >= 3.50) $finalLetter = 'A-';
@@ -1747,7 +1760,7 @@ class ResultController extends Controller
             $stuAttendance = $allAttendances->get($sid) ?: collect();
             $presentArray = ['present', 'late', 'P', 'L'];
             $presentDays = $stuAttendance->whereIn('status', $presentArray)->count();
-            
+
             $res->attendance_days = $totalSchoolDays;
             $res->attendance_present = $presentDays;
             $res->attendance_absent = max(0, $totalSchoolDays - $presentDays);

@@ -50,9 +50,6 @@ $(document).ready(function () {
         $('.select2').select2({
             width: '100%'
         });
-        console.log('✅ Select2 loaded successfully');
-    } else {
-        console.error('❌ Select2 still not loaded');
     }
 
     /* Toastr config */

@@ -3,9 +3,6 @@
 @section('title', 'কক্ষ পরিদর্শক')
 
 @push('styles')
-    <!-- Select2 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@1.6.2/dist/select2-bootstrap4.min.css">
     <style>
         .select2-container--bootstrap4 .select2-selection--single {
             height: calc(2.25rem + 2px) !important;
@@ -54,7 +51,7 @@
                 <h5 class="card-title mb-0"><strong>Set Exam Controller</strong></h5>
             </div>
             <div class="card-body">
-                <form method="post" action="{{ route('principal.institute.exams.invigilations.controller.set', $school) }}" class="form-inline">
+                <form method="post" action="{{ route(request()->routeIs('teacher.*') ? 'teacher.institute.exams.invigilations.controller.set' : 'principal.institute.exams.invigilations.controller.set', $school) }}" class="form-inline">
                     @csrf
                     <div class="form-group mr-2 mb-2">
                         <select name="user_id" class="form-control js-teacher-controller" style="width: 250px;" required>
@@ -80,7 +77,7 @@
                 <h5 class="card-title mb-0"><strong>Assign Room Duties</strong></h5>
             </div>
             <div class="card-body">
-                <form id="dutiesForm" method="GET" action="{{ route('principal.institute.exams.invigilations.index', $school) }}">
+                <form id="dutiesForm" method="GET" action="{{ route(request()->routeIs('teacher.*') ? 'teacher.institute.exams.invigilations.index' : 'principal.institute.exams.invigilations.index', $school) }}">
                     <div class="row">
                         <div class="form-group col-md-4">
                             <label>Seat Plan</label>
@@ -106,7 +103,7 @@
                                     @endforeach
                                 </select>
                             @else
-                                <select id="filterDate" class="form-control" disabled>
+                                <select name="duty_date_disabled" class="form-control" disabled>
                                     <option value="">No dates found</option>
                                 </select>
                                 <small class="form-text text-muted">Select an active seat plan mapped to an exam date.</small>
@@ -119,7 +116,7 @@
 
                 @if($sel_plan_id && $sel_date)
                     @if($rooms->isNotEmpty())
-                        <form id="saveAssignmentsForm" method="POST" action="{{ route('principal.institute.exams.invigilations.store', $school) }}">
+                        <form id="saveAssignmentsForm" method="POST" action="{{ route(request()->routeIs('teacher.*') ? 'teacher.institute.exams.invigilations.store' : 'principal.institute.exams.invigilations.store', $school) }}">
                             @csrf
                             <input type="hidden" name="plan_id" value="{{ $sel_plan_id }}">
                             <input type="hidden" name="duty_date" value="{{ $sel_date }}">
@@ -186,15 +183,7 @@
     }
 
     withJQ(function($) {
-        // Load Select2 dynamically after jQuery is there
-        if (!$.fn.select2) {
-            var s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js';
-            s.onload = initApp;
-            document.head.appendChild(s);
-        } else {
-            initApp();
-        }
+        initApp();
 
         function initApp() {
             // Initialize standard select2

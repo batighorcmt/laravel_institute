@@ -18,8 +18,6 @@
                 window.__select2_cdn_loading = true;
                 var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css'; css.crossOrigin = 'anonymous'; document.head.appendChild(css);
                 var js = document.createElement('script'); js.src = 'https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js'; js.async = true; js.crossOrigin = 'anonymous';
-                js.onload = function(){ console.log('Select2 loaded from CDN (layout fallback)'); };
-                js.onerror = function(){ console.error('Select2 CDN failed to load'); };
                 document.head.appendChild(js);
             }
             if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureSelect2); else ensureSelect2();
@@ -348,11 +346,15 @@
                             <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.exams.*') || request()->routeIs('principal.institute.seat-plans.*') ? 'menu-open' : '' }}">
                                 <a href="#" class="nav-link {{ request()->routeIs('principal.institute.exams.*') || request()->routeIs('principal.institute.seat-plans.*') ? 'active' : '' }}">
                                     <i class="nav-icon fas fa-file-alt"></i>
-                                    <p>Manage Exam <i class="right fas fa-angle-left"></i></p>
+                                    <p>Manage Exams <i class="right fas fa-angle-left"></i></p>
                                 </a>
                                 <ul class="nav nav-treeview">
+                                    <li class="nav-item"><a href="{{ route('principal.institute.marks.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.marks.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Mark Entry</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.exams.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.exams.index') || request()->routeIs('principal.institute.exams.create') || request()->routeIs('principal.institute.exams.edit') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>পরীক্ষা তালিকা</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.exams.invigilations.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.exams.invigilations.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>কক্ষ পরিদর্শক</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.exams.room-attendance', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.exams.room-attendance') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Room Attendance</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.exams.attendance-report', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.exams.attendance-report*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Attendance Report</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.exams.find-seat', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.exams.find-seat') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Find Students Seat</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.seat-plans.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.seat-plans.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>সিট প্ল্যান</p></a></li>
                                 </ul>
                             </li>
@@ -438,7 +440,7 @@
                             </li>
                         @endif
 
-                    @elseif($u && $u->isTeacher())
+                    @elseif($u && ($u->isTeacher() || $u->isExamController($u->primarySchool()?->id)))
                         {{-- Teacher Dashboard --}}
                         <li class="nav-item">
                             <a href="{{ route('teacher.dashboard') }}" class="nav-link {{ request()->routeIs('teacher.dashboard') ? 'active' : '' }}">
@@ -505,6 +507,24 @@
                             </a>
                         </li>
                         @endif
+
+                        {{-- Manage Exams --}}
+                        <li class="nav-item has-treeview {{ request()->routeIs('teacher.institute.exams.*') ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->routeIs('teacher.institute.exams.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-file-alt"></i>
+                                <p>Manage Exams <i class="right fas fa-angle-left"></i></p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item"><a href="{{ route('teacher.institute.exams.mark-entry', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.exams.mark-entry') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Mark Entry</p></a></li>
+                                <li class="nav-item"><a href="{{ route('teacher.institute.exams.room-attendance', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.exams.room-attendance') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Room Attendance</p></a></li>
+                                <li class="nav-item"><a href="{{ route('teacher.institute.exams.find-seat', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.exams.find-seat') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Find Students Seat</p></a></li>
+                                @if($u->isPrincipal($u->primarySchool()?->id) || $u->isExamController($u->primarySchool()?->id))
+                                <li class="nav-item"><a href="{{ route('teacher.institute.exams.invigilations.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.exams.invigilations.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Invigilation Duty</p></a></li>
+                                <li class="nav-item"><a href="{{ route('teacher.institute.exams.attendance-report', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.exams.attendance-report*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Attendance Report</p></a></li>
+                                @endif
+                            </ul>
+                        </li>
+
                     @elseif($u && $u->isParent())
                         {{-- Parent Menu --}}
                         <li class="nav-item">

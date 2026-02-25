@@ -20,6 +20,11 @@ class InvigilationController extends Controller
      */
     public function index(Request $request, School $school)
     {
+        $user = Auth::user();
+        if (!$user->isPrincipal($school->id) && !$user->isExamController($school->id)) {
+            abort(403, 'Unauthorized.');
+        }
+
         // 1. Get Teachers for the Select2 dropdowns (filtered by active schoolRoles that have the 'teacher' role)
         $teachers = User::whereHas('activeSchoolRoles', function($query) use ($school) {
             $query->where('school_id', $school->id)->whereHas('role', function($r) {
@@ -103,11 +108,12 @@ class InvigilationController extends Controller
         ));
     }
 
-    /**
-     * Set the exam controller
-     */
     public function setController(Request $request, School $school)
     {
+        if (!Auth::user()->isPrincipal($school->id)) {
+            abort(403, 'Unauthorized.');
+        }
+
         $request->validate([
             'user_id' => 'required|exists:users,id'
         ]);
@@ -122,7 +128,11 @@ class InvigilationController extends Controller
             'active' => true
         ]);
 
-        return redirect()->route('principal.institute.exams.invigilations.index', $school)
+        $redirectRoute = request()->routeIs('teacher.*') 
+            ? 'teacher.institute.exams.invigilations.index' 
+            : 'principal.institute.exams.invigilations.index';
+
+        return redirect()->route($redirectRoute, $school)
             ->with('success', 'Exam controller set successfully.');
     }
 
@@ -131,6 +141,11 @@ class InvigilationController extends Controller
      */
     public function store(Request $request, School $school)
     {
+        $user = Auth::user();
+        if (!$user->isPrincipal($school->id) && !$user->isExamController($school->id)) {
+            abort(403, 'Unauthorized.');
+        }
+
         $request->validate([
             'plan_id' => 'required|exists:seat_plans,id',
             'duty_date' => 'required|date',
@@ -174,7 +189,11 @@ class InvigilationController extends Controller
             );
         }
 
-        return redirect()->route('principal.institute.exams.invigilations.index', [
+        $redirectRoute = request()->routeIs('teacher.*') 
+            ? 'teacher.institute.exams.invigilations.index' 
+            : 'principal.institute.exams.invigilations.index';
+
+        return redirect()->route($redirectRoute, [
             'school' => $school,
             'plan_id' => $plan_id,
             'duty_date' => $duty_date,

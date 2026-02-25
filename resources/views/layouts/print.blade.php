@@ -21,10 +21,10 @@
         .print-main{padding:4px 0 0;position:relative;}
         /* Reserve space for fixed footer to avoid overlap with table rows (screen + print) */
         .print-main{padding-bottom:80px;margin-bottom:0;}
-        @media print{ 
+        @media print{
             body{margin:0;padding:0;}
             .print-wrapper{position:relative;}
-            .print-main{padding-bottom:0 !important;} 
+            .print-main{padding-bottom:0 !important;}
             /* Prevent table rows from breaking across pages */
             table{page-break-after:auto;}
             table tr{page-break-inside:avoid !important;page-break-after:auto;}
@@ -59,7 +59,7 @@
         .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#bbb;transition:.3s;border-radius:24px;}
         .slider:before{content:'';position:absolute;height:20px;width:20px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,0.4);}
         input:checked + .slider{background:#1b5e20;}
-        input:checked + .slider:before{transform:translateX(30px);}        
+        input:checked + .slider:before{transform:translateX(30px);}
         .switch-labels{display:flex;justify-content:space-between;position:absolute;top:0;left:0;width:100%;height:100%;font-size:10px;font-weight:700;color:#111;pointer-events:none;}
         .switch-labels span{flex:1;display:flex;align-items:center;justify-content:center;}
         input:checked ~ .switch-labels span.bn{color:#fff;}
@@ -138,15 +138,16 @@
         @yield('content')
     </div>
     @php
-        $dtFmt = now()->format('d M Y H:i');
+        // Print datetime in 12-hour format with AM/PM
+        $dtFmt = now()->format('d M Y h:i A');
         if($lang==='bn'){
             $digitsBn = ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯'];
             $dtFmt = strtr($dtFmt,$digitsBn);
+            // Replace AM/PM markers with Bangla equivalents
+            $dtFmt = str_replace(['AM','PM'], ['এএম','পিএম'], $dtFmt);
         }
     @endphp
-    <div class="fixed-footer">
-        <div class="line">{{ $lang==='bn' ? 'Developed by, Md. Abdul Halim | Batighor Computers' : 'Developed by, Md. Abdul Halim | Batighor Computers' }} | https://batighorbd.com </div>
-    </div>
+    <!-- Developer credit removed as requested -->
     </div>
     @stack('print_scripts')
 </body>

@@ -294,6 +294,14 @@ Route::middleware(['auth'])->group(function () {
             Route::prefix('exams')->name('exams.')->group(function(){
                 Route::get('/', [App\Http\Controllers\Principal\ExamController::class,'index'])->name('index');
 
+                // Room Attendance (Fixed paths first)
+                Route::get('/room-attendance', [App\Http\Controllers\Teacher\ExamRoomAttendanceController::class, 'index'])->name('room-attendance');
+                Route::post('/room-attendance/mark', [App\Http\Controllers\Teacher\ExamRoomAttendanceController::class, 'mark'])->name('room-attendance.mark');
+                Route::post('/room-attendance/mark-all', [App\Http\Controllers\Teacher\ExamRoomAttendanceController::class, 'markAll'])->name('room-attendance.mark-all');
+                Route::get('/attendance-report', [App\Http\Controllers\Teacher\ExamController::class, 'attendanceReport'])->name('attendance-report');
+                Route::get('/attendance-report/overall', [App\Http\Controllers\Teacher\ExamController::class, 'overallAttendanceReport'])->name('attendance-report.overall');
+                Route::get('/find-seat', [App\Http\Controllers\Teacher\ExamController::class, 'findSeat'])->name('find-seat');
+
                 // Invigilation routes
                 Route::prefix('invigilations')->name('invigilations.')->group(function() {
                     Route::get('/', [App\Http\Controllers\Principal\InvigilationController::class, 'index'])->name('index');
@@ -590,6 +598,32 @@ Route::middleware(['auth'])->group(function () {
 
             // Billing collection page for teachers (restricted by assigned class in controller)
             Route::get('/billing/collect', [App\Http\Controllers\Teacher\Billing\CollectController::class, 'create'])->name('billing.collect');
+
+            // Manage Exams (all teachers)
+            Route::prefix('exams')->name('exams.')->group(function () {
+                Route::get('/todays-duty',       [App\Http\Controllers\Teacher\ExamController::class, 'todaysDuty'])->name('todays-duty');
+                Route::get('/mark-entry',        [App\Http\Controllers\Teacher\ExamController::class, 'markEntry'])->name('mark-entry');
+                Route::get('/load-marks-form',   [App\Http\Controllers\Teacher\ExamController::class, 'loadMarksForm'])->name('load-marks-form');
+                Route::post('/store-marks',      [App\Http\Controllers\Teacher\ExamController::class, 'storeMarks'])->name('store-marks');
+                Route::get('/get-classes',       [App\Http\Controllers\Teacher\ExamController::class, 'getClasses'])->name('get-classes');
+                Route::get('/get-by-status',     [App\Http\Controllers\Teacher\ExamController::class, 'getExamsByStatus'])->name('get-by-status');
+                Route::get('/get-subjects',      [App\Http\Controllers\Teacher\ExamController::class, 'getSubjects'])->name('get-subjects');
+                Route::post('/save-mark',        [App\Http\Controllers\Teacher\ExamController::class, 'saveMark'])->name('save-mark');
+                Route::get('/room-attendance',   [App\Http\Controllers\Teacher\ExamRoomAttendanceController::class, 'index'])->name('room-attendance');
+                Route::post('/room-attendance/mark', [App\Http\Controllers\Teacher\ExamRoomAttendanceController::class, 'mark'])->name('room-attendance.mark');
+                Route::post('/room-attendance/mark-all', [App\Http\Controllers\Teacher\ExamRoomAttendanceController::class, 'markAll'])->name('room-attendance.mark-all');
+                Route::get('/find-seat',         [App\Http\Controllers\Teacher\ExamController::class, 'findSeat'])->name('find-seat');
+                // Invigilation management (Exam Controllers)
+                Route::prefix('invigilations')->name('invigilations.')->group(function() {
+                    Route::get('/', [\App\Http\Controllers\Principal\InvigilationController::class, 'index'])->name('index');
+                    Route::post('/controller', [\App\Http\Controllers\Principal\InvigilationController::class, 'setController'])->name('controller.set');
+                    Route::post('/', [\App\Http\Controllers\Principal\InvigilationController::class, 'store'])->name('store');
+                });
+
+                // Attendance Reports (Exam Controllers)
+                Route::get('/attendance-report', [App\Http\Controllers\Teacher\ExamController::class, 'attendanceReport'])->name('attendance-report');
+                Route::get('/attendance-report/overall', [App\Http\Controllers\Teacher\ExamController::class, 'overallAttendanceReport'])->name('attendance-report.overall');
+            });
         });
     });
 

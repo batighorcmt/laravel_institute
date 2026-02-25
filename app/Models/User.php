@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Sanctum\HasApiTokens;
 
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -152,5 +153,18 @@ class User extends Authenticatable
     public function student()
     {
         return $this->hasOne(Student::class);
+    }
+
+    /**
+     * Check if this user is an active exam controller for a school.
+     */
+    public function isExamController(?int $schoolId = null): bool
+    {
+        $query = ExamController::where('user_id', $this->id)
+            ->where('active', true);
+        if ($schoolId) {
+            $query->where('school_id', $schoolId);
+        }
+        return $query->exists();
     }
 }

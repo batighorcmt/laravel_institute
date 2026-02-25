@@ -41,6 +41,11 @@ class SeatPlanRoom extends Model
         return $this->hasMany(SeatPlanAllocation::class, 'room_id');
     }
 
+    public function invigilations(): HasMany
+    {
+        return $this->hasMany(ExamRoomInvigilation::class, 'seat_plan_room_id');
+    }
+
     // Accessors
     public function getTotalCapacityAttribute(): int
     {
