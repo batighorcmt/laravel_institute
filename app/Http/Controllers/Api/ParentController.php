@@ -15,6 +15,8 @@ use App\Models\LessonEvaluationRecord;
 use App\Models\ParentFeedback;
 use App\Models\Teacher;
 use App\Models\ClassSubject;
+use App\Models\StudentSubject;
+use App\Models\StudentEnrollment;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Resources\StudentResource;
