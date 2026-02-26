@@ -20,7 +20,7 @@ class HomeworkListPage extends ConsumerWidget {
           itemCount: homeworks.length,
           itemBuilder: (context, index) {
             final hw = homeworks[index];
-            final isUrgent = index == 0; // Keeping logic for visual demo
+            const isUrgent = false; // Real priority logic can be added here if API supports it
 
             return Card(
               margin: const EdgeInsets.only(bottom: 12),

@@ -20,7 +20,7 @@ class NoticeBoardPage extends ConsumerWidget {
           itemCount: notices.length,
           itemBuilder: (context, index) {
             final notice = notices[index];
-            final isHighPriority = notice['priority'] == 'high';
+            const isHighPriority = false;
 
             return Card(
               margin: const EdgeInsets.only(bottom: 16),

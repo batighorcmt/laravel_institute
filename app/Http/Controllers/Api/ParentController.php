@@ -77,22 +77,7 @@ class ParentController extends Controller
         ]);
     }
 
-    public function examResults(Request $request)
-    {
-        $studentId = $request->get('student_id');
-        $students = $this->resolveChildren($request);
-        $ids = $students->pluck('id');
-        $query = Result::query()->published()->whereIn('student_id', $ids)->orderByDesc('published_at');
-        if ($studentId && $ids->contains($studentId)) {
-            $query->where('student_id', $studentId);
-        }
-        if ($request->filled('exam_id')) { $query->forExam($request->get('exam_id')); }
-        $results = $query->limit(100)->get();
-        return ResultResource::collection($results)->additional([
-            'children' => $students->count(),
-            'message' => 'প্রকাশিত পরীক্ষার ফলাফল',
-        ]);
-    }
+
 
     public function leavesIndex(Request $request)
     {
@@ -209,33 +194,7 @@ class ParentController extends Controller
         ]);
     }
 
-    public function extraAttendance(Request $request)
-    {
-        $studentId = $request->get('student_id');
-        $children = $this->resolveChildren($request);
-        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
 
-        if (!$student) {
-            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
-        }
-
-        $attendance = ExtraClassAttendance::where('student_id', $student->id)
-            ->with('extraClass.subject')
-            ->orderByDesc('date')
-            ->limit(100)
-            ->get();
-
-        return response()->json([
-            'data' => $attendance->map(fn($a) => [
-                'id' => $a->id,
-                'date' => $a->date->toDateString(),
-                'status' => $a->status,
-                'class_name' => $a->extraClass->name,
-                'subject' => $a->extraClass->subject->name ?? 'N/A',
-            ]),
-            'message' => 'এক্সট্রা ক্লাস হাজিরা',
-        ]);
-    }
 
     public function lessonEvaluations(Request $request)
     {

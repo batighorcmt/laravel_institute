@@ -65,13 +65,13 @@ Route::prefix('v1')->group(function () {
     Route::get('parent/children', [\App\Http\Controllers\Api\ParentController::class, 'children'])->middleware('role:parent');
     Route::get('parent/homework', [\App\Http\Controllers\Api\ParentController::class, 'homework'])->middleware('role:parent');
     Route::get('parent/attendance', [\App\Http\Controllers\Api\ParentController::class, 'attendance'])->middleware('role:parent');
-    Route::get('parent/exam-results', [\App\Http\Controllers\Api\ParentController::class, 'examResults'])->middleware('role:parent');
+
     Route::get('parent/leaves', [\App\Http\Controllers\Api\ParentController::class, 'leavesIndex'])->middleware('role:parent');
     Route::post('parent/leaves', [\App\Http\Controllers\Api\ParentController::class, 'leavesStore'])->middleware('role:parent');
     Route::get('parent/profile', [\App\Http\Controllers\Api\ParentController::class, 'profile'])->middleware('role:parent');
     Route::get('parent/subjects', [\App\Http\Controllers\Api\ParentController::class, 'subjects'])->middleware('role:parent');
     Route::get('parent/routine', [\App\Http\Controllers\Api\ParentController::class, 'classRoutine'])->middleware('role:parent');
-    Route::get('parent/extra-attendance', [\App\Http\Controllers\Api\ParentController::class, 'extraAttendance'])->middleware('role:parent');
+
     Route::get('parent/lesson-evaluations', [\App\Http\Controllers\Api\ParentController::class, 'lessonEvaluations'])->middleware('role:parent');
     Route::get('parent/teachers', [\App\Http\Controllers\Api\ParentController::class, 'teachers'])->middleware('role:parent');
     Route::get('parent/feedback', [\App\Http\Controllers\Api\ParentController::class, 'feedbackIndex'])->middleware('role:parent');

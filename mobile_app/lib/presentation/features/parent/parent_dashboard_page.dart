@@ -43,14 +43,14 @@ class ParentDashboardPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.waving_hand, color: Colors.amberAccent, size: 28),
-                    SizedBox(width: 10),
+                    const Icon(Icons.waving_hand, color: Colors.amberAccent, size: 28),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'স্বাগতম, অভিভাবক!',
-                        style: TextStyle(
+                        'স্বাগতম, ${ref.watch(authProvider).asData?.value?.bnName ?? ref.watch(authProvider).asData?.value?.name ?? 'অভিভাবক'}!',
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
