@@ -43,25 +43,42 @@ class ParentController extends Controller
 
     public function homework(Request $request)
     {
-        $schoolId = $request->attributes->get('current_school_id');
         $date = $request->get('date');
         $studentId = $request->get('student_id');
         $students = $this->resolveChildren($request);
+        $schoolId = $request->attributes->get('current_school_id');
         
-        if ($studentId) {
-            $classIds = $students->where('id', $studentId)->pluck('class_id')->filter()->unique()->values();
-        } else {
-            $classIds = $students->pluck('class_id')->filter()->unique()->values();
+        $query = Homework::query()->with(['subject', 'teacher']);
+        
+        if ($schoolId) { 
+            $query->forSchool($schoolId); 
         }
 
-        $query = Homework::query()->with(['subject', 'teacher']);
-        if ($schoolId) { $query->forSchool($schoolId); }
-        if ($classIds->isNotEmpty()) { $query->whereIn('class_id', $classIds); }
+        if ($studentId) {
+            $student = $students->where('id', $studentId)->first();
+            if ($student) {
+                $query->where('class_id', $student->class_id);
+                $enrollment = $student->currentEnrollment;
+                if ($enrollment) {
+                    $query->where('section_id', $enrollment->section_id);
+                }
+            }
+        } else {
+            // Apply filters based on all children if no specific student is selected
+            $classIds = $students->pluck('class_id')->filter()->unique();
+            $sectionIds = $students->map(fn($s) => $s->currentEnrollment?->section_id)->filter()->unique();
+            
+            if ($classIds->isNotEmpty()) {
+                $query->whereIn('class_id', $classIds);
+            }
+            if ($sectionIds->isNotEmpty()) {
+                $query->whereIn('section_id', $sectionIds);
+            }
+        }
 
         if ($date) {
             $query->forDate($date);
         } else {
-            // By default, show homework from last 30 days or any with future submission dates
             $query->where(function($q) {
                 $q->where('homework_date', '>=', Carbon::now()->subDays(30)->toDateString())
                   ->orWhere('submission_date', '>=', Carbon::now()->toDateString());
@@ -351,13 +368,13 @@ class ParentController extends Controller
         $schoolId = $request->attributes->get('current_school_id');
         
         // ১. সরাসরি ইউজার আইডির সাথে যুক্ত শিক্ষার্থী (যদি শিক্ষার্থী নিজে লগইন করে)
-        $directStudent = Student::active()->where('user_id', $user->id)->first();
+        $directStudent = Student::active()->where('user_id', $user->id)->with('currentEnrollment')->first();
         if ($directStudent) {
             return collect([$directStudent]);
         }
 
         // ২. অভিভাবক হিসেবে যুক্ত শিক্ষার্থী (guardian_phone দিয়ে)
-        $query = Student::query()->active();
+        $query = Student::query()->active()->with('currentEnrollment');
         if ($schoolId) { $query->forSchool($schoolId); }
         $query->where(function($q) use ($user) {
             $q->where('guardian_phone', $user->username)
