@@ -239,6 +239,36 @@ class ParentDashboardPage extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
 
+          // Lesson Evaluation Section
+          const _SectionTitle(title: 'আজকের লেসন ইভ্যালুয়েশন'),
+          const SizedBox(height: 10),
+          Consumer(
+            builder: (context, ref, _) {
+              final profileAsync = ref.watch(parentStudentProfileProvider);
+              return profileAsync.when(
+                data: (profile) {
+                  final evals = (profile['today_evaluations'] as List?)?.cast<Map<String, dynamic>>();
+                  if (evals == null || evals.isEmpty) {
+                    return const _EmptyWidget(message: 'আজকের কোনো লেসন ইভ্যালুয়েশন পাওয়া যায়নি');
+                  }
+
+                  return Column(
+                    children: evals.map((ev) => _EvaluationStatusCard(
+                      period: ev['period'],
+                      subject: ev['subject'] ?? 'N/A',
+                      status: ev['status'],
+                      time: ev['time'],
+                      notes: ev['notes'],
+                    )).toList(),
+                  );
+                },
+                loading: () => const _ShimmerBlock(height: 80),
+                error: (_, __) => const SizedBox.shrink(),
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+
           const _SectionTitle(title: 'সাম্প্রতিক হোমওয়ার্ক'),
           const SizedBox(height: 10),
           homeworkAsync.when(
@@ -352,6 +382,115 @@ class _AttendanceStatusCard extends StatelessWidget {
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EvaluationStatusCard extends StatelessWidget {
+  final int? period;
+  final String subject;
+  final String? status;
+  final String? time;
+  final String? notes;
+
+  const _EvaluationStatusCard({
+    this.period,
+    required this.subject,
+    this.status,
+    this.time,
+    this.notes,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    String statusText = 'এখনো মূল্যায়ন হয়নি';
+    Color statusColor = Colors.grey;
+    IconData statusIcon = Icons.hourglass_empty;
+
+    if (status == 'completed') {
+      statusText = 'সম্পন্ন';
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle;
+    } else if (status == 'partial') {
+      statusText = 'আংশিক';
+      statusColor = Colors.orange;
+      statusIcon = Icons.pending;
+    } else if (status == 'not_done') {
+      statusText = 'করেনি';
+      statusColor = Colors.red;
+      statusIcon = Icons.cancel;
+    } else if (status == 'absent') {
+      statusText = 'অনুপস্থিত';
+      statusColor = Colors.blueGrey;
+      statusIcon = Icons.person_off;
+    }
+
+    String? formattedTime;
+    if (time != null) {
+      try {
+        final dt = DateTime.parse(time!).toLocal();
+        final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+        final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+        final minute = dt.minute.toString().padLeft(2, '0');
+        formattedTime = '$hour:$minute $ampm';
+      } catch (_) {}
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                  child: Text('পিরিয়ড: ${period ?? 'N/A'}', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 11)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Text(subject, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                  child: Row(
+                    children: [
+                      Icon(statusIcon, color: statusColor, size: 14),
+                      const SizedBox(width: 4),
+                      Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (formattedTime != null || notes != null) ...[
+              const Divider(height: 16),
+              if (formattedTime != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text('মূল্যায়নের সময়: $formattedTime', style: TextStyle(color: Colors.grey[600], fontSize: 11)),
+                    ],
+                  ),
+                ),
+              if (notes != null && notes!.isNotEmpty)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.notes, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Expanded(child: Text('নোট: $notes', style: TextStyle(color: Colors.grey[600], fontSize: 11))),
+                  ],
+                ),
+            ],
           ],
         ),
       ),

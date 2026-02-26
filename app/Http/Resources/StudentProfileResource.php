@@ -177,6 +177,29 @@ class StudentProfileResource extends JsonResource
                     ];
                 }),
             ],
+
+            'today_evaluations' => ($en && $en->class_id && $en->section_id) ? 
+                \App\Models\RoutineEntry::where('school_id', $st->school_id)
+                    ->where('class_id', $en->class_id)
+                    ->where('section_id', $en->section_id)
+                    ->where('day_of_week', strtolower(now()->format('l')))
+                    ->with(['subject'])
+                    ->orderBy('period_number')
+                    ->get()
+                    ->map(function($routine) use ($st) {
+                        $eval = \App\Models\LessonEvaluation::where('routine_entry_id', $routine->id)
+                            ->whereDate('evaluation_date', now())
+                            ->with(['records' => fn($q) => $q->where('student_id', $st->id)])
+                            ->first();
+                        
+                        return [
+                            'period' => $routine->period_number,
+                            'subject' => $routine->subject?->name,
+                            'status' => $eval?->records->first()?->status,
+                            'notes' => $eval?->notes,
+                            'time' => optional($eval?->evaluation_time)->toIso8601String(),
+                        ];
+                    }) : [],
         ];
     }
 }
