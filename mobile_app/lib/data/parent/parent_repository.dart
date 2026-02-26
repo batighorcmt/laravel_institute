@@ -71,6 +71,26 @@ class ParentRepository {
     return resp.data;
   }
 
+  Future<Map<String, dynamic>> getProfile({int? studentId}) async {
+    final resp = await _dio.get('parent/profile', queryParameters: studentId != null ? {'student_id': studentId} : {});
+    return resp.data['data'] as Map<String, dynamic>;
+  }
+
+  Future<void> updatePhoto(String filePath) async {
+    final formData = FormData.fromMap({
+      'photo': await MultipartFile.fromFile(filePath, filename: 'photo.jpg'),
+    });
+    await _dio.post('parent/update-photo', data: formData);
+  }
+
+  Future<void> changePassword(String current, String novel, String confirm) async {
+    await _dio.post('auth/change-password', data: {
+      'current_password': current,
+      'new_password': novel,
+      'new_password_confirmation': confirm,
+    });
+  }
+
   List<dynamic> _parseList(dynamic data) {
     if (data is List) return data;
     if (data is Map<String, dynamic> && data['data'] is List) {

@@ -15,6 +15,7 @@ class _NavItem {
 const _navItems = [
   _NavItem(label: 'ড্যাসবোর্ড', icon: Icons.dashboard_outlined, path: '/parent/dashboard'),
   _NavItem(label: 'প্রোফাইল', icon: Icons.person_outline, path: '/parent/profile'),
+  _NavItem(label: 'আমার সন্তান', icon: Icons.child_care_outlined, path: '/parent/my-child'),
   _NavItem(label: 'পঠিত বিষয়', icon: Icons.book_outlined, path: '/parent/subjects'),
   _NavItem(label: 'ক্লাস রুটিন', icon: Icons.schedule_outlined, path: '/parent/routine'),
   _NavItem(label: 'হোমওয়ার্ক', icon: Icons.assignment_outlined, path: '/parent/homework'),
@@ -34,7 +35,8 @@ class ParentShellPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentPath = GoRouterState.of(context).matchedLocation;
     final profile = ref.watch(authProvider).value;
-    final parentName = profile?.bnName ?? profile?.name ?? 'অভিভাবক';
+    final studentProfile = ref.watch(parentStudentProfileProvider).value;
+    final parentName = studentProfile?['guardian_name_bn'] ?? studentProfile?['guardian_name_en'] ?? 'অভিভাবক';
     final cs = Theme.of(context).colorScheme;
 
     final currentItem = _navItems.firstWhere(
@@ -186,12 +188,13 @@ class ParentShellPage extends ConsumerWidget {
                   final item = _navItems[index];
                   final isSelected = currentPath == item.path;
                   return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 0.5),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       color: isSelected ? cs.primary.withOpacity(0.12) : null,
                     ),
                     child: ListTile(
+                      dense: true,
                       leading: Icon(
                         item.icon,
                         color: isSelected ? cs.primary : Colors.grey[700],

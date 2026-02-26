@@ -15,6 +15,8 @@ use App\Models\LessonEvaluationRecord;
 use App\Models\ParentFeedback;
 use App\Models\Teacher;
 use App\Models\ClassSubject;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
 use App\Http\Resources\StudentResource;
 use App\Http\Resources\HomeworkResource;
 use App\Http\Resources\StudentAttendanceResource;
@@ -251,29 +253,19 @@ class ParentController extends Controller
 
     public function teachers(Request $request)
     {
-        $studentId = $request->get('student_id');
         $children = $this->resolveChildren($request);
-        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
-
-        if (!$student) {
-            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        $student = $children->first();
+        $schoolId = $student?->school_id;
+        
+        $query = Teacher::query()->active();
+        if ($schoolId) {
+            $query->forSchool($schoolId);
         }
-
-        // Teachers assigned to this student's class routine
-        $enrollment = $student->enrollments()->latest()->first();
-        if (!$enrollment) {
-            return response()->json(['message' => 'এনরোলমেন্ট পাওয়া যায়নি'], 404);
-        }
-
-        $teacherIds = RoutineEntry::where('class_id', $enrollment->class_id)
-            ->where('section_id', $enrollment->section_id)
-            ->pluck('teacher_id')
-            ->unique();
-
-        $teachers = Teacher::whereIn('id', $teacherIds)->get();
+        
+        $teachers = $query->orderBy('name')->get();
 
         return TeacherResource::collection($teachers)->additional([
-            'message' => 'শিক্ষক তালিকা',
+            'message' => 'বিদ্যালয়ের সকল শিক্ষক তালিকা',
         ]);
     }
 
@@ -312,6 +304,44 @@ class ParentController extends Controller
         ]);
 
         return new ParentFeedbackResource($feedback);
+    }
+
+    public function updatePhoto(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|max:2048',
+        ]);
+
+        $user = $request->user();
+        $path = $request->file('photo')->store('avatars', 'public');
+
+        $user->avatar = $path;
+        $user->save();
+
+        return response()->json([
+            'message' => 'প্রোফাইল ছবি আপডেট হয়েছে',
+            'photo_url' => Storage::url($path),
+        ]);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:6|confirmed',
+        ]);
+
+        $user = $request->user();
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'বর্তমান পাসওয়ার্ড সঠিক নয়'], 422);
+        }
+
+        $user->password = \Illuminate\Support\Facades\Hash::make($request->new_password);
+        $user->password_changed_at = now();
+        $user->save();
+
+        return response()->json(['message' => 'পাসওয়ার্ড সফলভাবে পরিবর্তিত হয়েছে']);
     }
 
     /* Utility: resolve parent children set */

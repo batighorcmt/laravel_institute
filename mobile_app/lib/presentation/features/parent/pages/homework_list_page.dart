@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../../core/config/env.dart';
 import '../../../state/parent_state.dart';
 
 class HomeworkListPage extends ConsumerWidget {
@@ -56,15 +58,30 @@ class HomeworkListPage extends ConsumerWidget {
                     child: subjectsAsync.when(
                       data: (items) => DropdownButtonFormField<int>(
                         value: selectedSubjectId,
-                        decoration: const InputDecoration(labelText: 'বিষয়', isDense: true, contentPadding: EdgeInsets.all(8), border: OutlineInputBorder()),
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'বিষয়',
+                          isDense: true,
+                          contentPadding: EdgeInsets.all(8),
+                          border: OutlineInputBorder(),
+                          labelStyle: TextStyle(fontSize: 12),
+                        ),
+                        style: const TextStyle(fontSize: 12, color: Colors.black),
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('সব বিষয়')),
-                          ...items.map((e) => DropdownMenuItem(value: e['id'] as int, child: Text(e['name'] ?? ''))),
+                          const DropdownMenuItem(value: null, child: Text('সব বিষয়', style: TextStyle(fontSize: 12))),
+                          ...items.map((e) => DropdownMenuItem(
+                                value: e['id'] as int,
+                                child: Text(
+                                  e['name'] ?? '',
+                                  style: const TextStyle(fontSize: 12),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              )),
                         ],
                         onChanged: (val) => ref.read(homeworkSubjectFilterProvider.notifier).state = val,
                       ),
-                      loading: () => const Text('লোড হচ্ছে...'),
-                      error: (_, __) => const Text('ত্রুটি'),
+                      loading: () => const Text('লোড হচ্ছে...', style: TextStyle(fontSize: 12)),
+                      error: (_, __) => const Text('ত্রুটি', style: TextStyle(fontSize: 12)),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -72,15 +89,30 @@ class HomeworkListPage extends ConsumerWidget {
                     child: teachersAsync.when(
                       data: (items) => DropdownButtonFormField<int>(
                         value: selectedTeacherId,
-                        decoration: const InputDecoration(labelText: 'শিক্ষক', isDense: true, contentPadding: EdgeInsets.all(8), border: OutlineInputBorder()),
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'শিক্ষক',
+                          isDense: true,
+                          contentPadding: EdgeInsets.all(8),
+                          border: OutlineInputBorder(),
+                          labelStyle: TextStyle(fontSize: 12),
+                        ),
+                        style: const TextStyle(fontSize: 12, color: Colors.black),
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('সব শিক্ষক')),
-                          ...items.map((e) => DropdownMenuItem(value: e['id'] as int, child: Text(e['name'] ?? ''))),
+                          const DropdownMenuItem(value: null, child: Text('সব শিক্ষক', style: TextStyle(fontSize: 12))),
+                          ...items.map((e) => DropdownMenuItem(
+                                value: e['id'] as int,
+                                child: Text(
+                                  e['name'] ?? '',
+                                  style: const TextStyle(fontSize: 12),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              )),
                         ],
                         onChanged: (val) => ref.read(homeworkTeacherFilterProvider.notifier).state = val,
                       ),
-                      loading: () => const Text('লোড হচ্ছে...'),
-                      error: (_, __) => const Text('ত্রুটি'),
+                      loading: () => const Text('লোড হচ্ছে...', style: TextStyle(fontSize: 12)),
+                      error: (_, __) => const Text('ত্রুটি', style: TextStyle(fontSize: 12)),
                     ),
                   ),
                 ],
@@ -152,7 +184,12 @@ class HomeworkListPage extends ConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Text('শিক্ষক', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                                    Text(hw['teacher_name']?.toString() ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                    Text(
+                                      hw['teacher_name']?.toString() ?? 'N/A',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -169,9 +206,24 @@ class HomeworkListPage extends ConsumerWidget {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
-                              onPressed: hasAttachment ? () {
-                                // Attachment logic if URL launcher is available
-                              } : null,
+                              onPressed: hasAttachment
+                                  ? () async {
+                                      final storageUrl = Env.apiBaseUrl.replaceAll('/api/v1/', '/storage/');
+                                      final attachmentPath = hw['attachment'].toString();
+                                      // Correctly encoding the path manually just in case Uri.parse has trouble with spaces
+                                      final encodedPath = attachmentPath.split('/').map((e) => Uri.encodeComponent(e)).join('/');
+                                      final url = Uri.parse(storageUrl + encodedPath);
+                                      if (await canLaunchUrl(url)) {
+                                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                                      } else {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('ডাউনলোড লিঙ্কটি ওপেন করা সম্ভব হচ্ছে না')),
+                                          );
+                                        }
+                                      }
+                                    }
+                                  : null,
                               icon: const Icon(Icons.file_download, size: 18),
                               label: Text(hasAttachment ? 'অ্যাটাচমেন্ট ডাউনলোড করুন' : 'অ্যাটাচমেন্ট নেই'),
                               style: ElevatedButton.styleFrom(

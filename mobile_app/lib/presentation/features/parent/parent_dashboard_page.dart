@@ -49,13 +49,19 @@ class ParentDashboardPage extends ConsumerWidget {
                     const Icon(Icons.waving_hand, color: Colors.amberAccent, size: 28),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        'স্বাগতম, ${ref.watch(authProvider).asData?.value?.bnName ?? ref.watch(authProvider).asData?.value?.name ?? 'অভিভাবক'}!',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final profile = ref.watch(parentStudentProfileProvider).value;
+                          final name = profile?['guardian_name_bn'] ?? profile?['guardian_name_en'] ?? 'অভিভাবক';
+                          return Text(
+                            'স্বাগতম, $name!',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -114,49 +120,6 @@ class ParentDashboardPage extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 24),
-
-          // Children Section
-          const _SectionTitle(title: 'সন্তান সমূহ'),
-          const SizedBox(height: 10),
-          childrenAsync.when(
-            data: (items) {
-              if (items.isEmpty) return const _EmptyWidget(message: 'কোনো সন্তান যুক্ত নেই');
-              return Column(
-                children: items.map((e) {
-                  final isSelected = e['id'] == selectedStudentId;
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    elevation: isSelected ? 4 : 1,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: isSelected ? BorderSide(color: cs.primary, width: 2) : BorderSide.none,
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: (isSelected ? cs.primary : Colors.grey).withOpacity(0.15),
-                        child: Text(
-                          (e['name']?[0] ?? 'S').toUpperCase(),
-                          style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? cs.primary : Colors.grey),
-                        ),
-                      ),
-                      title: Text(e['name'] ?? 'Student', style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text('শ্রেণি: ${e['class'] ?? 'N/A'} | শাখা: ${e['section'] ?? 'N/A'}'),
-                      trailing: isSelected ? Icon(Icons.check_circle, color: cs.primary) : null,
-                      onTap: () {
-                         ref.read(selectedStudentIdProvider.notifier).update(e['id']);
-                      },
-                    ),
-                  );
-                }).toList(),
-              );
-            },
-            loading: () => const _ShimmerBlock(height: 80),
-            error: (err, _) => _ErrorWidget(message: err.toString()),
-          ),
-          const SizedBox(height: 24),
-
-          // Recent Homework
           const _SectionTitle(title: 'সাম্প্রতিক হোমওয়ার্ক'),
           const SizedBox(height: 10),
           homeworkAsync.when(

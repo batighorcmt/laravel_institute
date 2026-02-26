@@ -8,6 +8,7 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login']);
     Route::middleware(['auth:sanctum','throttle:120,1'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
+    Route::post('auth/change-password', [AuthController::class, 'changePassword']);
     Route::get('me', [AuthController::class, 'me']);
 
     // Notices (public to authenticated users; create restricted to principal)
@@ -76,6 +77,8 @@ Route::prefix('v1')->group(function () {
     Route::get('parent/teachers', [\App\Http\Controllers\Api\ParentController::class, 'teachers'])->middleware('role:parent');
     Route::get('parent/feedback', [\App\Http\Controllers\Api\ParentController::class, 'feedbackIndex'])->middleware('role:parent');
     Route::post('parent/feedback', [\App\Http\Controllers\Api\ParentController::class, 'feedbackStore'])->middleware('role:parent');
+    Route::post('parent/update-photo', [\App\Http\Controllers\Api\ParentController::class, 'updatePhoto'])->middleware('role:parent');
+    Route::post('parent/change-password', [\App\Http\Controllers\Api\ParentController::class, 'changePassword'])->middleware('role:parent');
     // Device token endpoints
     Route::post('devices', [\App\Http\Controllers\Api\DeviceTokenController::class, 'store']);
     Route::delete('devices/{deviceToken}', [\App\Http\Controllers\Api\DeviceTokenController::class, 'destroy']);

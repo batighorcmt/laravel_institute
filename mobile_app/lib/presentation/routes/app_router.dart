@@ -26,6 +26,7 @@ import '../features/parent/pages/leave_application_page.dart';
 import '../features/parent/pages/notice_board_page.dart';
 import '../features/parent/pages/teacher_list_page.dart';
 import '../features/parent/pages/feedback_page.dart';
+import '../features/parent/pages/my_child_details_page.dart';
 
 // Helper to refresh GoRouter when auth state changes.
 class GoRouterRefreshNotifier extends ChangeNotifier {
@@ -150,6 +151,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/parent/profile',
             name: 'parent-profile',
             builder: (context, state) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: '/parent/my-child',
+            name: 'parent-my-child',
+            builder: (context, state) => const MyChildDetailsPage(),
           ),
           GoRoute(
             path: '/parent/subjects',

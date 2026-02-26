@@ -101,3 +101,8 @@ final parentSubjectsProvider = FutureProvider<List<dynamic>>((ref) {
 final parentFeedbackProvider = FutureProvider<List<dynamic>>((ref) {
   return ref.watch(parentRepositoryProvider).getFeedback();
 });
+
+final parentStudentProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final studentId = ref.watch(selectedStudentIdProvider);
+  return ref.read(parentRepositoryProvider).getProfile(studentId: studentId);
+});
