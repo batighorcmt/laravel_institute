@@ -143,36 +143,39 @@ class StudentProfileResource extends JsonResource
             ]) : [],
             
             'today_attendance' => [
-                'class' => \App\Models\Attendance::where('student_id', $st?->id)
+                'class' => ($ca = \App\Models\Attendance::where('student_id', $st?->id)
                     ->whereDate('date', now())
                     ->select('status', 'updated_at')
-                    ->first(),
+                    ->first()) ? [
+                        'status' => $ca->status,
+                        'updated_at' => optional($ca->updated_at)->toIso8601String()
+                    ] : null,
                 'extra_classes' => \App\Models\ExtraClassEnrollment::where('student_id', $st?->id)
                     ->where('status', 'active')
                     ->with(['extraClass'])
                     ->get()
-                    ->map(fn($en) => [
-                        'name' => $en->extraClass?->name,
-                        'status' => \App\Models\ExtraClassAttendance::where('student_id', $st?->id)
+                    ->map(function($en) use ($st) {
+                        $att = \App\Models\ExtraClassAttendance::where('student_id', $st?->id)
                             ->where('extra_class_id', $en->extra_class_id)
                             ->whereDate('date', now())
-                            ->first()?->status,
-                        'time' => \App\Models\ExtraClassAttendance::where('student_id', $st?->id)
-                            ->where('extra_class_id', $en->extra_class_id)
-                            ->whereDate('date', now())
-                            ->first()?->updated_at,
-                    ]),
-                'teams' => $st?->teams()->wherePivot('status', 'active')->get()->map(fn($tm) => [
-                    'name' => $tm->name,
-                    'status' => \App\Models\TeamAttendance::where('student_id', $st?->id)
+                            ->first();
+                        return [
+                            'name' => $en->extraClass?->name,
+                            'status' => $att?->status,
+                            'time' => optional($att?->updated_at)->toIso8601String(),
+                        ];
+                    }),
+                'teams' => $st?->teams()->wherePivot('status', 'active')->get()->map(function($tm) use ($st) {
+                    $att = \App\Models\TeamAttendance::where('student_id', $st?->id)
                         ->where('team_id', $tm->id)
                         ->whereDate('date', now())
-                        ->first()?->status,
-                    'time' => \App\Models\TeamAttendance::where('student_id', $st?->id)
-                        ->where('team_id', $tm->id)
-                        ->whereDate('date', now())
-                        ->first()?->updated_at,
-                ]),
+                        ->first();
+                    return [
+                        'name' => $tm->name,
+                        'status' => $att?->status,
+                        'time' => optional($att?->updated_at)->toIso8601String(),
+                    ];
+                }),
             ],
         ];
     }

@@ -310,7 +310,7 @@ class _AttendanceStatusCard extends StatelessWidget {
     String? formattedTime;
     if (time != null) {
       try {
-        final dt = DateTime.parse(time!);
+        final dt = DateTime.parse(time!).toLocal();
         final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
         final ampm = dt.hour >= 12 ? 'PM' : 'AM';
         final minute = dt.minute.toString().padLeft(2, '0');
