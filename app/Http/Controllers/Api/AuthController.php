@@ -55,6 +55,7 @@ class AuthController extends Controller
             'roles' => $this->extractRoles($user),
             'bn_name' => $user->name, // default
             'mobile' => $user->username, // default for mobile login users
+            'photo_url' => $user->avatar ? \Illuminate\Support\Facades\Storage::url($user->avatar) : null,
         ];
 
         // Parent specific details

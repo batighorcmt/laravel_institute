@@ -150,14 +150,19 @@ class ParentShellPage extends ConsumerWidget {
                   CircleAvatar(
                     radius: 32,
                     backgroundColor: Colors.white.withOpacity(0.3),
-                    child: Text(
-                      parentName.isNotEmpty ? parentName[0].toUpperCase() : 'A',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    backgroundImage: profile?.photoUrl != null
+                        ? NetworkImage(profile!.photoUrl!)
+                        : null,
+                    child: profile?.photoUrl == null
+                        ? Text(
+                            parentName.isNotEmpty ? parentName[0].toUpperCase() : 'A',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   Text(
