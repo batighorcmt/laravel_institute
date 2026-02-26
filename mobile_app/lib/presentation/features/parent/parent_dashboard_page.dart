@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../state/parent_state.dart';
+import '../../state/auth_state.dart';
 
 class ParentDashboardPage extends ConsumerWidget {
   const ParentDashboardPage({super.key});
