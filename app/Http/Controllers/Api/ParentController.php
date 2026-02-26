@@ -61,6 +61,8 @@ class ParentController extends Controller
     public function attendance(Request $request)
     {
         $date = $request->get('date'); // optional single date
+        $month = $request->get('month'); // 1-12
+        $year = $request->get('year');
         $studentId = $request->get('student_id');
         $students = $this->resolveChildren($request);
         $ids = $students->pluck('id');
@@ -68,7 +70,11 @@ class ParentController extends Controller
         if ($studentId && $ids->contains($studentId)) {
             $query->where('student_id', $studentId);
         }
-        if ($date) { $query->where('date', $date); }
+        if ($date) { 
+            $query->whereDate('date', $date); 
+        } elseif ($month && $year) {
+            $query->whereMonth('date', $month)->whereYear('date', $year);
+        }
         $query->orderByDesc('date');
         $records = $query->limit(200)->get();
         return StudentAttendanceResource::collection($records)->additional([

@@ -11,6 +11,14 @@ class SelectedStudentIdNotifier extends Notifier<int?> {
 
 final selectedStudentIdProvider = NotifierProvider<SelectedStudentIdNotifier, int?>(SelectedStudentIdNotifier.new);
 
+class AttendanceMonthYearNotifier extends Notifier<DateTime> {
+  @override
+  DateTime build() => DateTime.now();
+  void update(DateTime dt) => state = dt;
+}
+
+final attendanceMonthYearProvider = NotifierProvider<AttendanceMonthYearNotifier, DateTime>(AttendanceMonthYearNotifier.new);
+
 final parentChildrenProvider = FutureProvider<List<dynamic>>((ref) async {
   final children = await ref.watch(parentRepositoryProvider).getChildren();
   if (children.isNotEmpty && ref.read(selectedStudentIdProvider) == null) {
@@ -31,7 +39,12 @@ final parentRoutineProvider = FutureProvider<List<dynamic>>((ref) {
 
 final parentAttendanceProvider = FutureProvider<List<dynamic>>((ref) {
   final studentId = ref.watch(selectedStudentIdProvider);
-  return ref.watch(parentRepositoryProvider).getAttendance(studentId: studentId);
+  final dt = ref.watch(attendanceMonthYearProvider);
+  return ref.watch(parentRepositoryProvider).getAttendance(
+    studentId: studentId,
+    month: dt.month,
+    year: dt.year,
+  );
 });
 
 final parentEvaluationsProvider = FutureProvider<List<dynamic>>((ref) {

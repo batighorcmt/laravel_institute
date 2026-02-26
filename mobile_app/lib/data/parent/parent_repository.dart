@@ -14,8 +14,12 @@ class ParentRepository {
     return _parseList(resp.data);
   }
 
-  Future<List<dynamic>> getAttendance({int? studentId}) async {
-    final resp = await _dio.get('parent/attendance', queryParameters: studentId != null ? {'student_id': studentId} : {});
+  Future<List<dynamic>> getAttendance({int? studentId, int? month, int? year}) async {
+    final params = <String, dynamic>{};
+    if (studentId != null) params['student_id'] = studentId;
+    if (month != null) params['month'] = month;
+    if (year != null) params['year'] = year;
+    final resp = await _dio.get('parent/attendance', queryParameters: params);
     return _parseList(resp.data);
   }
 

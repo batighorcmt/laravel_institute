@@ -77,9 +77,48 @@ class AttendanceReportPage extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // Attendance History
-              const Text(
-                'হাজিরা ইতিহাস',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'হাজিরা ইতিহাস',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  InkWell(
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: ref.read(attendanceMonthYearProvider),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                        initialEntryMode: DatePickerEntryMode.calendarOnly,
+                        helpText: 'মাস নির্বাচন করুন',
+                      );
+                      if (picked != null) {
+                        ref.read(attendanceMonthYearProvider.notifier).update(picked);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_month, size: 16, color: Colors.blue),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatMonthYear(ref.watch(attendanceMonthYearProvider)),
+                            style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               ...attendance.map((e) => _buildAttendanceItem(e)).toList(),
@@ -154,6 +193,14 @@ class AttendanceReportPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _formatMonthYear(DateTime dt) {
+    final months = [
+      'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+      'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+    ];
+    return '${months[dt.month - 1]} ${dt.year}';
   }
 }
 

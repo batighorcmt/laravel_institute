@@ -61,7 +61,7 @@ class ClassRoutinePage extends ConsumerWidget {
               elevation: 2,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: ExpansionTile(
-                initiallyExpanded: true,
+                initiallyExpanded: false,
                 shape: const Border(),
                 title: Text(
                   dayName,

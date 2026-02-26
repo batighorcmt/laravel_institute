@@ -29,15 +29,17 @@ class RoutineResource extends JsonResource
                 default => $this->day_of_week,
             },
             'period_number' => $this->period_number,
-            'start_time' => (!empty($this->start_time) && $this->start_time !== '00:00:00') ? Carbon::parse($this->start_time)->format('h:i A') : null,
-            'end_time' => (!empty($this->end_time) && $this->end_time !== '00:00:00') ? Carbon::parse($this->end_time)->format('h:i A') : null,
+            'start_time' => ($this->start_time && !in_array($this->start_time, ['00:00:00', '00:00', 'null', ''])) ? Carbon::parse($this->start_time)->format('h:i A') : null,
+            'end_time' => ($this->end_time && !in_array($this->end_time, ['00:00:00', '00:00', 'null', ''])) ? Carbon::parse($this->end_time)->format('h:i A') : null,
             'subject' => [
                 'id' => $this->subject_id,
                 'name' => $this->subject->name ?? 'N/A',
             ],
             'teacher' => [
                 'id' => $this->teacher_id,
-                'name' => $this->teacher ? ($this->teacher->full_name_bn ?: $this->teacher->full_name) : 'শিক্ষক নির্ধারিত নয়',
+                'name' => $this->teacher 
+                    ? ($this->teacher->user->name ?? $this->teacher->full_name_bn ?? $this->teacher->full_name ?? 'শিক্ষক নির্ধারিত নয়') 
+                    : 'শিক্ষক নির্ধারিত নয়',
             ],
         ];
     }
