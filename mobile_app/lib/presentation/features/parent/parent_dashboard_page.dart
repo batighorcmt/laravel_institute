@@ -73,14 +73,6 @@ class ParentDashboardPage extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        Text(
-                          'সন্তান: $studentName',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
                         const SizedBox(height: 12),
                         Container(
                           width: double.infinity,
@@ -92,6 +84,15 @@ class ParentDashboardPage extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text(
+                                'সন্তান: $studentName',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const Divider(color: Colors.white24, height: 12),
                               Text(
                                 'শ্রেণি: $className | শাখা: $sectionName | রোল: $rollNo',
                                 style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
@@ -253,12 +254,15 @@ class ParentDashboardPage extends ConsumerWidget {
                   }
 
                   return Column(
-                    children: evals.map((ev) => _EvaluationStatusCard(
-                      period: ev['period'],
-                      subject: ev['subject'] ?? 'N/A',
-                      status: ev['status'],
-                      time: ev['time'],
-                      notes: ev['notes'],
+                    children: evals.map((ev) => GestureDetector(
+                      onTap: () => context.push('/parent/evaluations'),
+                      child: _EvaluationStatusCard(
+                        period: ev['period'],
+                        subject: ev['subject'] ?? 'N/A',
+                        status: ev['status'],
+                        time: ev['time'],
+                        notes: ev['notes'],
+                      ),
                     )).toList(),
                   );
                 },
@@ -269,13 +273,16 @@ class ParentDashboardPage extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
 
-          const _SectionTitle(title: 'সাম্প্রতিক হোমওয়ার্ক'),
+          const _SectionTitle(title: 'আজকের প্রদানকৃত হোমওয়ার্ক'),
           const SizedBox(height: 10),
           homeworkAsync.when(
             data: (items) {
-              if (items.isEmpty) return const _EmptyWidget(message: 'কোনো সাম্প্রতিক হোমওয়ার্ক নেই');
+              final todayStr = DateTime.now().toIso8601String().split('T').first;
+              final todayItems = items.where((e) => e['date'] == todayStr).toList();
+
+              if (todayItems.isEmpty) return const _EmptyWidget(message: 'আজকের কোনো হোমওয়ার্ক নেই');
               return Column(
-                children: items.take(3).map((e) {
+                children: todayItems.map((e) {
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
@@ -487,7 +494,7 @@ class _EvaluationStatusCard extends StatelessWidget {
                   children: [
                     const Icon(Icons.notes, size: 14, color: Colors.grey),
                     const SizedBox(width: 4),
-                    Expanded(child: Text('নোট: $notes', style: TextStyle(color: Colors.grey[600], fontSize: 11))),
+                    Expanded(child: Text('পাঠ বিষয়: $notes', style: TextStyle(color: Colors.grey[700], fontSize: 12, fontWeight: FontWeight.w500))),
                   ],
                 ),
             ],

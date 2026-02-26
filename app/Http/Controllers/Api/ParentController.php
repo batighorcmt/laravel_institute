@@ -90,7 +90,9 @@ class ParentController extends Controller
             }
         }
 
-        if ($date) {
+        if ($request->filled('from_date') && $request->filled('to_date')) {
+            $query->whereBetween('homework_date', [$request->get('from_date'), $request->get('to_date')]);
+        } elseif ($date) {
             $query->forDate($date);
         } else {
             $query->where(function($q) {

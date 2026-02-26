@@ -9,9 +9,10 @@ class ParentRepository {
     return _parseList(resp.data);
   }
 
-  Future<List<dynamic>> getHomework({String? date, int? studentId}) async {
+  Future<List<dynamic>> getHomework({String? fromDate, String? toDate, int? studentId}) async {
     final params = <String, dynamic>{};
-    if (date != null) params['date'] = date;
+    if (fromDate != null) params['from_date'] = fromDate;
+    if (toDate != null) params['to_date'] = toDate;
     if (studentId != null) params['student_id'] = studentId;
     final resp = await _dio.get('parent/homework', queryParameters: params);
     return _parseList(resp.data);

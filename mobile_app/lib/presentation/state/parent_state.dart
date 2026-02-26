@@ -28,11 +28,16 @@ final parentChildrenProvider = FutureProvider<List<dynamic>>((ref) async {
 });
 
 class HomeworkDateFilterNotifier extends Notifier<DateTime?> {
+  final bool isDefaultToday;
+  HomeworkDateFilterNotifier({this.isDefaultToday = false});
+
   @override
-  DateTime? build() => null;
+  DateTime? build() => isDefaultToday ? DateTime.now() : null;
   set state(DateTime? value) => super.state = value;
 }
-final homeworkDateFilterProvider = NotifierProvider<HomeworkDateFilterNotifier, DateTime?>(HomeworkDateFilterNotifier.new);
+
+final homeworkFromDateFilterProvider = NotifierProvider<HomeworkDateFilterNotifier, DateTime?>(() => HomeworkDateFilterNotifier(isDefaultToday: true));
+final homeworkToDateFilterProvider = NotifierProvider<HomeworkDateFilterNotifier, DateTime?>(() => HomeworkDateFilterNotifier(isDefaultToday: true));
 
 class HomeworkSubjectFilterNotifier extends Notifier<int?> {
   @override
@@ -50,9 +55,14 @@ final homeworkTeacherFilterProvider = NotifierProvider<HomeworkTeacherFilterNoti
 
 final parentHomeworkProvider = FutureProvider<List<dynamic>>((ref) {
   final studentId = ref.watch(selectedStudentIdProvider);
-  final date = ref.watch(homeworkDateFilterProvider);
-  final dateStr = date?.toIso8601String().split('T').first;
-  return ref.watch(parentRepositoryProvider).getHomework(studentId: studentId, date: dateStr);
+  final fromDate = ref.watch(homeworkFromDateFilterProvider);
+  final toDate = ref.watch(homeworkToDateFilterProvider);
+  
+  return ref.watch(parentRepositoryProvider).getHomework(
+    studentId: studentId, 
+    fromDate: fromDate?.toIso8601String().split('T').first,
+    toDate: toDate?.toIso8601String().split('T').first,
+  );
 });
 
 final parentRoutineProvider = FutureProvider<List<dynamic>>((ref) {
