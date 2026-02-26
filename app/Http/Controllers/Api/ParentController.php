@@ -194,14 +194,15 @@ class ParentController extends Controller
 
         $subjects = ClassSubject::where('class_id', $student->class_id)
             ->where('school_id', $student->school_id)
+            ->whereHas('subject')
             ->with('subject')
             ->get();
 
         return response()->json([
             'data' => $subjects->map(fn($s) => [
-                'id' => $s->subject->id,
-                'name' => $s->subject->name,
-                'code' => $s->subject->code,
+                'id' => $s->subject_id,
+                'name' => $s->subject->name ?? 'N/A',
+                'code' => $s->subject->code ?? '',
                 'is_optional' => $s->is_optional,
             ]),
             'message' => 'পঠিত বিষয় সমূহ',
@@ -219,7 +220,7 @@ class ParentController extends Controller
         }
 
         // We need section_id from enrollment
-        $enrollment = $student->enrollments()->latest()->first();
+        $enrollment = $student->currentEnrollment;
         if (!$enrollment) {
             return response()->json(['message' => 'এনরোলমেন্ট পাওয়া যায়নি'], 404);
         }
@@ -279,7 +280,7 @@ class ParentController extends Controller
             $query->forSchool($schoolId);
         }
         
-        $teachers = $query->orderBy('name')->get();
+        $teachers = $query->orderBy('first_name')->get();
 
         return TeacherResource::collection($teachers)->additional([
             'message' => 'বিদ্যালয়ের সকল শিক্ষক তালিকা',
