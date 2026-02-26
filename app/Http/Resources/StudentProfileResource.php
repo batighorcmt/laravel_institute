@@ -71,6 +71,8 @@ class StudentProfileResource extends JsonResource
             'shift' => $en?->class?->shift?->name,
             'medium' => $en?->class?->medium,
             'optional_subject' => $st?->optionalSubject?->name,
+            'school_name' => $st?->school?->name,
+            'school_name_bn' => $st?->school?->name_bn,
 
             // Guardian fields (top-level) so mobile clients can easily read them
             'guardian_name' => $st?->guardian_name_en ?? $st?->guardian_name_bn ?? $st?->father_name ?? $st?->mother_name,
@@ -139,6 +141,20 @@ class StudentProfileResource extends JsonResource
                 'status' => $tm->pivot?->status,
                 'joined_at' => $tm->pivot?->joined_at,
             ]) : [],
+            
+            'today_attendance' => [
+                'class' => \App\Models\Attendance::where('student_id', $st?->id)->whereDate('date', now())->first()?->status,
+                'extra_class' => \App\Models\ExtraClassEnrollment::where('student_id', $st?->id)
+                    ->where('status', 'active')
+                    ->exists() ? [
+                        'enrolled' => true,
+                        'status' => \App\Models\ExtraClassAttendance::where('student_id', $st?->id)->whereDate('date', now())->first()?->status
+                    ] : ['enrolled' => false],
+                'team' => $st?->teams()->wherePivot('status', 'active')->exists() ? [
+                    'enrolled' => true,
+                    'status' => \App\Models\TeamAttendance::where('student_id', $st?->id)->whereDate('date', now())->first()?->status
+                ] : ['enrolled' => false],
+            ],
         ];
     }
 }

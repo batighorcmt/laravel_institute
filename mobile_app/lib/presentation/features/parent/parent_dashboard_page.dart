@@ -23,59 +23,103 @@ class ParentDashboardPage extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           // Welcome Banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [cs.primary, cs.primary.withOpacity(0.65)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: cs.primary.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.waving_hand, color: Colors.amberAccent, size: 28),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Consumer(
-                        builder: (context, ref, _) {
-                          final profile = ref.watch(parentStudentProfileProvider).value;
-                          final name = profile?['guardian_name_bn'] ?? profile?['guardian_name_en'] ?? 'অভিভাবক';
-                          return Text(
-                            'স্বাগতম, $name!',
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          );
-                        },
+          Consumer(
+            builder: (context, ref, _) {
+              final profileAsync = ref.watch(parentStudentProfileProvider);
+              return profileAsync.when(
+                data: (profile) {
+                  final parentName = profile['guardian_name_bn'] ?? profile['guardian_name_en'] ?? 'অভিভাবক';
+                  final studentName = profile['name_bn'] ?? profile['name_en'] ?? 'শিক্ষার্থী';
+                  final schoolName = profile['school_name_bn'] ?? profile['school_name'] ?? 'বিদ্যালয়ের নাম';
+                  
+                  final studentId = profile['student_id'] ?? 'N/A';
+                  final className = profile['class'] ?? 'N/A';
+                  final sectionName = profile['section'] ?? 'N/A';
+                  final rollNo = profile['roll']?.toString() ?? 'N/A';
+                  final groupName = profile['group'] ?? 'N/A';
+
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [cs.primary, cs.primary.withOpacity(0.8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: cs.primary.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                  ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.waving_hand, color: Colors.amberAccent, size: 24),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'স্বাগতম, $parentName, $studentName',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'ID: $studentId | শ্রেণি: $className | শাখা: $sectionName | রোল: $rollNo | বিভাগ: $groupName',
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(Icons.school, color: Colors.white70, size: 16),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                schoolName,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 13,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                loading: () => Container(
+                  height: 140,
+                  decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(16)),
+                  child: const Center(child: CircularProgressIndicator()),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'আপনার সন্তানের শিক্ষা সংক্রান্ত সকল তথ্য এখানে পাবেন।',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
-                  ),
+                error: (err, _) => Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(16)),
+                  child: Text('লোডিং ত্রুটি: $err', style: const TextStyle(color: Colors.red)),
                 ),
-              ],
-            ),
+              );
+            },
           ),
           const SizedBox(height: 20),
 
@@ -83,7 +127,7 @@ class ParentDashboardPage extends ConsumerWidget {
           const _SectionTitle(title: 'দ্রুত অ্যাক্সেস'),
           const SizedBox(height: 10),
           SizedBox(
-            height: 88,
+            height: 95,
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
@@ -91,35 +135,90 @@ class ParentDashboardPage extends ConsumerWidget {
                   label: 'ক্লাস রুটিন',
                   icon: Icons.schedule,
                   color: Colors.orange,
-                  onTap: () => context.go('/parent/routine'),
+                  onTap: () => context.push('/parent/routine'),
                 ),
                 _QuickAccessChip(
                   label: 'হাজিরা',
                   icon: Icons.check_circle_outline,
                   color: Colors.green,
-                  onTap: () => context.go('/parent/attendance'),
+                  onTap: () => context.push('/parent/attendance'),
+                ),
+                _QuickAccessChip(
+                  label: 'মূল্যায়ন',
+                  icon: Icons.assessment_outlined,
+                  color: Colors.blue,
+                  onTap: () => context.push('/parent/evaluations'),
                 ),
                 _QuickAccessChip(
                   label: 'হোমওয়ার্ক',
                   icon: Icons.assignment_outlined,
                   color: Colors.purple,
-                  onTap: () => context.go('/parent/homework'),
+                  onTap: () => context.push('/parent/homework'),
                 ),
                 _QuickAccessChip(
                   label: 'নোটিস',
                   icon: Icons.campaign_outlined,
                   color: Colors.indigo,
-                  onTap: () => context.go('/parent/notices'),
+                  onTap: () => context.push('/parent/notices'),
                 ),
                 _QuickAccessChip(
                   label: 'ছুটি',
                   icon: Icons.card_travel_outlined,
                   color: Colors.teal,
-                  onTap: () => context.go('/parent/leaves'),
+                  onTap: () => context.push('/parent/leaves'),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 10),
+
+          // Attendance Status Section
+          const _SectionTitle(title: 'আজকের হাজিরার অবস্থা'),
+          const SizedBox(height: 10),
+          Consumer(
+            builder: (context, ref, _) {
+              final profileAsync = ref.watch(parentStudentProfileProvider);
+              return profileAsync.when(
+                data: (profile) {
+                  final att = profile['today_attendance'] as Map<String, dynamic>?;
+                  if (att == null) return const SizedBox.shrink();
+
+                  final extra = att['extra_class'] as Map<String, dynamic>?;
+                  final team = att['team'] as Map<String, dynamic>?;
+
+                  return Column(
+                    children: [
+                      _AttendanceStatusCard(
+                        title: 'শ্রেণির হাজিরা',
+                        status: att['class'],
+                        isMandatory: true,
+                        icon: Icons.class_outlined,
+                        color: Colors.green,
+                      ),
+                      if (extra?['enrolled'] == true)
+                        _AttendanceStatusCard(
+                          title: 'এক্সট্রা ক্লাস হাজিরা',
+                          status: extra?['status'],
+                          icon: Icons.more_time,
+                          color: Colors.orange,
+                        ),
+                      if (team?['enrolled'] == true)
+                        _AttendanceStatusCard(
+                          title: 'টিম হাজিরা',
+                          status: team?['status'],
+                          icon: Icons.group_work_outlined,
+                          color: Colors.indigo,
+                        ),
+                    ],
+                  );
+                },
+                loading: () => const _ShimmerBlock(height: 60),
+                error: (_, __) => const SizedBox.shrink(),
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+
           const _SectionTitle(title: 'সাম্প্রতিক হোমওয়ার্ক'),
           const SizedBox(height: 10),
           homeworkAsync.when(
@@ -137,7 +236,7 @@ class ParentDashboardPage extends ConsumerWidget {
                       ),
                       title: Text(e['title'] ?? 'Homework', style: const TextStyle(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
                       subtitle: Text('বিষয়: ${e['subject_name'] ?? 'N/A'} | জমা: ${e['submission_date'] ?? 'N/A'}'),
-                      onTap: () => context.go('/parent/homework'),
+                      onTap: () => context.push('/parent/homework'),
                     ),
                   );
                 }).toList(),
@@ -149,6 +248,83 @@ class ParentDashboardPage extends ConsumerWidget {
           const SizedBox(height: 32),
         ],
       ),
+    );
+  }
+}
+
+class _AttendanceStatusCard extends StatelessWidget {
+  final String title;
+  final String? status;
+  final bool isMandatory;
+  final IconData icon;
+  final Color color;
+
+  const _AttendanceStatusCard({
+    required this.title,
+    this.status,
+    this.isMandatory = false,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    String statusText = 'এখনো নেয়া হয়নি';
+    Color statusColor = Colors.grey;
+    IconData statusIcon = Icons.hourglass_empty;
+
+    if (status == 'present') {
+      statusText = 'উপস্থিত';
+      statusColor = Colors.green;
+      statusIcon = Icons.check_circle;
+    } else if (status == 'absent') {
+      statusText = 'অনুপস্থিত';
+      statusColor = Colors.red;
+      statusIcon = Icons.cancel;
+    } else if (status == 'late') {
+      statusText = 'বিলম্বিত';
+      statusColor = Colors.orange;
+      statusIcon = Icons.access_time;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  if (isMandatory)
+                    Text('(বাধ্যতামুলক)', style: TextStyle(color: Colors.red[400], fontSize: 11)),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: statusColor.withOpacity(0.2))),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(statusIcon, color: statusColor, size: 14),
+                  const SizedBox(width: 4),
+                  Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
     );
   }
 }

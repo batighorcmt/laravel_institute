@@ -44,205 +44,247 @@ class ParentShellPage extends ConsumerWidget {
       orElse: () => _navItems.first,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(currentItem.label),
-        elevation: 1,
-        actions: [
-          // Notification
-          IconButton(
-            tooltip: 'নোটিফিকেশন',
-            icon: Stack(
-              children: [
-                const Icon(Icons.notifications_outlined, size: 26),
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1.5),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('কোনো নতুন নোটিফিকেশন নেই')),
-              );
-            },
-          ),
-          // Reload
-          IconButton(
-            tooltip: 'রিলোড',
-            icon: const Icon(Icons.refresh, size: 26),
-            onPressed: () {
-              // Invalidate all parent-related providers
-              ref.invalidate(parentChildrenProvider);
-              ref.invalidate(parentHomeworkProvider);
-              ref.invalidate(parentRoutineProvider);
-              ref.invalidate(parentAttendanceProvider);
-              ref.invalidate(parentEvaluationsProvider);
-              ref.invalidate(parentLeavesProvider);
-              ref.invalidate(parentNoticesProvider);
-              ref.invalidate(parentTeachersProvider);
-              ref.invalidate(parentSubjectsProvider);
-              ref.invalidate(parentFeedbackProvider);
-              
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('উপাত্ত রিফ্রেশ করা হচ্ছে...')),
-              );
-            },
-          ),
-          // Logout
-          IconButton(
-            tooltip: 'লগআউট',
-            icon: const Icon(Icons.logout, size: 26, color: Colors.red),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('লগআউট'),
-                  content: const Text('আপনি কি লগআউট করতে চান?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('না'),
-                    ),
-                    FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        ref.read(authProvider.notifier).logout();
-                        context.go('/login');
-                      },
-                      child: const Text('হ্যাঁ, লগআউট'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            // Drawer Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [cs.primary, cs.primary.withOpacity(0.7)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        if (currentPath != '/parent/dashboard') {
+          // If not on dashboard, go to dashboard first
+          context.go('/parent/dashboard');
+          return;
+        }
+
+        // If on dashboard, ask for exit confirmation
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('অ্যাপ বন্ধ করুন'),
+            content: const Text('আপনি কি অ্যাপ থেকে বের হয়ে যেতে চান?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('না'),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('হ্যাঁ'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldExit == true) {
+          if (context.mounted) {
+            // Since we can't 'pop' the root, we can use SystemNavigator to exit
+            // but in most Flutter apps, letting it pop when canPop is true works.
+            // For now, we manually exit if they said yes.
+            // Using a hack to allow pop next time or just exit.
+            Navigator.of(context).pop(); // This might exit if it's the only page
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(currentItem.label),
+          elevation: 1,
+          actions: [
+            // Notification
+            IconButton(
+              tooltip: 'নোটিফিকেশন',
+              icon: Stack(
                 children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: Colors.white.withOpacity(0.3),
-                    backgroundImage: profile?.photoUrl != null
-                        ? NetworkImage(profile!.photoUrl!)
-                        : null,
-                    child: profile?.photoUrl == null
-                        ? Text(
-                            parentName.isNotEmpty ? parentName[0].toUpperCase() : 'A',
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    parentName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'অভিভাবক',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 13,
+                  const Icon(Icons.notifications_outlined, size: 26),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
                     ),
                   ),
                 ],
               ),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('কোনো নতুন নোটিফিকেশন নেই')),
+                );
+              },
             ),
-            // Nav Items
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: _navItems.length,
-                itemBuilder: (context, index) {
-                  final item = _navItems[index];
-                  final isSelected = currentPath == item.path;
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 0.5),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: isSelected ? cs.primary.withOpacity(0.12) : null,
-                    ),
-                    child: ListTile(
-                      dense: true,
-                      leading: Icon(
-                        item.icon,
-                        color: isSelected ? cs.primary : Colors.grey[700],
-                        size: 22,
-                      ),
-                      title: Text(
-                        item.label,
-                        style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          color: isSelected ? cs.primary : null,
-                          fontSize: 14,
-                        ),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      onTap: () {
-                        Navigator.pop(context); // close drawer
-                        if (!isSelected) {
-                          context.go(item.path);
-                        }
-                      },
-                    ),
-                  );
-                },
-              ),
+            // Reload
+            IconButton(
+              tooltip: 'রিলোড',
+              icon: const Icon(Icons.refresh, size: 26),
+              onPressed: () {
+                // Invalidate all parent-related providers
+                ref.invalidate(parentChildrenProvider);
+                ref.invalidate(parentHomeworkProvider);
+                ref.invalidate(parentRoutineProvider);
+                ref.invalidate(parentAttendanceProvider);
+                ref.invalidate(parentEvaluationsProvider);
+                ref.invalidate(parentLeavesProvider);
+                ref.invalidate(parentNoticesProvider);
+                ref.invalidate(parentTeachersProvider);
+                ref.invalidate(parentSubjectsProvider);
+                ref.invalidate(parentFeedbackProvider);
+                ref.invalidate(parentEvaluationStatsProvider);
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('উপাত্ত রিফ্রেশ করা হচ্ছে...')),
+                );
+              },
             ),
-            // Footer
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Batighor EIMS',
-                style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 12,
-                ),
-              ),
+            // Logout
+            IconButton(
+              tooltip: 'লগআউট',
+              icon: const Icon(Icons.logout, size: 26, color: Colors.red),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('লগআউট'),
+                    content: const Text('আপনি কি লগআউট করতে চান?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('না'),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          ref.read(authProvider.notifier).logout();
+                          context.go('/login');
+                        },
+                        child: const Text('হ্যাঁ, লগআউট'),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
+            const SizedBox(width: 4),
           ],
         ),
+        drawer: Drawer(
+          child: Column(
+            children: [
+              // Drawer Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [cs.primary, cs.primary.withOpacity(0.7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 32,
+                      backgroundColor: Colors.white.withOpacity(0.3),
+                      backgroundImage: profile?.photoUrl != null
+                          ? NetworkImage(profile!.photoUrl!)
+                          : null,
+                      child: profile?.photoUrl == null
+                          ? Text(
+                              parentName.isNotEmpty ? parentName[0].toUpperCase() : 'A',
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      parentName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'অভিভাবক',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Nav Items
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: _navItems.length,
+                  itemBuilder: (context, index) {
+                    final item = _navItems[index];
+                    final isSelected = currentPath == item.path;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 0.5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: isSelected ? cs.primary.withOpacity(0.12) : null,
+                      ),
+                      child: ListTile(
+                        dense: true,
+                        leading: Icon(
+                          item.icon,
+                          color: isSelected ? cs.primary : Colors.grey[700],
+                          size: 22,
+                        ),
+                        title: Text(
+                          item.label,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            color: isSelected ? cs.primary : null,
+                            fontSize: 14,
+                          ),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        onTap: () {
+                          Navigator.pop(context); // close drawer
+                          if (!isSelected) {
+                            context.go(item.path);
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+              // Footer
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Batighor EIMS',
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: child,
       ),
-      body: child,
     );
   }
 }
