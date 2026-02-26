@@ -360,6 +360,7 @@ class LessonEvaluationController extends Controller
             'students' => $students,
             'allowed_statuses' => ['completed','partial','not_done','absent'],
             'stats' => $stats,
+            'notes' => $evaluation?->notes,
             'read_only' => ! $isToday,
         ]);
     }

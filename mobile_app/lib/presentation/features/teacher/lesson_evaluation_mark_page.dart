@@ -24,6 +24,7 @@ class LessonEvaluationMarkPage extends StatefulWidget {
 
 class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
   late final Dio _dio;
+  late final TextEditingController _notesController;
   bool _loading = true;
   String? _error;
   String _date = '';
@@ -41,7 +42,14 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
   void initState() {
     super.initState();
     _dio = DioClient().dio;
+    _notesController = TextEditingController();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
   }
 
   Future<void> _pickDate() async {
@@ -79,6 +87,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
       );
       final data = (r.data as Map<String, dynamic>?) ?? {};
       _date = (data['date'] as String?) ?? '';
+      _notesController.text = (data['notes'] as String?) ?? '';
       final list = (data['students'] as List? ?? []).cast<Map>();
       _rows = list
           .map(
@@ -148,6 +157,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
         'subject_id': widget.subjectId,
         'evaluation_date': _date,
         'evaluation_time': time,
+        'notes': _notesController.text,
         // Some backends may expect 'time' or 'date' keys as well
         'time': time,
         // Some APIs may expect 'date' instead of 'evaluation_date'; include both.
@@ -233,13 +243,32 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isComplete ? _submit : null,
-                        icon: const Icon(Icons.save),
-                        label: const Text('সাবমিট করুন'),
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!_readOnly)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: TextField(
+                              controller: _notesController,
+                              decoration: const InputDecoration(
+                                labelText: 'নোট / পাঠ বিষয়',
+                                hintText: 'আজকের পাঠের সংক্ষিপ্ত বিবরণ লিখুন',
+                                border: OutlineInputBorder(),
+                                alignLabelWithHint: true,
+                              ),
+                              maxLines: 2,
+                            ),
+                          ),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _isComplete ? _submit : null,
+                            icon: const Icon(Icons.save),
+                            label: const Text('সাবমিট করুন'),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
