@@ -205,12 +205,30 @@ class ParentController extends Controller
         }
 
         $enrollment = $student->currentEnrollment;
-        $classId = $student->class_id ?? $enrollment?->class_id;
-
-        if (!$classId) {
-            return response()->json(['data' => [], 'message' => 'শ্রেণি পাওয়া যায়নি']);
+        if (!$enrollment) {
+            return response()->json(['data' => [], 'message' => 'অ্যাক্টিভ এনরোলমেন্ট পাওয়া যায়নি']);
         }
 
+        // Check if student has specific subject assignments
+        $assignedSubjects = StudentSubject::where('student_enrollment_id', $enrollment->id)
+            ->where('status', 'active')
+            ->with('subject')
+            ->get();
+
+        if ($assignedSubjects->isNotEmpty()) {
+            return response()->json([
+                'data' => $assignedSubjects->map(fn($s) => [
+                    'id' => $s->subject_id,
+                    'name' => $s->subject->name ?? 'N/A',
+                    'code' => $s->subject->code ?? '',
+                    'is_optional' => $s->is_optional,
+                ])->values(),
+                'message' => 'অ্যাসাইনকৃত বিষয় সমূহ',
+            ]);
+        }
+
+        // Fallback to class subjects if no specific assignments
+        $classId = $student->class_id ?? $enrollment->class_id;
         $subjects = ClassSubject::where('class_id', $classId)
             ->where('school_id', $student->school_id)
             ->where('status', 'active')
