@@ -133,6 +133,7 @@ class ParentShellPage extends ConsumerWidget {
                 ref.invalidate(parentSubjectsProvider);
                 ref.invalidate(parentFeedbackProvider);
                 ref.invalidate(parentEvaluationStatsProvider);
+                ref.invalidate(parentStudentProfileProvider);
                 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('উপাত্ত রিফ্রেশ করা হচ্ছে...')),

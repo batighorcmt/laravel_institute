@@ -61,44 +61,61 @@ class ParentDashboardPage extends ConsumerWidget {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.waving_hand, color: Colors.amberAccent, size: 24),
+                            const Icon(Icons.waving_hand, color: Colors.amberAccent, size: 22),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'স্বাগতম, $parentName, $studentName',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
+                            Text(
+                              'স্বাগতম, $parentName',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        Text(
+                          'সন্তান: $studentName',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(
-                            'ID: $studentId | শ্রেণি: $className | শাখা: $sectionName | রোল: $rollNo | বিভাগ: $groupName',
-                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'শ্রেণি: $className | শাখা: $sectionName | রোল: $rollNo',
+                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'আইডি: $studentId | বিভাগ: $groupName',
+                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            const Icon(Icons.school, color: Colors.white70, size: 16),
+                            const Icon(Icons.school, color: Colors.white70, size: 18),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 schoolName,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
-                                  fontSize: 13,
-                                  fontStyle: FontStyle.italic,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
@@ -183,32 +200,35 @@ class ParentDashboardPage extends ConsumerWidget {
                   final att = profile['today_attendance'] as Map<String, dynamic>?;
                   if (att == null) return const SizedBox.shrink();
 
-                  final extra = att['extra_class'] as Map<String, dynamic>?;
-                  final team = att['team'] as Map<String, dynamic>?;
+                  final classAtt = att['class'] as Map<String, dynamic>?;
+                  final extras = (att['extra_classes'] as List?)?.cast<Map<String, dynamic>>();
+                  final teams = (att['teams'] as List?)?.cast<Map<String, dynamic>>();
 
                   return Column(
                     children: [
                       _AttendanceStatusCard(
-                        title: 'শ্রেণির হাজিরা',
-                        status: att['class'],
-                        isMandatory: true,
+                        title: 'শ্রেণি হাজিরা',
+                        status: classAtt?['status'],
+                        time: classAtt?['updated_at'],
                         icon: Icons.class_outlined,
                         color: Colors.green,
                       ),
-                      if (extra?['enrolled'] == true)
-                        _AttendanceStatusCard(
-                          title: 'এক্সট্রা ক্লাস হাজিরা',
-                          status: extra?['status'],
+                      if (extras != null)
+                        ...extras.map((ex) => _AttendanceStatusCard(
+                          title: ex['name'] ?? 'এক্সট্রা ক্লাস',
+                          status: ex['status'],
+                          time: ex['time'],
                           icon: Icons.more_time,
                           color: Colors.orange,
-                        ),
-                      if (team?['enrolled'] == true)
-                        _AttendanceStatusCard(
-                          title: 'টিম হাজিরা',
-                          status: team?['status'],
+                        )),
+                      if (teams != null)
+                        ...teams.map((tm) => _AttendanceStatusCard(
+                          title: tm['name'] ?? 'টিম হাজিরা',
+                          status: tm['status'],
+                          time: tm['time'],
                           icon: Icons.group_work_outlined,
                           color: Colors.indigo,
-                        ),
+                        )),
                     ],
                   );
                 },
@@ -255,14 +275,14 @@ class ParentDashboardPage extends ConsumerWidget {
 class _AttendanceStatusCard extends StatelessWidget {
   final String title;
   final String? status;
-  final bool isMandatory;
+  final String? time;
   final IconData icon;
   final Color color;
 
   const _AttendanceStatusCard({
     required this.title,
     this.status,
-    this.isMandatory = false,
+    this.time,
     required this.icon,
     required this.color,
   });
@@ -287,6 +307,17 @@ class _AttendanceStatusCard extends StatelessWidget {
       statusIcon = Icons.access_time;
     }
 
+    String? formattedTime;
+    if (time != null) {
+      try {
+        final dt = DateTime.parse(time!);
+        final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+        final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+        final minute = dt.minute.toString().padLeft(2, '0');
+        formattedTime = '$hour:$minute $ampm';
+      } catch (_) {}
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
@@ -303,9 +334,9 @@ class _AttendanceStatusCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  if (isMandatory)
-                    Text('(বাধ্যতামুলক)', style: TextStyle(color: Colors.red[400], fontSize: 11)),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  if (formattedTime != null)
+                    Text('সময়: $formattedTime', style: TextStyle(color: Colors.grey[600], fontSize: 11)),
                 ],
               ),
             ),
@@ -324,7 +355,6 @@ class _AttendanceStatusCard extends StatelessWidget {
           ],
         ),
       ),
-    );
     );
   }
 }

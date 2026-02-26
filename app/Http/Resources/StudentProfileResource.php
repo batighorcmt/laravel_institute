@@ -143,17 +143,36 @@ class StudentProfileResource extends JsonResource
             ]) : [],
             
             'today_attendance' => [
-                'class' => \App\Models\Attendance::where('student_id', $st?->id)->whereDate('date', now())->first()?->status,
-                'extra_class' => \App\Models\ExtraClassEnrollment::where('student_id', $st?->id)
+                'class' => \App\Models\Attendance::where('student_id', $st?->id)
+                    ->whereDate('date', now())
+                    ->select('status', 'updated_at')
+                    ->first(),
+                'extra_classes' => \App\Models\ExtraClassEnrollment::where('student_id', $st?->id)
                     ->where('status', 'active')
-                    ->exists() ? [
-                        'enrolled' => true,
-                        'status' => \App\Models\ExtraClassAttendance::where('student_id', $st?->id)->whereDate('date', now())->first()?->status
-                    ] : ['enrolled' => false],
-                'team' => $st?->teams()->wherePivot('status', 'active')->exists() ? [
-                    'enrolled' => true,
-                    'status' => \App\Models\TeamAttendance::where('student_id', $st?->id)->whereDate('date', now())->first()?->status
-                ] : ['enrolled' => false],
+                    ->with(['extraClass'])
+                    ->get()
+                    ->map(fn($en) => [
+                        'name' => $en->extraClass?->name,
+                        'status' => \App\Models\ExtraClassAttendance::where('student_id', $st?->id)
+                            ->where('extra_class_id', $en->extra_class_id)
+                            ->whereDate('date', now())
+                            ->first()?->status,
+                        'time' => \App\Models\ExtraClassAttendance::where('student_id', $st?->id)
+                            ->where('extra_class_id', $en->extra_class_id)
+                            ->whereDate('date', now())
+                            ->first()?->updated_at,
+                    ]),
+                'teams' => $st?->teams()->wherePivot('status', 'active')->get()->map(fn($tm) => [
+                    'name' => $tm->name,
+                    'status' => \App\Models\TeamAttendance::where('student_id', $st?->id)
+                        ->where('team_id', $tm->id)
+                        ->whereDate('date', now())
+                        ->first()?->status,
+                    'time' => \App\Models\TeamAttendance::where('student_id', $st?->id)
+                        ->where('team_id', $tm->id)
+                        ->whereDate('date', now())
+                        ->first()?->updated_at,
+                ]),
             ],
         ];
     }
