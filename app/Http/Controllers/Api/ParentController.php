@@ -214,12 +214,12 @@ class ParentController extends Controller
         // Check if student has specific subject assignments
         $assignedSubjects = StudentSubject::where('student_enrollment_id', $enrollment->id)
             ->where('status', 'active')
-            ->with('subject')
+            ->with(['subject', 'classSubject'])
             ->get();
 
         if ($assignedSubjects->isNotEmpty()) {
             return response()->json([
-                'data' => $assignedSubjects->map(fn($s) => [
+                'data' => $assignedSubjects->sortBy(fn($s) => $s->classSubject->order_no ?? 999)->map(fn($s) => [
                     'id' => $s->subject_id,
                     'name' => $s->subject->name ?? 'N/A',
                     'code' => $s->subject->code ?? '',
@@ -236,6 +236,7 @@ class ParentController extends Controller
             ->where('status', 'active')
             ->whereHas('subject')
             ->with('subject')
+            ->orderBy('order_no')
             ->get()
             ->unique('subject_id');
 
@@ -321,7 +322,7 @@ class ParentController extends Controller
             $query->forSchool($schoolId);
         }
         
-        $teachers = $query->orderBy('first_name')->get();
+        $teachers = $query->orderBy('serial_number')->get();
 
         return TeacherResource::collection($teachers)->additional([
             'message' => 'বিদ্যালয়ের সকল শিক্ষক তালিকা',
