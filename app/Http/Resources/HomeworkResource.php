@@ -20,6 +20,8 @@ class HomeworkResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'attachment' => $this->attachment,
+            'subject_name' => $this->subject->name ?? 'N/A',
+            'teacher_name' => $this->teacher->full_name ?? $this->teacher->name ?? 'N/A',
         ];
     }
 }

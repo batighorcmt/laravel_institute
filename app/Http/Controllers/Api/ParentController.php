@@ -46,7 +46,7 @@ class ParentController extends Controller
         $students = $this->resolveChildren($request);
         $classIds = $students->pluck('class_id')->filter()->unique()->values();
 
-        $query = Homework::query()->forDate($date);
+        $query = Homework::query()->forDate($date)->with(['subject', 'teacher']);
         if ($schoolId) { $query->forSchool($schoolId); }
         if ($classIds->isNotEmpty()) { $query->whereIn('class_id', $classIds); }
         $homeworks = $query->orderBy('subject_id')->get();

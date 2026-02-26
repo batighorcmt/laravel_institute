@@ -5,6 +5,8 @@ import '../../core/config/env.dart';
 class UserProfile {
   final int id;
   final String name;
+  final String? bnName;
+  final String? mobile;
   final List<UserRole> roles;
   final String? photoUrl;
   final String? teacherDesignation;
@@ -12,6 +14,8 @@ class UserProfile {
   UserProfile({
     required this.id,
     required this.name,
+    this.bnName,
+    this.mobile,
     required this.roles,
     this.photoUrl,
     this.teacherDesignation,
@@ -87,6 +91,8 @@ class UserProfile {
     return UserProfile(
       id: (json['id'] as num).toInt(),
       name: (json['name'] ?? '').toString(),
+      bnName: json['bn_name']?.toString(),
+      mobile: json['mobile']?.toString(),
       roles: roles,
       photoUrl: _absolutePhoto(photo),
       teacherDesignation: teacherDesignation,
@@ -114,6 +120,8 @@ class UserProfile {
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
+    'bn_name': bnName,
+    'mobile': mobile,
     'roles': roles.map((r) => r.toJson()).toList(),
     'photo_url': photoUrl,
     'teacher_designation': teacherDesignation,

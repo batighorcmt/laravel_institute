@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 @section('title', 'ক্লাস রুটিন')
 
 @section('content')
@@ -21,11 +21,14 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-bordered table-striped m-0">
+                <table class="table table-bordered table-striped table-hover m-0">
                     <thead>
                         <tr class="bg-light">
-                            <th>দিন</th>
-                            <th>পিরিয়ড ও সময়</th>
+                            <th style="width: 120px;">দিন</th>
+                            <th style="width: 80px;">পিরিয়ড</th>
+                            <th>বিষয়</th>
+                            <th style="width: 180px;">সময়</th>
+                            <th style="width: 200px;">শিক্ষক</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -41,25 +44,24 @@
                             ];
                         @endphp
                         @foreach($days as $enDay => $bnDay)
-                        <tr>
-                            <td style="width: 120px; font-weight: bold;">{{ $bnDay }}</td>
-                            <td>
-                                @if(isset($routine[$enDay]))
-                                    <div class="d-flex flex-wrap">
-                                        @foreach($routine[$enDay] as $item)
-                                        <div class="border rounded p-2 m-1 bg-white" style="min-width: 150px;">
-                                            <div class="text-primary font-weight-bold">{{ $item->subject->name }}</div>
-                                            <div class="text-sm">পিরিয়ড: {{ $item->period_number }}</div>
-                                            <div class="text-sm text-muted">সময়: {{ \Carbon\Carbon::parse($item->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($item->end_time)->format('h:i A') }}</div>
-                                            <div class="text-sm">শিক্ষক: {{ $item->teacher->name }}</div>
-                                        </div>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <span class="text-muted">কোনো ক্লাস নেই</span>
-                                @endif
-                            </td>
-                        </tr>
+                            @if(isset($routine[$enDay]) && count($routine[$enDay]) > 0)
+                                @foreach($routine[$enDay] as $index => $item)
+                                <tr>
+                                    @if($index === 0)
+                                    <td style="font-weight: bold; vertical-align: middle;" rowspan="{{ count($routine[$enDay]) }}">{{ $bnDay }}</td>
+                                    @endif
+                                    <td class="text-center font-weight-bold">{{ $item->period_number }}</td>
+                                    <td class="text-primary font-weight-bold">{{ $item->subject->name }}</td>
+                                    <td class="text-muted">{{ \Carbon\Carbon::parse($item->start_time)->format('h:i A') }} - {{ \Carbon\Carbon::parse($item->end_time)->format('h:i A') }}</td>
+                                    <td>{{ $item->teacher ? ($item->teacher->full_name_bn ?: $item->teacher->full_name) : 'N/A' }}</td>
+                                </tr>
+                                @endforeach
+                            @else
+                            <tr>
+                                <td style="font-weight: bold;">{{ $bnDay }}</td>
+                                <td colspan="4" class="text-muted text-center">কোনো ক্লাস নেই</td>
+                            </tr>
+                            @endif
                         @endforeach
                     </tbody>
                 </table>

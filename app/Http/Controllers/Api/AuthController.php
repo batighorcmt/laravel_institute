@@ -53,7 +53,22 @@ class AuthController extends Controller
             'id' => $user->id,
             'name' => $user->name,
             'roles' => $this->extractRoles($user),
+            'bn_name' => $user->name, // default
+            'mobile' => $user->username, // default for mobile login users
         ];
+
+        // Parent specific details
+        $isParent = collect($payload['roles'])->contains('role', 'parent');
+        if ($isParent) {
+            $student = \App\Models\Student::where('guardian_phone', $user->username)
+                ->orWhere('guardian_phone', $user->email)
+                ->first();
+            if ($student) {
+                $payload['bn_name'] = $student->guardian_name_bn ?: ($student->guardian_name_en ?: $student->student_name_bn);
+                $payload['name'] = $student->guardian_name_en ?: ($student->guardian_name_bn ?: $student->student_name_en);
+                $payload['mobile'] = $student->guardian_phone;
+            }
+        }
 
         // If the user is a teacher for a school, include teacher designation and photo
         $schoolId = $user->firstTeacherSchoolId();
