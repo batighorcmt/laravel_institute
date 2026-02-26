@@ -298,48 +298,50 @@ class ParentController extends Controller
         $status = $request->get('status');
 
         $query = LessonEvaluationRecord::where('student_id', $student->id)
-            ->join('lesson_evaluations', 'lesson_evaluation_records.lesson_evaluation_id', '=', 'lesson_evaluations.id')
-            ->select('lesson_evaluation_records.*')
             ->with(['lessonEvaluation.subject', 'lessonEvaluation.teacher']);
 
-        // Default to today if no date filter
-        if (!$fromDate && !$toDate && !$subjectId && !$teacherId && !$status) {
-            $query->whereDate('lesson_evaluations.evaluation_date', Carbon::today());
-        } else {
-            if ($fromDate) {
-                $query->whereDate('lesson_evaluations.evaluation_date', '>=', $fromDate);
+        $query->whereHas('lessonEvaluation', function($q) use ($fromDate, $toDate, $subjectId, $teacherId, $status) {
+            // Default to today if no filters at all
+            if (!$fromDate && !$toDate && !$subjectId && !$teacherId && !$status) {
+                $q->whereDate('evaluation_date', Carbon::today());
+            } else {
+                if ($fromDate) {
+                    $q->whereDate('evaluation_date', '>=', $fromDate);
+                }
+                if ($toDate) {
+                    $q->whereDate('evaluation_date', '<=', $toDate);
+                }
             }
-            if ($toDate) {
-                $query->whereDate('lesson_evaluations.evaluation_date', '<=', $toDate);
-            }
-        }
 
-        if ($subjectId) {
-            $query->where('lesson_evaluations.subject_id', $subjectId);
-        }
-        if ($teacherId) {
-            $query->where('lesson_evaluations.teacher_id', $teacherId);
-        }
+            if ($subjectId) {
+                $q->where('subject_id', $subjectId);
+            }
+            if ($teacherId) {
+                $q->where('teacher_id', $teacherId);
+            }
+        });
+
         if ($status) {
-            $query->where('lesson_evaluation_records.status', $status);
+            $query->where('status', $status);
         }
 
-        $records = $query->orderByDesc('lesson_evaluations.evaluation_date')
-            ->orderByDesc('lesson_evaluations.created_at')
-            ->get();
+        $records = $query->latest()->get();
 
         return response()->json([
-            'data' => $records->map(fn($r) => [
-                'id' => $r->id,
-                'date' => optional($r->lessonEvaluation->evaluation_date)->toDateString(),
-                'subject' => $r->lessonEvaluation->subject->name ?? 'N/A',
-                'teacher' => $r->lessonEvaluation->teacher->full_name ?? $r->lessonEvaluation->teacher->name ?? 'N/A',
-                'notes' => $r->lessonEvaluation->notes,
-                'status' => $r->status,
-                'status_label' => $r->status_label,
-                'status_color' => $r->status_color, // success, warning, danger, secondary
-                'remarks' => $r->remarks,
-            ]),
+            'data' => $records->map(function($r) {
+                $eval = $r->lessonEvaluation;
+                return [
+                    'id' => $r->id,
+                    'date' => $eval && $eval->evaluation_date ? $eval->evaluation_date->toDateString() : 'N/A',
+                    'subject' => $eval->subject->name ?? 'N/A',
+                    'teacher' => $eval->teacher ? ($eval->teacher->full_name_bn ?: $eval->teacher->full_name) : 'N/A',
+                    'notes' => $eval->notes ?? '',
+                    'status' => $r->status,
+                    'status_label' => $r->status_label,
+                    'status_color' => $r->status_color,
+                    'remarks' => $r->remarks,
+                ];
+            }),
             'message' => 'লেসন ইভ্যালুয়েশন রিপোর্ট',
         ]);
     }
