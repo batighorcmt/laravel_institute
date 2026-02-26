@@ -79,6 +79,9 @@
                                     <a href="{{ route('teacher.institute.homework.show', [$school, $homework]) }}" class="btn btn-sm btn-info" title="Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
+                                    <a href="{{ route('teacher.institute.homework.edit', [$school, $homework]) }}" class="btn btn-sm btn-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
                                     <form action="{{ route('teacher.institute.homework.destroy', [$school, $homework]) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure?')">
                                         @csrf
                                         @method('DELETE')

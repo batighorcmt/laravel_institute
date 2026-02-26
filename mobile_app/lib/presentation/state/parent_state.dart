@@ -27,9 +27,32 @@ final parentChildrenProvider = FutureProvider<List<dynamic>>((ref) async {
   return children;
 });
 
+class HomeworkDateFilterNotifier extends Notifier<DateTime?> {
+  @override
+  DateTime? build() => null;
+  set state(DateTime? value) => super.state = value;
+}
+final homeworkDateFilterProvider = NotifierProvider<HomeworkDateFilterNotifier, DateTime?>(HomeworkDateFilterNotifier.new);
+
+class HomeworkSubjectFilterNotifier extends Notifier<int?> {
+  @override
+  int? build() => null;
+  set state(int? value) => super.state = value;
+}
+final homeworkSubjectFilterProvider = NotifierProvider<HomeworkSubjectFilterNotifier, int?>(HomeworkSubjectFilterNotifier.new);
+
+class HomeworkTeacherFilterNotifier extends Notifier<int?> {
+  @override
+  int? build() => null;
+  set state(int? value) => super.state = value;
+}
+final homeworkTeacherFilterProvider = NotifierProvider<HomeworkTeacherFilterNotifier, int?>(HomeworkTeacherFilterNotifier.new);
+
 final parentHomeworkProvider = FutureProvider<List<dynamic>>((ref) {
   final studentId = ref.watch(selectedStudentIdProvider);
-  return ref.watch(parentRepositoryProvider).getHomework(studentId: studentId);
+  final date = ref.watch(homeworkDateFilterProvider);
+  final dateStr = date?.toIso8601String().split('T').first;
+  return ref.watch(parentRepositoryProvider).getHomework(studentId: studentId, date: dateStr);
 });
 
 final parentRoutineProvider = FutureProvider<List<dynamic>>((ref) {

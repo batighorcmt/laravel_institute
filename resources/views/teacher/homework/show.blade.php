@@ -5,9 +5,14 @@
 @section('content')
 <div class="d-flex justify-content-between mb-3">
     <h1 class="m-0">Homework Details</h1>
-    <a href="{{ route('teacher.institute.homework.index', $school) }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Back
-    </a>
+    <div>
+        <a href="{{ route('teacher.institute.homework.edit', [$school, $homework]) }}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        <a href="{{ route('teacher.institute.homework.index', $school) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
 </div>
 
 <div class="card">

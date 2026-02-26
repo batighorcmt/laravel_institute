@@ -586,6 +586,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/create', [App\Http\Controllers\Teacher\HomeworkController::class, 'create'])->name('create');
                 Route::post('/', [App\Http\Controllers\Teacher\HomeworkController::class, 'store'])->name('store');
                 Route::get('/{homework}', [App\Http\Controllers\Teacher\HomeworkController::class, 'show'])->name('show');
+                Route::get('/{homework}/edit', [App\Http\Controllers\Teacher\HomeworkController::class, 'edit'])->name('edit');
+                Route::put('/{homework}', [App\Http\Controllers\Teacher\HomeworkController::class, 'update'])->name('update');
                 Route::delete('/{homework}', [App\Http\Controllers\Teacher\HomeworkController::class, 'destroy'])->name('destroy');
             });
 

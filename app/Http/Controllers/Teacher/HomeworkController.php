@@ -151,6 +151,80 @@ class HomeworkController extends Controller
     }
 
     /**
+     * Show form to edit homework
+     */
+    public function edit(School $school, Homework $homework)
+    {
+        $user = Auth::user();
+        $teacher = Teacher::where('user_id', $user->id)
+            ->where('school_id', $school->id)
+            ->firstOrFail();
+
+        // Verify this homework belongs to this teacher
+        if ($homework->teacher_id !== $teacher->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Get all routine entries to populate dropdowns
+        $routineEntries = RoutineEntry::with(['schoolClass', 'section', 'subject'])
+            ->where('teacher_id', $teacher->id)
+            ->where('school_id', $school->id)
+            ->get()
+            ->unique(function ($item) {
+                return $item->class_id . '-' . $item->section_id . '-' . $item->subject_id;
+            });
+
+        return view('teacher.homework.edit', compact('school', 'teacher', 'homework', 'routineEntries'));
+    }
+
+    /**
+     * Update homework
+     */
+    public function update(School $school, Homework $homework, Request $request)
+    {
+        $user = Auth::user();
+        $teacher = Teacher::where('user_id', $user->id)
+            ->where('school_id', $school->id)
+            ->firstOrFail();
+
+        // Verify this homework belongs to this teacher
+        if ($homework->teacher_id !== $teacher->id) {
+            abort(403, 'Unauthorized');
+        }
+
+        $request->validate([
+            'class_id' => 'required|exists:classes,id',
+            'section_id' => 'required|exists:sections,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'homework_date' => 'required|date',
+            'submission_date' => 'nullable|date|after_or_equal:homework_date',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'attachment' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
+        ]);
+
+        $data = $request->only(['class_id', 'section_id', 'subject_id', 'homework_date', 'submission_date', 'title', 'description']);
+
+        // Handle file upload
+        if ($request->hasFile('attachment')) {
+            // Delete old attachment if exists
+            if ($homework->attachment && Storage::disk('public')->exists($homework->attachment)) {
+                Storage::disk('public')->delete($homework->attachment);
+            }
+
+            $file = $request->file('attachment');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('homeworks', $filename, 'public');
+            $data['attachment'] = $path;
+        }
+
+        $homework->update($data);
+
+        return redirect()->route('teacher.institute.homework.index', $school)
+            ->with('success', 'হোমওয়ার্ক সফলভাবে আপডেট করা হয়েছে।');
+    }
+
+    /**
      * Delete homework
      */
     public function destroy(School $school, Homework $homework)
