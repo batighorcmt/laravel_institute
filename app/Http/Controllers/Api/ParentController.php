@@ -194,9 +194,11 @@ class ParentController extends Controller
 
         $subjects = ClassSubject::where('class_id', $student->class_id)
             ->where('school_id', $student->school_id)
+            ->where('status', 'active')
             ->whereHas('subject')
             ->with('subject')
-            ->get();
+            ->get()
+            ->unique('subject_id');
 
         return response()->json([
             'data' => $subjects->map(fn($s) => [
@@ -204,7 +206,7 @@ class ParentController extends Controller
                 'name' => $s->subject->name ?? 'N/A',
                 'code' => $s->subject->code ?? '',
                 'is_optional' => $s->is_optional,
-            ]),
+            ])->values(),
             'message' => 'পঠিত বিষয় সমূহ',
         ]);
     }
