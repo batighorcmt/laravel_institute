@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../state/parent_state.dart';
 
 class TeacherListPage extends ConsumerWidget {
@@ -22,19 +23,25 @@ class TeacherListPage extends ConsumerWidget {
             final teacher = teachers[index];
             final name = teacher['name']?.toString() ?? 'N/A';
             final designation = teacher['designation']?.toString() ?? 'Teacher';
+            final photo = teacher['photo']?.toString();
+            final phone = teacher['phone']?.toString();
+            final email = teacher['email']?.toString();
 
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               child: ExpansionTile(
                 leading: CircleAvatar(
                   backgroundColor: Colors.blue.withOpacity(0.2),
-                  child: Text(
-                    name.isNotEmpty ? name[0] : 'T',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
+                  backgroundImage: photo != null ? NetworkImage(photo) : null,
+                  child: photo == null
+                      ? Text(
+                          name.isNotEmpty ? name[0] : 'T',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        )
+                      : null,
                 ),
                 title: Text(
                   name,
@@ -56,19 +63,19 @@ class TeacherListPage extends ConsumerWidget {
                           value: designation,
                         ),
                         const SizedBox(height: 8),
-                        if (teacher['phone'] != null)
+                        if (phone != null && phone.isNotEmpty)
                           _buildInfoRow(
                             icon: Icons.phone,
                             label: 'ফোন',
-                            value: teacher['phone'].toString(),
+                            value: phone,
                             isClickable: true,
                           ),
                         const SizedBox(height: 8),
-                        if (teacher['email'] != null)
+                        if (email != null && email.isNotEmpty)
                           _buildInfoRow(
                             icon: Icons.email,
                             label: 'ইমেইল',
-                            value: teacher['email'].toString(),
+                            value: email,
                             isClickable: true,
                           ),
                         const SizedBox(height: 12),
@@ -76,22 +83,38 @@ class TeacherListPage extends ConsumerWidget {
                           children: [
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: () {},
+                                onPressed: (phone != null && phone.isNotEmpty)
+                                    ? () async {
+                                        final uri = Uri.parse('tel:$phone');
+                                        if (await canLaunchUrl(uri)) {
+                                          await launchUrl(uri);
+                                        }
+                                      }
+                                    : null,
                                 icon: const Icon(Icons.phone, size: 18),
                                 label: const Text('কল করুন'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: () {},
+                                onPressed: (email != null && email.isNotEmpty)
+                                    ? () async {
+                                        final uri = Uri.parse('mailto:$email');
+                                        if (await canLaunchUrl(uri)) {
+                                          await launchUrl(uri);
+                                        }
+                                      }
+                                    : null,
                                 icon: const Icon(Icons.email, size: 18),
                                 label: const Text('ইমেইল'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blue,
+                                  foregroundColor: Colors.white,
                                 ),
                               ),
                             ),
