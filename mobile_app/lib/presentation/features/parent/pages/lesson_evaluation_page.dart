@@ -143,6 +143,35 @@ class LessonEvaluationPage extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.analytics_outlined, size: 18, color: Colors.indigo),
+                      SizedBox(width: 8),
+                      Text(
+                        'বিষয়ভিত্তিক বাৎসরিক পরিসংখ্যান',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo),
+                      ),
+                    ],
+                  ),
+                  TextButton.icon(
+                    onPressed: () => context.pushNamed('parent-evaluations-stats'),
+                    icon: const Icon(Icons.visibility, size: 16),
+                    label: const Text('দেখুন', style: TextStyle(fontSize: 13)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.indigo,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

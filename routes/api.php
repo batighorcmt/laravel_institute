@@ -74,6 +74,7 @@ Route::prefix('v1')->group(function () {
     Route::get('parent/routine', [\App\Http\Controllers\Api\ParentController::class, 'classRoutine'])->middleware('role:parent');
 
     Route::get('parent/lesson-evaluations', [\App\Http\Controllers\Api\ParentController::class, 'lessonEvaluations'])->middleware('role:parent');
+    Route::get('parent/lesson-evaluation-stats', [\App\Http\Controllers\Api\ParentController::class, 'lessonEvaluationStats'])->middleware('role:parent');
     Route::get('parent/teachers', [\App\Http\Controllers\Api\ParentController::class, 'teachers'])->middleware('role:parent');
     Route::get('parent/feedback', [\App\Http\Controllers\Api\ParentController::class, 'feedbackIndex'])->middleware('role:parent');
     Route::post('parent/feedback', [\App\Http\Controllers\Api\ParentController::class, 'feedbackStore'])->middleware('role:parent');

@@ -22,6 +22,7 @@ import '../features/parent/pages/class_routine_page.dart';
 import '../features/parent/pages/homework_list_page.dart';
 import '../features/parent/pages/attendance_report_page.dart';
 import '../features/parent/pages/lesson_evaluation_page.dart';
+import '../features/parent/pages/lesson_evaluation_stats_page.dart';
 import '../features/parent/pages/leave_application_page.dart';
 import '../features/parent/pages/notice_board_page.dart';
 import '../features/parent/pages/teacher_list_page.dart';
@@ -181,6 +182,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/parent/evaluations',
             name: 'parent-evaluations',
             builder: (context, state) => const LessonEvaluationPage(),
+          ),
+          GoRoute(
+            path: '/parent/evaluations/stats',
+            name: 'parent-evaluations-stats',
+            builder: (context, state) => const LessonEvaluationStatsPage(),
           ),
           GoRoute(
             path: '/parent/leaves',

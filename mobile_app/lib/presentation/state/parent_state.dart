@@ -123,6 +123,11 @@ class EvalStringFilterNotifier extends Notifier<String?> {
 
 final evalStatusFilterProvider = NotifierProvider<EvalStringFilterNotifier, String?>(EvalStringFilterNotifier.new);
 
+final parentEvaluationStatsProvider = FutureProvider<List<dynamic>>((ref) {
+  final studentId = ref.watch(selectedStudentIdProvider);
+  return ref.watch(parentRepositoryProvider).getLessonEvaluationStats(studentId: studentId, year: DateTime.now().year);
+});
+
 final parentLeavesProvider = FutureProvider<List<dynamic>>((ref) {
   return ref.watch(parentRepositoryProvider).getLeaves();
 });

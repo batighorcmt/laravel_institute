@@ -346,6 +346,45 @@ class ParentController extends Controller
         ]);
     }
 
+    public function lessonEvaluationStats(Request $request)
+    {
+        $studentId = $request->get('student_id');
+        $children = $this->resolveChildren($request);
+        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        $year = $request->get('year', date('Y'));
+
+        $records = LessonEvaluationRecord::where('student_id', $student->id)
+            ->whereHas('lessonEvaluation', function($q) use ($year) {
+                $q->whereYear('evaluation_date', $year);
+            })
+            ->with(['lessonEvaluation.subject', 'lessonEvaluation.teacher'])
+            ->get();
+
+        $stats = $records->groupBy('lessonEvaluation.subject_id')->map(function($group) {
+            $first = $group->first()->lessonEvaluation;
+            return [
+                'subject_id' => $first->subject_id,
+                'subject_name' => $first->subject->name ?? 'N/A',
+                'teacher_name' => $first->teacher ? ($first->teacher->full_name_bn ?: $first->teacher->full_name) : 'N/A',
+                'completed' => $group->where('status', 'completed')->count(),
+                'partial' => $group->where('status', 'partial')->count(),
+                'not_done' => $group->where('status', 'not_done')->count(),
+                'absent' => $group->where('status', 'absent')->count(),
+            ];
+        })->values();
+
+        return response()->json([
+            'year' => $year,
+            'data' => $stats,
+            'message' => 'বিষয়ভিত্তিক বাৎসরিক লেসন ইভ্যালুয়েশন পরিসংখ্যান',
+        ]);
+    }
+
     public function teachers(Request $request)
     {
         $children = $this->resolveChildren($request);
