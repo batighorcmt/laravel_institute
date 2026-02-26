@@ -54,18 +54,30 @@ class ParentController extends Controller
             $query->forSchool($schoolId); 
         }
 
+        $student = null;
         if ($studentId) {
             $student = $students->where('id', $studentId)->first();
-            if ($student) {
-                $query->where('class_id', $student->class_id);
-                $enrollment = $student->currentEnrollment;
-                if ($enrollment) {
-                    $query->where('section_id', $enrollment->section_id);
-                }
+        } else {
+            $student = $students->first();
+        }
+
+        if ($student) {
+            $enrollment = $student->currentEnrollment;
+            $classId = $student->class_id ?? $enrollment?->class_id;
+            $sectionId = $enrollment?->section_id;
+
+            if ($classId) {
+                $query->where('class_id', $classId);
+            }
+            if ($sectionId) {
+                $query->where('section_id', $sectionId);
             }
         } else {
-            // Apply filters based on all children if no specific student is selected
-            $classIds = $students->pluck('class_id')->filter()->unique();
+            // Apply filters based on all children if no specific student is found
+            $classIds = $students->map(function($s) {
+                return $s->class_id ?? $s->currentEnrollment?->class_id;
+            })->filter()->unique();
+            
             $sectionIds = $students->map(fn($s) => $s->currentEnrollment?->section_id)->filter()->unique();
             
             if ($classIds->isNotEmpty()) {
@@ -80,7 +92,7 @@ class ParentController extends Controller
             $query->forDate($date);
         } else {
             $query->where(function($q) {
-                $q->where('homework_date', '>=', Carbon::now()->subDays(30)->toDateString())
+                $q->where('homework_date', '>=', Carbon::now()->subDays(60)->toDateString())
                   ->orWhere('submission_date', '>=', Carbon::now()->toDateString());
             });
         }
@@ -185,14 +197,21 @@ class ParentController extends Controller
     public function subjects(Request $request)
     {
         $studentId = $request->get('student_id');
-        $children = $this->resolveChildren($request);
-        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+        $students = $this->resolveChildren($request);
+        $student = $studentId ? $students->firstWhere('id', $studentId) : $students->first();
 
         if (!$student) {
             return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
         }
 
-        $subjects = ClassSubject::where('class_id', $student->class_id)
+        $enrollment = $student->currentEnrollment;
+        $classId = $student->class_id ?? $enrollment?->class_id;
+
+        if (!$classId) {
+            return response()->json(['data' => [], 'message' => 'শ্রেণি পাওয়া যায়নি']);
+        }
+
+        $subjects = ClassSubject::where('class_id', $classId)
             ->where('school_id', $student->school_id)
             ->where('status', 'active')
             ->whereHas('subject')
@@ -368,21 +387,27 @@ class ParentController extends Controller
     private function resolveChildren(Request $request)
     {
         $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id');
         
-        // ১. সরাসরি ইউজার আইডির সাথে যুক্ত শিক্ষার্থী (যদি শিক্ষার্থী নিজে লগইন করে)
+        // ১. সরাসরি ইউজার আইডির সাথে যুক্ত শিক্ষার্থী
         $directStudent = Student::active()->where('user_id', $user->id)->with('currentEnrollment')->first();
         if ($directStudent) {
             return collect([$directStudent]);
         }
 
-        // ২. অভিভাবক হিসেবে যুক্ত শিক্ষার্থী (guardian_phone দিয়ে)
-        $query = Student::query()->active()->with('currentEnrollment');
-        if ($schoolId) { $query->forSchool($schoolId); }
-        $query->where(function($q) use ($user) {
-            $q->where('guardian_phone', $user->username)
+        // ২. অভিভাবক হিসেবে যুক্ত শিক্ষার্থী
+        $query = Student::query()->active()->with(['currentEnrollment', 'class', 'school']);
+        
+        $phone = $user->username;
+        $cleanPhone = ltrim(str_replace(['+', '88'], '', $phone), '0');
+        
+        $query->where(function($q) use ($user, $phone, $cleanPhone) {
+            $q->where('guardian_phone', $phone)
+              ->orWhere('guardian_phone', '0' . $cleanPhone)
+              ->orWhere('guardian_phone', '880' . $cleanPhone)
+              ->orWhere('guardian_phone', '+880' . $cleanPhone)
               ->orWhere('guardian_phone', $user->email);
         });
+        
         return $query->get();
     }
 }
