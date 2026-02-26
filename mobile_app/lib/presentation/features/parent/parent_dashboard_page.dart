@@ -173,7 +173,7 @@ class ParentDashboardPage extends ConsumerWidget {
                         child: const Icon(Icons.assignment, color: Colors.purple, size: 22),
                       ),
                       title: Text(e['title'] ?? 'Homework', style: const TextStyle(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      subtitle: Text(e['due_date'] ?? ''),
+                      subtitle: Text('বিষয়: ${e['subject_name'] ?? 'N/A'} | জমা: ${e['submission_date'] ?? 'N/A'}'),
                       onTap: () => context.go('/parent/homework'),
                     ),
                   );

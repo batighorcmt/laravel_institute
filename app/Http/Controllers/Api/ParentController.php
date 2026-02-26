@@ -42,19 +42,36 @@ class ParentController extends Controller
     public function homework(Request $request)
     {
         $schoolId = $request->attributes->get('current_school_id');
-        $date = $request->get('date', Carbon::now()->toDateString());
+        $date = $request->get('date');
+        $studentId = $request->get('student_id');
         $students = $this->resolveChildren($request);
-        $classIds = $students->pluck('class_id')->filter()->unique()->values();
+        
+        if ($studentId) {
+            $classIds = $students->where('id', $studentId)->pluck('class_id')->filter()->unique()->values();
+        } else {
+            $classIds = $students->pluck('class_id')->filter()->unique()->values();
+        }
 
-        $query = Homework::query()->forDate($date)->with(['subject', 'teacher']);
+        $query = Homework::query()->with(['subject', 'teacher']);
         if ($schoolId) { $query->forSchool($schoolId); }
         if ($classIds->isNotEmpty()) { $query->whereIn('class_id', $classIds); }
-        $homeworks = $query->orderBy('subject_id')->get();
+
+        if ($date) {
+            $query->forDate($date);
+        } else {
+            // By default, show homework from last 30 days or any with future submission dates
+            $query->where(function($q) {
+                $q->where('homework_date', '>=', Carbon::now()->subDays(30)->toDateString())
+                  ->orWhere('submission_date', '>=', Carbon::now()->toDateString());
+            });
+        }
+
+        $homeworks = $query->orderByDesc('homework_date')->get();
 
         return HomeworkResource::collection($homeworks)->additional([
-            'date' => $date,
+            'date' => $date ?? Carbon::now()->toDateString(),
             'children_count' => $students->count(),
-            'message' => 'নির্দিষ্ট দিনের হোমওয়ার্ক',
+            'message' => $date ? 'নির্দিষ্ট দিনের হোমওয়ার্ক' : 'সাম্প্রতিক হোমওয়ার্ক',
         ]);
     }
 
