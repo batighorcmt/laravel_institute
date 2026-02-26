@@ -291,20 +291,53 @@ class ParentController extends Controller
             return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
         }
 
-        $records = LessonEvaluationRecord::where('student_id', $student->id)
-            ->with(['lessonEvaluation.subject', 'lessonEvaluation.teacher'])
-            ->orderByDesc('created_at')
-            ->limit(50)
+        $fromDate = $request->get('from_date');
+        $toDate = $request->get('to_date');
+        $subjectId = $request->get('subject_id');
+        $teacherId = $request->get('teacher_id');
+        $status = $request->get('status');
+
+        $query = LessonEvaluationRecord::where('student_id', $student->id)
+            ->join('lesson_evaluations', 'lesson_evaluation_records.lesson_evaluation_id', '=', 'lesson_evaluations.id')
+            ->select('lesson_evaluation_records.*')
+            ->with(['lessonEvaluation.subject', 'lessonEvaluation.teacher']);
+
+        // Default to today if no date filter
+        if (!$fromDate && !$toDate && !$subjectId && !$teacherId && !$status) {
+            $query->whereDate('lesson_evaluations.evaluation_date', Carbon::today());
+        } else {
+            if ($fromDate) {
+                $query->whereDate('lesson_evaluations.evaluation_date', '>=', $fromDate);
+            }
+            if ($toDate) {
+                $query->whereDate('lesson_evaluations.evaluation_date', '<=', $toDate);
+            }
+        }
+
+        if ($subjectId) {
+            $query->where('lesson_evaluations.subject_id', $subjectId);
+        }
+        if ($teacherId) {
+            $query->where('lesson_evaluations.teacher_id', $teacherId);
+        }
+        if ($status) {
+            $query->where('lesson_evaluation_records.status', $status);
+        }
+
+        $records = $query->orderByDesc('lesson_evaluations.evaluation_date')
+            ->orderByDesc('lesson_evaluations.created_at')
             ->get();
 
         return response()->json([
             'data' => $records->map(fn($r) => [
                 'id' => $r->id,
-                'date' => $r->lessonEvaluation->date,
+                'date' => optional($r->lessonEvaluation->evaluation_date)->toDateString(),
                 'subject' => $r->lessonEvaluation->subject->name ?? 'N/A',
-                'teacher' => $r->lessonEvaluation->teacher->name ?? 'N/A',
-                'lesson' => $r->lessonEvaluation->lesson_name,
-                'status' => $r->status_label,
+                'teacher' => $r->lessonEvaluation->teacher->full_name ?? $r->lessonEvaluation->teacher->name ?? 'N/A',
+                'notes' => $r->lessonEvaluation->notes,
+                'status' => $r->status,
+                'status_label' => $r->status_label,
+                'status_color' => $r->status_color, // success, warning, danger, secondary
                 'remarks' => $r->remarks,
             ]),
             'message' => 'লেসন ইভ্যালুয়েশন রিপোর্ট',

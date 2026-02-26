@@ -31,8 +31,23 @@ class ParentRepository {
     return _parseList(resp.data);
   }
 
-  Future<List<dynamic>> getLessonEvaluations({int? studentId}) async {
-    final resp = await _dio.get('parent/lesson-evaluations', queryParameters: studentId != null ? {'student_id': studentId} : {});
+  Future<List<dynamic>> getLessonEvaluations({
+    int? studentId,
+    String? fromDate,
+    String? toDate,
+    int? subjectId,
+    int? teacherId,
+    String? status,
+  }) async {
+    final params = <String, dynamic>{};
+    if (studentId != null) params['student_id'] = studentId;
+    if (fromDate != null) params['from_date'] = fromDate;
+    if (toDate != null) params['to_date'] = toDate;
+    if (subjectId != null) params['subject_id'] = subjectId;
+    if (teacherId != null) params['teacher_id'] = teacherId;
+    if (status != null) params['status'] = status;
+
+    final resp = await _dio.get('parent/lesson-evaluations', queryParameters: params);
     return _parseList(resp.data);
   }
 

@@ -77,8 +77,51 @@ final parentOverallAttendanceProvider = FutureProvider<List<dynamic>>((ref) {
 
 final parentEvaluationsProvider = FutureProvider<List<dynamic>>((ref) {
   final studentId = ref.watch(selectedStudentIdProvider);
-  return ref.watch(parentRepositoryProvider).getLessonEvaluations(studentId: studentId);
+  final fromDate = ref.watch(evalFromDateFilterProvider);
+  final toDate = ref.watch(evalToDateFilterProvider);
+  final subjectId = ref.watch(evalSubjectFilterProvider);
+  final teacherId = ref.watch(evalTeacherFilterProvider);
+  final status = ref.watch(evalStatusFilterProvider);
+
+  return ref.watch(parentRepositoryProvider).getLessonEvaluations(
+        studentId: studentId,
+        fromDate: fromDate?.toIso8601String().split('T').first,
+        toDate: toDate?.toIso8601String().split('T').first,
+        subjectId: subjectId,
+        teacherId: teacherId,
+        status: status,
+      );
 });
+
+// Lesson Evaluation filters state
+class EvalDateFilterNotifier extends Notifier<DateTime?> {
+  final bool isDefaultToday;
+  EvalDateFilterNotifier({this.isDefaultToday = false});
+
+  @override
+  DateTime? build() => isDefaultToday ? DateTime.now() : null;
+  set state(DateTime? value) => super.state = value;
+}
+
+final evalFromDateFilterProvider = NotifierProvider<EvalDateFilterNotifier, DateTime?>(() => EvalDateFilterNotifier(isDefaultToday: true));
+final evalToDateFilterProvider = NotifierProvider<EvalDateFilterNotifier, DateTime?>(() => EvalDateFilterNotifier(isDefaultToday: true));
+
+class EvalIntFilterNotifier extends Notifier<int?> {
+  @override
+  int? build() => null;
+  set state(int? value) => super.state = value;
+}
+
+final evalSubjectFilterProvider = NotifierProvider<EvalIntFilterNotifier, int?>(EvalIntFilterNotifier.new);
+final evalTeacherFilterProvider = NotifierProvider<EvalIntFilterNotifier, int?>(EvalIntFilterNotifier.new);
+
+class EvalStringFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  set state(String? value) => super.state = value;
+}
+
+final evalStatusFilterProvider = NotifierProvider<EvalStringFilterNotifier, String?>(EvalStringFilterNotifier.new);
 
 final parentLeavesProvider = FutureProvider<List<dynamic>>((ref) {
   return ref.watch(parentRepositoryProvider).getLeaves();
