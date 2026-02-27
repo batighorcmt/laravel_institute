@@ -54,8 +54,11 @@ Route::prefix('v1')->group(function () {
     Route::get('teachers', [\App\Http\Controllers\Api\TeacherDirectoryController::class, 'index'])->middleware('role:teacher,principal');
     // Teacher → Students directory and profile
     Route::get('teacher/students', [\App\Http\Controllers\Api\StudentDirectoryController::class, 'index'])->middleware('role:teacher');
-    Route::get('teacher/students/{student}', [\App\Http\Controllers\Api\StudentDirectoryController::class, 'show'])->middleware('role:teacher');
     Route::get('teacher/students/meta', [\App\Http\Controllers\Api\StudentDirectoryController::class, 'meta'])->middleware('role:teacher');
+    Route::get('teacher/students/filters/classes', [\App\Http\Controllers\Api\StudentDirectoryController::class, 'getClasses'])->middleware('role:teacher');
+    Route::get('teacher/students/filters/sections', [\App\Http\Controllers\Api\StudentDirectoryController::class, 'getSections'])->middleware('role:teacher');
+    Route::get('teacher/students/filters/groups', [\App\Http\Controllers\Api\StudentDirectoryController::class, 'getGroups'])->middleware('role:teacher');
+    Route::get('teacher/students/{student}', [\App\Http\Controllers\Api\StudentDirectoryController::class, 'show'])->middleware('role:teacher');
     Route::get('teacher/subjects', [\App\Http\Controllers\Api\TeacherSubjectController::class, 'forClassSection'])->middleware('role:teacher');
     Route::get('teacher/lesson-evaluations', [\App\Http\Controllers\Api\LessonEvaluationController::class, 'index'])->middleware('role:teacher');
     Route::post('teacher/lesson-evaluations', [\App\Http\Controllers\Api\LessonEvaluationController::class, 'store'])->middleware('role:teacher');

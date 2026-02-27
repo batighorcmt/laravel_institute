@@ -233,86 +233,50 @@ class TeacherStudentsRepository {
   Future<List<Map<String, dynamic>>> fetchSections({String? classId}) async {
     if (classId == null || classId.isEmpty) return [];
     _classScopedCache ??= {};
-    if (_classScopedCache![classId] == null) {
+    
+    // First try the new specific filter endpoint (mirrors principal panel)
+    try {
+      final res = await _dio.get(
+        'teacher/students/filters/sections',
+        queryParameters: {'class_id': classId},
+      );
+      if (res.data is List) {
+        final existing = _classScopedCache![classId] ?? {};
+        _classScopedCache![classId] = {
+           ...existing,
+           'sections': res.data,
+        };
+      }
+    } catch (_) {
+      // Fallback: try the meta endpoint
       try {
         final res = await _dio.get(
           'teacher/students/meta',
           queryParameters: {'class_id': classId},
         );
-        _classScopedCache![classId] = res.data is Map<String, dynamic>
-            ? res.data
-            : {};
-      } on DioException catch (e) {
-        final status = e.response?.statusCode;
-        if (status == 403) {
-          // Principal user: call principal sections/groups endpoints
-          try {
-            final resSec = await _dio.get(
-              'principal/students/filters/sections',
-              queryParameters: {'class_id': classId},
-            );
-            final resGrp = await _dio.get(
-              'principal/students/filters/groups',
-              queryParameters: {'class_id': classId},
-            );
-            final sections = resSec.data is List ? resSec.data : [];
-            final groups = resGrp.data is List ? resGrp.data : [];
-            _classScopedCache![classId] = {
-              'sections': sections,
-              'groups': groups,
-              'genders': [],
-            };
-          } catch (_) {
-            _classScopedCache![classId] = {};
-          }
-        } else {
-          // Fallback: try attendance meta and extract sections for the class
-          try {
-            final res2 = await _dio.get(
-              'teacher/students-attendance/class/meta',
-            );
-            final data2 = res2.data;
-            final list = data2 is List
-                ? data2.cast<Map<String, dynamic>>()
-                : (data2 is Map<String, dynamic> && data2['data'] is List)
-                ? (data2['data'] as List).cast<Map<String, dynamic>>()
-                : <Map<String, dynamic>>[];
-            final match = list.firstWhere(
-              (m) =>
-                  (m['class_id']?.toString() ?? m['id']?.toString()) == classId,
-              orElse: () => const {},
-            );
-            _classScopedCache![classId] = {
-              'sections': (match['sections'] as List?) ?? [],
-              'groups': [],
-              'genders': [],
-            };
-          } catch (_) {
-            _classScopedCache![classId] = {};
-          }
-        }
-      } catch (_) {
-        // Fallback: try generic meta/sections (filtered by class_id) which is robust for DB-active sections
-        try {
-          final res = await _dio.get(
-            'meta/sections',
-            queryParameters: {'class_id': classId},
-          );
-          final data = res.data;
-          List<Map<String, dynamic>> rows = [];
-          if (data is List) {
-            rows = List<Map<String, dynamic>>.from(data.map((x) => Map<String, dynamic>.from(x)));
-          }
-           _classScopedCache![classId] = {
-              'sections': rows,
-              'groups': [],
-              'genders': [],
-            };
-        } catch (_) {
-           _classScopedCache![classId] = {};
-        }
-      }
+        _classScopedCache![classId] = res.data is Map<String, dynamic> ? res.data : {};
+      } catch (_) {}
     }
+    }
+    
+    final meta = _classScopedCache![classId] ?? {};
+    if (meta.isEmpty || (meta['sections'] as List? ?? []).isEmpty) {
+      // If primary meta is empty or has no sections, try generic meta/sections
+      try {
+        final res = await _dio.get(
+          'meta/sections',
+          queryParameters: {'class_id': classId},
+        );
+        final data = res.data;
+        if (data is List) {
+          _classScopedCache![classId] = {
+            ...meta,
+            'sections': List<Map<String, dynamic>>.from(data.map((x) => Map<String, dynamic>.from(x))),
+          };
+        }
+      } catch (_) {}
+    }
+
     final sections = ((_classScopedCache![classId]['sections']) as List? ?? [])
         .cast<Map<String, dynamic>>()
         .map((e) => {'id': e['id']?.toString(), 'name': e['name']?.toString()})
@@ -331,20 +295,23 @@ class TeacherStudentsRepository {
   Future<List<Map<String, dynamic>>> fetchGroupsForClass(String classId) async {
     if (classId.isEmpty) return [];
     _classScopedCache ??= {};
-    if (_classScopedCache![classId] == null) {
-      try {
-        final res = await _dio.get(
-          'teacher/students/meta',
-          queryParameters: {'class_id': classId},
-        );
-        _classScopedCache![classId] = res.data is Map<String, dynamic>
-            ? res.data
-            : {};
-      } catch (_) {
-        _classScopedCache![classId] = {};
+    
+    // Try the specific filter endpoint
+    try {
+      final res = await _dio.get(
+        'teacher/students/filters/groups',
+        queryParameters: {'class_id': classId},
+      );
+      if (res.data is List) {
+        final existing = _classScopedCache![classId] ?? {};
+        _classScopedCache![classId] = {
+          ...existing,
+          'groups': res.data,
+        };
       }
-    }
-    final groups = ((_classScopedCache![classId]['groups']) as List? ?? [])
+    } catch (_) {}
+    
+    final groups = ((_classScopedCache![classId]?['groups']) as List? ?? [])
         .cast<Map<String, dynamic>>()
         .map((e) => {'id': e['id']?.toString(), 'name': e['name']?.toString()})
         .toList();

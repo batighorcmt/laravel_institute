@@ -26,8 +26,23 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
 
   List<Map<String, dynamic>> _classes = [];
   String? _selectedClassId;
+  List<Map<String, dynamic>> _sections = [];
+  String? _selectedSectionId;
+  List<Map<String, dynamic>> _groups = [];
+  String? _selectedGroupId;
+  List<String> _genders = [];
+  String? _selectedGender;
+  List<Map<String, dynamic>> _years = [];
+  String? _selectedYearId;
+  List<String> _religions = [];
+  String? _selectedReligion;
+  List<String> _statuses = [];
+  String? _selectedStatus;
 
+  final TextEditingController _searchCtrl = TextEditingController();
   bool _classesLoading = false;
+  bool _sectionsLoading = false;
+  bool _metaLoading = false;
 
   @override
   void initState() {
@@ -37,18 +52,54 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
     _fetchInitialData();
   }
 
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchInitialData() async {
-    setState(() => _classesLoading = true);
+    setState(() => _metaLoading = true);
     try {
       final classes = await _repo.fetchClasses();
+      // Fetch years, religions, statuses from multiple potential meta endpoints for reliability
+      final metaEndpoints = [
+        'teacher/students/meta',
+        'teacher/exams/mark-entry/meta',
+      ];
+      for (final endpoint in metaEndpoints) {
+        try {
+          final res = await _dio.get(endpoint);
+          final data = res.data;
+          if (data is Map<String, dynamic>) {
+            bool updated = false;
+            setState(() {
+              if (data['academic_years'] is List && _years.isEmpty) {
+                _years = (data['academic_years'] as List).cast<Map<String, dynamic>>();
+                updated = true;
+              }
+              if (data['religions'] is List && _religions.isEmpty) {
+                _religions = (data['religions'] as List).cast<String>();
+                updated = true;
+              }
+              if (data['statuses'] is List && _statuses.isEmpty) {
+                _statuses = (data['statuses'] as List).cast<String>();
+                updated = true;
+              }
+            });
+            if (updated) break;
+          }
+        } catch (_) {}
+      }
+
       if (mounted) {
         setState(() {
           _classes = classes;
-          _classesLoading = false;
+          _metaLoading = false;
         });
       }
     } catch (_) {
-      if (mounted) setState(() => _classesLoading = false);
+      if (mounted) setState(() => _metaLoading = false);
     }
     _load(reset: true);
   }
@@ -60,7 +111,14 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       final page = reset ? 1 : _page + 1;
       final res = await _repo.fetchStudents(
         page: page,
+        search: _searchCtrl.text,
         classId: _selectedClassId,
+        sectionId: _selectedSectionId,
+        groupId: _selectedGroupId,
+        gender: _selectedGender,
+        academicYear: _selectedYearId,
+        religion: _selectedReligion,
+        studentStatus: _selectedStatus,
       );
       final data = (res['data'] as List?) ?? [];
       final meta = (res['meta'] as Map?) ?? {};
@@ -131,39 +189,170 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       appBar: AppBar(title: const Text('Students')),
       body: Column(
         children: [
-          if (_loading || _classesLoading)
+          if (_loading || _metaLoading || _sectionsLoading)
             const LinearProgressIndicator(minHeight: 2),
+          
+          // Search Bar
           Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: DropdownButtonFormField<String>(
-              value: _selectedClassId,
-              isExpanded: true,
-              hint: _classesLoading ? const Text('Loading classes...') : null,
-              decoration: const InputDecoration(
-                labelText: 'Select Class',
-                border: OutlineInputBorder(),
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+            child: TextField(
+              controller: _searchCtrl,
+              decoration: InputDecoration(
+                hintText: 'Search by Name, Roll, ID...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchCtrl.text.isNotEmpty 
+                  ? IconButton(icon: const Icon(Icons.clear), onPressed: () { _searchCtrl.clear(); _load(reset: true); }) 
+                  : null,
+                border: const OutlineInputBorder(),
                 isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               ),
-              items: [
-                const DropdownMenuItem<String>(
-                  value: null,
-                  child: Text('All Classes'),
+              onSubmitted: (_) => _load(reset: true),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedClassId,
+                        isExpanded: true,
+                        hint: _metaLoading ? const Text('Loading...') : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Class',
+                          border: OutlineInputBorder(),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          isDense: true,
+                        ),
+                        items: [
+                          const DropdownMenuItem<String>(
+                            value: null,
+                            child: Text('All Classes'),
+                          ),
+                          ..._classes.map((c) => DropdownMenuItem<String>(
+                                value: c['id']?.toString(),
+                                child: Text(c['name']?.toString() ?? 'Class'),
+                              )),
+                        ],
+                        onChanged: _metaLoading
+                            ? null
+                            : (val) async {
+                                setState(() {
+                                  _selectedClassId = val;
+                                  _selectedSectionId = null;
+                                  _selectedGroupId = null;
+                                  _selectedGender = null;
+                                  _sections = [];
+                                  _groups = [];
+                                  _genders = [];
+                                  _sectionsLoading = (val != null);
+                                });
+                                if (val != null) {
+                                  try {
+                                    final sections = await _repo.fetchSections(classId: val);
+                                    final groups = await _repo.fetchGroupsForClass(val);
+                                    final genders = await _repo.fetchGendersForClass(val);
+                                    if (mounted) {
+                                      setState(() {
+                                        _sections = sections;
+                                        _groups = groups;
+                                        _genders = genders;
+                                        _sectionsLoading = false;
+                                      });
+                                    }
+                                  } catch (_) {
+                                    if (mounted) setState(() => _sectionsLoading = false);
+                                  }
+                                }
+                                _load(reset: true);
+                              },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedSectionId,
+                        isExpanded: true,
+                        hint: _sectionsLoading ? const Text('Loading...') : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Section',
+                          border: OutlineInputBorder(),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          isDense: true,
+                        ),
+                        items: [
+                          const DropdownMenuItem<String>(
+                            value: null,
+                            child: Text('All Sections'),
+                          ),
+                          ..._sections.map((s) => DropdownMenuItem<String>(
+                                value: s['id']?.toString(),
+                                child: Text(s['name']?.toString() ?? 'Section'),
+                              )),
+                        ],
+                        onChanged: _metaLoading
+                            ? null
+                            : (val) {
+                                setState(() {
+                                  _selectedSectionId = val;
+                                });
+                                _load(reset: true);
+                              },
+                      ),
+                    ),
+                  ],
                 ),
-                ..._classes.map((c) => DropdownMenuItem<String>(
-                      value: c['id']?.toString(),
-                      child: Text(c['name']?.toString() ?? 'Class'),
-                    )),
+                
+                const SizedBox(height: 8),
+
+                // Additional Filters Row (Scrollable)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      // Year Filter
+                      _filterDropdown('Year', _selectedYearId, _years.map((y)=>DropdownMenuItem(value: y['id'].toString(), child: Text(y['name'].toString()))).toList(), (v) {
+                        setState(() => _selectedYearId = v);
+                        _load(reset: true);
+                      }),
+                      const SizedBox(width: 8),
+
+                      // Group Filter
+                      _filterDropdown('Group', _selectedGroupId, _groups.map((g)=>DropdownMenuItem(value: g['id'].toString(), child: Text(g['name'].toString()))).toList(), (v) {
+                        setState(() => _selectedGroupId = v);
+                        _load(reset: true);
+                      }),
+                      const SizedBox(width: 8),
+
+                      // Gender Filter
+                      _filterDropdown('Gender', _selectedGender, _genders.map((g)=>DropdownMenuItem(value: g, child: Text(_capitalize(g)))).toList(), (v) {
+                        setState(() => _selectedGender = v);
+                        _load(reset: true);
+                      }),
+                      const SizedBox(width: 8),
+
+                      // Religion Filter
+                      _filterDropdown('Religion', _selectedReligion, _religions.map((r)=>DropdownMenuItem(value: r, child: Text(r))).toList(), (v) {
+                        setState(() => _selectedReligion = v);
+                        _load(reset: true);
+                      }),
+                      const SizedBox(width: 8),
+
+                      // Status Filter
+                      _filterDropdown('Status', _selectedStatus, _statuses.map((s)=>DropdownMenuItem(value: s, child: Text(_capitalize(s)))).toList(), (v) {
+                        setState(() => _selectedStatus = v);
+                        _load(reset: true);
+                      }),
+                    ],
+                  ),
+                ),
               ],
-              onChanged: _classesLoading
-                  ? null
-                  : (val) {
-                      setState(() {
-                        _selectedClassId = val;
-                      });
-                      _load(reset: true);
-                    },
             ),
           ),
           Expanded(
@@ -242,6 +431,28 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                           ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _filterDropdown(String label, String? value, List<DropdownMenuItem<String>> items, ValueChanged<String?> onChanged) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 100, maxWidth: 150),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        isExpanded: true,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          isDense: true,
+        ),
+        items: [
+          DropdownMenuItem<String>(value: null, child: Text('All $label')),
+          ...items,
+        ],
+        onChanged: onChanged,
+        style: const TextStyle(fontSize: 13, color: Colors.black87),
       ),
     );
   }

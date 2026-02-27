@@ -43,4 +43,8 @@ class Section extends Model
                  ->orderBy('sections.name')
                  ->select('sections.*');
     }
+    public function enrollments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(StudentEnrollment::class, 'section_id');
+    }
 }
