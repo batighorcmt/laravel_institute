@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/network/dio_client.dart';
 import 'homework_create_page.dart';
 
@@ -97,6 +98,8 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
                   final clsName = m['class_name']?.toString() ?? 'N/A';
                   final secName = m['section_name']?.toString() ?? 'N/A';
                   final subName = m['subject_name']?.toString() ?? 'N/A';
+                  final desc = m['description']?.toString() ?? '';
+                  final attachmentUrl = m['attachment_url']?.toString() ?? '';
 
                   return Card(
                     elevation: 2,
@@ -154,6 +157,44 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
                           if (due.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             _infoLabel(Icons.event_available, 'Due: ', due, color: Colors.orange.shade800),
+                          ],
+                          if (desc.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            const Text(
+                              'বর্ণনা:',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black54),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              desc,
+                              style: const TextStyle(fontSize: 13, color: Colors.black87),
+                            ),
+                          ],
+                          if (attachmentUrl.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.indigo,
+                                  side: const BorderSide(color: Colors.indigo),
+                                ),
+                                onPressed: () async {
+                                  final uri = Uri.parse(attachmentUrl);
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  } else {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('অ্যাটাচমেন্ট ওপেন করা সম্ভব হচ্ছে না')),
+                                      );
+                                    }
+                                  }
+                                },
+                                icon: const Icon(Icons.attach_file, size: 18),
+                                label: const Text('অ্যাটাচমেন্ট দেখুন'),
+                              ),
+                            ),
                           ],
                         ],
                       ),

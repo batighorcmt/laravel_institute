@@ -20,6 +20,7 @@ class HomeworkResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'attachment' => $this->attachment,
+            'attachment_url' => $this->attachment ? asset('storage/' . $this->attachment) : null,
             'subject_name' => $this->subject->name ?? 'N/A',
             'class_name' => $this->schoolClass->name ?? 'N/A',
             'section_name' => $this->section->name ?? 'N/A',
