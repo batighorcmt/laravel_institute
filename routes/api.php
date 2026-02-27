@@ -77,6 +77,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/room-attendance', [\App\Http\Controllers\Api\TeacherExamController::class, 'roomAttendanceStudents']);
         Route::post('/submit-room-attendance', [\App\Http\Controllers\Api\TeacherExamController::class, 'submitRoomAttendance']);
         Route::post('/bulk-submit-room-attendance', [\App\Http\Controllers\Api\TeacherExamController::class, 'bulkSubmitRoomAttendance']);
+        
+        // Duty Allocation
+        Route::get('/teachers', [\App\Http\Controllers\Api\TeacherExamController::class, 'teachersList']);
+        Route::post('/assign-duty', [\App\Http\Controllers\Api\TeacherExamController::class, 'assignDuty']);
+        Route::post('/remove-duty', [\App\Http\Controllers\Api\TeacherExamController::class, 'removeDuty']);
     });
 
     // Parent endpoints

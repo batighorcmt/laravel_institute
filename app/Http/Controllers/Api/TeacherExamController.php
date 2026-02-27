@@ -71,6 +71,7 @@ class TeacherExamController extends Controller
                 'shift' => $r->seatPlan?->shift,
                 'classes' => $r->seatPlan?->classes->pluck('name')->toArray() ?? [],
                 'teacher_name' => $r->invigilations->first()?->teacher?->name,
+                'teacher_user_id' => $r->invigilations->first()?->teacher_id,
             ]));
         }
 
@@ -633,6 +634,79 @@ class TeacherExamController extends Controller
             'plans' => $plans,
             'rows' => $rows
         ]);
+    }
+
+    public function teachersList(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user);
+        
+        $teachers = \App\Models\Teacher::where('school_id', $schoolId)
+            ->where('status', 'active')
+            ->get(['user_id', 'first_name', 'last_name', 'initials']);
+
+        return response()->json($teachers->map(fn($t) => [
+            'user_id' => $t->user_id,
+            'name' => $t->full_name,
+            'initials' => $t->initials,
+            'display_name' => $t->full_name . ($t->initials ? " ({$t->initials})" : ""),
+        ]));
+    }
+
+    public function assignDuty(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user);
+        
+        if (!$user->isExamController($schoolId) && !$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'plan_id' => 'required|integer',
+            'room_id' => 'required|integer',
+            'date' => 'required|date',
+            'teacher_user_id' => 'required|integer',
+        ]);
+
+        ExamRoomInvigilation::updateOrCreate(
+            [
+                'school_id' => $schoolId,
+                'duty_date' => $request->date,
+                'seat_plan_id' => $request->plan_id,
+                'seat_plan_room_id' => $request->room_id,
+            ],
+            [
+                'teacher_id' => $request->teacher_user_id,
+                'assigned_by' => $user->id,
+            ]
+        );
+
+        return response()->json(['message' => 'Duty assigned successfully']);
+    }
+
+    public function removeDuty(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user);
+        
+        if (!$user->isExamController($schoolId) && !$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'plan_id' => 'required|integer',
+            'room_id' => 'required|integer',
+            'date' => 'required|date',
+        ]);
+
+        ExamRoomInvigilation::where('school_id', $schoolId)
+            ->where('duty_date', $request->date)
+            ->where('seat_plan_id', $request->plan_id)
+            ->where('seat_plan_room_id', $request->room_id)
+            ->delete();
+
+        return response()->json(['message' => 'Duty removed successfully']);
     }
 
     protected function resolveSchoolId(Request $request, $user, $explicit = null): ?int

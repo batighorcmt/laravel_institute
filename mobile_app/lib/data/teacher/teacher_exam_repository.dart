@@ -167,4 +167,43 @@ class TeacherExamRepository {
     );
     return resp.data;
   }
+
+  Future<List<dynamic>> getTeachersList() async {
+    final resp = await _dio.get('teacher/exams/teachers');
+    return resp.data;
+  }
+
+  Future<Map<String, dynamic>> assignDuty({
+    required int planId,
+    required int roomId,
+    required String date,
+    required int teacherUserId,
+  }) async {
+    final resp = await _dio.post(
+      'teacher/exams/assign-duty',
+      data: {
+        'plan_id': planId,
+        'room_id': roomId,
+        'date': date,
+        'teacher_user_id': teacherUserId,
+      },
+    );
+    return resp.data;
+  }
+
+  Future<Map<String, dynamic>> removeDuty({
+    required int planId,
+    required int roomId,
+    required String date,
+  }) async {
+    final resp = await _dio.post(
+      'teacher/exams/remove-duty',
+      data: {
+        'plan_id': planId,
+        'room_id': roomId,
+        'date': date,
+      },
+    );
+    return resp.data;
+  }
 }
