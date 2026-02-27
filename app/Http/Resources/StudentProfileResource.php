@@ -70,6 +70,8 @@ class StudentProfileResource extends JsonResource
             'session' => $en?->academicYear?->name, 
             'shift' => $en?->class?->shift?->name,
             'medium' => $en?->class?->medium,
+            'class_teacher' => $en?->section?->class_teacher_name ?? $en?->section?->classTeacher?->full_name,
+            'class_teacher_phone' => $en?->section?->classTeacher?->phone,
             'optional_subject' => $st?->optionalSubject?->name,
             'school_name' => $st?->school?->name,
             'school_name_bn' => $st?->school?->name_bn,

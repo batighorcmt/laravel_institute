@@ -257,7 +257,6 @@ class TeacherStudentsRepository {
         _classScopedCache![classId] = res.data is Map<String, dynamic> ? res.data : {};
       } catch (_) {}
     }
-    }
     
     final meta = _classScopedCache![classId] ?? {};
     if (meta.isEmpty || (meta['sections'] as List? ?? []).isEmpty) {

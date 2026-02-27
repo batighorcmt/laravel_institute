@@ -221,22 +221,24 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                       child: DropdownButtonFormField<String>(
                         value: _selectedClassId,
                         isExpanded: true,
-                        hint: _metaLoading ? const Text('Loading...') : null,
+                        hint: _metaLoading ? const Text('Loading...', style: TextStyle(fontSize: 11)) : null,
+                        style: const TextStyle(fontSize: 11, color: Colors.black),
                         decoration: const InputDecoration(
                           labelText: 'Class',
+                          labelStyle: TextStyle(fontSize: 11),
                           border: OutlineInputBorder(),
                           contentPadding:
-                              EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                           isDense: true,
                         ),
                         items: [
                           const DropdownMenuItem<String>(
                             value: null,
-                            child: Text('All Classes'),
+                            child: Text('All', style: TextStyle(fontSize: 11)),
                           ),
                           ..._classes.map((c) => DropdownMenuItem<String>(
                                 value: c['id']?.toString(),
-                                child: Text(c['name']?.toString() ?? 'Class'),
+                                child: Text(c['name']?.toString() ?? 'Class', style: const TextStyle(fontSize: 11)),
                               )),
                         ],
                         onChanged: _metaLoading
@@ -273,27 +275,29 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                               },
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _selectedSectionId,
                         isExpanded: true,
-                        hint: _sectionsLoading ? const Text('Loading...') : null,
+                        hint: _sectionsLoading ? const Text('Loading...', style: TextStyle(fontSize: 11)) : null,
+                        style: const TextStyle(fontSize: 11, color: Colors.black),
                         decoration: const InputDecoration(
                           labelText: 'Section',
+                          labelStyle: TextStyle(fontSize: 11),
                           border: OutlineInputBorder(),
                           contentPadding:
-                              EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                           isDense: true,
                         ),
                         items: [
                           const DropdownMenuItem<String>(
                             value: null,
-                            child: Text('All Sections'),
+                            child: Text('All', style: TextStyle(fontSize: 11)),
                           ),
                           ..._sections.map((s) => DropdownMenuItem<String>(
                                 value: s['id']?.toString(),
-                                child: Text(s['name']?.toString() ?? 'Section'),
+                                child: Text(s['name']?.toString() ?? 'Section', style: const TextStyle(fontSize: 11)),
                               )),
                         ],
                         onChanged: _metaLoading
@@ -306,6 +310,38 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                               },
                       ),
                     ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedGroupId,
+                        isExpanded: true,
+                        style: const TextStyle(fontSize: 11, color: Colors.black),
+                        decoration: const InputDecoration(
+                          labelText: 'Group',
+                          labelStyle: TextStyle(fontSize: 11),
+                          border: OutlineInputBorder(),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                          isDense: true,
+                        ),
+                        items: [
+                          const DropdownMenuItem<String>(
+                            value: null,
+                            child: Text('All', style: TextStyle(fontSize: 11)),
+                          ),
+                          ..._groups.map((g) => DropdownMenuItem<String>(
+                                value: g['id']?.toString(),
+                                child: Text(g['name']?.toString() ?? 'Group', style: const TextStyle(fontSize: 11)),
+                              )),
+                        ],
+                        onChanged: (val) {
+                          setState(() {
+                            _selectedGroupId = val;
+                          });
+                          _load(reset: true);
+                        },
+                      ),
+                    ),
                   ],
                 ),
                 
@@ -316,36 +352,15 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      // Year Filter
-                      _filterDropdown('Year', _selectedYearId, _years.map((y)=>DropdownMenuItem(value: y['id'].toString(), child: Text(y['name'].toString()))).toList(), (v) {
-                        setState(() => _selectedYearId = v);
-                        _load(reset: true);
-                      }),
-                      const SizedBox(width: 8),
-
-                      // Group Filter
-                      _filterDropdown('Group', _selectedGroupId, _groups.map((g)=>DropdownMenuItem(value: g['id'].toString(), child: Text(g['name'].toString()))).toList(), (v) {
-                        setState(() => _selectedGroupId = v);
-                        _load(reset: true);
-                      }),
-                      const SizedBox(width: 8),
-
-                      // Gender Filter
-                      _filterDropdown('Gender', _selectedGender, _genders.map((g)=>DropdownMenuItem(value: g, child: Text(_capitalize(g)))).toList(), (v) {
-                        setState(() => _selectedGender = v);
-                        _load(reset: true);
-                      }),
-                      const SizedBox(width: 8),
-
                       // Religion Filter
-                      _filterDropdown('Religion', _selectedReligion, _religions.map((r)=>DropdownMenuItem(value: r, child: Text(r))).toList(), (v) {
+                      _filterDropdown('Religion', _selectedReligion, _religions.map((r)=>DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontSize: 11)))).toList(), (v) {
                         setState(() => _selectedReligion = v);
                         _load(reset: true);
                       }),
                       const SizedBox(width: 8),
 
                       // Status Filter
-                      _filterDropdown('Status', _selectedStatus, _statuses.map((s)=>DropdownMenuItem(value: s, child: Text(_capitalize(s)))).toList(), (v) {
+                      _filterDropdown('Status', _selectedStatus, _statuses.map((s)=>DropdownMenuItem(value: s, child: Text(_capitalize(s), style: const TextStyle(fontSize: 11)))).toList(), (v) {
                         setState(() => _selectedStatus = v);
                         _load(reset: true);
                       }),
@@ -437,22 +452,23 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
 
   Widget _filterDropdown(String label, String? value, List<DropdownMenuItem<String>> items, ValueChanged<String?> onChanged) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 100, maxWidth: 150),
+      constraints: const BoxConstraints(minWidth: 80, maxWidth: 120),
       child: DropdownButtonFormField<String>(
         value: value,
         isExpanded: true,
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: const TextStyle(fontSize: 11),
           border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           isDense: true,
         ),
         items: [
-          DropdownMenuItem<String>(value: null, child: Text('All $label')),
+          DropdownMenuItem<String>(value: null, child: Text('All $label', style: const TextStyle(fontSize: 11))),
           ...items,
         ],
         onChanged: onChanged,
-        style: const TextStyle(fontSize: 13, color: Colors.black87),
+        style: const TextStyle(fontSize: 11, color: Colors.black87),
       ),
     );
   }
@@ -638,6 +654,13 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     final medium = _pick(d, const ['medium']);
     final session = _pick(d, const ['session', 'academic_session']);
     final year = _pick(d, const ['academic_year', 'year']);
+    final optionalSubject = _pick(d, const ['optional_subject', 'optionalSubject']);
+    final schoolName = _combine(
+      _pick(d, const ['school_name', 'school']),
+      _pick(d, const ['school_name_bn', 'school_bn']),
+    );
+    final classTeacher = _pick(d, const ['class_teacher', 'teacher_name']);
+    final classTeacherPhone = _pick(d, const ['class_teacher_phone', 'teacher_phone']);
 
     final att = d['attendance_stats'] is Map ? Map<String, dynamic>.from(d['attendance_stats'] as Map) : null;
     final history = d['enrollment_history'] is List ? d['enrollment_history'] as List : [];
@@ -843,6 +866,37 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
 
                   const SizedBox(height: 12),
 
+                  // Class Teacher Card
+                  if (classTeacher.isNotEmpty)
+                    _sectionCard(
+                      title: 'Class Teacher',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6a11cb), Color(0xFF2575fc)],
+                      ),
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.blue.shade100,
+                            child: const Icon(Icons.person_pin, color: Colors.blue),
+                          ),
+                          title: Text(classTeacher, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(classTeacherPhone.isNotEmpty ? classTeacherPhone : 'No phone'),
+                          trailing: classTeacherPhone.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.call, color: Colors.green),
+                                onPressed: () async {
+                                  final uri = Uri(scheme: 'tel', path: classTeacherPhone);
+                                  if (await canLaunchUrl(uri)) await launchUrl(uri);
+                                },
+                              )
+                            : null,
+                        ),
+                      ],
+                    ),
+
+                  const SizedBox(height: 12),
+
                   // Info grid pills (colorful mini-cards)
                   _buildInfoPills(context, {
                     'Student ID': studentCode,
@@ -856,6 +910,8 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                     'Medium': medium,
                     'Session': session,
                     'Year': year,
+                    'Optional Subject': optionalSubject,
+                    'School': schoolName,
                   }),
 
                   const SizedBox(height: 12),
@@ -923,6 +979,28 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                         ],
                       ),
                       const SizedBox(height: 8),
+                      _infoRow(
+                        icon: Icons.call,
+                        label: 'Father\'s Phone',
+                        value: fatherPhone,
+                        onTap: fatherPhone.trim().isEmpty
+                            ? null
+                            : () async {
+                                final uri = Uri(scheme: 'tel', path: fatherPhone);
+                                if (await canLaunchUrl(uri)) await launchUrl(uri);
+                              },
+                      ),
+                      _infoRow(
+                        icon: Icons.call,
+                        label: 'Mother\'s Phone',
+                        value: motherPhone,
+                        onTap: motherPhone.trim().isEmpty
+                            ? null
+                            : () async {
+                                final uri = Uri(scheme: 'tel', path: motherPhone);
+                                if (await canLaunchUrl(uri)) await launchUrl(uri);
+                              },
+                      ),
                       _infoRow(
                         icon: Icons.family_restroom,
                         label: 'Guardian',
@@ -1055,32 +1133,35 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
 
                   const SizedBox(height: 12),
 
-                  // Admission & Previous
+                  // Admission & Previous Information
                   _sectionCard(
-                    title: 'Admission & Previous',
+                    title: 'Admission & Previous Information',
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFf7971e), Color(0xFFffd200)],
+                      colors: [Color(0xFF8e44ad), Color(0xFFc39bd3)],
                     ),
                     children: [
                       _infoRow(
-                        icon: Icons.numbers,
-                        label: 'Student ID',
-                        value: studentCode,
-                      ),
-                      _infoRow(
-                        icon: Icons.apartment,
+                        icon: Icons.school,
                         label: 'Previous School',
-                        value: _tc(_pick(d, const ['previous_school'])),
+                        value: _pick(d, const ['previous_school']),
                       ),
-                      _infoRow(
-                        icon: Icons.event_available,
-                        label: 'Pass Year',
-                        value: _pick(d, const ['pass_year']),
-                      ),
-                      _infoRow(
-                        icon: Icons.analytics,
-                        label: 'Previous Result',
-                        value: _pick(d, const ['previous_result']),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _infoRow(
+                              icon: Icons.history_edu,
+                              label: 'Pass Year',
+                              value: _pick(d, const ['pass_year']),
+                            ),
+                          ),
+                          Expanded(
+                            child: _infoRow(
+                              icon: Icons.assignment_turned_in,
+                              label: 'Result',
+                              value: _pick(d, const ['previous_result']),
+                            ),
+                          ),
+                        ],
                       ),
                       _infoRow(
                         icon: Icons.notes,
@@ -1095,8 +1176,19 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       _infoRow(
                         icon: Icons.verified_user,
                         label: 'Status',
-                        value: _tc(_pick(d, const ['status'])),
+                        value: _tc(_pick(d, const ['status', 'student_status'])),
                       ),
+                      _infoRow(
+                        icon: Icons.account_balance,
+                        label: 'School',
+                        value: schoolName,
+                      ),
+                      if (optionalSubject.isNotEmpty)
+                        _infoRow(
+                          icon: Icons.subject,
+                          label: 'Optional Subject',
+                          value: optionalSubject,
+                        ),
                     ],
                   ),
 
@@ -1192,6 +1284,36 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                             : null,
                         );
                       }).toList(),
+                    ),
+
+                  const SizedBox(height: 12),
+
+                  // Today's Status
+                  if (d.containsKey('today_attendance') || (d['today_evaluations'] as List? ?? []).isNotEmpty)
+                   _sectionCard(
+                      title: 'Today\'s Status',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2193b0), Color(0xFF6dd5ed)],
+                      ),
+                      children: [
+                        if (d['today_attendance'] != null && d['today_attendance']['class'] != null)
+                          _infoRow(
+                            icon: Icons.check_circle_outline,
+                            label: 'Today\'s Class Attendance',
+                            value: _tc((d['today_attendance']['class']['status'] ?? 'N/A').toString()),
+                          ),
+                        if ((d['today_evaluations'] as List? ?? []).isNotEmpty)
+                          ... (d['today_evaluations'] as List).map((ev) {
+                            final Map<String, dynamic> row = ev is Map ? Map<String, dynamic>.from(ev as Map) : {};
+                            return ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              leading: const Icon(Icons.book, size: 20),
+                              title: Text('${row['subject'] ?? 'Subject'} (Period ${row['period'] ?? ''})'),
+                              subtitle: Text('Status: ${row['status'] ?? 'Pending'}'),
+                            );
+                          }),
+                      ],
                     ),
 
                   const SizedBox(height: 24),
