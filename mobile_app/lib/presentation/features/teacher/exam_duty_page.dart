@@ -17,31 +17,59 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
   List<dynamic> _duties = [];
   
   List<dynamic> _plans = [];
+  List<String> _availableDates = [];
   int? _selectedPlanId;
-  DateTime _selectedDate = DateTime.now();
+  String? _selectedDate;
 
   @override
   void initState() {
     super.initState();
     if (widget.isController) {
-      _loadMeta().then((_) {
-        if (_plans.isNotEmpty) {
-          _selectedPlanId = _plans.first['id'];
-        }
-        _loadDuties();
-      });
+      _loadInitialMeta();
     } else {
+      _selectedDate = _formatDate(DateTime.now());
       _loadDuties();
     }
   }
 
-  Future<void> _loadMeta() async {
+  Future<void> _loadInitialMeta() async {
     try {
       final meta = await _repo.getDutyMeta();
       if (mounted) {
         setState(() {
           _plans = meta['plans'] ?? [];
+          if (_plans.isNotEmpty) {
+            _selectedPlanId = _plans.first['id'];
+          }
         });
+        if (_selectedPlanId != null) {
+          await _loadDatesForPlan(_selectedPlanId!);
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadDatesForPlan(int planId) async {
+    try {
+      final meta = await _repo.getDutyMeta(planId: planId);
+      if (mounted) {
+        setState(() {
+          _availableDates = List<String>.from(meta['dates'] ?? []);
+          if (_availableDates.isNotEmpty) {
+             // Try to keep same date or pick first/today
+             String today = _formatDate(DateTime.now());
+             if (_availableDates.contains(_selectedDate)) {
+               // keep selectedDate
+             } else if (_availableDates.contains(today)) {
+               _selectedDate = today;
+             } else {
+               _selectedDate = _availableDates.first;
+             }
+          } else {
+            _selectedDate = null;
+          }
+        });
+        _loadDuties();
       }
     } catch (_) {}
   }
@@ -51,7 +79,7 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
     try {
       final data = await _repo.getTodaysDuty(
         planId: _selectedPlanId,
-        date: _formatDate(_selectedDate),
+        date: _selectedDate,
       );
       if (mounted) {
         setState(() {
@@ -69,19 +97,6 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
 
   String _formatDate(DateTime d) {
     return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-  }
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
-      _loadDuties();
-    }
   }
 
   @override
@@ -142,36 +157,44 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
                   );
                 }).toList(),
                 onChanged: (val) {
-                  setState(() => _selectedPlanId = val);
-                  _loadDuties();
+                  if (val != null) {
+                    setState(() => _selectedPlanId = val);
+                    _loadDatesForPlan(val);
+                  }
                 },
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          InkWell(
-            onTap: _pickDate,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          if (_availableDates.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
                 color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_today, size: 18, color: Colors.blue),
-                  const SizedBox(width: 12),
-                  Text(
-                    'তারিখ: ${_formatDate(_selectedDate)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.arrow_drop_down),
-                ],
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: _selectedDate,
+                  hint: const Text('তারিখ নির্বাচন করুন'),
+                  items: _availableDates.map<DropdownMenuItem<String>>((d) {
+                    return DropdownMenuItem<String>(
+                      value: d,
+                      child: Text(d),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _selectedDate = val);
+                      _loadDuties();
+                    }
+                  },
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

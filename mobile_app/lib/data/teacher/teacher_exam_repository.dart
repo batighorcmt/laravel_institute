@@ -20,8 +20,11 @@ class TeacherExamRepository {
     return resp.data;
   }
 
-  Future<Map<String, dynamic>> getDutyMeta() async {
-    final resp = await _dio.get('teacher/exams/duty-meta');
+  Future<Map<String, dynamic>> getDutyMeta({int? planId}) async {
+    final resp = await _dio.get(
+      'teacher/exams/duty-meta',
+      queryParameters: {if (planId != null) 'plan_id': planId},
+    );
     return resp.data;
   }
 

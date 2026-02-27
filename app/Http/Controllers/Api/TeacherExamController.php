@@ -101,11 +101,26 @@ class TeacherExamController extends Controller
     {
         $user = $request->user();
         $schoolId = $this->resolveSchoolId($request, $user);
+        $planId = $request->get('plan_id');
         
         $plans = SeatPlan::where('school_id', $schoolId)->active()->orderBy('id', 'desc')->get(['id', 'name']);
         
+        $dates = [];
+        if ($planId) {
+            $dates = ExamSubject::whereIn('exam_id', function($q) use ($planId) {
+                $q->select('exam_id')->from('seat_plan_exams')->where('seat_plan_id', $planId);
+            })
+            ->whereNotNull('exam_date')
+            ->distinct()
+            ->orderBy('exam_date')
+            ->pluck('exam_date')
+            ->map(fn($d) => $d->format('Y-m-d'))
+            ->toArray();
+        }
+
         return response()->json([
             'plans' => $plans,
+            'dates' => $dates,
         ]);
     }
 
