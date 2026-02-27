@@ -206,7 +206,9 @@ class TeacherExamController extends Controller
             ->get()
             ->keyBy('student_id');
 
-        $data = $enrollments->map(function($en) use ($marks, $examSubject) {
+        $decimal = \App\Models\Setting::getDecimalPosition($schoolId);
+
+        $data = $enrollments->map(function($en) use ($marks, $examSubject, $decimal) {
             $m = $marks->get($en->student_id);
             return [
                 'student_id' => $en->student_id,
@@ -217,7 +219,7 @@ class TeacherExamController extends Controller
                     'creative' => $m->creative_marks,
                     'mcq' => $m->mcq_marks,
                     'practical' => $m->practical_marks,
-                    'total' => $m->total_marks,
+                    'total' => number_format($m->total_marks, $decimal, '.', ''),
                     'letter_grade' => $m->letter_grade,
                     'is_absent' => (bool)$m->is_absent,
                 ] : null,
@@ -246,6 +248,7 @@ class TeacherExamController extends Controller
             'students' => $data,
             'read_only' => $readOnly,
             'message' => $message,
+            'decimal_position' => $decimal,
         ]);
     }
 
@@ -315,7 +318,7 @@ class TeacherExamController extends Controller
 
         return response()->json([
             'success' => true,
-            'total_marks' => $totalMarks,
+            'total_marks' => number_format($totalMarks, \App\Models\Setting::getDecimalPosition($schoolId), '.', ''),
             'letter_grade' => $gradeInfo['letter_grade'],
         ]);
     }

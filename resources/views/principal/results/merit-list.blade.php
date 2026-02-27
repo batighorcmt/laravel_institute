@@ -115,7 +115,7 @@
                                             @endif
                                         </td>
                                         <td>{{ $result->class->name }} @if($result->section) - {{ $result->section->section_name }} @endif</td>
-                                        <td class="text-center"><strong>{{ number_format($result->total_marks, 2) }}</strong></td>
+                                        <td class="text-center"><strong>{{ number_format($result->total_marks, \App\Models\Setting::getDecimalPosition($school->id)) }}</strong></td>
                                         <td class="text-center">
                                             <strong class="text-primary">{{ number_format($result->gpa, 2) }}</strong>
                                         </td>

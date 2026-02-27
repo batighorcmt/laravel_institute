@@ -14,4 +14,9 @@ class Setting extends Model
     public function school(): BelongsTo { return $this->belongsTo(School::class); }
 
     public function scopeForSchool($q, $schoolId){ return $q->where('school_id', $schoolId); }
+
+    public static function getDecimalPosition($schoolId)
+    {
+        return (int) (self::where('school_id', $schoolId)->where('key', 'marks_decimal_position')->first()?->value ?? 2);
+    }
 }

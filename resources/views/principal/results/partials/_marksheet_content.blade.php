@@ -21,6 +21,8 @@
     $optionalSubject = null;
     $totalGP = 0;
     
+    $decimal = \App\Models\Setting::getDecimalPosition($school->id);
+
     // Group subjects to handle combined parts
     foreach($finalSubjects as $key => $fSub) {
         $res = $subjectResults->get($key);
@@ -32,14 +34,14 @@
         // Prepare data
         $subData = [
             'name' => $res['name'] ?? $fSub['name'] ?? 'Unknown',
-            'creative' => ($isNotFound || ($fSub['creative_full_mark'] ?? 0) <= 0) ? '-' : $res['creative'],
-            'mcq' => ($isNotFound || ($fSub['mcq_full_mark'] ?? 0) <= 0) ? '-' : $res['mcq'],
-            'practical' => ($isNotFound || ($fSub['practical_full_mark'] ?? 0) <= 0) ? '-' : $res['practical'],
-            'total' => $isNotFound ? '-' : ($isAbsent ? 'Ab' : $res['total']),
+            'creative' => ($isNotFound || ($fSub['creative_full_mark'] ?? 0) <= 0) ? '-' : number_format($res['creative'], $decimal, '.', ''),
+            'mcq' => ($isNotFound || ($fSub['mcq_full_mark'] ?? 0) <= 0) ? '-' : number_format($res['mcq'], $decimal, '.', ''),
+            'practical' => ($isNotFound || ($fSub['practical_full_mark'] ?? 0) <= 0) ? '-' : number_format($res['practical'], $decimal, '.', ''),
+            'total' => $isNotFound ? '-' : ($isAbsent ? 'Ab' : number_format($res['total'], $decimal, '.', '')),
             'grade' => $isNotFound ? '-' : ($isAbsent ? 'F' : $res['grade']),
             'gp' => $isNotFound ? '0.00' : number_format($res['gpa'] ?? 0, 2),
-            'full_mark' => $res['full_mark'] ?? ($fSub['total_full_mark'] ?? '-'),
-            'highest_mark' => $res['highest_mark'] ?? '-',
+            'full_mark' => is_numeric($res['full_mark'] ?? ($fSub['total_full_mark'] ?? null)) ? number_format($res['full_mark'] ?? $fSub['total_full_mark'], $decimal, '.', '') : '-',
+            'highest_mark' => is_numeric($res['highest_mark'] ?? null) ? number_format($res['highest_mark'], $decimal, '.', '') : '-',
             'is_part' => !empty($res['display_only']),
             'is_combined' => !empty($fSub['is_combined_result']),
             'is_failed' => ($isAbsent || $res['grade'] == 'F' || $res['grade'] == 'N/R')
@@ -233,7 +235,7 @@
     <div class="summary-cards">
         <div class="card-item">
             <div class="card-label">{{ t('Grand Total Marks', 'মোট প্রাপ্ত নম্বর') }}</div>
-            <span class="card-highlight">{{ bnNum($result->computed_total_marks) }}</span>
+            <span class="card-highlight">{{ bnNum(number_format($result->computed_total_marks, $decimal, '.', '')) }}</span>
         </div>
         <div class="card-item">
             <div class="card-label">{{ t('Merit Position (Class)', 'স্থান (শ্রেণি)') }}</div>

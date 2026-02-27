@@ -146,70 +146,73 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($subjectStats as $stat)
-                                <tr>
-                                    <td><strong>{{ $stat['subject'] }}</strong></td>
-                                    <td>{{ $stat['full_marks'] }}</td>
-                                    <td class="text-success"><strong>{{ $stat['highest'] }}</strong></td>
-                                    <td class="text-danger">{{ $stat['lowest'] }}</td>
-                                    <td>{{ $stat['average'] }}</td>
-                                    <td>
-                                        <div class="progress">
-                                            <div class="progress-bar bg-success" style="width: {{ $stat['pass_rate'] }}%">
-                                                {{ $stat['pass_rate'] }}%
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="text-success">{{ $stat['passed'] }}</td>
-                                    <td class="text-danger">{{ $stat['failed'] }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                                    @php 
+                                        $decimal = \App\Models\Setting::getDecimalPosition($school->id); 
+                                    @endphp
+                                    @foreach($subjectStats as $stat)
+                                        <tr>
+                                            <td><strong>{{ $stat['subject'] }}</strong></td>
+                                            <td>{{ $stat['full_marks'] }}</td>
+                                            <td class="text-success"><strong>{{ number_format($stat['highest'], $decimal, '.', '') }}</strong></td>
+                                            <td class="text-danger">{{ number_format($stat['lowest'], $decimal, '.', '') }}</td>
+                                            <td>{{ number_format($stat['average'], $decimal, '.', '') }}</td>
+                                            <td>
+                                                <div class="progress">
+                                                    <div class="progress-bar bg-success" style="width: {{ $stat['pass_rate'] }}%">
+                                                        {{ $stat['pass_rate'] }}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-success">{{ $stat['passed'] }}</td>
+                                            <td class="text-danger">{{ $stat['failed'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Top Performers -->
-        @if($topPerformers->count() > 0)
-            <div class="card">
-                <div class="card-header bg-success">
-                    <h3 class="card-title">শীর্ষ ১০ মেধাবী</h3>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th width="10%">স্থান</th>
-                                    <th width="15%">রোল</th>
-                                    <th>নাম</th>
-                                    <th width="15%">মোট নম্বর</th>
-                                    <th width="12%">GPA</th>
-                                    <th width="12%">গ্রেড</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($topPerformers as $result)
-                                    <tr>
-                                        <td class="text-center">
-                                            @if($result->merit_position_class <= 3)
-                                                <strong class="text-{{ $result->merit_position_class == 1 ? 'warning' : ($result->merit_position_class == 2 ? 'info' : 'success') }}">
-                                                    <i class="fas fa-trophy"></i> {{ $result->merit_position_class }}
-                                                </strong>
-                                            @else
-                                                {{ $result->merit_position_class }}
-                                            @endif
-                                        </td>
-                                        <td>{{ $result->student->student_id }}</td>
-                                        <td><strong>{{ $result->student->student_name_en }}</strong></td>
-                                        <td class="text-center">{{ number_format($result->total_marks, 2) }}</td>
-                                        <td class="text-center"><strong class="text-primary">{{ number_format($result->gpa, 2) }}</strong></td>
-                                        <td class="text-center">
-                                            <span class="badge badge-success">{{ $result->letter_grade }}</span>
-                                        </td>
-                                    </tr>
-                                @endforeach
+        
+                <!-- Top Performers -->
+                @if($topPerformers->count() > 0)
+                    <div class="card">
+                        <div class="card-header bg-success">
+                            <h3 class="card-title">শীর্ষ ১০ মেধাবী</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th width="10%">স্থান</th>
+                                            <th width="15%">রোল</th>
+                                            <th>নাম</th>
+                                            <th width="15%">মোট নম্বর</th>
+                                            <th width="12%">GPA</th>
+                                            <th width="12%">গ্রেড</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($topPerformers as $result)
+                                            <tr>
+                                                <td class="text-center">
+                                                    @if($result->merit_position_class <= 3)
+                                                        <strong class="text-{{ $result->merit_position_class == 1 ? 'warning' : ($result->merit_position_class == 2 ? 'info' : 'success') }}">
+                                                            <i class="fas fa-trophy"></i> {{ $result->merit_position_class }}
+                                                        </strong>
+                                                    @else
+                                                        {{ $result->merit_position_class }}
+                                                    @endif
+                                                </td>
+                                                <td>{{ $result->student->student_id }}</td>
+                                                <td><strong>{{ $result->student->student_name_en }}</strong></td>
+                                                <td class="text-center">{{ number_format($result->total_marks, $decimal, '.', '') }}</td>
+                                                <td class="text-center"><strong class="text-primary">{{ number_format($result->gpa, 2) }}</strong></td>
+                                                <td class="text-center">
+                                                    <span class="badge badge-success">{{ $result->letter_grade }}</span>
+                                                </td>
+                                            </tr>
+                                        @endforeach
                             </tbody>
                         </table>
                     </div>

@@ -177,7 +177,7 @@
                             @endforeach
     
                             <td class="text-center small summary-col">{{ $result->fourth_subject_code ?? '-' }}</td>
-                            <td class="text-center summary-col"><strong>{{ toBn(number_format($result->computed_total_marks ?? 0, 0), $lang) }}</strong></td>
+                            <td class="text-center summary-col"><strong>{{ toBn(number_format($result->computed_total_marks ?? 0, \App\Models\Setting::getDecimalPosition($school->id)), $lang) }}</strong></td>
                             @php
                                 $letter = $result->computed_letter ?? 'F';
                                 $status = $result->computed_status;

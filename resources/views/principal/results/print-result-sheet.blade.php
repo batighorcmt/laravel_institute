@@ -25,6 +25,8 @@
             return str_replace($eng, $bn, (string) $value);
         }
     }
+
+    $decimal = \App\Models\Setting::getDecimalPosition($school->id);
 @endphp
 
 @section('title', $printTitle)
@@ -465,7 +467,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td>{{ optional($passed->student->currentEnrollment)->section->name ?? 'N/A' }}</td>
                 <td>{{ $lang === 'bn' && optional($passed->student->currentEnrollment)->roll_no ? toBanglaNumber(optional($passed->student->currentEnrollment)->roll_no) : (optional($passed->student->currentEnrollment)->roll_no ?? 'N/A') }}</td>
-                <td>{{ $lang === 'bn' ? toBanglaNumber(number_format($passed->computed_total_marks, 0)) : number_format($passed->computed_total_marks, 0) }}</td>
+                <td>{{ $lang === 'bn' ? toBanglaNumber(number_format($passed->computed_total_marks, $decimal, '.', '')) : number_format($passed->computed_total_marks, $decimal, '.', '') }}</td>
                 <td>{{ $lang === 'bn' ? toBanglaNumber(number_format($passed->computed_gpa, 2)) : number_format($passed->computed_gpa, 2) }}</td>
                 <td>
                     <span class="result-pass">{{ $lang === 'bn' ? 'উত্তীর্ণ' : 'Passed' }}</span>
@@ -499,7 +501,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td>{{ optional($failed->student->currentEnrollment)->section->name ?? 'N/A' }}</td>
                 <td>{{ $lang === 'bn' && optional($failed->student->currentEnrollment)->roll_no ? toBanglaNumber(optional($failed->student->currentEnrollment)->roll_no) : (optional($failed->student->currentEnrollment)->roll_no ?? 'N/A') }}</td>
-                <td>{{ $lang === 'bn' ? toBanglaNumber(number_format($failed->computed_total_marks, 0)) : number_format($failed->computed_total_marks, 0) }}</td>
+                <td>{{ $lang === 'bn' ? toBanglaNumber(number_format($failed->computed_total_marks, $decimal, '.', '')) : number_format($failed->computed_total_marks, $decimal, '.', '') }}</td>
                 <td>{{ $lang === 'bn' ? toBanglaNumber(number_format($failed->computed_gpa, 2)) : number_format($failed->computed_gpa, 2) }}</td>
                 <td>
                     <span class="result-fail">{{ $lang === 'bn' ? 'অকৃতকার্য' : 'Failed' }}</span>

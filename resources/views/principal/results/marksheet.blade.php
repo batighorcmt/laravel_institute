@@ -154,7 +154,7 @@
                                         {{ $res->student->student_name_bn ?? $res->student->student_name_en }}<br>
                                         <small class="text-muted">ID: {{ $res->student->student_id }}</small>
                                     </td>
-                                    <td class="text-center">{{ number_format($res->computed_total_marks, 0) }}</td>
+                                    <td class="text-center">{{ number_format($res->computed_total_marks, \App\Models\Setting::getDecimalPosition($school->id), '.', '') }}</td>
                                     <td class="text-center">{{ number_format($res->computed_gpa, 2) }}</td>
                                     <td class="text-center">
                                         <span class="badge {{ $res->computed_letter == 'F' ? 'badge-danger' : 'badge-success' }}">

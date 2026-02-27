@@ -62,6 +62,9 @@
             </tr>
         </thead>
         <tbody>
+            @php 
+                $decimal = \App\Models\Setting::getDecimalPosition($school->id); 
+            @endphp
             @foreach($students as $student)
                 @php
                     $mark = $marks->get($student->id);
@@ -75,24 +78,28 @@
 
                     @if($examSubject->creative_full_mark > 0)
                         <td style="text-align: center;">
-                            {{ $mark && !$mark->is_absent ? ($lang==='bn' ? toBengaliNumber($mark->creative_marks) : $mark->creative_marks) : '' }}
+                            @php $val = $mark && !$mark->is_absent ? number_format($mark->creative_marks, $decimal, '.', '') : ''; @endphp
+                            {{ $val ? ($lang==='bn' ? toBengaliNumber($val) : $val) : '' }}
                         </td>
                     @endif
 
                     @if($examSubject->mcq_full_mark > 0)
                         <td style="text-align: center;">
-                            {{ $mark && !$mark->is_absent ? ($lang==='bn' ? toBengaliNumber($mark->mcq_marks) : $mark->mcq_marks) : '' }}
+                            @php $val = $mark && !$mark->is_absent ? number_format($mark->mcq_marks, $decimal, '.', '') : ''; @endphp
+                            {{ $val ? ($lang==='bn' ? toBengaliNumber($val) : $val) : '' }}
                         </td>
                     @endif
 
                     @if($examSubject->practical_full_mark > 0)
                         <td style="text-align: center;">
-                            {{ $mark && !$mark->is_absent ? ($lang==='bn' ? toBengaliNumber($mark->practical_marks) : $mark->practical_marks) : '' }}
+                            @php $val = $mark && !$mark->is_absent ? number_format($mark->practical_marks, $decimal, '.', '') : ''; @endphp
+                            {{ $val ? ($lang==='bn' ? toBengaliNumber($val) : $val) : '' }}
                         </td>
                     @endif
 
                     <td style="text-align: center;">
-                        {{ $mark && !$mark->is_absent ? ($lang==='bn' ? toBengaliNumber($mark->total_marks) : $mark->total_marks) : '' }}
+                        @php $val = $mark && !$mark->is_absent ? number_format($mark->total_marks, $decimal, '.', '') : ''; @endphp
+                        {{ $val ? ($lang==='bn' ? toBengaliNumber($val) : $val) : '' }}
                     </td>
                     <td style="text-align: center;">
                         {{ $mark ? ($mark->is_absent ? 'F' : ($mark->letter_grade ?? '')) : '' }}

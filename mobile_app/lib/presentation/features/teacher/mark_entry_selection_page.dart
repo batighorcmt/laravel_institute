@@ -49,7 +49,7 @@ class _MarkEntrySelectionPageState extends ConsumerState<MarkEntrySelectionPage>
     }
   }
 
-  Future<void> _loadExams(int yearId) async {
+  Future<void> _loadExams(int yearId, int classId) async {
     setState(() {
       _isLoading = true;
       _exams = [];
@@ -59,7 +59,7 @@ class _MarkEntrySelectionPageState extends ConsumerState<MarkEntrySelectionPage>
     });
     try {
       final repo = TeacherExamRepository();
-      final exams = await repo.getExams(yearId, status: 'active');
+      final exams = await repo.getExams(yearId, classId);
       if (mounted) {
         setState(() {
           _exams = exams;

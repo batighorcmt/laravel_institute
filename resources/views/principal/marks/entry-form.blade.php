@@ -84,16 +84,20 @@
                                         <td>{{ $enrollment->section->name ?? '-' }}</td>
                                         <td>{{ $enrollment->roll_no ?? '-' }}</td>
                                         <td>{{ $enrollment->student->student_name_en }}</td>
+                                    @php 
+                                        $decimal = \App\Models\Setting::getDecimalPosition($school->id); 
+                                        $step = $decimal > 0 ? '0.' . str_repeat('0', $decimal - 1) . '1' : '1';
+                                    @endphp
                                     @if($examSubject->creative_full_mark > 0)
-                                        <td><input type="number" class="form-control form-control-sm mark-input" data-field="creative_marks" data-student-id="{{ $enrollment->student->id }}" value="{{ $mark->creative_marks ?? '' }}" min="0" max="{{ $examSubject->creative_full_mark }}" step="0.01" {{ $mark && $mark->is_absent ? 'disabled' : '' }}></td>
+                                        <td><input type="number" class="form-control form-control-sm mark-input" data-field="creative_marks" data-student-id="{{ $enrollment->student->id }}" value="{{ ($mark && !is_null($mark->creative_marks)) ? number_format($mark->creative_marks, $decimal, '.', '') : '' }}" min="0" max="{{ $examSubject->creative_full_mark }}" step="{{ $step }}" {{ $mark && $mark->is_absent ? 'disabled' : '' }}></td>
                                     @endif
                                     @if($examSubject->mcq_full_mark > 0)
-                                        <td><input type="number" class="form-control form-control-sm mark-input" data-field="mcq_marks" data-student-id="{{ $enrollment->student->id }}" value="{{ $mark->mcq_marks ?? '' }}" min="0" max="{{ $examSubject->mcq_full_mark }}" step="0.01" {{ $mark && $mark->is_absent ? 'disabled' : '' }}></td>
+                                        <td><input type="number" class="form-control form-control-sm mark-input" data-field="mcq_marks" data-student-id="{{ $enrollment->student->id }}" value="{{ ($mark && !is_null($mark->mcq_marks)) ? number_format($mark->mcq_marks, $decimal, '.', '') : '' }}" min="0" max="{{ $examSubject->mcq_full_mark }}" step="{{ $step }}" {{ $mark && $mark->is_absent ? 'disabled' : '' }}></td>
                                     @endif
                                     @if($examSubject->practical_full_mark > 0)
-                                        <td><input type="number" class="form-control form-control-sm mark-input" data-field="practical_marks" data-student-id="{{ $enrollment->student->id }}" value="{{ $mark->practical_marks ?? '' }}" min="0" max="{{ $examSubject->practical_full_mark }}" step="0.01" {{ $mark && $mark->is_absent ? 'disabled' : '' }}></td>
+                                        <td><input type="number" class="form-control form-control-sm mark-input" data-field="practical_marks" data-student-id="{{ $enrollment->student->id }}" value="{{ ($mark && !is_null($mark->practical_marks)) ? number_format($mark->practical_marks, $decimal, '.', '') : '' }}" min="0" max="{{ $examSubject->practical_full_mark }}" step="{{ $step }}" {{ $mark && $mark->is_absent ? 'disabled' : '' }}></td>
                                     @endif
-                                    <td class="total-marks">{{ $mark->total_marks ?? '-' }}</td>
+                                    <td class="total-marks">{{ ($mark && !is_null($mark->total_marks)) ? number_format($mark->total_marks, $decimal, '.', '') : '-' }}</td>
                                     <td class="grade grade-column">{{ $mark->letter_grade ?? '-' }}</td>
                                     <td><input type="checkbox" class="absent-checkbox" data-student-id="{{ $enrollment->student->id }}" {{ $mark && $mark->is_absent ? 'checked' : '' }}></td>
                                     <td class="save-status">@if($mark)<span class="badge badge-success"><i class="fas fa-check"></i></span>@else<span class="badge badge-secondary"><i class="fas fa-minus"></i></span>@endif</td>
@@ -118,11 +122,12 @@
     (function($){
         $(function(){
             const saveUrl = "{{ route('principal.institute.marks.save', [$school, $exam, $examSubject]) }}";
+            const decimal = {{ \App\Models\Setting::getDecimalPosition($school->id) }};
 
             function recalcRow(row){
                 let total=0, any=false;
                 row.find('.mark-input').each(function(){ const v=$(this).val(); if(v!==''){ any=true; total+=parseFloat(v)||0; } });
-                row.find('.total-marks').text(any?total.toFixed(2):'-');
+                row.find('.total-marks').text(any?total.toFixed(decimal):'-');
             }
 
             $('tbody tr').each(function(){ recalcRow($(this)); });

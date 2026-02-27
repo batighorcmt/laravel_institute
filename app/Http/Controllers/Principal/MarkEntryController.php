@@ -131,7 +131,8 @@ class MarkEntryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'নম্বর সফলভাবে সংরক্ষণ করা হয়েছে',
-            'total_marks' => $isAbsent ? null : $totalMarks
+            'total_marks' => $isAbsent ? null : number_format($totalMarks, Setting::getDecimalPosition($school->id), '.', ''),
+            'letter_grade' => $gradeInfo['letter_grade'],
         ]);
     }
 

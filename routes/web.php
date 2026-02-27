@@ -430,6 +430,10 @@ Route::middleware(['auth'])->group(function () {
             Route::resource('academic-years', \App\Http\Controllers\Principal\AcademicYearController::class)->except(['show']);
             Route::patch('academic-years/{academic_year}/current', [\App\Http\Controllers\Principal\AcademicYearController::class,'setCurrent'])->name('academic-years.set-current');
 
+            // Result Settings
+            Route::get('result-settings', [\App\Http\Controllers\Principal\ResultSettingController::class, 'index'])->name('result-settings.index');
+            Route::post('result-settings', [\App\Http\Controllers\Principal\ResultSettingController::class, 'store'])->name('result-settings.store');
+
             // Extra Classes routes
             Route::prefix('extra-classes')->name('extra-classes.')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Principal\ExtraClassController::class, 'index'])->name('index');

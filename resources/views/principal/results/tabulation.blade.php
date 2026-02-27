@@ -176,6 +176,9 @@
                                         </td>
                                         <td class="text-center">{{ optional(optional($result->student)->currentEnrollment)->group->name ?? '-' }}</td>
 
+                                        @php 
+                                            $decimal = \App\Models\Setting::getDecimalPosition($school->id); 
+                                        @endphp
                                         @foreach($finalSubjects as $key => $subject)
                                             @php
                                                 $resData = $result->subject_results->get($key);
@@ -193,17 +196,17 @@
                                             @endphp
 
                                             @if($subject['creative_full_mark'] > 0)
-                                                <td class="text-center text-muted">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : $creative) }}</td>
+                                                <td class="text-center text-muted">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : number_format($creative, $decimal, '.', '')) }}</td>
                                             @endif
                                             @if($subject['mcq_full_mark'] > 0)
-                                                <td class="text-center text-muted">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : $mcq) }}</td>
+                                                <td class="text-center text-muted">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : number_format($mcq, $decimal, '.', '')) }}</td>
                                             @endif
                                             @if($subject['practical_full_mark'] > 0)
-                                                <td class="text-center text-muted">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : $practical) }}</td>
+                                                <td class="text-center text-muted">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : number_format($practical, $decimal, '.', '')) }}</td>
                                             @endif
 
                                             <td class="text-center font-weight-bold">
-                                                {{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : $total) }}
+                                                {{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : number_format($total, $decimal, '.', '')) }}
                                             </td>
                                             <td class="text-center">
                                                 @if($isNA || $isNR || !empty($resData['display_only']))
@@ -215,7 +218,7 @@
                                         @endforeach
 
                                         <td class="text-center">{{ $result->fourth_subject_code ?? '-' }}</td>
-                                        <td class="text-center"><strong>{{ number_format($result->computed_total_marks ?? $result->total_marks ?? 0, 0) }}</strong></td>
+                                        <td class="text-center"><strong>{{ number_format($result->computed_total_marks ?? $result->total_marks ?? 0, $decimal, '.', '') }}</strong></td>
                                         <td class="text-center"><strong>{{ number_format($result->computed_gpa ?? $result->gpa ?? 0, 2) }}</strong></td>
                                         <td class="text-center">
                                             @php $letter = $result->computed_letter ?? $result->letter_grade; @endphp
