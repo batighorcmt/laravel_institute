@@ -57,12 +57,26 @@ class AttendanceController extends Controller
             ], 400);
         }
         
-        // Validate request
-        $request->validate([
-            'photo' => 'required|string',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-        ]);
+        // Get settings to determine requirements
+        $settings = TeacherAttendanceSetting::where('school_id', $schoolId)->first();
+        
+        // Validate request based on settings
+        $rules = [];
+        if (!$settings || $settings->require_photo) {
+            $rules['photo'] = 'required|string';
+        } else {
+            $rules['photo'] = 'nullable|string';
+        }
+        
+        if (!$settings || $settings->require_location) {
+            $rules['latitude'] = 'required|numeric';
+            $rules['longitude'] = 'required|numeric';
+        } else {
+            $rules['latitude'] = 'nullable|numeric';
+            $rules['longitude'] = 'nullable|numeric';
+        }
+        
+        $request->validate($rules);
         
         // Check if already checked in today
         $attendance = TeacherAttendance::where('user_id', $user->id)
@@ -88,12 +102,15 @@ class AttendanceController extends Controller
             }
         }
         
-        // Save photo
-        $photoData = $request->photo;
-        $photoData = str_replace('data:image/png;base64,', '', $photoData);
-        $photoData = str_replace(' ', '+', $photoData);
-        $photoName = 'attendance/' . $user->id . '_checkin_' . time() . '.png';
-        Storage::disk('public')->put($photoName, base64_decode($photoData));
+        // Save photo if provided
+        $photoName = null;
+        if ($request->filled('photo')) {
+            $photoData = $request->photo;
+            $photoData = str_replace('data:image/png;base64,', '', $photoData);
+            $photoData = str_replace(' ', '+', $photoData);
+            $photoName = 'attendance/' . $user->id . '_checkin_' . time() . '.png';
+            Storage::disk('public')->put($photoName, base64_decode($photoData));
+        }
         
         // Create or update attendance record
         if (!$attendance) {
@@ -137,12 +154,26 @@ class AttendanceController extends Controller
             ], 400);
         }
         
-        // Validate request
-        $request->validate([
-            'photo' => 'required|string',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-        ]);
+        // Get settings to determine requirements
+        $settings = TeacherAttendanceSetting::where('school_id', $schoolId)->first();
+        
+        // Validate request based on settings
+        $rules = [];
+        if (!$settings || $settings->require_photo) {
+            $rules['photo'] = 'required|string';
+        } else {
+            $rules['photo'] = 'nullable|string';
+        }
+        
+        if (!$settings || $settings->require_location) {
+            $rules['latitude'] = 'required|numeric';
+            $rules['longitude'] = 'required|numeric';
+        } else {
+            $rules['latitude'] = 'nullable|numeric';
+            $rules['longitude'] = 'nullable|numeric';
+        }
+        
+        $request->validate($rules);
         
         // Get today's attendance record
         $attendance = TeacherAttendance::where('user_id', $user->id)
@@ -164,12 +195,15 @@ class AttendanceController extends Controller
             ], 400);
         }
         
-        // Save photo
-        $photoData = $request->photo;
-        $photoData = str_replace('data:image/png;base64,', '', $photoData);
-        $photoData = str_replace(' ', '+', $photoData);
-        $photoName = 'attendance/' . $user->id . '_checkout_' . time() . '.png';
-        Storage::disk('public')->put($photoName, base64_decode($photoData));
+        // Save photo if provided
+        $photoName = null;
+        if ($request->filled('photo')) {
+            $photoData = $request->photo;
+            $photoData = str_replace('data:image/png;base64,', '', $photoData);
+            $photoData = str_replace(' ', '+', $photoData);
+            $photoName = 'attendance/' . $user->id . '_checkout_' . time() . '.png';
+            Storage::disk('public')->put($photoName, base64_decode($photoData));
+        }
         
         // Update attendance record
         $attendance->check_out_time = $now->format('H:i:s');

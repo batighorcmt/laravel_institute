@@ -18,6 +18,20 @@ class TeacherAttendanceSettingsController extends Controller
 
     public function store(Request $request, School $school)
     {
+        // Normalize time inputs if they are in AM/PM format
+        $timeFields = ['check_in_start', 'check_in_end', 'late_threshold', 'check_out_start', 'check_out_end'];
+        foreach ($timeFields as $field) {
+            if ($request->filled($field)) {
+                try {
+                    $request->merge([
+                        $field => \Carbon\Carbon::parse($request->input($field))->format('H:i')
+                    ]);
+                } catch (\Exception $e) {
+                    // Let validation handle invalid formats
+                }
+            }
+        }
+
         $validated = $request->validate([
             'check_in_start' => 'required|date_format:H:i',
             'check_in_end' => 'required|date_format:H:i',

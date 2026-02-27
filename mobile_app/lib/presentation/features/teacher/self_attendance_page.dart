@@ -248,13 +248,23 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
         _busy = true;
         _error = null;
       });
-      await _capturePhoto();
-      if (_photo == null) return;
-      await _getLocation();
-      if (_position == null) {
-        setState(() => _error = 'Location not found');
-        return;
+
+      final requirePhoto = _settings?['require_photo'] ?? true;
+      final requireLocation = _settings?['require_location'] ?? true;
+
+      if (requirePhoto) {
+        await _capturePhoto();
+        if (_photo == null) return;
       }
+
+      if (requireLocation) {
+        await _getLocation();
+        if (_position == null) {
+          setState(() => _error = 'Location not found');
+          return;
+        }
+      }
+
       await _submitCheckIn();
       await _fetchTodayRecord();
       await _showSuccessModal('চেক ইন সফল (অভিনন্দন)');
@@ -273,13 +283,23 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
         _busy = true;
         _error = null;
       });
-      await _capturePhoto();
-      if (_photo == null) return;
-      await _getLocation();
-      if (_position == null) {
-        setState(() => _error = 'Location not found');
-        return;
+
+      final requirePhoto = _settings?['require_photo'] ?? true;
+      final requireLocation = _settings?['require_location'] ?? true;
+
+      if (requirePhoto) {
+        await _capturePhoto();
+        if (_photo == null) return;
       }
+
+      if (requireLocation) {
+        await _getLocation();
+        if (_position == null) {
+          setState(() => _error = 'Location not found');
+          return;
+        }
+      }
+
       await _submitCheckout();
       await _fetchTodayRecord();
       await _showSuccessModal('চেক আউট সফল (অভিনন্দন)');
@@ -315,19 +335,31 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
   Future<void> _submitCheckIn() async {
     final schoolId = _schoolId;
     if (schoolId == null) {
-      // School id not resolved. Previously we showed an error here;
-      // principals can use this page and may rely on overrides, so
-      // avoid showing an intrusive error message. Just return silently.
       return;
     }
-    if (_photo == null || _position == null) return;
-    final fileName = 'self_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final form = FormData.fromMap({
-      'lat': _position!.latitude,
-      'lng': _position!.longitude,
-      'photo': await MultipartFile.fromFile(_photo!.path, filename: fileName),
+
+    final requirePhoto = _settings?['require_photo'] ?? true;
+    final requireLocation = _settings?['require_location'] ?? true;
+
+    if (requirePhoto && _photo == null) return;
+    if (requireLocation && _position == null) return;
+
+    final Map<String, dynamic> data = {
       'school_id': schoolId,
-    });
+    };
+
+    if (_position != null) {
+      data['lat'] = _position!.latitude;
+      data['lng'] = _position!.longitude;
+    }
+
+    if (_photo != null) {
+      final fileName = 'self_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      data['photo'] =
+          await MultipartFile.fromFile(_photo!.path, filename: fileName);
+    }
+
+    final form = FormData.fromMap(data);
     try {
       final resp = await _dio.post('teacher/attendance', data: form);
       // API returns resource or {message, data: resource} on duplicate
@@ -360,18 +392,31 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
   Future<void> _submitCheckout() async {
     final schoolId = _schoolId;
     if (schoolId == null) {
-      // See note in _submitCheckIn: avoid showing the School ID missing
-      // message to allow principals to use this flow without interruption.
       return;
     }
-    if (_photo == null || _position == null) return;
-    final fileName = 'self_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final form = FormData.fromMap({
-      'lat': _position!.latitude,
-      'lng': _position!.longitude,
-      'photo': await MultipartFile.fromFile(_photo!.path, filename: fileName),
+
+    final requirePhoto = _settings?['require_photo'] ?? true;
+    final requireLocation = _settings?['require_location'] ?? true;
+
+    if (requirePhoto && _photo == null) return;
+    if (requireLocation && _position == null) return;
+
+    final Map<String, dynamic> data = {
       'school_id': schoolId,
-    });
+    };
+
+    if (_position != null) {
+      data['lat'] = _position!.latitude;
+      data['lng'] = _position!.longitude;
+    }
+
+    if (_photo != null) {
+      final fileName = 'self_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      data['photo'] =
+          await MultipartFile.fromFile(_photo!.path, filename: fileName);
+    }
+
+    final form = FormData.fromMap(data);
     try {
       final resp = await _dio.post('teacher/attendance/checkout', data: form);
       dynamic payload = resp.data;

@@ -150,113 +150,138 @@
     $(document).ready(function() {
         let stream = null;
         let currentAction = null; // 'checkin' or 'checkout'
+        
+        const requirePhoto = {{ ($settings->require_photo ?? true) ? 'true' : 'false' }};
+        const requireLocation = {{ ($settings->require_location ?? true) ? 'true' : 'false' }};
 
         $('#checkInBtn').click(function() {
             currentAction = 'checkin';
-            startCamera();
+            initiateAttendance();
         });
 
         $('#checkOutBtn').click(function() {
             currentAction = 'checkout';
-            startCamera();
+            initiateAttendance();
         });
+
+        function initiateAttendance() {
+            if (requirePhoto) {
+                startCamera();
+            } else if (requireLocation) {
+                getLocationAndSubmit();
+            } else {
+                submitAttendance(null, null, null);
+            }
+        }
 
         $('#cancelBtn').click(function() {
             stopCamera();
         });
 
         $('#captureBtn').click(function() {
-            capturePhoto();
+            if (requireLocation) {
+                getLocationAndSubmit(captureFromCanvas());
+            } else {
+                submitAttendance(captureFromCanvas(), null, null);
+            }
         });
 
         function startCamera() {
             $('#cameraSection').show();
+            $('#checkInBtn, #checkOutBtn').prop('disabled', true);
         
-        // Request camera access (front camera)
-        navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                facingMode: 'user', // Front camera
-                width: { ideal: 640 },
-                height: { ideal: 480 }
-            } 
-        })
-        .then(function(mediaStream) {
-            stream = mediaStream;
-            const video = document.getElementById('video');
-            video.srcObject = stream;
-        })
-        .catch(function(err) {
-            alert('Unable to access camera: ' + err.message);
-            $('#cameraSection').hide();
-        });
-    }
-
-    function stopCamera() {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            stream = null;
+            // Request camera access (front camera)
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: 'user', // Front camera
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                } 
+            })
+            .then(function(mediaStream) {
+                stream = mediaStream;
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+            })
+            .catch(function(err) {
+                alert('Unable to access camera: ' + err.message);
+                $('#cameraSection').hide();
+                $('#checkInBtn, #checkOutBtn').prop('disabled', false);
+            });
         }
-        $('#cameraSection').hide();
-        currentAction = null;
-    }
 
-    function capturePhoto() {
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const context = canvas.getContext('2d');
-        
-        // Draw video frame to canvas
-        context.drawImage(video, 0, 0, 400, 300);
-        
-        // Convert to low-resolution base64
-        const photoData = canvas.toDataURL('image/png', 0.5); // 50% quality
-        
-        // Get geolocation
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    submitAttendance(photoData, position.coords.latitude, position.coords.longitude);
-                },
-                function(error) {
-                    alert('Unable to get location: ' + error.message);
-                }
-            );
-        } else {
-            alert('Your browser does not support geolocation.');
-        }
-    }
-
-    function submitAttendance(photo, latitude, longitude) {
-        const url = currentAction === 'checkin' 
-            ? '{{ route("teacher.attendance.check-in") }}' 
-            : '{{ route("teacher.attendance.check-out") }}';
-        
-        $.ajax({
-            url: url,
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}',
-                photo: photo,
-                latitude: latitude,
-                longitude: longitude
-            },
-            success: function(response) {
-                stopCamera();
-                $('#successMessage').text(response.message);
-                $('#successTime').text('Time: ' + response.time);
-                $('#successModal').modal('show');
-                
-                // Reload page after modal closes
-                $('#successModal').on('hidden.bs.modal', function() {
-                    location.reload();
-                });
-            },
-            error: function(xhr) {
-                stopCamera();
-                alert('Error: ' + (xhr.responseJSON?.message || 'An error occurred'));
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
             }
-        });
-    }
+            $('#cameraSection').hide();
+            $('#checkInBtn, #checkOutBtn').prop('disabled', false);
+        }
+
+        function captureFromCanvas() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            
+            // Draw video frame to canvas
+            context.drawImage(video, 0, 0, 400, 300);
+            
+            // Convert to low-resolution base64
+            return canvas.toDataURL('image/png', 0.5); // 50% quality
+        }
+
+        function getLocationAndSubmit(photo = null) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        submitAttendance(photo, position.coords.latitude, position.coords.longitude);
+                    },
+                    function(error) {
+                        let msg = 'Unable to get location: ' + error.message;
+                        if (error.code === 1) {
+                            msg = 'Location permission denied. Please enable location to proceed.';
+                        }
+                        alert(msg);
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            } else {
+                alert('Your browser does not support geolocation.');
+            }
+        }
+
+        function submitAttendance(photo, latitude, longitude) {
+            const url = currentAction === 'checkin' 
+                ? '{{ route("teacher.attendance.check-in") }}' 
+                : '{{ route("teacher.attendance.check-out") }}';
+            
+            $.ajax({
+                url: url,
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    photo: photo,
+                    latitude: latitude,
+                    longitude: longitude
+                },
+                success: function(response) {
+                    stopCamera();
+                    $('#successMessage').text(response.message);
+                    $('#successTime').text('Time: ' + response.time);
+                    $('#successModal').modal('show');
+                    
+                    // Reload page after modal closes
+                    $('#successModal').on('hidden.bs.modal', function() {
+                        location.reload();
+                    });
+                },
+                error: function(xhr) {
+                    stopCamera();
+                    alert('Error: ' + (xhr.responseJSON?.message || 'An error occurred'));
+                }
+            });
+        }
     });
 })();
 </script>
