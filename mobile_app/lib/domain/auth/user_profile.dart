@@ -11,6 +11,8 @@ class UserProfile {
   final String? photoUrl;
   final String? teacherDesignation;
   final int? teacherId;
+  final String? teacherPhone;
+  final String? username;
 
   UserProfile({
     required this.id,
@@ -21,6 +23,8 @@ class UserProfile {
     this.photoUrl,
     this.teacherDesignation,
     this.teacherId,
+    this.teacherPhone,
+    this.username,
   });
 
   /// Robust factory accepting potentially malformed structures.
@@ -61,6 +65,7 @@ class UserProfile {
     String? photo;
     String? teacherDesignation;
     int? teacherId;
+    String? teacherPhone;
 
     for (final key in const [
       'photo',
@@ -94,6 +99,7 @@ class UserProfile {
       if (tid != null) {
         teacherId = (tid as num).toInt();
       }
+      teacherPhone = t['phone']?.toString();
     }
 
     return UserProfile(
@@ -105,6 +111,8 @@ class UserProfile {
       photoUrl: _absolutePhoto(photo),
       teacherDesignation: teacherDesignation,
       teacherId: teacherId,
+      teacherPhone: teacherPhone,
+      username: json['username']?.toString(),
     );
   }
 
@@ -135,6 +143,8 @@ class UserProfile {
     'photo_url': photoUrl,
     'teacher_designation': teacherDesignation,
     'teacher_id': teacherId,
+    'teacher_phone': teacherPhone,
+    'username': username,
   };
 }
 

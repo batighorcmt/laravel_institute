@@ -88,10 +88,13 @@ class AuthController extends Controller
                 $payload['teacher'] = [
                     'id' => $teacher->id,
                     'designation' => $teacher->designation,
+                    'phone' => $teacher->phone,
                     'photo_url' => $photoUrl,
                 ];
             }
         }
+
+        $payload['username'] = $user->username;
 
         return response()->json($payload);
     }

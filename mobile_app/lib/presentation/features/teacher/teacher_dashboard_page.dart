@@ -66,7 +66,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
     final photoUrl = profile?.photoUrl;
     final schoolName = _firstSchoolName(profile);
     final designation = profile?.teacherDesignation ?? 'Teacher';
-    final mobile = profile?.mobile;
+    final phone = profile?.teacherPhone ?? profile?.mobile;
 
     return Scaffold(
       appBar: AppBar(
@@ -102,7 +102,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
                 designation: designation,
                 schoolName: schoolName,
                 photoUrl: photoUrl,
-                mobile: mobile,
+                phone: phone,
                 todayRecord: _todayRecord,
                 onProfileTap: () {
                   Navigator.of(context).push(
@@ -176,7 +176,7 @@ class _HeaderCard extends StatelessWidget {
   final String designation;
   final String? schoolName;
   final String? photoUrl;
-  final String? mobile;
+  final String? phone;
   final Map<String, dynamic>? todayRecord;
   final VoidCallback onProfileTap;
 
@@ -185,7 +185,7 @@ class _HeaderCard extends StatelessWidget {
     required this.designation,
     this.schoolName,
     this.photoUrl,
-    this.mobile,
+    this.phone,
     this.todayRecord,
     required this.onProfileTap,
   });
@@ -267,7 +267,7 @@ class _HeaderCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '$designation${(mobile != null && mobile!.isNotEmpty) ? " ($mobile)" : ""}',
+                          '$designation${(phone != null && phone!.isNotEmpty) ? " ($phone)" : ""}',
                           style: const TextStyle(color: Color(0xFF4B5563)),
                         ),
                         if (schoolName != null) ...[

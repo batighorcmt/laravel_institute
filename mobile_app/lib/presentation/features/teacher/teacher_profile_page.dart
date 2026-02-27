@@ -101,10 +101,18 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      '${user.name}${user.teacherId != null ? " (ID: ${user.teacherId})" : ""}',
+                      user.name,
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
+                    if (user.username != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Username: ${user.username}',
+                        style: TextStyle(fontSize: 15, color: Colors.blue[700], fontWeight: FontWeight.w500),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                     if (user.teacherDesignation != null) ...[
                       const SizedBox(height: 4),
                       Text(
