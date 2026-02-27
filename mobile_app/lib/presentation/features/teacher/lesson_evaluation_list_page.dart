@@ -53,11 +53,13 @@ class _LessonEvaluationListPageState extends State<LessonEvaluationListPage> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
           ? Center(child: Text(_error!))
-          : ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: _items.length + 1,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (ctx, i) {
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView.separated(
+                padding: const EdgeInsets.all(12),
+                itemCount: _items.length + 1,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (ctx, i) {
                 if (i == 0) {
                   return Text(
                     'তারিখ: ' + (_date.isEmpty ? '-' : _date),
@@ -112,6 +114,7 @@ class _LessonEvaluationListPageState extends State<LessonEvaluationListPage> {
                 );
               },
             ),
+          ),
     );
   }
 }

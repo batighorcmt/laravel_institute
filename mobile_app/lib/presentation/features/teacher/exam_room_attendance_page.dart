@@ -150,13 +150,16 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
                 _buildStatsHeader(),
                 _buildBulkToggle(),
                 Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: _students.length,
-                    itemBuilder: (context, index) {
-                      final student = _students[index];
-                      return _buildStudentCard(student, index);
-                    },
+                  child: RefreshIndicator(
+                    onRefresh: _loadStudents,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: _students.length,
+                      itemBuilder: (context, index) {
+                        final student = _students[index];
+                        return _buildStudentCard(student, index);
+                      },
+                    ),
                   ),
                 ),
               ],

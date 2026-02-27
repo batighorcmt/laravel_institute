@@ -297,9 +297,11 @@ class _ClassSectionMarkAttendancePageState
                 Expanded(
                   child: displayedStudents.isEmpty
                       ? const Center(child: Text('কোনো রেকর্ড পাওয়া যায়নি'))
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(12),
-                          separatorBuilder: (_, i) => const SizedBox(height: 8),
+                      : RefreshIndicator(
+                          onRefresh: _load,
+                          child: ListView.separated(
+                            padding: const EdgeInsets.all(12),
+                            separatorBuilder: (_, i) => const SizedBox(height: 8),
                           itemCount: displayedStudents.length,
                           itemBuilder: (ctx, i) {
                             final s = displayedStudents[i];
@@ -318,6 +320,7 @@ class _ClassSectionMarkAttendancePageState
                               },
                             );
                           },
+                        ),
                         ),
                 ),
                 if (_isToday)

@@ -10,6 +10,7 @@ class UserProfile {
   final List<UserRole> roles;
   final String? photoUrl;
   final String? teacherDesignation;
+  final int? teacherId;
 
   UserProfile({
     required this.id,
@@ -19,6 +20,7 @@ class UserProfile {
     required this.roles,
     this.photoUrl,
     this.teacherDesignation,
+    this.teacherId,
   });
 
   /// Robust factory accepting potentially malformed structures.
@@ -58,6 +60,8 @@ class UserProfile {
         .toList();
     String? photo;
     String? teacherDesignation;
+    int? teacherId;
+
     for (final key in const [
       'photo',
       'avatar',
@@ -86,6 +90,10 @@ class UserProfile {
       if (td != null && td.toString().trim().isNotEmpty) {
         teacherDesignation = td.toString();
       }
+      final tid = t['id'];
+      if (tid != null) {
+        teacherId = (tid as num).toInt();
+      }
     }
 
     return UserProfile(
@@ -96,6 +104,7 @@ class UserProfile {
       roles: roles,
       photoUrl: _absolutePhoto(photo),
       teacherDesignation: teacherDesignation,
+      teacherId: teacherId,
     );
   }
 
@@ -125,6 +134,7 @@ class UserProfile {
     'roles': roles.map((r) => r.toJson()).toList(),
     'photo_url': photoUrl,
     'teacher_designation': teacherDesignation,
+    'teacher_id': teacherId,
   };
 }
 

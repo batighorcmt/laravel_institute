@@ -77,36 +77,40 @@ class _StudentsAttendanceMenuPageState
       appBar: AppBar(title: const Text('Students Attendance')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  if (_error != null)
-                    Text(_error!, style: const TextStyle(color: Colors.red)),
-                  _Card(
-                    keyId: 'class_attendance',
-                    title: 'Class Attendance',
-                    icon: Icons.fact_check_outlined,
-                    enabled: _modules['class_attendance'] == true,
-                    onTap: _open,
-                  ),
-                  const SizedBox(height: 12),
-                  _Card(
-                    keyId: 'extra_class_attendance',
-                    title: 'Extra Class Attendance',
-                    icon: Icons.event_note_outlined,
-                    enabled: _modules['extra_class_attendance'] == true,
-                    onTap: _open,
-                  ),
-                  const SizedBox(height: 12),
-                  _Card(
-                    keyId: 'team_attendance',
-                    title: 'Team Attendance',
-                    icon: Icons.groups_outlined,
-                    enabled: _modules['team_attendance'] == true,
-                    onTap: _open,
-                  ),
-                ],
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    if (_error != null)
+                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                    _Card(
+                      keyId: 'class_attendance',
+                      title: 'Class Attendance',
+                      icon: Icons.fact_check_outlined,
+                      enabled: _modules['class_attendance'] == true,
+                      onTap: _open,
+                    ),
+                    const SizedBox(height: 12),
+                    _Card(
+                      keyId: 'extra_class_attendance',
+                      title: 'Extra Class Attendance',
+                      icon: Icons.event_note_outlined,
+                      enabled: _modules['extra_class_attendance'] == true,
+                      onTap: _open,
+                    ),
+                    const SizedBox(height: 12),
+                    _Card(
+                      keyId: 'team_attendance',
+                      title: 'Team Attendance',
+                      icon: Icons.groups_outlined,
+                      enabled: _modules['team_attendance'] == true,
+                      onTap: _open,
+                    ),
+                  ],
+                ),
               ),
             ),
     );

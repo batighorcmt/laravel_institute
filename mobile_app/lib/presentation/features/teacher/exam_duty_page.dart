@@ -13,7 +13,7 @@ class ExamDutyPage extends StatefulWidget {
 
 class _ExamDutyPageState extends State<ExamDutyPage> {
   final TeacherExamRepository _repo = TeacherExamRepository();
-  bool _isLoading = true;
+  bool _isLoading = false;
   List<dynamic> _duties = [];
   
   List<dynamic> _plans = [];
@@ -28,6 +28,7 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
       _loadInitialMeta();
     } else {
       _selectedDate = _formatDate(DateTime.now());
+      setState(() => _isLoading = true);
       _loadDuties();
     }
   }

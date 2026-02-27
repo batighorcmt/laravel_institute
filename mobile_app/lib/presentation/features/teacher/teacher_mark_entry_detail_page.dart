@@ -120,20 +120,23 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
                   ),
                 ),
                 Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    itemCount: _students.length,
-                    itemBuilder: (context, index) {
-                      final student = _students[index];
-                      return _StudentMarkRow(
-                        student: student,
-                        examId: widget.examId,
-                        examSubjectId: widget.examSubjectId,
-                        examSubject: _examSubject!,
-                        readOnly: _readOnly,
-                        decimalPosition: _decimalPosition,
-                      );
-                    },
+                  child: RefreshIndicator(
+                    onRefresh: _loadData,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      itemCount: _students.length,
+                      itemBuilder: (context, index) {
+                        final student = _students[index];
+                        return _StudentMarkRow(
+                          student: student,
+                          examId: widget.examId,
+                          examSubjectId: widget.examSubjectId,
+                          examSubject: _examSubject!,
+                          readOnly: _readOnly,
+                          decimalPosition: _decimalPosition,
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],

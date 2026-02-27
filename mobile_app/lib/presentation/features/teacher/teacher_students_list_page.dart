@@ -559,56 +559,58 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                   )
                 : _items.isEmpty
                 ? const Center(child: Text('No students found'))
-                : ListView.separated(
-                    itemCount: _items.length + (_hasMore ? 1 : 0),
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      if (index >= _items.length) {
-                        // Load more trigger
-                        if (!_loading) _load();
-                        return const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                      final it = _items[index] as Map<String, dynamic>;
-                      final photoUrl = it['photo_url'] as String?;
-                      final name = it['name'] as String? ?? '';
-                      final roll = it['roll']?.toString() ?? '';
-                      final cls = it['class'] as String? ?? '';
-                      final section = it['section'] as String? ?? '';
-                      final phone = it['phone'] as String? ?? '';
-                      final id = it['id']?.toString() ?? '';
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage:
-                              photoUrl != null && photoUrl.isNotEmpty
-                              ? CachedNetworkImageProvider(photoUrl)
-                              : null,
-                          child: (photoUrl == null || photoUrl.isEmpty)
-                              ? const Icon(Icons.person)
-                              : null,
-                        ),
-                        title: Text(name),
-                        subtitle: Text('Roll: $roll  •  $cls-$section'),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.call),
-                          onPressed: phone.isNotEmpty
-                              ? () => _call(phone)
-                              : null,
-                        ),
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => TeacherStudentProfilePage(
-                                studentId: id,
-                                initialData: it,
-                              ),
-                            ),
+                : RefreshIndicator(
+                    onRefresh: () => _load(reset: true),
+                    child: ListView.separated(
+                      itemCount: _items.length + (_hasMore ? 1 : 0),
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        if (index >= _items.length) {
+                          if (!_loading) _load();
+                          return const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Center(child: CircularProgressIndicator()),
                           );
-                        },
-                      );
-                    },
+                        }
+                        final it = _items[index] as Map<String, dynamic>;
+                        final photoUrl = it['photo_url'] as String?;
+                        final name = it['name'] as String? ?? '';
+                        final roll = it['roll']?.toString() ?? '';
+                        final cls = it['class'] as String? ?? '';
+                        final section = it['section'] as String? ?? '';
+                        final phone = it['phone'] as String? ?? '';
+                        final id = it['id']?.toString() ?? '';
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage:
+                                photoUrl != null && photoUrl.isNotEmpty
+                                ? CachedNetworkImageProvider(photoUrl)
+                                : null,
+                            child: (photoUrl == null || photoUrl.isEmpty)
+                                ? const Icon(Icons.person)
+                                : null,
+                          ),
+                          title: Text(name),
+                          subtitle: Text('Roll: $roll  •  $cls-$section'),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.call),
+                            onPressed: phone.isNotEmpty
+                                ? () => _call(phone)
+                                : null,
+                          ),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => TeacherStudentProfilePage(
+                                  studentId: id,
+                                  initialData: it,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
           ),
         ],

@@ -160,16 +160,19 @@ class _DutyAllocationPageState extends State<DutyAllocationPage> {
                 Expanded(
                   child: _isLoadingRooms
                       ? const Center(child: CircularProgressIndicator())
-                      : _rooms.isEmpty
-                          ? _buildEmptyState()
-                          : ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-                              itemCount: _rooms.length,
-                              itemBuilder: (context, index) {
-                                final room = _rooms[index];
-                                return _buildAllocationCard(room);
-                              },
-                            ),
+                      : RefreshIndicator(
+                          onRefresh: _loadRooms,
+                          child: _rooms.isEmpty
+                              ? _buildEmptyState()
+                              : ListView.builder(
+                                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                                  itemCount: _rooms.length,
+                                  itemBuilder: (context, index) {
+                                    final room = _rooms[index];
+                                    return _buildAllocationCard(room);
+                                  },
+                                ),
+                        ),
                 ),
               ],
             ),

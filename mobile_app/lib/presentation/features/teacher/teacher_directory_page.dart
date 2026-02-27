@@ -181,16 +181,32 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (desig.isNotEmpty) Text(desig),
+                        if (desig.isNotEmpty)
+                          Text(
+                            '$desig${phone.isNotEmpty ? " ($phone)" : ""}',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
                         if (phone.isNotEmpty)
                           Row(
                             children: [
-                              Flexible(child: Text(phone)),
+                              const Text('Call: ', style: TextStyle(fontSize: 12)),
+                              Flexible(
+                                child: Text(
+                                  phone,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                              ),
                               IconButton(
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 tooltip: 'Call',
                                 icon: const Icon(
                                   Icons.call,
                                   color: Colors.green,
+                                  size: 20,
                                 ),
                                 onPressed: () => _callNumber(phone),
                               ),

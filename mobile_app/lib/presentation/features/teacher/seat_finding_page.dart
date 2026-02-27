@@ -37,9 +37,6 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
       if (mounted) {
         setState(() {
           _plans = data['plans'] ?? [];
-          if (_plans.isNotEmpty) {
-            _selectedPlanId = _plans.first['id'];
-          }
           _isLoading = false;
         });
       }
@@ -94,16 +91,19 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
                 Expanded(
                   child: _isSearching
                       ? const Center(child: CircularProgressIndicator())
-                      : _results.isEmpty
-                          ? _buildEmptyState()
-                          : ListView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: _results.length,
-                              itemBuilder: (context, index) {
-                                final student = _results[index];
-                                return _buildResultCard(student);
-                              },
-                            ),
+                      : RefreshIndicator(
+                          onRefresh: _loadInitialData,
+                          child: _results.isEmpty
+                              ? _buildEmptyState()
+                              : ListView.builder(
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: _results.length,
+                                  itemBuilder: (context, index) {
+                                    final student = _results[index];
+                                    return _buildResultCard(student);
+                                  },
+                                ),
+                        ),
                 ),
               ],
             ),

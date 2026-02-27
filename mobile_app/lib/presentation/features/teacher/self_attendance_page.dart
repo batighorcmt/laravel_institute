@@ -47,7 +47,10 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: SingleChildScrollView(
+        child: RefreshIndicator(
+          onRefresh: _fetchTodayRecord,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,6 +148,7 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
                 ),
             ],
           ),
+        ),
         ),
       ),
     );
