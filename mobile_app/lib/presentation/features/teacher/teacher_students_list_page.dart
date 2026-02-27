@@ -15,7 +15,6 @@ class TeacherStudentsListPage extends StatefulWidget {
 }
 
 class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
-  final _searchCtrl = TextEditingController();
   late final Dio _dio;
   late final TeacherStudentsRepository _repo;
 
@@ -25,105 +24,34 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   List<dynamic> _items = [];
   String? _error;
 
-  String? _classId;
-  String? _sectionId;
-  String? _groupId;
-  String? _gender;
-  String? _academicYearId;
-  List<Map<String, dynamic>> _academicYears = [];
-  String? _religion;
-  List<String> _religionOptions = [];
-  String? _studentStatus;
-  List<String> _studentStatusOptions = [];
   List<Map<String, dynamic>> _classes = [];
-  List<Map<String, dynamic>> _sections = [];
-  List<Map<String, dynamic>> _groups = [];
-  List<String> _genderOptions = [];
+  String? _selectedClassId;
+
+  bool _classesLoading = false;
 
   @override
   void initState() {
     super.initState();
     _dio = DioClient().dio;
     _repo = TeacherStudentsRepository(_dio);
-    _preloadFilters();
+    _fetchInitialData();
   }
 
-  Future<void> _preloadFilters() async {
+  Future<void> _fetchInitialData() async {
+    setState(() => _classesLoading = true);
     try {
       final classes = await _repo.fetchClasses();
-      // Do not use attendance-meta as a fallback. Use the teacher meta
-      // (DB-backed) result returned from the repository.
-      setState(() {
-        _classes = classes;
-        _groups = [];
-        _genderOptions = [];
-      });
-    } catch (_) {}
-
-    // Try to load academic year, religion and status options from meta endpoints
-    try {
-      final res = await _dio.get('teacher/students/meta');
-      final data = res.data;
-      if (data is Map<String, dynamic>) {
-        // Academic years (if provided)
-        if (data['academic_years'] is List) {
-          final list = (data['academic_years'] as List).cast<Map<String, dynamic>>();
-          _academicYears = list.map((e) => {'id': (e['id']?.toString() ?? e['year']?.toString() ?? ''), 'name': (e['name']?.toString() ?? e['year']?.toString() ?? '')}).where((e) => e['id'] != '').toList();
-        } else if (data['current_academic_year'] != null) {
-          final cur = data['current_academic_year'];
-          final id = (cur is Map && cur['id'] != null) ? cur['id'].toString() : cur.toString();
-          if (id.isNotEmpty) {
-            _academicYearId = id;
-            _academicYears = [{'id': id, 'name': id}];
-          }
-        }
-
-        // Religions
-        if (data['religions'] is List) {
-          _religionOptions = (data['religions'] as List).map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
-        }
-
-        // Statuses
-        if (data['statuses'] is List) {
-          _studentStatusOptions = (data['statuses'] as List).map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
-        }
-
-        // Groups
-        if (data['groups'] is List) {
-          final list = (data['groups'] as List).cast<Map<String, dynamic>>();
-          _groups = list.map((e) => {'id': e['id']?.toString() ?? '', 'name': e['name']?.toString() ?? ''}).where((e) => e['id'] != '').toList();
-        }
-
-        // Genders
-        if (data['genders'] is List) {
-          _genderOptions = (data['genders'] as List).map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
-        }
+      if (mounted) {
+        setState(() {
+          _classes = classes;
+          _classesLoading = false;
+        });
       }
     } catch (_) {
-      // Fallback to principal filter endpoints (best-effort)
-      try {
-        final resY = await _dio.get('principal/students/filters/academic-years');
-        final dataY = resY.data;
-        if (dataY is List) {
-          _academicYears = (dataY as List).cast<Map<String, dynamic>>().map((e) => {'id': e['id']?.toString() ?? '', 'name': e['name']?.toString() ?? ''}).where((e) => e['id'] != '').toList();
-        }
-      } catch (_) {}
-      try {
-        final resR = await _dio.get('principal/students/filters/religions');
-        final dataR = resR.data;
-        if (dataR is List) _religionOptions = (dataR as List).map((e) => e.toString()).toList();
-      } catch (_) {}
-      try {
-        final resS = await _dio.get('principal/students/filters/statuses');
-        final dataS = resS.data;
-        if (dataS is List) _studentStatusOptions = (dataS as List).map((e) => e.toString()).toList();
-      } catch (_) {}
+      if (mounted) setState(() => _classesLoading = false);
     }
-    if (mounted) setState(() {});
+    _load(reset: true);
   }
-
-  // Removed attendance-meta fallback. We rely on the repository's
-  // `fetchClasses()` which uses the teacher meta or principal DB endpoint.
 
   Future<void> _load({bool reset = false}) async {
     if (_loading) return;
@@ -132,14 +60,7 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       final page = reset ? 1 : _page + 1;
       final res = await _repo.fetchStudents(
         page: page,
-        search: _searchCtrl.text.trim(),
-        classId: _classId,
-        sectionId: _sectionId,
-        groupId: _groupId,
-        gender: _gender,
-        academicYear: _academicYearId,
-        religion: _religion,
-        studentStatus: _studentStatus,
+        classId: _selectedClassId,
       );
       final data = (res['data'] as List?) ?? [];
       final meta = (res['meta'] as Map?) ?? {};
@@ -178,7 +99,6 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
         _error = null;
         if (reset) {
           _items = data;
-          _deriveFiltersFromItems();
         } else {
           _items.addAll(data);
         }
@@ -192,23 +112,6 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       if (mounted) setState(() => _loading = false);
     }
   }
-
-  void _deriveFiltersFromItems() {
-    // Only derive groups as a fallback if meta didn't provide any
-    if (_groups.isNotEmpty) return;
-    
-    final groups = <String>{};
-    for (final it in _items) {
-      if (it is Map<String, dynamic>) {
-        final g = (it['group'] ?? '').toString();
-        if (g.isNotEmpty) groups.add(g);
-      }
-    }
-    _groups = groups.map((e) => {'id': e, 'name': e}).toList()
-      ..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
-  }
-
-  void _onSearch() => _load(reset: true);
 
   Future<void> _call(String phone) async {
     final uri = Uri(scheme: 'tel', path: phone);
@@ -228,403 +131,115 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       appBar: AppBar(title: const Text('Students')),
       body: Column(
         children: [
-          // Class Filter Horizontal List
-          if (_classes.isNotEmpty)
-            Container(
-              height: 50,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _classes.length + 1,
-                separatorBuilder: (context, index) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                     final isSelected = _classId == null;
-                     return ChoiceChip(
-                        label: const Text('All'),
-                        selected: isSelected,
-                        onSelected: (bool selected) {
-                          if (!isSelected) {
-                            setState(() {
-                              _classId = null;
-                              _sectionId = null;
-                              _sections = [];
-                              _groupId = null;
-                              _groups = [];
-                              _gender = null;
-                              _genderOptions = [];
-                            });
-                            _load(reset: true);
-                          }
-                        },
-                     );
-                  }
-                  final c = _classes[index - 1];
-                  final cid = c['id']?.toString();
-                  final cname = c['name']?.toString() ?? 'Class';
-                  final isSelected = _classId == cid;
-                  return ChoiceChip(
-                    label: Text(cname),
-                    selected: isSelected,
-                    onSelected: (bool selected) async {
-                      // If already selected, maybe we want to deselect?
-                      // The 'All' chip handles the null case.
-                      // If clicking same chip, do nothing or user can click 'All'.
-                      if (isSelected) return; 
-
-                      setState(() {
-                        _classId = cid;
-                        _sectionId = null;
-                        _sections = [];
-                        _groupId = null;
-                        _groups = [];
-                        _gender = null;
-                        _genderOptions = [];
-                      });
-                      
-                      // Fetch dependent filters immediately
-                      final sections = await _repo.fetchSections(classId: cid);
-                      final groups = cid != null && cid.isNotEmpty
-                          ? await _repo.fetchGroupsForClass(cid)
-                          : <Map<String, dynamic>>[];
-                      final genders = cid != null && cid.isNotEmpty
-                          ? await _repo.fetchGendersForClass(cid)
-                          : <String>[];
-
-                      if (mounted) {
-                        setState(() {
-                          _sections = sections;
-                          _groups = groups;
-                          _genderOptions = genders;
-                        });
-                      }
-                      
-                      _load(reset: true);
-                    },
-                  );
-                },
+          if (_loading || _classesLoading)
+            const LinearProgressIndicator(minHeight: 2),
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: DropdownButtonFormField<String>(
+              value: _selectedClassId,
+              isExpanded: true,
+              hint: _classesLoading ? const Text('Loading classes...') : null,
+              decoration: const InputDecoration(
+                labelText: 'Select Class',
+                border: OutlineInputBorder(),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                isDense: true,
               ),
-            ),
-          
-          // Row 1: Class + Section
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _classId,
-                    decoration: const InputDecoration(
-                      labelText: 'Class',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: null,
-                        child: Text(''),
-                      ),
-                      ..._classes.map(
-                        (c) => DropdownMenuItem<String>(
-                          value: c['id']?.toString(),
-                          child: Text(c['name']?.toString() ?? 'Class'),
-                        ),
-                      ),
-                    ],
-                    onChanged: (v) async {
+              items: [
+                const DropdownMenuItem<String>(
+                  value: null,
+                  child: Text('All Classes'),
+                ),
+                ..._classes.map((c) => DropdownMenuItem<String>(
+                      value: c['id']?.toString(),
+                      child: Text(c['name']?.toString() ?? 'Class'),
+                    )),
+              ],
+              onChanged: _classesLoading
+                  ? null
+                  : (val) {
                       setState(() {
-                        _classId = v;
-                        _sectionId = null;
-                        _sections = [];
-                        _groupId = null;
-                        _groups = [];
-                        _gender = null;
-                        _genderOptions = [];
+                        _selectedClassId = val;
                       });
-                      final sections = await _repo.fetchSections(classId: v);
-                      final groups = v != null && v.isNotEmpty
-                          ? await _repo.fetchGroupsForClass(v)
-                          : <Map<String, dynamic>>[];
-                      final genders = v != null && v.isNotEmpty
-                          ? await _repo.fetchGendersForClass(v)
-                          : <String>[];
-                      if (mounted) {
-                        setState(() {
-                          _sections = sections;
-                          _groups = groups;
-                          _genderOptions = genders;
-                        });
-                      }
                       _load(reset: true);
                     },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _sectionId,
-                    decoration: const InputDecoration(
-                      labelText: 'Section',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: null,
-                        child: Text(''),
-                      ),
-                      ..._sections.map(
-                        (s) => DropdownMenuItem<String>(
-                          value: s['id']?.toString(),
-                          child: Text(s['name']?.toString() ?? 'Section'),
-                        ),
-                      ),
-                    ],
-                    onChanged: (v) {
-                      setState(() => _sectionId = v);
-                      _load(reset: true);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Row 0.5: Academic Year + Religion + Student Status
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _academicYearId,
-                    decoration: const InputDecoration(
-                      labelText: 'Academic Year',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String>(value: null, child: Text('')),
-                      ..._academicYears.map((y) => DropdownMenuItem<String>(value: y['id']?.toString(), child: Text(y['name']?.toString() ?? ''))),
-                    ],
-                    onChanged: (v) {
-                      setState(() => _academicYearId = v);
-                      _load(reset: true);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _religion,
-                    decoration: const InputDecoration(
-                      labelText: 'Religion',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String>(value: null, child: Text('')),
-                      ..._religionOptions.map((r) => DropdownMenuItem<String>(value: r, child: Text(r))),
-                    ],
-                    onChanged: (v) {
-                      setState(() => _religion = v);
-                      _load(reset: true);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _studentStatus,
-                    decoration: const InputDecoration(
-                      labelText: 'Student Status',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String>(value: null, child: Text('')),
-                      ..._studentStatusOptions.map((s) => DropdownMenuItem<String>(value: s, child: Text(s))),
-                    ],
-                    onChanged: (v) {
-                      setState(() => _studentStatus = v);
-                      _load(reset: true);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Row 2: Group + Gender (dropdowns, default blank)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _groupId,
-                    decoration: const InputDecoration(
-                      labelText: 'Group',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: null,
-                        child: Text(''),
-                      ),
-                      ..._groups.map(
-                        (g) => DropdownMenuItem<String>(
-                          value: g['id']?.toString(),
-                          child: Text(g['name']?.toString() ?? 'Group'),
-                        ),
-                      ),
-                    ],
-                    onChanged: _groups.isEmpty
-                        ? null
-                        : (v) {
-                            setState(() => _groupId = v);
-                            _load(reset: true);
-                          },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _gender,
-                    decoration: const InputDecoration(
-                      labelText: 'Gender',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: null,
-                        child: Text(''),
-                      ),
-                      ..._genderOptions.map(
-                        (g) => DropdownMenuItem<String>(
-                          value: g,
-                          child: Text(_capitalize(g)),
-                        ),
-                      ),
-                    ],
-                    onChanged: (v) {
-                      setState(() => _gender = v);
-                      _load(reset: true);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'Search name/roll/id/phone',
-                      prefixIcon: const Icon(Icons.search),
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    onSubmitted: (_) => _onSearch(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _onSearch,
-                    style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                    ),
-                    child: const Text('Search'),
-                  ),
-                ),
-              ],
             ),
           ),
           Expanded(
             child: _loading && _items.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(_error!),
-                          const SizedBox(height: 8),
-                          ElevatedButton(
-                            onPressed: () => _load(reset: true),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                : _items.isEmpty
-                ? const Center(child: Text('No students found'))
-                : RefreshIndicator(
-                    onRefresh: () => _load(reset: true),
-                    child: ListView.separated(
-                      itemCount: _items.length + (_hasMore ? 1 : 0),
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        if (index >= _items.length) {
-                          if (!_loading) _load();
-                          return const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-                        final it = _items[index] as Map<String, dynamic>;
-                        final photoUrl = it['photo_url'] as String?;
-                        final name = it['name'] as String? ?? '';
-                        final roll = it['roll']?.toString() ?? '';
-                        final cls = it['class'] as String? ?? '';
-                        final section = it['section'] as String? ?? '';
-                        final phone = it['phone'] as String? ?? '';
-                        final id = it['id']?.toString() ?? '';
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage:
-                                photoUrl != null && photoUrl.isNotEmpty
-                                ? CachedNetworkImageProvider(photoUrl)
-                                : null,
-                            child: (photoUrl == null || photoUrl.isEmpty)
-                                ? const Icon(Icons.person)
-                                : null,
-                          ),
-                          title: Text(name),
-                          subtitle: Text('Roll: $roll  •  $cls-$section'),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.call),
-                            onPressed: phone.isNotEmpty
-                                ? () => _call(phone)
-                                : null,
-                          ),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => TeacherStudentProfilePage(
-                                  studentId: id,
-                                  initialData: it,
-                                ),
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_error!),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () => _load(reset: true),
+                                child: const Text('Retry'),
                               ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _items.isEmpty
+                        ? const Center(child: Text('No students found'))
+                        : RefreshIndicator(
+                            onRefresh: () => _load(reset: true),
+                            child: ListView.separated(
+                              itemCount: _items.length + (_hasMore ? 1 : 0),
+                              separatorBuilder: (_, __) => const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                if (index >= _items.length) {
+                                  if (!_loading) _load();
+                                  return const Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: Center(child: CircularProgressIndicator()),
+                                  );
+                                }
+                                final it = _items[index] as Map<String, dynamic>;
+                                final photoUrl = it['photo_url'] as String?;
+                                final name = it['name'] as String? ?? '';
+                                final roll = it['roll']?.toString() ?? '';
+                                final cls = it['class'] as String? ?? '';
+                                final section = it['section'] as String? ?? '';
+                                final phone = it['phone'] as String? ?? '';
+                                final id = it['id']?.toString() ?? '';
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundImage:
+                                        photoUrl != null && photoUrl.isNotEmpty
+                                            ? CachedNetworkImageProvider(photoUrl)
+                                            : null,
+                                    child: (photoUrl == null || photoUrl.isEmpty)
+                                        ? const Icon(Icons.person)
+                                        : null,
+                                  ),
+                                  title: Text(name),
+                                  subtitle: Text('Roll: $roll  •  $cls-$section'),
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.call),
+                                    onPressed:
+                                        phone.isNotEmpty ? () => _call(phone) : null,
+                                  ),
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => TeacherStudentProfilePage(
+                                          studentId: id,
+                                          initialData: it,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ),
           ),
         ],
       ),

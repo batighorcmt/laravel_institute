@@ -14,7 +14,7 @@ class StudentDirectoryController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        $schoolId = $this->resolveSchoolId($request, $user);
         if (! $schoolId || ! $user->isTeacher($schoolId)) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
@@ -111,7 +111,7 @@ class StudentDirectoryController extends Controller
     public function show(Request $request, Student $student)
     {
         $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        $schoolId = $this->resolveSchoolId($request, $user);
         if (! $schoolId || ! $user->isTeacher($schoolId)) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
@@ -173,7 +173,7 @@ class StudentDirectoryController extends Controller
     public function meta(Request $request)
     {
         $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        $schoolId = $this->resolveSchoolId($request, $user);
         if (! $schoolId || ! $user->isTeacher($schoolId)) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
@@ -277,5 +277,16 @@ class StudentDirectoryController extends Controller
             'religions' => $religions,
             'statuses' => $statuses,
         ]);
+    }
+
+    protected function resolveSchoolId(Request $request, $user): ?int
+    {
+        $attr = $request->attributes->get('current_school_id');
+        if ($attr) return (int)$attr;
+        $firstActive = $user->firstTeacherSchoolId();
+        if ($firstActive) return (int)$firstActive;
+        // Fallback to any school where they have a teacher role
+        $any = $user->schoolRoles()->whereHas('role', fn($q)=>$q->where('name','teacher'))->value('school_id');
+        return $any ? (int)$any : null;
     }
 }

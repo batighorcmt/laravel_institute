@@ -105,8 +105,18 @@ class TeacherStudentsRepository {
         _classMetaCache = [];
       }
     } on DioException catch (e) {
-      // If the teacher meta endpoint is forbidden (e.g., principal user),
-      // try the principal classes endpoint which reads from DB.
+      // If the teacher meta endpoint is forbidden or fails, 
+      // try the mark-entry meta which the user confirmed is working.
+      try {
+        final resM = await _dio.get('teacher/exams/mark-entry/meta');
+        final dataM = resM.data;
+        if (dataM is Map<String, dynamic> && dataM['classes'] is List) {
+           _classMetaCache = (dataM['classes'] as List).cast<Map<String, dynamic>>();
+           return;
+        }
+      } catch (_) {}
+
+      // If that also fails, try the principal classes endpoint which reads from DB.
       final status = e.response?.statusCode;
       if (status == 403) {
         try {
