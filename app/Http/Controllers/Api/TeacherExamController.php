@@ -37,18 +37,50 @@ class TeacherExamController extends Controller
 
     /**
      * Today's exam duty for this teacher.
+     * For Exam Controllers, allows filtering by plan_id and date.
      */
     public function todaysDuty(Request $request)
     {
         $user = $request->user();
         $schoolId = $this->resolveSchoolId($request, $user);
-        $today = now()->toDateString();
+        
+        $isController = $user->isExamController($schoolId) || $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        $planId = $request->get('plan_id');
+        $date = $request->get('date', now()->toDateString());
 
-        $duties = ExamRoomInvigilation::with(['room', 'seatPlan'])
+        if ($isController && $planId) {
+            // If plan is selected, we show all rooms from SeatPlanRoom 
+            $rooms = \App\Models\SeatPlanRoom::with(['invigilations' => function($q) use ($date) {
+                $q->where('duty_date', $date);
+            }, 'invigilations.teacher', 'seatPlan', 'seatPlan.classes'])
+            ->where('seat_plan_id', $planId)
+            ->orderBy('room_no')
+            ->get();
+
+            return response()->json($rooms->map(fn($r) => [
+                'id' => $r->invigilations->first()?->id ?? 0,
+                'is_assigned' => $r->invigilations->isNotEmpty(),
+                'duty_date' => $date,
+                'seat_plan_id' => $r->seat_plan_id,
+                'seat_plan_room_id' => $r->id,
+                'room_no' => $r->room_no,
+                'room_title' => $r->title,
+                'building' => $r->building,
+                'floor' => $r->floor,
+                'seat_plan' => $r->seatPlan?->name,
+                'shift' => $r->seatPlan?->shift,
+                'classes' => $r->seatPlan?->classes->pluck('name')->toArray() ?? [],
+                'teacher_name' => $r->invigilations->first()?->teacher?->name,
+            ]));
+        }
+
+        // Default: teacher duties
+        $query = ExamRoomInvigilation::with(['room', 'seatPlan', 'seatPlan.classes'])
             ->where('school_id', $schoolId)
             ->where('teacher_id', $user->id)
-            ->where('duty_date', $today)
-            ->get();
+            ->where('duty_date', $date);
+
+        $duties = $query->get();
 
         return response()->json($duties->map(fn($d) => [
             'id' => $d->id,
@@ -60,8 +92,21 @@ class TeacherExamController extends Controller
             'building' => $d->room?->building,
             'floor' => $d->room?->floor,
             'seat_plan' => $d->seatPlan?->name,
-            'exams' => $d->seatPlan?->exams->pluck('name')->toArray() ?? [],
+            'shift' => $d->seatPlan?->shift,
+            'classes' => $d->seatPlan?->classes->pluck('name')->toArray() ?? [],
         ]));
+    }
+
+    public function dutyMeta(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user);
+        
+        $plans = SeatPlan::where('school_id', $schoolId)->active()->orderBy('id', 'desc')->get(['id', 'name']);
+        
+        return response()->json([
+            'plans' => $plans,
+        ]);
     }
 
     /**

@@ -62,7 +62,7 @@ class _TeacherExamsPageState extends ConsumerState<TeacherExamsPage> {
                   background: const Color(0xFFF0F9FF),
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ExamDutyPage()),
+                      MaterialPageRoute(builder: (_) => ExamDutyPage(isController: _isExamController)),
                     );
                   },
                 ),

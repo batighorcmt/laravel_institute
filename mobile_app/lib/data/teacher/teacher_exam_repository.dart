@@ -9,8 +9,19 @@ class TeacherExamRepository {
     return resp.data;
   }
 
-  Future<List<dynamic>> getTodaysDuty() async {
-    final resp = await _dio.get('teacher/exams/todays-duty');
+  Future<List<dynamic>> getTodaysDuty({int? planId, String? date}) async {
+    final resp = await _dio.get(
+      'teacher/exams/todays-duty',
+      queryParameters: {
+        if (planId != null) 'plan_id': planId,
+        if (date != null) 'date': date,
+      },
+    );
+    return resp.data;
+  }
+
+  Future<Map<String, dynamic>> getDutyMeta() async {
+    final resp = await _dio.get('teacher/exams/duty-meta');
     return resp.data;
   }
 

@@ -178,20 +178,13 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _statGroup('মোট শিক্ষার্থী', _stats['total']?.toString() ?? '0', Icons.people, Colors.blue),
+              _statGroup('মোট', _stats['total']?.toString() ?? '0', Icons.people, Colors.blue),
               _statGroup('উপস্থিত', _stats['present']?.toString() ?? '0', Icons.check_circle, Colors.green),
               _statGroup('অনুপস্থিত', _stats['absent']?.toString() ?? '0', Icons.cancel, Colors.red),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _subStat('ছেলে: ${gender['male'] ?? 0}', Icons.male, Colors.blue),
-              const SizedBox(width: 20),
-              _subStat('মেয়ে: ${gender['female'] ?? 0}', Icons.female, Colors.pink),
+              _statGroup('ছেলে', gender['male']?.toString() ?? '0', Icons.male, Colors.blue),
+              _statGroup('মেয়ে', gender['female']?.toString() ?? '0', Icons.female, Colors.pink),
             ],
           ),
           if (classes.isNotEmpty) ...[
@@ -219,10 +212,10 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
   Widget _statGroup(String label, String value, IconData icon, Color color) {
     return Column(
       children: [
-        Icon(icon, size: 24, color: color),
+        Icon(icon, size: 18, color: color),
         const SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
       ],
     );
   }
@@ -307,33 +300,24 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'Roll: ${student['roll']}',
-                        style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold, fontSize: 11),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        student['name'] ?? 'N/A',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                Text(
+                  student['name'] ?? 'N/A',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  student['class_name'] ?? 'N/A',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                Row(
+                  children: [
+                    Text(
+                      'রোল: ${student['roll']}',
+                      style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      student['class_name'] ?? 'N/A',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -411,4 +395,3 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
     );
   }
 }
-修复
