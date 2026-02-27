@@ -49,13 +49,15 @@ class StudentProfileResource extends JsonResource
         return [
             'id' => $st?->id,
             'student_id' => $st?->student_id,
-            'student_code' => $st?->student_id, // Alias for mobile app
+            'student_code' => $st?->student_id, 
+            'student_name_en' => $st?->student_name_en,
+            'student_name_bn' => $st?->student_name_bn,
             'name' => $st?->full_name,
             'name_en' => $st?->student_name_en,
             'name_bn' => $st?->student_name_bn,
             'gender' => $st?->gender,
             'date_of_birth' => optional($st?->date_of_birth)->toDateString(),
-            'dob' => optional($st?->date_of_birth)->toDateString(), // Alias for mobile app
+            'dob' => optional($st?->date_of_birth)->toDateString(), 
             'phone' => $st?->guardian_phone,
             'email' => $st?->email ?? null,
             'blood_group' => $st?->blood_group ?? null,
@@ -81,25 +83,27 @@ class StudentProfileResource extends JsonResource
             'guardian_name_en' => $st?->guardian_name_en,
             'guardian_name_bn' => $st?->guardian_name_bn,
             'guardian_phone' => $st?->guardian_phone,
-            'guardian_relation' => $st?->guardian_relation ?? null,
+            'guardian_relation' => $st?->guardian_relation,
 
             // Specific parent fields at top level for picking robustness
             'father_name' => $st?->father_name,
             'father' => $st?->father_name,
+            'father_name_bn' => $st?->father_name_bn,
             'mother_name' => $st?->mother_name,
             'mother' => $st?->mother_name,
-            'father_phone' => null, // Column doesn't exist in students table
-            'mother_phone' => null, // Column doesn't exist in students table
+            'mother_name_bn' => $st?->mother_name_bn,
+            'father_phone' => null, 
+            'mother_phone' => null, 
 
             'guardians' => [
                 'father_name' => $st?->father_name,
                 'father_name_bn' => $st?->father_name_bn,
-                'father_phone' => null, // Column doesn't exist
+                'father_phone' => null,
                 'mother_name' => $st?->mother_name,
                 'mother_name_bn' => $st?->mother_name_bn,
-                'mother_phone' => null, // Column doesn't exist
+                'mother_phone' => null,
             ],
-            // Present / Permanent addresses (composed plus BN if available)
+            // Raw DB columns for addressing
             'present_address' => $presentAddress,
             'present_address_bn' => $presentAddressBn,
             'present_village' => $st?->present_village,
@@ -107,7 +111,6 @@ class StudentProfileResource extends JsonResource
             'present_post_office' => $st?->present_post_office,
             'present_upazilla' => $st?->present_upazilla,
             'present_district' => $st?->present_district,
-            
             'permanent_address' => $permanentAddress,
             'permanent_address_bn' => $permanentAddressBn,
             'permanent_village' => $st?->permanent_village,

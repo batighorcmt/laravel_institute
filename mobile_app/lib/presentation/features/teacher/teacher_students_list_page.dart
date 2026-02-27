@@ -578,9 +578,12 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
           'student',
           'profile',
           'guardian',
+          'guardians',
+          'parent',
           'parents',
           'academic',
           'contact',
+          'address',
           'addresses',
           'class',
           'section',
@@ -711,12 +714,12 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
         : permanentAddressFallback;
 
     final fatherName = _combine(
-      _tc(_pick(d, const ['father_name', 'father', 'father_name_en'])),
-      _pick(d, const ['father_name_bn']),
+      _tc(_pick(d, const ['father_name', 'father', 'father_name_en', 'fatherName'])),
+      _pick(d, const ['father_name_bn', 'fatherNameBn']),
     );
     final motherName = _combine(
-      _tc(_pick(d, const ['mother_name', 'mother', 'mother_name_en'])),
-      _pick(d, const ['mother_name_bn']),
+      _tc(_pick(d, const ['mother_name', 'mother', 'mother_name_en', 'motherName'])),
+      _pick(d, const ['mother_name_bn', 'motherNameBn']),
     );
     String fatherPhone = _pick(d, const [
       'father_phone',
@@ -1060,27 +1063,27 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       _infoRow(
                         icon: Icons.location_city,
                         label: 'গ্রাম',
-                        value: _pick(d, const ['present_village']),
+                        value: _pick(d, const ['present_village', 'village', 'gram', 'present_gram']),
                       ),
                       _infoRow(
                         icon: Icons.home_work,
                         label: 'পাড়া/মহল্লা',
-                        value: _pick(d, const ['present_para_moholla']),
+                        value: _pick(d, const ['present_para_moholla', 'para_moholla', 'para', 'moholla']),
                       ),
                       _infoRow(
                         icon: Icons.local_post_office,
                         label: 'ডাকঘর',
-                        value: _pick(d, const ['present_post_office']),
+                        value: _pick(d, const ['present_post_office', 'post_office', 'po', 'post']),
                       ),
                       _infoRow(
                         icon: Icons.map,
                         label: 'উপজেলা',
-                        value: _pick(d, const ['present_upazilla']),
+                        value: _pick(d, const ['present_upazilla', 'present_upazila', 'upazila', 'upazilla', 'thana']),
                       ),
                       _infoRow(
                         icon: Icons.location_on,
                         label: 'জেলা',
-                        value: _pick(d, const ['present_district']),
+                        value: _pick(d, const ['present_district', 'district', 'zilla', 'zila']),
                       ),
                       
                       const Divider(height: 24),
