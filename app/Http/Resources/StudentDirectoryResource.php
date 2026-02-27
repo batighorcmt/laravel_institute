@@ -35,6 +35,14 @@ class StudentDirectoryResource extends JsonResource
             'religion' => $st?->religion,
             'phone' => $st?->guardian_phone,
             'photo_url' => $photoUrl,
+            'father_name' => $st?->father_name,
+            'father_name_bn' => $st?->father_name_bn,
+            'mother_name' => $st?->mother_name,
+            'mother_name_bn' => $st?->mother_name_bn,
+            'present_village' => $st?->present_village,
+            'present_post_office' => $st?->present_post_office,
+            'present_upazilla' => $st?->present_upazilla,
+            'present_district' => $st?->present_district,
         ];
     }
 }

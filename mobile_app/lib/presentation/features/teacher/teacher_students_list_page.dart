@@ -640,8 +640,8 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       'avatar_url',
     ]);
     final name = _combine(
-      _tc(_pick(d, const ['name', 'student_name', 'full_name'])),
-      _pick(d, const ['name_bn', 'student_name_bn', 'full_name_bn', 'bn_name']),
+      _tc(_pick(d, const ['name', 'student_name', 'full_name', 'studentName'])),
+      _pick(d, const ['name_bn', 'student_name_bn', 'full_name_bn', 'bn_name', 'studentNameBn']),
     );
     final cls = _pick(d, const ['class', 'class_name']);
     final section = _pick(d, const ['section', 'section_name']);
@@ -669,10 +669,10 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     final history = d['enrollment_history'] is List ? d['enrollment_history'] as List : [];
     final memberships = d['memberships'] is List ? d['memberships'] as List : [];
 
-    final gender = _tc(_pick(d, const ['gender', 'gender_name']));
-    final bloodGroup = _tc(_pick(d, const ['blood_group']));
-    final dob = _pick(d, const ['date_of_birth', 'dob']);
-    final religion = _tc(_pick(d, const ['religion', 'religion_name']));
+    final gender = _tc(_pick(d, const ['gender', 'gender_name', 'genderName']));
+    final bloodGroup = _tc(_pick(d, const ['blood_group', 'bloodGroup', 'blood']));
+    final dob = _pick(d, const ['date_of_birth', 'dob', 'birth_date', 'dateOfBirth']);
+    final religion = _tc(_pick(d, const ['religion', 'religion_name', 'religionName']));
 
     final phone = _pick(d, const [
       'phone',

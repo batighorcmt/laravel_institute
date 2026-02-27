@@ -23,7 +23,7 @@ class StudentProfileResource extends JsonResource
         }
 
         $en = $st?->currentEnrollment;
-
+        
         // Compose present address from parts if available
         $presentParts = array_filter([
             $st?->present_village,
@@ -46,7 +46,17 @@ class StudentProfileResource extends JsonResource
         $presentAddressBn = $st?->present_address_bn ?? null;
         $permanentAddressBn = $st?->permanent_address_bn ?? null;
 
-        return [
+        $base = $st?->attributesToArray() ?? [];
+        // Map common attribute names to what mobile app expects if they differ
+        $base['dob'] = $base['date_of_birth'] ?? null;
+        $base['student_code'] = $base['student_id'] ?? null;
+
+        return array_merge($base, [
+            'photo_url' => $photoUrl,
+            'present_address' => $presentAddress,
+            'present_address_bn' => $presentAddressBn,
+            'permanent_address' => $permanentAddress,
+            'permanent_address_bn' => $permanentAddressBn,
             'id' => $st?->id,
             'student_id' => $st?->student_id,
             'student_code' => $st?->student_id, 
@@ -106,11 +116,15 @@ class StudentProfileResource extends JsonResource
             // Raw DB columns for addressing
             'present_address' => $presentAddress,
             'present_address_bn' => $presentAddressBn,
+            'village' => $st?->present_village,
+            'gram' => $st?->present_village,
             'present_village' => $st?->present_village,
             'present_para_moholla' => $st?->present_para_moholla,
             'present_post_office' => $st?->present_post_office,
             'present_upazilla' => $st?->present_upazilla,
             'present_district' => $st?->present_district,
+            'thana' => $st?->present_upazilla,
+            'zilla' => $st?->present_district,
             'permanent_address' => $permanentAddress,
             'permanent_address_bn' => $permanentAddressBn,
             'permanent_village' => $st?->permanent_village,
@@ -205,6 +219,6 @@ class StudentProfileResource extends JsonResource
                             'time' => optional($eval?->evaluation_time)->toIso8601String(),
                         ];
                     }) : [],
-        ];
+        ]);
     }
 }
