@@ -159,9 +159,19 @@ class TeacherExamController extends Controller
                 'name' => $student->full_name,
                 'roll' => $alloc->student->roll_no ?? $student->currentEnrollment?->roll_no,
                 'class_name' => $student->currentEnrollment?->class?->name ?? 'N/A',
+                'photo_url' => $student->photo_url,
+                'gender' => $student->gender,
                 'status' => $attendances->has($student->id) ? $attendances->get($student->id)->status : null,
             ];
         })->filter()->values();
+
+        $genderStats = [
+            'male' => $students->where('gender', 'male')->count(),
+            'female' => $students->where('gender', 'female')->count(),
+            'other' => $students->whereNotIn('gender', ['male', 'female'])->count(),
+        ];
+
+        $classStats = $students->groupBy('class_name')->map(fn($group) => $group->count());
 
         return response()->json([
             'date' => $date,
@@ -170,12 +180,14 @@ class TeacherExamController extends Controller
                 'total' => $students->count(),
                 'present' => $students->where('status', 'present')->count(),
                 'absent' => $students->where('status', 'absent')->count(),
+                'gender' => $genderStats,
+                'classes' => $classStats,
             ]
         ]);
     }
 
     /**
-     * Submit room attendance.
+     * Submit room attendance for a single student.
      */
     public function submitRoomAttendance(Request $request)
     {
@@ -186,9 +198,8 @@ class TeacherExamController extends Controller
             'plan_id' => 'required|integer',
             'room_id' => 'required|integer',
             'date' => 'required|date',
-            'items' => 'required|array',
-            'items.*.student_id' => 'required|integer',
-            'items.*.status' => 'required|string|in:present,absent',
+            'student_id' => 'required|integer',
+            'status' => 'required|string|in:present,absent',
         ]);
 
         $planId = $request->plan_id;
@@ -207,22 +218,70 @@ class TeacherExamController extends Controller
             return response()->json(['message' => 'Unauthorized access'], 403);
         }
 
-        foreach ($request->items as $item) {
+        ExamRoomAttendance::updateOrCreate(
+            [
+                'school_id' => $schoolId,
+                'duty_date' => $date,
+                'plan_id' => $planId,
+                'room_id' => $roomId,
+                'student_id' => $request->student_id,
+            ],
+            ['status' => $request->status]
+        );
+
+        return response()->json(['message' => 'Attendance saved successfully']);
+    }
+
+    /**
+     * Bulk submit room attendance.
+     */
+    public function bulkSubmitRoomAttendance(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user);
+        
+        $request->validate([
+            'plan_id' => 'required|integer',
+            'room_id' => 'required|integer',
+            'date' => 'required|date',
+            'status' => 'required|string|in:present,absent',
+        ]);
+
+        $planId = $request->plan_id;
+        $roomId = $request->room_id;
+        $date = $request->date;
+
+        // Access check
+        $isAuthorized = $user->isExamController($schoolId) || $user->isPrincipal($schoolId) || $user->isSuperAdmin() ||
+            ExamRoomInvigilation::where('seat_plan_id', $planId)
+                ->where('seat_plan_room_id', $roomId)
+                ->where('teacher_id', $user->id)
+                ->where('duty_date', $date)
+                ->exists();
+
+        if (!$isAuthorized) {
+            return response()->json(['message' => 'Unauthorized access'], 403);
+        }
+
+        $studentIds = SeatPlanAllocation::where('seat_plan_id', $planId)
+            ->where('room_id', $roomId)
+            ->pluck('student_id');
+
+        foreach ($studentIds as $sid) {
             ExamRoomAttendance::updateOrCreate(
                 [
                     'school_id' => $schoolId,
                     'duty_date' => $date,
                     'plan_id' => $planId,
                     'room_id' => $roomId,
-                    'student_id' => $item['student_id'],
+                    'student_id' => $sid,
                 ],
-                ['status' => $item['status']]
+                ['status' => $request->status]
             );
         }
 
-        return response()->json(['message' => 'Attendance saved successfully']);
+        return response()->json(['message' => 'Bulk attendance saved successfully']);
     }
-
     /**
      * Mark Entry - Meta data (years, classes, exams, subjects)
      */

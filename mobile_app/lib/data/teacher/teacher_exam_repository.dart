@@ -120,7 +120,8 @@ class TeacherExamRepository {
     required int planId,
     required int roomId,
     required String date,
-    required List<Map<String, dynamic>> items,
+    required int studentId,
+    required String status,
   }) async {
     final resp = await _dio.post(
       'teacher/exams/submit-room-attendance',
@@ -128,7 +129,26 @@ class TeacherExamRepository {
         'plan_id': planId,
         'room_id': roomId,
         'date': date,
-        'items': items,
+        'student_id': studentId,
+        'status': status,
+      },
+    );
+    return resp.data;
+  }
+
+  Future<Map<String, dynamic>> bulkSubmitRoomAttendance({
+    required int planId,
+    required int roomId,
+    required String date,
+    required String status,
+  }) async {
+    final resp = await _dio.post(
+      'teacher/exams/bulk-submit-room-attendance',
+      data: {
+        'plan_id': planId,
+        'room_id': roomId,
+        'date': date,
+        'status': status,
       },
     );
     return resp.data;
