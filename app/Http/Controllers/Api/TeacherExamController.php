@@ -143,11 +143,8 @@ class TeacherExamController extends Controller
                 ->with(['student', 'room']);
 
             if (is_numeric($find)) {
-                $query->whereHas('student', function ($q) use ($find) {
-                    $q->where('student_id', 'like', '%' . $find . '%')
-                      ->orWhereHas('currentEnrollment', function($qc) use ($find) {
-                          $qc->where('roll_no', 'like', '%' . $find . '%');
-                      });
+                $query->whereHas('student.currentEnrollment', function ($q) use ($find) {
+                    $q->where('roll_no', 'like', '%' . $find . '%');
                 });
             } else {
                 $query->whereHas('student', function ($q) use ($find) {

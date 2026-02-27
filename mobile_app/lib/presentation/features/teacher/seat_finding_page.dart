@@ -116,6 +116,7 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       child: Column(
         children: [
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
@@ -152,7 +153,7 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
                   child: TextField(
                     controller: _searchController,
                     decoration: const InputDecoration(
-                      hintText: 'ID, রোল বা নাম দিয়ে সার্চ করুন',
+                      hintText: 'রোল বা নাম দিয়ে সার্চ করুন',
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                       prefixIcon: Icon(Icons.search),
@@ -194,7 +195,7 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'সঠিক নাম, আইডি বা রোল দিয়ে সার্চ করুন',
+            'সঠিক নাম বা রোল দিয়ে সার্চ করুন',
             style: TextStyle(color: Colors.grey),
           ),
         ],
