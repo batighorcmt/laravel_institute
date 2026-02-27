@@ -21,6 +21,8 @@ class HomeworkResource extends JsonResource
             'description' => $this->description,
             'attachment' => $this->attachment,
             'subject_name' => $this->subject->name ?? 'N/A',
+            'class_name' => $this->schoolClass->name ?? 'N/A',
+            'section_name' => $this->section->name ?? 'N/A',
             'teacher_name' => $this->teacher->full_name ?? $this->teacher->name ?? 'N/A',
         ];
     }

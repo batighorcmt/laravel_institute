@@ -4,7 +4,8 @@ import '../../../core/network/dio_client.dart';
 import 'package:file_picker/file_picker.dart';
 
 class TeacherHomeworkCreatePage extends StatefulWidget {
-  const TeacherHomeworkCreatePage({super.key});
+  final Map<String, dynamic>? homework;
+  const TeacherHomeworkCreatePage({super.key, this.homework});
   @override
   State<TeacherHomeworkCreatePage> createState() =>
       _TeacherHomeworkCreatePageState();
@@ -33,6 +34,15 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
   void initState() {
     super.initState();
     _dio = DioClient().dio;
+    if (widget.homework != null) {
+      final hw = widget.homework!;
+      _titleCtrl.text = (hw['title'] ?? '').toString();
+      _descCtrl.text = (hw['description'] ?? '').toString();
+      _selectedClassId = (hw['class_id'] as num?)?.toInt();
+      _selectedSectionId = (hw['section_id'] as num?)?.toInt();
+      _selectedSubjectId = (hw['subject_id'] as num?)?.toInt();
+      _submissionDate = hw['submission_date']?.toString();
+    }
     _loadTodayRoutine();
   }
 
@@ -83,7 +93,13 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
         }
       }
       _classes = grouped.values.toList();
-      if (_classes.isNotEmpty) {
+      
+      // If editing, make sure current class/section/subject are in the lists if they weren't in today's routine
+      if (widget.homework != null && _classes.isNotEmpty) {
+         // (Selection logic continues below)
+      }
+
+      if (_classes.isNotEmpty && widget.homework == null) {
         _selectedClassId = (_classes.first['class_id'] as int);
         _sections = (_classes.first['sections'] as List)
             .cast<Map<String, dynamic>>();
@@ -94,7 +110,24 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
           if (_subjects.isNotEmpty)
             _selectedSubjectId = (_subjects.first['id'] as int);
         }
+      } else if (widget.homework != null) {
+        // Sync lists based on selected IDs from initialData
+        final cls = _classes.firstWhere(
+          (e) => (e['class_id'] as num?)?.toInt() == _selectedClassId,
+          orElse: () => {},
+        );
+        if (cls.isNotEmpty) {
+          _sections = (cls['sections'] as List).cast<Map<String, dynamic>>();
+          final sec = _sections.firstWhere(
+            (e) => (e['id'] as num?)?.toInt() == _selectedSectionId,
+            orElse: () => {},
+          );
+          if (sec.isNotEmpty) {
+            _subjects = (sec['subjects'] as List).cast<Map<String, dynamic>>();
+          }
+        }
       }
+
       if (mounted) setState(() {});
     } catch (_) {}
   }
@@ -168,11 +201,25 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
             filename: _attachmentPath!.split(RegExp(r'[\\/]')).last,
           ),
       });
-      final r = await _dio.post('teacher/homework', data: form);
+      
+      final Response r;
+      if (widget.homework != null) {
+        // Update
+        // Note: For file uploads with PUT/PATCH, some servers prefer POST with _method spoofing or specific headers.
+        // But since we implemented Route::match(['put', 'patch']), we try PUT.
+        // Actually, many PHP servers require POST for files. We can use _method: 'PUT'
+        if (_attachmentPath != null) form.fields.add(MapEntry('_method', 'PUT'));
+        final url = 'teacher/homework/${widget.homework!['id']}';
+        r = await _dio.post(url, data: form); 
+      } else {
+        // Create
+        r = await _dio.post('teacher/homework', data: form);
+      }
+
       if (!mounted) return;
       final msg = (r.data is Map && r.data['message'] is String)
           ? r.data['message'] as String
-          : 'হোমওয়ার্ক তৈরি সম্পন্ন';
+          : 'হোমওয়ার্ক সম্পন্ন';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       Navigator.of(context).pop(true);
     } catch (e) {
@@ -191,7 +238,9 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Homework')),
+      appBar: AppBar(
+        title: Text(widget.homework == null ? 'Create Homework' : 'Edit Homework'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(

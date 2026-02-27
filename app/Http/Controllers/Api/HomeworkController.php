@@ -103,4 +103,63 @@ class HomeworkController extends Controller
         return (new HomeworkResource($homework))
             ->additional(['message' => 'হোমওয়ার্ক তৈরি সম্পন্ন']);
     }
+
+    public function update(Request $request, Homework $homework)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id');
+        if (! $schoolId) {
+            $schoolId = $user->firstTeacherSchoolId();
+        }
+
+        // Verify ownership and role
+        $teacher = \App\Models\Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
+        if (!$teacher || ($homework->teacher_id !== $teacher->id && !$user->isPrincipal($schoolId))) {
+             return response()->json(['message' => 'আপনি শুধু আপনার তৈরি করা হোমওয়ার্ক পরিবর্তন করতে পারবেন'], 403);
+        }
+
+        $validated = $request->validate([
+            'class_id' => ['sometimes','required','integer'],
+            'section_id' => ['nullable','integer'],
+            'subject_id' => ['sometimes','required','integer'],
+            'homework_date' => ['nullable','date'],
+            'submission_date' => ['nullable','date'],
+            'title' => ['sometimes','required','string','max:150'],
+            'description' => ['nullable','string'],
+            'attachment' => ['nullable','file','max:4096'],
+        ]);
+
+        if ($request->hasFile('attachment')) {
+            // Delete old attachment if exists? 
+            // Storage::disk('public')->delete($homework->attachment);
+            $validated['attachment'] = $request->file('attachment')->store('homework', 'public');
+        }
+
+        $homework->update($validated);
+
+        return (new HomeworkResource($homework))
+            ->additional(['message' => 'হোমওয়ার্ক আপডেট সম্পন্ন']);
+    }
+
+    public function destroy(Request $request, Homework $homework)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id');
+        if (! $schoolId) {
+            $schoolId = $user->firstTeacherSchoolId();
+        }
+
+        $teacher = \App\Models\Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
+        if (!$teacher || ($homework->teacher_id !== $teacher->id && !$user->isPrincipal($schoolId))) {
+             return response()->json(['message' => 'আপনি শুধু আপনার তৈরি করা হোমওয়ার্ক ডিলিট করতে পারবেন'], 403);
+        }
+
+        // Delete attachment from storage
+        if ($homework->attachment) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($homework->attachment);
+        }
+
+        $homework->delete();
+        return response()->json(['message' => 'হোমওয়ার্ক ডিলিট সম্পন্ন']);
+    }
 }
