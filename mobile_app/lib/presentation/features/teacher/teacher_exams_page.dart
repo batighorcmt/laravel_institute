@@ -4,6 +4,7 @@ import '../../../widgets/animated_tile.dart';
 import '../../../widgets/app_snack.dart';
 import '../../../data/teacher/teacher_exam_repository.dart';
 import 'mark_entry_selection_page.dart';
+import 'exam_duty_page.dart';
 
 class TeacherExamsPage extends ConsumerStatefulWidget {
   const TeacherExamsPage({super.key});
@@ -59,7 +60,9 @@ class _TeacherExamsPageState extends ConsumerState<TeacherExamsPage> {
                   icon: Icons.assignment_ind_outlined,
                   background: const Color(0xFFF0F9FF),
                   onTap: () {
-                    showAppSnack(context, message: 'Exam Duty coming soon');
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ExamDutyPage()),
+                    );
                   },
                 ),
                 AnimatedTile(

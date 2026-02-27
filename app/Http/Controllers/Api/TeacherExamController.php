@@ -55,7 +55,10 @@ class TeacherExamController extends Controller
             'duty_date' => $d->duty_date->toDateString(),
             'room_no' => $d->room?->room_no,
             'room_title' => $d->room?->title,
+            'building' => $d->room?->building,
+            'floor' => $d->room?->floor,
             'seat_plan' => $d->seatPlan?->name,
+            'exams' => $d->seatPlan?->exams->pluck('name')->toArray() ?? [],
         ]));
     }
 
@@ -250,8 +253,8 @@ class TeacherExamController extends Controller
             'read_only' => $readOnly,
             'message' => $message,
             'decimal_position' => $decimal,
-            'print_blank_url' => URL::signedRoute('print.marks.portable', ['exam' => $exam->id, 'examSubject' => $examSubject->id, 'type' => 'print-blank']),
-            'print_filled_url' => URL::signedRoute('print.marks.portable', ['exam' => $exam->id, 'examSubject' => $examSubject->id, 'type' => 'print-filled']),
+            'print_blank_url' => URL::signedRoute('print.marks.portable', ['exam' => $exam->id, 'examSubject' => $examSubject->id, 'type' => 'print-blank', 'lang' => 'en', 'print' => 1]),
+            'print_filled_url' => URL::signedRoute('print.marks.portable', ['exam' => $exam->id, 'examSubject' => $examSubject->id, 'type' => 'print-filled', 'lang' => 'en', 'print' => 1]),
         ]);
     }
 

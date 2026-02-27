@@ -149,6 +149,15 @@
     @endphp
     <!-- Developer credit removed as requested -->
     </div>
+    @if(request('print') == 1)
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        };
+    </script>
+    @endif
     @stack('print_scripts')
 </body>
 </html>
