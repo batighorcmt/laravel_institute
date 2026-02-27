@@ -128,17 +128,22 @@ class TeacherExamController extends Controller
         $schoolId = $this->resolveSchoolId($request, $request->user());
         $request->validate([
             'academic_year_id' => 'required|integer',
+            'class_id' => 'required|integer',
             'status' => 'nullable|string|in:active,completed,draft',
         ]);
 
         $query = Exam::where('school_id', $schoolId)
-            ->where('academic_year_id', $request->academic_year_id);
+            ->where('academic_year_id', $request->academic_year_id)
+            ->where('class_id', $request->class_id);
         
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        $exams = $query->orderBy('id', 'desc')->get(['id', 'name', 'status']);
+        $exams = $query->orderByRaw("CASE WHEN status = 'active' THEN 0 ELSE 1 END")
+            ->orderBy('id', 'asc')
+            ->get(['id', 'name', 'status']);
+            
         return response()->json($exams);
     }
 
@@ -176,9 +181,13 @@ class TeacherExamController extends Controller
             'class_id' => 'required|integer',
         ]);
 
+        $user = $request->user();
         $exam = Exam::findOrFail($request->exam_id);
         $examSubject = ExamSubject::where('exam_id', $request->exam_id)
             ->where('subject_id', $request->subject_id)
+            ->when(!($user->isPrincipal($schoolId) || $user->isSuperAdmin() || $user->isExamController($schoolId)), function($q) use ($user) {
+                $q->where('teacher_id', $user->id);
+            })
             ->firstOrFail();
 
         $enrollments = StudentEnrollment::where('school_id', $schoolId)
@@ -209,10 +218,21 @@ class TeacherExamController extends Controller
                     'mcq' => $m->mcq_marks,
                     'practical' => $m->practical_marks,
                     'total' => $m->total_marks,
+                    'letter_grade' => $m->letter_grade,
                     'is_absent' => (bool)$m->is_absent,
                 ] : null,
             ];
         });
+
+        $isDeadlinePassed = $examSubject->mark_entry_deadline && now()->greaterThan($examSubject->mark_entry_deadline);
+        $readOnly = ($exam->status !== 'active') || ($isDeadlinePassed && !($user->isPrincipal($schoolId) || $user->isSuperAdmin()));
+        
+        $message = null;
+        if ($exam->status === 'completed') {
+            $message = 'এই পরীক্ষাটি সম্পন্ন হয়েছে। নম্বর শুধু দেখা যাবে।';
+        } elseif ($isDeadlinePassed) {
+            $message = 'নম্বর এন্ট্রির সময়সীমা শেষ হয়েছে।';
+        }
 
         return response()->json([
             'exam_subject' => [
@@ -221,8 +241,11 @@ class TeacherExamController extends Controller
                 'mcq_full' => $examSubject->mcq_full_mark,
                 'practical_full' => $examSubject->practical_full_mark,
                 'pass_type' => $examSubject->pass_type,
+                'deadline' => $examSubject->mark_entry_deadline?->toDateTimeString(),
             ],
             'students' => $data,
+            'read_only' => $readOnly,
+            'message' => $message,
         ]);
     }
 
@@ -251,6 +274,11 @@ class TeacherExamController extends Controller
 
         if ($exam->status !== 'active') {
              return response()->json(['message' => 'Exam is not active'], 422);
+        }
+
+        $isDeadlinePassed = $examSubject->mark_entry_deadline && now()->greaterThan($examSubject->mark_entry_deadline);
+        if ($isDeadlinePassed && !($user->isPrincipal($schoolId) || $user->isSuperAdmin())) {
+            return response()->json(['message' => 'নম্বর এন্ট্রির সময়সীমা শেষ হয়েছে।'], 422);
         }
 
         $isAbsent = $request->boolean('is_absent');

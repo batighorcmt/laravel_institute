@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../widgets/animated_tile.dart';
 import '../../../widgets/app_snack.dart';
 import '../../../data/teacher/teacher_exam_repository.dart';
+import 'mark_entry_selection_page.dart';
 
 class TeacherExamsPage extends ConsumerStatefulWidget {
   const TeacherExamsPage({super.key});
@@ -74,7 +75,9 @@ class _TeacherExamsPageState extends ConsumerState<TeacherExamsPage> {
                   icon: Icons.edit_note_outlined,
                   background: const Color(0xFFF5F3FF),
                   onTap: () {
-                    showAppSnack(context, message: 'Mark Entry coming soon');
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const MarkEntrySelectionPage()),
+                    );
                   },
                 ),
                 if (_isExamController) ...[

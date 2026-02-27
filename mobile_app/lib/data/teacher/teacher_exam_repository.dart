@@ -27,11 +27,12 @@ class TeacherExamRepository {
     return resp.data;
   }
 
-  Future<List<dynamic>> getExams(int academicYearId, {String? status}) async {
+  Future<List<dynamic>> getExams(int academicYearId, int classId, {String? status}) async {
     final resp = await _dio.get(
       'teacher/exams/mark-entry/exams',
       queryParameters: {
         'academic_year_id': academicYearId,
+        'class_id': classId,
         if (status != null) 'status': status,
       },
     );
@@ -62,7 +63,7 @@ class TeacherExamRepository {
     return resp.data;
   }
 
-  Future<bool> saveMark({
+  Future<Map<String, dynamic>?> saveMarkResult({
     required int examId,
     required int examSubjectId,
     required int studentId,
@@ -85,7 +86,7 @@ class TeacherExamRepository {
         'remarks': remarks,
       },
     );
-    return resp.data['success'] == true;
+    return resp.data;
   }
 
   Future<Map<String, dynamic>> getAttendanceReport(int? planId, String? date) async {
