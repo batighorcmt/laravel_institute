@@ -62,6 +62,19 @@ Route::prefix('v1')->group(function () {
     Route::get('teacher/lesson-evaluations/today-routine', [\App\Http\Controllers\Api\LessonEvaluationController::class, 'todayRoutine'])->middleware('role:teacher');
     Route::get('teacher/lesson-evaluations/form', [\App\Http\Controllers\Api\LessonEvaluationController::class, 'form'])->middleware('role:teacher');
 
+    // Teacher → Exams
+    Route::prefix('teacher/exams')->middleware('role:teacher')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\TeacherExamController::class, 'index']);
+        Route::get('/todays-duty', [\App\Http\Controllers\Api\TeacherExamController::class, 'todaysDuty']);
+        Route::get('/find-seat', [\App\Http\Controllers\Api\TeacherExamController::class, 'findSeat']);
+        Route::get('/mark-entry/meta', [\App\Http\Controllers\Api\TeacherExamController::class, 'markEntryMeta']);
+        Route::get('/mark-entry/exams', [\App\Http\Controllers\Api\TeacherExamController::class, 'getExams']);
+        Route::get('/mark-entry/subjects', [\App\Http\Controllers\Api\TeacherExamController::class, 'getSubjects']);
+        Route::get('/mark-entry/students', [\App\Http\Controllers\Api\TeacherExamController::class, 'getStudents']);
+        Route::post('/mark-entry/save-mark', [\App\Http\Controllers\Api\TeacherExamController::class, 'saveMark']);
+        Route::get('/attendance-report', [\App\Http\Controllers\Api\TeacherExamController::class, 'attendanceReport']);
+    });
+
     // Parent endpoints
     Route::get('parent/children', [\App\Http\Controllers\Api\ParentController::class, 'children'])->middleware('role:parent');
     Route::get('parent/homework', [\App\Http\Controllers\Api\ParentController::class, 'homework'])->middleware('role:parent');

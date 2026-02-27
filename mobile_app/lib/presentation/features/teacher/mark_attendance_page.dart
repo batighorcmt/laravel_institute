@@ -29,6 +29,8 @@ class _ClassSectionMarkAttendancePageState
   bool _isUpdate = false;
   bool _submitting = false;
 
+  AttendanceStatus? _filter;
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +42,7 @@ class _ClassSectionMarkAttendancePageState
     setState(() {
       _loading = true;
       _error = null;
+      _filter = null; // Reset filter on date change
     });
     try {
       final r = await _dio.get(
@@ -254,6 +257,10 @@ class _ClassSectionMarkAttendancePageState
 
   @override
   Widget build(BuildContext context) {
+    final displayedStudents = _filter == null
+        ? _students
+        : _students.where((s) => s.status == _filter).toList();
+
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: _loading
@@ -264,6 +271,9 @@ class _ClassSectionMarkAttendancePageState
               children: [
                 _HeaderBar(
                   date: _date,
+                  isToday: _isToday,
+                  currentFilter: _filter,
+                  onFilterChanged: (f) => setState(() => _filter = f),
                   onPickDate: _pickDate,
                   onSelectAllPresent: _isToday
                       ? () => _selectAll(AttendanceStatus.present)
@@ -285,40 +295,47 @@ class _ClassSectionMarkAttendancePageState
                 ),
                 const Divider(height: 1),
                 Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(12),
-                    separatorBuilder: (_, i) => const SizedBox(height: 8),
-                    itemCount: _students.length,
-                    itemBuilder: (ctx, i) {
-                      final s = _students[i];
-                      return _StudentRowWidget(
-                        row: s,
-                        enabled: _isToday,
-                        onChanged: (st) {
-                          if (!_isToday) return;
-                          setState(() {
-                            _students[i] = s.copyWith(status: st);
-                          });
-                        },
-                      );
-                    },
-                  ),
+                  child: displayedStudents.isEmpty
+                      ? const Center(child: Text('কোনো রেকর্ড পাওয়া যায়নি'))
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(12),
+                          separatorBuilder: (_, i) => const SizedBox(height: 8),
+                          itemCount: displayedStudents.length,
+                          itemBuilder: (ctx, i) {
+                            final s = displayedStudents[i];
+                            return _StudentRowWidget(
+                              row: s,
+                              enabled: _isToday,
+                              onChanged: (st) {
+                                if (!_isToday) return;
+                                // Find original index if we are filtering
+                                final originalIndex = _students.indexWhere((src) => src.id == s.id);
+                                if (originalIndex != -1) {
+                                  setState(() {
+                                    _students[originalIndex] = s.copyWith(status: st);
+                                  });
+                                }
+                              },
+                            );
+                          },
+                        ),
                 ),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: (_isToday && _isComplete && !_submitting)
-                            ? _submit
-                            : null,
-                        icon: const Icon(Icons.save),
-                        label: Text(_isUpdate ? 'আপডেট করুন' : 'সাবমিট করুন'),
+                if (_isToday)
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: (_isComplete && !_submitting)
+                              ? _submit
+                              : null,
+                          icon: const Icon(Icons.save),
+                          label: const Text('সাবমিট করুন'),
+                        ),
                       ),
                     ),
                   ),
-                ),
                 if (!_isToday)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -337,17 +354,25 @@ class _ClassSectionMarkAttendancePageState
 
 class _HeaderBar extends StatelessWidget {
   final String date;
+  final bool isToday;
+  final AttendanceStatus? currentFilter;
+  final ValueChanged<AttendanceStatus?> onFilterChanged;
   final VoidCallback onPickDate;
   final VoidCallback? onSelectAllPresent;
   final VoidCallback? onSelectAllAbsent;
   final VoidCallback? onSelectAllLate;
+
   const _HeaderBar({
     required this.date,
+    required this.isToday,
+    required this.currentFilter,
+    required this.onFilterChanged,
     required this.onPickDate,
     required this.onSelectAllPresent,
     required this.onSelectAllAbsent,
     required this.onSelectAllLate,
   });
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -375,31 +400,99 @@ class _HeaderBar extends StatelessWidget {
             height: 40,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              children: [
-                _ActionChip(
-                  icon: Icons.check_circle,
-                  color: Colors.green,
-                  label: 'সব উপস্থিত',
-                  onTap: onSelectAllPresent ?? () {},
-                ),
-                const SizedBox(width: 8),
-                _ActionChip(
-                  icon: Icons.cancel,
-                  color: Colors.red,
-                  label: 'সব অনুপস্থিত',
-                  onTap: onSelectAllAbsent ?? () {},
-                ),
-                const SizedBox(width: 8),
-                _ActionChip(
-                  icon: Icons.access_time_filled,
-                  color: Colors.orange,
-                  label: 'সব দেরি',
-                  onTap: onSelectAllLate ?? () {},
-                ),
-              ],
+              children: isToday
+                  ? [
+                      _ActionChip(
+                        icon: Icons.check_circle,
+                        color: Colors.green,
+                        label: 'সব উপস্থিত',
+                        onTap: onSelectAllPresent ?? () {},
+                      ),
+                      const SizedBox(width: 8),
+                      _ActionChip(
+                        icon: Icons.cancel,
+                        color: Colors.red,
+                        label: 'সব অনুপস্থিত',
+                        onTap: onSelectAllAbsent ?? () {},
+                      ),
+                      const SizedBox(width: 8),
+                      _ActionChip(
+                        icon: Icons.access_time_filled,
+                        color: Colors.orange,
+                        label: 'সব দেরি',
+                        onTap: onSelectAllLate ?? () {},
+                      ),
+                    ]
+                  : [
+                      _FilterChip(
+                        label: 'সব',
+                        isSelected: currentFilter == null,
+                        onTap: () => onFilterChanged(null),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'উপস্থিত',
+                        color: Colors.green,
+                        isSelected: currentFilter == AttendanceStatus.present,
+                        onTap: () => onFilterChanged(AttendanceStatus.present),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'অনুপস্থিত',
+                        color: Colors.red,
+                        isSelected: currentFilter == AttendanceStatus.absent,
+                        onTap: () => onFilterChanged(AttendanceStatus.absent),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'দেরি',
+                        color: Colors.orange,
+                        isSelected: currentFilter == AttendanceStatus.late,
+                        onTap: () => onFilterChanged(AttendanceStatus.late),
+                      ),
+                    ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final Color? color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = color ?? Theme.of(context).colorScheme.primary;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? effectiveColor : effectiveColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? effectiveColor : effectiveColor.withOpacity(0.5),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : effectiveColor,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
       ),
     );
   }

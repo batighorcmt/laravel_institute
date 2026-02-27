@@ -1,0 +1,101 @@
+import 'package:dio/dio.dart';
+import '../../core/network/dio_client.dart';
+
+class TeacherExamRepository {
+  final Dio _dio = DioClient().dio;
+
+  Future<Map<String, dynamic>> getExamStatus() async {
+    final resp = await _dio.get('teacher/exams');
+    return resp.data;
+  }
+
+  Future<List<dynamic>> getTodaysDuty() async {
+    final resp = await _dio.get('teacher/exams/todays-duty');
+    return resp.data;
+  }
+
+  Future<Map<String, dynamic>> findSeat(String find, int? planId) async {
+    final resp = await _dio.get(
+      'teacher/exams/find-seat',
+      queryParameters: {'find': find, 'plan_id': planId},
+    );
+    return resp.data;
+  }
+
+  Future<Map<String, dynamic>> getMarkEntryMeta() async {
+    final resp = await _dio.get('teacher/exams/mark-entry/meta');
+    return resp.data;
+  }
+
+  Future<List<dynamic>> getExams(int academicYearId, {String? status}) async {
+    final resp = await _dio.get(
+      'teacher/exams/mark-entry/exams',
+      queryParameters: {
+        'academic_year_id': academicYearId,
+        if (status != null) 'status': status,
+      },
+    );
+    return resp.data;
+  }
+
+  Future<List<dynamic>> getSubjects(int examId) async {
+    final resp = await _dio.get(
+      'teacher/exams/mark-entry/subjects',
+      queryParameters: {'exam_id': examId},
+    );
+    return resp.data;
+  }
+
+  Future<Map<String, dynamic>> getStudentsForMarkEntry({
+    required int examId,
+    required int subjectId,
+    required int classId,
+  }) async {
+    final resp = await _dio.get(
+      'teacher/exams/mark-entry/students',
+      queryParameters: {
+        'exam_id': examId,
+        'subject_id': subjectId,
+        'class_id': classId,
+      },
+    );
+    return resp.data;
+  }
+
+  Future<bool> saveMark({
+    required int examId,
+    required int examSubjectId,
+    required int studentId,
+    double? creative,
+    double? mcq,
+    double? practical,
+    bool isAbsent = false,
+    String? remarks,
+  }) async {
+    final resp = await _dio.post(
+      'teacher/exams/mark-entry/save-mark',
+      data: {
+        'exam_id': examId,
+        'exam_subject_id': examSubjectId,
+        'student_id': studentId,
+        'creative_marks': creative,
+        'mcq_marks': mcq,
+        'practical_marks': practical,
+        'is_absent': isAbsent,
+        'remarks': remarks,
+      },
+    );
+    return resp.data['success'] == true;
+  }
+
+  Future<Map<String, dynamic>> getAttendanceReport(int? planId, String? date) async {
+    final resp = await _dio.get(
+      'teacher/exams/attendance-report',
+      queryParameters: {
+        if (planId != null) 'plan_id': planId,
+        if (date != null) 'date': date,
+      },
+    );
+    return resp.data;
+  }
+}

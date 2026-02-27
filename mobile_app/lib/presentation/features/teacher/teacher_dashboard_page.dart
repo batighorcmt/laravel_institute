@@ -8,6 +8,7 @@ import 'homework_list_page.dart';
 import 'teacher_leave_list_page.dart';
 import 'teacher_directory_page.dart';
 import 'teacher_students_list_page.dart';
+import 'teacher_exams_page.dart';
 import '../../state/auth_state.dart';
 import '../../../domain/auth/user_profile.dart';
 
@@ -93,6 +94,11 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
       case 'homework':
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const TeacherHomeworkListPage()),
+        );
+        break;
+      case 'exams':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const TeacherExamsPage()),
         );
         break;
       case 'manage_leave':
@@ -226,6 +232,12 @@ class _OperationsGrid extends StatelessWidget {
         Color(0xFFF0FDF4),
       ),
       const _OpItem(
+        'exams',
+        'Exams',
+        Icons.description_outlined,
+        Color(0xFFEFF6FF),
+      ),
+      const _OpItem(
         'manage_leave',
         'Manage Leave',
         Icons.event_busy_outlined,
@@ -247,8 +259,7 @@ class _OperationsGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final proposed = (width / 140).floor();
-        final cols = proposed.clamp(2, 4);
+        final cols = 3;
         return GridView.count(
           crossAxisCount: cols,
           shrinkWrap: true,
@@ -262,6 +273,7 @@ class _OperationsGrid extends StatelessWidget {
                 title: item.title,
                 icon: item.icon,
                 background: item.background,
+                titleFontSize: 14,
                 onTap: () => onTap(item.key),
               ),
           ],
