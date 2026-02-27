@@ -43,6 +43,22 @@ class StudentDirectoryResource extends JsonResource
             'present_post_office' => $st?->present_post_office,
             'present_upazilla' => $st?->present_upazilla,
             'present_district' => $st?->present_district,
+            'permanent_village' => $st?->permanent_village,
+            'permanent_para_moholla' => $st?->permanent_para_moholla,
+            'permanent_post_office' => $st?->permanent_post_office,
+            'permanent_upazilla' => $st?->permanent_upazilla,
+            'permanent_district' => $st?->permanent_district,
+            'previous_school' => $st?->previous_school,
+            'pass_year' => $st?->pass_year,
+            'previous_result' => $st?->previous_result,
+            'previous_remarks' => $st?->previous_remarks,
+            'admission_date' => optional($st?->admission_date)->toDateString(),
+            'status' => $st?->status,
+            'school_name' => $st?->school?->name,
+            'school_name_bn' => $st?->school?->name_bn,
+            'optional_subject' => $st?->optionalSubject?->name,
+            'academic_year' => $en->academicYear?->name,
+            'year' => $en->academicYear?->name,
         ];
     }
 }

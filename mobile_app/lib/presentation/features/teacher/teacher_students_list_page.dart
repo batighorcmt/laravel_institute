@@ -1109,27 +1109,27 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       _infoRow(
                         icon: Icons.location_city,
                         label: 'গ্রাম',
-                        value: _pick(d, const ['permanent_village']),
+                        value: _pick(d, const ['permanent_village', 'perm_village', 'permanent_gram', 'permanent_gram_bn', 'perm_gram']),
                       ),
                       _infoRow(
                         icon: Icons.home_work,
                         label: 'পাড়া/মহল্লা',
-                        value: _pick(d, const ['permanent_para_moholla']),
+                        value: _pick(d, const ['permanent_para_moholla', 'perm_para_moholla', 'perm_para', 'perm_moholla', 'permanent_para']),
                       ),
                       _infoRow(
                         icon: Icons.local_post_office,
                         label: 'ডাকঘর',
-                        value: _pick(d, const ['permanent_post_office']),
+                        value: _pick(d, const ['permanent_post_office', 'perm_post_office', 'perm_po', 'perm_post', 'permanent_po']),
                       ),
                       _infoRow(
                         icon: Icons.map,
                         label: 'উপজেলা',
-                        value: _pick(d, const ['permanent_upazilla']),
+                        value: _pick(d, const ['permanent_upazilla', 'perm_upazilla', 'perm_upazila', 'permanent_upazila', 'perm_thana', 'permanent_thana']),
                       ),
                       _infoRow(
                         icon: Icons.location_on,
                         label: 'জেলা',
-                        value: _pick(d, const ['permanent_district']),
+                        value: _pick(d, const ['permanent_district', 'perm_district', 'perm_zilla', 'perm_zila', 'permanent_zilla', 'permanent_zila']),
                       ),
                     ],
                   ),
@@ -1146,7 +1146,7 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       _infoRow(
                         icon: Icons.school,
                         label: 'Previous School',
-                        value: _pick(d, const ['previous_school']),
+                        value: _pick(d, const ['previous_school', 'last_school', 'prev_school', 'previousSchool', 'lastSchool']),
                       ),
                       Row(
                         children: [
@@ -1154,14 +1154,14 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                             child: _infoRow(
                               icon: Icons.history_edu,
                               label: 'Pass Year',
-                              value: _pick(d, const ['pass_year']),
+                              value: _pick(d, const ['pass_year', 'passing_year', 'passYear', 'passingYear']),
                             ),
                           ),
                           Expanded(
                             child: _infoRow(
                               icon: Icons.assignment_turned_in,
                               label: 'Result',
-                              value: _pick(d, const ['previous_result']),
+                              value: _pick(d, const ['previous_result', 'last_result', 'previousResult', 'result', 'grade']),
                             ),
                           ),
                         ],
@@ -1169,22 +1169,22 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       _infoRow(
                         icon: Icons.notes,
                         label: 'Previous Remarks',
-                        value: _pick(d, const ['previous_remarks']),
+                        value: _pick(d, const ['previous_remarks', 'remarks', 'achievement', 'previousRemarks', 'notes']),
                       ),
                       _infoRow(
                         icon: Icons.date_range,
                         label: 'Admission Date',
-                        value: _pick(d, const ['admission_date']),
+                        value: _pick(d, const ['admission_date', 'admissionDate', 'admit_date', 'date_admitted']),
                       ),
                       _infoRow(
                         icon: Icons.verified_user,
                         label: 'Status',
-                        value: _tc(_pick(d, const ['status', 'student_status'])),
+                        value: _tc(_pick(d, const ['status', 'student_status', 'active_status', 'studentStatus', 'enrollment_status'])),
                       ),
                       _infoRow(
                         icon: Icons.account_balance,
                         label: 'School',
-                        value: schoolName,
+                        value: schoolName.isNotEmpty ? schoolName : _pick(d, const ['school_name', 'schoolName', 'institute_name']),
                       ),
                       if (optionalSubject.isNotEmpty)
                         _infoRow(
