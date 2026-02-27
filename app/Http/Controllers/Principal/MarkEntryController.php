@@ -11,6 +11,8 @@ use App\Models\Student;
 use App\Models\StudentEnrollment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
+use App\Models\Setting;
 
 class MarkEntryController extends Controller
 {
@@ -234,6 +236,22 @@ class MarkEntryController extends Controller
             ->keyBy('student_id');
 
         return view('principal.marks.print-filled', compact('school', 'exam', 'examSubject', 'students', 'marks'));
+    }
+
+    /**
+     * Portable print method for mobile apps (Internal signatures)
+     */
+    public function printPortable(Request $request, Exam $exam, ExamSubject $examSubject, $type)
+    {
+        $school = School::findOrFail($exam->school_id);
+        
+        if ($type === 'print-blank') {
+            return $this->printBlank($school, $exam, $examSubject);
+        } elseif ($type === 'print-filled') {
+            return $this->printFilled($school, $exam, $examSubject);
+        }
+        
+        abort(404);
     }
 
     // Calculate results for all students

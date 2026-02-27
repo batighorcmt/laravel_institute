@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/teacher/teacher_exam_repository.dart';
 import '../../../widgets/app_snack.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TeacherMarkEntryDetailPage extends ConsumerStatefulWidget {
   final int examId;
@@ -31,6 +32,8 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
   bool _readOnly = false;
   String? _message;
   int _decimalPosition = 2;
+  String? _printBlankUrl;
+  String? _printFilledUrl;
 
   @override
   void initState() {
@@ -53,6 +56,8 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
           _readOnly = data['read_only'] ?? false;
           _message = data['message'];
           _decimalPosition = data['decimal_position'] ?? 0;
+          _printBlankUrl = data['print_blank_url'];
+          _printFilledUrl = data['print_filled_url'];
           _isLoading = false;
         });
       }
@@ -83,9 +88,40 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
                       textAlign: TextAlign.center,
                     ),
                   ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _openPrintLink('print-blank'),
+                          icon: const Icon(Icons.print_outlined),
+                          label: const Text('ফাঁকা শিট'),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.blue),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _openPrintLink('print-filled'),
+                          icon: const Icon(Icons.print),
+                          label: const Text('পূরণকৃত শিট'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 Expanded(
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                     itemCount: _students.length,
                     itemBuilder: (context, index) {
                       final student = _students[index];
@@ -103,6 +139,24 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
               ],
             ),
     );
+  }
+
+  void _openPrintLink(String type) {
+    final url = type == 'print-blank' ? _printBlankUrl : _printFilledUrl;
+    if (url != null) {
+      _launchInBrowser(url);
+    } else {
+      showAppSnack(context, message: 'লিঙ্ক পাওয়া যায়নি');
+    }
+  }
+
+  Future<void> _launchInBrowser(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      showAppSnack(context, message: 'লিঙ্কটি ওপেন করা সম্ভব হচ্ছে না');
+    }
   }
 }
 
@@ -175,8 +229,46 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
 
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 800), () {
+      final cr = double.tryParse(_creativeController.text) ?? 0;
+      final mq = double.tryParse(_mcqController.text) ?? 0;
+      final pr = double.tryParse(_practicalController.text) ?? 0;
+
+      if (cr > (widget.examSubject['creative_full'] ?? 0)) {
+        _showErrorDialog('সৃজনশীল', widget.examSubject['creative_full'], _creativeController);
+        return;
+      }
+      if (mq > (widget.examSubject['mcq_full'] ?? 0)) {
+        _showErrorDialog('MCQ', widget.examSubject['mcq_full'], _mcqController);
+        return;
+      }
+      if (pr > (widget.examSubject['practical_full'] ?? 0)) {
+        _showErrorDialog('ব্যবহারিক', widget.examSubject['practical_full'], _practicalController);
+        return;
+      }
+
       _save();
     });
+  }
+
+  void _showErrorDialog(String label, dynamic max, TextEditingController controller) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('ভুল ইনপুট!', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+        content: Text('$label নম্বর $max এর বেশি হতে পারবে না। অনুগ্রহ করে সঠিক নম্বর দিন।'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              controller.clear();
+              setState(() {});
+            },
+            child: const Text('ঠিক আছে'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _save() async {
@@ -261,25 +353,11 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
                           Expanded(
                             child: Text(
                               widget.student['student_name'] ?? 'N/A',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (_letterGrade != null) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _letterGrade == 'F' ? Colors.red : Colors.green,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                _letterGrade!,
-                                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -287,7 +365,7 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
                         children: [
                           Text(
                             'Sec: ${widget.student['section']}',
-                            style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                            style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
                           ),
                           if (_totalMarks != null) ...[
                             const SizedBox(width: 12),
@@ -298,9 +376,27 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
                                 borderRadius: BorderRadius.circular(4),
                                 border: Border.all(color: Colors.blue.shade200),
                               ),
-                              child: Text(
-                                'Total: ${_totalMarks!.toStringAsFixed(widget.decimalPosition)}',
-                                style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold, fontSize: 14),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'Total: ${_totalMarks!.toStringAsFixed(widget.decimalPosition)}',
+                                    style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                  if (_letterGrade != null) ...[
+                                    Container(
+                                      margin: const EdgeInsets.only(left: 8),
+                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                                      decoration: BoxDecoration(
+                                        color: _letterGrade == 'F' ? Colors.red : Colors.green,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                      child: Text(
+                                        _letterGrade!,
+                                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
                           ],

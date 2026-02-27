@@ -18,6 +18,7 @@ use App\Models\Student;
 use App\Models\StudentEnrollment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 class TeacherExamController extends Controller
 {
@@ -249,6 +250,8 @@ class TeacherExamController extends Controller
             'read_only' => $readOnly,
             'message' => $message,
             'decimal_position' => $decimal,
+            'print_blank_url' => URL::signedRoute('print.marks.portable', ['exam' => $exam->id, 'examSubject' => $examSubject->id, 'type' => 'print-blank']),
+            'print_filled_url' => URL::signedRoute('print.marks.portable', ['exam' => $exam->id, 'examSubject' => $examSubject->id, 'type' => 'print-filled']),
         ]);
     }
 
