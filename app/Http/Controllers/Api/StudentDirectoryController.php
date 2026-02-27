@@ -26,8 +26,14 @@ class StudentDirectoryController extends Controller
         }
 
         $enroll = StudentEnrollment::query()
-            ->where('school_id', $schoolId)
-            ->where('status', 'active');
+            ->where('student_enrollments.school_id', $schoolId);
+
+        // Status filter (respect 'status' parameter from mobile app)
+        if ($request->filled('status')) {
+            $enroll->where('student_enrollments.status', $request->get('status'));
+        } else {
+            $enroll->where('student_enrollments.status', 'active');
+        }
 
         // Optional ordering by student columns (e.g. guardian_phone)
         $orderBy = $request->query('order_by');
@@ -71,6 +77,12 @@ class StudentDirectoryController extends Controller
                          ->orWhere('student_name_en', 'like', "%$s%")
                          ->orWhere('guardian_phone', 'like', "%$s%");
                   });
+            });
+        }
+
+        if ($request->filled('religion')) {
+            $enroll->whereHas('student', function($q) use ($request) {
+                $q->where('religion', $request->get('religion'));
             });
         }
 
@@ -220,6 +232,40 @@ class StudentDirectoryController extends Controller
                 ->whereHas('student', function($q){ $q->whereIn('gender',["male","female","other"]); })
                 ->with(['student:id,gender'])
                 ->get()->pluck('student.gender')->filter()->unique()->values();
+        } else {
+            // Default groups for the school
+            $groups = \App\Models\Group::forSchool($schoolId)
+                ->orderBy('name')
+                ->get(['id','name'])
+                ->map(fn($g)=>['id'=>(int)$g->id,'name'=>$g->name])->values();
+                
+            $genders = collect(['male', 'female', 'other']);
+        }
+
+        // Additional filters
+        $academicYears = \App\Models\AcademicYear::forSchool($schoolId)
+            ->orderBy('name', 'desc')
+            ->get(['id', 'name'])
+            ->map(fn($y) => ['id' => (int)$y->id, 'name' => $y->name])->values();
+
+        $religions = \App\Models\Student::forSchool($schoolId)
+            ->whereNotNull('religion')
+            ->distinct()
+            ->orderBy('religion')
+            ->pluck('religion')
+            ->filter()
+            ->values();
+        if ($religions->isEmpty()) {
+            $religions = collect(['Islam', 'Hindu', 'Buddhist', 'Christian', 'Other']);
+        }
+
+        $statuses = \App\Models\StudentEnrollment::forSchool($schoolId)
+            ->distinct()
+            ->pluck('status')
+            ->filter()
+            ->values();
+        if ($statuses->isEmpty()) {
+            $statuses = collect(['active', 'dropped', 'TC', 'inactive']);
         }
 
         return response()->json([
@@ -227,6 +273,9 @@ class StudentDirectoryController extends Controller
             'sections' => $sections,
             'groups' => $groups,
             'genders' => $genders,
+            'academic_years' => $academicYears,
+            'religions' => $religions,
+            'statuses' => $statuses,
         ]);
     }
 }

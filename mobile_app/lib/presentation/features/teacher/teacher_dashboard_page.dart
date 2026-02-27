@@ -267,7 +267,7 @@ class _HeaderCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '$designation${(phone != null && phone!.isNotEmpty) ? " ($phone)" : ""}',
+                          '$designation${(phone != null && phone!.isNotEmpty) ? " $phone" : ""}',
                           style: const TextStyle(color: Color(0xFF4B5563)),
                         ),
                         if (schoolName != null) ...[

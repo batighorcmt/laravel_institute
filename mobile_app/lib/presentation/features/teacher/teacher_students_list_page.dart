@@ -87,6 +87,17 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
         if (data['statuses'] is List) {
           _studentStatusOptions = (data['statuses'] as List).map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
         }
+
+        // Groups
+        if (data['groups'] is List) {
+          final list = (data['groups'] as List).cast<Map<String, dynamic>>();
+          _groups = list.map((e) => {'id': e['id']?.toString() ?? '', 'name': e['name']?.toString() ?? ''}).where((e) => e['id'] != '').toList();
+        }
+
+        // Genders
+        if (data['genders'] is List) {
+          _genderOptions = (data['genders'] as List).map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+        }
       }
     } catch (_) {
       // Fallback to principal filter endpoints (best-effort)
@@ -183,7 +194,9 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   }
 
   void _deriveFiltersFromItems() {
-    // Only derive groups as a fallback; keep classes/sections from meta
+    // Only derive groups as a fallback if meta didn't provide any
+    if (_groups.isNotEmpty) return;
+    
     final groups = <String>{};
     for (final it in _items) {
       if (it is Map<String, dynamic>) {

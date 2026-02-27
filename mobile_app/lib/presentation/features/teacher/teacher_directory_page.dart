@@ -183,7 +183,7 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                       children: [
                         if (desig.isNotEmpty)
                           Text(
-                            '$desig${phone.isNotEmpty ? " ($phone)" : ""}',
+                            '$desig${phone.isNotEmpty ? " $phone" : ""}',
                             style: TextStyle(color: Colors.grey[600]),
                           ),
                         if (phone.isNotEmpty)
