@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../data/teacher/teacher_exam_repository.dart';
 import '../../../../widgets/app_snack.dart';
+import 'exam_room_attendance_page.dart';
 
 class ExamDutyPage extends StatefulWidget {
   const ExamDutyPage({super.key});
@@ -90,88 +91,103 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ExamRoomAttendancePage(
+                planId: duty['seat_plan_id'],
+                roomId: duty['seat_plan_room_id'],
+                roomNo: duty['room_no'] ?? 'N/A',
+                date: duty['duty_date'],
+              ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.meeting_room, color: Colors.blue.shade700),
                   ),
-                  child: Icon(Icons.meeting_room, color: Colors.blue.shade700),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'কক্ষ নং: ${duty['room_no'] ?? 'N/A'}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      if (duty['room_title'] != null)
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          duty['room_title'],
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                          'কক্ষ নং: ${duty['room_no'] ?? 'N/A'}',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                    ],
+                        if (duty['room_title'] != null)
+                          Text(
+                            duty['room_title'],
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                          ),
+                      ],
+                    ),
                   ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'আজকের ডিউটি',
+                      style: TextStyle(color: Colors.orange.shade900, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(),
+              ),
+              _buildInfoRow(Icons.business, 'বিল্ডিং', duty['building'] ?? 'N/A'),
+              const SizedBox(height: 8),
+              _buildInfoRow(Icons.layers, 'তলা', duty['floor'] ?? 'N/A'),
+              const SizedBox(height: 8),
+              _buildInfoRow(Icons.event_note, 'সীট প্ল্যান', duty['seat_plan'] ?? 'N/A'),
+              if (duty['exams'] != null && (duty['exams'] as List).isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(height: 1),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'আজকের ডিউটি',
-                    style: TextStyle(color: Colors.orange.shade900, fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
+                const Text(
+                  'পরীক্ষাসমূহ:',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: (duty['exams'] as List).map((e) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Text(
+                      e.toString(),
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  )).toList(),
                 ),
               ],
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Divider(),
-            ),
-            _buildInfoRow(Icons.business, 'বিল্ডিং', duty['building'] ?? 'N/A'),
-            const SizedBox(height: 8),
-            _buildInfoRow(Icons.layers, 'তলা', duty['floor'] ?? 'N/A'),
-            const SizedBox(height: 8),
-            _buildInfoRow(Icons.event_note, 'সীট প্ল্যান', duty['seat_plan'] ?? 'N/A'),
-            if (duty['exams'] != null && (duty['exams'] as List).isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Divider(height: 1),
-              ),
-              const Text(
-                'পরীক্ষাসমূহ:',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey),
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: (duty['exams'] as List).map((e) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Text(
-                    e.toString(),
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                )).toList(),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );

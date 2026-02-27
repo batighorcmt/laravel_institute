@@ -73,6 +73,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/mark-entry/students', [\App\Http\Controllers\Api\TeacherExamController::class, 'getStudents']);
         Route::post('/mark-entry/save-mark', [\App\Http\Controllers\Api\TeacherExamController::class, 'saveMark']);
         Route::get('/attendance-report', [\App\Http\Controllers\Api\TeacherExamController::class, 'attendanceReport']);
+        Route::get('/room-attendance', [\App\Http\Controllers\Api\TeacherExamController::class, 'roomAttendanceStudents']);
+        Route::post('/submit-room-attendance', [\App\Http\Controllers\Api\TeacherExamController::class, 'submitRoomAttendance']);
     });
 
     // Parent endpoints

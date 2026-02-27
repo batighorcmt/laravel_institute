@@ -99,4 +99,38 @@ class TeacherExamRepository {
     );
     return resp.data;
   }
+
+  Future<Map<String, dynamic>> getRoomAttendance({
+    required int planId,
+    required int roomId,
+    String? date,
+  }) async {
+    final resp = await _dio.get(
+      'teacher/exams/room-attendance',
+      queryParameters: {
+        'plan_id': planId,
+        'room_id': roomId,
+        if (date != null) 'date': date,
+      },
+    );
+    return resp.data;
+  }
+
+  Future<Map<String, dynamic>> submitRoomAttendance({
+    required int planId,
+    required int roomId,
+    required String date,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final resp = await _dio.post(
+      'teacher/exams/submit-room-attendance',
+      data: {
+        'plan_id': planId,
+        'room_id': roomId,
+        'date': date,
+        'items': items,
+      },
+    );
+    return resp.data;
+  }
 }

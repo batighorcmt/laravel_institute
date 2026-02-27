@@ -53,6 +53,8 @@ class TeacherExamController extends Controller
         return response()->json($duties->map(fn($d) => [
             'id' => $d->id,
             'duty_date' => $d->duty_date->toDateString(),
+            'seat_plan_id' => $d->seat_plan_id,
+            'seat_plan_room_id' => $d->seat_plan_room_id,
             'room_no' => $d->room?->room_no,
             'room_title' => $d->room?->title,
             'building' => $d->room?->building,
@@ -107,6 +109,118 @@ class TeacherExamController extends Controller
             'plans' => $plans,
             'results' => $results,
         ]);
+    }
+
+    /**
+     * Students list for room attendance.
+     */
+    public function roomAttendanceStudents(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user);
+        
+        $planId = $request->get('plan_id');
+        $roomId = $request->get('room_id');
+        $date = $request->get('date', now()->toDateString());
+
+        if (!$planId || !$roomId) {
+            return response()->json(['message' => 'Plan and Room IDs are required'], 422);
+        }
+
+        // Access check
+        $isAuthorized = $user->isExamController($schoolId) || $user->isPrincipal($schoolId) || $user->isSuperAdmin() ||
+            ExamRoomInvigilation::where('seat_plan_id', $planId)
+                ->where('seat_plan_room_id', $roomId)
+                ->where('teacher_id', $user->id)
+                ->where('duty_date', $date)
+                ->exists();
+
+        if (!$isAuthorized) {
+            return response()->json(['message' => 'Unauthorized access to this room'], 403);
+        }
+
+        $allocations = SeatPlanAllocation::with(['student', 'student.currentEnrollment.class'])
+            ->where('seat_plan_id', $planId)
+            ->where('room_id', $roomId)
+            ->get();
+
+        $attendances = ExamRoomAttendance::where('plan_id', $planId)
+            ->where('room_id', $roomId)
+            ->where('duty_date', $date)
+            ->get()
+            ->keyBy('student_id');
+
+        $students = $allocations->map(function ($alloc) use ($attendances) {
+            $student = $alloc->student;
+            if (!$student) return null;
+
+            return [
+                'id' => $student->id,
+                'name' => $student->full_name,
+                'roll' => $alloc->student->roll_no ?? $student->currentEnrollment?->roll_no,
+                'class_name' => $student->currentEnrollment?->class?->name ?? 'N/A',
+                'status' => $attendances->has($student->id) ? $attendances->get($student->id)->status : null,
+            ];
+        })->filter()->values();
+
+        return response()->json([
+            'date' => $date,
+            'students' => $students,
+            'stats' => [
+                'total' => $students->count(),
+                'present' => $students->where('status', 'present')->count(),
+                'absent' => $students->where('status', 'absent')->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Submit room attendance.
+     */
+    public function submitRoomAttendance(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user);
+        
+        $request->validate([
+            'plan_id' => 'required|integer',
+            'room_id' => 'required|integer',
+            'date' => 'required|date',
+            'items' => 'required|array',
+            'items.*.student_id' => 'required|integer',
+            'items.*.status' => 'required|string|in:present,absent',
+        ]);
+
+        $planId = $request->plan_id;
+        $roomId = $request->room_id;
+        $date = $request->date;
+
+        // Access check
+        $isAuthorized = $user->isExamController($schoolId) || $user->isPrincipal($schoolId) || $user->isSuperAdmin() ||
+            ExamRoomInvigilation::where('seat_plan_id', $planId)
+                ->where('seat_plan_room_id', $roomId)
+                ->where('teacher_id', $user->id)
+                ->where('duty_date', $date)
+                ->exists();
+
+        if (!$isAuthorized) {
+            return response()->json(['message' => 'Unauthorized access'], 403);
+        }
+
+        foreach ($request->items as $item) {
+            ExamRoomAttendance::updateOrCreate(
+                [
+                    'school_id' => $schoolId,
+                    'duty_date' => $date,
+                    'plan_id' => $planId,
+                    'room_id' => $roomId,
+                    'student_id' => $item['student_id'],
+                ],
+                ['status' => $item['status']]
+            );
+        }
+
+        return response()->json(['message' => 'Attendance saved successfully']);
     }
 
     /**
