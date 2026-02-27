@@ -216,9 +216,9 @@ class TeacherExamController extends Controller
                 'roll' => $en->roll_no,
                 'section' => $en->section?->name,
                 'mark' => $m ? [
-                    'creative' => $m->creative_marks,
-                    'mcq' => $m->mcq_marks,
-                    'practical' => $m->practical_marks,
+                    'creative' => !is_null($m->creative_marks) ? number_format($m->creative_marks, $decimal, '.', '') : null,
+                    'mcq' => !is_null($m->mcq_marks) ? number_format($m->mcq_marks, $decimal, '.', '') : null,
+                    'practical' => !is_null($m->practical_marks) ? number_format($m->practical_marks, $decimal, '.', '') : null,
                     'total' => number_format($m->total_marks, $decimal, '.', ''),
                     'letter_grade' => $m->letter_grade,
                     'is_absent' => (bool)$m->is_absent,

@@ -30,6 +30,7 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
   Map<String, dynamic>? _examSubject;
   bool _readOnly = false;
   String? _message;
+  int _decimalPosition = 2;
 
   @override
   void initState() {
@@ -51,6 +52,7 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
           _examSubject = data['exam_subject'];
           _readOnly = data['read_only'] ?? false;
           _message = data['message'];
+          _decimalPosition = data['decimal_position'] ?? 0;
           _isLoading = false;
         });
       }
@@ -93,6 +95,7 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
                         examSubjectId: widget.examSubjectId,
                         examSubject: _examSubject!,
                         readOnly: _readOnly,
+                        decimalPosition: _decimalPosition,
                       );
                     },
                   ),
@@ -109,6 +112,7 @@ class _StudentMarkRow extends StatefulWidget {
   final int examSubjectId;
   final Map<String, dynamic> examSubject;
   final bool readOnly;
+  final int decimalPosition;
 
   const _StudentMarkRow({
     required this.student,
@@ -116,6 +120,7 @@ class _StudentMarkRow extends StatefulWidget {
     required this.examSubjectId,
     required this.examSubject,
     required this.readOnly,
+    required this.decimalPosition,
   });
 
   @override
@@ -228,50 +233,78 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade700,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text('ROLL', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+                      Text(
+                        '${widget.student['roll']}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Text(
-                            widget.student['student_name'] ?? 'N/A',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          Expanded(
+                            child: Text(
+                              widget.student['student_name'] ?? 'N/A',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                           if (_letterGrade != null) ...[
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: _letterGrade == 'F' ? Colors.red : Colors.green,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
                                 _letterGrade!,
-                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
                         ],
                       ),
-                      RichText(
-                        text: TextSpan(
-                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
-                          children: [
-                            const TextSpan(text: 'Roll: '),
-                            TextSpan(
-                              text: '${widget.student['roll']}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-                            ),
-                            TextSpan(text: ' | Sec: ${widget.student['section']}'),
-                            if (_totalMarks != null) 
-                              TextSpan(
-                                text: ' | Total: $_totalMarks',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            'Sec: ${widget.student['section']}',
+                            style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                          ),
+                          if (_totalMarks != null) ...[
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.blue.shade200),
                               ),
+                              child: Text(
+                                'Total: ${_totalMarks!.toStringAsFixed(widget.decimalPosition)}',
+                                style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                            ),
                           ],
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -279,27 +312,31 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
                 Column(
                   children: [
                     const Text('Absent', style: TextStyle(fontSize: 12)),
-                    Switch(
-                      value: _isAbsent,
-                      onChanged: widget.readOnly
-                          ? null
-                          : (v) {
-                              setState(() {
-                                _isAbsent = v;
-                                if (v) {
-                                  _creativeController.clear();
-                                  _mcqController.clear();
-                                  _practicalController.clear();
-                                }
-                              });
-                              _save();
-                            },
+                    SizedBox(
+                      height: 30,
+                      child: Switch(
+                        value: _isAbsent,
+                        activeColor: Colors.red,
+                        onChanged: widget.readOnly
+                            ? null
+                            : (v) {
+                                setState(() {
+                                  _isAbsent = v;
+                                  if (v) {
+                                    _creativeController.clear();
+                                    _mcqController.clear();
+                                    _practicalController.clear();
+                                  }
+                                });
+                                _save();
+                              },
+                      ),
                     ),
                   ],
                 ),
                 if (_isSaving)
                   const Padding(
-                    padding: EdgeInsets.only(left: 8.0),
+                    padding: EdgeInsets.only(left: 8.0, top: 10),
                     child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
                   ),
               ],
