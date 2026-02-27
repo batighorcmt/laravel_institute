@@ -81,7 +81,6 @@ Route::prefix('v1')->group(function () {
         // Duty Allocation
         Route::get('/teachers', [\App\Http\Controllers\Api\TeacherExamController::class, 'teachersList']);
         Route::post('/assign-duty', [\App\Http\Controllers\Api\TeacherExamController::class, 'assignDuty']);
-        Route::post('/remove-duty', [\App\Http\Controllers\Api\TeacherExamController::class, 'removeDuty']);
     });
 
     // Parent endpoints

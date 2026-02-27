@@ -664,49 +664,36 @@ class TeacherExamController extends Controller
 
         $request->validate([
             'plan_id' => 'required|integer',
-            'room_id' => 'required|integer',
             'date' => 'required|date',
-            'teacher_user_id' => 'required|integer',
+            'allocations' => 'required|array',
+            'allocations.*.room_id' => 'required|integer',
+            'allocations.*.teacher_user_id' => 'nullable|integer',
         ]);
 
-        ExamRoomInvigilation::updateOrCreate(
-            [
-                'school_id' => $schoolId,
-                'duty_date' => $request->date,
-                'seat_plan_id' => $request->plan_id,
-                'seat_plan_room_id' => $request->room_id,
-            ],
-            [
-                'teacher_id' => $request->teacher_user_id,
-                'assigned_by' => $user->id,
-            ]
-        );
-
-        return response()->json(['message' => 'Duty assigned successfully']);
-    }
-
-    public function removeDuty(Request $request)
-    {
-        $user = $request->user();
-        $schoolId = $this->resolveSchoolId($request, $user);
-        
-        if (!$user->isExamController($schoolId) && !$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        foreach ($request->allocations as $allocation) {
+            if (empty($allocation['teacher_user_id'])) {
+                ExamRoomInvigilation::where('school_id', $schoolId)
+                    ->where('duty_date', $request->date)
+                    ->where('seat_plan_id', $request->plan_id)
+                    ->where('seat_plan_room_id', $allocation['room_id'])
+                    ->delete();
+            } else {
+                ExamRoomInvigilation::updateOrCreate(
+                    [
+                        'school_id' => $schoolId,
+                        'duty_date' => $request->date,
+                        'seat_plan_id' => $request->plan_id,
+                        'seat_plan_room_id' => $allocation['room_id'],
+                    ],
+                    [
+                        'teacher_id' => $allocation['teacher_user_id'],
+                        'assigned_by' => $user->id,
+                    ]
+                );
+            }
         }
 
-        $request->validate([
-            'plan_id' => 'required|integer',
-            'room_id' => 'required|integer',
-            'date' => 'required|date',
-        ]);
-
-        ExamRoomInvigilation::where('school_id', $schoolId)
-            ->where('duty_date', $request->date)
-            ->where('seat_plan_id', $request->plan_id)
-            ->where('seat_plan_room_id', $request->room_id)
-            ->delete();
-
-        return response()->json(['message' => 'Duty removed successfully']);
+        return response()->json(['message' => 'Duty allocations saved successfully']);
     }
 
     protected function resolveSchoolId(Request $request, $user, $explicit = null): ?int

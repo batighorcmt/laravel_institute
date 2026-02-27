@@ -175,33 +175,15 @@ class TeacherExamRepository {
 
   Future<Map<String, dynamic>> assignDuty({
     required int planId,
-    required int roomId,
     required String date,
-    required int teacherUserId,
+    required List<Map<String, dynamic>> allocations,
   }) async {
     final resp = await _dio.post(
       'teacher/exams/assign-duty',
       data: {
         'plan_id': planId,
-        'room_id': roomId,
         'date': date,
-        'teacher_user_id': teacherUserId,
-      },
-    );
-    return resp.data;
-  }
-
-  Future<Map<String, dynamic>> removeDuty({
-    required int planId,
-    required int roomId,
-    required String date,
-  }) async {
-    final resp = await _dio.post(
-      'teacher/exams/remove-duty',
-      data: {
-        'plan_id': planId,
-        'room_id': roomId,
-        'date': date,
+        'allocations': allocations,
       },
     );
     return resp.data;

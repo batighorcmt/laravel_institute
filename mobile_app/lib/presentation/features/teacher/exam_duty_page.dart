@@ -38,13 +38,7 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
       if (mounted) {
         setState(() {
           _plans = meta['plans'] ?? [];
-          if (_plans.isNotEmpty) {
-            _selectedPlanId = _plans.first['id'];
-          }
         });
-        if (_selectedPlanId != null) {
-          await _loadDatesForPlan(_selectedPlanId!);
-        }
       }
     } catch (_) {}
   }
