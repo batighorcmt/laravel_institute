@@ -578,15 +578,15 @@ class _PrincipalDashboardPageState
             items: [
               _statRowCustom(
                 'Class Attendance',
-                'শাখা ${_summaryData?["class_attendance"]?["sections_with_attendance"] ?? 0}/${_summaryData?["class_attendance"]?["total_sections"] ?? 0}',
-                'শিক্ষার্থী ${_summaryData?["class_attendance"]?["present"] ?? 0}/${_summaryData?["class_attendance"]?["total"] ?? 0}',
+                'শাখা ${_sd('class_attendance', 'sections_with_attendance')}/${_sd('class_attendance', 'total_sections')}',
+                'শিক্ষার্থী ${_sd('class_attendance', 'present')}/${_sd('class_attendance', 'total')}',
                 Colors.teal,
               ),
               const Divider(height: 10),
               _statRowCustom(
                 'Extra Class Attendance',
-                'ক্লাস ${_summaryData?["extra_class_attendance"]?["classes_with_attendance"] ?? 0}/${_summaryData?["extra_class_attendance"]?["total_classes"] ?? 0}',
-                'শিক্ষার্থী ${_summaryData?["extra_class_attendance"]?["present"] ?? 0}/${_summaryData?["extra_class_attendance"]?["total"] ?? 0}',
+                'ক্লাস ${_sd('extra_class_attendance', 'classes_with_attendance')}/${_sd('extra_class_attendance', 'total_classes')}',
+                'শিক্ষার্থী ${_sd('extra_class_attendance', 'present')}/${_sd('extra_class_attendance', 'total')}',
                 Colors.orange,
               ),
             ],
@@ -597,9 +597,9 @@ class _PrincipalDashboardPageState
             icon: Icons.menu_book_outlined,
             color: Colors.purple,
             items: [
-              _statInfo('Total Routine Classes', _summaryData?['lesson_evaluation']?['total_expected']?.toString() ?? '0'),
-              _statInfo('Evaluations Completed', _summaryData?['lesson_evaluation']?['completed']?.toString() ?? '0', color: Colors.green),
-              _statInfo('Evaluations Pending', _summaryData?['lesson_evaluation']?['not_done']?.toString() ?? '0', color: Colors.orange),
+              _statInfo('Total Routine Classes', _sd('lesson_evaluation', 'total_expected')),
+              _statInfo('Evaluations Completed', _sd('lesson_evaluation', 'completed'), color: Colors.green),
+              _statInfo('Evaluations Pending', _sd('lesson_evaluation', 'not_done'), color: Colors.orange),
             ],
           ),
           const SizedBox(height: 12),
@@ -648,6 +648,21 @@ class _PrincipalDashboardPageState
         ),
       ),
     );
+  }
+
+  /// Safely reads a nested value from _summaryData:
+  /// _summaryData?[section]?[key] — avoids Dart issues with dynamic null-safe chaining.
+  String _sd(String section, String key) {
+    try {
+      final s = _summaryData;
+      if (s == null) return '0';
+      final inner = s[section];
+      if (inner == null || inner is! Map) return '0';
+      final val = inner[key];
+      return val?.toString() ?? '0';
+    } catch (_) {
+      return '0';
+    }
   }
 
   Widget _attStat(String label, String value, Color color) {

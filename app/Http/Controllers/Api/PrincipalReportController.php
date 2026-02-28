@@ -70,12 +70,15 @@ class PrincipalReportController extends Controller
             ->whereDate('evaluation_date', $date)
             ->count();
 
-        // Class attendance: count sections that had attendance taken today
-        $classSectionsWithAtt = Attendance::join('students','students.id','=','attendance.student_id')
+        // Class attendance: count distinct class-sections that had attendance taken today
+        $classSectionsWithAtt = DB::table('attendance')
+            ->join('students', 'students.id', '=', 'attendance.student_id')
             ->where('attendance.date', $date)
             ->where('students.school_id', $schoolId)
+            ->select('attendance.class_id', 'attendance.section_id')
             ->distinct()
-            ->count(DB::raw('CONCAT(attendance.class_id, "|", attendance.section_id)'));
+            ->get()
+            ->count();
 
         // Total active class-sections in this school
         $totalClassSections = Section::where('school_id', $schoolId)
