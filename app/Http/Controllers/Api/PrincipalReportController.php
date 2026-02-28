@@ -281,6 +281,10 @@ class PrincipalReportController extends Controller
             }])
             ->where('school_id', $schoolId);
 
+        if ($request->filled('subject_id')) {
+            $query->where('subject_id', $request->get('subject_id'));
+        }
+
         if ($request->filled('date')) {
             $query->whereDate('evaluation_date', $request->get('date'));
         }
@@ -418,7 +422,7 @@ class PrincipalReportController extends Controller
     }
 
     /**
-     * Return meta data for lesson evaluation reports (classes, teachers, dates).
+     * Return meta data for lesson evaluation reports (classes, teachers, dates, subjects).
      */
     public function lessonEvaluationMeta(Request $request)
     {
@@ -431,26 +435,44 @@ class PrincipalReportController extends Controller
             return response()->json(['message' => 'No school context'], 400);
         }
 
-        $classes = \App\Models\SchoolClass::forSchool($schoolId)->active()->get(['id', 'name']);
+        $classes = \App\Models\SchoolClass::forSchool($schoolId)->active()->get(['id', 'name'])->map(fn($c)=>[
+            'id' => (int)$c->id,
+            'name' => $c->name
+        ]);
         
         $teachers = \App\Models\Teacher::forSchool($schoolId)->active()->with('user:id,name')->get()->map(function($t){
             return [
-                'id' => $t->id,
-                'name' => $t->full_name ?: $t->user?->name
+                'id' => (int)$t->id,
+                'name' => $t->full_name ?: ($t->user?->name ?? 'Teacher #'.$t->id)
             ];
         });
+
+        $subjects = \App\Models\Subject::forSchool($schoolId)->active()->orderBy('name')->get(['id', 'name'])->map(fn($s)=>[
+            'id' => (int)$s->id,
+            'name' => $s->name
+        ]);
 
         $dates = \App\Models\LessonEvaluation::forSchool($schoolId)
             ->distinct()
             ->orderByDesc('evaluation_date')
             ->pluck('evaluation_date')
+            ->filter()
             ->map(fn($d) => $d->toDateString())
             ->values();
+
+        $statuses = [
+            ['id' => 'completed', 'name' => 'পড়া হয়েছে'],
+            ['id' => 'partial', 'name' => 'আংশিক হয়েছে'],
+            ['id' => 'not_done', 'name' => 'পড়া হয়নি'],
+            ['id' => 'absent', 'name' => 'অনুপস্থিত'],
+        ];
 
         return response()->json([
             'classes' => $classes,
             'teachers' => $teachers,
-            'dates' => $dates
+            'subjects' => $subjects,
+            'dates' => $dates,
+            'statuses' => $statuses
         ]);
     }
 
@@ -470,8 +492,8 @@ class PrincipalReportController extends Controller
 
         $teachers = \App\Models\Teacher::forSchool($schoolId)->active()->with('user:id,name')->get()->map(function($t){
             return [
-                'id' => $t->id,
-                'name' => $t->full_name ?: $t->user?->name
+                'id' => (int)$t->id,
+                'name' => $t->full_name ?: ($t->user?->name ?? 'Teacher #'.$t->id)
             ];
         });
 
