@@ -300,12 +300,16 @@ class PrincipalReportController extends Controller
                 $q->where('status', $status);
             });
         }
-        // Filter by teacher name (partial match)
+        // Filter by teacher (ID or name partial match)
         if ($request->filled('teacher')) {
             $teacher = $request->get('teacher');
-            $query->whereHas('teacher.user', function($q) use ($teacher) {
-                $q->where('name', 'like', "%{$teacher}%");
-            });
+            if (is_numeric($teacher)) {
+                $query->where('teacher_id', $teacher);
+            } else {
+                $query->whereHas('teacher.user', function($q) use ($teacher) {
+                    $q->where('name', 'like', "%{$teacher}%");
+                });
+            }
         }
 
         $items = $query->orderByDesc('evaluation_date')->paginate(25);

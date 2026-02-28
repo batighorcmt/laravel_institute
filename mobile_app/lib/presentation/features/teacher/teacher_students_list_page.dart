@@ -192,53 +192,44 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
           if (_loading || _metaLoading || _sectionsLoading)
             const LinearProgressIndicator(minHeight: 2),
           
-          // Search Bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-            child: TextField(
-              controller: _searchCtrl,
-              decoration: InputDecoration(
-                hintText: 'Search by Name, Roll, ID...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchCtrl.text.isNotEmpty 
-                  ? IconButton(icon: const Icon(Icons.clear), onPressed: () { _searchCtrl.clear(); _load(reset: true); }) 
-                  : null,
-                border: const OutlineInputBorder(),
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              ),
-              onSubmitted: (_) => _load(reset: true),
-            ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
             child: Column(
               children: [
+                // Row 1: Search and Class
                 Row(
                   children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: _searchCtrl,
+                        style: const TextStyle(fontSize: 12),
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          prefixIcon: const Icon(Icons.search, size: 16),
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                          suffixIcon: _searchCtrl.text.isNotEmpty 
+                            ? IconButton(icon: const Icon(Icons.clear, size: 16), onPressed: () { _searchCtrl.clear(); _load(reset: true); }) 
+                            : null,
+                        ),
+                        onSubmitted: (_) => _load(reset: true),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _selectedClassId,
                         isExpanded: true,
-                        hint: _metaLoading ? const Text('Loading...', style: TextStyle(fontSize: 11)) : null,
+                        hint: const Text('Class', style: TextStyle(fontSize: 11)),
                         style: const TextStyle(fontSize: 11, color: Colors.black),
-                        decoration: const InputDecoration(
-                          labelText: 'Class',
-                          labelStyle: TextStyle(fontSize: 11),
-                          border: OutlineInputBorder(),
-                          contentPadding:
-                              EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                          isDense: true,
-                        ),
+                        decoration: const InputDecoration(isDense: true, border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 8)),
                         items: [
-                          const DropdownMenuItem<String>(
-                            value: null,
-                            child: Text('All', style: TextStyle(fontSize: 11)),
-                          ),
+                          const DropdownMenuItem<String>(value: null, child: Text('Class: All', style: TextStyle(fontSize: 11))),
                           ..._classes.map((c) => DropdownMenuItem<String>(
                                 value: c['id']?.toString(),
-                                child: Text(c['name']?.toString() ?? 'Class', style: const TextStyle(fontSize: 11)),
+                                child: Text(c['name']?.toString() ?? '', style: const TextStyle(fontSize: 11)),
                               )),
                         ],
                         onChanged: _metaLoading
@@ -248,22 +239,18 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                                   _selectedClassId = val;
                                   _selectedSectionId = null;
                                   _selectedGroupId = null;
-                                  _selectedGender = null;
                                   _sections = [];
                                   _groups = [];
-                                  _genders = [];
                                   _sectionsLoading = (val != null);
                                 });
                                 if (val != null) {
                                   try {
                                     final sections = await _repo.fetchSections(classId: val);
                                     final groups = await _repo.fetchGroupsForClass(val);
-                                    final genders = await _repo.fetchGendersForClass(val);
                                     if (mounted) {
                                       setState(() {
                                         _sections = sections;
                                         _groups = groups;
-                                        _genders = genders;
                                         _sectionsLoading = false;
                                       });
                                     }
@@ -275,90 +262,41 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                               },
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // Row 2: Section, Group, Religion
+                Row(
+                  children: [
+                    Expanded(
+                      child: _metaDropdown('Section', _selectedSectionId, _sections, (val) {
+                        setState(() => _selectedSectionId = val);
+                        _load(reset: true);
+                      }),
+                    ),
                     const SizedBox(width: 4),
                     Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedSectionId,
-                        isExpanded: true,
-                        hint: _sectionsLoading ? const Text('Loading...', style: TextStyle(fontSize: 11)) : null,
-                        style: const TextStyle(fontSize: 11, color: Colors.black),
-                        decoration: const InputDecoration(
-                          labelText: 'Section',
-                          labelStyle: TextStyle(fontSize: 11),
-                          border: OutlineInputBorder(),
-                          contentPadding:
-                              EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                          isDense: true,
-                        ),
-                        items: [
-                          const DropdownMenuItem<String>(
-                            value: null,
-                            child: Text('All', style: TextStyle(fontSize: 11)),
-                          ),
-                          ..._sections.map((s) => DropdownMenuItem<String>(
-                                value: s['id']?.toString(),
-                                child: Text(s['name']?.toString() ?? 'Section', style: const TextStyle(fontSize: 11)),
-                              )),
-                        ],
-                        onChanged: _metaLoading
-                            ? null
-                            : (val) {
-                                setState(() {
-                                  _selectedSectionId = val;
-                                });
-                                _load(reset: true);
-                              },
-                      ),
+                      child: _metaDropdown('Group', _selectedGroupId, _groups, (val) {
+                        setState(() => _selectedGroupId = val);
+                        _load(reset: true);
+                      }),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _selectedGroupId,
+                        value: _selectedReligion,
                         isExpanded: true,
+                        hint: const Text('Religion', style: TextStyle(fontSize: 11)),
                         style: const TextStyle(fontSize: 11, color: Colors.black),
-                        decoration: const InputDecoration(
-                          labelText: 'Group',
-                          labelStyle: TextStyle(fontSize: 11),
-                          border: OutlineInputBorder(),
-                          contentPadding:
-                              EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                          isDense: true,
-                        ),
+                        decoration: const InputDecoration(isDense: true, border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 8)),
                         items: [
-                          const DropdownMenuItem<String>(
-                            value: null,
-                            child: Text('All', style: TextStyle(fontSize: 11)),
-                          ),
-                          ..._groups.map((g) => DropdownMenuItem<String>(
-                                value: g['id']?.toString(),
-                                child: Text(g['name']?.toString() ?? 'Group', style: const TextStyle(fontSize: 11)),
-                              )),
+                          const DropdownMenuItem<String>(value: null, child: Text('Rel: All', style: TextStyle(fontSize: 11))),
+                          ..._religions.map((r) => DropdownMenuItem<String>(value: r, child: Text(r, style: const TextStyle(fontSize: 11)))),
                         ],
-                        onChanged: (val) {
-                          setState(() {
-                            _selectedGroupId = val;
-                          });
-                          _load(reset: true);
-                        },
+                        onChanged: (v) { setState(() => _selectedReligion = v); _load(reset: true); },
                       ),
                     ),
                   ],
-                ),
-                
-                const SizedBox(height: 8),
-
-                // Additional Filters Row (Scrollable)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      // Religion Filter
-                      _filterDropdown('Religion', _selectedReligion, _religions.map((r)=>DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontSize: 11)))).toList(), (v) {
-                        setState(() => _selectedReligion = v);
-                        _load(reset: true);
-                      }),
-                    ],
-                  ),
                 ),
               ],
             ),
@@ -440,6 +378,28 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _metaDropdown(String label, String? value, List<Map<String, dynamic>> items, ValueChanged<String?> onChanged) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      isExpanded: true,
+      hint: Text(label, style: const TextStyle(fontSize: 11)),
+      style: const TextStyle(fontSize: 11, color: Colors.black),
+      decoration: const InputDecoration(
+        isDense: true, 
+        border: OutlineInputBorder(), 
+        contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 8)
+      ),
+      items: [
+        DropdownMenuItem<String>(value: null, child: Text('$label: All', style: const TextStyle(fontSize: 11))),
+        ...items.map((i) => DropdownMenuItem<String>(
+              value: i['id']?.toString(),
+              child: Text(i['name']?.toString() ?? '', style: const TextStyle(fontSize: 11)),
+            )),
+      ],
+      onChanged: onChanged,
     );
   }
 

@@ -73,43 +73,145 @@ class _LessonEvaluationReportPageState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Date'),
-              subtitle: Text(
-                _selectedDate == null
-                    ? 'Select a date'
-                    : _selectedDate!.toLocal().toString().split(' ')[0],
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.calendar_today),
-                onPressed: () async {
-                  final d = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime.now(),
-                  );
-                  if (d != null) setState(() => _selectedDate = d);
-                },
-              ),
+            // Compact Row 1: Date and Status
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final d = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (d != null) setState(() => _selectedDate = d);
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Date',
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _selectedDate == null
+                                ? 'Select Date'
+                                : _selectedDate!.toLocal().toString().split(' ')[0],
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          const Icon(Icons.calendar_today, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Status',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: '', child: Text('Any', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'completed', child: Text('Completed', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'partial', child: Text('Partial', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'not_done', child: Text('Not done', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(value: 'absent', child: Text('Absent', style: TextStyle(fontSize: 13))),
+                    ],
+                    value: _statusFilter ?? '',
+                    style: const TextStyle(fontSize: 13, color: Colors.black),
+                    onChanged: (v) => setState(() => _statusFilter = (v == null || v.isEmpty) ? null : v),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
+
+            // Compact Row 2: Class and Section
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    decoration: const InputDecoration(
+                      labelText: 'Class',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(),
+                    ),
+                    dropdownColor: Colors.white,
+                    items: (<Map<String, dynamic>>[{'id': -1, 'name': 'All'}] + _classes)
+                        .map((c) => DropdownMenuItem<int>(
+                              value: c['id'] is int ? c['id'] as int : int.tryParse(c['id']?.toString() ?? ''),
+                              child: Text((c['name'] ?? '').toString(), style: const TextStyle(fontSize: 13)),
+                            ))
+                        .where((it) => it.value != null)
+                        .toList(),
+                    value: _selectedClassId ?? (_classes.isEmpty ? null : (_classes.any((c) => c['id'] == -1) ? -1 : null)),
+                    onChanged: (v) async {
+                      final selectedIsAll = v != null && v == -1;
+                      setState(() {
+                        _selectedClassId = selectedIsAll ? null : v;
+                        _selectedSectionId = null;
+                        _selectedSubjectId = null;
+                        _sections = [];
+                        _subjects = [];
+                      });
+                      if (!selectedIsAll && v != null) await _fetchSections(v);
+                      if (!selectedIsAll) await _fetchSubjects();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    decoration: const InputDecoration(
+                      labelText: 'Section',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(),
+                    ),
+                    dropdownColor: Colors.white,
+                    items: _sections
+                        .map((s) => DropdownMenuItem<int>(
+                              value: s['id'] is int ? s['id'] as int : int.tryParse(s['id']?.toString() ?? ''),
+                              child: Text((s['name'] ?? '').toString(), style: const TextStyle(fontSize: 13)),
+                            ))
+                        .where((it) => it.value != null)
+                        .toList(),
+                    value: _selectedSectionId,
+                    onChanged: (v) async {
+                      setState(() {
+                        _selectedSectionId = v;
+                        _selectedSubjectId = null;
+                        _subjects = [];
+                      });
+                      await _fetchSubjects();
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Row 3: Teacher
             DropdownSearch<Map<String, dynamic>>(
               popupProps: PopupProps.menu(
                 showSearchBox: true,
                 searchFieldProps: TextFieldProps(
-                  decoration: InputDecoration(labelText: 'Search teacher'),
-                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                  decoration: const InputDecoration(labelText: 'Search teacher', isDense: true),
+                  style: const TextStyle(fontSize: 13, color: Colors.black),
                 ),
                 itemBuilder: (context, item, isSelected) => ListTile(
-                  title: Text(
-                    (item['name'] ?? '').toString(),
-                    style: const TextStyle(fontSize: 14, color: Colors.black),
-                  ),
-                  subtitle: item['designation'] != null
-                      ? Text(item['designation'].toString())
-                      : null,
+                  dense: true,
+                  title: Text((item['name'] ?? '').toString(), style: const TextStyle(fontSize: 13)),
+                  subtitle: item['designation'] != null ? Text(item['designation'].toString(), style: const TextStyle(fontSize: 11)) : null,
                 ),
               ),
               items: _teachers,
@@ -118,200 +220,76 @@ class _LessonEvaluationReportPageState
               dropdownDecoratorProps: DropDownDecoratorProps(
                 dropdownSearchDecoration: const InputDecoration(
                   labelText: 'Teacher',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  border: OutlineInputBorder(),
                 ),
               ),
               dropdownBuilder: (context, selectedItem) => Text(
-                selectedItem == null
-                    ? ''
-                    : (selectedItem['name'] ?? '').toString(),
-                style: const TextStyle(fontSize: 14),
+                selectedItem == null ? 'Select Teacher' : (selectedItem['name'] ?? '').toString(),
+                style: const TextStyle(fontSize: 13),
               ),
               selectedItem: _selectedTeacherObj,
+              onChanged: (m) {
+                setState(() {
+                  if (m == null || m['id'] == -1) {
+                    _selectedTeacherObj = null;
+                  } else {
+                    _selectedTeacherObj = m;
+                  }
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+
+            // Row 4: Subject
+            DropdownSearch<Map<String, dynamic>>(
+              popupProps: PopupProps.menu(
+                showSearchBox: true,
+                searchFieldProps: TextFieldProps(
+                  decoration: const InputDecoration(labelText: 'Search subject', isDense: true),
+                  style: const TextStyle(fontSize: 13, color: Colors.black),
+                ),
+                itemBuilder: (context, item, isSelected) => ListTile(
+                  dense: true,
+                  title: Text((item['name'] ?? '').toString(), style: const TextStyle(fontSize: 13)),
+                ),
+              ),
+              items: _subjects,
+              itemAsString: (Map<String, dynamic>? m) =>
+                  m == null ? '' : (m['name'] ?? '').toString(),
+              dropdownDecoratorProps: DropDownDecoratorProps(
+                dropdownSearchDecoration: const InputDecoration(
+                  labelText: 'Subject',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              dropdownBuilder: (context, selectedItem) => Text(
+                selectedItem == null ? 'Select Subject' : (selectedItem['name'] ?? '').toString(),
+                style: const TextStyle(fontSize: 13),
+              ),
+              selectedItem: _subjects.firstWhere(
+                (s) => (s['id'] is int ? s['id'] as int : int.tryParse(s['id']?.toString() ?? '')) == _selectedSubjectId,
+                orElse: () => _selectedClassId == null ? {'id': -1, 'name': 'All Subjects'} : {'id': -1, 'name': 'Any Subject'},
+              ),
               onChanged: (m) => setState(() {
-                _selectedTeacherObj = m;
+                if (m == null || m.isEmpty || m['id'] == -1) {
+                  _selectedSubjectId = null;
+                } else {
+                  _selectedSubjectId = m['id'] is int ? m['id'] as int : int.tryParse(m['id']?.toString() ?? '');
+                }
               }),
             ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Record status'),
-              items: const [
-                DropdownMenuItem(
-                  value: '',
-                  child: Text('Any', style: TextStyle(color: Colors.black)),
-                ),
-                DropdownMenuItem(
-                  value: 'completed',
-                  child: Text(
-                    'Completed',
-                    style: TextStyle(color: Colors.black),
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: 'partial',
-                  child: Text('Partial', style: TextStyle(color: Colors.black)),
-                ),
-                DropdownMenuItem(
-                  value: 'not_done',
-                  child: Text(
-                    'Not done',
-                    style: TextStyle(color: Colors.black),
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: 'absent',
-                  child: Text('Absent', style: TextStyle(color: Colors.black)),
-                ),
-              ],
-              value: _statusFilter ?? '',
-              style: const TextStyle(fontSize: 14),
-              onChanged: (v) => setState(
-                () => _statusFilter = (v == null || v.isEmpty) ? null : v,
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Class/section/subject selectors
-            if (_classes.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: Text('No classes available'),
-              )
-            else
-              DropdownButtonFormField<int>(
-                decoration: const InputDecoration(labelText: 'Class'),
-                dropdownColor: Colors.white,
-                items:
-                    (<Map<String, dynamic>>[
-                              {'id': -1, 'name': 'All Classes'},
-                            ] +
-                            _classes)
-                        .map(
-                          (c) => DropdownMenuItem<int>(
-                            value: c['id'] is int
-                                ? c['id'] as int
-                                : int.tryParse(c['id']?.toString() ?? ''),
-                            child: Text(
-                              (c['name'] ?? '').toString(),
-                              style: const TextStyle(color: Colors.black),
-                            ),
-                          ),
-                        )
-                        .where((it) => it.value != null)
-                        .toList(),
-                value:
-                    _selectedClassId ??
-                    (_classes.isEmpty
-                        ? null
-                        : (_classes.any((c) => c['id'] == -1) ? -1 : null)),
-                style: const TextStyle(fontSize: 14, color: Colors.black),
-                onChanged: (v) async {
-                  // sentinel -1 = All Classes -> treat as no specific class
-                  final selectedIsAll = v != null && v == -1;
-                  setState(() {
-                    _selectedClassId = selectedIsAll ? null : v;
-                    _selectedSectionId = null;
-                    _selectedSubjectId = null;
-                    _sections = [];
-                    _subjects = [];
-                  });
-                  if (!selectedIsAll && v != null) await _fetchSections(v);
-                  if (!selectedIsAll) await _fetchSubjects();
-                },
-              ),
-            const SizedBox(height: 8),
-            const SizedBox(height: 8),
-            if (_sections.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: Text('No sections available'),
-              )
-            else
-              DropdownButtonFormField<int>(
-                decoration: const InputDecoration(labelText: 'Section'),
-                dropdownColor: Colors.white,
-                items: _sections
-                    .map(
-                      (s) => DropdownMenuItem<int>(
-                        value: s['id'] is int
-                            ? s['id'] as int
-                            : int.tryParse(s['id']?.toString() ?? ''),
-                        child: Text(
-                          (s['name'] ?? '').toString(),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                      ),
-                    )
-                    .where((it) => it.value != null)
-                    .toList(),
-                value: _selectedSectionId,
-                style: const TextStyle(fontSize: 14, color: Colors.black),
-                onChanged: (v) async {
-                  setState(() {
-                    _selectedSectionId = v;
-                    _selectedSubjectId = null;
-                    _subjects = [];
-                  });
-                  await _fetchSubjects();
-                },
-              ),
-            const SizedBox(height: 8),
-            if (_subjects.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: Text('No subjects available'),
-              )
-            else
-              DropdownSearch<Map<String, dynamic>>(
-                popupProps: PopupProps.menu(
-                  showSearchBox: true,
-                  searchFieldProps: TextFieldProps(
-                    decoration: InputDecoration(labelText: 'Search subject'),
-                    style: const TextStyle(fontSize: 14, color: Colors.black),
-                  ),
-                  itemBuilder: (context, item, isSelected) => ListTile(
-                    title: Text(
-                      (item['name'] ?? '').toString(),
-                      style: const TextStyle(fontSize: 14, color: Colors.black),
-                    ),
-                  ),
-                ),
-                items: _subjects,
-                itemAsString: (Map<String, dynamic>? m) =>
-                    m == null ? '' : (m['name'] ?? '').toString(),
-                dropdownDecoratorProps: DropDownDecoratorProps(
-                  dropdownSearchDecoration: const InputDecoration(
-                    labelText: 'Subject',
-                  ),
-                ),
-                dropdownBuilder: (context, selectedItem) => Text(
-                  selectedItem == null
-                      ? ''
-                      : (selectedItem['name'] ?? '').toString(),
-                  style: const TextStyle(fontSize: 14),
-                ),
-                selectedItem: _subjects.firstWhere(
-                  (s) =>
-                      (s['id'] is int
-                          ? s['id'] as int
-                          : int.tryParse(s['id']?.toString() ?? '')) ==
-                      _selectedSubjectId,
-                  orElse: () => <String, dynamic>{},
-                ),
-                onChanged: (m) => setState(() {
-                  if (m == null || m.isEmpty) {
-                    _selectedSubjectId = null;
-                  } else {
-                    final id = m['id'] is int
-                        ? m['id'] as int
-                        : int.tryParse(m['id']?.toString() ?? '');
-                    _selectedSubjectId = id;
-                  }
-                }),
-              ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+
+            // Row 5: Actions
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 10)),
                     onPressed: _loading
                         ? null
                         : () async => await _fetchReport(),
@@ -321,11 +299,12 @@ class _LessonEvaluationReportPageState
                             width: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Generate Report'),
+                        : const Text('Generate Report', style: TextStyle(fontSize: 13)),
                   ),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton(
+                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 10)),
                   onPressed: () {
                     setState(() {
                       _selectedDate = null;
@@ -340,7 +319,7 @@ class _LessonEvaluationReportPageState
                       _error = null;
                     });
                   },
-                  child: const Text('Reset'),
+                  child: const Text('Reset', style: TextStyle(fontSize: 13)),
                 ),
               ],
             ),
@@ -594,10 +573,13 @@ class _LessonEvaluationReportPageState
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
         setState(() {
-          _subjects = data
-              .map((e) => {'id': e['id'], 'name': e['name']})
-              .toList()
-              .cast<Map<String, dynamic>>();
+          _subjects = [
+                {'id': -1, 'name': _selectedClassId == null ? 'All Subjects' : 'Any Subject'}
+              ] +
+              data
+                  .map((e) => {'id': e['id'], 'name': e['name']})
+                  .toList()
+                  .cast<Map<String, dynamic>>();
         });
       } else {
         _addLog('Subjects endpoint returned status ${resp.statusCode}');
@@ -665,14 +647,17 @@ class _LessonEvaluationReportPageState
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
         setState(() {
-          _teachers = data
-              .map((e) => {
-                    'id': e['id'], 
-                    'name': e['name'],
-                    'designation': e['designation']
-                   })
-              .toList()
-              .cast<Map<String, dynamic>>();
+          _teachers = [
+            {'id': -1, 'name': 'All Teachers', 'designation': ''}
+          ] +
+              data
+                  .map((e) => {
+                        'id': e['id'],
+                        'name': e['name'],
+                        'designation': e['designation']
+                      })
+                  .toList()
+                  .cast<Map<String, dynamic>>();
         });
       } else {
         _addLog('Teachers endpoint returned status ${resp.statusCode}');
