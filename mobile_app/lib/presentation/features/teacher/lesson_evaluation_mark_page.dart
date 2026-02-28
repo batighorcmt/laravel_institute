@@ -27,6 +27,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
   late final TextEditingController _notesController;
   bool _loading = true;
   String? _error;
+  String? _warningMessage;
   String _date = '';
   List<_Row> _rows = const [];
   bool _readOnly = false;
@@ -100,6 +101,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
           )
           .toList();
       _readOnly = (data['read_only'] as bool?) ?? false;
+      _warningMessage = data['message'] as String?;
       final stats = (data['stats'] as Map?) ?? {};
       _stats = {
         'total': (stats['total'] as num?)?.toInt() ?? 0,
@@ -220,6 +222,30 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                 ),
                 const Divider(height: 1),
                 _StatsRow(stats: _stats),
+                if (_warningMessage != null && _warningMessage!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: Container(
+                      padding: const EdgeInsets.all(12.0),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning, color: Colors.red),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _warningMessage!,
+                              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.all(12),
