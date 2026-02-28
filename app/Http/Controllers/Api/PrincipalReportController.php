@@ -215,48 +215,6 @@ class PrincipalReportController extends Controller
             ->groupBy('classes.id','classes.name','classes.numeric_value','sections.id','sections.name','sections.class_teacher_name','teachers.initials')
             ->get();
 
-        $allClasses = SchoolClass::forSchool($schoolId)->active()->get(['id','name','numeric_value']);
-        $existingKeys = $sectionTotals->map(fn($r)=>"{$r->class_id}|{$r->section_id}")->all();
-        foreach ($allClasses as $cls) {
-            $classSections = DB::table('sections')
-                ->leftJoin('teachers', 'sections.class_teacher_id', '=', 'teachers.id')
-                ->where('sections.school_id', $schoolId)
-                ->where('sections.class_id', $cls->id)
-                ->where('sections.status','active')
-                ->get(['sections.id','sections.name','sections.class_teacher_name','teachers.initials as class_teacher_initials']);
-            if ($classSections->isEmpty()) {
-                $sectionTotals->push((object) [
-                    'class_id' => $cls->id,
-                    'class_name' => $cls->name,
-                    'numeric_value' => $cls->numeric_value,
-                    'section_id' => 0,
-                    'section_name' => '—',
-                    'class_teacher_name' => null,
-                    'class_teacher_initials' => null,
-                    'total' => 0,
-                    'total_male' => 0,
-                    'total_female' => 0,
-                ]);
-                continue;
-            }
-            foreach ($classSections as $sec) {
-                $key = $cls->id . '|' . $sec->id;
-                if (!in_array($key, $existingKeys, true)) {
-                    $sectionTotals->push((object) [
-                        'class_id' => $cls->id,
-                        'class_name' => $cls->name,
-                        'numeric_value' => $cls->numeric_value,
-                        'section_id' => $sec->id,
-                        'section_name' => $sec->name,
-                        'class_teacher_name' => $sec->class_teacher_name,
-                        'class_teacher_initials' => $sec->class_teacher_initials,
-                        'total' => 0,
-                        'total_male' => 0,
-                        'total_female' => 0,
-                    ]);
-                }
-            }
-        }
         $sectionTotals = $sectionTotals->sortBy(function($r){
             return sprintf('%05d|%s', (int)$r->numeric_value, (string)$r->section_name);
         })->values();

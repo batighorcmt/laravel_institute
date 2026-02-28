@@ -430,10 +430,10 @@ class _ExtraClassAttendanceReportPageState
                           cells: [
                             DataCell(Text(displayName, style: const TextStyle(fontWeight: FontWeight.bold))),
                             DataCell(Text('$st')),
-                            DataCell(Text('$dispPresent')),
-                            DataCell(Text('$dispAbsent')),
                             DataCell(Text('$stm')),
                             DataCell(Text('$stf')),
+                            DataCell(Text('$dispPresent')),
+                            DataCell(Text('$dispAbsent')),
                             DataCell(Text('$dispPresentMale')),
                             DataCell(Text('$dispAbsentMale')),
                             DataCell(Text('$dispPresentFemale')),
@@ -451,90 +451,37 @@ class _ExtraClassAttendanceReportPageState
                       DataRow(
                         cells: [
                           const DataCell(
-                            Text(
-                              'মোট',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
+                            Text('মোট', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           DataCell(
-                            Text(
-                              '$classTotal',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text('$classTotal', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           DataCell(
-                            Text(
-                              '$classPresent',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text('$classMale', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           DataCell(
-                            Text(
-                              '$classAbsent',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text('$classFemale', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           DataCell(
-                            Text(
-                              '$classMale',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text('$classPresent', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           DataCell(
-                            Text(
-                              '$classFemale',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text('$classAbsent', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           DataCell(
-                            Text(
-                              '$classPresentMale',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text('$classPresentMale', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           DataCell(
-                            Text(
-                              '$classAbsentMale',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text('$classAbsentMale', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           DataCell(
-                            Text(
-                              '$classPresentFemale',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text('$classPresentFemale', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           DataCell(
-                            Text(
-                              '$classAbsentFemale',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text('$classAbsentFemale', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                           DataCell(
-                            Text(
-                              classPct,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text(classPct, style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -562,10 +509,10 @@ class _ExtraClassAttendanceReportPageState
                                 columns: const [
                                   DataColumn(label: Text('শাখা', style: TextStyle(fontSize: 12))),
                                   DataColumn(label: Text('মোট', style: TextStyle(fontSize: 12))),
-                                  DataColumn(label: Text('উ.মোট', style: TextStyle(fontSize: 12, color: Colors.green))),
-                                  DataColumn(label: Text('অ.মোট', style: TextStyle(fontSize: 12, color: Colors.red))),
                                   DataColumn(label: Text('ছে', style: TextStyle(fontSize: 12))),
                                   DataColumn(label: Text('মে', style: TextStyle(fontSize: 12))),
+                                  DataColumn(label: Text('উ.মোট', style: TextStyle(fontSize: 12, color: Colors.green))),
+                                  DataColumn(label: Text('অ.মোট', style: TextStyle(fontSize: 12, color: Colors.red))),
                                   DataColumn(label: Text('উ.ছে', style: TextStyle(fontSize: 12, color: Colors.green))),
                                   DataColumn(label: Text('অ.ছে', style: TextStyle(fontSize: 12, color: Colors.red))),
                                   DataColumn(label: Text('উ.মে', style: TextStyle(fontSize: 12, color: Colors.green))),
