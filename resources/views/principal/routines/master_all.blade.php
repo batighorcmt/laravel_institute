@@ -15,11 +15,11 @@
   .header-info { display: flex !important; margin-bottom: 20px !important; }
 }
 
-.table-routine th, .table-routine td { vertical-align: middle; font-size:12px; padding: 4px; border: 1px solid #dee2e6; }
-.table-routine thead th { background: #f8f9fa; }
-.sub { font-weight:600; display:block; }
-.small { font-size: 11px; }
-.teacher-col { font-weight: bold; width: 60px; min-width: 60px; text-align: center; }
+.table-routine th, .table-routine td { vertical-align: middle; font-size:13px; padding: 4px; border: 1px solid #000 !important; color: #000 !important; }
+.table-routine thead th { background: #f8f9fa; color: #000 !important; font-weight: 700; }
+.sub { font-weight:700; display:block; font-size: 14px; color: #000 !important; line-height: 1.2; margin-bottom: 2px; }
+.small { font-size: 13px; color: #000 !important; font-weight: 600; line-height: 1.2; }
+.teacher-col { font-weight: bold; width: 60px; min-width: 60px; text-align: center; font-size: 14px; color: #000 !important; }
 .flex-container {
     display: flex;
     gap: 20px;
@@ -112,9 +112,9 @@
                                     @else
                                        @foreach($list as $e)
                                           <div><span class="sub">{{ $e->class?->name ?? '' }} {{ $e->section ? '- '.$e->section->name : '' }}</span></div>
-                                          <div class="small text-muted">{{ $e->subject?->name ?? '' }}</div>
-                                          @if($e->room) <div class="small text-muted" style="font-size: 10px; margin-top:2px;">রুম: {{ strtr($e->room, ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯']) }}</div> @endif
-                                          @if(!$loop->last)<hr class="my-1 border-secondary">@endif
+                                          <div class="small">{{ $e->subject?->name ?? '' }}</div>
+                                          @if($e->room) <div class="small" style="font-size: 12px !important; margin-top:2px;">রুম: {{ strtr($e->room, ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯']) }}</div> @endif
+                                          @if(!$loop->last)<hr class="my-1 border-dark">@endif
                                        @endforeach
                                     @endif
                                  </td>
