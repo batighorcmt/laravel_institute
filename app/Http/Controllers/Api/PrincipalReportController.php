@@ -281,10 +281,6 @@ class PrincipalReportController extends Controller
             }])
             ->where('school_id', $schoolId);
 
-        if ($request->filled('subject_id')) {
-            $query->where('subject_id', $request->get('subject_id'));
-        }
-
         if ($request->filled('date')) {
             $query->whereDate('evaluation_date', $request->get('date'));
         }
@@ -498,10 +494,10 @@ class PrincipalReportController extends Controller
             return response()->json(['message' => 'No school context'], 400);
         }
 
-        $teachers = \App\Models\Teacher::forSchool($schoolId)->active()->with('user:id,name')->get()->map(function($t){
+        $teachers = \App\Models\Teacher::forSchool($schoolId)->active()->orderBy('serial_number')->orderBy('id')->get()->map(function($t){
             return [
                 'id' => (int)$t->id,
-                'name' => $t->full_name ?: ($t->user?->name ?? 'Teacher #'.$t->id)
+                'name' => $t->full_name ?: ($t->first_name . ' ' . $t->last_name)
             ];
         });
 
