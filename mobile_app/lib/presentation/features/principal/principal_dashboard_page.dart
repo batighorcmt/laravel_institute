@@ -138,7 +138,7 @@ class _PrincipalDashboardPageState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Principal Dashboard'),
+        title: const Text('Batighor EIMS'),
         actions: [
           IconButton(
             tooltip: 'Reload',
@@ -576,8 +576,19 @@ class _PrincipalDashboardPageState
             icon: Icons.pie_chart_outline,
             color: Colors.blue,
             items: [
-              _statRow('Class Attendance', _summaryData?['class_attendance']),
-              _statRow('Extra Class Attendance', _summaryData?['extra_class_attendance']),
+              _statRowCustom(
+                'Class Attendance',
+                'শাখা ${_summaryData?["class_attendance"]?["sections_with_attendance"] ?? 0}/${_summaryData?["class_attendance"]?["total_sections"] ?? 0}',
+                'শিক্ষার্থী ${_summaryData?["class_attendance"]?["present"] ?? 0}/${_summaryData?["class_attendance"]?["total"] ?? 0}',
+                Colors.teal,
+              ),
+              const Divider(height: 10),
+              _statRowCustom(
+                'Extra Class Attendance',
+                'ক্লাস ${_summaryData?["extra_class_attendance"]?["classes_with_attendance"] ?? 0}/${_summaryData?["extra_class_attendance"]?["total_classes"] ?? 0}',
+                'শিক্ষার্থী ${_summaryData?["extra_class_attendance"]?["present"] ?? 0}/${_summaryData?["extra_class_attendance"]?["total"] ?? 0}',
+                Colors.orange,
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -646,6 +657,25 @@ class _PrincipalDashboardPageState
         const SizedBox(height: 2),
         Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
       ],
+    );
+  }
+
+  Widget _statRowCustom(String label, String sub1, String sub2, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(sub1, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+              Text(sub2, style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

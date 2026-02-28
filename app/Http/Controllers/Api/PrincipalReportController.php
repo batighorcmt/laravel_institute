@@ -52,6 +52,15 @@ class PrincipalReportController extends Controller
             ->where('date', $date)
             ->count();
 
+        // Count distinct extra classes scheduled today and those with attendance
+        $totalExtraClasses = \App\Models\ExtraClass::where('school_id', $schoolId)
+            ->whereDate('date', $date)
+            ->count();
+        $extraClassesWithAtt = \App\Models\ExtraClassAttendance::whereHas('extraClass', fn($q) => $q->where('school_id', $schoolId))
+            ->where('date', $date)
+            ->distinct('extra_class_id')
+            ->count('extra_class_id');
+
         // 3. Lesson Evaluation Stats
         $routineExpected = RoutineEntry::where('school_id', $schoolId)
             ->where('day_of_week', $dayOfWeek)
@@ -61,6 +70,18 @@ class PrincipalReportController extends Controller
             ->whereDate('evaluation_date', $date)
             ->count();
 
+        // Class attendance: count sections that had attendance taken today
+        $classSectionsWithAtt = Attendance::join('students','students.id','=','attendance.student_id')
+            ->where('attendance.date', $date)
+            ->where('students.school_id', $schoolId)
+            ->distinct()
+            ->count(DB::raw('CONCAT(attendance.class_id, "|", attendance.section_id)'));
+
+        // Total active class-sections in this school
+        $totalClassSections = Section::where('school_id', $schoolId)
+            ->where('status', 'active')
+            ->count();
+
         return response()->json([
             'data' => [
                 'date' => $date,
@@ -68,11 +89,15 @@ class PrincipalReportController extends Controller
                     'total' => $totalActiveStudents,
                     'present' => $presentToday,
                     'percentage' => $totalActiveStudents > 0 ? round(($presentToday / $totalActiveStudents) * 100, 1) : 0,
+                    'total_sections' => $totalClassSections,
+                    'sections_with_attendance' => $classSectionsWithAtt,
                 ],
                 'extra_class_attendance' => [
                     'total' => $extraClassTotal,
                     'present' => $extraClassPresent,
                     'percentage' => $extraClassTotal > 0 ? round(($extraClassPresent / $extraClassTotal) * 100, 1) : 0,
+                    'total_classes' => $totalExtraClasses,
+                    'classes_with_attendance' => $extraClassesWithAtt,
                 ],
                 'lesson_evaluation' => [
                     'total_expected' => $routineExpected,

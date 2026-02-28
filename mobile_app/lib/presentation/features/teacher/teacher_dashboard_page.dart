@@ -70,7 +70,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Teacher Dashboard'),
+        title: const Text('Batighor EIMS'),
         actions: [
           IconButton(
             tooltip: 'Notifications',
