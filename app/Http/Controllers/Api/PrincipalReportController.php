@@ -43,7 +43,7 @@ class PrincipalReportController extends Controller
             ->whereIn('attendance.status', ['present','late'])
             ->count();
 
-        // 2. Extra Class Attendance
+        // 2. Extra Class Attendance — date lives in extra_class_attendances, not extra_classes
         $extraClassPresent = \App\Models\ExtraClassAttendance::whereHas('extraClass', fn($q) => $q->where('school_id', $schoolId))
             ->where('date', $date)
             ->whereIn('status', ['present', 'late'])
@@ -52,25 +52,24 @@ class PrincipalReportController extends Controller
             ->where('date', $date)
             ->count();
 
-        // Count distinct extra classes scheduled today and those with attendance
-        $totalExtraClasses = \App\Models\ExtraClass::where('school_id', $schoolId)
-            ->whereDate('date', $date)
-            ->count();
-        $extraClassesWithAtt = \App\Models\ExtraClassAttendance::whereHas('extraClass', fn($q) => $q->where('school_id', $schoolId))
+        // Count distinct extra classes that had attendance taken today
+        $totalExtraClasses = \App\Models\ExtraClassAttendance::whereHas('extraClass', fn($q) => $q->where('school_id', $schoolId))
             ->where('date', $date)
             ->distinct('extra_class_id')
             ->count('extra_class_id');
+        // For now: classes_with_attendance == those that have any record (same as totalExtraClasses)
+        $extraClassesWithAtt = $totalExtraClasses;
 
         // 3. Lesson Evaluation Stats
         $routineExpected = RoutineEntry::where('school_id', $schoolId)
             ->where('day_of_week', $dayOfWeek)
             ->count();
-        
+
         $evaluationsDone = LessonEvaluation::where('school_id', $schoolId)
             ->whereDate('evaluation_date', $date)
             ->count();
 
-        // Class attendance: count distinct class-sections that had attendance taken today
+        // Count distinct class-sections that had attendance taken today (safe approach)
         $classSectionsWithAtt = DB::table('attendance')
             ->join('students', 'students.id', '=', 'attendance.student_id')
             ->where('attendance.date', $date)
