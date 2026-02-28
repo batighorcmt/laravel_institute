@@ -68,7 +68,7 @@
       <div class="header-text">
         <h1 class="school-name mb-1">{{ $school->name_bn }}</h1>
         <div class="routine-title">শিক্ষক রুটিন — {{ strtr(date('Y'), $bnMap ?? []) }}</div>
-        <div class="meta-line mt-1">শিক্ষক: {{ $teacherName }} {{ $teacher->designation ? ' - '.$teacher->designation : '' }}</div>
+        <div class="meta-line mt-1">শিক্ষক: {{ $teacherName }} {{ $teacher->initials ? ' - '.$teacher->initials : '' }}</div>
       </div>
     </div>
     

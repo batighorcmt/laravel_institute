@@ -17,7 +17,7 @@
           <select name="teacher_id" id="teacher_id" class="form-control select2" required>
             <option value="">— নির্বাচন করুন —</option>
             @foreach($teachers as $teacher)
-              <option value="{{ $teacher->id }}">{{ $teacher->user->name ?? 'Unknown' }} {{ $teacher->designation ? ' - '.$teacher->designation : '' }}</option>
+              <option value="{{ $teacher->id }}">{{ $teacher->user->name ?? 'Unknown' }} {{ $teacher->initials ? ' - '.$teacher->initials : '' }}</option>
             @endforeach
           </select>
         </div>
@@ -33,12 +33,17 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    if ($.fn.select2) {
-        $('.select2').select2({
-            theme: 'bootstrap4',
-            width: '100%'
-        });
+    function initSelect2() {
+        if ($.fn.select2) {
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+        } else {
+            setTimeout(initSelect2, 100);
+        }
     }
+    initSelect2();
 });
 </script>
 @endpush
