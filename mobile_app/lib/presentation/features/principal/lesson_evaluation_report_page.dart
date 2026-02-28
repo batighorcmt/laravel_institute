@@ -573,13 +573,12 @@ class _LessonEvaluationReportPageState
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
         setState(() {
-          _subjects = [
+          _subjects = <Map<String, dynamic>>[
                 {'id': -1, 'name': _selectedClassId == null ? 'All Subjects' : 'Any Subject'}
               ] +
               data
-                  .map((e) => {'id': e['id'], 'name': e['name']})
-                  .toList()
-                  .cast<Map<String, dynamic>>();
+                  .map((e) => <String, dynamic>{'id': e['id'], 'name': e['name']})
+                  .toList();
         });
       } else {
         _addLog('Subjects endpoint returned status ${resp.statusCode}');
@@ -647,17 +646,16 @@ class _LessonEvaluationReportPageState
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
         setState(() {
-          _teachers = [
+          _teachers = <Map<String, dynamic>>[
             {'id': -1, 'name': 'All Teachers', 'designation': ''}
           ] +
               data
-                  .map((e) => {
+                  .map((e) => <String, dynamic>{
                         'id': e['id'],
                         'name': e['name'],
                         'designation': e['designation']
                       })
-                  .toList()
-                  .cast<Map<String, dynamic>>();
+                  .toList();
         });
       } else {
         _addLog('Teachers endpoint returned status ${resp.statusCode}');
