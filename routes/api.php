@@ -139,6 +139,9 @@ Route::prefix('v1')->group(function () {
     });
 
     // Meta endpoints
+    Route::get('meta/classes', [\App\Http\Controllers\Api\SchoolMetaController::class, 'classes']);
+    Route::get('meta/sections', [\App\Http\Controllers\Api\SchoolMetaController::class, 'sections']);
+    Route::get('meta/subjects', [\App\Http\Controllers\Api\SchoolMetaController::class, 'subjects']);
     Route::get('meta/teachers', [\App\Http\Controllers\Api\SchoolMetaController::class, 'teachers']);
     });
 });

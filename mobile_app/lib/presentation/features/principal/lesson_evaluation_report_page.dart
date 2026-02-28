@@ -434,6 +434,7 @@ class _LessonEvaluationReportPageState
       _addLog('GET principal/students/filters/classes -> ${resp.statusCode}');
       _addLog('Resp: ${resp.data}');
       if (resp.statusCode == 200) {
+        final data = _extractList(resp.data);
         final rawData = data.map((e) => {
           'id': e['id'], 
           'name': e['name'],
@@ -497,6 +498,7 @@ class _LessonEvaluationReportPageState
       );
       _addLog('Resp: ${resp.data}');
       if (resp.statusCode == 200) {
+        final data = _extractList(resp.data);
         final rawData = data.map((e) => {'id': e['id'], 'name': e['name']}).toList();
         
         // Natural sort for sections

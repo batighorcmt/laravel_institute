@@ -40,15 +40,40 @@ class SchoolMetaController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $query = Section::where('school_id', $schoolId);
+        $query = Section::where('school_id', $schoolId)->where('status', 'active');
         if ($classId) {
-            $query->whereHas('enrollments', function($q) use ($classId) {
-                $q->where('class_id', $classId);
-            });
+            $query->where('class_id', $classId);
         }
 
         $sections = $query->orderBy('name')->get(['id','name']);
         return response()->json($sections->map(fn($s)=>['id'=>$s->id,'name'=>$s->name])->values());
+    }
+
+    public function subjects(Request $request)
+    {
+        $user = Auth::user();
+        $schoolId = $this->resolveSchoolId($request);
+        $classId = $request->get('class_id');
+
+        if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if ($classId) {
+            $subjects = \App\Models\Subject::whereHas('classMappings', function($q) use ($classId) {
+                    $q->where('class_id', $classId)->where('status', 'active');
+                })
+                ->join('class_subjects', 'subjects.id', '=', 'class_subjects.subject_id')
+                ->where('class_subjects.class_id', $classId)
+                ->select('subjects.id', 'subjects.name')
+                ->orderByRaw('COALESCE(class_subjects.order_no, 9999)')
+                ->orderBy('subjects.name')
+                ->get();
+        } else {
+            $subjects = \App\Models\Subject::forSchool($schoolId)->active()->orderBy('name')->get(['id','name']);
+        }
+
+        return response()->json($subjects);
     }
 
     public function teachers(Request $request)
@@ -67,6 +92,7 @@ class SchoolMetaController extends Controller
                 'id' => $t->id,
                 'user_id' => $t->user_id,
                 'name' => $t->user?->name ?? $t->full_name,
+                'designation' => $t->designation,
             ];
         })->values();
 
