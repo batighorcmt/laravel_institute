@@ -52,15 +52,36 @@ class PrincipalReportController extends Controller
             ->whereIn('status', ['present', 'late'])
             ->count();
 
-        $extraClassTotal = (clone $extraQuery)->count();
+        // Total enrolled students in active extra classes
+        $extraClassTotal = DB::table('extra_class_enrollments')
+            ->join('extra_classes', 'extra_classes.id', '=', 'extra_class_enrollments.extra_class_id')
+            ->join('students', 'students.id', '=', 'extra_class_enrollments.student_id')
+            ->where('extra_classes.school_id', $schoolId)
+            ->where('extra_classes.status', 'active')
+            ->where('extra_class_enrollments.status', 'active')
+            ->where('students.status', 'active')
+            ->count();
+
+        // Total active extra classes with at least one active enrolled student
+        $totalExtraClasses = DB::table('extra_classes')
+            ->where('school_id', $schoolId)
+            ->where('status', 'active')
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('extra_class_enrollments')
+                    ->join('students', 'students.id', '=', 'extra_class_enrollments.student_id')
+                    ->whereColumn('extra_class_enrollments.extra_class_id', 'extra_classes.id')
+                    ->where('extra_class_enrollments.status', 'active')
+                    ->where('students.status', 'active');
+            })
+            ->count();
 
         // Distinct extra classes with any attendance today
-        $totalExtraClasses = (clone $extraQuery)
+        $extraClassesWithAtt = (clone $extraQuery)
             ->select('extra_class_id')
             ->pluck('extra_class_id')
             ->unique()
             ->count();
-        $extraClassesWithAtt = $totalExtraClasses;
 
         // 3. Lesson Evaluation Stats
         $routineExpected = RoutineEntry::where('school_id', $schoolId)
