@@ -307,6 +307,9 @@ class PrincipalReportController extends Controller
                 $q->where('name', 'like', "%{$teacher}%");
             });
         }
+        if ($request->filled('teacher_id')) {
+            $query->where('teacher_id', $request->get('teacher_id'));
+        }
 
         $items = $query->orderByDesc('evaluation_date')->paginate(25);
 
@@ -412,6 +415,67 @@ class PrincipalReportController extends Controller
                 'records' => $records,
             ]
         ]);
+    }
+
+    /**
+     * Return meta data for lesson evaluation reports (classes, teachers, dates).
+     */
+    public function lessonEvaluationMeta(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id')
+            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
+            ?? ($user->primarySchool()?->id ?? null);
+            
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+
+        $classes = \App\Models\SchoolClass::forSchool($schoolId)->active()->get(['id', 'name']);
+        
+        $teachers = \App\Models\Teacher::forSchool($schoolId)->active()->with('user:id,name')->get()->map(function($t){
+            return [
+                'id' => $t->id,
+                'name' => $t->full_name ?: $t->user?->name
+            ];
+        });
+
+        $dates = \App\Models\LessonEvaluation::forSchool($schoolId)
+            ->distinct()
+            ->orderByDesc('evaluation_date')
+            ->pluck('evaluation_date')
+            ->map(fn($d) => $d->toDateString())
+            ->values();
+
+        return response()->json([
+            'classes' => $classes,
+            'teachers' => $teachers,
+            'dates' => $dates
+        ]);
+    }
+
+    /**
+     * Get all teachers for the school filter
+     */
+    public function getTeachers(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id')
+            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
+            ?? ($user->primarySchool()?->id ?? null);
+            
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+
+        $teachers = \App\Models\Teacher::forSchool($schoolId)->active()->with('user:id,name')->get()->map(function($t){
+            return [
+                'id' => $t->id,
+                'name' => $t->full_name ?: $t->user?->name
+            ];
+        });
+
+        return response()->json($teachers);
     }
 }
 
