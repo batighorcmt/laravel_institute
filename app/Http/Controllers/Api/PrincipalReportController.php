@@ -435,22 +435,30 @@ class PrincipalReportController extends Controller
             return response()->json(['message' => 'No school context'], 400);
         }
 
-        $classes = \App\Models\SchoolClass::forSchool($schoolId)->active()->get(['id', 'name'])->map(fn($c)=>[
+        $classes = \App\Models\SchoolClass::forSchool($schoolId)->active()->ordered()->get(['id', 'name'])->map(fn($c)=>[
             'id' => (int)$c->id,
             'name' => $c->name
         ]);
         
-        $teachers = \App\Models\Teacher::forSchool($schoolId)->active()->with('user:id,name')->get()->map(function($t){
+        $teachers = \App\Models\Teacher::forSchool($schoolId)->active()->orderBy('serial_number')->orderBy('id')->get()->map(function($t){
             return [
                 'id' => (int)$t->id,
-                'name' => $t->full_name ?: ($t->user?->name ?? 'Teacher #'.$t->id)
+                'name' => $t->full_name ?: ($t->first_name . ' ' . $t->last_name)
             ];
         });
 
-        $subjects = \App\Models\Subject::forSchool($schoolId)->active()->orderBy('name')->get(['id', 'name'])->map(fn($s)=>[
-            'id' => (int)$s->id,
-            'name' => $s->name
-        ]);
+        $subjects = \App\Models\ClassSubject::forSchool($schoolId)
+            ->where('status', 'active')
+            ->with(['subject:id,name', 'class:id,numeric_value'])
+            ->get()
+            ->sortBy(fn($cs) => ($cs->class?->numeric_value ?? 999) . '_' . ($cs->order_no ?? 999) . '_' . ($cs->subject?->name ?? ''))
+            ->map(function($cs) {
+                if (!$cs->subject) return null;
+                return [
+                    'id' => (int)$cs->subject_id,
+                    'name' => $cs->subject->name . ($cs->class ? " ({$cs->class->name})" : "")
+                ];
+            })->filter()->values();
 
         $dates = \App\Models\LessonEvaluation::forSchool($schoolId)
             ->distinct()
