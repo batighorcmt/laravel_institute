@@ -43,28 +43,22 @@ class PrincipalReportController extends Controller
             ->whereIn('attendance.status', ['present','late'])
             ->count();
 
-        // 2. Extra Class Attendance — date lives in extra_class_attendances, not extra_classes
-        $extraClassPresent = DB::table('extra_class_attendances')
-            ->join('extra_classes', 'extra_classes.id', '=', 'extra_class_attendances.extra_class_id')
-            ->where('extra_classes.school_id', $schoolId)
-            ->where('extra_class_attendances.date', $date)
-            ->whereIn('extra_class_attendances.status', ['present', 'late'])
+        // 2. Extra Class Attendance — use Eloquent whereHas (proven approach)
+        $extraQuery = \App\Models\ExtraClassAttendance::whereHas(
+            'extraClass', fn($q) => $q->where('school_id', $schoolId)
+        )->whereDate('date', $date);
+
+        $extraClassPresent = (clone $extraQuery)
+            ->whereIn('status', ['present', 'late'])
             ->count();
 
-        $extraClassTotal = DB::table('extra_class_attendances')
-            ->join('extra_classes', 'extra_classes.id', '=', 'extra_class_attendances.extra_class_id')
-            ->where('extra_classes.school_id', $schoolId)
-            ->where('extra_class_attendances.date', $date)
-            ->count();
+        $extraClassTotal = (clone $extraQuery)->count();
 
-        // Count distinct extra classes that had attendance taken today (PHP-side count)
-        $totalExtraClasses = DB::table('extra_class_attendances')
-            ->join('extra_classes', 'extra_classes.id', '=', 'extra_class_attendances.extra_class_id')
-            ->where('extra_classes.school_id', $schoolId)
-            ->where('extra_class_attendances.date', $date)
-            ->select('extra_class_attendances.extra_class_id')
-            ->distinct()
-            ->get()
+        // Distinct extra classes with any attendance today
+        $totalExtraClasses = (clone $extraQuery)
+            ->select('extra_class_id')
+            ->pluck('extra_class_id')
+            ->unique()
             ->count();
         $extraClassesWithAtt = $totalExtraClasses;
 
