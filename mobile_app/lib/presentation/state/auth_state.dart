@@ -50,6 +50,19 @@ class AuthNotifier extends AsyncNotifier<UserProfile?> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_cacheKey);
   }
+
+  Future<void> refresh() async {
+    // Silently fetch fresh profile without setting AsyncLoading
+    // (so the UI doesn't redirect to login)
+    try {
+      final data = await AuthRepository().me();
+      final profile = UserProfile.fromDynamic(data);
+      await _writeCachedProfile(profile);
+      state = AsyncData(profile);
+    } catch (_) {
+      // Keep existing state on failure — do NOT set AsyncError
+    }
+  }
 }
 
 final authProvider = AsyncNotifierProvider<AuthNotifier, UserProfile?>(

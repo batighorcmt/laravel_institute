@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../state/auth_state.dart';
 import '../../../widgets/animated_tile.dart';
 import '../../../widgets/app_snack.dart';
 import '../../../data/teacher/teacher_exam_repository.dart';

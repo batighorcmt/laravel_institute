@@ -9,6 +9,8 @@ use App\Models\Attendance;
 use App\Models\StudentEnrollment;
 use App\Models\SchoolClass;
 use App\Models\Section;
+use App\Models\RoutineEntry;
+use App\Models\LessonEvaluation;
 use Illuminate\Support\Facades\DB;
 
 class PrincipalReportController extends Controller

@@ -37,12 +37,37 @@ class _PrincipalDashboardPageState
   bool _fetchedExtra = false;
   Map<String, dynamic>? _summaryData;
   bool _summaryLoading = false;
+  Map<String, dynamic>? _selfRecord;
 
   @override
   void initState() {
     super.initState();
     _dio = DioClient().dio;
     _fetchSummary();
+    _fetchSelfAttendance();
+  }
+  
+  Future<void> _fetchSelfAttendance() async {
+    try {
+      final today = DateTime.now();
+      final ymd = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      final resp = await _dio.get('teacher/attendance');
+      final data = resp.data;
+      List list = [];
+      if (data is List) list = data;
+      if (data is Map && data['data'] is List) list = data['data'];
+      Map<String, dynamic>? todayRec;
+      for (final raw in list) {
+        if (raw is Map<String, dynamic>) {
+          final dateField = (raw['date'] ?? raw['attendance_date'] ?? raw['day'] ?? '').toString();
+          if (dateField.startsWith(ymd)) {
+            todayRec = raw;
+            break;
+          }
+        }
+      }
+      if (mounted) setState(() => _selfRecord = todayRec);
+    } catch (_) {}
   }
   
   Future<void> _fetchSummary() async {
@@ -118,11 +143,22 @@ class _PrincipalDashboardPageState
           IconButton(
             tooltip: 'Reload',
             icon: const Icon(Icons.refresh),
-            onPressed: () {
-              _fetchSummary();
+            onPressed: () async {
+              // Reset all local state
               setState(() {
-                 _fetchedExtra = false;
+                _summaryData = null;
+                _selfRecord = null;
+                _overridePhoto = null;
+                _overrideDesignation = null;
+                _fetchedExtra = false;
               });
+              // Force-refresh auth profile from server (picks up profile changes)
+              await ref.read(authProvider.notifier).refresh();
+              // Then refresh local page data
+              await Future.wait([
+                _fetchSummary(),
+                _fetchSelfAttendance(),
+              ]);
             },
           ),
           IconButton(
@@ -135,9 +171,16 @@ class _PrincipalDashboardPageState
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await Future.wait([
+            _fetchSummary(),
+            _fetchSelfAttendance(),
+          ]);
+        },
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
           // Header showing current user's name, designation, photo and school
           Builder(
             builder: (ctx) {
@@ -146,6 +189,29 @@ class _PrincipalDashboardPageState
               var photo = _overridePhoto ?? profile?.photoUrl;
               var designation =
                   _overrideDesignation ?? profile?.teacherDesignation ?? '';
+
+              final mobile = profile?.teacherPhone ?? profile?.mobile ?? '';
+              final selfStatus = _selfRecord?['status']?.toString() ?? 'Absent';
+              final checkIn = _selfRecord?['check_in_time']?.toString() ?? '-';
+              final checkOut = _selfRecord?['check_out_time']?.toString() ?? '-';
+              
+              String statusLabel = 'অনুপস্থিত';
+              Color statusColor = Colors.red;
+              if (selfStatus.toLowerCase() == 'present') {
+                statusLabel = 'উপস্থিত';
+                statusColor = Colors.green;
+              } else if (selfStatus.toLowerCase() == 'late') {
+                statusLabel = 'বিলম্ব';
+                statusColor = Colors.orange;
+              } else if (selfStatus.toLowerCase() == 'absent') {
+                statusLabel = 'অনুপস্থিত';
+                statusColor = Colors.red;
+              }
+
+              if (_selfRecord == null) {
+                statusLabel = 'হাজিরা দেওয়া হয়নি';
+                statusColor = Colors.grey;
+              }
 
               // If not yet fetched, try to fetch rich profile once.
               if (!_fetchedExtra) {
@@ -183,12 +249,6 @@ class _PrincipalDashboardPageState
                 }
               }
 
-              final mobile = profile?.mobile ?? profile?.teacherPhone ?? '';
-              final attendance = _summaryData?['class_attendance'];
-              final presentStr = attendance != null 
-                ? 'Present: ${attendance['present']}/${attendance['total']} (${attendance['percentage']}%)' 
-                : 'Attendance: Loading...';
-
               return Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -202,88 +262,94 @@ class _PrincipalDashboardPageState
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 32,
-                          backgroundColor: const Color(0xFFE6F5EE),
-                          backgroundImage: (photo != null && photo.isNotEmpty)
-                              ? NetworkImage(photo)
-                              : null,
-                          child: (photo == null || photo.isEmpty)
-                              ? Text(
-                                  name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    color: Color(0xFF1A1D1F),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 32,
+                              backgroundColor: const Color(0xFFE6F5EE),
+                              backgroundImage: (photo != null && photo.isNotEmpty)
+                                  ? NetworkImage(photo)
+                                  : null,
+                              child: (photo == null || photo.isEmpty)
+                                  ? Text(
+                                      name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                                      style: const TextStyle(
+                                        fontSize: 28,
+                                        color: Color(0xFF1A1D1F),
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                )
-                              : null,
+                                  if (designation.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      designation,
+                                      style: TextStyle(
+                                        color: Colors.grey[700],
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                  if (mobile.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      mobile,
+                                      style: const TextStyle(
+                                        color: Color(0xFF4B5563),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 6),
+                                  if (schoolName != null)
+                                    Text(
+                                      schoolName,
+                                      style: const TextStyle(
+                                        color: Color(0xFF1F2937),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right, color: Colors.grey),
+                          ],
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        if (_selfRecord != null) ...[
+                          const Divider(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              Text(
-                                name,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (designation.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  designation,
-                                  style: TextStyle(
-                                    color: Colors.grey[700],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                              if (mobile.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  mobile,
-                                  style: TextStyle(
-                                    color: Colors.blue[800],
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                              const Divider(height: 16),
-                              if (schoolName != null)
-                                Text(
-                                  schoolName,
-                                  style: const TextStyle(
-                                    color: Color(0xFF1F2937),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.green[50],
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  presentStr,
-                                  style: TextStyle(
-                                    color: Colors.green[800],
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                              _attStat('আজকের স্ট্যাটাস', statusLabel, statusColor),
+                              _attStat('চেক ইন', checkIn, Colors.green),
+                              _attStat('চেক আউট', checkOut, Colors.red),
                             ],
                           ),
-                        ),
-                        const Icon(Icons.chevron_right, color: Colors.grey),
+                        ] else ...[
+                          const Divider(height: 20),
+                          const Center(
+                            child: Text(
+                              'আজকের হাজিরা দেওয়া হয়নি',
+                              style: TextStyle(color: Colors.grey, fontSize: 13),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -504,30 +570,28 @@ class _PrincipalDashboardPageState
 
           const SizedBox(height: 12),
 
-          // Attendance & Lesson Summary Sections
-          if (_summaryData != null) ...[
-            _statSection(
-              title: 'Attendance Overview',
-              icon: Icons.pie_chart_outline,
-              color: Colors.blue,
-              items: [
-                _statRow('Class Attendance', _summaryData!['class_attendance']),
-                _statRow('Extra Class Attendance', _summaryData!['extra_class_attendance']),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _statSection(
-              title: 'Lesson Evaluation',
-              icon: Icons.menu_book_outlined,
-              color: Colors.purple,
-              items: [
-                _statInfo('Total Routine Classes', _summaryData!['lesson_evaluation']['total_expected'].toString()),
-                _statInfo('Evaluations Completed', _summaryData!['lesson_evaluation']['completed'].toString(), color: Colors.green),
-                _statInfo('Evaluations Pending', _summaryData!['lesson_evaluation']['not_done'].toString(), color: Colors.orange),
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
+          // Attendance & Lesson Summary Sections (Always show placeholders)
+          _statSection(
+            title: 'Attendance Overview',
+            icon: Icons.pie_chart_outline,
+            color: Colors.blue,
+            items: [
+              _statRow('Class Attendance', _summaryData?['class_attendance']),
+              _statRow('Extra Class Attendance', _summaryData?['extra_class_attendance']),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _statSection(
+            title: 'Lesson Evaluation',
+            icon: Icons.menu_book_outlined,
+            color: Colors.purple,
+            items: [
+              _statInfo('Total Routine Classes', _summaryData?['lesson_evaluation']?['total_expected']?.toString() ?? '0'),
+              _statInfo('Evaluations Completed', _summaryData?['lesson_evaluation']?['completed']?.toString() ?? '0', color: Colors.green),
+              _statInfo('Evaluations Pending', _summaryData?['lesson_evaluation']?['not_done']?.toString() ?? '0', color: Colors.orange),
+            ],
+          ),
+          const SizedBox(height: 12),
 
           // Reports card
           Card(
@@ -569,10 +633,22 @@ class _PrincipalDashboardPageState
             ),
           ),
           const SizedBox(height: 24),
-        ],
+          ],
+        ),
       ),
     );
   }
+
+  Widget _attStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+      ],
+    );
+  }
+
 
   Widget _statSection({required String title, required IconData icon, required Color color, required List<Widget> items}) {
     return Card(
