@@ -157,6 +157,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/', [PrincipalRoutineController::class,'panel'])->name('panel');
                 Route::get('/teacher-panel', [PrincipalRoutineController::class,'teacherPanel'])->name('teacher-panel');
                 Route::get('/master', [PrincipalRoutineController::class,'master'])->name('master');
+                Route::get('/master-all', [PrincipalRoutineController::class,'masterAll'])->name('master-all');
                 Route::get('/master-print', [PrincipalRoutineController::class,'masterPrint'])->name('master-print');
                 Route::get('/print', [PrincipalRoutineController::class,'printView'])->name('print');
                 Route::get('/teacher-print', [PrincipalRoutineController::class,'teacherPrintView'])->name('teacher-print');

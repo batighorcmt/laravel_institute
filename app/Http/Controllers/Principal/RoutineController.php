@@ -68,6 +68,45 @@ class RoutineController extends Controller
         return view('principal.routines.master', compact('school','days','selectedDay','teachers','maxPeriod','entries'));
     }
 
+    public function masterAll(School $school)
+    {
+        $days = ['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'];
+
+        // Get all teachers
+        $allTeachers = Teacher::where('school_id', $school->id)
+            ->with('user:id,name')
+            ->orderByRaw('COALESCE(serial_number, 999999) asc')
+            ->orderBy(User::select('name')->whereColumn('users.id','teachers.user_id'))
+            ->get();
+
+        // Get all routine entries
+        $allEntries = RoutineEntry::forSchool($school->id)
+            ->with(['subject:id,name','class:id,name','section:id,name'])
+            ->get();
+            
+        $maxPeriod = $allEntries->max('period_number') ?? 0;
+
+        $entries = $allEntries->groupBy(fn($e)=>$e->day_of_week.'#'.$e->teacher_id.'#'.$e->period_number);
+
+        // Filter active days
+        $activeDays = [];
+        foreach($days as $dk => $dn){
+            if($allEntries->where('day_of_week', $dk)->isNotEmpty()){
+                $activeDays[$dk] = $dn;
+            }
+        }
+        if(empty($activeDays)){
+            $activeDays = $days;
+        }
+
+        // Filter teachers who actually have classes across the week to save space
+        $teachers = $allTeachers->filter(function($t) use ($allEntries) {
+            return $allEntries->where('teacher_id', $t->id)->isNotEmpty();
+        });
+
+        return view('principal.routines.master_all', compact('school','activeDays','teachers','maxPeriod','entries'));
+    }
+
     public function masterPrint(Request $request, School $school)
     {
         $days = ['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'];
