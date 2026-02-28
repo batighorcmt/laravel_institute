@@ -80,13 +80,10 @@ class PrincipalStudentController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $sections = Section::where('school_id', $schoolId);
+        $sections = Section::where('school_id', $schoolId)->where('status', 'active');
 
         if ($classId) {
-            // Get sections that have enrollments for this class
-            $sections->whereHas('enrollments', function($q) use ($classId) {
-                $q->where('class_id', $classId);
-            });
+            $sections->where('class_id', $classId);
         }
 
         $sections = $sections->orderBy('name')->get(['id', 'name']);
@@ -167,15 +164,35 @@ class PrincipalStudentController extends Controller
         if ($classId && $sectionId) {
             $subjectIds = \App\Models\RoutineEntry::query()
                 ->where('school_id', $schoolId)
-                ->when($classId, fn($q)=>$q->where('class_id', $classId))
-                ->when($sectionId, fn($q)=>$q->where('section_id', $sectionId))
+                ->where('class_id', $classId)
+                ->where('section_id', $sectionId)
                 ->distinct()->pluck('subject_id')->filter()->unique()->values();
 
             if ($subjectIds->isEmpty()) {
-                return response()->json([]);
+                // fallback to class mappings
+                $subjects = \App\Models\Subject::whereHas('classMappings', function($q) use ($classId) {
+                        $q->where('class_id', $classId)->where('status', 'active');
+                    })
+                    ->join('class_subjects', 'subjects.id', '=', 'class_subjects.subject_id')
+                    ->where('class_subjects.class_id', $classId)
+                    ->select('subjects.id', 'subjects.name')
+                    ->orderByRaw('COALESCE(class_subjects.order_no, 9999)')
+                    ->orderBy('subjects.name')
+                    ->get();
+            } else {
+                $subjects = \App\Models\Subject::whereIn('id', $subjectIds)->active()->orderBy('name')->get(['id','name']);
             }
-
-            $subjects = \App\Models\Subject::whereIn('id', $subjectIds)->orderBy('name')->get(['id','name']);
+        } elseif ($classId) {
+            // If only class is provided, get subjects mapped to that class with proper ordering
+            $subjects = \App\Models\Subject::whereHas('classMappings', function($q) use ($classId) {
+                    $q->where('class_id', $classId)->where('status', 'active');
+                })
+                ->join('class_subjects', 'subjects.id', '=', 'class_subjects.subject_id')
+                ->where('class_subjects.class_id', $classId)
+                ->select('subjects.id', 'subjects.name')
+                ->orderByRaw('COALESCE(class_subjects.order_no, 9999)')
+                ->orderBy('subjects.name')
+                ->get();
         } else {
             $subjects = \App\Models\Subject::forSchool($schoolId)->active()->orderBy('name')->get(['id','name']);
         }

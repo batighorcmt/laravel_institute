@@ -195,15 +195,10 @@ class StudentDirectoryController extends Controller
         $classId = $request->get('class_id');
         if (!$schoolId) return response()->json([], 403);
 
-        $sections = \App\Models\Section::where('school_id', $schoolId);
+        $sections = \App\Models\Section::where('school_id', $schoolId)->where('status', 'active');
 
         if ($classId) {
-            $sections->where(function($q) use ($classId) {
-                $q->where('class_id', $classId)
-                  ->orWhereHas('enrollments', function($sq) use ($classId) {
-                      $sq->where('class_id', $classId);
-                  });
-            });
+            $sections->where('class_id', $classId);
         }
 
         $sections = $sections->orderBy('name')->get(['id', 'name']);

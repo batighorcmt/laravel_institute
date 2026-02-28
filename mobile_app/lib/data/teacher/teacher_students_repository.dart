@@ -212,7 +212,7 @@ class TeacherStudentsRepository {
         out.add({'id': cid, 'name': cname ?? 'Class'});
       }
     }
-    // Order by numeric_value when provided, else by name
+    // Order by numeric_value when provided, else by name using natural sort
     out.sort((a, b) {
       final ai = meta.firstWhere(
         (m) => m['id'].toString() == a['id'],
@@ -225,7 +225,14 @@ class TeacherStudentsRepository {
       final an = (ai['numeric_value'] as num?)?.toInt();
       final bn = (bi['numeric_value'] as num?)?.toInt();
       if (an != null && bn != null && an != bn) return an.compareTo(bn);
-      return (a['name'] as String).compareTo(b['name'] as String);
+      
+      final nameA = a['name'] as String? ?? '';
+      final nameB = b['name'] as String? ?? '';
+      final intA = int.tryParse(nameA);
+      final intB = int.tryParse(nameB);
+      if (intA != null && intB != null) return intA.compareTo(intB);
+      
+      return nameA.compareTo(nameB);
     });
     return out;
   }
@@ -280,9 +287,20 @@ class TeacherStudentsRepository {
         .cast<Map<String, dynamic>>()
         .map((e) => {'id': e['id']?.toString(), 'name': e['name']?.toString()})
         .toList();
-    sections.sort(
-      (a, b) => (a['name'] as String).compareTo(b['name'] as String),
-    );
+    sections.sort((a, b) {
+      final nameA = a['name'] as String? ?? '';
+      final nameB = b['name'] as String? ?? '';
+      
+      // Try numeric sort if both names are integers
+      final intA = int.tryParse(nameA);
+      final intB = int.tryParse(nameB);
+      if (intA != null && intB != null) {
+        return intA.compareTo(intB);
+      }
+      
+      // Fallback to lexicographical sort
+      return nameA.compareTo(nameB);
+    });
     return sections;
   }
 
@@ -314,7 +332,14 @@ class TeacherStudentsRepository {
         .cast<Map<String, dynamic>>()
         .map((e) => {'id': e['id']?.toString(), 'name': e['name']?.toString()})
         .toList();
-    groups.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+    groups.sort((a, b) {
+      final n1 = a['name'] as String? ?? '';
+      final n2 = b['name'] as String? ?? '';
+      final i1 = int.tryParse(n1);
+      final i2 = int.tryParse(n2);
+      if (i1 != null && i2 != null) return i1.compareTo(i2);
+      return n1.compareTo(n2);
+    });
     return groups;
   }
 

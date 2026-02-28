@@ -37,7 +37,7 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   List<String> _religions = [];
   String? _selectedReligion;
   List<String> _statuses = [];
-  String? _selectedStatus;
+  String? _selectedStatus = 'active';
 
   final TextEditingController _searchCtrl = TextEditingController();
   bool _classesLoading = false;
@@ -355,13 +355,6 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                       // Religion Filter
                       _filterDropdown('Religion', _selectedReligion, _religions.map((r)=>DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(fontSize: 11)))).toList(), (v) {
                         setState(() => _selectedReligion = v);
-                        _load(reset: true);
-                      }),
-                      const SizedBox(width: 8),
-
-                      // Status Filter
-                      _filterDropdown('Status', _selectedStatus, _statuses.map((s)=>DropdownMenuItem(value: s, child: Text(_capitalize(s), style: const TextStyle(fontSize: 11)))).toList(), (v) {
-                        setState(() => _selectedStatus = v);
                         _load(reset: true);
                       }),
                     ],

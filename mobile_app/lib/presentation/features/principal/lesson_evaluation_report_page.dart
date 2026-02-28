@@ -434,12 +434,22 @@ class _LessonEvaluationReportPageState
       _addLog('GET principal/students/filters/classes -> ${resp.statusCode}');
       _addLog('Resp: ${resp.data}');
       if (resp.statusCode == 200) {
-        final data = _extractList(resp.data);
+        final rawData = data.map((e) => {
+          'id': e['id'], 
+          'name': e['name'],
+          'numeric_value': e['numeric_value']
+        }).toList();
+        
+        // Numerical sort for classes
+        rawData.sort((a, b) {
+          final an = int.tryParse(a['numeric_value']?.toString() ?? '');
+          final bn = int.tryParse(b['numeric_value']?.toString() ?? '');
+          if (an != null && bn != null && an != bn) return an.compareTo(bn);
+          return a['name'].toString().compareTo(b['name'].toString());
+        });
+
         setState(() {
-          _classes = data
-              .map((e) => {'id': e['id'], 'name': e['name']})
-              .toList()
-              .cast<Map<String, dynamic>>();
+          _classes = rawData.cast<Map<String, dynamic>>();
         });
       } else {
         _addLog('Classes endpoint returned status ${resp.statusCode}');
@@ -487,12 +497,20 @@ class _LessonEvaluationReportPageState
       );
       _addLog('Resp: ${resp.data}');
       if (resp.statusCode == 200) {
-        final data = _extractList(resp.data);
+        final rawData = data.map((e) => {'id': e['id'], 'name': e['name']}).toList();
+        
+        // Natural sort for sections
+        rawData.sort((a, b) {
+          final s1 = a['name'].toString();
+          final s2 = b['name'].toString();
+          final n1 = int.tryParse(s1);
+          final n2 = int.tryParse(s2);
+          if (n1 != null && n2 != null) return n1.compareTo(n2);
+          return s1.compareTo(s2);
+        });
+
         setState(() {
-          _sections = data
-              .map((e) => {'id': e['id'], 'name': e['name']})
-              .toList()
-              .cast<Map<String, dynamic>>();
+          _sections = rawData.cast<Map<String, dynamic>>();
         });
       } else {
         _addLog('Sections endpoint returned status ${resp.statusCode}');
@@ -586,13 +604,7 @@ class _LessonEvaluationReportPageState
       if (_subjects.isEmpty) {
         try {
           final meta = await DioClient().dio.get(
-            'meta/sections', // original code had meta/sections here ? Maybe copy-paste error in original code, but keeping it safe or correcting ?
-            // Original code used meta/sections for subjects fallback? That seems wrong but let's check original. 
-            // Original line 553: 'meta/sections' - yes it was meta/sections. 
-            // I should probably change it to meta/subjects if that exists but adhering to minimal changes strategy unless broken.
-            // Wait, looking at line 553 in original code... it WAS 'meta/sections'. That is odd for subjects. 
-            // It might be a mistake in the original file I read.
-            // Let's assume the user wants subjects.
+            'meta/subjects',
             queryParameters: params,
           );
           _addLog('GET meta/sections?params=$params -> ${meta.statusCode}');
