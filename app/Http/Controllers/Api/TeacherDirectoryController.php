@@ -26,7 +26,7 @@ class TeacherDirectoryController extends Controller
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
-        $query = Teacher::query()->forSchool($schoolId)->active();
+        $query = Teacher::with('user')->forSchool($schoolId)->active();
         // Optional filters
         if ($request->filled('designation')) {
             $query->where('designation', $request->get('designation'));

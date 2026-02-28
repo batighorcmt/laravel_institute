@@ -26,8 +26,10 @@ class TeacherDirectoryResource extends JsonResource
             'teacher_id' => $this->id, // Export for frontend use
             'serial_number' => $this->serial_number,
             'name' => trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? '')),
+            'initials' => $this->initials,
             'designation' => $this->designation,
             'phone' => $this->phone,
+            'email' => $this->user?->email,
             'photo_url' => $photoUrl,
         ];
     }

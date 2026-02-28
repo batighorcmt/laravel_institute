@@ -416,16 +416,14 @@ class _ExtraClassAttendanceReportPageState
                       final pct = st > 0
                           ? '${(dispPresent / st * 100).toStringAsFixed(1)}%'
                           : '—';
-                      String getInitials(String name) {
-                        return name.trim().split(RegExp(r'\s+')).where((e) => e.isNotEmpty).map((e) => e[0].toUpperCase()).join('');
-                      }
-
-                      final tName = s['class_teacher_name'];
-                      final tInitials = tName != null && tName.toString().isNotEmpty ? ' (${getInitials(tName.toString())})' : '';
+                      final tInitials = s['class_teacher_initials'];
+                      final tInitialsStr = tInitials != null && tInitials.toString().isNotEmpty 
+                          ? ' (${tInitials.toString()})' 
+                          : '';
                       
                       final displayName = attTaken
-                          ? '${sName.toString()}$tInitials'
-                          : '${sName.toString()}$tInitials (হাজিরা নেই)';
+                          ? '${sName.toString()}$tInitialsStr'
+                          : '${sName.toString()}$tInitialsStr (হাজিরা নেই)';
 
                       rows.add(
                         DataRow(

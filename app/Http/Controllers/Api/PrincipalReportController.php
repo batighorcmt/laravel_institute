@@ -198,28 +198,32 @@ class PrincipalReportController extends Controller
                 'classes.id as class_id','classes.name as class_name','classes.numeric_value',
                 'sections.id as section_id','sections.name as section_name',
                 'sections.class_teacher_name',
+                'teachers.initials as class_teacher_initials',
                 DB::raw('COUNT(DISTINCT student_enrollments.student_id) as total'),
                 DB::raw("SUM(CASE WHEN students.gender='male' THEN 1 ELSE 0 END) as total_male"),
                 DB::raw("SUM(CASE WHEN students.gender='female' THEN 1 ELSE 0 END) as total_female")
             )
             ->join('classes','student_enrollments.class_id','=','classes.id')
             ->join('sections','student_enrollments.section_id','=','sections.id')
+            ->leftJoin('teachers', 'sections.class_teacher_id', '=', 'teachers.id')
             ->join('students','students.id','=','student_enrollments.student_id')
             ->where('student_enrollments.school_id', $schoolId)
             ->where('student_enrollments.status','active')
             ->where('students.status', 'active')
             ->where('sections.status','active')
             ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
-            ->groupBy('classes.id','classes.name','classes.numeric_value','sections.id','sections.name','sections.class_teacher_name')
+            ->groupBy('classes.id','classes.name','classes.numeric_value','sections.id','sections.name','sections.class_teacher_name','teachers.initials')
             ->get();
 
         $allClasses = SchoolClass::forSchool($schoolId)->active()->get(['id','name','numeric_value']);
         $existingKeys = $sectionTotals->map(fn($r)=>"{$r->class_id}|{$r->section_id}")->all();
         foreach ($allClasses as $cls) {
-            $classSections = Section::forSchool($schoolId)
-                ->where('class_id', $cls->id)
-                ->where('status','active')
-                ->get(['id','name','class_teacher_name']);
+            $classSections = DB::table('sections')
+                ->leftJoin('teachers', 'sections.class_teacher_id', '=', 'teachers.id')
+                ->where('sections.school_id', $schoolId)
+                ->where('sections.class_id', $cls->id)
+                ->where('sections.status','active')
+                ->get(['sections.id','sections.name','sections.class_teacher_name','teachers.initials as class_teacher_initials']);
             if ($classSections->isEmpty()) {
                 $sectionTotals->push((object) [
                     'class_id' => $cls->id,
@@ -228,6 +232,7 @@ class PrincipalReportController extends Controller
                     'section_id' => 0,
                     'section_name' => '—',
                     'class_teacher_name' => null,
+                    'class_teacher_initials' => null,
                     'total' => 0,
                     'total_male' => 0,
                     'total_female' => 0,
@@ -244,6 +249,7 @@ class PrincipalReportController extends Controller
                         'section_id' => $sec->id,
                         'section_name' => $sec->name,
                         'class_teacher_name' => $sec->class_teacher_name,
+                        'class_teacher_initials' => $sec->class_teacher_initials,
                         'total' => 0,
                         'total_male' => 0,
                         'total_female' => 0,
@@ -315,6 +321,7 @@ class PrincipalReportController extends Controller
                 'section_id' => $row->section_id,
                 'section_name' => $row->section_name,
                 'class_teacher_name' => $row->class_teacher_name ?? null,
+                'class_teacher_initials' => $row->class_teacher_initials ?? null,
                 'total' => (int)$row->total,
                 'total_male' => (int)$row->total_male,
                 'total_female' => (int)$row->total_female,
@@ -556,6 +563,7 @@ class PrincipalReportController extends Controller
 
         $extraClasses = \DB::table('extra_classes')
             ->join('users', 'extra_classes.teacher_id', '=', 'users.id')
+            ->leftJoin('teachers', 'users.id', '=', 'teachers.user_id')
             ->leftJoin('extra_class_enrollments', function($join) {
                 $join->on('extra_classes.id', '=', 'extra_class_enrollments.extra_class_id')
                      ->where('extra_class_enrollments.status', 'active');
@@ -566,11 +574,12 @@ class PrincipalReportController extends Controller
             })
             ->where('extra_classes.school_id', $schoolId)
             ->where('extra_classes.status', 'active')
-            ->groupBy('extra_classes.id', 'extra_classes.name', 'users.name')
+            ->groupBy('extra_classes.id', 'extra_classes.name', 'users.name', 'teachers.initials')
             ->select(
                 'extra_classes.id as section_id',
                 'extra_classes.name as section_name',
                 'users.name as class_teacher_name',
+                'teachers.initials as class_teacher_initials',
                 \DB::raw('COUNT(DISTINCT extra_class_enrollments.student_id) as total'),
                 \DB::raw("SUM(CASE WHEN students.gender='male' THEN 1 ELSE 0 END) as total_male"),
                 \DB::raw("SUM(CASE WHEN students.gender='female' THEN 1 ELSE 0 END) as total_female")
@@ -616,6 +625,7 @@ class PrincipalReportController extends Controller
                 'section_id' => $cls->section_id,
                 'section_name' => $cls->section_name,
                 'class_teacher_name' => $cls->class_teacher_name,
+                'class_teacher_initials' => $cls->class_teacher_initials ?? null,
                 'total' => (int)$cls->total,
                 'total_male' => (int)$cls->total_male,
                 'total_female' => (int)$cls->total_female,

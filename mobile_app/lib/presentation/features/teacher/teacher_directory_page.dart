@@ -172,18 +172,23 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                   }
                   final t = _items[index];
                   final name = (t['name'] ?? '').toString();
+                  final initials = (t['initials'] ?? '').toString();
                   final desig = (t['designation'] ?? '').toString();
                   final phone = (t['phone'] ?? '').toString();
+                  final email = (t['email'] ?? '').toString();
                   final photoUrl = (t['photo_url'] ?? '').toString();
+                  
+                  final displayName = initials.isNotEmpty ? '$name ($initials)' : name;
+
                   return ListTile(
                     leading: _TeacherAvatar(name: name, photoUrl: photoUrl),
-                    title: Text(name),
+                    title: Text(displayName),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (desig.isNotEmpty)
                           Text(
-                            '$desig${phone.isNotEmpty ? " $phone" : ""}',
+                            desig,
                             style: TextStyle(color: Colors.grey[600]),
                           ),
                         if (phone.isNotEmpty)
@@ -212,6 +217,32 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                               ),
                             ],
                           ),
+                        if (email.isNotEmpty)
+                          Row(
+                            children: [
+                              const Text('Email: ', style: TextStyle(fontSize: 12)),
+                              Flexible(
+                                child: Text(
+                                  email,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                tooltip: 'Email',
+                                icon: const Icon(
+                                  Icons.email,
+                                  color: Colors.orange,
+                                  size: 20,
+                                ),
+                                onPressed: () => _emailTeacher(email),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                   );
@@ -234,6 +265,19 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Cannot call $phone')));
+    }
+  }
+
+  Future<void> _emailTeacher(String email) async {
+    if (email.isEmpty) return;
+    final uri = Uri(scheme: 'mailto', path: email);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Cannot email $email')));
     }
   }
 }
