@@ -307,9 +307,6 @@ class PrincipalReportController extends Controller
                 $q->where('name', 'like', "%{$teacher}%");
             });
         }
-        if ($request->filled('teacher_id')) {
-            $query->where('teacher_id', $request->get('teacher_id'));
-        }
 
         $items = $query->orderByDesc('evaluation_date')->paginate(25);
 
@@ -415,93 +412,6 @@ class PrincipalReportController extends Controller
                 'records' => $records,
             ]
         ]);
-    }
-
-    /**
-     * Return meta data for lesson evaluation reports (classes, teachers, dates, subjects).
-     */
-    public function lessonEvaluationMeta(Request $request)
-    {
-        $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id')
-            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
-            ?? ($user->primarySchool()?->id ?? null);
-            
-        if (empty($schoolId)) {
-            return response()->json(['message' => 'No school context'], 400);
-        }
-
-        $classes = \App\Models\SchoolClass::forSchool($schoolId)->active()->ordered()->get(['id', 'name'])->map(fn($c)=>[
-            'id' => (int)$c->id,
-            'name' => $c->name
-        ]);
-        
-        $teachers = \App\Models\Teacher::forSchool($schoolId)->active()->orderBy('serial_number')->orderBy('id')->get()->map(function($t){
-            return [
-                'id' => (int)$t->id,
-                'name' => $t->full_name ?: ($t->first_name . ' ' . $t->last_name)
-            ];
-        });
-
-        $subjects = \App\Models\ClassSubject::forSchool($schoolId)
-            ->where('status', 'active')
-            ->with(['subject:id,name', 'class:id,numeric_value'])
-            ->get()
-            ->sortBy(fn($cs) => ($cs->class?->numeric_value ?? 999) . '_' . ($cs->order_no ?? 999) . '_' . ($cs->subject?->name ?? ''))
-            ->map(function($cs) {
-                if (!$cs->subject) return null;
-                return [
-                    'id' => (int)$cs->subject_id,
-                    'name' => $cs->subject->name . ($cs->class ? " ({$cs->class->name})" : "")
-                ];
-            })->filter()->values();
-
-        $dates = \App\Models\LessonEvaluation::forSchool($schoolId)
-            ->distinct()
-            ->orderByDesc('evaluation_date')
-            ->pluck('evaluation_date')
-            ->filter()
-            ->map(fn($d) => $d->toDateString())
-            ->values();
-
-        $statuses = [
-            ['id' => 'completed', 'name' => 'পড়া হয়েছে'],
-            ['id' => 'partial', 'name' => 'আংশিক হয়েছে'],
-            ['id' => 'not_done', 'name' => 'পড়া হয়নি'],
-            ['id' => 'absent', 'name' => 'অনুপস্থিত'],
-        ];
-
-        return response()->json([
-            'classes' => $classes,
-            'teachers' => $teachers,
-            'subjects' => $subjects,
-            'dates' => $dates,
-            'statuses' => $statuses
-        ]);
-    }
-
-    /**
-     * Get all teachers for the school filter
-     */
-    public function getTeachers(Request $request)
-    {
-        $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id')
-            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
-            ?? ($user->primarySchool()?->id ?? null);
-            
-        if (empty($schoolId)) {
-            return response()->json(['message' => 'No school context'], 400);
-        }
-
-        $teachers = \App\Models\Teacher::forSchool($schoolId)->active()->orderBy('serial_number')->orderBy('id')->get()->map(function($t){
-            return [
-                'id' => (int)$t->id,
-                'name' => $t->full_name ?: ($t->first_name . ' ' . $t->last_name)
-            ];
-        });
-
-        return response()->json($teachers);
     }
 }
 
