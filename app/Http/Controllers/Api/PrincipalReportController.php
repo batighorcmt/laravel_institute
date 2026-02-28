@@ -44,20 +44,28 @@ class PrincipalReportController extends Controller
             ->count();
 
         // 2. Extra Class Attendance — date lives in extra_class_attendances, not extra_classes
-        $extraClassPresent = \App\Models\ExtraClassAttendance::whereHas('extraClass', fn($q) => $q->where('school_id', $schoolId))
-            ->where('date', $date)
-            ->whereIn('status', ['present', 'late'])
-            ->count();
-        $extraClassTotal = \App\Models\ExtraClassAttendance::whereHas('extraClass', fn($q) => $q->where('school_id', $schoolId))
-            ->where('date', $date)
+        $extraClassPresent = DB::table('extra_class_attendances')
+            ->join('extra_classes', 'extra_classes.id', '=', 'extra_class_attendances.extra_class_id')
+            ->where('extra_classes.school_id', $schoolId)
+            ->where('extra_class_attendances.date', $date)
+            ->whereIn('extra_class_attendances.status', ['present', 'late'])
             ->count();
 
-        // Count distinct extra classes that had attendance taken today
-        $totalExtraClasses = \App\Models\ExtraClassAttendance::whereHas('extraClass', fn($q) => $q->where('school_id', $schoolId))
-            ->where('date', $date)
-            ->distinct('extra_class_id')
-            ->count('extra_class_id');
-        // For now: classes_with_attendance == those that have any record (same as totalExtraClasses)
+        $extraClassTotal = DB::table('extra_class_attendances')
+            ->join('extra_classes', 'extra_classes.id', '=', 'extra_class_attendances.extra_class_id')
+            ->where('extra_classes.school_id', $schoolId)
+            ->where('extra_class_attendances.date', $date)
+            ->count();
+
+        // Count distinct extra classes that had attendance taken today (PHP-side count)
+        $totalExtraClasses = DB::table('extra_class_attendances')
+            ->join('extra_classes', 'extra_classes.id', '=', 'extra_class_attendances.extra_class_id')
+            ->where('extra_classes.school_id', $schoolId)
+            ->where('extra_class_attendances.date', $date)
+            ->select('extra_class_attendances.extra_class_id')
+            ->distinct()
+            ->get()
+            ->count();
         $extraClassesWithAtt = $totalExtraClasses;
 
         // 3. Lesson Evaluation Stats
@@ -69,7 +77,7 @@ class PrincipalReportController extends Controller
             ->whereDate('evaluation_date', $date)
             ->count();
 
-        // Count distinct class-sections that had attendance taken today (safe approach)
+        // Count distinct class-sections that had attendance taken today
         $classSectionsWithAtt = DB::table('attendance')
             ->join('students', 'students.id', '=', 'attendance.student_id')
             ->where('attendance.date', $date)
@@ -79,9 +87,19 @@ class PrincipalReportController extends Controller
             ->get()
             ->count();
 
-        // Total active class-sections in this school
-        $totalClassSections = Section::where('school_id', $schoolId)
-            ->where('status', 'active')
+        // Total sections that have at least one active enrolled student
+        $totalClassSections = DB::table('sections')
+            ->where('sections.school_id', $schoolId)
+            ->where('sections.status', 'active')
+            ->whereExists(function ($q) use ($schoolId) {
+                $q->select(DB::raw(1))
+                    ->from('student_enrollments')
+                    ->join('students', 'students.id', '=', 'student_enrollments.student_id')
+                    ->whereColumn('student_enrollments.section_id', 'sections.id')
+                    ->where('student_enrollments.school_id', $schoolId)
+                    ->where('student_enrollments.status', 'active')
+                    ->where('students.status', 'active');
+            })
             ->count();
 
         return response()->json([
