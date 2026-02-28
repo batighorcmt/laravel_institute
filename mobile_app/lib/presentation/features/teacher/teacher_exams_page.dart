@@ -27,11 +27,20 @@ class _TeacherExamsPageState extends ConsumerState<TeacherExamsPage> {
 
   Future<void> _checkStatus() async {
     try {
+      final user = ref.read(authProvider).asData?.value;
+      bool isPrincipal = false;
+      if (user != null) {
+        isPrincipal = user.roles.any((r) => 
+          r.role.toLowerCase().contains('principal') || 
+          r.role.toLowerCase().contains('head')
+        );
+      }
+
       final repo = TeacherExamRepository();
       final status = await repo.getExamStatus();
       if (mounted) {
         setState(() {
-          _isExamController = status['is_exam_controller'] ?? false;
+          _isExamController = (status['is_exam_controller'] ?? false) || isPrincipal;
           _isLoading = false;
         });
       }

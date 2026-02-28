@@ -8,6 +8,7 @@ import '../teacher/teacher_leave_list_page.dart';
 import '../teacher/teacher_directory_page.dart';
 import '../teacher/teacher_students_list_page.dart';
 import '../teacher/teacher_profile_page.dart';
+import '../teacher/teacher_exams_page.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../data/auth/auth_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,11 +35,30 @@ class _PrincipalDashboardPageState
   String? _overridePhoto;
   String? _overrideDesignation;
   bool _fetchedExtra = false;
+  Map<String, dynamic>? _summaryData;
+  bool _summaryLoading = false;
 
   @override
   void initState() {
     super.initState();
     _dio = DioClient().dio;
+    _fetchSummary();
+  }
+  
+  Future<void> _fetchSummary() async {
+    if (_summaryLoading) return;
+    setState(() => _summaryLoading = true);
+    try {
+      final res = await _dio.get('principal/reports/attendance-summary');
+      if (mounted) {
+        setState(() {
+          _summaryData = res.data['data'];
+          _summaryLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _summaryLoading = false);
+    }
   }
 
   Future<Map<String, dynamic>> _fetchJson(String path) async {
@@ -96,6 +116,16 @@ class _PrincipalDashboardPageState
         title: const Text('Principal Dashboard'),
         actions: [
           IconButton(
+            tooltip: 'Reload',
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              _fetchSummary();
+              setState(() {
+                 _fetchedExtra = false;
+              });
+            },
+          ),
+          IconButton(
             tooltip: 'Logout',
             icon: const Icon(Icons.logout, color: Colors.red),
             onPressed: () async {
@@ -116,7 +146,8 @@ class _PrincipalDashboardPageState
               var photo = _overridePhoto ?? profile?.photoUrl;
               var designation =
                   _overrideDesignation ?? profile?.teacherDesignation ?? '';
-              // If not yet fetched, try to fetch raw /me for richer teacher fields once.
+
+              // If not yet fetched, try to fetch rich profile once.
               if (!_fetchedExtra) {
                 _fetchedExtra = true;
                 () async {
@@ -136,36 +167,12 @@ class _PrincipalDashboardPageState
                             (td?.toString().isNotEmpty == true)) {
                           setState(() => _overrideDesignation = td.toString());
                         }
-                      } else {
-                        final rawRoles = raw['roles'];
-                        if (rawRoles is List) {
-                          for (final e in rawRoles) {
-                            if (e is Map) {
-                              final tp = e['photo_url'] ?? e['photo'];
-                              final td =
-                                  e['designation'] ??
-                                  e['position'] ??
-                                  e['title'];
-                              if ((photo == null || (photo?.isEmpty ?? true)) &&
-                                  (tp?.toString().isNotEmpty == true)) {
-                                setState(() => _overridePhoto = tp.toString());
-                                break;
-                              }
-                              if ((designation == null ||
-                                      (designation?.isEmpty ?? true)) &&
-                                  (td?.toString().isNotEmpty == true)) {
-                                setState(
-                                  () => _overrideDesignation = td.toString(),
-                                );
-                              }
-                            }
-                          }
-                        }
                       }
                     }
                   } catch (_) {}
                 }();
               }
+
               String? schoolName;
               if (profile != null) {
                 for (final r in profile.roles) {
@@ -175,9 +182,16 @@ class _PrincipalDashboardPageState
                   }
                 }
               }
+
+              final mobile = profile?.mobile ?? profile?.teacherPhone ?? '';
+              final attendance = _summaryData?['class_attendance'];
+              final presentStr = attendance != null 
+                ? 'Present: ${attendance['present']}/${attendance['total']} (${attendance['percentage']}%)' 
+                : 'Attendance: Loading...';
+
               return Card(
-                elevation: 1,
-                clipBehavior: Clip.antiAlias,
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: InkWell(
                   onTap: () {
                     Navigator.of(context).push(
@@ -187,11 +201,12 @@ class _PrincipalDashboardPageState
                     );
                   },
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         CircleAvatar(
-                          radius: 28,
+                          radius: 32,
                           backgroundColor: const Color(0xFFE6F5EE),
                           backgroundImage: (photo != null && photo.isNotEmpty)
                               ? NetworkImage(photo)
@@ -200,13 +215,13 @@ class _PrincipalDashboardPageState
                               ? Text(
                                   name.isNotEmpty ? name[0].toUpperCase() : 'U',
                                   style: const TextStyle(
-                                    fontSize: 24,
+                                    fontSize: 28,
                                     color: Color(0xFF1A1D1F),
                                   ),
                                 )
                               : null,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,27 +229,57 @@ class _PrincipalDashboardPageState
                               Text(
                                 name,
                                 style: const TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              if (designation.isNotEmpty)
-                                Text(
-                                  designation,
-                                  style: const TextStyle(
-                                    color: Color(0xFF4B5563),
-                                  ),
-                                ),
-                              if (schoolName != null) ...[
+                              if (designation.isNotEmpty) ...[
                                 const SizedBox(height: 2),
                                 Text(
-                                  schoolName,
-                                  style: const TextStyle(
-                                    color: Color(0xFF4B5563),
+                                  designation,
+                                  style: TextStyle(
+                                    color: Colors.grey[700],
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
+                              if (mobile.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  mobile,
+                                  style: TextStyle(
+                                    color: Colors.blue[800],
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                              const Divider(height: 16),
+                              if (schoolName != null)
+                                Text(
+                                  schoolName,
+                                  style: const TextStyle(
+                                    color: Color(0xFF1F2937),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.green[50],
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  presentStr,
+                                  style: TextStyle(
+                                    color: Colors.green[800],
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -351,10 +396,11 @@ class _PrincipalDashboardPageState
                 titleFontSize: 9,
                 icon: Icons.assessment_outlined,
                 background: const Color(0xFFF7FBFF),
-                onTap: () async {
-                  await showAppSnack(
-                    context,
-                    message: 'Scroll for Exam Summary',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const TeacherExamsPage(), // Principal has full access
+                    ),
                   );
                 },
               ),
@@ -458,31 +504,32 @@ class _PrincipalDashboardPageState
 
           const SizedBox(height: 12),
 
-          // Attendance Report card restored at page bottom
-          Card(
-            elevation: 1,
-            child: ListTile(
-              leading: const Icon(
-                Icons.bar_chart_outlined,
-                color: Colors.green,
-              ),
-              title: const Text('Attendance Report'),
-              subtitle: const Text(
-                'Daily attendance summaries and class-wise reports',
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const PrincipalAttendanceDetailsPage(),
-                  ),
-                );
-              },
+          // Attendance & Lesson Summary Sections
+          if (_summaryData != null) ...[
+            _statSection(
+              title: 'Attendance Overview',
+              icon: Icons.pie_chart_outline,
+              color: Colors.blue,
+              items: [
+                _statRow('Class Attendance', _summaryData!['class_attendance']),
+                _statRow('Extra Class Attendance', _summaryData!['extra_class_attendance']),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
+            _statSection(
+              title: 'Lesson Evaluation',
+              icon: Icons.menu_book_outlined,
+              color: Colors.purple,
+              items: [
+                _statInfo('Total Routine Classes', _summaryData!['lesson_evaluation']['total_expected'].toString()),
+                _statInfo('Evaluations Completed', _summaryData!['lesson_evaluation']['completed'].toString(), color: Colors.green),
+                _statInfo('Evaluations Pending', _summaryData!['lesson_evaluation']['not_done'].toString(), color: Colors.orange),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
 
-          // Reports card (opens a page containing multiple reports)
+          // Reports card
           Card(
             elevation: 1,
             child: InkWell(
@@ -497,7 +544,7 @@ class _PrincipalDashboardPageState
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    const Icon(Icons.folder_open_outlined, size: 28),
+                    const Icon(Icons.folder_open_outlined, size: 28, color: Colors.indigo),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -522,6 +569,69 @@ class _PrincipalDashboardPageState
             ),
           ),
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _statSection({required String title, required IconData icon, required Color color, required List<Widget> items}) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 8),
+                Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(children: items),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statRow(String label, dynamic data) {
+    if (data == null) return const SizedBox();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13)),
+          Text(
+            '${data['present']}/${data['total']} (${data['percentage']}%)',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statInfo(String label, String value, {Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13)),
+          Text(
+            value,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color),
+          ),
         ],
       ),
     );

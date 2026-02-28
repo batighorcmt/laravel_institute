@@ -15,12 +15,69 @@ class PrincipalReportController extends Controller
 {
     public function attendanceSummary(Request $request)
     {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id')
+            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
+            ?? ($user->primarySchool()?->id ?? null);
+
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+
+        $date = $request->query('date', now()->toDateString());
+        $dayOfWeek = now()->format('l'); // Monday, Tuesday, etc.
+
+        // 1. Regular Class Attendance
+        $totalActiveStudents = StudentEnrollment::join('students', 'students.id', '=', 'student_enrollments.student_id')
+            ->where('student_enrollments.school_id', $schoolId)
+            ->where('student_enrollments.status', 'active')
+            ->where('students.status', 'active')
+            ->count();
+        
+        $presentToday = Attendance::join('students','students.id','=','attendance.student_id')
+            ->where('attendance.date', $date)
+            ->where('students.school_id', $schoolId)
+            ->where('students.status', 'active')
+            ->whereIn('attendance.status', ['present','late'])
+            ->count();
+
+        // 2. Extra Class Attendance
+        $extraClassPresent = \App\Models\ExtraClassAttendance::whereHas('extraClass', fn($q) => $q->where('school_id', $schoolId))
+            ->where('date', $date)
+            ->whereIn('status', ['present', 'late'])
+            ->count();
+        $extraClassTotal = \App\Models\ExtraClassAttendance::whereHas('extraClass', fn($q) => $q->where('school_id', $schoolId))
+            ->where('date', $date)
+            ->count();
+
+        // 3. Lesson Evaluation Stats
+        $routineExpected = RoutineEntry::where('school_id', $schoolId)
+            ->where('day_of_week', $dayOfWeek)
+            ->count();
+        
+        $evaluationsDone = LessonEvaluation::where('school_id', $schoolId)
+            ->whereDate('evaluation_date', $date)
+            ->count();
+
         return response()->json([
             'data' => [
-                'present_percentage' => null,
-                'absent_percentage' => null,
-            ],
-            'meta' => ['message' => 'attendance summary placeholder']
+                'date' => $date,
+                'class_attendance' => [
+                    'total' => $totalActiveStudents,
+                    'present' => $presentToday,
+                    'percentage' => $totalActiveStudents > 0 ? round(($presentToday / $totalActiveStudents) * 100, 1) : 0,
+                ],
+                'extra_class_attendance' => [
+                    'total' => $extraClassTotal,
+                    'present' => $extraClassPresent,
+                    'percentage' => $extraClassTotal > 0 ? round(($extraClassPresent / $extraClassTotal) * 100, 1) : 0,
+                ],
+                'lesson_evaluation' => [
+                    'total_expected' => $routineExpected,
+                    'completed' => $evaluationsDone,
+                    'not_done' => max(0, $routineExpected - $evaluationsDone),
+                ],
+            ]
         ]);
     }
 

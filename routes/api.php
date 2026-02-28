@@ -68,7 +68,7 @@ Route::prefix('v1')->group(function () {
     Route::get('teacher/lesson-evaluations/form', [\App\Http\Controllers\Api\LessonEvaluationController::class, 'form'])->middleware('role:teacher');
 
     // Teacher → Exams
-    Route::prefix('teacher/exams')->middleware('role:teacher')->group(function () {
+    Route::prefix('teacher/exams')->middleware('role:teacher,principal')->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\TeacherExamController::class, 'index']);
         Route::get('/todays-duty', [\App\Http\Controllers\Api\TeacherExamController::class, 'todaysDuty']);
         Route::get('/duty-meta', [\App\Http\Controllers\Api\TeacherExamController::class, 'dutyMeta']);
