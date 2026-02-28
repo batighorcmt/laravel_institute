@@ -25,10 +25,16 @@ class TeacherStudentAttendanceController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
 
-        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
-        $classEnabled = $teacher ? Section::where('school_id',$schoolId)->where('class_teacher_id',$teacher->id)->where('status','active')->exists() : false;
-        // ExtraClass model links teacher_id to users.id
-        $extraEnabled = ExtraClass::where('school_id',$schoolId)->where('status','active')->where('teacher_id',$user->id)->exists();
+        $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        if ($isPrincipal) {
+            $classEnabled = Section::where('school_id', $schoolId)->where('status', 'active')->exists();
+            $extraEnabled = ExtraClass::where('school_id', $schoolId)->where('status', 'active')->exists();
+        } else {
+            $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
+            $classEnabled = $teacher ? Section::where('school_id',$schoolId)->where('class_teacher_id',$teacher->id)->where('status','active')->exists() : false;
+            // ExtraClass model links teacher_id to users.id
+            $extraEnabled = ExtraClass::where('school_id',$schoolId)->where('status','active')->where('teacher_id',$user->id)->exists();
+        }
         $teamEnabled = Team::forSchool($schoolId)->active()->exists();
 
         return response()->json([
@@ -44,13 +50,15 @@ class TeacherStudentAttendanceController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
 
-        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
-        if (! $teacher) return response()->json(['data'=>[]]);
+        $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        $sectionsQuery = Section::where('school_id', $schoolId)->where('status', 'active');
+        if (!$isPrincipal) {
+            $teacher = Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->where('status', 'active')->first();
+            if (!$teacher) return response()->json(['data' => []]);
+            $sectionsQuery->where('class_teacher_id', $teacher->id);
+        }
 
-        $sections = Section::where('school_id',$schoolId)
-            ->where('class_teacher_id',$teacher->id)
-            ->where('status','active')
-            ->with(['schoolClass:id,name'])
+        $sections = $sectionsQuery->with(['schoolClass:id,name'])
             ->orderBy('class_id')
             ->orderBy('name')
             ->get(['id','name','class_id']);
@@ -75,10 +83,13 @@ class TeacherStudentAttendanceController extends Controller
         $user = $request->user();
         $schoolId = $this->resolveSchoolId($request, $user);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
-        $rows = ExtraClass::where('school_id',$schoolId)
-            ->where('status','active')
-            ->where('teacher_id',$user->id)
-            ->with(['schoolClass:id,name','section:id,name','subject:id,name'])
+        $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        $rowsQuery = ExtraClass::where('school_id', $schoolId)->where('status', 'active');
+        if (!$isPrincipal) {
+            $rowsQuery->where('teacher_id', $user->id);
+        }
+
+        $rows = $rowsQuery->with(['schoolClass:id,name','section:id,name','subject:id,name'])
             ->orderByDesc('id')
             ->get(['id','class_id','section_id','subject_id','name','schedule']);
         $data = $rows->map(fn($r)=>[
@@ -107,9 +118,12 @@ class TeacherStudentAttendanceController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user, $section->school_id);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
 
-        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
-        if (! $teacher || (int)$section->class_teacher_id !== (int)$teacher->id) {
-            return response()->json(['message' => 'আপনি এই শাখার শ্রেণিশিক্ষক নন'], 403);
+        $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        if (!$isPrincipal) {
+            $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
+            if (! $teacher || (int)$section->class_teacher_id !== (int)$teacher->id) {
+                return response()->json(['message' => 'আপনি এই শাখার শ্রেণিশিক্ষক নন'], 403);
+            }
         }
 
         $date = $request->query('date', now()->toDateString());
@@ -196,9 +210,12 @@ class TeacherStudentAttendanceController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user, $section->school_id);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
 
-        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
-        if (! $teacher || (int)$section->class_teacher_id !== (int)$teacher->id) {
-            return response()->json(['message' => 'আপনি এই শাখার শ্রেণিশিক্ষক নন'], 403);
+        $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        if (!$isPrincipal) {
+            $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
+            if (! $teacher || (int)$section->class_teacher_id !== (int)$teacher->id) {
+                return response()->json(['message' => 'আপনি এই শাখার শ্রেণিশিক্ষক নন'], 403);
+            }
         }
 
         $data = $request->validate([
@@ -287,8 +304,11 @@ class TeacherStudentAttendanceController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user, $extraClass->school_id);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
 
-        if ((int)$extraClass->teacher_id !== (int)$user->id || $extraClass->status !== 'active') {
-            return response()->json(['message' => 'আপনি এই এক্সট্রা ক্লাসের দায়িত্বপ্রাপ্ত নন'], 403);
+        $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        if (!$isPrincipal) {
+            if ((int)$extraClass->teacher_id !== (int)$user->id || $extraClass->status !== 'active') {
+                return response()->json(['message' => 'আপনি এই এক্সট্রা ক্লাসের দায়িত্বপ্রাপ্ত নন'], 403);
+            }
         }
 
         $date = $request->query('date', now()->toDateString());
@@ -368,8 +388,11 @@ class TeacherStudentAttendanceController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user, $extraClass->school_id);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
 
-        if ((int)$extraClass->teacher_id !== (int)$user->id || $extraClass->status !== 'active') {
-            return response()->json(['message' => 'আপনি এই এক্সট্রা ক্লাসের দায়িত্বপ্রাপ্ত নন'], 403);
+        $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        if (!$isPrincipal) {
+            if ((int)$extraClass->teacher_id !== (int)$user->id || $extraClass->status !== 'active') {
+                return response()->json(['message' => 'আপনি এই এক্সট্রা ক্লাসের দায়িত্বপ্রাপ্ত নন'], 403);
+            }
         }
 
         $data = $request->validate([
@@ -458,6 +481,10 @@ class TeacherStudentAttendanceController extends Controller
         if ($explicit) return (int)$explicit;
         $attr = $request->attributes->get('current_school_id');
         if ($attr) return (int)$attr;
+        
+        $principalSchoolId = $user->schoolRoles()->whereHas('role', fn($q)=>$q->whereIn('name', ['principal', 'super_admin']))->value('school_id');
+        if ($principalSchoolId) return (int)$principalSchoolId;
+        
         $firstActive = $user->firstTeacherSchoolId();
         if ($firstActive) return (int)$firstActive;
         $any = $user->schoolRoles()->whereHas('role', fn($q)=>$q->where('name','teacher'))->value('school_id');

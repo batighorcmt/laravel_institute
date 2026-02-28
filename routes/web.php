@@ -155,7 +155,12 @@ Route::middleware(['auth'])->group(function () {
             // Class Routine
             Route::prefix('routine')->name('routine.')->group(function(){
                 Route::get('/', [PrincipalRoutineController::class,'panel'])->name('panel');
-                    Route::get('/print', [PrincipalRoutineController::class,'printView'])->name('print');
+                Route::get('/teacher-panel', [PrincipalRoutineController::class,'teacherPanel'])->name('teacher-panel');
+                Route::get('/master', [PrincipalRoutineController::class,'master'])->name('master');
+                Route::get('/master-all', [PrincipalRoutineController::class,'masterAll'])->name('master-all');
+                Route::get('/master-print', [PrincipalRoutineController::class,'masterPrint'])->name('master-print');
+                Route::get('/print', [PrincipalRoutineController::class,'printView'])->name('print');
+                Route::get('/teacher-print', [PrincipalRoutineController::class,'teacherPrintView'])->name('teacher-print');
                 Route::get('/subjects', [PrincipalRoutineController::class,'subjects'])->name('subjects');
                 Route::get('/grid', [PrincipalRoutineController::class,'grid'])->name('grid');
                 Route::get('/period-count', [PrincipalRoutineController::class,'periodCount'])->name('period-count');
@@ -600,6 +605,11 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/students', [App\Http\Controllers\Teacher\DirectoryController::class, 'students'])->name('students');
                 Route::get('/students/{student}', [App\Http\Controllers\Teacher\DirectoryController::class, 'studentShow'])->name('students.show');
                 Route::get('/teachers', [App\Http\Controllers\Teacher\DirectoryController::class, 'teachers'])->name('teachers');
+            });
+
+            // Teacher Routine
+            Route::prefix('routine')->name('routine.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Teacher\TeacherRoutineController::class, 'printView'])->name('index');
             });
 
             // Billing collection page for teachers (restricted by assigned class in controller)

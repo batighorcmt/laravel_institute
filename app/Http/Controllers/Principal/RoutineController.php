@@ -36,6 +36,99 @@ class RoutineController extends Controller
         return view('principal.routines.panel', compact('school','classes','sections','teachers'));
     }
 
+    public function teacherPanel(School $school)
+    {
+        $teachers = Teacher::where('school_id',$school->id)
+            ->with('user:id,name')
+            ->orderByRaw('COALESCE(serial_number, 999999) asc')
+            ->orderBy(User::select('name')->whereColumn('users.id','teachers.user_id'))
+            ->get(['id','user_id','school_id','designation','serial_number','initials']);
+        return view('principal.routines.teacher_panel', compact('school','teachers'));
+    }
+
+    public function master(Request $request, School $school)
+    {
+        $days = ['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'];
+        $selectedDay = $request->get('day_of_week', 'saturday');
+        if(!array_key_exists($selectedDay, $days)) $selectedDay = 'saturday';
+
+        $teachers = Teacher::where('school_id', $school->id)
+            ->with('user:id,name')
+            ->orderByRaw('COALESCE(serial_number, 999999) asc')
+            ->orderBy(User::select('name')->whereColumn('users.id','teachers.user_id'))
+            ->get();
+
+        $maxPeriod = RoutineEntry::forSchool($school->id)->where('day_of_week', $selectedDay)->max('period_number') ?? 0;
+
+        $entries = RoutineEntry::forSchool($school->id)->where('day_of_week', $selectedDay)
+            ->with(['subject:id,name','class:id,name','section:id,name'])
+            ->get()
+            ->groupBy(fn($e)=>$e->teacher_id.'#'.$e->period_number);
+
+        return view('principal.routines.master', compact('school','days','selectedDay','teachers','maxPeriod','entries'));
+    }
+
+    public function masterAll(School $school)
+    {
+        $days = ['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'];
+
+        // Get all teachers
+        $allTeachers = Teacher::where('school_id', $school->id)
+            ->with('user:id,name')
+            ->orderByRaw('COALESCE(serial_number, 999999) asc')
+            ->orderBy(User::select('name')->whereColumn('users.id','teachers.user_id'))
+            ->get();
+
+        // Get all routine entries
+        $allEntries = RoutineEntry::forSchool($school->id)
+            ->with(['subject:id,name','class:id,name','section:id,name'])
+            ->get();
+            
+        $maxPeriod = $allEntries->max('period_number') ?? 0;
+
+        $entries = $allEntries->groupBy(fn($e)=>$e->day_of_week.'#'.$e->teacher_id.'#'.$e->period_number);
+
+        // Filter active days
+        $activeDays = [];
+        foreach($days as $dk => $dn){
+            if($allEntries->where('day_of_week', $dk)->isNotEmpty()){
+                $activeDays[$dk] = $dn;
+            }
+        }
+        if(empty($activeDays)){
+            $activeDays = $days;
+        }
+
+        // Filter teachers who actually have classes across the week to save space
+        $teachers = $allTeachers->filter(function($t) use ($allEntries) {
+            return $allEntries->where('teacher_id', $t->id)->isNotEmpty();
+        });
+
+        return view('principal.routines.master_all', compact('school','activeDays','teachers','maxPeriod','entries'));
+    }
+
+    public function masterPrint(Request $request, School $school)
+    {
+        $days = ['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'];
+        $selectedDay = $request->get('day_of_week', 'saturday');
+        if(!array_key_exists($selectedDay, $days)) $selectedDay = 'saturday';
+
+        $teachers = Teacher::where('school_id', $school->id)
+            ->with('user:id,name')
+            ->orderByRaw('COALESCE(serial_number, 999999) asc')
+            ->orderBy(User::select('name')->whereColumn('users.id','teachers.user_id'))
+            ->get();
+
+        $maxPeriod = RoutineEntry::forSchool($school->id)->where('day_of_week', $selectedDay)->max('period_number') ?? 0;
+
+        $entries = RoutineEntry::forSchool($school->id)->where('day_of_week', $selectedDay)
+            ->with(['subject:id,name','class:id,name','section:id,name'])
+            ->get()
+            ->groupBy(fn($e)=>$e->teacher_id.'#'.$e->period_number);
+
+        return view('principal.routines.master_print', compact('school','days','selectedDay','teachers','maxPeriod','entries'));
+    }
+
     public function subjects(Request $request, School $school)
     {
         try {
@@ -208,5 +301,28 @@ class RoutineController extends Controller
             ->groupBy(fn($e)=>$e->day_of_week.'#'.$e->period_number);
         $days = ['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'];
         return view('principal.routines.print', compact('school','class','section','periodCount','entries','days'));
+    }
+
+    public function teacherPrintView(Request $request, School $school)
+    {
+        $teacherId = (int)$request->get('teacher_id');
+        if(!$teacherId){
+            return redirect()->route('principal.institute.routine.panel',$school)->with('error','প্রিন্টের জন্য আগে শিক্ষক নির্বাচন করুন');
+        }
+        $teacher = Teacher::where('school_id', $school->id)->with('user')->find($teacherId);
+        if(!$teacher){
+            return redirect()->route('principal.institute.routine.panel',$school)->with('error','সঠিক শিক্ষক পাওয়া যায়নি');
+        }
+        
+        // Find max period number for the teacher to build a dynamic grid
+        $maxPeriod = RoutineEntry::forSchool($school->id)->where('teacher_id', $teacherId)->max('period_number') ?? 0;
+        
+        $entries = RoutineEntry::forSchool($school->id)->where('teacher_id', $teacherId)
+            ->with(['subject:id,name','class:id,name','section:id,name'])
+            ->get()
+            ->groupBy(fn($e)=>$e->day_of_week.'#'.$e->period_number);
+        
+        $days = ['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'];
+        return view('principal.routines.teacher_print', compact('school','teacher','maxPeriod','entries','days'));
     }
 }
