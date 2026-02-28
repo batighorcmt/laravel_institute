@@ -197,6 +197,7 @@ class PrincipalReportController extends Controller
         $sectionTotals = StudentEnrollment::select(
                 'classes.id as class_id','classes.name as class_name','classes.numeric_value',
                 'sections.id as section_id','sections.name as section_name',
+                'sections.class_teacher_name',
                 DB::raw('COUNT(DISTINCT student_enrollments.student_id) as total'),
                 DB::raw("SUM(CASE WHEN students.gender='male' THEN 1 ELSE 0 END) as total_male"),
                 DB::raw("SUM(CASE WHEN students.gender='female' THEN 1 ELSE 0 END) as total_female")
@@ -209,7 +210,7 @@ class PrincipalReportController extends Controller
             ->where('students.status', 'active')
             ->where('sections.status','active')
             ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
-            ->groupBy('classes.id','classes.name','classes.numeric_value','sections.id','sections.name')
+            ->groupBy('classes.id','classes.name','classes.numeric_value','sections.id','sections.name','sections.class_teacher_name')
             ->get();
 
         $allClasses = SchoolClass::forSchool($schoolId)->active()->get(['id','name','numeric_value']);
@@ -218,7 +219,7 @@ class PrincipalReportController extends Controller
             $classSections = Section::forSchool($schoolId)
                 ->where('class_id', $cls->id)
                 ->where('status','active')
-                ->get(['id','name']);
+                ->get(['id','name','class_teacher_name']);
             if ($classSections->isEmpty()) {
                 $sectionTotals->push((object) [
                     'class_id' => $cls->id,
@@ -226,6 +227,7 @@ class PrincipalReportController extends Controller
                     'numeric_value' => $cls->numeric_value,
                     'section_id' => 0,
                     'section_name' => '—',
+                    'class_teacher_name' => null,
                     'total' => 0,
                     'total_male' => 0,
                     'total_female' => 0,
@@ -241,6 +243,7 @@ class PrincipalReportController extends Controller
                         'numeric_value' => $cls->numeric_value,
                         'section_id' => $sec->id,
                         'section_name' => $sec->name,
+                        'class_teacher_name' => $sec->class_teacher_name,
                         'total' => 0,
                         'total_male' => 0,
                         'total_female' => 0,
@@ -311,6 +314,7 @@ class PrincipalReportController extends Controller
             $classBreakdown[$key]['sections'][] = [
                 'section_id' => $row->section_id,
                 'section_name' => $row->section_name,
+                'class_teacher_name' => $row->class_teacher_name ?? null,
                 'total' => (int)$row->total,
                 'total_male' => (int)$row->total_male,
                 'total_female' => (int)$row->total_female,
@@ -533,6 +537,132 @@ class PrincipalReportController extends Controller
                 'status' => $evaluation->status,
                 'stats' => $evaluation->getCompletionStats(),
                 'records' => $records,
+            ]
+        ]);
+    }
+
+    public function extraClassAttendanceDetails(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id')
+            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
+            ?? ($user->primarySchool()?->id ?? null);
+        
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+        
+        $date = $request->query('date', now()->toDateString());
+
+        $extraClasses = \DB::table('extra_classes')
+            ->join('users', 'extra_classes.teacher_id', '=', 'users.id')
+            ->leftJoin('extra_class_enrollments', function($join) {
+                $join->on('extra_classes.id', '=', 'extra_class_enrollments.extra_class_id')
+                     ->where('extra_class_enrollments.status', 'active');
+            })
+            ->leftJoin('students', function($join) {
+                $join->on('extra_class_enrollments.student_id', '=', 'students.id')
+                     ->where('students.status', 'active');
+            })
+            ->where('extra_classes.school_id', $schoolId)
+            ->where('extra_classes.status', 'active')
+            ->groupBy('extra_classes.id', 'extra_classes.name', 'users.name')
+            ->select(
+                'extra_classes.id as section_id',
+                'extra_classes.name as section_name',
+                'users.name as class_teacher_name',
+                \DB::raw('COUNT(DISTINCT extra_class_enrollments.student_id) as total'),
+                \DB::raw("SUM(CASE WHEN students.gender='male' THEN 1 ELSE 0 END) as total_male"),
+                \DB::raw("SUM(CASE WHEN students.gender='female' THEN 1 ELSE 0 END) as total_female")
+            )
+            ->having('total', '>', 0)
+            ->get();
+
+        $attendances = \DB::table('extra_class_attendances')
+            ->join('students', 'extra_class_attendances.student_id', '=', 'students.id')
+            ->where('extra_class_attendances.date', $date)
+            ->whereIn('extra_class_attendances.extra_class_id', $extraClasses->pluck('section_id'))
+            ->select(
+                'extra_class_attendances.extra_class_id as section_id',
+                \DB::raw("SUM(CASE WHEN students.gender='male' AND extra_class_attendances.status IN ('present','late') THEN 1 ELSE 0 END) as present_male"),
+                \DB::raw("SUM(CASE WHEN students.gender='female' AND extra_class_attendances.status IN ('present','late') THEN 1 ELSE 0 END) as present_female"),
+                \DB::raw("SUM(CASE WHEN students.gender='male' AND extra_class_attendances.status='absent' THEN 1 ELSE 0 END) as absent_male"),
+                \DB::raw("SUM(CASE WHEN students.gender='female' AND extra_class_attendances.status='absent' THEN 1 ELSE 0 END) as absent_female"),
+                \DB::raw("COUNT(DISTINCT CASE WHEN extra_class_attendances.status IN ('present','late') THEN extra_class_attendances.student_id END) as present_total"),
+                \DB::raw("COUNT(DISTINCT CASE WHEN extra_class_attendances.status='absent' THEN extra_class_attendances.student_id END) as absent_total")
+            )
+            ->groupBy('extra_class_attendances.extra_class_id')
+            ->get()
+            ->keyBy('section_id');
+
+        $sections = [];
+        $classTotal = 0;
+        $classMale = 0;
+        $classFemale = 0;
+        $classPresent = 0;
+        $classPresentMale = 0;
+        $classPresentFemale = 0;
+        $classAbsent = 0;
+        $classAbsentMale = 0;
+        $classAbsentFemale = 0;
+
+        foreach ($extraClasses as $cls) {
+            $att = $attendances->get($cls->section_id) ?? (object)[
+                'present_male' => 0, 'present_female' => 0, 'absent_male' => 0, 'absent_female' => 0, 'present_total' => 0, 'absent_total' => 0
+            ];
+            $attTaken = isset($attendances[$cls->section_id]);
+
+            $sections[] = [
+                'section_id' => $cls->section_id,
+                'section_name' => $cls->section_name,
+                'class_teacher_name' => $cls->class_teacher_name,
+                'total' => (int)$cls->total,
+                'total_male' => (int)$cls->total_male,
+                'total_female' => (int)$cls->total_female,
+                'present_male' => (int)$att->present_male,
+                'absent_male' => (int)$att->absent_male,
+                'present_female' => (int)$att->present_female,
+                'absent_female' => (int)$att->absent_female,
+                'present_total' => (int)$att->present_total,
+                'absent_total' => (int)$att->absent_total,
+                'att_taken' => $attTaken,
+            ];
+
+            $classTotal += (int)$cls->total;
+            $classMale += (int)$cls->total_male;
+            $classFemale += (int)$cls->total_female;
+            $classPresent += (int)$att->present_total;
+            $classPresentMale += (int)$att->present_male;
+            $classPresentFemale += (int)$att->present_female;
+            $classAbsent += (int)$att->absent_total;
+            $classAbsentMale += (int)$att->absent_male;
+            $classAbsentFemale += (int)$att->absent_female;
+        }
+
+        $classWise = [
+            [
+                'class_id' => 1,
+                'class_name' => 'Extra Classes',
+                'numeric_value' => '1',
+                'sections' => $sections,
+                'total' => $classTotal,
+                'total_male' => $classMale,
+                'total_female' => $classFemale,
+                'present_male' => $classPresentMale,
+                'present_female' => $classPresentFemale,
+                'absent_male' => $classAbsentMale,
+                'absent_female' => $classAbsentFemale,
+                'present_total' => $classPresent,
+                'absent_total' => $classAbsent,
+                'any_att' => count($attendances) > 0,
+                'percentage' => ($classTotal > 0 && count($attendances) > 0) ? round(($classPresent / $classTotal) * 100, 1) : null,
+            ]
+        ];
+
+        return response()->json([
+            'data' => [
+                'date' => $date,
+                'class_wise' => $classWise,
             ]
         ]);
     }

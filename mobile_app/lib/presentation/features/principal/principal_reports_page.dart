@@ -3,6 +3,7 @@ import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 import 'principal_attendance_details_page.dart';
 import 'lesson_evaluation_report_page.dart';
+import 'extra_class_attendance_report_page.dart';
 
 class PrincipalReportsPage extends StatelessWidget {
   const PrincipalReportsPage({super.key});
@@ -20,15 +21,37 @@ class PrincipalReportsPage extends StatelessWidget {
                 Icons.bar_chart_outlined,
                 color: Colors.green,
               ),
-              title: const Text('Attendance Report'),
+              title: const Text('Class Attendance Report'),
               subtitle: const Text(
-                'Daily attendance summaries and class-wise reports',
+                'Daily class attendance summaries and branch-wise reports',
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => const PrincipalAttendanceDetailsPage(),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: const Icon(
+                Icons.insights_outlined,
+                color: Colors.orange,
+              ),
+              title: const Text('Extra Class Attendance Report'),
+              subtitle: const Text(
+                'Daily extra class summaries and reports',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    // We'll rename/create this page shortly
+                    builder: (_) => const ExtraClassAttendanceReportPage(),
                   ),
                 );
               },

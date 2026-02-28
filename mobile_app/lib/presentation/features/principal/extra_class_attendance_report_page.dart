@@ -2,17 +2,17 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/dio_client.dart';
 
-class PrincipalAttendanceDetailsPage extends StatefulWidget {
+class ExtraClassAttendanceReportPage extends StatefulWidget {
   final String? date; // ISO yyyy-MM-dd
-  const PrincipalAttendanceDetailsPage({Key? key, this.date}) : super(key: key);
+  const ExtraClassAttendanceReportPage({Key? key, this.date}) : super(key: key);
 
   @override
-  State<PrincipalAttendanceDetailsPage> createState() =>
-      _PrincipalAttendanceDetailsPageState();
+  State<ExtraClassAttendanceReportPage> createState() =>
+      _ExtraClassAttendanceReportPageState();
 }
 
-class _PrincipalAttendanceDetailsPageState
-    extends State<PrincipalAttendanceDetailsPage> {
+class _ExtraClassAttendanceReportPageState
+    extends State<ExtraClassAttendanceReportPage> {
   late final Dio _dio;
   late Future<Map<String, dynamic>> _future;
   late DateTime _selectedDate;
@@ -47,7 +47,7 @@ class _PrincipalAttendanceDetailsPageState
     q['date'] =
         "${_selectedDate.year.toString().padLeft(4, '0')}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
     final resp = await _dio.get(
-      'principal/reports/attendance-details',
+      'principal/reports/extra-class-attendance-details',
       queryParameters: q,
     );
     return resp.data as Map<String, dynamic>;
@@ -79,7 +79,7 @@ class _PrincipalAttendanceDetailsPageState
     final yearStr = _selectedDate.year.toString();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Attendance Details')),
+      appBar: AppBar(title: const Text('Extra Class Attendance')),
       body: Column(
         children: [
           Padding(
