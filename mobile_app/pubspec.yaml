@@ -61,6 +61,9 @@ dependencies:
   rive: ^0.13.2
   image: ^4.1.7
   dropdown_search: ^5.0.6
+  record: ^6.2.0
+  path_provider: ^2.1.5
+  audioplayers: ^6.6.0
 
 dev_dependencies:
   flutter_test:

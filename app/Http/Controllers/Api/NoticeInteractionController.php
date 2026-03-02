@@ -40,7 +40,7 @@ class NoticeInteractionController extends Controller
         }
 
         $request->validate([
-            'voice' => ['required', 'file', 'mimes:webm,mp3,wav,ogg', 'max:5120'], // Max 5MB
+            'voice' => ['required', 'file', 'mimes:webm,mp3,wav,ogg,m4a,aac', 'max:5120'], // Max 5MB
             'duration' => ['required', 'numeric', 'max:31'], // Max 30 seconds
         ]);
 

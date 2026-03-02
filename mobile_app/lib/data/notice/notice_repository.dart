@@ -39,7 +39,7 @@ class NoticeRepository {
 
   Future<void> submitVoiceReply(int id, String filePath, double duration) async {
     final formData = FormData.fromMap({
-      'voice': await MultipartFile.fromFile(filePath, filename: 'reply.webm'),
+      'voice': await MultipartFile.fromFile(filePath, filename: 'reply.m4a'),
       'duration': duration,
     });
     await _dio.post('notices/$id/reply', data: formData);

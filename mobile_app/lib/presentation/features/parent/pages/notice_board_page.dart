@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../state/notice_state.dart';
+import '../../../widgets/notice_reply_section.dart';
 
 class NoticeBoardPage extends ConsumerWidget {
   const NoticeBoardPage({super.key});
@@ -154,32 +155,8 @@ class NoticeBoardPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 40),
                       if (notice['reply_required'] == true) ...[
-                         Container(
-                           padding: const EdgeInsets.all(16),
-                           width: double.infinity,
-                           decoration: BoxDecoration(
-                             color: Colors.green.withOpacity(0.05),
-                             borderRadius: BorderRadius.circular(16),
-                             border: Border.all(color: Colors.green.withOpacity(0.2)),
-                           ),
-                           child: Column(
-                             children: [
-                               const Icon(Icons.mic, color: Colors.green, size: 32),
-                               const SizedBox(height: 12),
-                               const Text(
-                                 'আপনার ভয়েস মেসেজ দিয়ে রিপ্লাই দিন',
-                                 style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-                               ),
-                               const SizedBox(height: 8),
-                               const Text(
-                                 '(ভয়েস রেকর্ডিং ফিচারটি মোবাইল অ্যাপের পরবর্তী আপডেটে যুক্ত হবে)',
-                                 textAlign: TextAlign.center,
-                                 style: TextStyle(fontSize: 11, color: Colors.grey),
-                               ),
-                             ],
-                           ),
-                         ),
-                         const SizedBox(height: 24),
+                        NoticeReplySection(noticeId: notice['id'] as int),
+                        const SizedBox(height: 24),
                       ],
                       SizedBox(
                         width: double.infinity,

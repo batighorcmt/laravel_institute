@@ -45,6 +45,8 @@
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>এই অ্যাপটি নোটিশের ভয়েস রিপ্লাই রেকর্ড করার জন্য মাইক্রোফোন ব্যবহার করে।</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>
