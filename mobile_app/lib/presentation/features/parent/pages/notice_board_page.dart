@@ -133,7 +133,7 @@ class NoticeBoardPage extends ConsumerWidget {
                             ),
                           ),
                           const Spacer(),
-                          if (notice['reply_required'] == true) 
+                          if (notice['reply_required'] == true || notice['reply_required'] == 1) 
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
@@ -154,7 +154,7 @@ class NoticeBoardPage extends ConsumerWidget {
                         style: const TextStyle(fontSize: 16, height: 1.7, color: Color(0xFF374151)),
                       ),
                       const SizedBox(height: 40),
-                      if (notice['reply_required'] == true) ...[
+                      if (notice['reply_required'] == true || notice['reply_required'] == 1) ...[
                         NoticeReplySection(noticeId: notice['id'] as int),
                         const SizedBox(height: 24),
                       ],

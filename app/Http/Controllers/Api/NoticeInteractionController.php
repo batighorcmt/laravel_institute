@@ -36,7 +36,10 @@ class NoticeInteractionController extends Controller
                                     ->where('parent_id', $user->id)
                                     ->first();
         if ($existingReply) {
-            return response()->json(['message' => 'আপনি ইতিমধ্যে এই নোটিশে রিপ্লাই দিয়েছেন'], 403);
+            return response()->json([
+                'message' => 'আপনার রিপ্লাই ইতিমধ্যে পাঠানো হয়েছে',
+                'reply_id' => $existingReply->id,
+            ]);
         }
 
         $request->validate([

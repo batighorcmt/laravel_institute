@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/notice/notice_repository.dart';
@@ -29,6 +30,7 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
         filePath, 
         duration.toDouble(),
       );
+      if (!mounted) return;
       setState(() {
         _isSending = false;
         _isSent = true;
@@ -36,13 +38,28 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
       });
       // Optionally invalidate list to update counts if displayed
       ref.invalidate(noticesListProvider);
-    } catch (e) {
+    } on DioException catch (e) {
+      if (!mounted) return;
       setState(() => _isSending = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ত্রুটি: $e')),
-        );
-      }
+      final serverMsg = e.response?.data?['message'] as String?;
+      final displayMsg = serverMsg ?? 'নেটওয়ার্ক সমস্যা হয়েছে, আবার চেষ্টা করুন';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(displayMsg),
+          backgroundColor: Colors.red[700],
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ত্রুটি: $e'),
+          backgroundColor: Colors.red[700],
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 

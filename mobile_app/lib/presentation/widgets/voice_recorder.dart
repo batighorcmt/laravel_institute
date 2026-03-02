@@ -143,6 +143,7 @@ class _VoiceRecorderState extends State<VoiceRecorder> {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (_filePath == null) ...[
             Text(
@@ -158,32 +159,36 @@ class _VoiceRecorderState extends State<VoiceRecorder> {
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
-            GestureDetector(
-              onTap: _isRecording ? _stop : _start,
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: _isRecording ? Colors.red : Colors.blue,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: (_isRecording ? Colors.red : Colors.blue).withOpacity(0.3),
-                      blurRadius: 12,
-                      spreadRadius: 4,
-                    )
-                  ],
-                ),
-                child: Icon(
-                  _isRecording ? Icons.stop : Icons.mic,
-                  color: Colors.white,
-                  size: 32,
+            Center(
+              child: GestureDetector(
+                onTap: _isRecording ? _stop : _start,
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: _isRecording ? Colors.red : Colors.blue,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (_isRecording ? Colors.red : Colors.blue).withOpacity(0.3),
+                        blurRadius: 12,
+                        spreadRadius: 4,
+                      )
+                    ],
+                  ),
+                  child: Icon(
+                    _isRecording ? Icons.stop : Icons.mic,
+                    color: Colors.white,
+                    size: 32,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            TextButton(
-              onPressed: widget.onCancel,
-              child: const Text('বাতিল করুন', style: TextStyle(color: Colors.grey)),
+            Center(
+              child: TextButton(
+                onPressed: widget.onCancel,
+                child: const Text('বাতিল করুন', style: TextStyle(color: Colors.grey)),
+              ),
             ),
           ] else ...[
             const Text(
