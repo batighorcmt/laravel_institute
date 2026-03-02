@@ -22,7 +22,7 @@ const _navItems = [
   _NavItem(label: 'হাজিরা রিপোর্ট', icon: Icons.check_circle_outline, path: '/parent/attendance'),
   _NavItem(label: 'লেসন ইভ্যালুয়েশন', icon: Icons.star_outline, path: '/parent/evaluations'),
   _NavItem(label: 'ছুটির আবেদন', icon: Icons.card_travel_outlined, path: '/parent/leaves'),
-  _NavItem(label: 'নোটিস বোর্ড', icon: Icons.campaign_outlined, path: '/parent/notices'),
+  _NavItem(label: 'নোটিস বোর্ড', icon: Icons.campaign_outlined, path: '/notice-board'),
   _NavItem(label: 'শিক্ষক তালিকা', icon: Icons.groups_outlined, path: '/parent/teachers'),
   _NavItem(label: 'মতামত/অভিযোগ', icon: Icons.feedback_outlined, path: '/parent/feedback'),
 ];

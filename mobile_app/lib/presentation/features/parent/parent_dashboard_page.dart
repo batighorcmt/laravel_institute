@@ -177,7 +177,7 @@ class ParentDashboardPage extends ConsumerWidget {
                   label: 'নোটিস',
                   icon: Icons.campaign_outlined,
                   color: Colors.indigo,
-                  onTap: () => context.push('/parent/notices'),
+                  onTap: () => context.push('/notice-board'),
                 ),
                 _QuickAccessChip(
                   label: 'ছুটি',

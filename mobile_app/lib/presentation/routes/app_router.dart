@@ -134,6 +134,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const TeamsListPage(),
       ),
 
+      GoRoute(
+        path: '/notice-board',
+        builder: (context, state) => const NoticeBoardPage(),
+      ),
+
       // ── Parent Shell with sidebar ──
       ShellRoute(
         builder: (context, state, child) => ParentShellPage(child: child),

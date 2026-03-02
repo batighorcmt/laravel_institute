@@ -9,6 +9,8 @@
 import $ from 'jquery';
 window.$ = window.jQuery = $;
 
+import './bootstrap';
+
 // -------------------------
 // Bootstrap
 // -------------------------
@@ -51,12 +53,18 @@ Object.entries(modules).forEach(([path, definition]) => {
 });
 
 // Mount Vue
-window.addEventListener('DOMContentLoaded', () => {
+const mountApp = () => {
     const el = document.getElementById('app');
-    if (el) {
+    if (el && !el.__vue_app__) {
         app.mount('#app');
     }
-});
+};
+
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', mountApp);
+} else {
+    mountApp();
+}
 
 // -------------------------
 // App Ready

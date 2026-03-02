@@ -167,6 +167,9 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
           MaterialPageRoute(builder: (_) => const TeacherStudentsListPage()),
         );
         break;
+      case 'notices':
+        context.push('/notice-board'); 
+        break;
     }
   }
 }
@@ -397,6 +400,12 @@ class _OperationsGrid extends StatelessWidget {
         'Students',
         Icons.school_outlined,
         Color(0xFFFFFBEB),
+      ),
+      const _OpItem(
+        'notices',
+        'Notices',
+        Icons.campaign_outlined,
+        Color(0xFFFFF3E0),
       ),
     ];
     return GridView.count(

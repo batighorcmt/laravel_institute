@@ -21,7 +21,7 @@ Route::prefix('v1')->group(function () {
     
     // Interactions
     Route::post('notices/{notice}/read', [\App\Http\Controllers\Api\NoticeInteractionController::class, 'markAsRead']);
-    Route::post('notices/{notice}/reply', [\App\Http\Controllers\Api\NoticeInteractionController::class, 'storeReply'])->middleware('role:parent,teacher');
+    Route::post('notices/{notice}/reply', [\App\Http\Controllers\Api\NoticeInteractionController::class, 'storeReply'])->middleware('role:parent,teacher,principal');
 
     // Principal reports
     Route::get('principal/reports/attendance-summary', [\App\Http\Controllers\Api\PrincipalReportController::class, 'attendanceSummary'])->middleware('role:principal');

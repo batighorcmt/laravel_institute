@@ -659,8 +659,14 @@
 
     <!-- Main -->
     <div class="content-wrapper">
-        <section class="content pt-3">
-            <div class="container-fluid">
+        <section class="content-header pb-2">
+            <div class="container-fluid pt-2 px-md-4">
+                @yield('content_header')
+            </div>
+        </section>
+
+        <section class="content pt-1">
+            <div class="container-fluid px-md-4">
                 @yield('content')
             </div>
         </section>
