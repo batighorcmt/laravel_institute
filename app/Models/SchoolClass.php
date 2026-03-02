@@ -12,7 +12,7 @@ class SchoolClass extends Model
     protected $table = 'classes';
     
     protected $fillable = [
-        'school_id', 'name', 'numeric_value', 'capacity', 'class_teacher_id', 'status'
+        'school_id', 'name', 'bangla_name', 'numeric_value', 'capacity', 'class_teacher_id', 'status'
     ];
 
     protected $casts = [

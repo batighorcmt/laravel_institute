@@ -55,6 +55,7 @@ class SectionController extends Controller
                 'required','string','max:50',
                 Rule::unique('sections','name')->where(fn($q) => $q->where('school_id',$school->id)->where('class_id',$request->input('class_id'))),
             ],
+            'bangla_name' => ['required','string','max:100'],
             'class_teacher_id' => ['nullable','integer','exists:teachers,id'],
             'status' => ['required','in:active,inactive'],
         ]);
@@ -106,6 +107,7 @@ class SectionController extends Controller
                     ->ignore($section->id)
                     ->where(fn($q) => $q->where('school_id',$school->id)->where('class_id',$request->input('class_id'))),
             ],
+            'bangla_name' => ['required','string','max:100'],
             'class_teacher_id' => ['nullable','integer','exists:teachers,id'],
             'status' => ['required','in:active,inactive'],
         ]);

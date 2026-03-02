@@ -14,12 +14,13 @@
     </form>
     <div class="table-responsive">
       <table class="table table-striped">
-  <thead><tr><th>#</th><th>নাম</th><th>নিউমেরিক</th><th>আসন</th><th>স্ট্যাটাস</th><th>বিষয়</th><th class="text-right">অ্যাকশন</th></tr></thead>
+  <thead><tr><th>#</th><th>নাম</th><th>বাংলা নাম</th><th>নিউমেরিক</th><th>আসন</th><th>স্ট্যাটাস</th><th>বিষয়</th><th class="text-right">অ্যাকশন</th></tr></thead>
         <tbody>
           @forelse($items as $i => $cls)
             <tr>
               <td>{{ $items->firstItem() + $i }}</td>
               <td>{{ $cls->name }}</td>
+              <td>{{ $cls->bangla_name }}</td>
               <td>{{ $cls->numeric_value }}</td>
               <td>{{ $cls->capacity }}</td>
               <td><span class="badge badge-{{ $cls->status==='active'?'success':'secondary' }}">{{ $cls->status }}</span></td>

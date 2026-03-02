@@ -41,6 +41,12 @@
                 </div>
 
                 <div class="form-group col-md-4">
+                    <label>বাংলা নাম *</label>
+                    <input type="text" name="bangla_name" class="form-control"
+                           required value="{{ old('bangla_name',$section->bangla_name) }}">
+                </div>
+
+                <div class="form-group col-md-4">
                     <label>Class Teacher (optional)</label>
 
                     {{-- IMPORTANT: options are rendered server-side --}}
@@ -78,4 +84,17 @@
 </div>
     
 @endsection
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    $('select[name="class_teacher_id"]').select2({
+        theme: 'bootstrap4',
+        width: '100%',
+        placeholder: '-- নির্বাচন করুন --',
+        allowClear: true
+    });
+});
+</script>
+@endpush
 

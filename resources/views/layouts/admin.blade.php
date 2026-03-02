@@ -384,7 +384,16 @@
                                     <p>Documents <i class="right fas fa-angle-left"></i></p>
                                 </a>
                                 <ul class="nav nav-treeview">
-                                    <li class="nav-item"><a href="{{ route('principal.institute.documents.prottayon.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.prottayon.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Prottayon</p></a></li>
+                                    <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.documents.prottayon.*') ? 'menu-open' : '' }}">
+                                        <a href="#" class="nav-link {{ request()->routeIs('principal.institute.documents.prottayon.*') ? 'active' : '' }}">
+                                            <i class="far fa-dot-circle nav-icon"></i>
+                                            <p>Prottayon <i class="right fas fa-angle-left"></i></p>
+                                        </a>
+                                        <ul class="nav nav-treeview">
+                                            <li class="nav-item"><a href="{{ route('principal.institute.documents.prottayon.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.prottayon.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>নতুন তৈরি (Create)</p></a></li>
+                                            <li class="nav-item"><a href="{{ route('principal.institute.documents.prottayon.history', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.prottayon.history') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>ইতিহাস (History)</p></a></li>
+                                        </ul>
+                                    </li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.documents.certificate.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.certificate.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Certificate</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.documents.testimonial.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.testimonial.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Testimonial</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.documents.settings.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.settings.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Settings</p></a></li>

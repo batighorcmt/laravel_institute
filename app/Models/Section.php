@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Section extends Model
 {
-    protected $fillable = ['school_id','class_id','name','class_teacher_id','class_teacher_name','status'];
+    protected $fillable = ['school_id','class_id','name','bangla_name','class_teacher_id','class_teacher_name','status'];
 
     public function school(): BelongsTo
     {

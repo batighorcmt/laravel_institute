@@ -23,12 +23,13 @@
     <button class="btn btn-outline-secondary">সার্চ</button>
   </form>
   <table class="table table-striped">
-  <thead><tr><th>#</th><th>শাখা</th><th>শ্রেণি</th><th>শ্রেণি শিক্ষক</th><th>স্ট্যাটাস</th><th class="text-right">অ্যাকশন</th></tr></thead>
+  <thead><tr><th>#</th><th>শাখা (EN)</th><th>শাখা (BN)</th><th>শ্রেণি</th><th>শ্রেণি শিক্ষক</th><th>স্ট্যাটাস</th><th class="text-right">অ্যাকশন</th></tr></thead>
     <tbody>
       @forelse($items as $i => $item)
       <tr>
         <td>{{ $items->firstItem() + $i }}</td>
         <td>{{ $item->name }}</td>
+        <td>{{ $item->bangla_name }}</td>
   <td>{{ optional($item->class)->name }}</td>
         <td>{{ $item->classTeacher?->user?->name ?? ($item->class_teacher_name ?? '-') }}</td>
         <td><span class="badge badge-{{ $item->status=='active'?'success':'secondary' }}">{{ $item->status }}</span></td>

@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+﻿@extends('layouts.admin')
 @section('title','সেকশন যোগ')
 @section('content')
 <div class="row mb-2"><div class="col"><h1 class="m-0">নতুন সেকশন</h1></div><div class="col text-right"><a href="{{ route('principal.institute.sections.index',$school) }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> তালিকা</a></div></div>
@@ -14,6 +14,7 @@
       </select>
     </div>
     <div class="form-group col-md-4"><label>শাখার নাম *</label><input type="text" name="name" class="form-control" required value="{{ old('name') }}" placeholder="যেমন: A"></div>
+    <div class="form-group col-md-4"><label>বাংলা নাম *</label><input type="text" name="bangla_name" class="form-control" required value="{{ old('bangla_name') }}" placeholder="যেমন: ক"></div>
     <div class="form-group col-md-4">
       <label>শ্রেণি শিক্ষক (ঐচ্ছিক)</label>
       <select name="class_teacher_id" class="form-control">
@@ -34,3 +35,15 @@
 </form>
 </div></div>
 @endsection
+@push('scripts')
+<script>
+.ready(function() {
+    select[name=\"class_teacher_id\"].select2({
+        theme: 'bootstrap4',
+        width: '100%',
+        placeholder: '-- নির্বাচন করুন --',
+        allowClear: true
+    });
+});
+</script>
+@endpush

@@ -38,6 +38,27 @@ import { Chart } from 'chart.js/auto';
 window.Chart = Chart;
 
 // -------------------------
+// Vue (NEW)
+// -------------------------
+import { createApp } from 'vue';
+const app = createApp({});
+
+// Auto-register components
+const modules = import.meta.glob('./components/**/*.vue', { eager: true });
+Object.entries(modules).forEach(([path, definition]) => {
+    const componentName = path.split('/').pop().replace(/\.\w+$/, '');
+    app.component(componentName, definition.default);
+});
+
+// Mount Vue
+window.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('app');
+    if (el) {
+        app.mount('#app');
+    }
+});
+
+// -------------------------
 // App Ready
 // -------------------------
 $(document).ready(function () {

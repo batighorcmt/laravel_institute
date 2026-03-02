@@ -185,34 +185,53 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
       _submitting = true;
     });
     try {
-      final form = FormData.fromMap({
-        'class_id': _selectedClassId,
-        'section_id': _selectedSectionId,
-        'subject_id': _selectedSubjectId,
-        // homework_date is omitted; server will default to today
-        'submission_date': _submissionDate,
-        'title': _titleCtrl.text.trim(),
-        'description': _descCtrl.text.trim().isEmpty
-            ? null
-            : _descCtrl.text.trim(),
-        if (_attachmentPath != null)
-          'attachment': await MultipartFile.fromFile(
-            _attachmentPath!,
-            filename: _attachmentPath!.split(RegExp(r'[\\/]')).last,
-          ),
-      });
-      
       final Response r;
       if (widget.homework != null) {
         // Update
-        // Note: For file uploads with PUT/PATCH, some servers prefer POST with _method spoofing or specific headers.
-        // But since we implemented Route::match(['put', 'patch']), we try PUT.
-        // Actually, many PHP servers require POST for files. We can use _method: 'PUT'
-        if (_attachmentPath != null) form.fields.add(MapEntry('_method', 'PUT'));
-        final url = 'teacher/homework/${widget.homework!['id']}';
-        r = await _dio.post(url, data: form); 
+        if (_attachmentPath == null) {
+          // No new file, use JSON PATCH for better reliability
+          final url = 'teacher/homework/${widget.homework!['id']}';
+          r = await _dio.patch(url, data: {
+            'class_id': _selectedClassId,
+            'section_id': _selectedSectionId,
+            'subject_id': _selectedSubjectId,
+            'submission_date': _submissionDate,
+            'title': _titleCtrl.text.trim(),
+            'description': _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+          });
+        } else {
+          // Has file, must use FormData with POST + _method spoofing
+          final form = FormData.fromMap({
+            'class_id': _selectedClassId,
+            'section_id': _selectedSectionId,
+            'subject_id': _selectedSubjectId,
+            'submission_date': _submissionDate,
+            'title': _titleCtrl.text.trim(),
+            'description': _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+            '_method': 'PUT',
+            'attachment': await MultipartFile.fromFile(
+              _attachmentPath!,
+              filename: _attachmentPath!.split(RegExp(r'[\\/]')).last,
+            ),
+          });
+          final url = 'teacher/homework/${widget.homework!['id']}';
+          r = await _dio.post(url, data: form);
+        }
       } else {
         // Create
+        final form = FormData.fromMap({
+          'class_id': _selectedClassId,
+          'section_id': _selectedSectionId,
+          'subject_id': _selectedSubjectId,
+          'submission_date': _submissionDate,
+          'title': _titleCtrl.text.trim(),
+          'description': _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+          if (_attachmentPath != null)
+            'attachment': await MultipartFile.fromFile(
+              _attachmentPath!,
+              filename: _attachmentPath!.split(RegExp(r'[\\/]')).last,
+            ),
+        });
         r = await _dio.post('teacher/homework', data: form);
       }
 
@@ -224,9 +243,17 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('সংরক্ষণ ব্যর্থ')));
+      String errorMsg = 'সংরক্ষণ ব্যর্থ';
+      if (e is DioException && e.response?.data is Map) {
+        final data = e.response!.data as Map;
+        if (data['message'] != null) {
+          errorMsg = data['message'].toString();
+        } else if (data['errors'] != null) {
+          final errs = data['errors'] as Map;
+          errorMsg = errs.values.first.toString();
+        }
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));
     } finally {
       if (mounted)
         setState(() {

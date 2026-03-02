@@ -29,6 +29,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
   String? _error;
   String? _warningMessage;
   String _date = '';
+  EvalStatus? _filterStatus;
   List<_Row> _rows = const [];
   bool _readOnly = false;
   Map<String, int> _stats = const {
@@ -77,6 +78,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
     setState(() {
       _loading = true;
       _error = null;
+      _filterStatus = null;
     });
     try {
       final r = await _dio.get(
@@ -214,6 +216,12 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                 _TopBar(
                   date: _date,
                   readOnly: _readOnly,
+                  filterStatus: _filterStatus,
+                  onSetFilter: (status) {
+                    setState(() {
+                      _filterStatus = status;
+                    });
+                  },
                   onPickDate: _pickDate,
                   onAllCompleted: () => _markAll(EvalStatus.completed),
                   onAllPartial: () => _markAll(EvalStatus.partial),
@@ -250,29 +258,37 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(12),
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemCount: _rows.length,
+                    itemCount: _filterStatus == null 
+                        ? _rows.length 
+                        : _rows.where((r) => r.status == _filterStatus).length,
                     itemBuilder: (ctx, i) {
-                      final s = _rows[i];
+                      final displayRows = _filterStatus == null 
+                          ? _rows 
+                          : _rows.where((r) => r.status == _filterStatus).toList();
+                      final s = displayRows[i];
                       return _RowWidget(
                         row: s,
                         readOnly: _readOnly,
                         onChanged: (st) {
                           if (_readOnly) return;
                           setState(() {
-                            _rows[i] = s.copyWith(status: st);
+                            final idx = _rows.indexWhere((r) => r.id == s.id);
+                            if (idx != -1) {
+                              _rows[idx] = _rows[idx].copyWith(status: st);
+                            }
                           });
                         },
                       );
                     },
                   ),
                 ),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!_readOnly)
+                if (!_readOnly)
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12.0),
                             child: TextField(
@@ -286,18 +302,50 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                               maxLines: 2,
                             ),
                           ),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _isComplete ? _submit : null,
-                            icon: const Icon(Icons.save),
-                            label: const Text('সাবমিট করুন'),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _isComplete ? _submit : null,
+                              icon: const Icon(Icons.save),
+                              label: const Text('সাবমিট করুন'),
+                            ),
                           ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
                         ),
-                      ],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('নোট / পাঠ বিষয়:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            const SizedBox(height: 4),
+                            Text(
+                              _notesController.text.isNotEmpty 
+                                  ? _notesController.text 
+                                  : 'কোনো নোট দেওয়া হয়নি',
+                              style: TextStyle(
+                                color: _notesController.text.isNotEmpty ? null : Colors.grey.shade600,
+                                fontStyle: _notesController.text.isNotEmpty ? FontStyle.normal : FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
     );
@@ -307,6 +355,8 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
 class _TopBar extends StatelessWidget {
   final String date;
   final bool readOnly;
+  final EvalStatus? filterStatus;
+  final ValueChanged<EvalStatus?> onSetFilter;
   final VoidCallback onPickDate;
   final VoidCallback onAllCompleted;
   final VoidCallback onAllPartial;
@@ -315,6 +365,8 @@ class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.date,
     required this.readOnly,
+    this.filterStatus,
+    required this.onSetFilter,
     required this.onPickDate,
     required this.onAllCompleted,
     required this.onAllPartial,
@@ -350,7 +402,7 @@ class _TopBar extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 6.0),
               child: Text(
-                'পূর্বের রেকর্ড শুধু দেখা যাবে',
+                'পূর্বের রেকর্ড শুধু দেখা যাবে. স্ট্যাটাস অনুসারে ফিল্টার করতে ক্লিক করুন:',
                 style: disabledStyle,
               ),
             ),
@@ -363,29 +415,41 @@ class _TopBar extends StatelessWidget {
                 _Chip(
                   icon: Icons.check_circle,
                   color: Colors.green,
-                  label: 'সব সম্পন্ন',
-                  onTap: readOnly ? null : onAllCompleted,
+                  label: readOnly ? 'সম্পন্ন' : 'সব সম্পন্ন',
+                  isSelected: filterStatus == EvalStatus.completed,
+                  onTap: readOnly
+                      ? () => onSetFilter(filterStatus == EvalStatus.completed ? null : EvalStatus.completed)
+                      : onAllCompleted,
                 ),
                 const SizedBox(width: 8),
                 _Chip(
                   icon: Icons.timelapse,
                   color: Colors.orange,
-                  label: 'সব আংশিক',
-                  onTap: readOnly ? null : onAllPartial,
+                  label: readOnly ? 'আংশিক' : 'সব আংশিক',
+                  isSelected: filterStatus == EvalStatus.partial,
+                  onTap: readOnly
+                      ? () => onSetFilter(filterStatus == EvalStatus.partial ? null : EvalStatus.partial)
+                      : onAllPartial,
                 ),
                 const SizedBox(width: 8),
                 _Chip(
                   icon: Icons.close,
                   color: Colors.red,
-                  label: 'সব হয়নি',
-                  onTap: readOnly ? null : onAllNotDone,
+                  label: readOnly ? 'হয়নি' : 'সব হয়নি',
+                  isSelected: filterStatus == EvalStatus.notDone,
+                  onTap: readOnly
+                      ? () => onSetFilter(filterStatus == EvalStatus.notDone ? null : EvalStatus.notDone)
+                      : onAllNotDone,
                 ),
                 const SizedBox(width: 8),
                 _Chip(
                   icon: Icons.person_off,
                   color: Colors.grey,
-                  label: 'সব অনুপস্থিত',
-                  onTap: readOnly ? null : onAllAbsent,
+                  label: readOnly ? 'অনুপস্থিত' : 'সব অনুপস্থিত',
+                  isSelected: filterStatus == EvalStatus.absent,
+                  onTap: readOnly
+                      ? () => onSetFilter(filterStatus == EvalStatus.absent ? null : EvalStatus.absent)
+                      : onAllAbsent,
                 ),
               ],
             ),
@@ -400,11 +464,13 @@ class _Chip extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String label;
+  final bool isSelected;
   final VoidCallback? onTap;
   const _Chip({
     required this.icon,
     required this.color,
     required this.label,
+    this.isSelected = false,
     required this.onTap,
   });
   @override
@@ -414,15 +480,15 @@ class _Chip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
+          color: isSelected ? color : color.withValues(alpha: 0.12),
           border: Border.all(color: color.withValues(alpha: 0.5)),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           children: [
-            Icon(icon, color: color, size: 18),
+            Icon(icon, color: isSelected ? Colors.white : color, size: 18),
             const SizedBox(width: 4),
-            Text(label),
+            Text(label, style: TextStyle(color: isSelected ? Colors.white : null)),
           ],
         ),
       ),

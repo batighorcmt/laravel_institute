@@ -537,6 +537,9 @@ Route::middleware(['auth'])->group(function () {
                 // Settings (backgrounds, colors for print pages)
                 Route::get('/settings', [\App\Http\Controllers\Principal\Documents\SettingsController::class, 'index'])->name('settings.index');
                 Route::post('/settings', [\App\Http\Controllers\Principal\Documents\SettingsController::class, 'store'])->name('settings.store');
+                Route::get('/settings/templates', [\App\Http\Controllers\Principal\Documents\SettingsController::class, 'templates'])->name('settings.templates.index');
+                Route::post('/settings/templates', [\App\Http\Controllers\Principal\Documents\SettingsController::class, 'storeTemplate'])->name('settings.templates.store');
+                Route::delete('/settings/templates/{template}', [\App\Http\Controllers\Principal\Documents\SettingsController::class, 'destroyTemplate'])->name('settings.templates.destroy');
             });
         });
     });
