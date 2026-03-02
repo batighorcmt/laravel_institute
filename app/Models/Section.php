@@ -47,4 +47,9 @@ class Section extends Model
     {
         return $this->hasMany(StudentEnrollment::class, 'section_id');
     }
+
+    public function noticeTargets()
+    {
+        return $this->morphMany(NoticeTarget::class, 'targetable');
+    }
 }

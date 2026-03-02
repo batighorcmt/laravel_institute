@@ -75,4 +75,9 @@ class SchoolClass extends Model
     {
         return (int) $this->numeric_value >= 9;
     }
+
+    public function noticeTargets()
+    {
+        return $this->morphMany(NoticeTarget::class, 'targetable');
+    }
 }

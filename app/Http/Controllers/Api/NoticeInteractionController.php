@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Notice;
+use App\Models\NoticeRead;
+use App\Models\NoticeReply;
+use Illuminate\Support\Facades\Storage;
+
+class NoticeInteractionController extends Controller
+{
+    public function markAsRead(Notice $notice, Request $request)
+    {
+        $user = $request->user();
+        
+        NoticeRead::updateOrCreate(
+            ['notice_id' => $notice->id, 'user_id' => $user->id],
+            ['read_at' => now()]
+        );
+
+        return response()->json(['message' => 'নোটিশ পড়া হয়েছে']);
+    }
+
+    public function storeReply(Notice $notice, Request $request)
+    {
+        $user = $request->user();
+
+        if (!$notice->reply_required) {
+            return response()->json(['message' => 'এই নোটিশে রিপ্লাই প্রয়োজন নেই'], 400);
+        }
+
+        // Check if user already replied
+        $existingReply = NoticeReply::where('notice_id', $notice->id)
+                                    ->where('parent_id', $user->id)
+                                    ->first();
+        if ($existingReply) {
+            return response()->json(['message' => 'আপনি ইতিমধ্যে এই নোটিশে রিপ্লাই দিয়েছেন'], 403);
+        }
+
+        $request->validate([
+            'voice' => ['required', 'file', 'mimes:webm,mp3,wav,ogg', 'max:5120'], // Max 5MB
+            'duration' => ['required', 'numeric', 'max:31'], // Max 30 seconds
+        ]);
+
+        $student = $user->student;
+        
+        $path = $request->file('voice')->store('notices/replies', 'public');
+
+        $reply = NoticeReply::create([
+            'notice_id' => $notice->id,
+            'student_id' => $student?->id,
+            'parent_id' => $user->id,
+            'voice_path' => $path,
+            'duration' => $request->duration,
+        ]);
+
+        return response()->json([
+            'message' => 'রিপ্লাই সফলভাবে পাঠানো হয়েছে',
+            'reply_id' => $reply->id
+        ]);
+    }
+}

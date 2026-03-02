@@ -82,5 +82,8 @@ class Teacher extends Model
         return $query->where('school_id', $schoolId);
     }
 
-    
+    public function noticeTargets()
+    {
+        return $this->morphMany(NoticeTarget::class, 'targetable');
+    }
 }

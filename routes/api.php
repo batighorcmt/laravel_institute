@@ -11,9 +11,17 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/change-password', [AuthController::class, 'changePassword']);
     Route::get('me', [AuthController::class, 'me']);
 
-    // Notices (public to authenticated users; create restricted to principal)
+    // Notices
     Route::get('notices', [\App\Http\Controllers\Api\NoticeController::class, 'index']);
+    Route::get('notices/{notice}', [\App\Http\Controllers\Api\NoticeController::class, 'show']);
     Route::post('notices', [\App\Http\Controllers\Api\NoticeController::class, 'store'])->middleware('role:principal');
+    Route::match(['put', 'patch'], 'notices/{notice}', [\App\Http\Controllers\Api\NoticeController::class, 'update'])->middleware('role:principal');
+    Route::delete('notices/{notice}', [\App\Http\Controllers\Api\NoticeController::class, 'destroy'])->middleware('role:principal');
+    Route::get('notices/{notice}/stats', [\App\Http\Controllers\Api\NoticeController::class, 'stats'])->middleware('role:principal');
+    
+    // Interactions
+    Route::post('notices/{notice}/read', [\App\Http\Controllers\Api\NoticeInteractionController::class, 'markAsRead']);
+    Route::post('notices/{notice}/reply', [\App\Http\Controllers\Api\NoticeInteractionController::class, 'storeReply'])->middleware('role:parent,teacher');
 
     // Principal reports
     Route::get('principal/reports/attendance-summary', [\App\Http\Controllers\Api\PrincipalReportController::class, 'attendanceSummary'])->middleware('role:principal');
@@ -140,9 +148,12 @@ Route::prefix('v1')->group(function () {
     });
 
     // Meta endpoints
-    Route::get('meta/classes', [\App\Http\Controllers\Api\SchoolMetaController::class, 'classes']);
-    Route::get('meta/sections', [\App\Http\Controllers\Api\SchoolMetaController::class, 'sections']);
-    Route::get('meta/subjects', [\App\Http\Controllers\Api\SchoolMetaController::class, 'subjects']);
-    Route::get('meta/teachers', [\App\Http\Controllers\Api\SchoolMetaController::class, 'teachers']);
+    Route::prefix('meta')->group(function () {
+        Route::get('classes', [\App\Http\Controllers\Api\SchoolMetaController::class, 'classes']);
+        Route::get('sections', [\App\Http\Controllers\Api\SchoolMetaController::class, 'sections']);
+        Route::get('groups', [\App\Http\Controllers\Api\SchoolMetaController::class, 'groups']);
+        Route::get('subjects', [\App\Http\Controllers\Api\SchoolMetaController::class, 'subjects']);
+        Route::get('teachers', [\App\Http\Controllers\Api\SchoolMetaController::class, 'teachers']);
+    });
     });
 });

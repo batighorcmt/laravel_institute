@@ -167,4 +167,14 @@ class User extends Authenticatable
         }
         return $query->exists();
     }
+
+    public function noticeReads(): HasMany
+    {
+        return $this->hasMany(NoticeRead::class);
+    }
+
+    public function noticeReplies(): HasMany
+    {
+        return $this->hasMany(NoticeReply::class, 'parent_id');
+    }
 }

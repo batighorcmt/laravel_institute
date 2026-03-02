@@ -39,8 +39,15 @@ class PrincipalController extends Controller
     public function manageSchool(\App\Models\School $school)
     {
         // Authorization: ensure current user is principal for this school
-    $current = Auth::user(); /** @var User $current */
-    abort_unless($current->isPrincipal($school->id) || $current->isSuperAdmin(), 403);
+        $current = Auth::user(); /** @var User $current */
+        abort_unless($current->isPrincipal($school->id) || $current->isSuperAdmin(), 403);
         return view('principal.institute.manage', compact('school'));
+    }
+
+    public function notices(\App\Models\School $school)
+    {
+        $current = Auth::user(); /** @var User $current */
+        abort_unless($current->isPrincipal($school->id) || $current->isSuperAdmin(), 403);
+        return view('principal.institute.notices.index', compact('school'));
     }
 }

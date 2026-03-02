@@ -40,13 +40,32 @@ class SchoolMetaController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $query = Section::where('school_id', $schoolId)->where('status', 'active');
+        $query = Section::where('sections.school_id', $schoolId)->where('sections.status', 'active');
         if ($classId) {
-            $query->where('class_id', $classId);
+            $query->where('sections.class_id', $classId);
         }
 
-        $sections = $query->orderBy('name')->get(['id','name']);
-        return response()->json($sections->map(fn($s)=>['id'=>$s->id,'name'=>$s->name])->values());
+        $sections = $query->with('class:id,name')->ordered()->get(['sections.id','sections.name','sections.class_id']);
+        
+        return response()->json($sections->map(fn($s)=>[
+            'id'=>$s->id,
+            'name'=>$s->name,
+            'class_id'=>$s->class_id,
+            'class_name'=>$s->class?->name
+        ])->values());
+    }
+
+    public function groups(Request $request)
+    {
+        $user = Auth::user();
+        $schoolId = $this->resolveSchoolId($request);
+
+        if (! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $groups = \App\Models\Group::forSchool($schoolId)->where('status', 'active')->get(['id','name']);
+        return response()->json($groups);
     }
 
     public function subjects(Request $request)

@@ -59,4 +59,9 @@ class TeacherController extends Controller
              'pendingEvaluations'
          ));
      }
+
+    public function notices(\App\Models\School $school)
+    {
+        return view('teacher.notices.index', compact('school'));
+    }
 }

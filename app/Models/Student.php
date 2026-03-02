@@ -211,6 +211,9 @@ class Student extends Model
         return asset('images/default-avatar.svg');
     }
 
-    
+    public function noticeTargets()
+    {
+        return $this->morphMany(NoticeTarget::class, 'targetable');
+    }
 }
 

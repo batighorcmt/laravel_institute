@@ -283,17 +283,6 @@
                                 </ul>
                             </li>
 
-                            {{-- Lesson Evaluation (Principal Reports) --}}
-                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.lesson-evaluations.*') ? 'menu-open' : '' }}">
-                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.lesson-evaluations.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fas fa-clipboard-check"></i>
-                                    <p>Lesson Evaluation <i class="right fas fa-angle-left"></i></p>
-                                </a>
-                                <ul class="nav nav-treeview">
-                                    <li class="nav-item"><a href="{{ route('principal.institute.lesson-evaluations.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.lesson-evaluations.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Reports</p></a></li>
-                                </ul>
-                            </li>
-
                             @if(method_exists($u,'primarySchool') && $u->primarySchool())
                                 {{-- Attendance (top-level) --}}
                                 <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.attendance*') || request()->routeIs('principal.institute.holidays*') ? 'menu-open' : '' }}">
@@ -345,6 +334,18 @@
                                         <li class="nav-item"><a href="{{ route('principal.institute.holidays.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.holidays.*') || request()->routeIs('principal.institute.weekly-holidays.*') ? 'active' : '' }}"><i class="far fa-dot-circle nav-icon"></i><p>Holiday Management</p></a></li>
                                     </ul>
                                 </li>
+
+                            {{-- Lesson Evaluation (Principal Reports) --}}
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.lesson-evaluations.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.lesson-evaluations.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-clipboard-check"></i>
+                                    <p>Lesson Evaluation <i class="right fas fa-angle-left"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item"><a href="{{ route('principal.institute.lesson-evaluations.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.lesson-evaluations.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Reports</p></a></li>
+                                </ul>
+                            </li>
+
 
                             {{-- Manage Exam --}}
                             <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.exams.*') || request()->routeIs('principal.institute.seat-plans.*') ? 'menu-open' : '' }}">
@@ -398,6 +399,13 @@
                                     <li class="nav-item"><a href="{{ route('principal.institute.documents.testimonial.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.testimonial.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Testimonial</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.documents.settings.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.settings.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Settings</p></a></li>
                                 </ul>
+                            </li>
+
+                            <li class="nav-item">
+                                <a href="{{ route('principal.institute.notices', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.notices') || request()->is('principal/institute/*/notices*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-bullhorn"></i>
+                                    <p>নোটিশ বোর্ড</p>
+                                </a>
                             </li>
 
                             {{-- Billing --}}
@@ -523,6 +531,13 @@
                             <a href="{{ route('teacher.institute.directory.teachers', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.directory.teachers') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-chalkboard-teacher"></i>
                                 <p>Teachers</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{{ route('teacher.institute.notices', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.notices') || request()->is('teacher/institute/*/notices*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-bullhorn"></i>
+                                <p>নোটিস বোর্ড</p>
                             </a>
                         </li>
                         @endif

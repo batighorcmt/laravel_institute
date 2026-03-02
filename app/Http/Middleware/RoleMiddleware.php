@@ -16,7 +16,7 @@ class RoleMiddleware
      * @param  string  $role
      * @param  string|null  $schoolRequired
      */
-    public function handle(Request $request, Closure $next, string $role, ?string $schoolRequired = null): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
         if (!Auth::check()) {
             return redirect()->route('login');
@@ -29,30 +29,37 @@ class RoleMiddleware
             return $next($request);
         }
 
-        // Check if user has the required role
+        // Check if school context is required
         $schoolId = null;
-        if ($schoolRequired) {
-            $schoolParam = $request->route('school');
+        if (in_array('school', $roles)) {
+            $schoolParam = $request->route('school') ?? $request->route('school_id');
             if ($schoolParam) {
                 if (is_object($schoolParam)) {
-                    // Support Route Model Binding objects
-                    if (method_exists($schoolParam, 'getKey')) {
-                        $schoolId = $schoolParam->getKey();
-                    } elseif (property_exists($schoolParam, 'id')) {
-                        $schoolId = $schoolParam->id;
-                    }
+                    $schoolId = method_exists($schoolParam, 'getKey') ? $schoolParam->getKey() : ($schoolParam->id ?? null);
                 } else {
-                    // Scalar route parameter
                     $schoolId = $schoolParam;
                 }
             }
+            // Filter out 'school' flag from roles
+            $roles = array_filter($roles, fn($r) => $r !== 'school');
         }
 
-        if (!$user->hasRole($role, $schoolId)) {
+        // Check for any of the roles
+        $hasAccess = false;
+        foreach ($roles as $role) {
+            // Handle cases where comma-separated roles might be passed as a single string (e.g. role:parent,teacher)
+            // though Laravel usually splits them if the middleware is defined with ...$roles
+            if ($user->hasRole($role, $schoolId)) {
+                $hasAccess = true;
+                break;
+            }
+        }
+
+        if (!$hasAccess) {
             abort(403, 'Insufficient permissions.');
         }
 
-        // Store current school context for the request
+        // Store context
         if ($schoolId) {
             $request->attributes->set('current_school_id', $schoolId);
         }

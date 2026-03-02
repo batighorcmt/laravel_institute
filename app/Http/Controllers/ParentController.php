@@ -366,13 +366,7 @@ class ParentController extends Controller
     {
         $children = $this->resolveChildren();
         $selectedStudent = $this->getSelectedStudent($children, $request);
-        
-        $notices = Notice::forSchool($selectedStudent->school_id)
-            ->published()
-            ->orderByDesc('publish_at')
-            ->paginate(15);
-
-        return view('parent.notices', compact('children', 'selectedStudent', 'notices'));
+        return view('parent.notices', compact('children', 'selectedStudent'));
     }
 
     public function teachers(Request $request)

@@ -8,7 +8,7 @@
 
 @section('content')
     <div id="app">
-        <notice-inbox :school-id="{{ $selectedStudent->school_id }}"></notice-inbox>
+        <notice-inbox :school-id="{{ $school->id }}"></notice-inbox>
     </div>
 @stop
 

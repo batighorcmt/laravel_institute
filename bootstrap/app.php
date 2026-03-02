@@ -12,6 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->statefulApi();
         // Ensure timezone is always set correctly for live server
         $middleware->append(\App\Http\Middleware\SetTimezone::class);
         // Route middleware aliases
