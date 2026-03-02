@@ -209,7 +209,18 @@ class NoticeController extends Controller
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
-        $replies = $notice->replies()->with(['student', 'parent:id,name'])->get();
+        $replies = $notice->replies()
+            ->with(['student.class', 'parent:id,name'])
+            ->get()
+            ->map(function($reply) {
+                $data = $reply->toArray();
+                if ($reply->student) {
+                    $data['student']['name'] = $reply->student->student_name_bn ?: $reply->student->student_name_en;
+                    $data['student']['class_name'] = $reply->student->class?->class_name;
+                }
+                return $data;
+            });
+
         $reads = $notice->reads()->with('user:id,name')->get();
 
         // Calculate total recipients (estimated)
