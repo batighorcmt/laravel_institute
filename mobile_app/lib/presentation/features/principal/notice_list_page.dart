@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../state/notice_state.dart';
 import 'notice_create_page.dart';
+import 'notice_stats_page.dart';
 
 class NoticeListPage extends ConsumerWidget {
   const NoticeListPage({super.key});
@@ -99,36 +100,12 @@ class NoticeListPage extends ConsumerWidget {
   }
 
   void _viewStats(BuildContext context, dynamic notice) {
-    // Navigate to a stats page or show a modal
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Consumer(
-        builder: (context, ref, _) {
-          final statsAsync = ref.watch(noticeStatsProvider(notice['id']));
-          return statsAsync.when(
-            data: (stats) => Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('নোটিশ পরিসংখ্যান', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _StatCard(label: 'দেখা হয়েছে', value: '${stats['read_count']}', color: Colors.blue),
-                      _StatCard(label: 'রিপ্লাই', value: '${stats['reply_count']}', color: Colors.green),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('ঠিক আছে')),
-                ],
-              ),
-            ),
-            loading: () => const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())),
-            error: (err, _) => Center(child: Text('ত্রুটি: $err')),
-          );
-        },
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NoticeStatsPage(
+          noticeId: notice['id'],
+          noticeTitle: notice['title']?.toString() ?? '',
+        ),
       ),
     );
   }
@@ -155,19 +132,5 @@ class NoticeListPage extends ConsumerWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  const _StatCard({required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
-        Text(label, style: const TextStyle(color: Colors.grey)),
-      ],
-    );
   }
 }

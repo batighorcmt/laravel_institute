@@ -204,19 +204,59 @@ class NoticeController extends Controller
 
     public function stats(Notice $notice, Request $request)
     {
-        if (!$request->user()->isPrincipal()) {
+        $schoolId = $request->attributes->get('current_school_id');
+        if (!$request->user()->isPrincipal($schoolId)) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
-        $readIds = $notice->reads()->pluck('user_id')->toArray();
-        $replies = $notice->replies()->with(['student', 'parent'])->get();
+        $replies = $notice->replies()->with(['student', 'parent:id,name'])->get();
+        $reads = $notice->reads()->with('user:id,name')->get();
+
+        // Calculate total recipients (estimated)
+        $totalRecipients = 0;
+        if ($notice->audience_type === 'all') {
+            $totalRecipients = \App\Models\Student::where('school_id', $schoolId)->where('status', 'active')->count() +
+                               \App\Models\Teacher::where('school_id', $schoolId)->where('status', 'active')->count();
+        } elseif ($notice->audience_type === 'teachers') {
+            if ($notice->targets()->exists()) {
+                $totalRecipients = $notice->targets()->where('targetable_type', \App\Models\Teacher::class)->count();
+            } else {
+                $totalRecipients = \App\Models\Teacher::where('school_id', $schoolId)->where('status', 'active')->count();
+            }
+        } elseif ($notice->audience_type === 'students') {
+            if ($notice->targets()->exists()) {
+                // If specific targets exist (Classes, Sections, Students)
+                $targetIds = $notice->targets->pluck('targetable_id', 'targetable_type');
+                
+                $studentIds = collect();
+                
+                if (isset($targetIds[\App\Models\Student::class])) {
+                     $studentIds = $studentIds->merge($notice->targets->where('targetable_type', \App\Models\Student::class)->pluck('targetable_id'));
+                }
+                
+                if (isset($targetIds[\App\Models\SchoolClass::class])) {
+                    $classIds = $notice->targets->where('targetable_type', \App\Models\SchoolClass::class)->pluck('targetable_id');
+                    $studentIds = $studentIds->merge(\App\Models\Student::whereIn('class_id', $classIds)->pluck('id'));
+                }
+                
+                if (isset($targetIds[\App\Models\Section::class])) {
+                    $sectionIds = $notice->targets->where('targetable_type', \App\Models\Section::class)->pluck('targetable_id');
+                    $studentIds = $studentIds->merge(\App\Models\Student::whereHas('currentEnrollment', fn($q) => $q->whereIn('section_id', $sectionIds))->pluck('id'));
+                }
+
+                $totalRecipients = $studentIds->unique()->count();
+            } else {
+                $totalRecipients = \App\Models\Student::where('school_id', $schoolId)->where('status', 'active')->count();
+            }
+        }
 
         return response()->json([
             'notice' => new NoticeResource($notice),
             'stats' => [
-                'read_count' => count($readIds),
+                'total_recipients' => $totalRecipients,
+                'read_count' => $reads->count(),
                 'reply_count' => $replies->count(),
-                'reads' => $notice->reads()->with('user:id,name')->get(),
+                'reads' => $reads,
                 'replies' => $replies
             ]
         ]);
