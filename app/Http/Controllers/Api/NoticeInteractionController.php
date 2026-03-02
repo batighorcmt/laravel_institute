@@ -43,8 +43,9 @@ class NoticeInteractionController extends Controller
         }
 
         $request->validate([
-            'voice' => ['required', 'file', 'mimes:webm,mp3,wav,ogg,m4a,aac', 'max:5120'], // Max 5MB
-            'duration' => ['required', 'numeric', 'max:31'], // Max 30 seconds
+            // Accept all common audio MIME types including audio/mp4 (Android .m4a), audio/aac, etc.
+            'voice' => ['required', 'file', 'mimetypes:audio/mp4,audio/x-m4a,audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/webm,audio/aac,application/octet-stream', 'max:5120'],
+            'duration' => ['required', 'numeric', 'max:31'],
         ]);
 
         $student = $user->student;

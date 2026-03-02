@@ -8,11 +8,13 @@ import 'package:path/path.dart' as p;
 class VoiceRecorder extends StatefulWidget {
   final Function(String filePath, int durationSeconds) onCompleted;
   final VoidCallback onCancel;
+  final bool isSending;
 
   const VoiceRecorder({
     super.key,
     required this.onCompleted,
     required this.onCancel,
+    this.isSending = false,
   });
 
   @override
@@ -225,24 +227,38 @@ class _VoiceRecorderState extends State<VoiceRecorder> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _reset,
+                    onPressed: widget.isSending ? null : _reset,
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.red),
+                      side: BorderSide(color: widget.isSending ? Colors.grey : Colors.red),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text('আবার রেকর্ড করুন', style: TextStyle(color: Colors.red)),
+                    child: Text(
+                      'আবার রেকর্ড করুন',
+                      style: TextStyle(color: widget.isSending ? Colors.grey : Colors.red),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => widget.onCompleted(_filePath!, _recordDuration),
+                    onPressed: widget.isSending
+                        ? null
+                        : () => widget.onCompleted(_filePath!, _recordDuration),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text('রিপ্লাই পাঠান'),
+                    child: widget.isSending
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('রিপ্লাই পাঠান'),
                   ),
                 ),
               ],

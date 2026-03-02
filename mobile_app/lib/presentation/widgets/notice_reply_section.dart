@@ -23,43 +23,76 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
   bool _showRecorder = false;
 
   Future<void> _handleVoiceCompleted(String filePath, int duration) async {
+    debugPrint('[NoticeReply] ▶ onCompleted: filePath=$filePath | duration=$duration | noticeId=${widget.noticeId}');
+
     setState(() => _isSending = true);
+
     try {
+      debugPrint('[NoticeReply] ⏳ Calling submitVoiceReply...');
       await ref.read(noticeRepositoryProvider).submitVoiceReply(
-        widget.noticeId, 
-        filePath, 
+        widget.noticeId,
+        filePath,
         duration.toDouble(),
       );
-      if (!mounted) return;
+      debugPrint('[NoticeReply] ✅ submitVoiceReply SUCCESS');
+
+      if (!mounted) {
+        debugPrint('[NoticeReply] ⚠ Widget unmounted after success — cannot setState');
+        return;
+      }
       setState(() {
         _isSending = false;
         _isSent = true;
         _showRecorder = false;
       });
-      // Optionally invalidate list to update counts if displayed
       ref.invalidate(noticesListProvider);
+
     } on DioException catch (e) {
-      if (!mounted) return;
+      debugPrint('[NoticeReply] ❌ DioException:'
+          ' type=${e.type.name}'
+          ' | status=${e.response?.statusCode}'
+          ' | data=${e.response?.data}'
+          ' | msg=${e.message}');
+
+      if (!mounted) {
+        debugPrint('[NoticeReply] ⚠ Widget unmounted after DioException');
+        return;
+      }
       setState(() => _isSending = false);
-      final serverMsg = e.response?.data?['message'] as String?;
-      final displayMsg = serverMsg ?? 'নেটওয়ার্ক সমস্যা হয়েছে, আবার চেষ্টা করুন';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(displayMsg),
-          backgroundColor: Colors.red[700],
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
+
+      final dynamic respData = e.response?.data;
+      final String? serverMsg = (respData is Map) ? respData['message'] as String? : null;
+      final String displayMsg = serverMsg ?? 'নেটওয়ার্ক সমস্যা (${e.type.name})';
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(displayMsg),
+            backgroundColor: Colors.red[700],
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e, stack) {
+      debugPrint('[NoticeReply] ❌ Unknown error: $e\n$stack');
+
+      if (!mounted) {
+        debugPrint('[NoticeReply] ⚠ Widget unmounted after unknown error');
+        return;
+      }
       setState(() => _isSending = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('ত্রুটি: $e'),
-          backgroundColor: Colors.red[700],
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('ত্রুটি: $e'),
+            backgroundColor: Colors.red[700],
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 
@@ -80,7 +113,7 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
             Icon(Icons.check_circle, color: Colors.blue),
             SizedBox(width: 8),
             Text(
-              'আপনার রিপ্লাই পাঠানো হয়েছে',
+              'আপনার রিপ্লাই পাঠানো হয়েছে',
               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
             ),
           ],
@@ -88,22 +121,7 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
       );
     }
 
-    if (_isSending) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        width: double.infinity,
-        child: const Center(
-          child: Column(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 12),
-              Text('রিপ্লাই পাঠানো হচ্ছে...', style: TextStyle(color: Colors.grey)),
-            ],
-          ),
-        ),
-      );
-    }
-
+    // VoiceRecorder stays mounted even during sending — isSending controls the button state
     if (!_showRecorder) {
       return Container(
         padding: const EdgeInsets.all(16),
@@ -118,7 +136,7 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
             const Icon(Icons.mic_none, color: Colors.green, size: 32),
             const SizedBox(height: 12),
             const Text(
-              'এই নোটিশের জন্য একটি ভয়েস রিপ্লাই দিন',
+              'এই নোটিশের জন্য একটি ভয়েস রিপ্লাই দিন',
               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
             ),
             const SizedBox(height: 16),
@@ -143,6 +161,7 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
     return VoiceRecorder(
       onCompleted: _handleVoiceCompleted,
       onCancel: () => setState(() => _showRecorder = false),
+      isSending: _isSending,
     );
   }
 }
