@@ -113,8 +113,10 @@ class NoticeController extends Controller
         ]);
 
         // Handle targets
-        if (!empty($validated['targets'])) {
-            foreach ($validated['targets'] as $target) {
+        if ($request->has('targets') && is_array($request->input('targets'))) {
+            foreach ($request->input('targets') as $target) {
+                if (empty($target['id']) || empty($target['type'])) continue;
+
                 $typeMap = [
                     'Teacher' => \App\Models\Teacher::class,
                     'Student' => \App\Models\Student::class,

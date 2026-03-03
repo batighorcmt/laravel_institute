@@ -57,15 +57,23 @@ class PushNotificationService
         if ($userIds->isEmpty()) return;
 
         // 2. Get device tokens for these users
-        $tokens = DeviceToken::whereIn('user_id', $userIds)->pluck('token')->toArray();
+        $tokens = DeviceToken::whereIn('user_id', $userIds)
+            ->whereNotNull('token')
+            ->pluck('token')
+            ->unique()
+            ->toArray();
 
         // 3. Dispatch Job if tokens exist
         if (!empty($tokens)) {
+            $title = $notice->title ?? 'নতুন নোটিশ';
+            $body = mb_substr(strip_tags($notice->body ?? ''), 0, 100);
+            if (strlen($notice->body ?? '') > 100) $body .= '...';
+
             SendPushNotificationJob::dispatch(
                 $tokens,
-                $notice->title,
-                mb_substr(strip_tags($notice->body), 0, 100) . '...',
-                ['id' => $notice->id, 'type' => 'notice']
+                $title,
+                $body,
+                ['id' => (string)$notice->id, 'type' => 'notice']
             );
         }
     }
