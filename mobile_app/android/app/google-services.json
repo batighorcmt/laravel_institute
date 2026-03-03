@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "329184404517",
+    "project_id": "batighor-eims",
+    "storage_bucket": "batighor-eims.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:329184404517:android:0b13c82603be31ec970bcc",
+        "android_client_info": {
+          "package_name": "com.batighorsoft.eims"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMR34LQ0mGTgkIsdP4-yAnWS5WN27jeU4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

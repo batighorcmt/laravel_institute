@@ -131,6 +131,9 @@ class NoticeController extends Controller
                 }
             }
         }
+        
+        // Send Push Notifications
+        app(\App\Services\PushNotificationService::class)->sendNoticeNotification($notice);
 
         return (new NoticeResource($notice))->additional(['message' => 'নোটিশ তৈরি সফল']);
     }

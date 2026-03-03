@@ -1,21 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'presentation/routes/app_router.dart';
 import 'theme/app_theme.dart';
 import 'core/network/dio_client.dart';
 import 'core/config/env.dart';
 import 'dart:developer' as developer;
+import 'core/services/notification_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  developer.log('Handling background message: ${message.messageId}');
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize Firebase if config exists; otherwise continue without it.
+  
   try {
+    // 1. Initialize Firebase
     await Firebase.initializeApp();
-  } catch (_) {
-    // No firebase options configured; skip for now.
+    
+    // 2. Initialize Dio
+    await DioClient().init();
+    
+    // 3. Set Background Handler
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    
+    // 4. Initialize Notification Service
+    await NotificationService().init();
+    
+    developer.log('Firebase and Notifications initialized');
+  } catch (e) {
+    developer.log('Initialization Error: $e');
   }
-  await DioClient().init();
   developer.log(
     'App starting with API_BASE_URL=${Env.apiBaseUrl}',
     name: 'Main',
