@@ -13,22 +13,22 @@
 
     <div class="row">
         <div class="col-lg-3 col-6">
-            <div class="small-box bg-info">
+            <a href="{{ route('superadmin.schools.index') }}" class="small-box bg-info text-decoration-none d-block">
                 <div class="inner">
                     <h3>{{ $data['total_schools'] ?? 0 }}</h3>
                     <p>মোট স্কুল</p>
                 </div>
                 <div class="icon"><i class="fas fa-school"></i></div>
-            </div>
+            </a>
         </div>
         <div class="col-lg-3 col-6">
-            <div class="small-box bg-success">
+            <a href="{{ route('superadmin.users.index') }}" class="small-box bg-success text-decoration-none d-block">
                 <div class="inner">
                     <h3>{{ $data['total_users'] ?? 0 }}</h3>
                     <p>মোট ব্যবহারকারী</p>
                 </div>
                 <div class="icon"><i class="fas fa-users"></i></div>
-            </div>
+            </a>
         </div>
         <div class="col-lg-3 col-6">
             <div class="small-box bg-warning">
@@ -68,10 +68,10 @@
                 <div class="card-body">
                     <p class="mb-2">আপনি সুপার এডমিন হিসেবে লগইন করেছেন। এখানে আপনি:</p>
                     <div class="row">
-                        <div class="col-md-3"><div class="border rounded p-3 h-100"><i class="fas fa-school text-primary"></i> <span class="ms-2">সকল স্কুল ব্যবস্থাপনা</span></div></div>
-                        <div class="col-md-3"><div class="border rounded p-3 h-100"><i class="fas fa-plus-circle text-success"></i> <span class="ms-2">নতুন স্কুল যোগ</span></div></div>
-                        <div class="col-md-3"><div class="border rounded p-3 h-100"><i class="fas fa-users-cog text-warning"></i> <span class="ms-2">ব্যবহারকারী ব্যবস্থাপনা</span></div></div>
-                        <div class="col-md-3"><div class="border rounded p-3 h-100"><i class="fas fa-cogs text-danger"></i> <span class="ms-2">সিস্টেম সেটিংস</span></div></div>
+                        <div class="col-md-3"><a href="{{ route('superadmin.schools.index') }}" class="text-decoration-none text-dark"><div class="border rounded p-3 h-100"><i class="fas fa-school text-primary"></i> <span class="ms-2">সকল স্কুল ব্যবস্থাপনা</span></div></a></div>
+                        <div class="col-md-3"><a href="{{ route('superadmin.schools.create') }}" class="text-decoration-none text-dark"><div class="border rounded p-3 h-100"><i class="fas fa-plus-circle text-success"></i> <span class="ms-2">নতুন স্কুল যোগ</span></div></a></div>
+                        <div class="col-md-3"><a href="{{ route('superadmin.users.index') }}" class="text-decoration-none text-dark"><div class="border rounded p-3 h-100"><i class="fas fa-users-cog text-warning"></i> <span class="ms-2">ব্যবহারকারী ব্যবস্থাপনা</span></div></a></div>
+                        <div class="col-md-3"><a href="#" class="text-decoration-none text-dark"><div class="border rounded p-3 h-100"><i class="fas fa-cogs text-danger"></i> <span class="ms-2">সিস্টেম সেটিংস</span></div></a></div>
                     </div>
                 </div>
             </div>

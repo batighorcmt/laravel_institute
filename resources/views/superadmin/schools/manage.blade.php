@@ -72,6 +72,11 @@
                 <li>বিষয় (Subject) যোগ করুন</li>
                 <li>টিচার / প্রিন্সিপাল ইউজার অ্যাসাইন করুন</li>
                 <li>স্টুডেন্ট ইমপোর্ট বা ম্যানুয়াল এন্ট্রি করুন</li>
+                <li class="mt-2">
+                    <a href="{{ route('principal.institute.fcm.index', $school) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-bell mr-1"></i> পুশ নোটিফিকেশন চেক করুন
+                    </a>
+                </li>
             </ul>
         </div>
     </div>

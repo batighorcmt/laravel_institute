@@ -10,19 +10,7 @@
     <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}">
 
     @vite(['resources/css/app.css','resources/js/app.js'])
-    <script>
-        (function(){
-            function ensureSelect2(){
-                if (window.$ && $.fn && $.fn.select2) return;
-                if (window.__select2_cdn_loading) return;
-                window.__select2_cdn_loading = true;
-                var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/css/select2.min.css'; css.crossOrigin = 'anonymous'; document.head.appendChild(css);
-                var js = document.createElement('script'); js.src = 'https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js'; js.async = true; js.crossOrigin = 'anonymous';
-                document.head.appendChild(js);
-            }
-            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureSelect2); else ensureSelect2();
-        })();
-    </script>
+    @stack('styles')
     <style>
         .navbar-search { min-width: 220px; }
 
@@ -222,12 +210,13 @@
                         </li>
 
                         {{-- Academic Setup (remaining items) --}}
-                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.shifts.*') || request()->routeIs('principal.institute.sections.*') || request()->routeIs('principal.institute.groups.*') || request()->routeIs('principal.institute.classes.*') || request()->routeIs('principal.institute.subjects.*') || request()->routeIs('principal.institute.teams.*') || request()->routeIs('principal.institute.academic-years.*') || request()->routeIs('principal.institute.extra-classes.*') || request()->routeIs('principal.institute.routine.*') || request()->routeIs('principal.institute.result-settings.*') ? 'menu-open' : '' }}">
-                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.shifts.*') || request()->routeIs('principal.institute.sections.*') || request()->routeIs('principal.institute.groups.*') || request()->routeIs('principal.institute.classes.*') || request()->routeIs('principal.institute.subjects.*') || request()->routeIs('principal.institute.teams.*') || request()->routeIs('principal.institute.academic-years.*') || request()->routeIs('principal.institute.extra-classes.*') || request()->routeIs('principal.institute.routine.*') || request()->routeIs('principal.institute.result-settings.*') ? 'active' : '' }}">
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.shifts.*') || request()->routeIs('principal.institute.sections.*') || request()->routeIs('principal.institute.classes.*') || request()->routeIs('principal.institute.subjects.*') || request()->routeIs('principal.institute.academic-years.*') || request()->routeIs('principal.institute.fcm.*') || request()->routeIs('principal.institute.result-settings.*') || request()->routeIs('principal.institute.extra-classes.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.shifts.*') || request()->routeIs('principal.institute.sections.*') || request()->routeIs('principal.institute.groups.*') || request()->routeIs('principal.institute.classes.*') || request()->routeIs('principal.institute.subjects.*') || request()->routeIs('principal.institute.teams.*') || request()->routeIs('principal.institute.academic-years.*') || request()->routeIs('principal.institute.extra-classes.*') || request()->routeIs('principal.institute.routine.*') || request()->routeIs('principal.institute.result-settings.*') || request()->routeIs('principal.institute.fcm.*') ? 'active' : '' }}">
                                     <i class="nav-icon fas fa-cogs"></i>
-                                    <p>Academic Setup <i class="right fas fa-angle-left"></i></p>
+                                    <p>একাডেমিক সেটআপ <i class="right fas fa-angle-left"></i></p>
                                 </a>
                                 <ul class="nav nav-treeview">
+                                    <li class="nav-item"><a href="{{ route('principal.institute.fcm.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.fcm.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Push Diagnostics</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.shifts.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.shifts.*') ? 'active' : '' }}"><i class="far fa-dot-circle nav-icon"></i><p>Shift</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.classes.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.classes.*') ? 'active' : '' }}"><i class="far fa-dot-circle nav-icon"></i><p>Class</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.sections.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.sections.*') ? 'active' : '' }}"><i class="far fa-dot-circle nav-icon"></i><p>Section</p></a></li>
