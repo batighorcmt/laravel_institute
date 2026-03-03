@@ -204,7 +204,7 @@ class NoticeController extends Controller
 
     public function stats(Notice $notice, Request $request)
     {
-        $schoolId = $request->attributes->get('current_school_id');
+        $schoolId = $request->attributes->get('current_school_id') ?? $request->user()->primarySchool()?->id;
         if (!$request->user()->isPrincipal($schoolId)) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
@@ -225,23 +225,37 @@ class NoticeController extends Controller
                 $teacherQuery->whereIn('id', $targetIds);
             }
 
-            $teachers = $teacherQuery->get(['id', 'user_id', 'teacher_name_bn', 'teacher_name_en']);
+            $teachers = $teacherQuery->get(['id', 'user_id', 'first_name_bn', 'last_name_bn', 'first_name', 'last_name']);
             foreach ($teachers as $teacher) {
                 $status = 'unread';
                 if ($teacher->user_id && in_array($teacher->user_id, $reads)) $status = 'read';
-                // Check for teacher reply if applicable (though currently repo handles voice via parent/student)
                 
+                // For teachers, we check if they replied using their user_id (parent_id in NoticeReply)
+                $replyKey = 'parent_' . $teacher->user_id;
+                $voiceReply = null;
+                if ($teacher->user_id && $replies->has($replyKey)) {
+                    $status = 'replied';
+                    $voiceReply = [
+                        'url' => $replies[$replyKey]->voice_url,
+                        'duration' => $replies[$replyKey]->duration,
+                    ];
+                }
+
+                $nameBn = trim(($teacher->first_name_bn ?? '') . ' ' . ($teacher->last_name_bn ?? ''));
+                $nameEn = trim(($teacher->first_name ?? '') . ' ' . ($teacher->last_name ?? ''));
+
                 $recipientList->push([
                     'id' => $teacher->id,
                     'type' => 'teacher',
-                    'name' => $teacher->teacher_name_bn ?: $teacher->teacher_name_en,
+                    'name' => $nameBn ?: ($nameEn ?: 'N/A'),
                     'status' => $status,
+                    'reply' => $voiceReply,
                     'details' => 'শিক্ষক'
                 ]);
             }
         }
 
-        // 2. Handle Students/Parents
+        // 2. Handle Students
         if ($notice->audience_type === 'all' || $notice->audience_type === 'students') {
             $studentQuery = \App\Models\Student::where('school_id', $schoolId)
                 ->where('status', 'active')
@@ -250,16 +264,12 @@ class NoticeController extends Controller
             if ($notice->audience_type === 'students' && $notice->targets()->exists()) {
                 $studentQuery->where(function($q) use ($notice) {
                     $targets = $notice->targets;
-                    
-                    // Direct student targets
                     $studentIds = $targets->where('targetable_type', \App\Models\Student::class)->pluck('targetable_id');
                     if ($studentIds->isNotEmpty()) $q->orWhereIn('id', $studentIds);
 
-                    // Class targets
                     $classIds = $targets->where('targetable_type', \App\Models\SchoolClass::class)->pluck('targetable_id');
                     if ($classIds->isNotEmpty()) $q->orWhereIn('class_id', $classIds);
 
-                    // Section targets
                     $sectionIds = $targets->where('targetable_type', \App\Models\Section::class)->pluck('targetable_id');
                     if ($sectionIds->isNotEmpty()) {
                         $q->orWhereHas('currentEnrollment', function($sq) use ($sectionIds) {
@@ -288,7 +298,7 @@ class NoticeController extends Controller
                 $recipientList->push([
                     'id' => $student->id,
                     'type' => 'student',
-                    'name' => $student->student_name_bn ?: $student->student_name_en,
+                    'name' => $student->student_name_bn ?: ($student->student_name_en ?: 'N/A'),
                     'class_name' => $student->class?->class_name,
                     'section_name' => $enroll?->section?->section_name,
                     'roll' => $enroll?->roll_no,
