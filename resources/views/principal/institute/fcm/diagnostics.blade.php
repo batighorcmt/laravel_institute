@@ -47,6 +47,10 @@
                 <div class="alert alert-warning p-2 small">
                     <i class="fas fa-exclamation-triangle"></i> <code>storage/app/firebase-service-account.json</code> file is missing.
                 </div>
+                @elseif(!$saDetails)
+                <div class="alert alert-danger p-2 small">
+                    <i class="fas fa-times-circle"></i> JSON is <b>invalid</b>. Please check formatting (remove backslashes or spaces).
+                </div>
                 @endif
                 <div class="text-xs text-muted mt-2 border-top pt-2">
                     <i class="fas fa-info-circle"></i> If notification errors persist with <code>invalid_grant</code>, regenerate the service account key in Firebase Console and replace the JSON file in storage.

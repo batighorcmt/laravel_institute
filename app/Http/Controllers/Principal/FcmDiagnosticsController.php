@@ -15,11 +15,12 @@ class FcmDiagnosticsController extends Controller
     public function index(School $school, Request $request)
     {
         // 1. Health Check
-        $saPath = config('fcm.service_account_path');
-        $saExists = File::exists($saPath);
+        $saPath = config('fcm.service_account_path') ?: storage_path('app/firebase-service-account.json');
+        $saExists = file_exists($saPath);
         $saDetails = null;
         if ($saExists) {
-            $saDetails = json_decode(File::get($saPath), true);
+            $content = file_get_contents($saPath);
+            $saDetails = json_decode($content, true);
         }
 
         // 2. Active Tokens for this school's users
