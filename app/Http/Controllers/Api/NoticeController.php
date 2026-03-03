@@ -299,13 +299,14 @@ class NoticeController extends Controller
                     'id' => $student->id,
                     'type' => 'student',
                     'name' => $student->student_name_bn ?: ($student->student_name_en ?: 'N/A'),
-                    'class_name' => $student->class?->class_name,
-                    'section_name' => $enroll?->section?->section_name,
+                    'photo_url' => $student->photo_url,
+                    'class_name' => $student->class?->name,
+                    'section_name' => $enroll?->section?->name,
                     'roll' => $enroll?->roll_no,
                     'status' => $status,
                     'reply' => $voiceReply,
-                    'details' => "ক্লাস: " . ($student->class?->class_name ?? 'N/A') . 
-                                 ", শাখা: " . ($enroll?->section?->section_name ?? 'N/A') . 
+                    'details' => "ক্লাস: " . ($student->class?->name ?? 'N/A') . 
+                                 ", শাখা: " . ($enroll?->section?->name ?? 'N/A') . 
                                  ", রোল: " . ($enroll?->roll_no ?? 'N/A')
                 ]);
             }
