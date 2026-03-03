@@ -643,6 +643,40 @@ class _PrincipalDashboardPageState
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          // Push Notification Logs card
+          Card(
+            elevation: 1,
+            child: InkWell(
+              onTap: () => context.push('/principal/notification-logs'),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.notifications_active_outlined, size: 28, color: Colors.orange),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Push Diagnostics',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text('View notification delivery status and logs'),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right),
+                  ],
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
           ],
         ),

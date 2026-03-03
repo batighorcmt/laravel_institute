@@ -17,13 +17,22 @@ class SendPushNotificationJob implements ShouldQueue
         protected array $tokens,
         protected string $title,
         protected string $body,
-        protected array $data = []
+        protected array $data = [],
+        protected ?int $userId = null,
+        protected ?int $noticeId = null
     ) {}
 
     public function handle(FcmService $fcm): void
     {
         foreach ($this->tokens as $token) {
-            $fcm->sendToToken($token, $this->title, $this->body, $this->data);
+            $fcm->sendToToken(
+                $token, 
+                $this->title, 
+                $this->body, 
+                $this->data, 
+                $this->userId, 
+                $this->noticeId
+            );
         }
     }
 }

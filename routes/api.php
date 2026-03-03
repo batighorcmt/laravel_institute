@@ -119,6 +119,12 @@ Route::prefix('v1')->group(function () {
     Route::post('devices', [\App\Http\Controllers\Api\DeviceTokenController::class, 'store']);
     Route::delete('devices/{deviceToken}', [\App\Http\Controllers\Api\DeviceTokenController::class, 'destroy']);
 
+    // Notifications Diagnostics
+    Route::middleware('role:principal')->group(function () {
+        Route::get('notifications/logs', [\App\Http\Controllers\Api\NotificationLogController::class, 'index']);
+        Route::get('notifications/stats', [\App\Http\Controllers\Api\NotificationLogController::class, 'stats']);
+    });
+
     // Test push (principal only)
     Route::post('notifications/test', function (\Illuminate\Http\Request $request) {
         $user = $request->user();
