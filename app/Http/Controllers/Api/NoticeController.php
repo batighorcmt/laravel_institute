@@ -259,7 +259,7 @@ class NoticeController extends Controller
         if ($notice->audience_type === 'all' || $notice->audience_type === 'students') {
             $studentQuery = \App\Models\Student::where('school_id', $schoolId)
                 ->where('status', 'active')
-                ->with(['class', 'currentEnrollment.section']);
+                ->with(['currentEnrollment.class', 'currentEnrollment.section']);
 
             if ($notice->audience_type === 'students' && $notice->targets()->exists()) {
                 $studentQuery->where(function($q) use ($notice) {
@@ -295,18 +295,21 @@ class NoticeController extends Controller
                 }
 
                 $enroll = $student->currentEnrollment;
+                $className = $enroll?->class?->name ?? $student->class?->name;
+                $sectionName = $enroll?->section?->name;
+
                 $recipientList->push([
                     'id' => $student->id,
                     'type' => 'student',
                     'name' => $student->student_name_bn ?: ($student->student_name_en ?: 'N/A'),
                     'photo_url' => $student->photo_url,
-                    'class_name' => $student->class?->name,
-                    'section_name' => $enroll?->section?->name,
+                    'class_name' => $className,
+                    'section_name' => $sectionName,
                     'roll' => $enroll?->roll_no,
                     'status' => $status,
                     'reply' => $voiceReply,
-                    'details' => "ক্লাস: " . ($student->class?->name ?? 'N/A') . 
-                                 ", শাখা: " . ($enroll?->section?->name ?? 'N/A') . 
+                    'details' => "ক্লাস: " . ($className ?? 'N/A') . 
+                                 ", শাখা: " . ($sectionName ?? 'N/A') . 
                                  ", রোল: " . ($enroll?->roll_no ?? 'N/A')
                 ]);
             }
