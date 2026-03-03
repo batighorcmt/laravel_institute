@@ -16,6 +16,7 @@ class SuperAdminController extends Controller
             'total_users' => User::count(),
             'total_students' => Student::count(),
             'active_schools' => School::where('status', 'active')->count(),
+            'total_subjects' => \App\Models\Subject::count(),
         ];
 
         return view('superadmin.dashboard', compact('data'));

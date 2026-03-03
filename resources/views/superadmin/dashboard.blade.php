@@ -22,7 +22,7 @@
             </a>
         </div>
         <div class="col-lg-3 col-6">
-            <a href="{{ route('superadmin.users.index') }}" class="small-box bg-success d-block text-white">
+            <a href="#" class="small-box bg-success d-block text-white">
                 <div class="inner">
                     <h3>{{ $data['total_users'] ?? 0 }}</h3>
                     <p>মোট ব্যবহারকারী</p>
@@ -70,7 +70,7 @@
                     <div class="row">
                         <div class="col-md-3"><a href="{{ route('superadmin.schools.index') }}" class="text-decoration-none text-dark"><div class="border rounded p-3 h-100 hover-shadow"><i class="fas fa-school text-primary"></i> <span class="ml-2">সকল স্কুল ব্যবস্থাপনা</span></div></a></div>
                         <div class="col-md-3"><a href="{{ route('superadmin.schools.create') }}" class="text-decoration-none text-dark"><div class="border rounded p-3 h-100 hover-shadow"><i class="fas fa-plus-circle text-success"></i> <span class="ml-2">নতুন স্কুল যোগ</span></div></a></div>
-                        <div class="col-md-3"><a href="{{ route('superadmin.users.index') }}" class="text-decoration-none text-dark"><div class="border rounded p-3 h-100 hover-shadow"><i class="fas fa-users-cog text-warning"></i> <span class="ml-2">ব্যবহারকারী ব্যবস্থাপনা</span></div></a></div>
+                        <div class="col-md-3"><a href="#" class="text-decoration-none text-dark"><div class="border rounded p-3 h-100 hover-shadow"><i class="fas fa-users-cog text-warning"></i> <span class="ml-2">ব্যবহারকারী ব্যবস্থাপনা</span></div></a></div>
                         <div class="col-md-3"><a href="#" class="text-decoration-none text-dark"><div class="border rounded p-3 h-100 hover-shadow"><i class="fas fa-cogs text-danger"></i> <span class="ml-2">সিস্টেম সেটিংস</span></div></a></div>
                     </div>
                 </div>
