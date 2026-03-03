@@ -55,9 +55,6 @@
       <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
         <span><i class="fas fa-bullhorn mr-2"></i> নোটিশ বোর্ড</span><i class="fas fa-angle-right"></i>
       </a>
-      <a href="{{ route('principal.institute.fcm.index', $school) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-        <span><i class="fas fa-bell mr-2"></i> পুশ নোটিফিকেশন (ডায়াগনস্টিক)</span><i class="fas fa-angle-right"></i>
-      </a>
       <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
         <span><i class="fas fa-cogs mr-2"></i> ইনস্টিটিউট সেটিংস</span><i class="fas fa-angle-right"></i>
       </a>
