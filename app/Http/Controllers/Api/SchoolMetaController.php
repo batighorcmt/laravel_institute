@@ -13,7 +13,9 @@ class SchoolMetaController extends Controller
 {
     protected function resolveSchoolId(Request $request)
     {
-        return $request->query('school_id') ?? $request->attributes->get('current_school_id');
+        return $request->query('school_id') ?? 
+               $request->attributes->get('current_school_id') ?? 
+               $request->user()->primarySchool()?->id;
     }
 
     public function classes(Request $request)

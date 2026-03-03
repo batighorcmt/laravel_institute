@@ -87,15 +87,34 @@ class Teacher extends Model
         return $this->morphMany(NoticeTarget::class, 'targetable');
     }
 
-    public function getPhotoUrlAttribute(): string
+    public function getPhotoUrlAttribute(): ?string
     {
         if (empty($this->photo)) {
-            return asset('images/default-avatar.svg');
+            return null;
         }
+
+        // 1) Check in teachers folder
         $path = 'teachers/' . $this->photo;
         if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
             return asset('storage/' . $path);
         }
-        return asset('images/default-avatar.svg');
+
+        // 2) If stored directly in public path
+        if (file_exists(public_path($this->photo))) {
+            return asset($this->photo);
+        }
+
+        // 3) If stored in storage/app/public (accessible via /storage/...)
+        if (file_exists(storage_path('app/public/' . $this->photo))) {
+            return asset('storage/' . ltrim($this->photo, '/'));
+        }
+
+        // 4) Fallback to students folder
+        $studentsPath = 'students/' . $this->photo;
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($studentsPath)) {
+            return asset('storage/' . $studentsPath);
+        }
+
+        return null;
     }
 }

@@ -225,7 +225,7 @@ class NoticeController extends Controller
                 $teacherQuery->whereIn('id', $targetIds);
             }
 
-            $teachers = $teacherQuery->get(['id', 'user_id', 'first_name_bn', 'last_name_bn', 'first_name', 'last_name']);
+            $teachers = $teacherQuery->get(['id', 'user_id', 'photo', 'first_name_bn', 'last_name_bn', 'first_name', 'last_name']);
             foreach ($teachers as $teacher) {
                 $status = 'unread';
                 if ($teacher->user_id && in_array($teacher->user_id, $reads)) $status = 'read';

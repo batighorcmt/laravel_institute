@@ -208,7 +208,7 @@ class Student extends Model
             // ignore
         }
 
-        return asset('images/default-avatar.svg');
+        return null;
     }
 
     public function noticeTargets()
