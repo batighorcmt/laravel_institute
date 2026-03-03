@@ -209,66 +209,105 @@ class NoticeController extends Controller
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
-        $replies = $notice->replies()
-            ->with(['student.class', 'parent:id,name'])
-            ->get()
-            ->map(function($reply) {
-                $data = $reply->toArray();
-                if ($reply->student) {
-                    $data['student']['name'] = $reply->student->student_name_bn ?: $reply->student->student_name_en;
-                    $data['student']['class_name'] = $reply->student->class?->class_name;
-                }
-                return $data;
-            });
+        $reads = $notice->reads()->pluck('user_id')->toArray();
+        $replies = $notice->replies()->get()->keyBy(function($r) {
+            return $r->student_id ? 'student_'.$r->student_id : 'parent_'.$r->parent_id;
+        });
 
-        $reads = $notice->reads()->with('user:id,name')->get();
+        $recipientList = collect();
 
-        // Calculate total recipients (estimated)
-        $totalRecipients = 0;
-        if ($notice->audience_type === 'all') {
-            $totalRecipients = \App\Models\Student::where('school_id', $schoolId)->where('status', 'active')->count() +
-                               \App\Models\Teacher::where('school_id', $schoolId)->where('status', 'active')->count();
-        } elseif ($notice->audience_type === 'teachers') {
-            if ($notice->targets()->exists()) {
-                $totalRecipients = $notice->targets()->where('targetable_type', \App\Models\Teacher::class)->count();
-            } else {
-                $totalRecipients = \App\Models\Teacher::where('school_id', $schoolId)->where('status', 'active')->count();
+        // 1. Handle Teachers
+        if ($notice->audience_type === 'all' || $notice->audience_type === 'teachers') {
+            $teacherQuery = \App\Models\Teacher::where('school_id', $schoolId)->where('status', 'active');
+            
+            if ($notice->audience_type === 'teachers' && $notice->targets()->where('targetable_type', \App\Models\Teacher::class)->exists()) {
+                $targetIds = $notice->targets()->where('targetable_type', \App\Models\Teacher::class)->pluck('targetable_id');
+                $teacherQuery->whereIn('id', $targetIds);
             }
-        } elseif ($notice->audience_type === 'students') {
-            if ($notice->targets()->exists()) {
-                // If specific targets exist (Classes, Sections, Students)
-                $targetIds = $notice->targets->pluck('targetable_id', 'targetable_type');
+
+            $teachers = $teacherQuery->get(['id', 'user_id', 'teacher_name_bn', 'teacher_name_en']);
+            foreach ($teachers as $teacher) {
+                $status = 'unread';
+                if ($teacher->user_id && in_array($teacher->user_id, $reads)) $status = 'read';
+                // Check for teacher reply if applicable (though currently repo handles voice via parent/student)
                 
-                $studentIds = collect();
+                $recipientList->push([
+                    'id' => $teacher->id,
+                    'type' => 'teacher',
+                    'name' => $teacher->teacher_name_bn ?: $teacher->teacher_name_en,
+                    'status' => $status,
+                    'details' => 'শিক্ষক'
+                ]);
+            }
+        }
+
+        // 2. Handle Students/Parents
+        if ($notice->audience_type === 'all' || $notice->audience_type === 'students') {
+            $studentQuery = \App\Models\Student::where('school_id', $schoolId)
+                ->where('status', 'active')
+                ->with(['class', 'currentEnrollment.section']);
+
+            if ($notice->audience_type === 'students' && $notice->targets()->exists()) {
+                $studentQuery->where(function($q) use ($notice) {
+                    $targets = $notice->targets;
+                    
+                    // Direct student targets
+                    $studentIds = $targets->where('targetable_type', \App\Models\Student::class)->pluck('targetable_id');
+                    if ($studentIds->isNotEmpty()) $q->orWhereIn('id', $studentIds);
+
+                    // Class targets
+                    $classIds = $targets->where('targetable_type', \App\Models\SchoolClass::class)->pluck('targetable_id');
+                    if ($classIds->isNotEmpty()) $q->orWhereIn('class_id', $classIds);
+
+                    // Section targets
+                    $sectionIds = $targets->where('targetable_type', \App\Models\Section::class)->pluck('targetable_id');
+                    if ($sectionIds->isNotEmpty()) {
+                        $q->orWhereHas('currentEnrollment', function($sq) use ($sectionIds) {
+                            $sq->whereIn('section_id', $sectionIds);
+                        });
+                    }
+                });
+            }
+
+            $students = $studentQuery->get();
+            foreach ($students as $student) {
+                $status = 'unread';
+                if ($student->user_id && in_array($student->user_id, $reads)) $status = 'read';
                 
-                if (isset($targetIds[\App\Models\Student::class])) {
-                     $studentIds = $studentIds->merge($notice->targets->where('targetable_type', \App\Models\Student::class)->pluck('targetable_id'));
-                }
-                
-                if (isset($targetIds[\App\Models\SchoolClass::class])) {
-                    $classIds = $notice->targets->where('targetable_type', \App\Models\SchoolClass::class)->pluck('targetable_id');
-                    $studentIds = $studentIds->merge(\App\Models\Student::whereIn('class_id', $classIds)->pluck('id'));
-                }
-                
-                if (isset($targetIds[\App\Models\Section::class])) {
-                    $sectionIds = $notice->targets->where('targetable_type', \App\Models\Section::class)->pluck('targetable_id');
-                    $studentIds = $studentIds->merge(\App\Models\Student::whereHas('currentEnrollment', fn($q) => $q->whereIn('section_id', $sectionIds))->pluck('id'));
+                $replyKey = 'student_' . $student->id;
+                $voiceReply = null;
+                if ($replies->has($replyKey)) {
+                    $status = 'replied';
+                    $voiceReply = [
+                        'url' => $replies[$replyKey]->voice_url,
+                        'duration' => $replies[$replyKey]->duration,
+                    ];
                 }
 
-                $totalRecipients = $studentIds->unique()->count();
-            } else {
-                $totalRecipients = \App\Models\Student::where('school_id', $schoolId)->where('status', 'active')->count();
+                $enroll = $student->currentEnrollment;
+                $recipientList->push([
+                    'id' => $student->id,
+                    'type' => 'student',
+                    'name' => $student->student_name_bn ?: $student->student_name_en,
+                    'class_name' => $student->class?->class_name,
+                    'section_name' => $enroll?->section?->section_name,
+                    'roll' => $enroll?->roll_no,
+                    'status' => $status,
+                    'reply' => $voiceReply,
+                    'details' => "ক্লাস: " . ($student->class?->class_name ?? 'N/A') . 
+                                 ", শাখা: " . ($enroll?->section?->section_name ?? 'N/A') . 
+                                 ", রোল: " . ($enroll?->roll_no ?? 'N/A')
+                ]);
             }
         }
 
         return response()->json([
             'notice' => new NoticeResource($notice),
             'stats' => [
-                'total_recipients' => $totalRecipients,
-                'read_count' => $reads->count(),
-                'reply_count' => $replies->count(),
-                'reads' => $reads,
-                'replies' => $replies
+                'total_recipients' => $recipientList->count(),
+                'read_count' => $recipientList->whereIn('status', ['read', 'replied'])->count(),
+                'reply_count' => $recipientList->where('status', 'replied')->count(),
+                'all' => $recipientList->values()
             ]
         ]);
     }
