@@ -18,8 +18,8 @@ class PushNotificationService
 
         // 1. Get appropriate user IDs
         if ($notice->audience_type === 'all') {
-            $userIds = User::whereHas('school', function($q) use ($notice) {
-                $q->where('id', $notice->school_id);
+            $userIds = User::whereHas('schoolRoles', function($q) use ($notice) {
+                $q->where('school_id', $notice->school_id);
             })->pluck('id');
         } elseif ($notice->audience_type === 'teachers') {
             $teacherQuery = \App\Models\Teacher::where('school_id', $notice->school_id)->where('status', 'active');
