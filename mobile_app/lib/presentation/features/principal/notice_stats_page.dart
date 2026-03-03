@@ -190,13 +190,20 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
                 items: [
                   const DropdownMenuItem(value: null, child: Text('সব শ্রেণি')),
                   ...classesAsync.maybeWhen(
-                    data: (list) => list.map<DropdownMenuItem<String?>>((c) => DropdownMenuItem(value: c['name']?.toString(), child: Text(c['name']?.toString() ?? ''))).toList(),
+                    data: (list) {
+                       return list.map<DropdownMenuItem<String?>>((c) {
+                         final name = c is Map ? c['name']?.toString() : c.toString();
+                         return DropdownMenuItem(value: name, child: Text(name ?? ''));
+                       }).toList();
+                    },
+                    loading: () => [const DropdownMenuItem(value: null, child: Text('লোড হচ্ছে...'))],
+                    error: (err, _) => [DropdownMenuItem(value: null, child: Text('ত্রুটি: $err'))],
                     orElse: () => [],
                   ),
                 ],
                 onChanged: (val) => setState(() {
                   _classFilter = val;
-                  _sectionFilter = null; // Reset section when class changes
+                  _sectionFilter = null;
                 }),
               ),
               const SizedBox(width: 8),
@@ -211,8 +218,13 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
                       final filtered = _classFilter == null 
                           ? list 
                           : list.where((s) => s['class_name'] == _classFilter).toList();
-                      return filtered.map<DropdownMenuItem<String?>>((s) => DropdownMenuItem(value: s['name']?.toString(), child: Text(s['name']?.toString() ?? ''))).toList();
+                      return filtered.map<DropdownMenuItem<String?>>((s) {
+                        final name = s is Map ? s['name']?.toString() : s.toString();
+                        return DropdownMenuItem(value: name, child: Text(name ?? ''));
+                      }).toList();
                     },
+                    loading: () => [const DropdownMenuItem(value: null, child: Text('লোড হচ্ছে...'))],
+                    error: (err, _) => [DropdownMenuItem(value: null, child: Text('ত্রুটি: $err'))],
                     orElse: () => [],
                   ),
                 ],
