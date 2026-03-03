@@ -248,6 +248,7 @@ class NoticeController extends Controller
                     'id' => $teacher->id,
                     'type' => 'teacher',
                     'name' => $nameBn ?: ($nameEn ?: 'N/A'),
+                    'photo_url' => $teacher->photo_url,
                     'status' => $status,
                     'reply' => $voiceReply,
                     'details' => 'শিক্ষক'

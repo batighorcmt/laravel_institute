@@ -86,4 +86,16 @@ class Teacher extends Model
     {
         return $this->morphMany(NoticeTarget::class, 'targetable');
     }
+
+    public function getPhotoUrlAttribute(): string
+    {
+        if (empty($this->photo)) {
+            return asset('images/default-avatar.svg');
+        }
+        $path = 'teachers/' . $this->photo;
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return asset('storage/' . $path);
+        }
+        return asset('images/default-avatar.svg');
+    }
 }
