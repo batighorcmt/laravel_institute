@@ -427,6 +427,14 @@ Route::middleware(['auth'])->group(function () {
                 // Online Payments (SSLCommerz)
                 Route::get('payments', [PrincipalPaymentSettingsController::class,'index'])->name('payments.index');
                 Route::post('payments', [PrincipalPaymentSettingsController::class,'save'])->name('payments.save');
+
+                // FCM Diagnostics & Logs
+                Route::prefix('fcm')->name('fcm.')->group(function(){
+                    Route::get('/', [\App\Http\Controllers\Principal\FcmDiagnosticsController::class, 'index'])->name('index');
+                    Route::post('/test-send', [\App\Http\Controllers\Principal\FcmDiagnosticsController::class, 'testSend'])->name('test-send');
+                    Route::delete('/token/{token}', [\App\Http\Controllers\Principal\FcmDiagnosticsController::class, 'deleteToken'])->name('token.destroy');
+                    Route::delete('/logs/clear', [\App\Http\Controllers\Principal\FcmDiagnosticsController::class, 'clearLogs'])->name('logs.clear');
+                });
             });
 
             Route::resource('shifts', PrincipalShiftController::class)->except(['show']);
