@@ -15,7 +15,7 @@ class StudentDirectoryController extends Controller
     {
         $user = $request->user();
         $schoolId = $this->resolveSchoolId($request, $user);
-        if (! $schoolId || ! $user->isTeacher($schoolId)) {
+        if (! $schoolId || ! ($user->isTeacher($schoolId) || $user->isPrincipal($schoolId) || $user->isSuperAdmin())) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
@@ -112,7 +112,7 @@ class StudentDirectoryController extends Controller
     {
         $user = $request->user();
         $schoolId = $this->resolveSchoolId($request, $user);
-        if (! $schoolId || ! $user->isTeacher($schoolId)) {
+        if (! $schoolId || ! ($user->isTeacher($schoolId) || $user->isPrincipal($schoolId) || $user->isSuperAdmin())) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
@@ -237,7 +237,7 @@ class StudentDirectoryController extends Controller
     {
         $user = $request->user();
         $schoolId = $this->resolveSchoolId($request, $user);
-        if (! $schoolId || ! $user->isTeacher($schoolId)) {
+        if (! $schoolId || ! ($user->isTeacher($schoolId) || $user->isPrincipal($schoolId) || $user->isSuperAdmin())) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
@@ -288,6 +288,10 @@ class StudentDirectoryController extends Controller
     {
         $attr = $request->attributes->get('current_school_id');
         if ($attr) return (int)$attr;
+        
+        $principalSchoolId = $user->schoolRoles()->whereHas('role', fn($q)=>$q->whereIn('name', ['principal', 'super_admin']))->value('school_id');
+        if ($principalSchoolId) return (int)$principalSchoolId;
+
         $firstActive = $user->firstTeacherSchoolId();
         if ($firstActive) return (int)$firstActive;
         // Fallback to any school where they have a teacher role
