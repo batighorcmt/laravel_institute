@@ -55,7 +55,7 @@ class StudentController extends Controller
         $classId = $request->get('class_id');
         $sectionId = $request->get('section_id');
         $groupId = $request->get('group_id');
-        $status = $request->get('status');
+        $status = $request->get('status', 'active');
         $gender = $request->get('gender');
         $religion = $request->get('religion');
         $village = $request->get('village');
@@ -120,6 +120,7 @@ class StudentController extends Controller
             'school'=>$school,
             'students'=>$students,
             'q'=>$q,
+            'status' => $status,
             'years'=>$years,
             'currentYear'=>$currentYear,
             'selectedYear'=>$selectedYear,

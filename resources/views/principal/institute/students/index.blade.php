@@ -69,10 +69,10 @@
   </select>
   <select name="status" class="form-control mr-2">
     <option value="">-- স্ট্যাটাস নির্বাচন --</option>
-    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>সক্রিয়</option>
-    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>নিষ্ক্রিয়</option>
-    <option value="graduated" {{ request('status') == 'graduated' ? 'selected' : '' }}>গ্র্যাজুয়েট</option>
-    <option value="transferred" {{ request('status') == 'transferred' ? 'selected' : '' }}>ট্রান্সফার্ড</option>
+    <option value="active" {{ $status == 'active' ? 'selected' : '' }}>সক্রিয়</option>
+    <option value="inactive" {{ $status == 'inactive' ? 'selected' : '' }}>নিষ্ক্রিয়</option>
+    <option value="graduated" {{ $status == 'graduated' ? 'selected' : '' }}>গ্র্যাজুয়েট</option>
+    <option value="transferred" {{ $status == 'transferred' ? 'selected' : '' }}>ট্রান্সফার্ড</option>
   </select>
   <select name="gender" class="form-control mr-2">
     <option value="">-- লিঙ্গ নির্বাচন --</option>

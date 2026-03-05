@@ -28,12 +28,12 @@ class StudentDirectoryController extends Controller
         $enroll = StudentEnrollment::query()
             ->where('student_enrollments.school_id', $schoolId);
 
-        // Status filter (respect 'status' parameter from mobile app)
-        if ($request->filled('status')) {
-            $enroll->where('student_enrollments.status', $request->get('status'));
-        } else {
-            $enroll->where('student_enrollments.status', 'active');
-        }
+        // Status filter (default to 'active' on both student and enrollment tables)
+        $status = $request->get('status', 'active');
+        $enroll->where('student_enrollments.status', $status);
+        $enroll->whereHas('student', function($q) use ($status) {
+            $q->where('status', $status);
+        });
 
         // Optional ordering by student columns (e.g. guardian_phone)
         $orderBy = $request->query('order_by');
