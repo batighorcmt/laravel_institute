@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import '../../../core/network/dio_client.dart';
 
 class NotificationsPage extends StatefulWidget {
