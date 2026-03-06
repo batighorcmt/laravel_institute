@@ -11,7 +11,8 @@ class NotificationService {
   NotificationService._internal();
 
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
     // 1. Request permissions for iOS & Android 13+
@@ -30,14 +31,16 @@ class NotificationService {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings(
-      // You can add onDidReceiveLocalNotification callback here if needed
-    );
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+          // You can add onDidReceiveLocalNotification callback here if needed
+        );
 
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
 
     await _localNotifications.initialize(
       initializationSettings,
@@ -57,11 +60,17 @@ class NotificationService {
     );
 
     await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(channel);
 
     // iOS: show alert, badge and play sound when app is in foreground
-    await _fcm.setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
+    await _fcm.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
 
     // 3. Handle messages
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
@@ -78,7 +87,9 @@ class NotificationService {
     });
   }
 
-  static Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  static Future<void> _firebaseMessagingBackgroundHandler(
+    RemoteMessage message,
+  ) async {
     // Handle background message if needed
     developer.log('Handling a background message: ${message.messageId}');
   }
@@ -112,10 +123,7 @@ class NotificationService {
         notification.hashCode,
         notification.title,
         notification.body,
-        NotificationDetails(
-          android: androidDetails,
-          iOS: iosDetails,
-        ),
+        NotificationDetails(android: androidDetails, iOS: iosDetails),
       );
     }
   }
@@ -123,10 +131,13 @@ class NotificationService {
   Future<void> _sendTokenToServer(String token) async {
     try {
       final dio = DioClient().dio;
-      await dio.post('devices', data: {
-        'token': token,
-        'platform': Platform.isAndroid ? 'android' : 'ios',
-      });
+      await dio.post(
+        'devices',
+        data: {
+          'token': token,
+          'platform': Platform.isAndroid ? 'android' : 'ios',
+        },
+      );
       developer.log('Device token sent to server: $token');
     } catch (e) {
       developer.log('Error sending token to server: $e');

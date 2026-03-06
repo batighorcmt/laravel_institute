@@ -27,16 +27,25 @@ class NotificationLogController extends Controller
      */
     public function userIndex(Request $request)
     {
-        $user = $request->user();
-        $logs = \App\Models\NotificationLog::with(['notice'])
-            ->where('user_id', $user->id)
-            ->when($request->status, function($q) use ($request) {
-                return $q->where('status', $request->status);
-            })
-            ->latest()
-            ->paginate($request->per_page ?? 20);
+        try {
+            $user = $request->user();
+            if (! $user) {
+                return response()->json(['message' => 'Unauthenticated'], 401);
+            }
 
-        return response()->json($logs);
+            $logs = \App\Models\NotificationLog::with(['notice'])
+                ->where('user_id', $user->id)
+                ->when($request->status, function($q) use ($request) {
+                    return $q->where('status', $request->status);
+                })
+                ->latest()
+                ->paginate($request->per_page ?? 20);
+
+            return response()->json($logs);
+        } catch (\Throwable $e) {
+            \Log::error('Notification userIndex error: ' . $e->getMessage());
+            return response()->json(['message' => 'Server error while loading notifications'], 500);
+        }
     }
 
     /**
@@ -45,22 +54,28 @@ class NotificationLogController extends Controller
      */
     public function markAsRead(Request $request, $id = null)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
+            if (! $user) return response()->json(['message' => 'Unauthenticated'], 401);
 
-        if ($request->input('all') === true || $request->input('all') === 'true' || $request->input('all') === '1') {
-            \App\Models\NotificationLog::where('user_id', $user->id)->whereNull('read_at')->update(['read_at' => now()]);
-            return response()->json(['message' => 'Marked all as read']);
+            if ($request->input('all') === true || $request->input('all') === 'true' || $request->input('all') === '1') {
+                \App\Models\NotificationLog::where('user_id', $user->id)->whereNull('read_at')->update(['read_at' => now()]);
+                return response()->json(['message' => 'Marked all as read']);
+            }
+
+            $ids = $request->input('ids');
+            if ($id !== null) $ids = array_merge((array)$ids ?? [], [(int)$id]);
+            if (empty($ids)) {
+                return response()->json(['message' => 'No ids provided'], 400);
+            }
+
+            \App\Models\NotificationLog::whereIn('id', (array)$ids)->where('user_id', $user->id)->update(['read_at' => now()]);
+
+            return response()->json(['message' => 'Marked as read']);
+        } catch (\Throwable $e) {
+            \Log::error('Notification markAsRead error: ' . $e->getMessage());
+            return response()->json(['message' => 'Server error while marking read'], 500);
         }
-
-        $ids = $request->input('ids');
-        if ($id !== null) $ids = array_merge((array)$ids ?? [], [(int)$id]);
-        if (empty($ids)) {
-            return response()->json(['message' => 'No ids provided'], 400);
-        }
-
-        \App\Models\NotificationLog::whereIn('id', (array)$ids)->where('user_id', $user->id)->update(['read_at' => now()]);
-
-        return response()->json(['message' => 'Marked as read']);
     }
 
     public function stats()

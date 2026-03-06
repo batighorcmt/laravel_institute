@@ -34,7 +34,20 @@ class _NotificationsPageState extends State<NotificationsPage> {
       // Mark all as read on open
       await DioClient().dio.post('notifications/mark-read', data: {'all': true});
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading notifications: $e')));
+      String msg = 'Error loading notifications';
+      try {
+        if (e is DioException && e.response != null && e.response?.data != null) {
+          final d = e.response?.data;
+          if (d is Map && d['message'] != null) msg = d['message'];
+          else msg = e.toString();
+        } else {
+          msg = e.toString();
+        }
+      } catch (_) {
+        msg = e.toString();
+      }
+
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       setState(() => _isLoading = false);
     }
   }

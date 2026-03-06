@@ -13,18 +13,66 @@ class _NavItem {
 }
 
 const _navItems = [
-  _NavItem(label: 'ড্যাসবোর্ড', icon: Icons.dashboard_outlined, path: '/parent/dashboard'),
-  _NavItem(label: 'প্রোফাইল', icon: Icons.person_outline, path: '/parent/profile'),
-  _NavItem(label: 'আমার সন্তান', icon: Icons.child_care_outlined, path: '/parent/my-child'),
-  _NavItem(label: 'পঠিত বিষয়', icon: Icons.book_outlined, path: '/parent/subjects'),
-  _NavItem(label: 'ক্লাস রুটিন', icon: Icons.schedule_outlined, path: '/parent/routine'),
-  _NavItem(label: 'হোমওয়ার্ক', icon: Icons.assignment_outlined, path: '/parent/homework'),
-  _NavItem(label: 'হাজিরা রিপোর্ট', icon: Icons.check_circle_outline, path: '/parent/attendance'),
-  _NavItem(label: 'লেসন ইভ্যালুয়েশন', icon: Icons.star_outline, path: '/parent/evaluations'),
-  _NavItem(label: 'ছুটির আবেদন', icon: Icons.card_travel_outlined, path: '/parent/leaves'),
-  _NavItem(label: 'নোটিস বোর্ড', icon: Icons.campaign_outlined, path: '/notice-board'),
-  _NavItem(label: 'শিক্ষক তালিকা', icon: Icons.groups_outlined, path: '/parent/teachers'),
-  _NavItem(label: 'মতামত/অভিযোগ', icon: Icons.feedback_outlined, path: '/parent/feedback'),
+  _NavItem(
+    label: 'ড্যাসবোর্ড',
+    icon: Icons.dashboard_outlined,
+    path: '/parent/dashboard',
+  ),
+  _NavItem(
+    label: 'প্রোফাইল',
+    icon: Icons.person_outline,
+    path: '/parent/profile',
+  ),
+  _NavItem(
+    label: 'আমার সন্তান',
+    icon: Icons.child_care_outlined,
+    path: '/parent/my-child',
+  ),
+  _NavItem(
+    label: 'পঠিত বিষয়',
+    icon: Icons.book_outlined,
+    path: '/parent/subjects',
+  ),
+  _NavItem(
+    label: 'ক্লাস রুটিন',
+    icon: Icons.schedule_outlined,
+    path: '/parent/routine',
+  ),
+  _NavItem(
+    label: 'হোমওয়ার্ক',
+    icon: Icons.assignment_outlined,
+    path: '/parent/homework',
+  ),
+  _NavItem(
+    label: 'হাজিরা রিপোর্ট',
+    icon: Icons.check_circle_outline,
+    path: '/parent/attendance',
+  ),
+  _NavItem(
+    label: 'লেসন ইভ্যালুয়েশন',
+    icon: Icons.star_outline,
+    path: '/parent/evaluations',
+  ),
+  _NavItem(
+    label: 'ছুটির আবেদন',
+    icon: Icons.card_travel_outlined,
+    path: '/parent/leaves',
+  ),
+  _NavItem(
+    label: 'নোটিস বোর্ড',
+    icon: Icons.campaign_outlined,
+    path: '/notice-board',
+  ),
+  _NavItem(
+    label: 'শিক্ষক তালিকা',
+    icon: Icons.groups_outlined,
+    path: '/parent/teachers',
+  ),
+  _NavItem(
+    label: 'মতামত/অভিযোগ',
+    icon: Icons.feedback_outlined,
+    path: '/parent/feedback',
+  ),
 ];
 
 class ParentShellPage extends ConsumerWidget {
@@ -36,7 +84,10 @@ class ParentShellPage extends ConsumerWidget {
     final currentPath = GoRouterState.of(context).matchedLocation;
     final profile = ref.watch(authProvider).value;
     final studentProfile = ref.watch(parentStudentProfileProvider).value;
-    final parentName = studentProfile?['guardian_name_bn'] ?? studentProfile?['guardian_name_en'] ?? 'অভিভাবক';
+    final parentName =
+        studentProfile?['guardian_name_bn'] ??
+        studentProfile?['guardian_name_en'] ??
+        'অভিভাবক';
     final cs = Theme.of(context).colorScheme;
 
     final currentItem = _navItems.firstWhere(
@@ -80,7 +131,9 @@ class ParentShellPage extends ConsumerWidget {
             // but in most Flutter apps, letting it pop when canPop is true works.
             // For now, we manually exit if they said yes.
             // Using a hack to allow pop next time or just exit.
-            Navigator.of(context).pop(); // This might exit if it's the only page
+            Navigator.of(
+              context,
+            ).pop(); // This might exit if it's the only page
           }
         }
       },
@@ -132,7 +185,7 @@ class ParentShellPage extends ConsumerWidget {
                 ref.invalidate(parentFeedbackProvider);
                 ref.invalidate(parentEvaluationStatsProvider);
                 ref.invalidate(parentStudentProfileProvider);
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('উপাত্ত রিফ্রেশ করা হচ্ছে...')),
                 );
@@ -154,7 +207,9 @@ class ParentShellPage extends ConsumerWidget {
                         child: const Text('না'),
                       ),
                       FilledButton(
-                        style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
                         onPressed: () {
                           Navigator.pop(ctx);
                           ref.read(authProvider.notifier).logout();
@@ -195,7 +250,9 @@ class ParentShellPage extends ConsumerWidget {
                           : null,
                       child: profile?.photoUrl == null
                           ? Text(
-                              parentName.isNotEmpty ? parentName[0].toUpperCase() : 'A',
+                              parentName.isNotEmpty
+                                  ? parentName[0].toUpperCase()
+                                  : 'A',
                               style: const TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
@@ -233,7 +290,10 @@ class ParentShellPage extends ConsumerWidget {
                     final item = _navItems[index];
                     final isSelected = currentPath == item.path;
                     return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 0.5),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 0.5,
+                      ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         color: isSelected ? cs.primary.withOpacity(0.12) : null,
@@ -248,7 +308,9 @@ class ParentShellPage extends ConsumerWidget {
                         title: Text(
                           item.label,
                           style: TextStyle(
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                             color: isSelected ? cs.primary : null,
                             fontSize: 14,
                           ),
@@ -273,10 +335,7 @@ class ParentShellPage extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   'Batighor EIMS',
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
                 ),
               ),
             ],
