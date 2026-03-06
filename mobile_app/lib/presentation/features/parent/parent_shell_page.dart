@@ -111,9 +111,7 @@ class ParentShellPage extends ConsumerWidget {
                 ],
               ),
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('কোনো নতুন নোটিফিকেশন নেই')),
-                );
+                context.push('/notifications');
               },
             ),
             // Reload

@@ -119,6 +119,11 @@ Route::prefix('v1')->group(function () {
     Route::post('devices', [\App\Http\Controllers\Api\DeviceTokenController::class, 'store']);
     Route::delete('devices/{deviceToken}', [\App\Http\Controllers\Api\DeviceTokenController::class, 'destroy']);
 
+    // User notifications (for authenticated users)
+    Route::get('notifications', [\App\Http\Controllers\Api\NotificationLogController::class, 'userIndex']);
+    Route::post('notifications/mark-read', [\App\Http\Controllers\Api\NotificationLogController::class, 'markAsRead']);
+    Route::post('notifications/{id}/mark-read', [\App\Http\Controllers\Api\NotificationLogController::class, 'markAsRead']);
+
     // Notifications Diagnostics
     Route::middleware('role:principal')->group(function () {
         Route::get('notifications/logs', [\App\Http\Controllers\Api\NotificationLogController::class, 'index']);

@@ -26,10 +26,13 @@ class NotificationService {
     }
 
     // 2. Initialize Local Notifications for Foreground messages
+    // Create Android channel (supports custom sound if provided in res/raw)
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    
-    const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings();
+
+    const DarwinInitializationSettings initializationSettingsIOS = DarwinInitializationSettings(
+      // You can add onDidReceiveLocalNotification callback here if needed
+    );
 
     const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
@@ -42,6 +45,23 @@ class NotificationService {
         // Handle notification click when app is in foreground
       },
     );
+
+    // Android notification channel with sound support (place raw/notification_sound.mp3)
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'high_importance_channel',
+      'High Importance Notifications',
+      description: 'Important notifications',
+      importance: Importance.max,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound('notification_sound'),
+    );
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
+    // iOS: show alert, badge and play sound when app is in foreground
+    await _fcm.setForegroundNotificationPresentationOptions(alert: true, badge: true, sound: true);
 
     // 3. Handle messages
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
@@ -68,19 +88,33 @@ class NotificationService {
     AndroidNotification? android = message.notification?.android;
 
     if (notification != null) {
+      final soundName = message.data['sound'] ?? 'notification_sound';
+      final androidDetails = AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription: 'Important notifications',
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+        playSound: true,
+        sound: RawResourceAndroidNotificationSound(soundName),
+        visibility: NotificationVisibility.public,
+      );
+
+      final iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        sound: '${message.data['sound'] ?? 'notification_sound'}.aiff',
+      );
+
       _localNotifications.show(
         notification.hashCode,
         notification.title,
         notification.body,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'high_importance_channel',
-            'High Importance Notifications',
-            importance: Importance.max,
-            priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
-          ),
-          iOS: DarwinNotificationDetails(),
+        NotificationDetails(
+          android: androidDetails,
+          iOS: iosDetails,
         ),
       );
     }

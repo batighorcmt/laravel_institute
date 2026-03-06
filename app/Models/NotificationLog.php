@@ -17,4 +17,9 @@ class NotificationLog extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    protected $casts = [
+        'response_payload' => 'array',
+        'read_at' => 'datetime',
+    ];
 }

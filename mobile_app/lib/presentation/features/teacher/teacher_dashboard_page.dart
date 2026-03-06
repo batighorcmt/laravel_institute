@@ -76,7 +76,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
             tooltip: 'Notifications',
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () async {
-              await showAppSnack(context, message: 'Notifications coming soon');
+              if (context.mounted) context.push('/notifications');
             },
           ),
           IconButton(
