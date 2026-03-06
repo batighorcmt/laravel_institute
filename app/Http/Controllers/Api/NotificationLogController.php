@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class NotificationLogController extends Controller
 {
@@ -59,14 +60,23 @@ class NotificationLogController extends Controller
             if (! $user) return response()->json(['message' => 'Unauthenticated'], 401);
 
             if ($request->input('all') === true || $request->input('all') === 'true' || $request->input('all') === '1') {
+                if (! Schema::hasColumn('notification_logs', 'read_at')) {
+                    return response()->json(['message' => 'Database missing column read_at. Run migrations: php artisan migrate'], 500);
+                }
+
                 \App\Models\NotificationLog::where('user_id', $user->id)->whereNull('read_at')->update(['read_at' => now()]);
                 return response()->json(['message' => 'Marked all as read']);
             }
 
             $ids = $request->input('ids');
             if ($id !== null) $ids = array_merge((array)$ids ?? [], [(int)$id]);
+
             if (empty($ids)) {
                 return response()->json(['message' => 'No ids provided'], 400);
+            }
+
+            if (! Schema::hasColumn('notification_logs', 'read_at')) {
+                return response()->json(['message' => 'Database missing column read_at. Run migrations: php artisan migrate'], 500);
             }
 
             \App\Models\NotificationLog::whereIn('id', (array)$ids)->where('user_id', $user->id)->update(['read_at' => now()]);
