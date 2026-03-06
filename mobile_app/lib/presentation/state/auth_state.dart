@@ -3,6 +3,7 @@ import '../../data/auth/auth_repository.dart';
 import '../../domain/auth/user_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../../core/services/notification_service.dart';
 
 class AuthNotifier extends AsyncNotifier<UserProfile?> {
   @override
@@ -37,6 +38,10 @@ class AuthNotifier extends AsyncNotifier<UserProfile?> {
       final profile = UserProfile.fromDynamic(data);
       state = AsyncData(profile);
       await _writeCachedProfile(profile);
+      // Ensure device token is registered for this authenticated user
+      try {
+        await NotificationService().registerDeviceForUser();
+      } catch (_) {}
       return true;
     } catch (e) {
       state = AsyncError(e, StackTrace.current);

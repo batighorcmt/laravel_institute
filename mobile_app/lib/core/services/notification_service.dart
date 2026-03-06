@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
 import '../network/dio_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -82,6 +83,16 @@ class NotificationService {
       _sendTokenToServer(token);
     }
 
+    // If previous attempts failed, retry any pending token
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pending = prefs.getString('pending_device_token');
+      if (pending != null && pending.isNotEmpty) {
+        await _sendTokenToServer(pending);
+        prefs.remove('pending_device_token');
+      }
+    } catch (_) {}
+
     _fcm.onTokenRefresh.listen((token) {
       _sendTokenToServer(token);
     });
@@ -139,8 +150,39 @@ class NotificationService {
         },
       );
       developer.log('Device token sent to server: $token');
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        if (prefs.getString('pending_device_token') == token) {
+          prefs.remove('pending_device_token');
+        }
+      } catch (_) {}
     } catch (e) {
       developer.log('Error sending token to server: $e');
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('pending_device_token', token);
+      } catch (_) {}
+    }
+  }
+
+  /// Public helper to (re-)register current FCM token for the authenticated user.
+  Future<void> registerDeviceForUser() async {
+    try {
+      String? token = await _fcm.getToken();
+      if (token != null) {
+        await _sendTokenToServer(token);
+      }
+      // also retry pending
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final pending = prefs.getString('pending_device_token');
+        if (pending != null && pending.isNotEmpty) {
+          await _sendTokenToServer(pending);
+          prefs.remove('pending_device_token');
+        }
+      } catch (_) {}
+    } catch (e) {
+      developer.log('Error in registerDeviceForUser: $e');
     }
   }
 }

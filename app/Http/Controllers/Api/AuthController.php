@@ -30,6 +30,11 @@ class AuthController extends Controller
             ], 422);
         }
 
+        // Ensure the user is assigned to at least one active school role
+        if (! $user->activeSchoolRoles()->exists()) {
+            return response()->json(['message' => 'Your account is not assigned to any school or role. Please contact administrator.'], 403);
+        }
+
         // Create token (consider scoping later)
         $token = $user->createToken($validated['device_name'])->plainTextToken;
 
