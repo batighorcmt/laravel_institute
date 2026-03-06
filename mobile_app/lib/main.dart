@@ -19,20 +19,20 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     // 1. Initialize Firebase
     await Firebase.initializeApp();
-    
+
     // 2. Initialize Dio
     await DioClient().init();
-    
+
     // 3. Set Background Handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    
+
     // 4. Initialize Notification Service
     await NotificationService().init();
-    
+
     developer.log('Firebase and Notifications initialized');
   } catch (e) {
     developer.log('Initialization Error: $e');
@@ -63,6 +63,7 @@ Future<void> main() async {
   );
   runApp(const ProviderScope(child: MyApp()));
 }
+
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
@@ -78,7 +79,6 @@ class MyApp extends ConsumerWidget {
       // darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.light,
       routerConfig: router,
-      navigatorKey: rootNavigatorKey,
     );
   }
 }

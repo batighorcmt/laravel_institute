@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/navigation.dart';
 import '../features/auth/sign_in_screen.dart';
 import '../features/splash/splash_screen.dart';
 import '../features/home/home_page.dart';
@@ -55,6 +56,7 @@ class GoRouterRefreshNotifier extends ChangeNotifier {
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     refreshListenable: GoRouterRefreshNotifier(ref),
     initialLocation: '/splash',
     routes: [

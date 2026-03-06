@@ -132,9 +132,19 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       subtitle: Text(it['body'] ?? ''),
-                      trailing: Text(timeStr, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      trailing: Text(
+                        timeStr,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
                       onTap: () {
-                        final nid = it['notice_id'] ?? it['notice'] ?? it['noticeId'] ?? it['id'];
+                        final nid =
+                            it['notice_id'] ??
+                            it['notice'] ??
+                            it['noticeId'] ??
+                            it['id'];
                         if (nid != null) {
                           final id = int.tryParse(nid.toString()) ?? 0;
                           if (id > 0) {

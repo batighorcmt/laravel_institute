@@ -56,7 +56,8 @@ class NotificationService {
             final id = data['id'] ?? data['notice_id'] ?? data['noticeId'];
             if (type == 'notice' && id != null) {
               final ctx = rootNavigatorKey.currentContext;
-              if (ctx != null) GoRouter.of(ctx).push('/notices/${id.toString()}');
+              if (ctx != null)
+                GoRouter.of(ctx).push('/notices/${id.toString()}');
             }
           }
         } catch (e) {
