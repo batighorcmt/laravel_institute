@@ -32,6 +32,7 @@ import '../features/principal/notification_logs_page.dart';
 import '../features/principal/notice_create_page.dart';
 import '../features/principal/notice_stats_page.dart';
 import '../features/common/notifications_page.dart';
+import '../features/common/notice_detail_page.dart';
 
 // Helper to refresh GoRouter when auth state changes.
 class GoRouterRefreshNotifier extends ChangeNotifier {
@@ -101,6 +102,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         builder: (context, state) => const NotificationsPage(),
+      ),
+      GoRoute(
+        path: '/notices/:noticeId',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['noticeId'] ?? '0') ?? 0;
+          return NoticeDetailPage(noticeId: id);
+        },
       ),
       GoRoute(
         path: '/teacher/self-attendance',

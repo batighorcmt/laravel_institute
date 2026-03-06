@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:go_router/go_router.dart';
 import 'presentation/routes/app_router.dart';
+import 'core/navigation.dart';
 import 'theme/app_theme.dart';
 import 'core/network/dio_client.dart';
 import 'core/config/env.dart';
@@ -35,6 +37,26 @@ Future<void> main() async {
   } catch (e) {
     developer.log('Initialization Error: $e');
   }
+  // Handle notification which opened the app from terminated state
+  try {
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      final data = initialMessage.data;
+      final type = data['type'];
+      final id = data['id'] ?? data['notice_id'] ?? data['noticeId'];
+      if (type == 'notice' && id != null) {
+        // Navigate after runApp (use rootNavigatorKey.currentContext later in build)
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final ctx = rootNavigatorKey.currentContext;
+          if (ctx != null) {
+            try {
+              GoRouter.of(ctx).push('/notices/${id.toString()}');
+            } catch (_) {}
+          }
+        });
+      }
+    }
+  } catch (_) {}
   developer.log(
     'App starting with API_BASE_URL=${Env.apiBaseUrl}',
     name: 'Main',
@@ -56,6 +78,7 @@ class MyApp extends ConsumerWidget {
       // darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.light,
       routerConfig: router,
+      navigatorKey: rootNavigatorKey,
     );
   }
 }

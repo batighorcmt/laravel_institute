@@ -3,6 +3,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'dart:developer' as developer;
+import 'dart:convert';
+import '../navigation.dart';
+import 'package:go_router/go_router.dart';
 import '../network/dio_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,7 +49,19 @@ class NotificationService {
     await _localNotifications.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (details) {
-        // Handle notification click when app is in foreground
+        try {
+          if (details.payload != null && details.payload!.isNotEmpty) {
+            final Map<String, dynamic> data = jsonDecode(details.payload!);
+            final type = data['type'];
+            final id = data['id'] ?? data['notice_id'] ?? data['noticeId'];
+            if (type == 'notice' && id != null) {
+              final ctx = rootNavigatorKey.currentContext;
+              if (ctx != null) GoRouter.of(ctx).push('/notices/${id.toString()}');
+            }
+          }
+        } catch (e) {
+          developer.log('Error handling local notification tap: $e');
+        }
       },
     );
 
@@ -76,6 +91,21 @@ class NotificationService {
     // 3. Handle messages
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    // When user taps a notification (app in background or terminated)
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      try {
+        final data = message.data;
+        final type = data['type'];
+        final id = data['id'] ?? data['notice_id'] ?? data['noticeId'];
+        if (type == 'notice' && id != null) {
+          final ctx = rootNavigatorKey.currentContext;
+          if (ctx != null) GoRouter.of(ctx).push('/notices/${id.toString()}');
+        }
+      } catch (e) {
+        developer.log('Error handling onMessageOpenedApp: $e');
+      }
+    });
 
     // 4. Token management
     String? token = await _fcm.getToken();
@@ -135,6 +165,7 @@ class NotificationService {
         notification.title,
         notification.body,
         NotificationDetails(android: androidDetails, iOS: iosDetails),
+        payload: jsonEncode(message.data),
       );
     }
   }
