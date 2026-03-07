@@ -35,16 +35,15 @@ class NoticeController extends Controller
             }
         }
 
-        $query->where(function($q) use ($schoolId) {
-            $q->whereNull('school_id');
-            if ($schoolId) {
+        if ($schoolId) {
+            $query->where(function($q) use ($schoolId) {
                 if (is_array($schoolId)) {
-                    $q->orWhereIn('school_id', $schoolId);
+                    $q->whereIn('school_id', $schoolId);
                 } else {
-                    $q->orWhere('school_id', $schoolId);
+                    $q->where('school_id', $schoolId);
                 }
-            }
-        });
+            });
+        }
 
         // Logic for different audiences
         if (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
@@ -113,7 +112,7 @@ class NoticeController extends Controller
             $schoolId = $user->primarySchool()?->id;
         }
 
-        if (! $user->isPrincipal($schoolId) && ! $user->isSuperAdmin()) {
+        if (!$schoolId || (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin())) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
