@@ -17,7 +17,7 @@ class NoticeController extends Controller
         $schoolId = $request->attributes->get('current_school_id');
         $user = $request->user();
 
-        $query = Notice::published()->active()->orderByDesc('publish_at');
+        $query = Notice::query();
 
         // Security: If not super admin, strictly limit to schools where the user is a principal|teacher|parent
         if (!$user->isSuperAdmin()) {
@@ -35,6 +35,7 @@ class NoticeController extends Controller
             }
         }
 
+        // Apply school filtering
         if ($schoolId) {
             $query->where(function($q) use ($schoolId) {
                 // 1. Direct school match
@@ -64,8 +65,17 @@ class NoticeController extends Controller
             });
         }
 
+        // Determine if user is principal for the context
+        $isManager = $user->isSuperAdmin() || $user->isPrincipal($schoolId);
+
+        if (!$isManager) {
+            $query->published()->active();
+        }
+
+        $query->orderByDesc('publish_at')->latest();
+
         // Logic for different audiences
-        if (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+        if (!$isManager) {
             $query->where(function($q) use ($user) {
                 // Global notices
                 $q->where('audience_type', 'all');
