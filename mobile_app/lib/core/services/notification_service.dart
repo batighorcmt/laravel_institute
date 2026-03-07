@@ -66,14 +66,14 @@ class NotificationService {
       },
     );
 
-    // Android notification channel with sound support (place raw/notification_sound.mp3)
+    // Android notification channel with sound support (place raw/notice_sound.mp3)
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'Important notifications',
+      'notice_channel', // New channel ID to ensure internal update
+      'Notice Notifications',
+      description: 'Notifications for new notices',
       importance: Importance.max,
       playSound: true,
-      sound: RawResourceAndroidNotificationSound('notification_sound'),
+      sound: RawResourceAndroidNotificationSound('notice_sound'),
     );
 
     await _localNotifications
@@ -141,11 +141,11 @@ class NotificationService {
     AndroidNotification? android = message.notification?.android;
 
     if (notification != null) {
-      final soundName = message.data['sound'] ?? 'notification_sound';
+      final soundName = message.data['sound'] ?? 'notice_sound';
       final androidDetails = AndroidNotificationDetails(
-        'high_importance_channel',
-        'High Importance Notifications',
-        channelDescription: 'Important notifications',
+        'notice_channel',
+        'Notice Notifications',
+        channelDescription: 'Notifications for new notices',
         importance: Importance.max,
         priority: Priority.high,
         icon: '@mipmap/ic_launcher',
@@ -158,7 +158,7 @@ class NotificationService {
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
-        sound: '${message.data['sound'] ?? 'notification_sound'}.aiff',
+        sound: '${message.data['sound'] ?? 'notice_sound'}.mp3',
       );
 
       _localNotifications.show(

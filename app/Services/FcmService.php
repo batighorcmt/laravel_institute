@@ -40,6 +40,19 @@ class FcmService
                     'body' => $body,
                 ],
                 'data' => array_map('strval', $data),
+                'android' => [
+                    'notification' => [
+                        'sound' => 'notice_sound',
+                        'channel_id' => 'notice_channel',
+                    ],
+                ],
+                'apns' => [
+                    'payload' => [
+                        'aps' => [
+                            'sound' => 'notice_sound.mp3',
+                        ],
+                    ],
+                ],
             ],
         ];
 
