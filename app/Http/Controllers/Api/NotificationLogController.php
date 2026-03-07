@@ -30,7 +30,6 @@ class NotificationLogController extends Controller
         return response()->json($logs);
     }
 
-<<<<<<< Updated upstream
     /**
      * Return notifications for authenticated user.
      */
@@ -98,10 +97,6 @@ class NotificationLogController extends Controller
 
     public function stats(Request $request)
     {
-=======
-    public function stats(Request $request)
-    {
->>>>>>> Stashed changes
         $schoolId = $request->attributes->get('current_school_id') ?? $request->school_id;
 
         $query = \App\Models\NotificationLog::query();
