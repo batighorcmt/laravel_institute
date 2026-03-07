@@ -137,6 +137,18 @@ class ExtraClassAttendanceController extends Controller
             }
 
             DB::commit();
+
+            // Send Push Notifications
+            try {
+                $pushService = new \App\Services\PushNotificationService();
+                foreach ($validated['attendance'] as $att) {
+                    $pushService->sendAttendanceNotification($att['student_id'], $att['status'], $validated['date'], 'extra_class');
+                }
+            } catch (\Exception $e) {
+                // Log but don't fail redirect
+                \Illuminate\Support\Facades\Log::error('Teacher ExtraClass Push Error: ' . $e->getMessage());
+            }
+
             return redirect()->route('teacher.institute.attendance.extra-classes.take', [
                 'school' => $school,
                 'extra_class_id' => $extraClass->id,

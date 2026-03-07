@@ -586,7 +586,16 @@ class AttendanceController extends Controller
                 ]);
             }
             \App\Jobs\SendAttendanceSmsJob::dispatch($studentsPayload, $date);
-            $message .= ' SMS dispatch queued.';
+            
+            // Dispatch Push Notifications
+            $pushService = new \App\Services\PushNotificationService();
+            foreach ($request->attendance as $studentId => $data) {
+                if (empty($previousStatuses) || (isset($previousStatuses[$studentId]) && $previousStatuses[$studentId] !== $data['status'])) {
+                    $pushService->sendAttendanceNotification($studentId, $data['status'], $date, 'class');
+                }
+            }
+            
+            $message .= ' SMS and Push notifications queued.';
 
             // Provide a minimal sms report to the view to avoid undefined variable errors
             $smsReport = [

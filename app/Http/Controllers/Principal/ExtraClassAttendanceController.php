@@ -125,12 +125,19 @@ class ExtraClassAttendanceController extends Controller
             // Send SMS notifications
             $smsCount = $this->sendExtraAttendanceSms($school, $validated['attendance'], $extraClass, $validated['date']);
 
+            // Send Push Notifications
+            $pushService = new \App\Services\PushNotificationService();
+            foreach ($validated['attendance'] as $att) {
+                // For simplicity in extra class, we send push to all (or you could track previous statuses if desired)
+                $pushService->sendAttendanceNotification($att['student_id'], $att['status'], $validated['date'], 'extra_class');
+            }
+
             DB::commit();
             return redirect()->route('principal.institute.extra-classes.attendance.take', [
                 'school' => $school,
                 'extra_class_id' => $extraClass->id,
                 'date' => $validated['date']
-            ])->with('success', 'Attendance recorded successfully! ' . $smsCount . ' SMS sent.');
+            ])->with('success', 'Attendance recorded successfully! ' . $smsCount . ' SMS and Push notifications sent.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Failed to save attendance: ' . $e->getMessage());

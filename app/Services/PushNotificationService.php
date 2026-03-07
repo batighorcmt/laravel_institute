@@ -80,4 +80,44 @@ class PushNotificationService
             }
         }
     }
+    /**
+     * Send push notification for attendance status update
+     */
+    public function sendAttendanceNotification($studentId, $status, $date, $type = 'class')
+    {
+        $student = \App\Models\Student::with('class')->find($studentId);
+        if (!$student || !$student->user_id) return;
+
+        $userId = $student->user_id;
+        $tokens = DeviceToken::where('user_id', $userId)->whereNotNull('token')->pluck('token')->unique();
+        
+        if ($tokens->isEmpty()) return;
+
+        $statusBn = [
+            'present' => 'উপস্থিত',
+            'absent' => 'অনুপস্থিত',
+            'late' => 'বিলম্বিত',
+            'excused' => 'ছুটি'
+        ];
+        
+        $statusText = $statusBn[$status] ?? $status;
+        $dateStr = \Carbon\Carbon::parse($date)->format('d-m-Y');
+        $className = $student->class ? $student->class->name : '';
+        
+        $title = "হাজিরা নোটিফিকেশন";
+        
+        if ($type === 'extra_class') {
+            $body = "এক্সট্রা ক্লাস হাজিরা: {$student->full_name} ($className) আজকের ক্লাসে \"$statusText\"। তারিখ: $dateStr";
+        } else {
+            $body = "ক্লাস হাজিরা: {$student->full_name} ($className) আজকের ক্লাসে \"$statusText\"। তারিখ: $dateStr";
+        }
+
+        SendPushNotificationJob::dispatch(
+            $tokens->toArray(),
+            $title,
+            $body,
+            ['student_id' => (string)$studentId, 'type' => 'attendance'],
+            $userId
+        );
+    }
 }

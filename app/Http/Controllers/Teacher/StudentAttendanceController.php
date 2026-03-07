@@ -174,9 +174,17 @@ class StudentAttendanceController extends Controller
 
             DB::commit();
 
-            // Enqueue SMS notifications using shared service
+            // Enqueue SMS and Push notifications using shared services
             $smsService = new AttendanceSmsService();
             $smsService->enqueueAttendanceSms($school, $request->attendance, $classId, $sectionId, $date, true, $previousStatuses, $user->id);
+
+            $pushService = new \App\Services\PushNotificationService();
+            foreach ($request->attendance as $studentId => $data) {
+                // Only send push if status has changed or it's a new record
+                if (empty($previousStatuses) || (isset($previousStatuses[$studentId]) && $previousStatuses[$studentId] !== $data['status'])) {
+                    $pushService->sendAttendanceNotification($studentId, $data['status'], $date, 'class');
+                }
+            }
 
             return redirect()->route('teacher.institute.attendance.class.take', [
                 'school' => $school,

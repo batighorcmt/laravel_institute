@@ -277,10 +277,11 @@ class TeacherStudentAttendanceController extends Controller
             }
         });
 
-        // Enqueue SMS notifications in background and return report
+        // Enqueue SMS and Push notifications in background and return report
         $smsReport = null;
         try {
             $smsService = new AttendanceSmsService();
+            $pushService = new \App\Services\PushNotificationService();
             // Build attendance payload as expected: studentId => ['status'=>...]
             $attendancePayload = collect($items)->mapWithKeys(fn($it)=>[$it['student_id']=>['status'=>$it['status']]])->toArray();
             $schoolModel = \App\Models\School::find($section->school_id);
@@ -288,9 +289,17 @@ class TeacherStudentAttendanceController extends Controller
                 // Only mark as "existing record" when we actually had previous statuses captured.
                 $isExisting = !empty($previousStatuses);
                 $smsReport = $smsService->enqueueAttendanceSms($schoolModel, $attendancePayload, $section->class_id, $section->id, $date, $isExisting, $previousStatuses, $user->id);
+                
+                // Send Push Notifications
+                foreach ($items as $it) {
+                    // Avoid duplicate push if status hasn't changed (optional, but good for UX)
+                    if (!$wasExisting || (isset($previousStatuses[$it['student_id']]) && $previousStatuses[$it['student_id']] !== $it['status'])) {
+                        $pushService->sendAttendanceNotification($it['student_id'], $it['status'], $date, 'class');
+                    }
+                }
             }
         } catch (\Throwable $e) {
-            Log::error('Failed to enqueue class attendance SMS', ['error'=>$e->getMessage(), 'section_id'=>$section->id]);
+            Log::error('Failed to enqueue class attendance notifications', ['error'=>$e->getMessage(), 'section_id'=>$section->id]);
         }
 
         $resp = ['message' => $wasExisting ? 'উপস্থিতি আপডেট হয়েছে' : 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে'];
@@ -456,18 +465,26 @@ class TeacherStudentAttendanceController extends Controller
             'excused' => $records->where('status','excused')->count(),
         ];
 
-        // Enqueue attendance SMS for the extra class (respecting sms settings and templates)
+        // Enqueue attendance notifications for the extra class (respecting settings and templates)
         try {
             $smsService = new AttendanceSmsService();
+            $pushService = new \App\Services\PushNotificationService();
             $attendancePayload = collect($data['items'])->mapWithKeys(fn($it)=>[$it['student_id']=>['status'=>$it['status']]])->toArray();
             $schoolModel = \App\Models\School::find($extraClass->school_id);
             if ($schoolModel) {
                 $isExisting = !empty($previousStatuses);
                 $smsService->enqueueAttendanceSms($schoolModel, $attendancePayload, $extraClass->class_id, $extraClass->section_id, $data['date'], $isExisting, $previousStatuses, $user->id, 'extra_class');
+
+                // Send Push Notifications
+                foreach ($data['items'] as $it) {
+                    if (!$wasExisting || (isset($previousStatuses[$it['student_id']]) && $previousStatuses[$it['student_id']] !== $it['status'])) {
+                        $pushService->sendAttendanceNotification($it['student_id'], $it['status'], $data['date'], 'extra_class');
+                    }
+                }
             }
         } catch (\Throwable $e) {
-            // Don't fail the attendance submit if SMS enqueue fails; log for debugging
-            Log::error('Failed to enqueue extra-class attendance SMS', ['error'=>$e->getMessage(), 'extra_class_id'=>$extraClass->id]);
+            // Don't fail the attendance submit if notification enqueue fails; log for debugging
+            Log::error('Failed to enqueue extra-class attendance notifications', ['error'=>$e->getMessage(), 'extra_class_id'=>$extraClass->id]);
         }
 
         return response()->json([
