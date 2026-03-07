@@ -31,6 +31,11 @@ class AdmissionController extends Controller
             return back();
         }
 
+        if ($school->status !== 'active') {
+            Session::flash('admission_login_error', 'প্রতিষ্ঠানটি বর্তমানে ইনএকটিভ রয়েছে');
+            return back();
+        }
+
         // Find application by app_id for this school
         $application = AdmissionApplication::query()
             ->where('school_id', $school->id)

@@ -32,7 +32,7 @@ class RoleMiddleware
         // Check if school context is required
         $schoolId = null;
         if (in_array('school', $roles)) {
-            $schoolParam = $request->route('school') ?? $request->route('school_id');
+            $schoolParam = $request->route('school') ?? $request->route('school_id') ?? $request->input('school_id') ?? $request->input('school');
             if ($schoolParam) {
                 if (is_object($schoolParam)) {
                     $schoolId = method_exists($schoolParam, 'getKey') ? $schoolParam->getKey() : ($schoolParam->id ?? null);

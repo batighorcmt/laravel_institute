@@ -6,13 +6,13 @@ use App\Http\Controllers\Api\AuthController;
 Route::prefix('v1')->group(function () {
     // Auth
     Route::post('auth/login', [AuthController::class, 'login']);
-    Route::middleware(['auth:sanctum','throttle:120,1'])->group(function () {
+    Route::middleware(['auth:sanctum','throttle:120,1', 'active_school'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::post('auth/change-password', [AuthController::class, 'changePassword']);
     Route::get('me', [AuthController::class, 'me']);
 
     // Notices
-    Route::get('notices', [\App\Http\Controllers\Api\NoticeController::class, 'index']);
+    Route::get('notices', [\App\Http\Controllers\Api\NoticeController::class, 'index'])->middleware('role:parent,teacher,principal,school');
     Route::get('notices/{notice}', [\App\Http\Controllers\Api\NoticeController::class, 'show']);
     Route::post('notices', [\App\Http\Controllers\Api\NoticeController::class, 'store'])->middleware('role:principal');
     Route::match(['put', 'patch'], 'notices/{notice}', [\App\Http\Controllers\Api\NoticeController::class, 'update'])->middleware('role:principal');
@@ -125,7 +125,7 @@ Route::prefix('v1')->group(function () {
     Route::post('notifications/{id}/mark-read', [\App\Http\Controllers\Api\NotificationLogController::class, 'markAsRead']);
 
     // Notifications Diagnostics
-    Route::middleware('role:principal')->group(function () {
+    Route::middleware('role:principal,school')->group(function () {
         Route::get('notifications/logs', [\App\Http\Controllers\Api\NotificationLogController::class, 'index']);
         Route::get('notifications/stats', [\App\Http\Controllers\Api\NotificationLogController::class, 'stats']);
     });

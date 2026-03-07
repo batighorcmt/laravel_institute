@@ -39,11 +39,11 @@ class LoginController extends Controller
             $user = Auth::user();
             /** @var User $user */
             
-            // Check if user has any active roles
-            if (!$user->activeSchoolRoles()->exists()) {
+            // Check if user has any active roles in active schools
+            if (!$user->isSuperAdmin() && !$user->activeSchoolRoles()->whereHas('school', fn($s) => $s->where('status', 'active'))->exists()) {
                 Auth::logout();
                 return redirect()->back()->withErrors([
-                    'email' => 'Your account is not assigned to any school or role.',
+                    'email' => 'আপনার প্রতিষ্ঠানটি বর্তমানে ইনএকটিভ রয়েছে।',
                 ]);
             }
 

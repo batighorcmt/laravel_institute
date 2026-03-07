@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'strict_role' => \App\Http\Middleware\StrictRoleMiddleware::class,
+            'active_school' => \App\Http\Middleware\EnsureSchoolIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

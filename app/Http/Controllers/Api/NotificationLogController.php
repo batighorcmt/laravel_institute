@@ -10,7 +10,14 @@ class NotificationLogController extends Controller
 {
     public function index(Request $request)
     {
+        $schoolId = $request->attributes->get('current_school_id') ?? $request->school_id;
+
         $logs = \App\Models\NotificationLog::with(['user', 'notice'])
+            ->when($schoolId, function($q) use ($schoolId) {
+                return $q->whereHas('user.schoolRoles', function($sq) use ($schoolId) {
+                    $sq->where('school_id', $schoolId);
+                });
+            })
             ->when($request->user_id, function($q) use ($request) {
                 return $q->where('user_id', $request->user_id);
             })
@@ -23,6 +30,7 @@ class NotificationLogController extends Controller
         return response()->json($logs);
     }
 
+<<<<<<< Updated upstream
     /**
      * Return notifications for authenticated user.
      */
@@ -89,12 +97,24 @@ class NotificationLogController extends Controller
     }
 
     public function stats()
+=======
+    public function stats(Request $request)
+>>>>>>> Stashed changes
     {
+        $schoolId = $request->attributes->get('current_school_id') ?? $request->school_id;
+
+        $query = \App\Models\NotificationLog::query();
+        if ($schoolId) {
+            $query->whereHas('user.schoolRoles', function($sq) use ($schoolId) {
+                $sq->where('school_id', $schoolId);
+            });
+        }
+
         $stats = [
-            'total' => \App\Models\NotificationLog::count(),
-            'sent' => \App\Models\NotificationLog::where('status', 'sent')->count(),
-            'failed' => \App\Models\NotificationLog::where('status', 'failed')->count(),
-            'latest_logs' => \App\Models\NotificationLog::with('user')->latest()->limit(5)->get()
+            'total' => (clone $query)->count(),
+            'sent' => (clone $query)->where('status', 'sent')->count(),
+            'failed' => (clone $query)->where('status', 'failed')->count(),
+            'latest_logs' => (clone $query)->with('user')->latest()->limit(5)->get()
         ];
 
         return response()->json($stats);

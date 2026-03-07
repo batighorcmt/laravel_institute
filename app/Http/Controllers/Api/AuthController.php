@@ -30,9 +30,17 @@ class AuthController extends Controller
             ], 422);
         }
 
+<<<<<<< Updated upstream
         // Ensure the user is assigned to at least one active school role
         if (! $user->activeSchoolRoles()->exists()) {
             return response()->json(['message' => 'Your account is not assigned to any school or role. Please contact administrator.'], 403);
+=======
+        // Check for active school
+        if (!$user->isSuperAdmin() && !$user->activeSchoolRoles()->whereHas('school', fn($s) => $s->where('status', 'active'))->exists()) {
+            return response()->json([
+                'message' => 'আপনার প্রতিষ্ঠানটি বর্তমানে ইনএকটিভ রয়েছে।'
+            ], 403);
+>>>>>>> Stashed changes
         }
 
         // Create token (consider scoping later)

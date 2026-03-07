@@ -104,7 +104,7 @@ Route::get('/password/reset/{token}', [PasswordResetController::class, 'showRese
 Route::post('/password/reset', [PasswordResetController::class, 'resetPassword'])->name('password.update');
 
 // Protected routes - require authentication
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'active_school'])->group(function () {
 
     // Dashboard routes based on roles
     Route::get('/dashboard', function () {
