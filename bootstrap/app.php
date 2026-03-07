@@ -23,5 +23,21 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if ($request->is('api/*')) {
+                // Ignore standard HTTP exceptions (Validation, Authentication, etc.) to maintain default Laravel behavior
+                if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface || 
+                    $e instanceof \Illuminate\Validation\ValidationException ||
+                    $e instanceof \Illuminate\Auth\Access\AuthorizationException ||
+                    $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
+                    return null;
+                }
+
+                // Return uniform error message for general server errors (500)
+                return response()->json([
+                    'message' => 'ডাটা লোড করতে ব্যর্থ',
+                    'error_debug' => config('app.debug') ? $e->getMessage() : null,
+                ], 500);
+            }
+        });
     })->create();

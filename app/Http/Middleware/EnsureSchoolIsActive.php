@@ -36,7 +36,7 @@ class EnsureSchoolIsActive
                 }
 
                 if ($school && $school->status !== 'active') {
-                    return $this->forceLogout($request, "আপনার প্রতিষ্ঠানটি বর্তমানে ইনএকটিভ রয়েছে। বিস্তারিত জানতে কর্তৃপক্ষের সাথে যোগাযোগ করুন।");
+                    return $this->forceLogout($request, "ডাটা লোড করতে ব্যর্থ");
                 }
             } else {
                 // If no school in request, check if the user has AT LEAST ONE active school role in an active school
@@ -47,7 +47,7 @@ class EnsureSchoolIsActive
                     ->exists();
 
                 if (!$hasActiveSchool) {
-                    return $this->forceLogout($request, "আপনার সাথে সংযুক্ত সকল প্রতিষ্ঠান বর্তমানে ইনএকটিভ রয়েছে।");
+                    return $this->forceLogout($request, "ডাটা লোড করতে ব্যর্থ");
                 }
             }
         }
@@ -59,7 +59,7 @@ class EnsureSchoolIsActive
     {
         Auth::logout();
         
-        if ($request->expectsJson()) {
+        if ($request->expectsJson() || $request->is('api/*')) {
             return response()->json(['message' => $message], 403);
         }
 

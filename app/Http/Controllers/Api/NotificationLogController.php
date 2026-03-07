@@ -10,12 +10,36 @@ class NotificationLogController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id') ?? $request->school_id;
 
-        $logs = \App\Models\NotificationLog::with(['user', 'notice'])
-            ->when($schoolId, function($q) use ($schoolId) {
+        $query = \App\Models\NotificationLog::with(['user', 'notice']);
+
+        // Security: If not super admin, strictly limit to schools where the user is a principal
+        if (!$user->isSuperAdmin()) {
+            if ($schoolId) {
+                if (!$user->isPrincipal($schoolId)) {
+                    return response()->json(['message' => 'অননুমোদিত'], 403);
+                }
+            } else {
+                $schoolId = $user->activeSchoolRoles()
+                    ->whereHas('role', fn($q) => $q->where('name', \App\Models\Role::PRINCIPAL))
+                    ->pluck('school_id')
+                    ->toArray();
+                
+                if (empty($schoolId)) {
+                    return response()->json(['message' => 'অননুমোদিত'], 403);
+                }
+            }
+        }
+
+        $logs = $query->when($schoolId, function($q) use ($schoolId) {
                 return $q->whereHas('user.schoolRoles', function($sq) use ($schoolId) {
-                    $sq->where('school_id', $schoolId);
+                    if (is_array($schoolId)) {
+                        $sq->whereIn('school_id', $schoolId);
+                    } else {
+                        $sq->where('school_id', $schoolId);
+                    }
                 });
             })
             ->when($request->user_id, function($q) use ($request) {
@@ -30,7 +54,6 @@ class NotificationLogController extends Controller
         return response()->json($logs);
     }
 
-<<<<<<< Updated upstream
     /**
      * Return notifications for authenticated user.
      */
@@ -98,16 +121,36 @@ class NotificationLogController extends Controller
 
     public function stats(Request $request)
     {
-=======
-    public function stats(Request $request)
-    {
->>>>>>> Stashed changes
+        $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id') ?? $request->school_id;
 
         $query = \App\Models\NotificationLog::query();
+
+        // Security: Same scoping as index
+        if (!$user->isSuperAdmin()) {
+            if ($schoolId) {
+                if (!$user->isPrincipal($schoolId)) {
+                    return response()->json(['message' => 'অননুমোদিত'], 403);
+                }
+            } else {
+                $schoolId = $user->activeSchoolRoles()
+                    ->whereHas('role', fn($q) => $q->where('name', \App\Models\Role::PRINCIPAL))
+                    ->pluck('school_id')
+                    ->toArray();
+                
+                if (empty($schoolId)) {
+                    return response()->json(['message' => 'অননুমোদিত'], 403);
+                }
+            }
+        }
+
         if ($schoolId) {
             $query->whereHas('user.schoolRoles', function($sq) use ($schoolId) {
-                $sq->where('school_id', $schoolId);
+                if (is_array($schoolId)) {
+                    $sq->whereIn('school_id', $schoolId);
+                } else {
+                    $sq->where('school_id', $schoolId);
+                }
             });
         }
 

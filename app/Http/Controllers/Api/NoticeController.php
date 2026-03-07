@@ -11,15 +11,36 @@ use Illuminate\Support\Carbon;
 
 class NoticeController extends Controller
 {
+
     public function index(Request $request)
     {
         $schoolId = $request->attributes->get('current_school_id');
         $user = $request->user();
 
         $query = Notice::published()->active()->orderByDesc('publish_at');
-        
+
+        // Security: If not super admin, strictly limit to schools where the user is a principal|teacher|parent
+        if (!$user->isSuperAdmin()) {
+            if ($schoolId) {
+                if (!$user->hasRole('principal', $schoolId) && !$user->hasRole('teacher', $schoolId) && !$user->hasRole('parent', $schoolId)) {
+                    return response()->json(['message' => 'অননুমোদিত'], 403);
+                }
+            } else {
+                // Determine all schools where the user has any active role
+                $schoolId = $user->activeSchoolRoles()->pluck('school_id')->unique()->toArray();
+                
+                if (empty($schoolId)) {
+                    return response()->json(['message' => 'আপনার কোনো প্রতিষ্ঠানের সাথে সংযোগ পাওয়া যায়নি।'], 403);
+                }
+            }
+        }
+
         if ($schoolId) {
-            $query->forSchool($schoolId);
+            if (is_array($schoolId)) {
+                $query->whereIn('school_id', $schoolId);
+            } else {
+                $query->forSchool($schoolId);
+            }
         }
 
         // Logic for different audiences
@@ -207,14 +228,26 @@ class NoticeController extends Controller
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
+        // Security: Prevent deleting notices from other schools
+        if ($notice->school_id && $notice->school_id != $schoolId && !$user->isSuperAdmin()) {
+            return response()->json(['message' => 'অননুমোদিত'], 403);
+        }
+
         $notice->delete();
         return response()->json(['message' => 'নোটিশ মুছে ফেলা হয়েছে']);
     }
 
     public function stats(Notice $notice, Request $request)
     {
-        $schoolId = $request->attributes->get('current_school_id') ?? $request->user()->primarySchool()?->id;
-        if (!$request->user()->isPrincipal($schoolId)) {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->primarySchool()?->id;
+
+        if (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+            return response()->json(['message' => 'অননুমোদিত'], 403);
+        }
+
+        // Security: Prevent viewing stats for notices from other schools
+        if ($notice->school_id && $notice->school_id != $schoolId && !$user->isSuperAdmin()) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
