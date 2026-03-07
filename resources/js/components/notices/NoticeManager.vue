@@ -536,6 +536,7 @@ export default {
 
         await axios[method](url, {
            ...this.form,
+           school_id: this.schoolId,
            targets: finalTargets
         });
         

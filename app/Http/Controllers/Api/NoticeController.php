@@ -37,11 +37,30 @@ class NoticeController extends Controller
 
         if ($schoolId) {
             $query->where(function($q) use ($schoolId) {
-                if (is_array($schoolId)) {
-                    $q->whereIn('school_id', $schoolId);
-                } else {
-                    $q->where('school_id', $schoolId);
-                }
+                // 1. Direct school match
+                $q->where(function($qq) use ($schoolId) {
+                    if (is_array($schoolId)) {
+                        $qq->whereIn('school_id', $schoolId);
+                    } else {
+                        $qq->where('school_id', $schoolId);
+                    }
+                });
+
+                // 2. Legacy fallback: NULL school_id notices created by authors of this school OR super admins
+                $q->orWhere(function($qq) use ($schoolId) {
+                    $qq->whereNull('school_id')
+                       ->where(function($qqq) use ($schoolId) {
+                           $qqq->whereHas('author.schoolRoles.role', function($rq) {
+                               $rq->where('name', 'superadmin');
+                           })->orWhereHas('author.schoolRoles', function($sq) use ($schoolId) {
+                               if (is_array($schoolId)) {
+                                   $sq->whereIn('school_id', $schoolId);
+                               } else {
+                                   $sq->where('school_id', $schoolId);
+                               }
+                           });
+                       });
+                });
             });
         }
 
