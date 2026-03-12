@@ -159,13 +159,11 @@
             font-size: 14px;
         }
 
-        .subject-info,
-        .print-table-container {
+        .subject-info {
             page-break-inside: avoid;
         }
 
         .print-table {
-            page-break-inside: avoid;
             font-size: 14px;
         }
 
@@ -180,7 +178,8 @@
 
         .print-table tbody td {
             font-size: 14px;
-            min-height: 20px;
+            min-height: 15px;
+            padding: 2px 4px;
         }
 
         .print-table tr {

@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         // Ensure timezone is always set correctly for live server
         $middleware->append(\App\Http\Middleware\SetTimezone::class);
+        $middleware->web(append: [
+            \App\Http\Middleware\EnsurePdfDownload::class,
+        ]);
         // Route middleware aliases
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,

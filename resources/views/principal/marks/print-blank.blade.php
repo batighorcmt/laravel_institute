@@ -69,20 +69,20 @@
                     <td>{{ $lang==='bn' ? ($enrollment->student->student_name_bn ?: $enrollment->student->student_name_en) : $enrollment->student->student_name_en }}</td>
 
                     @if($examSubject->creative_full_mark > 0)
-                        <td style="text-align: center; min-height: 30px;"></td>
+                        <td style="text-align: center;"></td>
                     @endif
 
                     @if($examSubject->mcq_full_mark > 0)
-                        <td style="text-align: center; min-height: 30px;"></td>
+                        <td style="text-align: center;"></td>
                     @endif
 
                     @if($examSubject->practical_full_mark > 0)
-                        <td style="text-align: center; min-height: 30px;"></td>
+                        <td style="text-align: center;"></td>
                     @endif
 
-                    <td style="text-align: center; min-height: 30px;"></td>
-                    <td style="text-align: center; min-height: 30px;"></td>
-                    <td style="text-align: center; min-height: 30px;"></td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align: center;"></td>
+                    <td style="text-align: center;"></td>
                 </tr>
             @endforeach
         </tbody>
@@ -135,13 +135,11 @@
             font-size: 11px;
         }
 
-        .subject-info,
-        .print-table-container {
+        .subject-info {
             page-break-inside: avoid;
         }
 
         .print-table {
-            page-break-inside: avoid;
             font-size: 14px;
         }
 
@@ -156,7 +154,8 @@
 
         .print-table tbody td {
             font-size: 14px;
-            min-height: 20px;
+            min-height: 15px;
+            padding: 2px 4px; /* reduce padding so rows fit better */
         }
 
         .print-table tr {
