@@ -20,6 +20,7 @@
 @font-face {
     font-family: 'Kalpurush';
     src: local('Kalpurush'),
+         url('/build/assets/kalpurush.woff2') format('woff2'),
          url('/fonts/kalpurush/kalpurush.woff2') format('woff2'),
          url('/fonts/kalpurush/kalpurush.ttf') format('truetype');
     font-weight: 400;
@@ -30,6 +31,121 @@
 body {
     font-family: 'Kalpurush', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
+
+/* ===============================
+   UI Font (Hind Siliguri)
+   =============================== */
+@font-face {
+    font-family: 'Hind Siliguri';
+    /* production-first (public/fonts) then dev/build fallback */
+    src: url('/fonts/hind-siliguri/HindSiliguri-Light.woff2') format('woff2'),
+         url('/build/assets/HindSiliguri-Light.woff2') format('woff2');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Hind Siliguri';
+    src: url('/fonts/hind-siliguri/HindSiliguri-Regular.woff2') format('woff2'),
+         url('/build/assets/HindSiliguri-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Hind Siliguri';
+    src: url('/fonts/hind-siliguri/HindSiliguri-Medium.woff2') format('woff2'),
+         url('/build/assets/HindSiliguri-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Hind Siliguri';
+    src: url('/fonts/hind-siliguri/HindSiliguri-SemiBold.woff2') format('woff2'),
+         url('/build/assets/HindSiliguri-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Hind Siliguri';
+    src: url('/fonts/hind-siliguri/HindSiliguri-Bold.woff2') format('woff2'),
+         url('/build/assets/HindSiliguri-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* CSS variables for fonts */
+:root {
+    --font-ui: 'Hind Siliguri', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-content: 'Kalpurush', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+/* Apply UI font to interface elements (buttons, nav, headings, labels, etc.) */
+h1,h2,h3,h4,h5,h6,
+.main-header,
+.nav-sidebar .nav-link,
+.sidebar,
+.btn,
+.card,
+.card .card-title,
+.form-label,
+.form-control,
+.select2-container,
+.breadcrumb,
+.page-title {
+    font-family: var(--font-ui);
+}
+
+/* Keep content text using Kalpurush (body already set), but ensure paragraphs inherit correctly */
+p, li, span, .content, .card-body {
+    font-family: var(--font-content);
+}
+
+/* Stronger overrides to beat utility classes (Tailwind) and component-scoped styles */
+html {
+    font-family: var(--font-content);
+}
+
+/* UI elements: use Hind Siliguri with higher specificity */
+html body h1,
+html body h2,
+html body h3,
+html body h4,
+html body h5,
+html body h6,
+html body .main-header,
+html body .nav-sidebar .nav-link,
+html body .sidebar,
+html body .btn,
+html body .card,
+html body .card .card-title,
+html body .form-label,
+html body .form-control,
+html body .select2-container,
+html body .breadcrumb,
+html body .page-title,
+html body .brand-text,
+html body .notice-manager,
+html body .notice-manager .card-title,
+.notice-list .card-title,
+.notice-manager h5.card-title {
+    font-family: var(--font-ui) !important;
+}
+
+/* Ensure small text uses content font */
+html body p,
+html body li,
+html body span,
+html body .card-body,
+html body .notice-manager .card-text {
+    font-family: var(--font-content) !important;
+}
+
+/* Utility to force UI font where needed for testing */
+.font-ui-force { font-family: var(--font-ui) !important; }
 
 /* ===============================
    Theme Variables

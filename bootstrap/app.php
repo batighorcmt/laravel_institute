@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'strict_role' => \App\Http\Middleware\StrictRoleMiddleware::class,
             'active_school' => \App\Http\Middleware\EnsureSchoolIsActive::class,
+            'module' => \App\Http\Middleware\CheckModuleAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

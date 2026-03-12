@@ -15,6 +15,11 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <!-- Preload local Bengali UI/Content fonts -->
+        <link rel="preload" href="/fonts/hind-siliguri/HindSiliguri-Regular.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="/fonts/hind-siliguri/HindSiliguri-Bold.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="/fonts/kalpurush/kalpurush.woff2" as="font" type="font/woff2" crossorigin>
+
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>

@@ -117,8 +117,28 @@ class User extends Authenticatable
      */
     public function primarySchool(): ?School
     {
+        $schoolId = session('active_school_id');
+        if ($schoolId) {
+            return School::find($schoolId);
+        }
         $pivot = $this->activeSchoolRoles()->with('school')->first();
         return $pivot?->school;
+    }
+
+    /**
+     * Check if a module is enabled for the user's primary school.
+     */
+    public function hasModule(string $slug): bool
+    {
+        $school = $this->primarySchool();
+        if (!$school) {
+            return false;
+        }
+
+        return $school->modules()
+            ->where('slug', $slug)
+            ->where('is_enabled', true)
+            ->exists();
     }
 
     /**

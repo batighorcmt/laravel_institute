@@ -1,7 +1,7 @@
 <template>
   <div class="notice-manager p-4 bg-white rounded shadow-sm">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2 class="h4 mb-0 font-weight-bold text-primary">নোটিশ বোর্ড</h2>
+      <h2 class="h4 mb-0 font-weight-bold text-primary font-ui-force">নোটিশ বোর্ড</h2>
       <button @click="openCreator()" class="btn btn-primary shadow-sm">
         <i class="fas fa-plus-circle mr-1"></i> নতুন নোটিশ
       </button>
@@ -12,7 +12,7 @@
       <div v-for="notice in notices" :key="notice.id" class="card mb-3 border-left-primary shadow-sm hover-shadow transition">
         <div class="card-body d-flex justify-content-between align-items-center py-3">
           <div @click="viewSingle(notice)" class="cursor-pointer flex-grow-1">
-            <h5 class="card-title text-dark mb-1 font-weight-bold">{{ notice.title }}</h5>
+            <h5 class="card-title text-dark mb-1 font-weight-bold font-ui-force">{{ notice.title }}</h5>
             <p class="card-text text-muted small mb-0">
               <i class="fas fa-user-friends mr-1"></i> {{ audienceLabel(notice.audience_type) }} |
               <i class="fas fa-calendar-alt mr-1"></i> {{ notice.publish_at }}

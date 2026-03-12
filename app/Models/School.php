@@ -82,6 +82,13 @@ class School extends Model
         return $this->hasMany(Teacher::class);
     }
 
+    public function modules(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Module::class, 'school_modules')
+            ->withPivot('is_enabled')
+            ->withTimestamps();
+    }
+
     // Scopes
     public function scopeActive($query)
     {

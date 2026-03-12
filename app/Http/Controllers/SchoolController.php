@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\School;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Module;
 use App\Models\UserSchoolRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -318,7 +319,50 @@ class SchoolController extends Controller
      */
     public function manage(School $school)
     {
+        $school->load('modules');
         return view('superadmin.schools.manage', compact('school'));
+    }
+
+    /**
+     * Get all modules with their enabled status for the school.
+     */
+    public function getModules(School $school)
+    {
+        $allModules = Module::where('status', 'active')->get();
+        $schoolModules = $school->modules->pluck('pivot.is_enabled', 'id');
+
+        $modules = $allModules->map(function ($module) use ($schoolModules) {
+            return [
+                'id' => $module->id,
+                'name' => $module->name,
+                'slug' => $module->slug,
+                'description' => $module->description,
+                'is_enabled' => (bool) ($schoolModules[$module->id] ?? false),
+            ];
+        });
+
+        return response()->json($modules);
+    }
+
+    /**
+     * Update school module permissions.
+     */
+    public function updateModules(Request $request, School $school)
+    {
+        $data = $request->validate([
+            'modules' => ['required', 'array'],
+            'modules.*.id' => ['required', 'exists:modules,id'],
+            'modules.*.is_enabled' => ['required', 'boolean'],
+        ]);
+
+        $syncData = [];
+        foreach ($data['modules'] as $module) {
+            $syncData[$module['id']] = ['is_enabled' => $module['is_enabled']];
+        }
+
+        $school->modules()->sync($syncData);
+
+        return response()->json(['message' => __('মডিউল পারমিশন সফলভাবে আপডেট হয়েছে।')]);
     }
 
     /**

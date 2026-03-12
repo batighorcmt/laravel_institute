@@ -25,59 +25,71 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-3 mb-3">
-            <div class="info-box bg-info">
-                <span class="info-box-icon"><i class="fas fa-users-cog"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">ব্যবহারকারী</span>
-                    <span class="info-box-number">--</span>
+    <div id="app">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <div class="info-box bg-info">
+                    <span class="info-box-icon"><i class="fas fa-users-cog"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">ব্যবহারকারী</span>
+                        <span class="info-box-number">--</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="info-box bg-success">
+                    <span class="info-box-icon"><i class="fas fa-layer-group"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">ক্লাস</span>
+                        <span class="info-box-number">--</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="info-box bg-warning">
+                    <span class="info-box-icon"><i class="fas fa-book"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">বিষয়</span>
+                        <span class="info-box-number">--</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="info-box bg-danger">
+                    <span class="info-box-icon"><i class="fas fa-user-graduate"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">স্টুডেন্ট</span>
+                        <span class="info-box-number">--</span>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="info-box bg-success">
-                <span class="info-box-icon"><i class="fas fa-layer-group"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">ক্লাস</span>
-                    <span class="info-box-number">--</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="info-box bg-warning">
-                <span class="info-box-icon"><i class="fas fa-book"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">বিষয়</span>
-                    <span class="info-box-number">--</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="info-box bg-danger">
-                <span class="info-box-icon"><i class="fas fa-user-graduate"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">স্টুডেন্ট</span>
-                    <span class="info-box-number">--</span>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="card">
-        <div class="card-header"><h3 class="card-title mb-0">পরবর্তী কাজ</h3></div>
-        <div class="card-body">
-            <ul class="mb-0">
-                <li>এই প্রতিষ্ঠানের জন্য ক্লাস তৈরি করুন</li>
-                <li>বিষয় (Subject) যোগ করুন</li>
-                <li>টিচার / প্রিন্সিপাল ইউজার অ্যাসাইন করুন</li>
-                <li>স্টুডেন্ট ইমপোর্ট বা ম্যানুয়াল এন্ট্রি করুন</li>
-                <li class="mt-2 text-decoration-none" style="list-style: none;">
-                    <a href="{{ route('principal.institute.fcm.index', $school) }}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-bell mr-1"></i> পুশ নোটিফিকেশন চেক করুন / ডায়াগনস্টিক
-                    </a>
-                </li>
-            </ul>
+        <div class="row">
+            <div class="col-12">
+                <school-module-manager 
+                    :school-id="{{ $school->id }}"
+                    fetch-url="{{ route('superadmin.schools.modules', $school) }}"
+                    update-url="{{ route('superadmin.schools.update-modules', $school) }}"
+                ></school-module-manager>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h3 class="card-title mb-0">পরবর্তী কাজ</h3></div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>এই প্রতিষ্ঠানের জন্য ক্লাস তৈরি করুন</li>
+                    <li>বিষয় (Subject) যোগ করুন</li>
+                    <li>টিচার / প্রিন্সিপাল ইউজার অ্যাসাইন করুন</li>
+                    <li>স্টুডেন্ট ইমপোর্ট বা ম্যানুয়াল এন্ট্রি করুন</li>
+                    <li class="mt-2 text-decoration-none" style="list-style: none;">
+                        <a href="{{ route('principal.institute.fcm.index', $school) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-bell mr-1"></i> পুশ নোটিফিকেশন চেক করুন / ডায়াগনস্টিক
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 @endsection

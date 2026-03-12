@@ -141,6 +141,10 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             Route::get('schools/{school}/manage', [SchoolController::class, 'manage'])->name('schools.manage');
             // Reset principal password and show once to superadmin
             Route::post('schools/{school}/reset-password', [SchoolController::class, 'resetPassword'])->name('schools.reset-password');
+
+            // School Modules management
+            Route::get('schools/{school}/modules', [SchoolController::class, 'getModules'])->name('schools.modules');
+            Route::post('schools/{school}/modules', [SchoolController::class, 'updateModules'])->name('schools.update-modules');
     });
 
     // Principal Routes (role-protected)
@@ -153,7 +157,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
         // Nested resources under a specific school
         Route::prefix('institute/{school}')->name('institute.')->middleware(['role:principal,school'])->group(function () {
             // Class Routine
-            Route::prefix('routine')->name('routine.')->group(function(){
+            Route::prefix('routine')->name('routine.')->middleware('module:routine')->group(function(){
                 Route::get('/', [PrincipalRoutineController::class,'panel'])->name('panel');
                 Route::get('/teacher-panel', [PrincipalRoutineController::class,'teacherPanel'])->name('teacher-panel');
                 Route::get('/master', [PrincipalRoutineController::class,'master'])->name('master');
@@ -169,7 +173,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::delete('/entry', [PrincipalRoutineController::class,'deleteEntry'])->name('entry.delete');
             });
             // Notices management
-            Route::get('/notices', [PrincipalController::class, 'notices'])->name('notices');
+            Route::get('/notices', [PrincipalController::class, 'notices'])->middleware('module:notices')->name('notices');
             // Teachers management
             Route::prefix('teachers')->name('teachers.')->group(function(){
                 Route::get('/', [PrincipalTeacherController::class,'index'])->name('index');
@@ -181,7 +185,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::post('/{teacher}/reset-password', [PrincipalTeacherController::class,'resetPassword'])->name('reset-password');
             });
             // Attendance routes
-            Route::prefix('attendance')->name('attendance.')->group(function () {
+            Route::prefix('attendance')->name('attendance.')->middleware('module:attendance')->group(function () {
                 Route::get('/class', [App\Http\Controllers\Principal\AttendanceController::class, 'index'])->name('class.index');
                 Route::get('/class/take', [App\Http\Controllers\Principal\AttendanceController::class, 'take'])->name('class.take');
                 Route::post('/class/store', [App\Http\Controllers\Principal\AttendanceController::class, 'store'])->name('class.store');
@@ -217,13 +221,13 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             });
 
             // Lesson Evaluation Reports (Principal)
-            Route::prefix('lesson-evaluations')->name('lesson-evaluations.')->group(function(){
+            Route::prefix('lesson-evaluations')->name('lesson-evaluations.')->middleware('module:lesson_evaluation')->group(function(){
                 Route::get('/', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class, 'index'])->name('index');
                 Route::get('/{lessonEvaluation}', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class, 'show'])->name('show');
             });
 
             // Admission settings and applications
-            Route::prefix('admissions')->name('admissions.')->group(function(){
+            Route::prefix('admissions')->name('admissions.')->middleware('module:admission')->group(function(){
                 Route::get('/settings', [PrincipalAdmissionController::class,'settings'])->name('settings');
                 Route::post('/settings', [PrincipalAdmissionController::class,'updateSettings'])->name('settings.update');
                 // Per-class admission settings
@@ -298,7 +302,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             });
 
             // Exam Management Routes
-            Route::prefix('exams')->name('exams.')->group(function(){
+            Route::prefix('exams')->name('exams.')->middleware('module:exams')->group(function(){
                 Route::get('/', [App\Http\Controllers\Principal\ExamController::class,'index'])->name('index');
 
                 // Room Attendance (Fixed paths first)
@@ -333,7 +337,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             });
 
             // Mark Entry Routes
-            Route::prefix('marks')->name('marks.')->group(function(){
+            Route::prefix('marks')->name('marks.')->middleware('module:exams')->group(function(){
                 Route::get('/', [App\Http\Controllers\Principal\MarkEntryController::class,'index'])->name('index');
                 Route::get('/{exam}', [App\Http\Controllers\Principal\MarkEntryController::class,'show'])->name('show');
                 Route::get('/{exam}/subjects/{examSubject}/entry', [App\Http\Controllers\Principal\MarkEntryController::class,'entryForm'])->name('entry');
@@ -373,7 +377,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             });
 
             // Result Management Routes
-            Route::prefix('results')->name('results.')->group(function(){
+            Route::prefix('results')->name('results.')->middleware('module:results')->group(function(){
                 // Exam List
                 Route::get('/exams', [App\Http\Controllers\Principal\ResultController::class,'examList'])->name('exams');
                 Route::get('/exams/{exam}/result-sheet/print', [App\Http\Controllers\Principal\ResultController::class,'printResultSheet'])->name('exams.result-sheet.print');
@@ -410,20 +414,22 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::delete('holidays/{holiday}', [\App\Http\Controllers\Principal\HolidayController::class,'destroy'])->name('holidays.destroy');
                 Route::post('weekly-holidays', [\App\Http\Controllers\Principal\HolidayController::class,'updateWeekly'])->name('weekly-holidays.update');
                 // SMS Settings
-                Route::get('sms', [\App\Http\Controllers\Principal\SmsSettingsController::class,'index'])->name('sms.index');
-                Route::match(['post', 'patch'], 'sms', function() { abort(405, 'Method not allowed for this route. Use the appropriate form.'); });
-                Route::match(['post', 'patch'], 'sms/api', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveApi'])->name('sms.api.save');
-                Route::match(['post', 'patch'], 'sms/class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveClassAttendance'])->name('sms.class-attendance.save');
-                Route::match(['post', 'patch'], 'sms/extra-class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveExtraClassAttendance'])->name('sms.extra-class-attendance.save');
-                Route::match(['post', 'patch'], 'sms/lesson-evaluation', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveLessonEvaluation'])->name('sms.lesson-evaluation.save');
-                Route::post('sms/templates', [\App\Http\Controllers\Principal\SmsSettingsController::class,'storeTemplate'])->name('sms.templates.store');
-                Route::match(['post', 'patch'], 'sms/templates/{template}', [\App\Http\Controllers\Principal\SmsSettingsController::class,'updateTemplate'])->name('sms.templates.update');
-                Route::delete('sms/templates/{template}', [\App\Http\Controllers\Principal\SmsSettingsController::class,'destroyTemplate'])->name('sms.templates.destroy');
-                // SMS Panel + Logs
-                Route::get('sms/panel', [\App\Http\Controllers\Principal\SmsController::class,'panel'])->name('sms.panel');
-                Route::post('sms/send', [\App\Http\Controllers\Principal\SmsController::class,'send'])->name('sms.send');
-                Route::get('sms/logs', [\App\Http\Controllers\Principal\SmsController::class,'logs'])->name('sms.logs');
-                Route::get('sms/logs/{log}', [\App\Http\Controllers\Principal\SmsController::class,'view'])->name('sms.logs.view');
+                Route::prefix('sms')->name('sms.')->middleware('module:sms')->group(function(){
+                    Route::get('/', [\App\Http\Controllers\Principal\SmsSettingsController::class,'index'])->name('index');
+                    Route::match(['post', 'patch'], '/', function() { abort(405, 'Method not allowed for this route. Use the appropriate form.'); });
+                    Route::match(['post', 'patch'], '/api', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveApi'])->name('api.save');
+                    Route::match(['post', 'patch'], '/class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveClassAttendance'])->name('class-attendance.save');
+                    Route::match(['post', 'patch'], '/extra-class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveExtraClassAttendance'])->name('extra-class-attendance.save');
+                    Route::match(['post', 'patch'], '/lesson-evaluation', [\App\Http\Controllers\Principal\SmsSettingsController::class,'saveLessonEvaluation'])->name('lesson-evaluation.save');
+                    Route::post('/templates', [\App\Http\Controllers\Principal\SmsSettingsController::class,'storeTemplate'])->name('templates.store');
+                    Route::match(['post', 'patch'], '/templates/{template}', [\App\Http\Controllers\Principal\SmsSettingsController::class,'updateTemplate'])->name('templates.update');
+                    Route::delete('/templates/{template}', [\App\Http\Controllers\Principal\SmsSettingsController::class,'destroyTemplate'])->name('templates.destroy');
+                    // SMS Panel + Logs
+                    Route::get('/panel', [\App\Http\Controllers\Principal\SmsController::class,'panel'])->name('panel');
+                    Route::post('/send', [\App\Http\Controllers\Principal\SmsController::class,'send'])->name('send');
+                    Route::get('/logs', [\App\Http\Controllers\Principal\SmsController::class,'logs'])->name('logs');
+                    Route::get('/logs/{log}', [\App\Http\Controllers\Principal\SmsController::class,'view'])->name('logs.view');
+                });
                 // Online Payments (SSLCommerz)
                 Route::get('payments', [PrincipalPaymentSettingsController::class,'index'])->name('payments.index');
                 Route::post('payments', [PrincipalPaymentSettingsController::class,'save'])->name('payments.save');
@@ -451,7 +457,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             Route::post('result-settings', [\App\Http\Controllers\Principal\ResultSettingController::class, 'store'])->name('result-settings.store');
 
             // Extra Classes routes
-            Route::prefix('extra-classes')->name('extra-classes.')->group(function () {
+            Route::prefix('extra-classes')->name('extra-classes.')->middleware('module:extra_class')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Principal\ExtraClassController::class, 'index'])->name('index');
                 Route::get('/create', [\App\Http\Controllers\Principal\ExtraClassController::class, 'create'])->name('create');
                 Route::post('/', [\App\Http\Controllers\Principal\ExtraClassController::class, 'store'])->name('store');
@@ -520,7 +526,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             Route::get('teams/{team}/members', [PrincipalTeamController::class, 'members'])->name('teams.members');
 
             // Documents (Prottayon, Certificate, Testimonial, Settings)
-            Route::prefix('documents')->name('documents.')->group(function(){
+            Route::prefix('documents')->name('documents.')->middleware('module:documents')->group(function(){
                 // Prottayon
                 Route::get('/prottayon', [\App\Http\Controllers\Principal\Documents\ProttayonController::class, 'index'])->name('prottayon.index');
                 Route::post('/prottayon/generate', [\App\Http\Controllers\Principal\Documents\ProttayonController::class, 'generate'])->name('prottayon.generate');
@@ -577,28 +583,29 @@ Route::middleware(['auth', 'active_school'])->group(function () {
         // School-specific teacher routes
         Route::prefix('institute/{school}')->name('institute.')->middleware(['role:teacher,school'])->group(function () {
             // Student Attendance (Class/Section based)
-            Route::prefix('attendance/class')->name('attendance.class.')->group(function () {
+            Route::prefix('attendance/class')->name('attendance.class.')->middleware('module:attendance')->group(function () {
                 Route::get('/', [App\Http\Controllers\Teacher\StudentAttendanceController::class, 'index'])->name('index');
                 Route::get('/take', [App\Http\Controllers\Teacher\StudentAttendanceController::class, 'take'])->name('take');
                 Route::post('/store', [App\Http\Controllers\Teacher\StudentAttendanceController::class, 'store'])->name('store');
             });
 
-            Route::prefix('attendance/extra-classes')->name('attendance.extra-classes.')->group(function () {
+            Route::prefix('attendance/extra-classes')->name('attendance.extra-classes.')->middleware('module:attendance')->group(function () {
                 Route::get('/', [App\Http\Controllers\Teacher\ExtraClassAttendanceController::class, 'index'])->name('index');
                 Route::get('/take', [App\Http\Controllers\Teacher\ExtraClassAttendanceController::class, 'take'])->name('take');
                 Route::post('/store', [App\Http\Controllers\Teacher\ExtraClassAttendanceController::class, 'store'])->name('store');
             });
+Condition:
 
             // Notices
-            Route::get('/notices', [TeacherController::class, 'notices'])->name('notices');
+            Route::get('/notices', [TeacherController::class, 'notices'])->middleware('module:notices')->name('notices');
 
             // Team Attendance (stub; to be implemented)
-            Route::prefix('attendance/team')->name('attendance.team.')->group(function () {
+            Route::prefix('attendance/team')->name('attendance.team.')->middleware('module:attendance')->group(function () {
                 Route::get('/', [App\Http\Controllers\Teacher\TeamAttendanceController::class, 'index'])->name('index');
             });
 
             // Lesson Evaluation
-            Route::prefix('lesson-evaluation')->name('lesson-evaluation.')->group(function () {
+            Route::prefix('lesson-evaluation')->name('lesson-evaluation.')->middleware('module:lesson_evaluation')->group(function () {
                 Route::get('/', [App\Http\Controllers\Teacher\LessonEvaluationController::class, 'index'])->name('index');
                 Route::get('/create', [App\Http\Controllers\Teacher\LessonEvaluationController::class, 'create'])->name('create');
                 Route::post('/', [App\Http\Controllers\Teacher\LessonEvaluationController::class, 'store'])->name('store');
@@ -606,7 +613,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             });
 
             // Homework
-            Route::prefix('homework')->name('homework.')->group(function () {
+            Route::prefix('homework')->name('homework.')->middleware('module:homework')->group(function () {
                 Route::get('/', [App\Http\Controllers\Teacher\HomeworkController::class, 'index'])->name('index');
                 Route::get('/create', [App\Http\Controllers\Teacher\HomeworkController::class, 'create'])->name('create');
                 Route::post('/', [App\Http\Controllers\Teacher\HomeworkController::class, 'store'])->name('store');
@@ -624,7 +631,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             });
 
             // Teacher Routine
-            Route::prefix('routine')->name('routine.')->group(function () {
+            Route::prefix('routine')->name('routine.')->middleware('module:routine')->group(function () {
                 Route::get('/', [App\Http\Controllers\Teacher\TeacherRoutineController::class, 'printView'])->name('index');
             });
 
@@ -632,7 +639,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             Route::get('/billing/collect', [App\Http\Controllers\Teacher\Billing\CollectController::class, 'create'])->name('billing.collect');
 
             // Manage Exams (all teachers)
-            Route::prefix('exams')->name('exams.')->group(function () {
+            Route::prefix('exams')->name('exams.')->middleware('module:exams')->group(function () {
                 Route::get('/todays-duty',       [App\Http\Controllers\Teacher\ExamController::class, 'todaysDuty'])->name('todays-duty');
                 Route::get('/mark-entry',        [App\Http\Controllers\Teacher\ExamController::class, 'markEntry'])->name('mark-entry');
                 Route::get('/load-marks-form',   [App\Http\Controllers\Teacher\ExamController::class, 'loadMarksForm'])->name('load-marks-form');
@@ -664,23 +671,25 @@ Route::middleware(['auth', 'active_school'])->group(function () {
         Route::get('/dashboard', [ParentController::class, 'dashboard'])->name('dashboard');
         Route::get('/profile', [ParentController::class, 'profile'])->name('profile');
         Route::get('/subjects', [ParentController::class, 'subjects'])->name('subjects');
-        Route::get('/routine', [ParentController::class, 'routine'])->name('routine');
-        Route::get('/homework', [ParentController::class, 'homework'])->name('homework');
-        Route::get('/attendance/class', [ParentController::class, 'classAttendance'])->name('attendance.class');
-        Route::get('/attendance/extra', [ParentController::class, 'extraAttendanceReport'])->name('attendance.extra');
-        Route::get('/evaluations', [ParentController::class, 'evaluations'])->name('evaluations');
+        Route::get('/routine', [ParentController::class, 'routine'])->middleware('module:routine')->name('routine');
+        Route::get('/homework', [ParentController::class, 'homework'])->middleware('module:homework')->name('homework');
+        Route::get('/attendance/class', [ParentController::class, 'classAttendance'])->middleware('module:attendance')->name('attendance.class');
+        Route::get('/attendance/extra', [ParentController::class, 'extraAttendanceReport'])->middleware('module:attendance')->name('attendance.extra');
+        Route::get('/evaluations', [ParentController::class, 'evaluations'])->middleware('module:lesson_evaluation')->name('evaluations');
         Route::get('/leaves', [ParentController::class, 'leaves'])->name('leaves');
         Route::post('/leaves', [ParentController::class, 'submitLeave'])->name('leaves.store');
-        Route::get('/notices', [ParentController::class, 'notices'])->name('notices');
+        Route::get('/notices', [ParentController::class, 'notices'])->middleware('module:notices')->name('notices');
         Route::get('/teachers', [ParentController::class, 'teachers'])->name('teachers');
         Route::get('/feedback', [ParentController::class, 'feedback'])->name('feedback');
         Route::post('/feedback', [ParentController::class, 'submitFeedback'])->name('feedback.store');
     });
 
     // Billing blades (simple views; access limited by nav visibility and auth)
-    Route::get('/billing/due', function () { return view('billing.due'); })->name('billing.due');
-    Route::get('/billing/statement', function () { return view('billing.statement'); })->name('billing.statement');
-    Route::get('/billing/collect', function () { return view('billing.collect'); })->name('billing.collect');
+    Route::middleware('module:accounts')->group(function() {
+        Route::get('/billing/due', function () { return view('billing.due'); })->name('billing.due');
+        Route::get('/billing/statement', function () { return view('billing.statement'); })->name('billing.statement');
+        Route::get('/billing/collect', function () { return view('billing.collect'); })->name('billing.collect');
+    });
 
     // Billing Settings
     Route::get('/billing/settings/fee-structures', [\App\Http\Controllers\Billing\SettingsController::class, 'feeStructureIndex'])->name('billing.settings.fee_structures');
@@ -695,8 +704,10 @@ Route::middleware(['auth', 'active_school'])->group(function () {
     Route::post('/billing/settings/global-fees', [\App\Http\Controllers\Billing\SettingsController::class, 'globalFeesStore'])->name('billing.settings.global_fees.store');
 
     // Fine Settings
-    Route::get('/billing/settings/fines', [\App\Http\Controllers\Billing\SettingsController::class, 'fineIndex'])->name('billing.settings.fines');
-    Route::post('/billing/settings/fines', [\App\Http\Controllers\Billing\SettingsController::class, 'fineStore'])->name('billing.settings.fines.store');
+    Route::middleware('module:accounts')->group(function() {
+        Route::get('/billing/settings/fines', [\App\Http\Controllers\Billing\SettingsController::class, 'fineIndex'])->name('billing.settings.fines');
+        Route::post('/billing/settings/fines', [\App\Http\Controllers\Billing\SettingsController::class, 'fineStore'])->name('billing.settings.fines.store');
+    });
 });
 
 // Public document verification endpoint (QR target)

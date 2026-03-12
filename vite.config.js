@@ -22,4 +22,20 @@ export default defineConfig({
             vue: 'vue/dist/vue.esm-bundler.js',
         },
     },
+    server: {
+        proxy: {
+            // Proxy font requests in dev to the Laravel app (127.0.0.1:8000)
+            '/fonts': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                secure: false,
+            },
+            // Proxy build asset requests (so /build/assets/* served by Laravel during dev)
+            '/build/assets': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                secure: false,
+            },
+        },
+    },
 });
