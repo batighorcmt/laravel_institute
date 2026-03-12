@@ -43,6 +43,7 @@ class SubjectController extends Controller
         $this->authorizePrincipal($school);
         $data = $request->validate([
             'name' => ['required','string','max:100', Rule::unique('subjects','name')->where(fn($q)=>$q->where('school_id',$school->id))],
+            'bangla_name' => ['required','string','max:100'],
             'code' => ['nullable','string','max:50'],
             'description' => ['nullable','string'],
             'status' => ['required','in:active,inactive'],
@@ -84,6 +85,7 @@ class SubjectController extends Controller
         // Simplified update: ignore marks & pass logic. Only update identity + part presence.
         $data = $request->validate([
             'name' => ['required','string','max:100', Rule::unique('subjects','name')->ignore($subject->id)->where(fn($q)=>$q->where('school_id',$school->id))],
+            'bangla_name' => ['required','string','max:100'],
             'code' => ['nullable','string','max:50'],
             'description' => ['nullable','string'],
             'status' => ['required','in:active,inactive'],

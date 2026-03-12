@@ -12,12 +12,13 @@
   </form>
   <div class="table-responsive">
     <table class="table table-striped">
-      <thead><tr><th>#</th><th>নাম</th><th>কোড</th><th>প্যাটার্ন</th><th>স্ট্যাটাস</th><th class="text-right">অ্যাকশন</th></tr></thead>
+      <thead><tr><th>#</th><th>নাম</th><th>বাংলা নাম</th><th>কোড</th><th>প্যাটার্ন</th><th>স্ট্যাটাস</th><th class="text-right">অ্যাকশন</th></tr></thead>
       <tbody>
         @forelse($subjects as $i => $item)
         <tr>
           <td>{{ $subjects->firstItem() + $i }}</td>
           <td>{{ $item->name }}</td>
+          <td>{{ $item->bangla_name }}</td>
           <td>{{ $item->code }}</td>
           <td>
             @php($shown=false)

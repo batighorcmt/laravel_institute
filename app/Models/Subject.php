@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Subject extends Model
 {
     protected $fillable = [
-        'school_id', 'name', 'code', 'description', 'status',
+        'school_id', 'name', 'bangla_name', 'code', 'description', 'status',
         'has_creative','has_mcq','has_practical',
         // mark/pass fields intentionally retained in table but excluded from mass-assignment updates per simplified policy
     ];

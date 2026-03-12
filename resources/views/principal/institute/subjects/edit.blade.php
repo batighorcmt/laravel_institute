@@ -5,8 +5,9 @@
 <div class="card"><div class="card-body">
 <form method="post" action="{{ route('principal.institute.subjects.update',[$school,$subject]) }}">@csrf @method('PUT')
   <div class="form-row">
-    <div class="form-group col-md-5"><label>নাম *</label><input type="text" name="name" class="form-control" required value="{{ old('name',$subject->name) }}"></div>
-    <div class="form-group col-md-3"><label>কোড</label><input type="text" name="code" class="form-control" value="{{ old('code',$subject->code) }}"></div>
+    <div class="form-group col-md-4"><label>নাম *</label><input type="text" name="name" class="form-control" required value="{{ old('name',$subject->name) }}"></div>
+    <div class="form-group col-md-4"><label>বাংলা নাম *</label><input type="text" name="bangla_name" class="form-control" required value="{{ old('bangla_name',$subject->bangla_name) }}"></div>
+    <div class="form-group col-md-2"><label>কোড</label><input type="text" name="code" class="form-control" value="{{ old('code',$subject->code) }}"></div>
     <div class="form-group col-md-2"><label>স্ট্যাটাস</label><select name="status" class="form-control">
       <option value="active" {{ $subject->status=='active'?'selected':'' }}>active</option>
       <option value="inactive" {{ $subject->status=='inactive'?'selected':'' }}>inactive</option>
