@@ -68,11 +68,11 @@
                <textarea v-model="form.body" class="form-control" rows="12" placeholder="নোটিশের বিস্তারিত বার্তা এখানে লিখুন..."></textarea>
              </div>
            </div>
-           
+
            <div class="col-md-5">
              <div class="bg-light p-3 rounded border">
                 <h6 class="mb-3 border-bottom pb-2 font-weight-bold"><i class="fas fa-bullseye mr-2"></i>প্রাপক নির্বাচন</h6>
-                
+
                 <div class="form-group">
                   <label class="small text-muted">কাদের জন্য প্রযোজ্য?</label>
                   <select v-model="form.audience_type" class="form-control" @change="resetTargets">
@@ -140,7 +140,7 @@
                            <span class="input-group-text"><i class="fas fa-search"></i></span>
                         </div>
                       </div>
-                      
+
                       <div v-if="foundStudents.length" class="found-students border rounded bg-white shadow-sm p-1 max-h-150 overflow-auto">
                         <div v-for="std in foundStudents" :key="std.id" @click="addTarget(std, 'Student')" class="p-2 small border-bottom cursor-pointer hover-bg-light">
                            <div class="font-weight-bold text-primary">{{ std.name_bn }}</div>
@@ -158,7 +158,7 @@
                 </div>
 
                 <hr>
-                
+
                 <div class="form-row">
                    <div class="col-12 mb-3">
                      <div class="custom-control custom-switch">
@@ -268,7 +268,7 @@
                    <div class="badge badge-light p-2">{{ audienceLabel(viewingNotice.audience_type) }}</div>
                 </div>
              </div>
-             
+
              <div class="notice-content py-3 mb-4" v-html="formattedBody(viewingNotice.body)"></div>
 
              <div class="notice-targets bg-light p-3 rounded">
@@ -279,7 +279,7 @@
                    </div>
                 </div>
                 <div v-else class="text-muted small">
-                   {{ viewingNotice.audience_type === 'all' ? 'সকল শিক্ষক এবং শিক্ষার্থী' : 
+                   {{ viewingNotice.audience_type === 'all' ? 'সকল শিক্ষক এবং শিক্ষার্থী' :
                       viewingNotice.audience_type === 'teachers' ? 'সকল শিক্ষক' : 'সকল শিক্ষার্থী' }}
                 </div>
              </div>
@@ -326,16 +326,16 @@ export default {
       statsData: {},
       activeTab: 'reads',
       viewingNotice: null,
-      
+
       teachers: [],
       classes: [],
       sections: [],
       groups: [],
-      selectedClasses: [], 
-      
+      selectedClasses: [],
+
       studentSearch: '',
       foundStudents: [],
-      
+
       form: {
         title: '',
         body: '',
@@ -366,7 +366,7 @@ export default {
         }
         return true;
       });
-      
+
       // Update form.targets with Class targets
       // First remove all existing Class targets
       this.form.targets = this.form.targets.filter(t => t.type !== 'Class');
@@ -420,7 +420,7 @@ export default {
         // Use either existing sections or selected classes as filter
         const params = { q: this.studentSearch, school_id: this.schoolId };
         if (this.selectedClasses.length === 1) params.class_id = this.selectedClasses[0];
-        
+
         const res = await axios.get('/api/v1/principal/students/search', { params });
         this.foundStudents = res.data;
       } catch (err) {
@@ -429,10 +429,10 @@ export default {
     }, 500),
     addTarget(item, type) {
       if (!this.form.targets.find(t => t.id === item.id && t.type === type)) {
-        this.form.targets.push({ 
-          id: item.id, 
-          type: type, 
-          name: item.name_bn || item.student_name_bn || item.name || item.student_id 
+        this.form.targets.push({
+          id: item.id,
+          type: type,
+          name: item.name_bn || item.student_name_bn || item.name || item.student_id
         });
       }
       this.studentSearch = '';
@@ -473,12 +473,12 @@ export default {
         publish_at: notice.publish_at ? notice.publish_at.replace(' ', 'T').slice(0, 16) : '',
         expiry_at: notice.expiry_at ? notice.expiry_at.replace(' ', 'T').slice(0, 16) : '',
       };
-      
+
       // Sync selectedClasses from targets
       this.selectedClasses = this.form.targets
         .filter(t => t.type === 'Class')
         .map(t => t.id);
-        
+
       this.showCreator = true;
       this.viewingNotice = null;
     },
@@ -495,26 +495,26 @@ export default {
       if (!this.form.title || !this.form.body) {
         return alert('শিরোনাম এবং বিবরণ আবশ্যক');
       }
-      
+
       this.saving = true;
       try {
         const url = this.editingId ? `/api/v1/notices/${this.editingId}` : '/api/v1/notices';
         const method = this.editingId ? 'put' : 'post';
-        
+
         // Prepare smart targets based on hierararchy: Student > Section/Group > Class
         let finalTargets = [...this.form.targets];
-        
+
         if (this.form.audience_type === 'students') {
            const studentTargets = finalTargets.filter(t => t.type === 'Student');
            const sectionTargets = finalTargets.filter(t => t.type === 'Section');
            const groupTargets   = finalTargets.filter(t => t.type === 'Group');
            const classTargets   = finalTargets.filter(t => t.type === 'Class');
-           
+
            // Logic: If any student is selected, and they belong to a class/section that is also selected,
            // we should keep the broad targets only if the user explicitly wanted "Additives".
-           // But based on "এক কথায় পরিষ্কার করি", if a specific section is selected, 
+           // But based on "এক কথায় পরিষ্কার করি", if a specific section is selected,
            // it means ONLY for that section.
-           
+
            // Filter classes: remove if any of its sections or students are selected
            const filteredTargets = finalTargets.filter(t => {
               if (t.type === 'Class') {
@@ -530,7 +530,7 @@ export default {
               }
               return true;
            });
-           
+
            finalTargets = filteredTargets;
         }
 
@@ -539,7 +539,7 @@ export default {
            school_id: this.schoolId,
            targets: finalTargets
         });
-        
+
         this.showCreator = false;
         this.fetchNotices();
       } catch (err) {
