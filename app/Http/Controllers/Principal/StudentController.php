@@ -67,7 +67,7 @@ class StudentController extends Controller
             ? Section::where('sections.school_id', $school->id)->where('sections.class_id', $classId)->ordered()->get()
             : collect();
         $groups = ($classId && ($cls = SchoolClass::find($classId)) && $cls->usesGroups())
-            ? Group::where('school_id', $school->id)->orderBy('name')->get()
+            ? Group::where('school_id', $school->id)->where('class_id', $classId)->orderBy('name')->get()
             : collect();
 
         $students = Student::select('students.*')
@@ -235,7 +235,7 @@ class StudentController extends Controller
         if (!empty($enrollData['enroll_class_id'])) {
             $class = SchoolClass::find($enrollData['enroll_class_id']);
             if ($class && $class->usesGroups() && empty($enrollData['enroll_group_id'])) {
-                return back()->withInput()->withErrors(['enroll_group_id' => 'ক্লাস ৯ম ও ১০ম এর জন্য গ্রুপ নির্বাচন বাধ্যতামূলক']);
+                return back()->withInput()->withErrors(['enroll_group_id' => 'এই শ্রেণির জন্য গ্রুপ নির্বাচন বাধ্যতামূলক']);
             }
         }
 
@@ -513,7 +513,7 @@ class StudentController extends Controller
             // Validate group for class 9 and 10
             $class = SchoolClass::find($enrollData['enroll_class_id']);
             if ($class && $class->usesGroups() && empty($enrollData['enroll_group_id'])) {
-                return back()->withInput()->withErrors(['enroll_group_id' => 'ক্লাস ৯ম ও ১০ম এর জন্য গ্রুপ নির্বাচন বাধ্যতামূলক']);
+                return back()->withInput()->withErrors(['enroll_group_id' => 'এই শ্রেণির জন্য গ্রুপ নির্বাচন বাধ্যতামূলক']);
             }
             
             if ($class && !$class->usesGroups()) {

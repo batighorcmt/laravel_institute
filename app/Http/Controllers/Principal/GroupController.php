@@ -22,7 +22,9 @@ class GroupController extends Controller
         $this->authorizePrincipal($school);
         $q = $request->get('q');
         $items = Group::forSchool($school->id)
+            ->with('class')
             ->when($q, fn($x) => $x->where('name','like',"%$q%"))
+            ->orderBy('class_id')
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
@@ -32,14 +34,17 @@ class GroupController extends Controller
     public function create(School $school)
     {
         $this->authorizePrincipal($school);
-        return view('principal.institute.groups.create', compact('school'));
+        $classList = \App\Models\SchoolClass::forSchool($school->id)->ordered()->get();
+        return view('principal.institute.groups.create', compact('school','classList'));
     }
 
     public function store(School $school, Request $request)
     {
         $this->authorizePrincipal($school);
         $data = $request->validate([
+            'class_id' => ['required','exists:classes,id'],
             'name' => ['required','string','max:100'],
+            'bangla_name' => ['required','string','max:150'],
             'status' => ['required','in:active,inactive'],
         ]);
         $data['school_id'] = $school->id;
@@ -51,7 +56,8 @@ class GroupController extends Controller
     {
         $this->authorizePrincipal($school);
         abort_unless($group->school_id === $school->id, 404);
-        return view('principal.institute.groups.edit', compact('school','group'));
+        $classList = \App\Models\SchoolClass::forSchool($school->id)->ordered()->get();
+        return view('principal.institute.groups.edit', compact('school','group','classList'));
     }
 
     public function update(School $school, Group $group, Request $request)
@@ -59,7 +65,9 @@ class GroupController extends Controller
         $this->authorizePrincipal($school);
         abort_unless($group->school_id === $school->id, 404);
         $data = $request->validate([
+            'class_id' => ['required','exists:classes,id'],
             'name' => ['required','string','max:100'],
+            'bangla_name' => ['required','string','max:150'],
             'status' => ['required','in:active,inactive'],
         ]);
         $group->update($data);

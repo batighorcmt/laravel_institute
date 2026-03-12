@@ -71,9 +71,14 @@ class SchoolClass extends Model
         return $this->name . ' (' . $this->numeric_value . ')';
     }
 
+    public function groups(): HasMany
+    {
+        return $this->hasMany(Group::class, 'class_id');
+    }
+
     public function usesGroups(): bool
     {
-        return (int) $this->numeric_value >= 9;
+        return $this->groups()->where('status', 'active')->exists();
     }
 
     public function noticeTargets()

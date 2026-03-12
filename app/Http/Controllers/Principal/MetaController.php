@@ -36,10 +36,16 @@ class MetaController extends Controller
         $this->authorizePrincipal($school);
         $classId = (int) $request->query('class_id');
         $class = SchoolClass::find($classId);
-        if (!$class || !$class->usesGroups()) {
+        if (!$class) {
             return response()->json([]);
         }
-        $groups = Group::where('school_id',$school->id)->orderBy('name')->get(['id','name']);
+        // Fetch groups assigned specifically to this class
+        $groups = Group::where('school_id',$school->id)
+            ->where('class_id', $classId)
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get(['id','name','bangla_name']);
+            
         return response()->json($groups);
     }
 

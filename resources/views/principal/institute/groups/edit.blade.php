@@ -5,8 +5,18 @@
 <div class="card"><div class="card-body">
 <form method="post" action="{{ route('principal.institute.groups.update',[$school,$group]) }}">@csrf @method('PUT')
   <div class="form-row">
-    <div class="form-group col-md-8"><label>নাম *</label><input type="text" name="name" class="form-control" required value="{{ old('name',$group->name) }}"></div>
-    <div class="form-group col-md-4"><label>স্ট্যাটাস</label><select name="status" class="form-control">
+    <div class="form-group col-md-3">
+      <label>শ্রেণি *</label>
+      <select name="class_id" class="form-control" required>
+        <option value="">নির্বাচন করুন</option>
+        @foreach($classList as $cls)
+          <option value="{{ $cls->id }}" {{ old('class_id', $group->class_id) == $cls->id ? 'selected' : '' }}>{{ $cls->name }} ({{ $cls->numeric_value }})</option>
+        @endforeach
+      </select>
+    </div>
+    <div class="form-group col-md-3"><label>নাম *</label><input type="text" name="name" class="form-control" required value="{{ old('name',$group->name) }}"></div>
+    <div class="form-group col-md-3"><label>বাংলা নাম *</label><input type="text" name="bangla_name" class="form-control" required value="{{ old('bangla_name',$group->bangla_name) }}"></div>
+    <div class="form-group col-md-3"><label>স্ট্যাটাস</label><select name="status" class="form-control">
       <option value="active" {{ $group->status==='active'?'selected':'' }}>active</option>
       <option value="inactive" {{ $group->status==='inactive'?'selected':'' }}>inactive</option>
     </select></div>

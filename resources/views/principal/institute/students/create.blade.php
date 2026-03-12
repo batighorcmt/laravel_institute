@@ -44,7 +44,7 @@
               </select>
             </div>
           </div>
-          <div class="col-md-2">
+          <div class="col-md-2" id="enroll_group_container" style="display: none;">
             <div class="form-group">
               <label><i class="fas fa-users mr-1"></i>গ্রুপ</label>
               <select name="enroll_group_id" id="enroll_group_id" class="form-control">
@@ -321,21 +321,35 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   function loadGroups(){
     if(!groupSel) return;
+    const groupContainer = groupSel.closest('.col-md-2');
     groupSel.innerHTML = '<option value="">--</option>';
     const cid = classSel.value;
-    if(!cid) return;
+    if(!cid) {
+        if(groupContainer) groupContainer.style.display = 'none';
+        groupSel.required = false;
+        return;
+    }
     fetchJSON("{{ route('principal.institute.meta.groups',$school) }}", {class_id: cid}, data => {
-      data.forEach(g=>{
-        groupSel.insertAdjacentHTML('beforeend', `<option value="${g.id}">${g.name}</option>`);
-      });
+      if(data && data.length > 0){
+        if(groupContainer) groupContainer.style.display = 'block';
+        groupSel.required = true;
+        data.forEach(g=>{
+          groupSel.insertAdjacentHTML('beforeend', `<option value="${g.id}">${g.name} (${g.bangla_name})</option>`);
+        });
+      } else {
+        if(groupContainer) groupContainer.style.display = 'none';
+        groupSel.required = false;
+        groupSel.value = '';
+      }
     });
   }
   function loadNextRoll(){
     if(!rollHint || !rollInput) return;
-    const year = yearInput ? yearInput.value : '';
+    const yearSelect = document.querySelector('[name="enroll_academic_year_id"]');
+    const yearId = yearSelect ? yearSelect.value : '';
     const cid = classSel ? classSel.value : '';
-    if(!year || !cid) { rollHint.textContent=''; return; }
-    fetchJSON("{{ route('principal.institute.meta.next-roll',$school) }}", {year: year, class_id: cid, section_id: sectionSel ? sectionSel.value : '', group_id: groupSel ? groupSel.value : ''}, data => {
+    if(!yearId || !cid) { rollHint.textContent=''; return; }
+    fetchJSON("{{ route('principal.institute.meta.next-roll',$school) }}", {year_id: yearId, class_id: cid, section_id: sectionSel ? sectionSel.value : '', group_id: groupSel ? groupSel.value : ''}, data => {
       if(data && data.next){
         rollHint.textContent = 'পরবর্তী রোল: ' + data.next;
         if(!rollInput.value){ rollInput.value = data.next; }

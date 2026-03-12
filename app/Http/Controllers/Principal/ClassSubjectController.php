@@ -82,7 +82,7 @@ class ClassSubjectController extends Controller
         if ($class->school_id !== $school->id) abort(404);
 
         $subjects = Subject::forSchool($school->id)->orderBy('name')->get();
-        $groups = $class->usesGroups() ? Group::forSchool($school->id)->orderBy('name')->get() : collect();
+        $groups = $class->usesGroups() ? Group::forSchool($school->id)->where('class_id', $class->id)->orderBy('name')->get() : collect();
         $mappings = ClassSubject::with('subject','group')
             ->where('school_id',$school->id)
             ->where('class_id',$class->id)
@@ -127,7 +127,7 @@ class ClassSubjectController extends Controller
             }
             if ($isOptional && empty($inputIds)) {
                 // Optional selected but no group specified: expand to all groups
-                $targetGroupIds = Group::forSchool($school->id)->pluck('id')->all();
+                $targetGroupIds = Group::forSchool($school->id)->where('class_id', $class->id)->pluck('id')->all();
             } else {
                 // If empty and not optional => common (null)
                 $targetGroupIds = empty($inputIds) ? [null] : $inputIds;
@@ -224,7 +224,7 @@ class ClassSubjectController extends Controller
             }
             if ($isOptional && empty($inputIds)) {
                 // Optional selected but no group specified: expand to all groups
-                $targetGroupIds = Group::forSchool($school->id)->pluck('id')->all();
+                $targetGroupIds = Group::forSchool($school->id)->where('class_id', $class->id)->pluck('id')->all();
             } else {
                 $targetGroupIds = empty($inputIds) ? [null] : $inputIds;
             }

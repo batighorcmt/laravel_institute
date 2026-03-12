@@ -51,7 +51,7 @@
               </select>
             </div>
           </div>
-          <div class="col-md-2">
+          <div class="col-md-2" id="enroll_group_container" style="{{ isset($activeEnrollment) && $activeEnrollment->group_id ? '' : 'display:none;' }}">
             <div class="form-group">
               <label><i class="fas fa-users mr-1"></i>গ্রুপ</label>
               <select name="enroll_group_id" id="enroll_group_id" class="form-control">
@@ -369,22 +369,26 @@ document.addEventListener('DOMContentLoaded', function() {
   
   function loadGroups(selectedId = null){
     if(!groupSel) return;
+    const groupContainer = document.getElementById('enroll_group_container');
     groupSel.innerHTML = '<option value="">--</option>';
     const cid = classSel.value;
-    if(!cid) return;
+    if(!cid) {
+      if(groupContainer) groupContainer.style.display = 'none';
+      groupSel.required = false;
+      return;
+    }
     fetchJSON("{{ route('principal.institute.meta.groups',$school) }}", {class_id: cid}, data => {
       if(data && data.length > 0){
+        if(groupContainer) groupContainer.style.display = 'block';
+        groupSel.required = true;
         data.forEach(g=>{
           const selected = (selectedId && g.id == selectedId) ? ' selected' : '';
-          groupSel.insertAdjacentHTML('beforeend', `<option value="${g.id}"${selected}>${g.name}</option>`);
+          groupSel.insertAdjacentHTML('beforeend', `<option value="${g.id}"${selected}>${g.name} (${g.bangla_name})</option>`);
         });
-        if(groupSel.parentElement && groupSel.parentElement.parentElement){
-          groupSel.parentElement.parentElement.style.display = 'block';
-        }
       } else {
-        if(groupSel.parentElement && groupSel.parentElement.parentElement){
-          groupSel.parentElement.parentElement.style.display = 'none';
-        }
+        if(groupContainer) groupContainer.style.display = 'none';
+        groupSel.required = false;
+        groupSel.value = '';
       }
     });
   }
