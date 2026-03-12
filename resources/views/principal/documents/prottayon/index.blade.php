@@ -3,7 +3,12 @@
 
 @section('content')
 <div id="app">
-    <prottayon-generator :school-id="{{ $school->id }}" :initial-classes="{{ $classes->toJson() }}"></prottayon-generator>
+    <prottayon-generator 
+        :school-id="{{ $school->id }}" 
+        school-name-bn="{{ $school->name_bn ?: $school->name }}"
+        school-name-en="{{ $school->name }}"
+        :initial-classes="{{ $classes->toJson() }}"
+    ></prottayon-generator>
 </div>
 @endsection
 

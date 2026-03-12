@@ -48,7 +48,7 @@ class TestimonialController extends Controller
         $academicYear = \App\Models\AcademicYear::find($validated['academic_year']);
 
         // Memo: schoolCode/testimonial/academicYearName/serialInYear
-        $memoNo = DocumentMemoService::generate($school, 'testimonial', null, $academicYear->name, null, $student);
+        $memoNo = DocumentMemoService::generate($school, 'testimonial', null, $academicYear->name, null, $student, 'en');
 
         $record = DocumentRecord::create([
             'school_id' => $school->id,

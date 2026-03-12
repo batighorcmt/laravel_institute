@@ -9,6 +9,7 @@ class DocumentTemplate extends Model
     protected $fillable = [
         'school_id',
         'type',
+        'language',
         'name',
         'content',
         'is_active',

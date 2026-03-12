@@ -50,8 +50,8 @@ class Student extends Model
         'school_id', 'user_id', 'class_id', 'optional_subject_id', 'admission_id', 'student_id', 'student_name_en','student_name_bn',
         'date_of_birth', 'gender', 'religion', 'father_name', 'mother_name','father_name_bn','mother_name_bn', 'guardian_phone',
         'guardian_relation','guardian_name_en','guardian_name_bn',
-        'present_village','present_para_moholla','present_post_office','present_upazilla','present_district',
-        'permanent_village','permanent_para_moholla','permanent_post_office','permanent_upazilla','permanent_district',
+        'present_village','present_village_en','present_para_moholla','present_post_office','present_post_office_en','present_upazilla','present_upazilla_en','present_district','present_district_en',
+        'permanent_village','permanent_village_en','permanent_para_moholla','permanent_post_office','permanent_post_office_en','permanent_upazilla','permanent_upazilla_en','permanent_district','permanent_district_en',
         'blood_group', 'photo', 'admission_date', 'status',
         'previous_school','pass_year','previous_result','previous_remarks'
     ];
@@ -208,7 +208,7 @@ class Student extends Model
             // ignore
         }
 
-        return null;
+        return asset('images/default-avatar.svg');
     }
 
     public function noticeTargets()

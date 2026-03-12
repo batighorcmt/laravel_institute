@@ -58,15 +58,28 @@
                                 <button v-for="kw in ['[year]', '[class]', '[section]', '[type]', '[serial]']" 
                                         :key="kw" type="button" 
                                         class="btn btn-xs btn-outline-info mr-1 mb-1"
-                                        @click="insertKeyword(pageKey, kw)">
+                                        @click="showKeywords = false"> <!-- just info, not inserting actually -->
                                     {{ kw }}
                                 </button>
                             </div>
-                            <textarea :id="'custom_text_' + pageKey" 
-                                      v-model="getSetting(pageKey).custom_text_raw" 
-                                      class="form-control form-control-sm" 
-                                      rows="2" 
-                                      placeholder="Text1, Text2 or use keywords"></textarea>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="small text-muted">বাংলা কাস্টম টেক্সট</label>
+                                    <textarea :id="'custom_text_' + pageKey" 
+                                              v-model="getSetting(pageKey).custom_text_raw" 
+                                              class="form-control form-control-sm" 
+                                              rows="2" 
+                                              placeholder="Tex1, Text2 or keywords"></textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="small text-muted">English Custom Text</label>
+                                    <textarea :id="'custom_text_en_' + pageKey" 
+                                              v-model="getSetting(pageKey).custom_text_en_raw" 
+                                              class="form-control form-control-sm" 
+                                              rows="2" 
+                                              placeholder="Tex1, Text2 or keywords"></textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="card-footer text-right">
@@ -107,6 +120,7 @@ const getSetting = (page) => {
             colors: initial.colors || { title: '#000000', body: '#333333' },
             memo_format: initial.memo_format || ['institution_code', 'serial_no'],
             custom_text_raw: Array.isArray(initial.custom_text) ? initial.custom_text.join(',') : (initial.custom_text || ''),
+            custom_text_en_raw: Array.isArray(initial.custom_text_en) ? initial.custom_text_en.join(',') : (initial.custom_text_en || ''),
             background_path: initial.background_path || null
         };
     }
@@ -151,6 +165,7 @@ const saveSettings = async (page) => {
         
         s.memo_format.forEach(m => formData.append('memo_format[]', m));
         formData.append('custom_text', s.custom_text_raw);
+        formData.append('custom_text_en', s.custom_text_en_raw);
 
         await axios.post(`/principal/institute/${props.schoolId}/documents/settings`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }

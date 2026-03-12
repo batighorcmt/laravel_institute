@@ -41,7 +41,7 @@ class CertificateController extends Controller
         $student = Student::forSchool($school->id)->findOrFail($validated['student_id']);
 
         // Memo: schoolCode<>certificate<>academicYearName<>serialInYear
-        $memoNo = DocumentMemoService::generate($school, 'certificate', null, null, null, $student);
+        $memoNo = DocumentMemoService::generate($school, 'certificate', null, null, null, $student, 'en');
 
         $record = DocumentRecord::create([
             'school_id' => $school->id,

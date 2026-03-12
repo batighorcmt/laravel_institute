@@ -31,6 +31,7 @@ class SettingsController extends Controller
             'colors' => 'nullable|array',
             'memo_format' => 'nullable|array|min:1',
             'custom_text' => 'nullable|string',
+            'custom_text_en' => 'nullable|string',
         ]);
 
         $path = null;
@@ -46,6 +47,7 @@ class SettingsController extends Controller
         if (isset($validated['colors'])) { $setting->colors = $validated['colors']; }
         if (isset($validated['memo_format'])) { $setting->memo_format = $validated['memo_format']; }
         if (isset($validated['custom_text'])) { $setting->custom_text = array_filter(array_map('trim', explode(',', $validated['custom_text']))); }
+        if (isset($validated['custom_text_en'])) { $setting->custom_text_en = array_filter(array_map('trim', explode(',', $validated['custom_text_en']))); }
         $setting->save();
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -66,6 +68,7 @@ class SettingsController extends Controller
         $validated = $request->validate([
             'id' => 'nullable|exists:document_templates,id',
             'type' => 'required|in:prottayon,certificate,testimonial',
+            'language' => 'required|in:bn,en',
             'name' => 'required|string|max:255',
             'content' => 'required|string',
             'is_active' => 'required|boolean',
@@ -76,6 +79,7 @@ class SettingsController extends Controller
             [
                 'school_id' => $school->id,
                 'type' => $validated['type'],
+                'language' => $validated['language'],
                 'name' => $validated['name'],
                 'content' => $validated['content'],
                 'is_active' => $validated['is_active'],

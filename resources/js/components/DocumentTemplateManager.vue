@@ -23,6 +23,15 @@
                             </div>
                         </div>
                         <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">ভাষা (Language)</label>
+                            <div class="col-sm-9">
+                                <select v-model="form.language" class="form-control" required>
+                                    <option value="bn">বাংলা (Bengali)</option>
+                                    <option value="en">ইংরেজি (English)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
                             <label class="col-sm-3 col-form-label">টেম্পলেট এর নাম</label>
                             <div class="col-sm-9">
                                 <input type="text" v-model="form.name" class="form-control" placeholder="যেমন: সাধারণ প্রত্যয়নপত্র" required>
@@ -70,6 +79,7 @@
                             <tr>
                                 <th>নাম</th>
                                 <th>ধরণ</th>
+                                <th>ভাষা</th>
                                 <th style="width: 80px">অ্যাকশন</th>
                             </tr>
                         </thead>
@@ -81,6 +91,11 @@
                                 </td>
                                 <td>
                                     <span class="badge badge-info">{{ template.type }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge" :class="template.language === 'bn' ? 'badge-warning' : 'badge-primary'">
+                                        {{ template.language === 'bn' ? 'বাংলা' : 'English' }}
+                                    </span>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
@@ -123,6 +138,7 @@ const loading = ref(false);
 const form = ref({
     id: null,
     type: 'prottayon',
+    language: 'bn',
     name: '',
     content: '',
     is_active: true
@@ -176,6 +192,7 @@ const resetForm = () => {
     form.value = {
         id: null,
         type: 'prottayon',
+        language: 'bn',
         name: '',
         content: '',
         is_active: true

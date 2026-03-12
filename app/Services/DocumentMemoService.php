@@ -13,7 +13,7 @@ class DocumentMemoService
      * Generate memo no based on configured format or default format: <school_code>/<type>/<academic_year_name>/<serial_in_year>
      * Type will be one of: prottayon|certificate|testimonial
      */
-    public static function generate(School $school, string $type, ?Carbon $issuedAt = null, ?string $yearName = null, ?array $format = null, ?\App\Models\Student $student = null): string
+    public static function generate(School $school, string $type, ?Carbon $issuedAt = null, ?string $yearName = null, ?array $format = null, ?\App\Models\Student $student = null, string $lang = 'bn'): string
     {
         $issuedAt = $issuedAt ?: Carbon::now();
         $currentYear = AcademicYear::forSchool($school->id)->current()->first();
@@ -62,7 +62,11 @@ class DocumentMemoService
                     $parts[] = str_pad((string)$serial, 4, '0', STR_PAD_LEFT);
                     break;
                 case 'custom_text':
-                    $parts[] = $setting && $setting->custom_text ? implode('-', $setting->custom_text) : 'CUSTOM';
+                    if ($lang === 'en' && $setting && $setting->custom_text_en) {
+                        $parts[] = implode('-', $setting->custom_text_en);
+                    } else {
+                        $parts[] = $setting && $setting->custom_text ? implode('-', $setting->custom_text) : 'CUSTOM';
+                    }
                     break;
                 case 'class':
                     if ($student && $student->class) {

@@ -9,13 +9,14 @@
   <div class="table-responsive">
     <table class="table table-striped mb-0">
       <thead>
-        <tr><th>#</th><th>শিক্ষাবর্ষ</th><th>শুরুর তারিখ</th><th>শেষ তারিখ</th><th>স্ট্যাটাস</th><th class="text-right">অ্যাকশন</th></tr>
+        <tr><th>#</th><th>শিক্ষাবর্ষ (EN)</th><th>শিক্ষাবর্ষ (BN)</th><th>শুরুর তারিখ</th><th>শেষ তারিখ</th><th>স্ট্যাটাস</th><th class="text-right">অ্যাকশন</th></tr>
       </thead>
       <tbody>
         @forelse($years as $i=>$y)
           <tr>
             <td>{{ $i+1 }}</td>
             <td>{{ $y->name }}</td>
+            <td>{{ $y->name_bn }}</td>
             <td>{{ $y->start_date->format('d-m-Y') }}</td>
             <td>{{ $y->end_date->format('d-m-Y') }}</td>
             <td>

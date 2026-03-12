@@ -96,10 +96,17 @@ class MetaController extends Controller
             'student_enrollments.student_id as record_id', 'student_enrollments.roll_no',
             'students.student_id as student_code',
             'students.student_name_bn','students.student_name_en','students.guardian_phone',
-            'classes.name as class_name','sections.name as section_name'
+            'students.father_name_bn','students.father_name','students.mother_name_bn','students.mother_name',
+            'students.date_of_birth','students.gender','students.blood_group','students.religion',
+            'students.present_village','students.present_post_office','students.present_upazilla','students.present_district',
+            'students.permanent_village','students.permanent_post_office','students.permanent_upazilla','students.permanent_district',
+            'classes.name as class_name','classes.bangla_name as class_name_bn',
+            'sections.name as section_name','sections.bangla_name as section_name_bn',
+            'academic_years.name as academic_year','academic_years.name_bn as academic_year_bn'
         )
         ->join('students','students.id','=','student_enrollments.student_id')
         ->join('classes','classes.id','=','student_enrollments.class_id')
+        ->join('academic_years','academic_years.id','=','student_enrollments.academic_year_id')
         ->leftJoin('sections','sections.id','=','student_enrollments.section_id')
         ->where('student_enrollments.school_id',$school->id)
         ->where('student_enrollments.academic_year_id',$yearId)
@@ -122,10 +129,33 @@ class MetaController extends Controller
                 'record_id' => (int)$r->record_id,
                 'student_id' => $r->student_code,
                 'name' => $r->student_name_bn ?: $r->student_name_en,
+                'student_name_bn' => $r->student_name_bn,
+                'student_name_en' => $r->student_name_en,
+                'father_name_bn' => $r->father_name_bn,
+                'father_name' => $r->father_name,
+                'mother_name_bn' => $r->mother_name_bn,
+                'mother_name' => $r->mother_name,
+                'date_of_birth' => $r->date_of_birth,
+                'gender' => $r->gender,
+                'blood_group' => $r->blood_group,
+                'religion' => $r->religion,
                 'phone' => $r->guardian_phone,
+                'guardian_phone' => $r->guardian_phone,
+                'present_village' => $r->present_village,
+                'present_post_office' => $r->present_post_office,
+                'present_upazilla' => $r->present_upazilla,
+                'present_district' => $r->present_district,
+                'permanent_village' => $r->permanent_village,
+                'permanent_post_office' => $r->permanent_post_office,
+                'permanent_upazilla' => $r->permanent_upazilla,
+                'permanent_district' => $r->permanent_district,
                 'roll_no' => $r->roll_no,
                 'class_name' => $r->class_name,
+                'class_name_bn' => $r->class_name_bn,
                 'section_name' => $r->section_name,
+                'section_name_bn' => $r->section_name_bn,
+                'academic_year' => $r->academic_year,
+                'academic_year_bn' => $r->academic_year_bn,
             ];
         });
 

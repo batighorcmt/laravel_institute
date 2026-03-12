@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AcademicYear extends Model
 {
-    protected $fillable = ['school_id','name','start_date','end_date','is_current'];
+    protected $fillable = ['school_id','name','name_bn','start_date','end_date','is_current'];
 
     protected $casts = [
         'start_date' => 'date',

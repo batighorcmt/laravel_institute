@@ -176,8 +176,16 @@ import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import KeywordSelector from './KeywordSelector.vue';
 
+const toBengaliNumber = (num) => {
+    if (!num && num !== 0) return '';
+    const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return num.toString().replace(/\d/g, d => bn[d]);
+};
+
 const props = defineProps({
     schoolId: { type: Number, required: true },
+    schoolNameBn: { type: String, default: '' },
+    schoolNameEn: { type: String, default: '' },
     initialClasses: { type: Array, default: () => [] }
 });
 
@@ -186,6 +194,7 @@ const sections = ref([]);
 const students = ref([]);
 const templates = ref([]);
 const selectedTemplateId = ref('');
+const selectedTemplate = ref(null);
 const selectedStudent = ref(null);
 const tempStudent = ref(null);
 const showEditModal = ref(false);
@@ -238,6 +247,7 @@ const applyStudentEdits = () => {
 
 const onTemplateChange = () => {
     const template = templates.value.find(t => t.id == selectedTemplateId.value);
+    selectedTemplate.value = template;
     if (template) {
         form.value.template_id = template.id;
         form.value.content = template.content;
@@ -272,23 +282,69 @@ const parsedContent = computed(() => {
         '[mother_name_en]': s.mother_name || '',
         '[student_id]': s.student_id || '',
         '[roll_no]': s.roll_no || '',
-        '[date_of_birth]': s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString('bn-BD') : '',
+        '[date_of_birth]': s.date_of_birth
+            ? new Date(s.date_of_birth).toLocaleDateString(selectedTemplate.value?.language === 'en' ? 'en-GB' : 'bn-BD')
+            : '',
+        '[date_of_birth_bn]': s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString('bn-BD') : '',
+        '[date_of_birth_en]': s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString('en-GB') : '',
         '[gender]': s.gender == 'male' ? 'ছাত্র' : 'ছাত্রী',
         '[blood_group]': s.blood_group || '',
-        '[present_village]': s.present_village || '',
-        '[present_post_office]': s.present_post_office || '',
-        '[present_upazilla]': s.present_upazilla || '',
-        '[present_district]': s.present_district || '',
-        '[permanent_village]': s.permanent_village || '',
-        '[permanent_post_office]': s.permanent_post_office || '',
-        '[permanent_upazilla]': s.permanent_upazilla || '',
-        '[permanent_district]': s.permanent_district || '',
-        '[class_name]': s.class_name || '',
-        '[section_name]': s.section_name || '',
-        '[session]': s.academic_year || '',
-        '[date]': new Date().toLocaleDateString('bn-BD'),
-        '[school_name]': 'আপনার বিদ্যালয়'
+        '[guardian_phone]': s.guardian_phone || '',
+        '[present_village_bn]': s.present_village || '',
+        '[present_village_en]': s.present_village_en || '',
+        '[present_post_office_bn]': s.present_post_office || '',
+        '[present_post_office_en]': s.present_post_office_en || '',
+        '[present_upazilla_bn]': s.present_upazilla || '',
+        '[present_upazilla_en]': s.present_upazilla_en || '',
+        '[present_district_bn]': s.present_district || '',
+        '[present_district_en]': s.present_district_en || '',
+        '[permanent_village_bn]': s.permanent_village || '',
+        '[permanent_village_en]': s.permanent_village_en || '',
+        '[permanent_post_office_bn]': s.permanent_post_office || '',
+        '[permanent_post_office_en]': s.permanent_post_office_en || '',
+        '[permanent_upazilla_bn]': s.permanent_upazilla || '',
+        '[permanent_upazilla_en]': s.permanent_upazilla_en || '',
+        '[permanent_district_bn]': s.permanent_district || '',
+        '[permanent_district_en]': s.permanent_district_en || '',
+        '[present_village]': selectedTemplate.value?.language === 'en' ? (s.present_village_en || '') : (s.present_village || ''),
+        '[present_post_office]': selectedTemplate.value?.language === 'en' ? (s.present_post_office_en || '') : (s.present_post_office || ''),
+        '[present_upazilla]': selectedTemplate.value?.language === 'en' ? (s.present_upazilla_en || '') : (s.present_upazilla || ''),
+        '[present_district]': selectedTemplate.value?.language === 'en' ? (s.present_district_en || '') : (s.present_district || ''),
+        '[permanent_village]': selectedTemplate.value?.language === 'en' ? (s.permanent_village_en || '') : (s.permanent_village || ''),
+        '[permanent_post_office]': selectedTemplate.value?.language === 'en' ? (s.permanent_post_office_en || '') : (s.permanent_post_office || ''),
+        '[permanent_upazilla]': selectedTemplate.value?.language === 'en' ? (s.permanent_upazilla_en || '') : (s.permanent_upazilla || ''),
+        '[permanent_district]': selectedTemplate.value?.language === 'en' ? (s.permanent_district_en || '') : (s.permanent_district || ''),
+        '[class_name_bn]': s.class_name_bn || s.class_name || '',
+        '[class_name_en]': s.class_name || '',
+        '[section_name_bn]': s.section_name_bn || s.section_name || '',
+        '[section_name_en]': s.section_name || '',
+        '[session_bn]': s.academic_year_bn || s.academic_year || '',
+        '[session_en]': s.academic_year || '',
+        '[session]': selectedTemplate.value?.language === 'en' ? (s.academic_year || '') : (s.academic_year_bn || s.academic_year || ''),
+        '[date]': new Date().toLocaleDateString(selectedTemplate.value?.language === 'en' ? 'en-GB' : 'bn-BD'),
+        '[school_name]': selectedTemplate.value?.language === 'en' ? props.schoolNameEn : props.schoolNameBn,
+        '[school_name_bn]': props.schoolNameBn,
+        '[school_name_en]': props.schoolNameEn,
+        // Language specific Numbers
+        '[roll_no_bn]': toBengaliNumber(s.roll_no),
+        '[roll_no_en]': s.roll_no,
+        // Aliases
+        '[student_name]': selectedTemplate.value?.language === 'en' ? (s.student_name_en || s.name) : (s.student_name_bn || s.name),
+        '[father_name]': selectedTemplate.value?.language === 'en' ? (s.father_name || '') : (s.father_name_bn || ''),
+        '[mother_name]': selectedTemplate.value?.language === 'en' ? (s.mother_name || '') : (s.mother_name_bn || ''),
     };
+
+    // Helper for language-based number conversion
+    const isEn = selectedTemplate.value?.language === 'en';
+    if (isEn) {
+        tokens['[roll_no]'] = s.roll_no || '';
+        tokens['[class_name]'] = s.class_name || '';
+        tokens['[section_name]'] = s.section_name || '';
+    } else {
+        tokens['[roll_no]'] = toBengaliNumber(s.roll_no);
+        tokens['[class_name]'] = s.class_name_bn || s.class_name || '';
+        tokens['[section_name]'] = s.section_name_bn || s.section_name || '';
+    }
 
     Object.keys(tokens).forEach(key => {
         const val = tokens[key] || '';

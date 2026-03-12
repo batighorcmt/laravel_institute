@@ -35,6 +35,7 @@ class AcademicYearController extends Controller
         $this->authorizePrincipal($school);
         $data = $request->validate([
             'name' => ['required','string','max:50'],
+            'name_bn' => ['nullable','string','max:100'],
             'start_date' => ['required','date'],
             'end_date' => ['required','date','after:start_date'],
             'is_current' => ['sometimes','boolean']
@@ -61,6 +62,7 @@ class AcademicYearController extends Controller
         abort_unless($academic_year->school_id===$school->id,404);
         $data = $request->validate([
             'name' => ['required','string','max:50'],
+            'name_bn' => ['nullable','string','max:100'],
             'start_date' => ['required','date'],
             'end_date' => ['required','date','after:start_date'],
             'is_current' => ['sometimes','boolean']

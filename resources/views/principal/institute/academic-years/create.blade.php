@@ -8,9 +8,10 @@
 @if($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
 <form method="post" action="{{ route('principal.institute.academic-years.store',$school) }}">@csrf
   <div class="form-row">
-    <div class="form-group col-md-4"><label>নাম *</label><input type="text" name="name" class="form-control" required value="{{ old('name') }}" placeholder="2025"></div>
-    <div class="form-group col-md-4"><label>শুরুর তারিখ *</label><input type="date" name="start_date" class="form-control" required value="{{ old('start_date') }}"></div>
-    <div class="form-group col-md-4"><label>শেষ তারিখ *</label><input type="date" name="end_date" class="form-control" required value="{{ old('end_date') }}"></div>
+    <div class="form-group col-md-3"><label>নাম (ইংরেজি) *</label><input type="text" name="name" class="form-control" required value="{{ old('name') }}" placeholder="2025"></div>
+    <div class="form-group col-md-3"><label>নাম (বাংলা)</label><input type="text" name="name_bn" class="form-control" value="{{ old('name_bn') }}" placeholder="২০২৫"></div>
+    <div class="form-group col-md-3"><label>শুরুর তারিখ *</label><input type="date" name="start_date" class="form-control" required value="{{ old('start_date') }}"></div>
+    <div class="form-group col-md-3"><label>শেষ তারিখ *</label><input type="date" name="end_date" class="form-control" required value="{{ old('end_date') }}"></div>
   </div>
   <div class="form-group form-check">
     <input type="checkbox" name="is_current" id="is_current" class="form-check-input" value="1" {{ old('is_current')?'checked':'' }}>

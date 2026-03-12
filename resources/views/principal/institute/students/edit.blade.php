@@ -199,22 +199,81 @@
         <h5 class="mb-2"><i class="fas fa-map-marker-alt mr-2"></i>ঠিকানা</h5>
         <div class="row g-2">
           <div class="col-12"><strong>Present Address</strong></div>
-          <div class="col-md-6"><input id="present_village" name="present_village" class="form-control" placeholder="গ্রাম/এলাকা" value="{{ old('present_village',$student->present_village) }}"></div>
-          <div class="col-md-6"><input id="present_para_moholla" name="present_para_moholla" class="form-control" placeholder="পাড়া/মহল্লা" value="{{ old('present_para_moholla',$student->present_para_moholla) }}"></div>
-          <div class="col-md-4 mt-2"><input id="present_post_office" name="present_post_office" class="form-control" placeholder="পোস্ট অফিস" value="{{ old('present_post_office',$student->present_post_office) }}"></div>
-          <div class="col-md-4 mt-2"><input id="present_upazilla" name="present_upazilla" class="form-control" placeholder="উপজেলা" value="{{ old('present_upazilla',$student->present_upazilla) }}"></div>
-          <div class="col-md-4 mt-2"><input id="present_district" name="present_district" class="form-control" placeholder="জেলা" value="{{ old('present_district',$student->present_district) }}"></div>
+          <div class="col-md-6">
+            <label>গ্রাম/এলাকা</label>
+            <div class="input-group">
+              <input id="present_village" name="present_village" class="form-control" placeholder="বাংলায়" value="{{ old('present_village',$student->present_village) }}">
+              <input id="present_village_en" name="present_village_en" class="form-control" placeholder="English" value="{{ old('present_village_en',$student->present_village_en) }}">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label>পাড়া/মহল্লা</label>
+            <div class="input-group">
+              <input id="present_para_moholla" name="present_para_moholla" class="form-control" placeholder="বাংলায়" value="{{ old('present_para_moholla',$student->present_para_moholla) }}">
+            </div>
+          </div>
+          <div class="col-md-4 mt-2">
+            <label>পোস্ট অফিস</label>
+            <div class="input-group">
+              <input id="present_post_office" name="present_post_office" class="form-control" placeholder="বাংলায়" value="{{ old('present_post_office',$student->present_post_office) }}">
+              <input id="present_post_office_en" name="present_post_office_en" class="form-control" placeholder="English" value="{{ old('present_post_office_en',$student->present_post_office_en) }}">
+            </div>
+          </div>
+          <div class="col-md-4 mt-2">
+            <label>উপজেলা</label>
+            <div class="input-group">
+              <input id="present_upazilla" name="present_upazilla" class="form-control" placeholder="বাংলায়" value="{{ old('present_upazilla',$student->present_upazilla) }}">
+              <input id="present_upazilla_en" name="present_upazilla_en" class="form-control" placeholder="English" value="{{ old('present_upazilla_en',$student->present_upazilla_en) }}">
+            </div>
+          </div>
+          <div class="col-md-4 mt-2">
+            <label>জেলা</label>
+            <div class="input-group">
+              <input id="present_district" name="present_district" class="form-control" placeholder="বাংলায়" value="{{ old('present_district',$student->present_district) }}">
+              <input id="present_district_en" name="present_district_en" class="form-control" placeholder="English" value="{{ old('present_district_en',$student->present_district_en) }}">
+            </div>
+          </div>
+          
           <div class="col-12 mt-3"><strong>Permanent Address</strong></div>
           <div class="col-12 mb-2 form-check">
             <input type="checkbox" id="same_as_present" class="form-check-input" />
             <label class="form-check-label" for="same_as_present">Present ঠিকানাটি Permanent-এর সাথে কপি করুন</label>
           </div>
-          <div class="col-md-6"><input id="permanent_village" name="permanent_village" class="form-control" placeholder="গ্রাম/এলাকা" value="{{ old('permanent_village',$student->permanent_village) }}"></div>
-          <div class="col-md-6"><input id="permanent_para_moholla" name="permanent_para_moholla" class="form-control" placeholder="পাড়া/মহল্লা" value="{{ old('permanent_para_moholla',$student->permanent_para_moholla) }}"></div>
-          <div class="col-md-4 mt-2"><input id="permanent_post_office" name="permanent_post_office" class="form-control" placeholder="পোস্ট অফিস" value="{{ old('permanent_post_office',$student->permanent_post_office) }}"></div>
-          <div class="col-md-4 mt-2"><input id="permanent_upazilla" name="permanent_upazilla" class="form-control" placeholder="উপজেলা" value="{{ old('permanent_upazilla',$student->permanent_upazilla) }}"></div>
-          <div class="col-md-4 mt-2"><input id="permanent_district" name="permanent_district" class="form-control" placeholder="জেলা" value="{{ old('permanent_district',$student->permanent_district) }}"></div>
           
+          <div class="col-md-6">
+            <label>গ্রাম/এলাকা</label>
+            <div class="input-group">
+              <input id="permanent_village" name="permanent_village" class="form-control" placeholder="বাংলায়" value="{{ old('permanent_village',$student->permanent_village) }}">
+              <input id="permanent_village_en" name="permanent_village_en" class="form-control" placeholder="English" value="{{ old('permanent_village_en',$student->permanent_village_en) }}">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label>পাড়া/মহল্লা</label>
+            <div class="input-group">
+              <input id="permanent_para_moholla" name="permanent_para_moholla" class="form-control" placeholder="বাংলায়" value="{{ old('permanent_para_moholla',$student->permanent_para_moholla) }}">
+            </div>
+          </div>
+          <div class="col-md-4 mt-2">
+            <label>পোস্ট অফিস</label>
+            <div class="input-group">
+              <input id="permanent_post_office" name="permanent_post_office" class="form-control" placeholder="বাংলায়" value="{{ old('permanent_post_office',$student->permanent_post_office) }}">
+              <input id="permanent_post_office_en" name="permanent_post_office_en" class="form-control" placeholder="English" value="{{ old('permanent_post_office_en',$student->permanent_post_office_en) }}">
+            </div>
+          </div>
+          <div class="col-md-4 mt-2">
+            <label>উপজেলা</label>
+            <div class="input-group">
+              <input id="permanent_upazilla" name="permanent_upazilla" class="form-control" placeholder="বাংলায়" value="{{ old('permanent_upazilla',$student->permanent_upazilla) }}">
+              <input id="permanent_upazilla_en" name="permanent_upazilla_en" class="form-control" placeholder="English" value="{{ old('permanent_upazilla_en',$student->permanent_upazilla_en) }}">
+            </div>
+          </div>
+          <div class="col-md-4 mt-2">
+            <label>জেলা</label>
+            <div class="input-group">
+              <input id="permanent_district" name="permanent_district" class="form-control" placeholder="বাংলায়" value="{{ old('permanent_district',$student->permanent_district) }}">
+              <input id="permanent_district_en" name="permanent_district_en" class="form-control" placeholder="English" value="{{ old('permanent_district_en',$student->permanent_district_en) }}">
+            </div>
+          </div>
         </div>
       </div>
       <div class="mb-4">
@@ -272,7 +331,7 @@ async function previewImage(event){const input=event.target;const file=input.fil
 
 function copyPresentAddress(){
   const checked = document.getElementById('same_as_present')?.checked;
-  const fields = ['district','upazilla','post_office','village','para_moholla'];
+  const fields = ['district','district_en','upazilla','upazilla_en','post_office','post_office_en','village','village_en','para_moholla'];
   fields.forEach(function(f){
     const src = document.getElementById('present_' + f);
     const dst = document.getElementById('permanent_' + f);
@@ -306,7 +365,7 @@ function applyGuardianBehavior() {
 document.addEventListener('DOMContentLoaded', function() {
   // Address copy listeners
   ['present','permanent'].forEach(function(prefix){
-    ['district','upazilla','post_office','village','para_moholla'].forEach(function(f){
+    ['district','district_en','upazilla','upazilla_en','post_office','post_office_en','village','village_en','para_moholla'].forEach(function(f){
       const el = document.getElementById(prefix + '_' + f);
       if (el) {
         el.addEventListener('input', function(){ 
