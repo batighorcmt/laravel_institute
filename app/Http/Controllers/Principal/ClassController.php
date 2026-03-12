@@ -47,6 +47,7 @@ class ClassController extends Controller
 
         $data = $request->validate([
             'name' => ['required','string','max:100'],
+            'bangla_name' => ['required','string','max:100'],
             'numeric_value' => ['required','integer','min:1','max:20'],
             'capacity' => ['required','integer','min:1','max:200'],
             'status' => ['required','in:active,inactive'],
@@ -86,6 +87,7 @@ class ClassController extends Controller
 
         $data = $request->validate([
             'name' => ['required','string','max:100'],
+            'bangla_name' => ['required','string','max:100'],
             'numeric_value' => ['required','integer','min:1','max:20'],
             'capacity' => ['required','integer','min:1','max:200'],
             'status' => ['required','in:active,inactive'],
