@@ -9,6 +9,11 @@ use App\Models\SchoolClass;
 use App\Models\Section;
 use App\Models\Group;
 use App\Models\AcademicYear;
+use App\Models\User;
+use App\Models\Role;
+use App\Models\UserSchoolRole;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Bus\Queueable;
@@ -79,16 +84,20 @@ class ProcessStudentBulkImport implements ShouldQueue
 
         // Preload class/section/group lists for fuzzy matching
         $classes = SchoolClass::where('school_id', $this->schoolId)->get()->mapWithKeys(fn($c)=>[$c->id=>$c->name])->toArray();
-        
+
         // Load sections grouped by class_id: [class_id => [section_id => section_name]]
         $sectionsByClass = Section::where('school_id', $this->schoolId)
             ->get()
             ->groupBy('class_id')
             ->map(fn($sections) => $sections->mapWithKeys(fn($s) => [$s->id => $s->name])->toArray())
             ->toArray();
-        
-        // Load groups: groups are shared across all classes (no class_id in groups table)
-        $groups = Group::where('school_id', $this->schoolId)->get()->mapWithKeys(fn($g)=>[$g->id=>$g->name])->toArray();
+
+        // Load groups grouped by class_id so matching happens within the same class
+        $groupsByClass = Group::where('school_id', $this->schoolId)
+            ->get()
+            ->groupBy('class_id')
+            ->map(fn($gs) => $gs->mapWithKeys(fn($g) => [$g->id => $g->name])->toArray())
+            ->toArray();
 
         $rowNo = 1;
         foreach ($rows as $cols) {
@@ -120,11 +129,11 @@ class ProcessStudentBulkImport implements ShouldQueue
 
             // Resolve class for student_id generation
             $enClass = null;
-            if (!empty($assoc['enroll_class_id']) && is_numeric($assoc['enroll_class_id'])) { 
-                $enClass = intval($assoc['enroll_class_id']); 
+            if (!empty($assoc['enroll_class_id']) && is_numeric($assoc['enroll_class_id'])) {
+                $enClass = intval($assoc['enroll_class_id']);
             }
-            if (empty($enClass) && !empty($assoc['enroll_class_name'])) { 
-                $enClass = $this->findBestMatch($classes, $assoc['enroll_class_name']); 
+            if (empty($enClass) && !empty($assoc['enroll_class_name'])) {
+                $enClass = $this->findBestMatch($classes, $assoc['enroll_class_name']);
             }
             $classModel = $enClass ? SchoolClass::find($enClass) : null;
             $classNumeric = $classModel ? $classModel->numeric_value : 1;
@@ -176,24 +185,60 @@ class ProcessStudentBulkImport implements ShouldQueue
                 continue;
             }
 
+            // Ensure a user exists for this student (username = student_id, default password 123456)
+            try {
+                if (!empty($student->student_id)) {
+                    DB::transaction(function() use ($student) {
+                        $user = User::where('username', $student->student_id)->first();
+                        if (!$user) {
+                            $user = User::create([
+                                'name' => $student->student_name_en ?: $student->student_name_bn ?: 'Student',
+                                'username' => $student->student_id,
+                                'email' => $student->student_id . '@institute.local',
+                                'password' => Hash::make('123456'),
+                            ]);
+                        }
+                        // link student->user
+                        $student->update(['user_id' => $user->id]);
+                        // assign parent role for this school
+                        $parentRole = Role::where('name', Role::PARENT)->first();
+                        if ($parentRole) {
+                            UserSchoolRole::firstOrCreate([
+                                'user_id' => $user->id,
+                                'school_id' => $this->schoolId,
+                                'role_id' => $parentRole->id,
+                            ], [
+                                'status' => 'active',
+                            ]);
+                        }
+                    });
+                }
+            } catch (\Throwable $e) {
+                // non-fatal: record but continue
+                $failures[] = array_merge($assoc, ['__error' => 'ensure user failed: '.$e->getMessage()]);
+                Cache::put($reportKey, ['success'=> $success, 'errors'=>$failures], 3600);
+            }
+
             // Enrollment mapping: fuzzy match names if provided
             $enYear = $assoc['enroll_academic_year'] ?? null;
             $enClass = null; $enSection = null; $enGroup = null; $enRoll = null;
             if (!empty($assoc['enroll_class_id']) && is_numeric($assoc['enroll_class_id'])) { $enClass = intval($assoc['enroll_class_id']); }
             if (empty($enClass) && !empty($assoc['enroll_class_name'])) { $enClass = $this->findBestMatch($classes, $assoc['enroll_class_name']); }
-            
+
             // Get sections for this specific class (sections are class-specific)
             $sectionsForClass = $enClass && isset($sectionsByClass[$enClass]) ? $sectionsByClass[$enClass] : [];
-            
+            // Get groups for this specific class (groups are class-specific)
+            $groupsForClass = $enClass && isset($groupsByClass[$enClass]) ? $groupsByClass[$enClass] : [];
+
             if (!empty($assoc['enroll_section_id']) && is_numeric($assoc['enroll_section_id'])) { $enSection = intval($assoc['enroll_section_id']); }
             if (empty($enSection) && !empty($assoc['enroll_section_name'])) { $enSection = $this->findBestMatch($sectionsForClass, $assoc['enroll_section_name']); }
             if (!empty($assoc['enroll_group_id']) && is_numeric($assoc['enroll_group_id'])) { $enGroup = intval($assoc['enroll_group_id']); }
-            if (empty($enGroup) && !empty($assoc['enroll_group_name'])) { $enGroup = $this->findBestMatch($groups, $assoc['enroll_group_name']); }
+            if (empty($enGroup) && !empty($assoc['enroll_group_name'])) { $enGroup = $this->findBestMatch($groupsForClass, $assoc['enroll_group_name']); }
             if (!empty($assoc['enroll_roll_no']) && is_numeric($assoc['enroll_roll_no'])) { $enRoll = intval($assoc['enroll_roll_no']); }
 
             // Validate existence of section/group IDs for this class, else null them (foreign key safety)
             if ($enSection && !array_key_exists($enSection, $sectionsForClass)) { $enSection = null; }
-            if ($enGroup && !array_key_exists($enGroup, $groups)) { $enGroup = null; }
+            if ($enGroup && !array_key_exists($enGroup, $groupsForClass)) { $enGroup = null; }
 
             // If mandatory enrollment fields missing or class name not resolved -> log failure
             if ($enYear && !$enClass) {
