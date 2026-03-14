@@ -715,9 +715,11 @@ class StudentController extends Controller
                 'student_name_en' => ['required','string','max:150'],
                 'enroll_academic_year' => ['required','numeric'],
                 'enroll_roll_no' => ['required','numeric'],
-                // Only class/section names required (not IDs)
-                'enroll_class_name' => ['required','string'],
-                'enroll_section_name' => ['required','string'],
+                // allow either class/section id or name
+                'enroll_class_name' => ['required_without:enroll_class_id','nullable','string'],
+                'enroll_class_id' => ['required_without:enroll_class_name','nullable'],
+                'enroll_section_name' => ['required_without:enroll_section_id','nullable','string'],
+                'enroll_section_id' => ['required_without:enroll_section_name','nullable'],
             ]);
 
             if ($validator->fails()) {
@@ -725,15 +727,30 @@ class StudentController extends Controller
                 continue;
             }
 
-            // Optional date parsing (ignore if invalid or empty)
-            $dob = null; if (!empty($assoc['date_of_birth'])) { try { $dob = Carbon::parse($assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { try { $dob = Carbon::createFromFormat('d/m/Y', $assoc['date_of_birth'])->toDateString(); } catch (\Throwable $e) { $dob = null; } } }
-            $admission_date = null; if (!empty($assoc['admission_date'])) { try { $admission_date = Carbon::parse($assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { try { $admission_date = Carbon::createFromFormat('d/m/Y', $assoc['admission_date'])->toDateString(); } catch (\Throwable $e) { $admission_date = null; } } }
+            // Flexible date parsing (supports multiple common formats)
+            $parseDate = function($val) {
+                if (empty($val)) return null;
+                $val = trim((string)$val);
+                $formats = ['Y-m-d','Y/m/d','d/m/Y','d-m-Y','d.m.Y','m/d/Y'];
+                foreach ($formats as $f) {
+                    try { return Carbon::createFromFormat($f, $val)->toDateString(); } catch (\Throwable $e) { }
+                }
+                try { return Carbon::parse($val)->toDateString(); } catch (\Throwable $e) { return null; }
+            };
+            $dob = $parseDate($assoc['date_of_birth'] ?? null);
+            $admission_date = $parseDate($assoc['admission_date'] ?? null);
 
-            // Get class first to generate proper student_id
-            $cname = trim($assoc['enroll_class_name']);
-            $foundClass = SchoolClass::where('school_id',$school->id)->where('name','like',"%{$cname}%")->first();
+            // Get class first to generate proper student_id. Support id or name.
+            $foundClass = null;
+            if (!empty($assoc['enroll_class_id']) && is_numeric($assoc['enroll_class_id'])) {
+                $foundClass = SchoolClass::where('school_id',$school->id)->where('id',intval($assoc['enroll_class_id']))->first();
+            }
+            if (!$foundClass && !empty($assoc['enroll_class_name'])) {
+                $cname = trim($assoc['enroll_class_name']);
+                $foundClass = SchoolClass::where('school_id',$school->id)->where('name','like',"%{$cname}%")->first();
+            }
             if (!$foundClass) {
-                $errors[] = "Row {$rowNo}: Class not found - {$cname}";
+                $errors[] = "Row {$rowNo}: Class not found - " . ($assoc['enroll_class_name'] ?? $assoc['enroll_class_id'] ?? '');
                 continue;
             }
             
@@ -786,13 +803,19 @@ class StudentController extends Controller
             $enClass = $foundClass->id; // Already found above
             $enSection = null; $enGroup = null; $enRoll = intval($assoc['enroll_roll_no']);
             
-            // Get section by name (required)
-            $sname = trim($assoc['enroll_section_name']);
-            $foundSection = Section::where('school_id',$school->id)->where('name','like',"%{$sname}%")->first();
-            if ($foundSection) { 
-                $enSection = $foundSection->id; 
+            // Get section by id or name (required)
+            $foundSection = null;
+            if (!empty($assoc['enroll_section_id']) && is_numeric($assoc['enroll_section_id'])) {
+                $foundSection = Section::where('school_id',$school->id)->where('id',intval($assoc['enroll_section_id']))->first();
+            }
+            if (!$foundSection && !empty($assoc['enroll_section_name'])) {
+                $sname = trim($assoc['enroll_section_name']);
+                $foundSection = Section::where('school_id',$school->id)->where('name','like',"%{$sname}%")->first();
+            }
+            if ($foundSection) {
+                $enSection = $foundSection->id;
             } else {
-                $errors[] = "Row {$rowNo}: Section not found - {$sname}";
+                $errors[] = "Row {$rowNo}: Section not found - " . ($assoc['enroll_section_name'] ?? $assoc['enroll_section_id'] ?? '');
                 continue;
             }
             
@@ -891,8 +914,8 @@ class StudentController extends Controller
             return Excel::download(new StudentBulkTemplateExport(), 'students-template.xlsx');
         }
         $rows = [
-            ['student_name_bn','student_name_en','date_of_birth','gender','father_name','mother_name','guardian_phone','address','admission_date','status','enroll_academic_year','enroll_class_id','enroll_section_id','enroll_group_id','enroll_roll_no'],
-            ['রশিদ','Rashid','2010-05-13','male','আব্বা','আম্মা','01700000000','Dhaka','2023-01-15','active','2023','1','1','','10']
+            ['student_name_bn','student_name_en','date_of_birth','gender','father_name','mother_name','guardian_phone','address','admission_date','status','enroll_academic_year','enroll_class_id','enroll_class_name','enroll_section_id','enroll_section_name','enroll_group_id','enroll_roll_no'],
+            ['রশিদ','Rashid','2010-05-13','male','আব্বা','আম্মা','01700000000','Dhaka','2023-01-15','active','2023','1','One','1','A','','10']
         ];
         $fh = fopen('php://temp','w');
         foreach($rows as $r){ fputcsv($fh,$r); }

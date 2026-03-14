@@ -14,8 +14,8 @@ class StudentDirectoryController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $schoolId = $this->resolveSchoolId($request, $user);
-        if (! $schoolId || ! ($user->isTeacher($schoolId) || $user->isPrincipal($schoolId) || $user->isSuperAdmin())) {
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        if (! $schoolId || ! $user->isTeacher($schoolId)) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
@@ -26,14 +26,8 @@ class StudentDirectoryController extends Controller
         }
 
         $enroll = StudentEnrollment::query()
-            ->where('student_enrollments.school_id', $schoolId);
-
-        // Status filter (default to 'active' on both student and enrollment tables)
-        $status = $request->get('status', 'active');
-        $enroll->where('student_enrollments.status', $status);
-        $enroll->whereHas('student', function($q) use ($status) {
-            $q->where('status', $status);
-        });
+            ->where('school_id', $schoolId)
+            ->where('status', 'active');
 
         // Optional ordering by student columns (e.g. guardian_phone)
         $orderBy = $request->query('order_by');
@@ -80,12 +74,6 @@ class StudentDirectoryController extends Controller
             });
         }
 
-        if ($request->filled('religion')) {
-            $enroll->whereHas('student', function($q) use ($request) {
-                $q->where('religion', $request->get('religion'));
-            });
-        }
-
         $enroll->with(['student','class:id,name','section:id,name','group:id,name']);
         $enroll->orderBy('class_id')->orderBy('section_id')->orderBy('roll_no');
         $perPage = (int)($request->get('per_page', 40));
@@ -111,8 +99,8 @@ class StudentDirectoryController extends Controller
     public function show(Request $request, Student $student)
     {
         $user = $request->user();
-        $schoolId = $this->resolveSchoolId($request, $user);
-        if (! $schoolId || ! ($user->isTeacher($schoolId) || $user->isPrincipal($schoolId) || $user->isSuperAdmin())) {
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        if (! $schoolId || ! $user->isTeacher($schoolId)) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
@@ -145,37 +133,25 @@ class StudentDirectoryController extends Controller
         }
 
         // Also eager-load primary student relations used by the resource
-        $student->loadMissing([
-            'class', 
-            'optionalSubject',
-            'enrollments.class', 
-            'enrollments.section', 
-            'enrollments.group', 
-            'enrollments.academicYear',
-            'teams' => function($q) {
-                $q->withPivot('joined_at', 'status');
-            }
-        ]);
-
-        // Calculate attendance stats for the current academic year or school
-        $attendanceStats = [
-            'present' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'present')->count(),
-            'absent' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'absent')->count(),
-            'late' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'late',)->count(),
-            'leave' => \App\Models\Attendance::where('student_id', $student->id)->where('status', 'leave')->count(),
-        ];
-        $student->setAttribute('attendance_stats', $attendanceStats);
-        $student->setAttribute('working_days', array_sum($attendanceStats));
+        $student->loadMissing(['class', 'optionalSubject']);
 
         return (new StudentProfileResource($student));
     }
 
-    public function getClasses(Request $request)
+    public function meta(Request $request)
     {
         $user = $request->user();
-        $schoolId = $this->resolveSchoolId($request, $user);
-        if (!$schoolId) return response()->json([], 403);
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        if (! $schoolId || ! $user->isTeacher($schoolId)) {
+            return response()->json(['message' => 'অননুমোদিত'], 403);
+        }
 
+        $yearId = (int)($request->query('academic_year_id', 0));
+        if (! $yearId) {
+            $yearId = (int)(\App\Models\AcademicYear::forSchool($schoolId)->current()->value('id') ?? 0);
+        }
+
+        // Classes: all active classes ordered by numeric_value then name
         $classes = \App\Models\SchoolClass::forSchool($schoolId)
             ->active()->ordered()
             ->get(['id','name','numeric_value'])
@@ -185,92 +161,45 @@ class StudentDirectoryController extends Controller
                 'numeric_value' => (int)$c->numeric_value,
             ])->values();
 
-        return response()->json($classes);
-    }
-
-    public function getSections(Request $request)
-    {
-        $user = $request->user();
-        $schoolId = $this->resolveSchoolId($request, $user);
-        $classId = $request->get('class_id');
-        if (!$schoolId) return response()->json([], 403);
-
-        $sections = \App\Models\Section::where('school_id', $schoolId)->where('status', 'active');
+        $classId = (int)($request->query('class_id', 0));
+        $sections = collect();
+        $groups = collect();
+        $genders = collect();
 
         if ($classId) {
-            $sections->where('class_id', $classId);
-        }
+            // Sections: active for the class
+            $sections = \App\Models\Section::where([
+                    'school_id' => $schoolId,
+                    'class_id' => $classId,
+                    'status' => 'active',
+                ])
+                ->orderBy('name')
+                ->get(['id','name'])
+                ->map(fn($s)=>['id'=>(int)$s->id,'name'=>$s->name])->values();
 
-        $sections = $sections->orderBy('name')->get(['id', 'name']);
-
-        return response()->json($sections);
-    }
-
-    public function getGroups(Request $request)
-    {
-        $user = $request->user();
-        $schoolId = $this->resolveSchoolId($request, $user);
-        $classId = $request->get('class_id');
-        if (!$schoolId) return response()->json([], 403);
-
-        if ($classId) {
-            $groupIds = \App\Models\StudentEnrollment::where('school_id', $schoolId)
+            // Groups: those that actually exist in current year enrollments for the class
+            $groupIds = \App\Models\StudentEnrollment::query()
+                ->where('school_id', $schoolId)
                 ->where('class_id', $classId)
+                ->when($yearId, fn($q)=>$q->where('academic_year_id', $yearId))
                 ->whereNotNull('group_id')
-                ->where('status', 'active')
-                ->distinct()
-                ->pluck('group_id');
+                ->where('status','active')
+                ->distinct()->pluck('group_id');
 
             $groups = \App\Models\Group::whereIn('id', $groupIds)
                 ->orderBy('name')
-                ->get(['id', 'name']);
-        } else {
-            $groups = \App\Models\Group::forSchool($schoolId)
-                ->orderBy('name')
-                ->get(['id', 'name']);
-        }
+                ->get(['id','name'])
+                ->map(fn($g)=>['id'=>(int)$g->id,'name'=>$g->name])->values();
 
-        return response()->json($groups);
-    }
-
-    public function meta(Request $request)
-    {
-        $user = $request->user();
-        $schoolId = $this->resolveSchoolId($request, $user);
-        if (! $schoolId || ! ($user->isTeacher($schoolId) || $user->isPrincipal($schoolId) || $user->isSuperAdmin())) {
-            return response()->json(['message' => 'অননুমোদিত'], 403);
-        }
-
-        $classes = $this->getClasses($request)->getData();
-        $sections = $this->getSections($request)->getData();
-        $groups = $this->getGroups($request)->getData();
-
-        $genders = collect(['male', 'female', 'other']);
-
-        // Additional filters
-        $academicYears = \App\Models\AcademicYear::forSchool($schoolId)
-            ->orderBy('name', 'desc')
-            ->get(['id', 'name'])
-            ->map(fn($y) => ['id' => (int)$y->id, 'name' => $y->name])->values();
-
-        $religions = \App\Models\Student::forSchool($schoolId)
-            ->whereNotNull('religion')
-            ->distinct()
-            ->orderBy('religion')
-            ->pluck('religion')
-            ->filter()
-            ->values();
-        if ($religions->isEmpty()) {
-            $religions = collect(['Islam', 'Hindu', 'Buddhist', 'Christian', 'Other']);
-        }
-
-        $statuses = \App\Models\StudentEnrollment::forSchool($schoolId)
-            ->distinct()
-            ->pluck('status')
-            ->filter()
-            ->values();
-        if ($statuses->isEmpty()) {
-            $statuses = collect(['active', 'dropped', 'TC', 'inactive']);
+            // Genders present in the selected class (current year)
+            $genders = \App\Models\StudentEnrollment::query()
+                ->where('school_id', $schoolId)
+                ->where('class_id', $classId)
+                ->when($yearId, fn($q)=>$q->where('academic_year_id', $yearId))
+                ->where('status','active')
+                ->whereHas('student', function($q){ $q->whereIn('gender',["male","female","other"]); })
+                ->with(['student:id,gender'])
+                ->get()->pluck('student.gender')->filter()->unique()->values();
         }
 
         return response()->json([
@@ -278,24 +207,6 @@ class StudentDirectoryController extends Controller
             'sections' => $sections,
             'groups' => $groups,
             'genders' => $genders,
-            'academic_years' => $academicYears,
-            'religions' => $religions,
-            'statuses' => $statuses,
         ]);
-    }
-
-    protected function resolveSchoolId(Request $request, $user): ?int
-    {
-        $attr = $request->attributes->get('current_school_id');
-        if ($attr) return (int)$attr;
-        
-        $principalSchoolId = $user->schoolRoles()->whereHas('role', fn($q)=>$q->whereIn('name', ['principal', 'super_admin']))->value('school_id');
-        if ($principalSchoolId) return (int)$principalSchoolId;
-
-        $firstActive = $user->firstTeacherSchoolId();
-        if ($firstActive) return (int)$firstActive;
-        // Fallback to any school where they have a teacher role
-        $any = $user->schoolRoles()->whereHas('role', fn($q)=>$q->where('name','teacher'))->value('school_id');
-        return $any ? (int)$any : null;
     }
 }
