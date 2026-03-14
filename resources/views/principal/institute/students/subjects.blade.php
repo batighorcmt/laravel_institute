@@ -12,7 +12,7 @@
     <div>
       <strong>শিক্ষার্থী:</strong> {{ $enrollment->student->full_name }}
       <span class="mx-2">|</span>
-      <strong>বর্ষ:</strong> {{ $enrollment->academic_year }}
+      <strong>বর্ষ:</strong> {{ $enrollment->academicYear?->name ?? '---' }}
       <span class="mx-2">|</span>
       <strong>শ্রেণি:</strong> {{ $enrollment->class?->name }}
       @if($enrollment->section)<span class="mx-2">|</span><strong>শাখা:</strong> {{ $enrollment->section->name }}@endif
