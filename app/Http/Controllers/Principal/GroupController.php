@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Group;
 use App\Models\School;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 
 class GroupController extends Controller
 {
@@ -43,7 +44,15 @@ class GroupController extends Controller
         $this->authorizePrincipal($school);
         $data = $request->validate([
             'class_id' => ['required','exists:classes,id'],
-            'name' => ['required','string','max:100'],
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('groups')->where(function ($query) use ($school, $request) {
+                    return $query->where('school_id', $school->id)
+                                 ->where('class_id', $request->input('class_id'));
+                })
+            ],
             'bangla_name' => ['required','string','max:150'],
             'status' => ['required','in:active,inactive'],
         ]);
@@ -66,7 +75,15 @@ class GroupController extends Controller
         abort_unless($group->school_id === $school->id, 404);
         $data = $request->validate([
             'class_id' => ['required','exists:classes,id'],
-            'name' => ['required','string','max:100'],
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('groups')->where(function ($query) use ($school, $request) {
+                    return $query->where('school_id', $school->id)
+                                 ->where('class_id', $request->input('class_id'));
+                })->ignore($group->id)
+            ],
             'bangla_name' => ['required','string','max:150'],
             'status' => ['required','in:active,inactive'],
         ]);
