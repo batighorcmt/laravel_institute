@@ -183,6 +183,12 @@
                         <th>শ্রেণি ও শাখা (Class/Sec)</th>
                         <td>{{ $activeEnrollment->class?->name }} ({{ $activeEnrollment->section?->name }})</td>
                     </tr>
+                    @if($activeEnrollment->group)
+                    <tr>
+                        <th>গ্রুপ (Group)</th>
+                        <td>{{ $activeEnrollment->group->name }}</td>
+                    </tr>
+                    @endif
                     <tr>
                         <th>রোল নম্বর (Roll No)</th>
                         <td><strong>{{ $activeEnrollment->roll_no }}</strong></td>
