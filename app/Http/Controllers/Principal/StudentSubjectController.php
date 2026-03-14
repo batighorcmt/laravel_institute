@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\StudentEnrollment;
 use App\Models\StudentSubject;
 use App\Models\ClassSubject;
+use App\Models\Group;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,12 +25,18 @@ class StudentSubjectController extends Controller
         abort_unless($enrollment->school_id === $school->id, 404);
 
         // Fetch mappings for this class; include group-specific and group-null (applies to all groups)
+        // If the enrollment has no group assigned but the class uses groups, also
+        // include mappings for any group defined for the class so students without
+        // a group still see available subjects.
+        $groupIds = Group::where('school_id', $school->id)->where('class_id', $enrollment->class_id)->pluck('id')->toArray();
         $mappings = ClassSubject::forSchool($school->id)
             ->where('class_id', $enrollment->class_id)
-            ->where(function($q) use ($enrollment){
+            ->where(function($q) use ($enrollment, $groupIds){
                 $q->whereNull('group_id'); // subjects for all groups
                 if ($enrollment->group_id) {
                     $q->orWhere('group_id', $enrollment->group_id);
+                } else if (!empty($groupIds)) {
+                    $q->orWhereIn('group_id', $groupIds);
                 }
             })
             ->with('subject')
@@ -70,12 +77,15 @@ class StudentSubjectController extends Controller
         ]);
 
         // Determine compulsory and optional mappings
+        $groupIds = Group::where('school_id', $school->id)->where('class_id', $enrollment->class_id)->pluck('id')->toArray();
         $mappings = ClassSubject::forSchool($school->id)
             ->where('class_id', $enrollment->class_id)
-            ->where(function($q) use ($enrollment){
+            ->where(function($q) use ($enrollment, $groupIds){
                 $q->whereNull('group_id');
                 if ($enrollment->group_id) {
                     $q->orWhere('group_id', $enrollment->group_id);
+                } else if (!empty($groupIds)) {
+                    $q->orWhereIn('group_id', $groupIds);
                 }
             })
             ->with('subject')
