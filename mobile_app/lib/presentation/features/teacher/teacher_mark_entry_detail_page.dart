@@ -35,10 +35,41 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
   String? _printBlankUrl;
   String? _printFilledUrl;
 
+  // All FocusNodes for every student × every active field, in order.
+  // Rebuilt whenever _students or _examSubject changes.
+  List<FocusNode> _allFocusNodes = [];
+
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    for (final fn in _allFocusNodes) {
+      fn.dispose();
+    }
+    super.dispose();
+  }
+
+  /// Builds a flat ordered list of FocusNodes – one per active field per student.
+  /// Must be called after _students / _examSubject are set.
+  void _rebuildFocusNodes() {
+    // Dispose old nodes first
+    for (final fn in _allFocusNodes) {
+      fn.dispose();
+    }
+
+    final hasCreative = ((_examSubject?['creative_full'] ?? 0) as num) > 0;
+    final hasMcq      = ((_examSubject?['mcq_full']      ?? 0) as num) > 0;
+    final hasPractical= ((_examSubject?['practical_full'] ?? 0) as num) > 0;
+    final fieldsPerStudent = (hasCreative ? 1 : 0) + (hasMcq ? 1 : 0) + (hasPractical ? 1 : 0);
+
+    _allFocusNodes = List.generate(
+      _students.length * fieldsPerStudent,
+      (_) => FocusNode(),
+    );
   }
 
   Future<void> _loadData() async {
@@ -51,26 +82,33 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
       );
       if (mounted) {
         setState(() {
-          _students = data['students'] ?? [];
-          _examSubject = data['exam_subject'];
-          _readOnly = data['read_only'] ?? false;
-          _message = data['message'];
-          _decimalPosition = data['decimal_position'] ?? 0;
-          _printBlankUrl = data['print_blank_url'];
-          _printFilledUrl = data['print_filled_url'];
-          _isLoading = false;
+          _students         = data['students'] ?? [];
+          _examSubject      = data['exam_subject'];
+          _readOnly         = data['read_only'] ?? false;
+          _message          = data['message'];
+          _decimalPosition  = data['decimal_position'] ?? 0;
+          _printBlankUrl    = data['print_blank_url'];
+          _printFilledUrl   = data['print_filled_url'];
+          _isLoading        = false;
+          _rebuildFocusNodes();
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        showAppSnack(context, message: 'তথ্য লোড করতে ব্যর্থ হয়েছে');
+        showAppSnack(context, message: 'তথ্য লোড করতে ব্যর্থ হয়েছে');
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasCreative  = ((_examSubject?['creative_full']  ?? 0) as num) > 0;
+    final hasMcq       = ((_examSubject?['mcq_full']       ?? 0) as num) > 0;
+    final hasPractical = ((_examSubject?['practical_full'] ?? 0) as num) > 0;
+    final fieldsPerStudent =
+        (hasCreative ? 1 : 0) + (hasMcq ? 1 : 0) + (hasPractical ? 1 : 0);
+
     return Scaffold(
       appBar: AppBar(title: Text(widget.subjectName)),
       body: _isLoading
@@ -127,13 +165,29 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
                       itemCount: _students.length,
                       itemBuilder: (context, index) {
                         final student = _students[index];
+
+                        // Slice this student's FocusNodes from the flat list
+                        final startIdx = index * fieldsPerStudent;
+                        final studentNodes = _allFocusNodes.length >= startIdx + fieldsPerStudent
+                            ? _allFocusNodes.sublist(startIdx, startIdx + fieldsPerStudent)
+                            : <FocusNode>[];
+
+                        // The *very first* focus node of the NEXT student (null for last student)
+                        final nextStudentFirstFocus =
+                            (index + 1 < _students.length && _allFocusNodes.length > startIdx + fieldsPerStudent)
+                                ? _allFocusNodes[startIdx + fieldsPerStudent]
+                                : null;
+
                         return _StudentMarkRow(
+                          key: ValueKey(student['student_id']),
                           student: student,
                           examId: widget.examId,
                           examSubjectId: widget.examSubjectId,
                           examSubject: _examSubject!,
                           readOnly: _readOnly,
                           decimalPosition: _decimalPosition,
+                          focusNodes: studentNodes,
+                          nextStudentFirstFocus: nextStudentFirstFocus,
                         );
                       },
                     ),
@@ -149,7 +203,7 @@ class _TeacherMarkEntryDetailPageState extends ConsumerState<TeacherMarkEntryDet
     if (url != null) {
       _launchInBrowser(url);
     } else {
-      showAppSnack(context, message: 'লিঙ্ক পাওয়া যায়নি');
+      showAppSnack(context, message: 'লিঙ্ক পাওয়া যায়নি');
     }
   }
 
@@ -170,14 +224,21 @@ class _StudentMarkRow extends StatefulWidget {
   final Map<String, dynamic> examSubject;
   final bool readOnly;
   final int decimalPosition;
+  /// Ordered FocusNodes for this student's active fields (creative → mcq → practical).
+  final List<FocusNode> focusNodes;
+  /// First FocusNode of the NEXT student (null if this is the last student).
+  final FocusNode? nextStudentFirstFocus;
 
   const _StudentMarkRow({
+    super.key,
     required this.student,
     required this.examId,
     required this.examSubjectId,
     required this.examSubject,
     required this.readOnly,
     required this.decimalPosition,
+    required this.focusNodes,
+    required this.nextStudentFirstFocus,
   });
 
   @override
@@ -195,16 +256,106 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
   String? _letterGrade;
   double? _totalMarks;
 
+  // ─── helpers ──────────────────────────────────────────────────────────────
+
+  bool get _hasCreative  => (widget.examSubject['creative_full']  ?? 0) > 0;
+  bool get _hasMcq       => (widget.examSubject['mcq_full']       ?? 0) > 0;
+  bool get _hasPractical => (widget.examSubject['practical_full'] ?? 0) > 0;
+
+  /// Returns the FocusNode at position [i] within this student's nodes (or null).
+  FocusNode? _fn(int i) =>
+      i < widget.focusNodes.length ? widget.focusNodes[i] : null;
+
+  /// Ordered list of (focusNode, nextFocusNode) for the active fields.
+  List<(FocusNode?, FocusNode?)> get _fieldFocusPairs {
+    final nodes = <FocusNode?>[];
+    if (_hasCreative)  nodes.add(_fn(0));
+    if (_hasMcq)       nodes.add(_fn(nodes.length));
+    if (_hasPractical) nodes.add(_fn(nodes.length));
+
+    return List.generate(nodes.length, (i) {
+      final current = nodes[i];
+      // next = next field within this student, OR first field of next student
+      final next = (i + 1 < nodes.length)
+          ? nodes[i + 1]
+          : widget.nextStudentFirstFocus;
+      return (current, next);
+    });
+  }
+
+  // Focus nodes resolved per field
+  FocusNode? get _creativeFocus  => _fn(0);
+  FocusNode? get _mcqFocus {
+    int idx = _hasCreative ? 1 : 0;
+    return _fn(idx);
+  }
+  FocusNode? get _practicalFocus {
+    int idx = (_hasCreative ? 1 : 0) + (_hasMcq ? 1 : 0);
+    return _fn(idx);
+  }
+
+  /// Next focus after creative
+  FocusNode? get _afterCreative =>
+      _hasMcq ? _mcqFocus : (_hasPractical ? _practicalFocus : widget.nextStudentFirstFocus);
+
+  /// Next focus after mcq
+  FocusNode? get _afterMcq =>
+      _hasPractical ? _practicalFocus : widget.nextStudentFirstFocus;
+
+  /// Next focus after practical (last field → next student)
+  FocusNode? get _afterPractical => widget.nextStudentFirstFocus;
+
+  // ─── digit-count auto-advance ─────────────────────────────────────────────
+
+  int _digitCount(dynamic value) {
+    final n = (value ?? 0).toInt();
+    if (n <= 0) return 1;
+    return n.toString().length;
+  }
+
+  void _autoAdvanceIfNeeded(String value, dynamic maxMark, FocusNode? next) {
+    if (next == null) return;
+    final max = (maxMark ?? 0) as num;
+    if (max <= 0) return;
+
+    final current = double.tryParse(value);
+    if (current == null || value.trim().isEmpty) return;
+
+    final maxDigits = _digitCount(max);
+    final digits = value.replaceAll('.', '').replaceAll('-', '').trim();
+
+    // ── Rule 1: digit count has reached/exceeded max's digit count → advance ──
+    if (digits.length >= maxDigits) {
+      next.requestFocus();
+      return;
+    }
+
+    // ── Rule 2: even the smallest possible completion exceeds max → advance ──
+    // The smallest value you can form by appending (remaining) more digits is
+    // current × 10^remaining  (e.g. "3" with 1 remaining → 30).
+    // If that minimum is already > max, no valid completion exists → advance now.
+    final remaining = maxDigits - digits.length;
+    double minCompletion = current;
+    for (int i = 0; i < remaining; i++) {
+      minCompletion *= 10;
+    }
+    if (minCompletion > max) {
+      next.requestFocus();
+    }
+  }
+
+  // ─── lifecycle ────────────────────────────────────────────────────────────
+
   @override
   void initState() {
     super.initState();
     final mark = widget.student['mark'];
-    _creativeController = TextEditingController(text: mark?['creative']?.toString() ?? '');
-    _mcqController = TextEditingController(text: mark?['mcq']?.toString() ?? '');
+    _creativeController  = TextEditingController(text: mark?['creative']?.toString()  ?? '');
+    _mcqController       = TextEditingController(text: mark?['mcq']?.toString()       ?? '');
     _practicalController = TextEditingController(text: mark?['practical']?.toString() ?? '');
-    _isAbsent = mark?['is_absent'] ?? false;
+    _isAbsent    = mark?['is_absent'] ?? false;
     _letterGrade = mark?['letter_grade'];
-    _totalMarks = mark?['total'] != null ? double.tryParse(mark!['total'].toString()) : null;
+    _totalMarks  = mark?['total'] != null ? double.tryParse(mark!['total'].toString()) : null;
   }
 
   @override
@@ -213,30 +364,22 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
     _mcqController.dispose();
     _practicalController.dispose();
     _debounce?.cancel();
+    // FocusNodes are owned by the parent – do NOT dispose them here.
     super.dispose();
   }
 
+  // ─── save logic ───────────────────────────────────────────────────────────
+
   void _onChanged() {
     if (widget.readOnly) return;
-    
-    // Quick validation
-    final cr = double.tryParse(_creativeController.text) ?? 0;
-    final mq = double.tryParse(_mcqController.text) ?? 0;
-    final pr = double.tryParse(_practicalController.text) ?? 0;
-
-    if (cr > (widget.examSubject['creative_full'] ?? 0) ||
-        mq > (widget.examSubject['mcq_full'] ?? 0) ||
-        pr > (widget.examSubject['practical_full'] ?? 0)) {
-       // Maybe show a warning or just cap it. For now let's just let it be, but highlight error.
-    }
 
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 800), () {
-      final cr = double.tryParse(_creativeController.text) ?? 0;
-      final mq = double.tryParse(_mcqController.text) ?? 0;
+      final cr = double.tryParse(_creativeController.text)  ?? 0;
+      final mq = double.tryParse(_mcqController.text)       ?? 0;
       final pr = double.tryParse(_practicalController.text) ?? 0;
 
-      if (cr > (widget.examSubject['creative_full'] ?? 0)) {
+      if (cr > (widget.examSubject['creative_full']  ?? 0)) {
         _showErrorDialog('সৃজনশীল', widget.examSubject['creative_full'], _creativeController);
         return;
       }
@@ -277,49 +420,47 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
   Future<void> _save() async {
     if (widget.readOnly) return;
 
-    // Validation
-    final cr = double.tryParse(_creativeController.text) ?? 0;
-    final mq = double.tryParse(_mcqController.text) ?? 0;
+    final cr = double.tryParse(_creativeController.text)  ?? 0;
+    final mq = double.tryParse(_mcqController.text)       ?? 0;
     final pr = double.tryParse(_practicalController.text) ?? 0;
 
-    if (cr > (widget.examSubject['creative_full'] ?? 0) ||
-        mq > (widget.examSubject['mcq_full'] ?? 0) ||
+    if (cr > (widget.examSubject['creative_full']  ?? 0) ||
+        mq > (widget.examSubject['mcq_full']       ?? 0) ||
         pr > (widget.examSubject['practical_full'] ?? 0)) {
-       // Do not save invalid marks
-       return;
+      return;
     }
 
     setState(() => _isSaving = true);
     try {
-      final repo = TeacherExamRepository();
+      final repo   = TeacherExamRepository();
       final result = await repo.saveMarkResult(
-        examId: widget.examId,
+        examId:       widget.examId,
         examSubjectId: widget.examSubjectId,
-        studentId: widget.student['student_id'],
-        creative: double.tryParse(_creativeController.text),
-        mcq: double.tryParse(_mcqController.text),
-        practical: double.tryParse(_practicalController.text),
-        isAbsent: _isAbsent,
+        studentId:    widget.student['student_id'],
+        creative:     double.tryParse(_creativeController.text),
+        mcq:          double.tryParse(_mcqController.text),
+        practical:    double.tryParse(_practicalController.text),
+        isAbsent:     _isAbsent,
       );
       if (mounted && result != null) {
         setState(() {
           _letterGrade = result['letter_grade'];
-          _totalMarks = result['total_marks'] != null ? double.tryParse(result['total_marks'].toString()) : null;
+          _totalMarks  = result['total_marks'] != null
+              ? double.tryParse(result['total_marks'].toString())
+              : null;
         });
       }
-    } catch (e) {
+    } catch (_) {
       // quiet fail
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
+  // ─── build ────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    final hasCreative = (widget.examSubject['creative_full'] ?? 0) > 0;
-    final hasMcq = (widget.examSubject['mcq_full'] ?? 0) > 0;
-    final hasPractical = (widget.examSubject['practical_full'] ?? 0) > 0;
-
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -327,6 +468,7 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── student header ──
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -441,26 +583,45 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
               ],
             ),
             const Divider(),
+            // ── mark fields ──
             if (!_isAbsent)
               Row(
                 children: [
-                  if (hasCreative)
+                  if (_hasCreative)
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(right: 8.0),
-                        child: _buildField('Creative', _creativeController, widget.examSubject['creative_full']),
+                        child: _buildField(
+                          'সৃজনশীল',
+                          _creativeController,
+                          widget.examSubject['creative_full'],
+                          _creativeFocus,
+                          _afterCreative,
+                        ),
                       ),
                     ),
-                  if (hasMcq)
+                  if (_hasMcq)
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(right: 8.0),
-                        child: _buildField('MCQ', _mcqController, widget.examSubject['mcq_full']),
+                        child: _buildField(
+                          'MCQ',
+                          _mcqController,
+                          widget.examSubject['mcq_full'],
+                          _mcqFocus,
+                          _afterMcq,
+                        ),
                       ),
                     ),
-                  if (hasPractical)
+                  if (_hasPractical)
                     Expanded(
-                      child: _buildField('Practical', _practicalController, widget.examSubject['practical_full']),
+                      child: _buildField(
+                        'ব্যবহারিক',
+                        _practicalController,
+                        widget.examSubject['practical_full'],
+                        _practicalFocus,
+                        _afterPractical,
+                      ),
                     ),
                 ],
               ),
@@ -470,18 +631,27 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
     );
   }
 
-  Widget _buildField(String label, TextEditingController controller, dynamic fullMark) {
-    final val = double.tryParse(controller.text) ?? 0;
+  Widget _buildField(
+    String label,
+    TextEditingController controller,
+    dynamic fullMark,
+    FocusNode? focusNode,
+    FocusNode? nextFocusNode,
+  ) {
+    final val     = double.tryParse(controller.text) ?? 0;
     final isError = val > (fullMark ?? 0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$label (Max: $fullMark)', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        Text('$label (সর্বোচ্চ: $fullMark)', style: const TextStyle(fontSize: 10, color: Colors.grey)),
         const SizedBox(height: 4),
         TextField(
           controller: controller,
+          focusNode: focusNode,
           enabled: !widget.readOnly,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          textInputAction: nextFocusNode != null ? TextInputAction.next : TextInputAction.done,
           decoration: InputDecoration(
             isDense: true,
             hintText: '0',
@@ -500,8 +670,14 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
             contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
           ),
           onChanged: (v) {
-            setState(() {}); // trigger rebuild for isError cue
+            setState(() {}); // rebuild for error-border
             _onChanged();
+            // Auto-advance when digit count matches max-mark's digit length
+            _autoAdvanceIfNeeded(v, fullMark, nextFocusNode);
+          },
+          onSubmitted: (_) {
+            // Keyboard "Next" / "Done" button also advances
+            nextFocusNode?.requestFocus();
           },
         ),
       ],

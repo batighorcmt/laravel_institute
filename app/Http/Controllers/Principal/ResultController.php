@@ -1424,15 +1424,7 @@ class ResultController extends Controller
 
         $results = $resultQuery->get();
 
-        // Fetch students enrolled - for attendance, we need all enrolled students in this class
-        // regardless of academic year, as students may have results but be enrolled in different AY
-        $enrollmentQueryForAttendance = StudentEnrollment::where('school_id', $school->id)
-            ->where('class_id', $classId)
-            ->where('status','active');
-
-        $enrolledStudentIdsForAttendance = $enrollmentQueryForAttendance->pluck('student_id')->unique()->values()->all();
-
-        // For other operations, we still need the AY-specific enrollments
+        // Fetch students enrolled in THIS academic year only
         $enrollmentQuery = StudentEnrollment::where('school_id', $school->id)
             ->where('class_id', $classId)
             ->where('academic_year_id', $exam->academic_year_id)
@@ -1440,10 +1432,9 @@ class ResultController extends Controller
 
         $enrolledStudentIds = $enrollmentQuery->pluck('student_id')->unique()->values()->all();
 
-        // Combine results students with enrolled students for comprehensive list
+        // Combine results students with enrolled students (both filtered to correct AY)
         $allStudentIds = collect($results->pluck('student_id'))
             ->merge($enrolledStudentIds)
-            ->merge($enrolledStudentIdsForAttendance)
             ->unique()
             ->values()
             ->all();
@@ -1483,9 +1474,8 @@ class ResultController extends Controller
         $activeStudentIds = Student::whereIn('id', $allStudentIds)->where('status','active')->pluck('id')->unique()->values()->all();
 
         $allEnrollmentIds = StudentEnrollment::whereIn('student_id', $activeStudentIds)
-            // Remove academic_year_id filter to include students from any AY (e.g. transfer/mismatch)
-            // ->where('academic_year_id', $exam->academic_year_id)
-            ->where('class_id', $classId) // Ensure class matches
+            ->where('academic_year_id', $exam->academic_year_id) // Must match the exam's academic year
+            ->where('class_id', $classId)
             ->pluck('id');
 
         $assignedSubjectsMap = StudentSubject::with('enrollment')->whereIn('student_enrollment_id', $allEnrollmentIds)
