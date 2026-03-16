@@ -1,4 +1,5 @@
 @extends('layouts.print')
+@section('suppress_header', true)
 
 @php
     $lang = request('lang', 'bn');
@@ -10,6 +11,28 @@
         $en = ['0','1','2','3','4','5','6','7','8','9'];
         $bn = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
         return str_replace($en, $bn, $number);
+    }
+
+    $logoUrl = asset('images/default-logo.png');
+    $logoPath = public_path('images/default-logo.png');
+    if(isset($school) && $school && $school->logo){
+        $candidates = [
+            'uploads/schools/'.$school->logo,
+            'storage/schools/'.$school->logo,
+            'storage/'.$school->logo,
+        ];
+        foreach($candidates as $c){ 
+            if(file_exists(public_path($c))){ 
+                $logoUrl = asset($c); 
+                $logoPath = public_path($c);
+                break;
+            } 
+        }
+    }
+    if (request('pdf') == 1 && file_exists($logoPath)) {
+        $ext = pathinfo($logoPath, PATHINFO_EXTENSION) ?: 'png';
+        $data = file_get_contents($logoPath);
+        $logoUrl = 'data:image/' . $ext . ';base64,' . base64_encode($data);
     }
 @endphp
 
@@ -35,7 +58,7 @@
         grid-template-columns: 1fr auto;
         grid-template-areas: "roll img" "name name" "class class";
     }
-    .seat img { grid-area: img; width: 36px; height: 36px; border-radius: 4px; object-fit: cover; position: static; }
+    .seat img { grid-area: img; width: 45px; height: 45px; border-radius: 4px; object-fit: cover; object-position: top; border: 1px solid #ccc; background: #f9f9f9; position: static; }
     .seat .roll { grid-area: roll; font-size: 24px; font-weight: 900; color: #b00; line-height:1; }
     .seat .name { grid-area: name; font-size: 12px; font-weight: 600; line-height:1.1; }
     .seat .class { grid-area: class; font-size: 16px; color: #333; line-height:1.1; }
@@ -70,22 +93,6 @@
 </style>
 @endpush
 
-@section('print_header_right')
-    @php
-        $shiftName = (string)($seatPlan->shift ?? 'Morning');
-        $sn = strtolower(trim($shiftName));
-        if (strpos($sn,'even') !== false) { $shiftLabel = $lang === 'bn' ? 'সন্ধ্যা শিফট' : 'Evening Shift'; }
-        elseif (strpos($sn,'morn') !== false) { $shiftLabel = $lang === 'bn' ? 'সকাল শিফট' : 'Morning Shift'; }
-        else { $shiftLabel = ucwords($shiftName).' '.($lang === 'bn' ? 'শিফট' : 'Shift'); }
-        $shiftParts = preg_split('/\s+/', trim($shiftLabel), 2);
-        $shiftLine1 = $shiftParts[0] ?? $shiftLabel;
-        $shiftLine2 = $shiftParts[1] ?? '';
-    @endphp
-    <div class="shift-overlay">
-        <div class="line2">{{ $shiftLine1 }}</div>
-        <div class="line1">{{ $shiftLine2 }}</div>
-    </div>
-@endsection
 
 @section('content')
 
@@ -116,6 +123,34 @@
 
     @forelse($rooms as $room)
         <div class="room-page">
+            <div class="print-header">
+                <div class="logo">@if($logoUrl)<img src="{{ $logoUrl }}" alt="logo">@endif</div>
+                <div class="center">
+                    <h1 class="school-name">{{ $lang==='bn' ? ($school->name_bn ?? $school->name) : ($school->name ?? $school->name_bn) }}</h1>
+                    @php $addr = $lang==='bn' ? ($school->address_bn ?? $school->address) : ($school->address ?? $school->address_bn); @endphp
+                    @if($addr)
+                        <div class="school-address">{{ $addr }}</div>
+                    @endif
+                    @isset($printTitle)<div class="page-title">{{ $printTitle }}</div>@endisset
+                    @isset($printSubtitle)<div class="page-subtitle">{{ $printSubtitle }}</div>@endisset
+                    
+                    @php
+                        $shiftName = (string)($seatPlan->shift ?? 'Morning');
+                        $sn = strtolower(trim($shiftName));
+                        if (strpos($sn,'even') !== false) { $shiftLabel = $lang === 'bn' ? 'সন্ধ্যা শিফট' : 'Evening Shift'; }
+                        elseif (strpos($sn,'morn') !== false) { $shiftLabel = $lang === 'bn' ? 'সকাল শিফট' : 'Morning Shift'; }
+                        else { $shiftLabel = ucwords($shiftName).' '.($lang === 'bn' ? 'শিফট' : 'Shift'); }
+                        $shiftParts = preg_split('/\s+/', trim($shiftLabel), 2);
+                        $shiftLine1 = $shiftParts[0] ?? $shiftLabel;
+                        $shiftLine2 = $shiftParts[1] ?? '';
+                    @endphp
+                    <div class="shift-overlay">
+                        <div class="line2">{{ $shiftLine1 }}</div>
+                        <div class="line1">{{ $shiftLine2 }}</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="room-number">
                 {{ $lang === 'bn' ? 'রুম নং:' : 'Room No:' }} {{ $lang === 'bn' ? toBengaliNumber($room->room_no) : $room->room_no }}
             </div>
@@ -151,14 +186,14 @@
                                 <div class="seat left{{ $leftGradeClass }}">
                                     @if($leftAllocation && $leftAllocation->student)
                                         @if($leftAllocation->student->photo)
-                                            <img src="{{ asset('storage/students/' . $leftAllocation->student->photo) }}" alt="photo">
+                                            <img src="{{ $leftAllocation->student->photo_url }}" alt="photo">
                                         @endif
                                         @php
                                             $rollDisplay = $leftAllocation->student->roll ?? $leftAllocation->student->student_id;
                                             if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                         @endphp
                                         <div class="roll">{{ $rollDisplay }}</div>
-                                        <div class="name">{{ Str::limit($leftAllocation->student->student_name_en, 15) }}</div>
+                                        <div class="name">{{ Str::limit($leftAllocation->student->student_name_en, 30) }}</div>
                                         <div class="class">{{ $leftAllocation->student->class->name ?? '' }}</div>
                                     @else
                                         --
@@ -175,14 +210,14 @@
                                 <div class="seat right{{ $rightGradeClass }}">
                                     @if($rightAllocation && $rightAllocation->student)
                                         @if($rightAllocation->student->photo)
-                                            <img src="{{ asset('storage/students/' . $rightAllocation->student->photo) }}" alt="photo">
+                                            <img src="{{ $rightAllocation->student->photo_url }}" alt="photo">
                                         @endif
                                         @php
                                             $rollDisplay = $rightAllocation->student->roll ?? $rightAllocation->student->student_id;
                                             if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                         @endphp
                                         <div class="roll">{{ $rollDisplay }}</div>
-                                        <div class="name">{{ Str::limit($rightAllocation->student->student_name_en, 15) }}</div>
+                                        <div class="name">{{ Str::limit($rightAllocation->student->student_name_en, 30) }}</div>
                                         <div class="class">{{ $rightAllocation->student->class->name ?? '' }}</div>
                                     @else
                                         --

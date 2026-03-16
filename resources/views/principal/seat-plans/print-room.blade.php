@@ -33,7 +33,7 @@
         grid-template-columns: 1fr auto;
         grid-template-areas: "roll img" "name name" "class class";
     }
-    .seat img { grid-area: img; width: 36px; height: 36px; border-radius: 4px; object-fit: cover; position: static; }
+    .seat img { grid-area: img; width: 45px; height: 45px; border-radius: 4px; object-fit: cover; object-position: top; border: 1px solid #ccc; background: #f9f9f9; position: static; }
     .seat .roll { grid-area: roll; font-size: 24px; font-weight: 900; color: #b00; line-height:1; }
     .seat .name { grid-area: name; font-size: 12px; font-weight: 600; line-height:1.1; }
     .seat .class { grid-area: class; font-size: 16px; color: #333; line-height:1.1; }
@@ -149,7 +149,7 @@
                         <div class="seat left{{ $leftGradeClass }}">
                             @if($leftAllocation && $leftAllocation->student)
                                 @if($leftAllocation->student->photo)
-                                    <img src="{{ asset('storage/students/' . $leftAllocation->student->photo) }}" alt="photo">
+                                    <img src="{{ $leftAllocation->student->photo_url }}" alt="photo">
                                 @endif
                                 @php
                                     $rollDisplay = $leftAllocation->student->roll ?? $leftAllocation->student->student_id;
@@ -176,7 +176,7 @@
                         <div class="seat right{{ $rightGradeClass }}">
                             @if($rightAllocation && $rightAllocation->student)
                                 @if($rightAllocation->student->photo)
-                                    <img src="{{ asset('storage/students/' . $rightAllocation->student->photo) }}" alt="photo">
+                                    <img src="{{ $rightAllocation->student->photo_url }}" alt="photo">
                                 @endif
                                 @php
                                     $rollDisplay = $rightAllocation->student->roll ?? $rightAllocation->student->student_id;
