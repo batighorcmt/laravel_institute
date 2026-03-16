@@ -18,9 +18,13 @@
 /storage/*.key
 /storage/pail
 /vendor
+/mobile_app
 Homestead.json
 Homestead.yaml
 Thumbs.db
 error_log
 public/.htaccess
 public/.htaccess
+/mobile_app
+*.dart
+mobile_app/lib/presentation/features/teacher/teacher_mark_entry_detail_page.dart
