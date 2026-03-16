@@ -11,6 +11,28 @@
         $bn = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
         return str_replace($en, $bn, $number);
     }
+
+    if (!function_exists('t')){
+        function t($en, $bn){ 
+            $currentLang = request('lang', 'bn');
+            return $currentLang === 'bn' ? ($bn ?: $en) : ($en ?: $bn); 
+        }
+    }
+
+    if (!function_exists('langField')){
+        function langField($obj, $field, $lang='bn'){
+            if (!$obj) return '';
+            if (in_array($field, ['student_name', 'name'])){
+                if ($lang === 'bn'){
+                    return $obj->student_name_bn ?? $obj->bangla_name ?? $obj->student_name_en ?? $obj->name ?? '';
+                }
+                return $obj->student_name_en ?? $obj->name ?? $obj->student_name_bn ?? $obj->bangla_name ?? '';
+            }
+            $bnField = $field . '_bn';
+            if ($lang === 'bn') return $obj->$bnField ?? $obj->$field ?? '';
+            return $obj->$field ?? $obj->$bnField ?? '';
+        }
+    }
 @endphp
 
 @push('print_head')
@@ -156,8 +178,8 @@
                                     if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                 @endphp
                                 <div class="roll">{{ $rollDisplay }}</div>
-                                <div class="name">{{ ucwords(strtolower($leftAllocation->student->student_name_en)) }}</div>
-                                <div class="class">{{ $leftClass ?? '' }}</div>
+                                <div class="name">{{ Str::limit(langField($leftAllocation->student, 'student_name', $lang), 30) }}</div>
+                                <div class="class">{{ langField($leftAllocation->student->currentEnrollment->class, 'name', $lang) }}</div>
                             @else
                                 --
                             @endif
@@ -183,8 +205,8 @@
                                     if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                 @endphp
                                 <div class="roll">{{ $rollDisplay }}</div>
-                                <div class="name">{{ ucwords(strtolower($rightAllocation->student->student_name_en)) }}</div>
-                                <div class="class">{{ $rightClass ?? '' }}</div>
+                                <div class="name">{{ Str::limit(langField($rightAllocation->student, 'student_name', $lang), 30) }}</div>
+                                <div class="class">{{ langField($rightAllocation->student->currentEnrollment->class, 'name', $lang) }}</div>
                             @else
                                 --
                             @endif
@@ -202,7 +224,7 @@
         $totalAssigned = 0;
         foreach($room->allocations as $allocation){
             if($allocation->student && $allocation->student->currentEnrollment && $allocation->student->currentEnrollment->class){
-                $className = $allocation->student->currentEnrollment->class->name;
+                $className = langField($allocation->student->currentEnrollment->class, 'name', $lang);
                 $classCounts[$className] = ($classCounts[$className] ?? 0) + 1;
                 $totalAssigned++;
 

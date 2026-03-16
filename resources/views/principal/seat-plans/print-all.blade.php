@@ -29,10 +29,26 @@
             } 
         }
     }
-    if (request('pdf') == 1 && file_exists($logoPath)) {
-        $ext = pathinfo($logoPath, PATHINFO_EXTENSION) ?: 'png';
-        $data = file_get_contents($logoPath);
-        $logoUrl = 'data:image/' . $ext . ';base64,' . base64_encode($data);
+    if (!function_exists('t')){
+        function t($en, $bn){ 
+            $currentLang = request('lang', 'bn');
+            return $currentLang === 'bn' ? ($bn ?: $en) : ($en ?: $bn); 
+        }
+    }
+
+    if (!function_exists('langField')){
+        function langField($obj, $field, $lang='bn'){
+            if (!$obj) return '';
+            if (in_array($field, ['student_name', 'name'])){
+                if ($lang === 'bn'){
+                    return $obj->student_name_bn ?? $obj->bangla_name ?? $obj->student_name_en ?? $obj->name ?? '';
+                }
+                return $obj->student_name_en ?? $obj->name ?? $obj->student_name_bn ?? $obj->bangla_name ?? '';
+            }
+            $bnField = $field . '_bn';
+            if ($lang === 'bn') return $obj->$bnField ?? $obj->$field ?? '';
+            return $obj->$field ?? $obj->$bnField ?? '';
+        }
     }
 @endphp
 
@@ -193,8 +209,8 @@
                                             if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                         @endphp
                                         <div class="roll">{{ $rollDisplay }}</div>
-                                        <div class="name">{{ Str::limit($leftAllocation->student->student_name_en, 30) }}</div>
-                                        <div class="class">{{ $leftAllocation->student->class->name ?? '' }}</div>
+                                        <div class="name">{{ Str::limit(langField($leftAllocation->student, 'student_name', $lang), 30) }}</div>
+                                        <div class="class">{{ langField($leftAllocation->student->class, 'name', $lang) }}</div>
                                     @else
                                         --
                                     @endif
@@ -217,8 +233,8 @@
                                             if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                         @endphp
                                         <div class="roll">{{ $rollDisplay }}</div>
-                                        <div class="name">{{ Str::limit($rightAllocation->student->student_name_en, 30) }}</div>
-                                        <div class="class">{{ $rightAllocation->student->class->name ?? '' }}</div>
+                                        <div class="name">{{ Str::limit(langField($rightAllocation->student, 'student_name', $lang), 30) }}</div>
+                                        <div class="class">{{ langField($rightAllocation->student->class, 'name', $lang) }}</div>
                                     @else
                                         --
                                     @endif
@@ -234,7 +250,7 @@
                 $totalAssigned = 0;
                 foreach($room->allocations as $allocation){
                     if($allocation->student && $allocation->student->class){
-                        $className = $allocation->student->class->name;
+                        $className = langField($allocation->student->class, 'name', $lang);
                         $classCounts[$className] = ($classCounts[$className] ?? 0) + 1;
                         $totalAssigned++;
                     }
