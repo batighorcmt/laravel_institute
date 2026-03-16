@@ -21,17 +21,38 @@
   if (!function_exists('bnNum')){
     function bnNum($v){ return request('lang','bn') === 'bn' ? bn_num($v) : $v; }
   }
-  function fmt_date($d){ return $d ? date('d/m/Y', strtotime($d)) : '-'; }
-  function fmt_time($t){ return $t ? date('h:i A', strtotime($t)) : '-'; }
-  function shortSubjectName($name){
-    $n = trim((string)$name);
-    if ($n === '') return $n;
-    $normalized = strtolower(preg_replace('/\s+/', ' ', $n));
-    if ($normalized === 'information and communication technology') return 'ICT';
-    if ($normalized === 'history of bangladesh and world civilization') return 'History';
-    if (strpos($normalized, 'information') !== false && strpos($normalized, 'communication') !== false && strpos($normalized, 'technology') !== false) return 'ICT';
-    if (strpos($normalized, 'history of bangladesh') !== false && strpos($normalized, 'world civilization') !== false) return 'History';
-    return $n;
+  if (!function_exists('fmt_date')){
+    function fmt_date($d){ return $d ? date('d/m/Y', strtotime($d)) : '-'; }
+  }
+  if (!function_exists('fmt_time')){
+    function fmt_time($t){ return $t ? date('h:i A', strtotime($t)) : '-'; }
+  }
+  if (!function_exists('shortSubjectName')){
+    function shortSubjectName($name){
+      $n = trim((string)$name);
+      if ($n === '') return $n;
+      $normalized = strtolower(preg_replace('/\s+/', ' ', $n));
+      if ($normalized === 'information and communication technology') return 'ICT';
+      if ($normalized === 'history of bangladesh and world civilization') return 'History';
+      if (strpos($normalized, 'information') !== false && strpos($normalized, 'communication') !== false && strpos($normalized, 'technology') !== false) return 'ICT';
+      if (strpos($normalized, 'history of bangladesh') !== false && strpos($normalized, 'world civilization') !== false) return 'History';
+      return $n;
+    }
+  }
+  if (!function_exists('langField')){
+    function langField($obj, $field, $lang='bn'){
+      if (in_array($field, ['full_name','name'])){
+        if ($lang === 'bn'){
+          return $obj->student_name_bn ?? $obj->student_name_en ?? $obj->full_name ?? null;
+        }
+        return $obj->student_name_en ?? $obj->student_name_bn ?? $obj->full_name ?? null;
+      }
+      $bn = $field . '_bn';
+      if ($lang === 'bn') {
+        return $obj->$bn ?? $obj->$field ?? null;
+      }
+      return $obj->$field ?? $obj->$bn ?? null;
+    }
   }
 @endphp
 
@@ -41,7 +62,7 @@
 <style>
   /* Keep existing layout styles but ensure letters use Hind Siliguri and numbers use Kalpurush */
   body{ font-family:'Hind Siliguri', system-ui, Segoe UI, Roboto, Arial, sans-serif !important; }
-  .num{ font-family: 'Kalpurush', 'Noto Sans Bengali', serif; }
+  .num{ font-family: 'Kalpurush', 'Noto Sans Bengali', serif; font-size: 14pt; font-weight: bold; }
   .no-bn{ font-family: inherit; }
   /* original page styles preserved below */
   :root { --primary:#0ea5e9; --border:#1f2937; --ink:#0a0a0a; --muted:#111827; --bg:#ffffff; }
@@ -90,21 +111,6 @@
   <div class="page">
 @php
 foreach ($students as $stu):
-  if (!function_exists('langField')){
-    function langField($obj, $field, $lang='bn'){
-      if (in_array($field, ['full_name','name'])){
-        if ($lang === 'bn'){
-          return $obj->student_name_bn ?? $obj->student_name_en ?? $obj->full_name ?? null;
-        }
-        return $obj->student_name_en ?? $obj->student_name_bn ?? $obj->full_name ?? null;
-      }
-      $bn = $field . '_bn';
-      if ($lang === 'bn') {
-        return $obj->$bn ?? $obj->$field ?? null;
-      }
-      return $obj->$field ?? $obj->$bn ?? null;
-    }
-  }
   $stu_name = langField($stu, 'full_name', $lang) ?: langField($stu, 'name', $lang) ?: ($stu->student_id ?? $stu->id ?? '');
   $enrollment = $stu->enrollments->first();
   $stu_roll = $enrollment ? $enrollment->roll_no : '';
@@ -163,14 +169,14 @@ foreach ($students as $stu):
         </div>
       </div>
   <table class="info-table" cellpadding="0" cellspacing="0" style="margin:4px 0;width:100%">
-          <tbody>
+          <tbody style="text-align: left;">
             <tr>
               <td>{{ t('Name of Student','শিক্ষার্থীর নাম') }}:</td>
               <td><strong>{{ $stu_name }}</strong></td>
               <td>{{ t('ID','আইডি') }}:</td
               ><td><strong class="no-bn">{{ $stu_id_show }}</strong></td>
               <td>{{ t('Roll Number','রোল নং') }}:</td>
-              <td style="text-align: left;"><strong class="num">{{ bnNum($stu_roll) }}</strong></td>
+              <td><strong class="num">{{ bnNum($stu_roll) }}</strong></td>
             </tr>
             <tr>
                 <td>{{ t('Class','শ্রেণি') }}:</td>

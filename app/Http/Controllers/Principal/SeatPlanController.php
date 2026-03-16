@@ -227,11 +227,11 @@ class SeatPlanController extends Controller
         $students = Student::forSchool($school->id)
             ->with('currentEnrollment')
             ->where('status', 'active')
-            ->whereHas('enrollments', function($q) use ($currentAcademicYear, $seatPlan) {
-                $q->where('status', 'active')
-                    ->where('academic_year_id', $currentAcademicYear->id)
-                    ->whereIn('class_id', $seatPlan->seatPlanClasses()->pluck('class_id'));
-            })
+            ->whereHas('enrollments', function ($q) use ($currentAcademicYear, $seatPlan) {
+            $q->where('status', 'active')
+                ->where('academic_year_id', $currentAcademicYear->id)
+                ->whereIn('class_id', $seatPlan->seatPlanClasses()->pluck('class_id'));
+        })
             ->orderBy('student_id')
             ->get();
 
@@ -333,7 +333,7 @@ class SeatPlanController extends Controller
     public function printRoom(School $school, SeatPlan $seatPlan, SeatPlanRoom $room)
     {
         $room->load([
-            'allocations.student.currentEnrollment.class', 
+            'allocations.student.currentEnrollment.class',
             'allocations.student.currentEnrollment.group',
             'allocations.student.currentEnrollment.subjects.subject',
             'allocations.student.class'
@@ -373,25 +373,27 @@ class SeatPlanController extends Controller
         $query = Student::forSchool($school->id)
             ->whereNotIn('id', $allocatedStudentIds)
             ->where('status', 'active')
-            ->whereHas('enrollments', function($q) use ($currentAcademicYear, $seatPlan, $classId) {
-                $q->where('status', 'active')
-                    ->where('academic_year_id', $currentAcademicYear->id);
-                if ($classId) {
-                    $q->where('class_id', $classId);
-                } else {
-                    $q->whereIn('class_id', $seatPlan->seatPlanClasses()->pluck('class_id'));
-                }
-            });
+            ->whereHas('enrollments', function ($q) use ($currentAcademicYear, $seatPlan, $classId) {
+            $q->where('status', 'active')
+                ->where('academic_year_id', $currentAcademicYear->id);
+            if ($classId) {
+                $q->where('class_id', $classId);
+            }
+            else {
+                $q->whereIn('class_id', $seatPlan->seatPlanClasses()->pluck('class_id'));
+            }
+        });
 
         if ($search) {
             $query->where(function ($q) use ($search, $currentAcademicYear) {
                 $q->where('student_name_en', 'like', "%{$search}%")
                     ->orWhere('student_name_bn', 'like', "%{$search}%")
                     ->orWhere('student_id', 'like', "%{$search}%")
-                    ->orWhereHas('enrollments', function($subQ) use ($search, $currentAcademicYear) {
-                        $subQ->where('academic_year_id', $currentAcademicYear->id)
-                            ->where('roll_no', 'like', "%{$search}%");
-                    });
+                    ->orWhereHas('enrollments', function ($subQ) use ($search, $currentAcademicYear) {
+                    $subQ->where('academic_year_id', $currentAcademicYear->id)
+                        ->where('roll_no', 'like', "%{$search}%");
+                }
+                );
             });
         }
 
@@ -410,10 +412,10 @@ class SeatPlanController extends Controller
 
         $allocation = SeatPlanAllocation::where('seat_plan_id', $seatPlan->id)
             ->whereHas('student', function ($query) use ($search) {
-                $query->where('student_id', 'like', "%{$search}%")
-                    ->orWhere('student_name_en', 'like', "%{$search}%")
-                    ->orWhere('student_name_bn', 'like', "%{$search}%");
-            })
+            $query->where('student_id', 'like', "%{$search}%")
+                ->orWhere('student_name_en', 'like', "%{$search}%")
+                ->orWhere('student_name_bn', 'like', "%{$search}%");
+        })
             ->with(['student', 'room'])
             ->first();
 
