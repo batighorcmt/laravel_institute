@@ -118,11 +118,21 @@
             $c = trim((string)$className);
             if ($c==='') return null;
             $lc = strtolower($c);
+            
+            // English matches
             if (strpos($lc,'six')!==false) return 6;
             if (strpos($lc,'seven')!==false) return 7;
             if (strpos($lc,'eight')!==false) return 8;
             if (strpos($lc,'nine')!==false) return 9;
             if (strpos($lc,'ten')!==false) return 10;
+            
+            // Bengali matches
+            if (strpos($c,'ষষ্ঠ')!==false) return 6;
+            if (strpos($c,'সপ্তম')!==false) return 7;
+            if (strpos($c,'অষ্টম')!==false) return 8;
+            if (strpos($c,'নবম')!==false) return 9;
+            if (strpos($c,'দশম')!==false) return 10;
+            
             if (preg_match('/\b(6)\b/', $c)) return 6;
             if (preg_match('/\b(7)\b/', $c)) return 7;
             if (preg_match('/\b(8)\b/', $c)) return 8;
@@ -209,7 +219,7 @@
                                             if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                         @endphp
                                         <div class="roll">{{ $rollDisplay }}</div>
-                                        <div class="name">{{ Str::limit(langField($leftAllocation->student, 'student_name', $lang), 30) }}</div>
+                                        <div class="name">{{ \Illuminate\Support\Str::limit(langField($leftAllocation->student, 'student_name', $lang), 30) }}</div>
                                         <div class="class">{{ langField($leftAllocation->student->class, 'name', $lang) }}</div>
                                     @else
                                         --
@@ -233,7 +243,7 @@
                                             if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                         @endphp
                                         <div class="roll">{{ $rollDisplay }}</div>
-                                        <div class="name">{{ Str::limit(langField($rightAllocation->student, 'student_name', $lang), 30) }}</div>
+                                        <div class="name">{{ \Illuminate\Support\Str::limit(langField($rightAllocation->student, 'student_name', $lang), 30) }}</div>
                                         <div class="class">{{ langField($rightAllocation->student->class, 'name', $lang) }}</div>
                                     @else
                                         --
@@ -247,12 +257,32 @@
 
             @php
                 $classCounts = [];
+                $groupCounts = [];
+                $optionalCounts = [];
                 $totalAssigned = 0;
                 foreach($room->allocations as $allocation){
-                    if($allocation->student && $allocation->student->class){
-                        $className = langField($allocation->student->class, 'name', $lang);
+                    if($allocation->student && $allocation->student->currentEnrollment && $allocation->student->currentEnrollment->class){
+                        $className = langField($allocation->student->currentEnrollment->class, 'name', $lang);
                         $classCounts[$className] = ($classCounts[$className] ?? 0) + 1;
                         $totalAssigned++;
+
+                        $grade = detectGradeFromClass($className);
+                        if ($grade == 9 || $grade == 10) {
+                            if (!isset($groupCounts[$className])) $groupCounts[$className] = [];
+                            if (!isset($optionalCounts[$className])) $optionalCounts[$className] = [];
+
+                            if ($allocation->student->currentEnrollment->group) {
+                                $groupName = langField($allocation->student->currentEnrollment->group, 'name', $lang);
+                                $groupCounts[$className][$groupName] = ($groupCounts[$className][$groupName] ?? 0) + 1;
+                            }
+
+                            foreach($allocation->student->currentEnrollment->subjects as $sub) {
+                                if ($sub->is_optional && $sub->subject) {
+                                    $optName = langField($sub->subject, 'name', $lang);
+                                    $optionalCounts[$className][$optName] = ($optionalCounts[$className][$optName] ?? 0) + 1;
+                                }
+                            }
+                        }
                     }
                 }
             @endphp
@@ -278,12 +308,38 @@
                         @endif
                     </div>
                     <div class="stat-col">
-                        <h5>{{ $lang === 'bn' ? 'গ্রুপভিত্তিক (৯-১০)' : 'Group-wise (9-10)' }}</h5>
-                        <div style="color:#666;">{{ $lang === 'bn' ? 'প্রযোজ্য নয়' : 'Not applicable' }}</div>
+                        <h5>{{ $lang === 'bn' ? 'গ্রুপভিত্তিক' : 'Group-wise' }}</h5>
+                        @if(empty($groupCounts))
+                            <div style="color:#666;">{{ $lang === 'bn' ? 'প্রযোজ্য নয়' : 'Not applicable' }}</div>
+                        @else
+                            @foreach($groupCounts as $className => $counts)
+                                @if(!empty($counts))
+                                    <strong style="margin-top: 6px; display: block;">{{ $className }}:</strong>
+                                    <ul style="margin-bottom: 5px;">
+                                        @foreach($counts as $gn => $cnt)
+                                            <li>{{ $gn }} — {{ $lang === 'bn' ? toBengaliNumber($cnt) : $cnt }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            @endforeach
+                        @endif
                     </div>
                     <div class="stat-col">
-                        <h5>{{ $lang === 'bn' ? 'ঐচ্ছিক বিষয় (৯-১০)' : 'Optional subjects (9-10)' }}</h5>
-                        <div style="color:#666;">{{ $lang === 'bn' ? 'প্রযোজ্য নয়' : 'Not applicable' }}</div>
+                        <h5>{{ $lang === 'bn' ? 'ঐচ্ছিক বিষয়' : 'Optional subjects' }}</h5>
+                        @if(empty($optionalCounts))
+                            <div style="color:#666;">{{ $lang === 'bn' ? 'প্রযোজ্য নয়' : 'Not applicable' }}</div>
+                        @else
+                            @foreach($optionalCounts as $className => $counts)
+                                @if(!empty($counts))
+                                    <strong style="margin-top: 6px; display: block;">{{ $className }}:</strong>
+                                    <ul style="margin-bottom: 5px;">
+                                        @foreach($counts as $on => $cnt)
+                                            <li>{{ $on }} — {{ $lang === 'bn' ? toBengaliNumber($cnt) : $cnt }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            @endforeach
+                        @endif
                     </div>
                 </div>
             </div>

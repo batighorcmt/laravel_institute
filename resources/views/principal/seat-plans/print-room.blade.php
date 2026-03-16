@@ -114,11 +114,21 @@
             $c = trim((string)$className);
             if ($c==='') return null;
             $lc = strtolower($c);
+            
+            // English matches
             if (strpos($lc,'six')!==false) return 6;
             if (strpos($lc,'seven')!==false) return 7;
             if (strpos($lc,'eight')!==false) return 8;
             if (strpos($lc,'nine')!==false) return 9;
             if (strpos($lc,'ten')!==false) return 10;
+            
+            // Bengali matches
+            if (strpos($c,'ষষ্ঠ')!==false) return 6;
+            if (strpos($c,'সপ্তম')!==false) return 7;
+            if (strpos($c,'অষ্টম')!==false) return 8;
+            if (strpos($c,'নবম')!==false) return 9;
+            if (strpos($c,'দশম')!==false) return 10;
+            
             if (preg_match('/\b(6)\b/', $c)) return 6;
             if (preg_match('/\b(7)\b/', $c)) return 7;
             if (preg_match('/\b(8)\b/', $c)) return 8;
@@ -178,7 +188,7 @@
                                     if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                 @endphp
                                 <div class="roll">{{ $rollDisplay }}</div>
-                                <div class="name">{{ Str::limit(langField($leftAllocation->student, 'student_name', $lang), 30) }}</div>
+                                <div class="name">{{ \Illuminate\Support\Str::limit(langField($leftAllocation->student, 'student_name', $lang), 30) }}</div>
                                 <div class="class">{{ langField($leftAllocation->student->currentEnrollment->class, 'name', $lang) }}</div>
                             @else
                                 --
@@ -205,7 +215,7 @@
                                     if($lang === 'bn') $rollDisplay = toBengaliNumber($rollDisplay);
                                 @endphp
                                 <div class="roll">{{ $rollDisplay }}</div>
-                                <div class="name">{{ Str::limit(langField($rightAllocation->student, 'student_name', $lang), 30) }}</div>
+                                <div class="name">{{ \Illuminate\Support\Str::limit(langField($rightAllocation->student, 'student_name', $lang), 30) }}</div>
                                 <div class="class">{{ langField($rightAllocation->student->currentEnrollment->class, 'name', $lang) }}</div>
                             @else
                                 --
@@ -234,13 +244,13 @@
                     if (!isset($optionalCounts[$className])) $optionalCounts[$className] = [];
 
                     if ($allocation->student->currentEnrollment->group) {
-                        $groupName = $allocation->student->currentEnrollment->group->name;
+                        $groupName = langField($allocation->student->currentEnrollment->group, 'name', $lang);
                         $groupCounts[$className][$groupName] = ($groupCounts[$className][$groupName] ?? 0) + 1;
                     }
 
                     foreach($allocation->student->currentEnrollment->subjects as $sub) {
                         if ($sub->is_optional && $sub->subject) {
-                            $optName = $sub->subject->name;
+                            $optName = langField($sub->subject, 'name', $lang);
                             $optionalCounts[$className][$optName] = ($optionalCounts[$className][$optName] ?? 0) + 1;
                         }
                     }

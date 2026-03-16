@@ -344,7 +344,12 @@ class SeatPlanController extends Controller
 
     public function printAll(School $school, SeatPlan $seatPlan)
     {
-        $rooms = $seatPlan->rooms()->with(['allocations.student.currentEnrollment', 'allocations.student.class'])->get();
+        $rooms = $seatPlan->rooms()->with([
+            'allocations.student.currentEnrollment.class',
+            'allocations.student.currentEnrollment.group',
+            'allocations.student.currentEnrollment.subjects.subject',
+            'allocations.student.class'
+        ])->get();
 
         return view('principal.seat-plans.print-all', compact('school', 'seatPlan', 'rooms'));
     }
