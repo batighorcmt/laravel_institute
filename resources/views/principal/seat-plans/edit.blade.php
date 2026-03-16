@@ -51,12 +51,21 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="name">Seat Plan Name <span class="text-danger">*</span></label>
+                                <label for="name">Seat Plan Name (English) <span class="text-danger">*</span></label>
                                 <input type="text" name="name" id="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $seatPlan->name) }}" required>
                                 @error('name')
                                     <span class="invalid-feedback">{{ $message }}</span>
                                 @enderror
-                                <small class="form-text text-muted">Example: First Terminal Exam 2025</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="name_bn">Seat Plan Name (Bengali)</label>
+                                <input type="text" name="name_bn" id="name_bn" class="form-control @error('name_bn') is-invalid @enderror" value="{{ old('name_bn', $seatPlan->name_bn) }}">
+                                @error('name_bn')
+                                    <span class="invalid-feedback">{{ $message }}</span>
+                                @enderror
                             </div>
                         </div>
 

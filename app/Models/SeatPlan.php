@@ -15,6 +15,7 @@ class SeatPlan extends Model
     protected $fillable = [
         'school_id',
         'name',
+        'name_bn',
         'shift',
         'status',
     ];

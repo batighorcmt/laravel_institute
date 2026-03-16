@@ -37,6 +37,7 @@ class SeatPlanController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'name_bn' => 'nullable|string|max:255',
             'shift' => 'nullable|string|max:50',
             'status' => 'required|in:draft,active,completed',
             'class_ids' => 'nullable|array',
@@ -48,6 +49,7 @@ class SeatPlanController extends Controller
         $seatPlan = SeatPlan::create([
             'school_id' => $school->id,
             'name' => $validated['name'],
+            'name_bn' => $validated['name_bn'] ?? null,
             'shift' => $validated['shift'] ?? null,
             'status' => $validated['status'],
         ]);
@@ -91,6 +93,7 @@ class SeatPlanController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'name_bn' => 'nullable|string|max:255',
             'shift' => 'nullable|string|max:50',
             'status' => 'required|in:draft,active,completed',
             'class_ids' => 'nullable|array',
@@ -101,6 +104,7 @@ class SeatPlanController extends Controller
 
         $seatPlan->update([
             'name' => $validated['name'],
+            'name_bn' => $validated['name_bn'] ?? null,
             'shift' => $validated['shift'] ?? null,
             'status' => $validated['status'],
         ]);

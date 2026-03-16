@@ -3,7 +3,7 @@
 @php
     $lang = request('lang', 'bn');
     $printTitle = $lang === 'bn' ? 'সীট প্ল্যান' : 'Seat Plan';
-    $printSubtitle = $seatPlan->name;
+    $printSubtitle = $lang === 'bn' ? ($seatPlan->name_bn ?? $seatPlan->name) : ($seatPlan->name ?? $seatPlan->name_bn);
     
     // Bengali number conversion helper
     function toBengaliNumber($number) {
