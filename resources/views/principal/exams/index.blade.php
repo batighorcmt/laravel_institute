@@ -126,6 +126,11 @@
                                                 <a href="{{ route('principal.institute.seat-plans.index', $school) }}?exam_id={{ $exam->id }}"><i class="fas fa-chair"></i> Seat Plan</a>
                                                 <a href="{{ route('principal.institute.marks.show', [$school, $exam]) }}"><i class="fas fa-pen"></i> Mark Entry</a>
                                                 <a href="{{ route('principal.institute.results.marksheet', $school) }}?exam_id={{ $exam->id }}"><i class="fas fa-file-alt"></i> Results</a>
+                                                
+                                                <a href="{{ route('principal.institute.exams.admit_v2', [$school, $exam]) }}" target="_blank"><i class="fas fa-id-card"></i> প্রবেশপত্র (Admit v2)</a>
+                                                <a href="{{ route('principal.institute.exams.admit_v3', [$school, $exam]) }}" target="_blank"><i class="fas fa-id-card-alt"></i> সরল প্রবেশপত্র (Admit v3)</a>
+                                                <a href="{{ route('principal.institute.exams.attendance_sheet', [$school, $exam]) }}" target="_blank"><i class="fas fa-clipboard-list"></i> পরীক্ষার হাজিরা শীট</a>
+
                                                 <div style="border-top: 1px solid #ddd; margin: 5px 0;"></div>
                                                 <form action="{{ route('principal.institute.exams.destroy', [$school, $exam]) }}" method="POST" class="d-inline" onsubmit="return confirm('আপনি কি নিশ্চিত যে আপনি এই পরীক্ষা মুছে ফেলতে চান?')">
                                                     @csrf

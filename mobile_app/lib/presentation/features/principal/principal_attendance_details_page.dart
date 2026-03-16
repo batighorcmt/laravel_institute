@@ -4,7 +4,7 @@ import '../../../core/network/dio_client.dart';
 
 class PrincipalAttendanceDetailsPage extends StatefulWidget {
   final String? date; // ISO yyyy-MM-dd
-  const PrincipalAttendanceDetailsPage({Key? key, this.date}) : super(key: key);
+  const PrincipalAttendanceDetailsPage({super.key, this.date});
 
   @override
   State<PrincipalAttendanceDetailsPage> createState() =>
@@ -59,8 +59,9 @@ class _PrincipalAttendanceDetailsPageState
       if (d['class_wise'] is List) return List.from(d['class_wise'] as List);
       if (d['classWise'] is List) return List.from(d['classWise'] as List);
     }
-    if (json['class_wise'] is List)
+    if (json['class_wise'] is List) {
       return List.from(json['class_wise'] as List);
+    }
     if (json['classWise'] is List) return List.from(json['classWise'] as List);
     if (json['data'] is List) return List.from(json['data'] as List);
     return [];
@@ -125,8 +126,9 @@ class _PrincipalAttendanceDetailsPageState
                 }
                 final json = snapshot.data ?? {};
                 final classWise = _extractClassWise(json);
-                if (classWise.isEmpty)
+                if (classWise.isEmpty) {
                   return const Center(child: Text('কোনও তথ্য নেই'));
+                }
 
                 int grandTotal = 0;
                 int grandMale = 0;
@@ -417,10 +419,11 @@ class _PrincipalAttendanceDetailsPageState
                           ? '${(dispPresent / st * 100).toStringAsFixed(1)}%'
                           : '—';
                       final tInitials = s['class_teacher_initials'];
-                      final tInitialsStr = tInitials != null && tInitials.toString().isNotEmpty 
-                          ? ' (${tInitials.toString()})' 
+                      final tInitialsStr =
+                          tInitials != null && tInitials.toString().isNotEmpty
+                          ? ' (${tInitials.toString()})'
                           : '';
-                      
+
                       final displayName = attTaken
                           ? '${sName.toString()}$tInitialsStr'
                           : '${sName.toString()}$tInitialsStr (হাজিরা নেই)';
@@ -428,7 +431,14 @@ class _PrincipalAttendanceDetailsPageState
                       rows.add(
                         DataRow(
                           cells: [
-                            DataCell(Text(displayName, style: const TextStyle(fontWeight: FontWeight.bold))),
+                            DataCell(
+                              Text(
+                                displayName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                             DataCell(Text('$st')),
                             DataCell(Text('$stm')),
                             DataCell(Text('$stf')),
@@ -451,37 +461,90 @@ class _PrincipalAttendanceDetailsPageState
                       DataRow(
                         cells: [
                           const DataCell(
-                            Text('মোট', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              'মোট',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                           ),
                           DataCell(
-                            Text('$classTotal', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              '$classTotal',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           DataCell(
-                            Text('$classMale', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              '$classMale',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           DataCell(
-                            Text('$classFemale', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              '$classFemale',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           DataCell(
-                            Text('$classPresent', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              '$classPresent',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           DataCell(
-                            Text('$classAbsent', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              '$classAbsent',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           DataCell(
-                            Text('$classPresentMale', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              '$classPresentMale',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           DataCell(
-                            Text('$classAbsentMale', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              '$classAbsentMale',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           DataCell(
-                            Text('$classPresentFemale', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              '$classPresentFemale',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           DataCell(
-                            Text('$classAbsentFemale', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              '$classAbsentFemale',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           DataCell(
-                            Text(classPct, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              classPct,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -507,17 +570,90 @@ class _PrincipalAttendanceDetailsPageState
                                 dataRowMaxHeight: 45,
                                 headingRowHeight: 40,
                                 columns: const [
-                                  DataColumn(label: Text('শাখা', style: TextStyle(fontSize: 12))),
-                                  DataColumn(label: Text('মোট', style: TextStyle(fontSize: 12))),
-                                  DataColumn(label: Text('ছে', style: TextStyle(fontSize: 12))),
-                                  DataColumn(label: Text('মে', style: TextStyle(fontSize: 12))),
-                                  DataColumn(label: Text('উ.মোট', style: TextStyle(fontSize: 12, color: Colors.green))),
-                                  DataColumn(label: Text('অ.মোট', style: TextStyle(fontSize: 12, color: Colors.red))),
-                                  DataColumn(label: Text('উ.ছে', style: TextStyle(fontSize: 12, color: Colors.green))),
-                                  DataColumn(label: Text('অ.ছে', style: TextStyle(fontSize: 12, color: Colors.red))),
-                                  DataColumn(label: Text('উ.মে', style: TextStyle(fontSize: 12, color: Colors.green))),
-                                  DataColumn(label: Text('অ.মে', style: TextStyle(fontSize: 12, color: Colors.red))),
-                                  DataColumn(label: Text('%', style: TextStyle(fontSize: 12))),
+                                  DataColumn(
+                                    label: Text(
+                                      'শাখা',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'মোট',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'ছে',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'মে',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'উ.মোট',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'অ.মোট',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'উ.ছে',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'অ.ছে',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'উ.মে',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      'অ.মে',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.red,
+                                      ),
+                                    ),
+                                  ),
+                                  DataColumn(
+                                    label: Text(
+                                      '%',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                  ),
                                 ],
                                 rows: rows,
                               ),
@@ -536,4 +672,3 @@ class _PrincipalAttendanceDetailsPageState
     );
   }
 }
-

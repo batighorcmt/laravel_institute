@@ -9,17 +9,15 @@ import '../../../data/teacher/teacher_students_repository.dart';
 class PrincipalStudentProfilePage extends StatefulWidget {
   final String studentId;
 
-  const PrincipalStudentProfilePage({
-    super.key,
-    required this.studentId,
-  });
+  const PrincipalStudentProfilePage({super.key, required this.studentId});
 
   @override
-  State<PrincipalStudentProfilePage> createState() => _PrincipalStudentProfilePageState();
+  State<PrincipalStudentProfilePage> createState() =>
+      _PrincipalStudentProfilePageState();
 }
 
-
-class _PrincipalStudentProfilePageState extends State<PrincipalStudentProfilePage> {
+class _PrincipalStudentProfilePageState
+    extends State<PrincipalStudentProfilePage> {
   final _searchCtrl = TextEditingController();
   late final Dio _dio;
   late final TeacherStudentsRepository _repo;
@@ -81,14 +79,15 @@ class _PrincipalStudentProfilePageState extends State<PrincipalStudentProfilePag
       final meta = res['meta'] as Map? ?? {};
 
       // Pagination logic (reused from teacher list)
-      int current = (meta['current_page'] as int?) ?? (meta['page'] as int?) ?? page;
+      int current =
+          (meta['current_page'] as int?) ?? (meta['page'] as int?) ?? page;
       int? last = (meta['last_page'] as int?) ?? (meta['lastPage'] as int?);
       bool nextPage = false;
       if (last != null) {
         nextPage = current < last;
       } else {
-         final per = (meta['per_page'] as int?) ?? 15;
-         nextPage = data.length >= per;
+        final per = (meta['per_page'] as int?) ?? 15;
+        nextPage = data.length >= per;
       }
 
       if (mounted) {
@@ -130,12 +129,24 @@ class _PrincipalStudentProfilePageState extends State<PrincipalStudentProfilePag
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _classId,
+                    initialValue: _classId,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Class', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                    decoration: const InputDecoration(
+                      labelText: 'Class',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 0,
+                      ),
+                    ),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('All')),
-                      ..._classes.map((c) => DropdownMenuItem(value: c['id']?.toString(), child: Text(c['name']?.toString() ?? ''))),
+                      ..._classes.map(
+                        (c) => DropdownMenuItem(
+                          value: c['id']?.toString(),
+                          child: Text(c['name']?.toString() ?? ''),
+                        ),
+                      ),
                     ],
                     onChanged: (v) async {
                       setState(() {
@@ -167,16 +178,28 @@ class _PrincipalStudentProfilePageState extends State<PrincipalStudentProfilePag
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _sectionId,
+                    initialValue: _sectionId,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Section', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                    decoration: const InputDecoration(
+                      labelText: 'Section',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 0,
+                      ),
+                    ),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('All')),
-                      ..._sections.map((s) => DropdownMenuItem(value: s['id']?.toString(), child: Text(s['name']?.toString() ?? ''))),
+                      ..._sections.map(
+                        (s) => DropdownMenuItem(
+                          value: s['id']?.toString(),
+                          child: Text(s['name']?.toString() ?? ''),
+                        ),
+                      ),
                     ],
                     onChanged: (v) {
-                       setState(() => _sectionId = v);
-                       _load(reset: true);
+                      setState(() => _sectionId = v);
+                      _load(reset: true);
                     },
                   ),
                 ),
@@ -189,12 +212,24 @@ class _PrincipalStudentProfilePageState extends State<PrincipalStudentProfilePag
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _groupId,
+                    initialValue: _groupId,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Group', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                    decoration: const InputDecoration(
+                      labelText: 'Group',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 0,
+                      ),
+                    ),
                     items: [
                       const DropdownMenuItem(value: null, child: Text('All')),
-                       ..._groups.map((g) => DropdownMenuItem(value: g['id']?.toString(), child: Text(g['name']?.toString() ?? ''))),
+                      ..._groups.map(
+                        (g) => DropdownMenuItem(
+                          value: g['id']?.toString(),
+                          child: Text(g['name']?.toString() ?? ''),
+                        ),
+                      ),
                     ],
                     onChanged: (v) {
                       setState(() => _groupId = v);
@@ -205,12 +240,21 @@ class _PrincipalStudentProfilePageState extends State<PrincipalStudentProfilePag
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _gender,
+                    initialValue: _gender,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Gender', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 0)),
+                    decoration: const InputDecoration(
+                      labelText: 'Gender',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 0,
+                      ),
+                    ),
                     items: [
-                       const DropdownMenuItem(value: null, child: Text('All')),
-                       ..._genderOptions.map((g) => DropdownMenuItem(value: g, child: Text(g))),
+                      const DropdownMenuItem(value: null, child: Text('All')),
+                      ..._genderOptions.map(
+                        (g) => DropdownMenuItem(value: g, child: Text(g)),
+                      ),
                     ],
                     onChanged: (v) {
                       setState(() => _gender = v);
@@ -228,7 +272,10 @@ class _PrincipalStudentProfilePageState extends State<PrincipalStudentProfilePag
               controller: _searchCtrl,
               decoration: InputDecoration(
                 hintText: 'Search...',
-                suffixIcon: IconButton(icon: const Icon(Icons.search), onPressed: _onSearch),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: _onSearch,
+                ),
                 border: const OutlineInputBorder(),
               ),
               onSubmitted: (_) => _onSearch(),
@@ -239,30 +286,49 @@ class _PrincipalStudentProfilePageState extends State<PrincipalStudentProfilePag
             child: _loading && _items.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : _items.isEmpty
-                    ? const Center(child: Text('No students found'))
-                    : ListView.separated(
-                        itemCount: _items.length + (_hasMore ? 1 : 0),
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (ctx, i) {
-                          if (i >= _items.length) {
-                            if (!_loading) _load();
-                            return const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()));
-                          }
-                          final item = _items[i] as Map<String, dynamic>;
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: item['photo_url'] != null ? NetworkImage(item['photo_url']) : null,
-                              child: item['photo_url'] == null ? const Icon(Icons.person) : null,
+                ? const Center(child: Text('No students found'))
+                : ListView.separated(
+                    itemCount: _items.length + (_hasMore ? 1 : 0),
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (ctx, i) {
+                      if (i >= _items.length) {
+                        if (!_loading) _load();
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(8),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
+                      final item = _items[i] as Map<String, dynamic>;
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: item['photo_url'] != null
+                              ? NetworkImage(item['photo_url'])
+                              : null,
+                          child: item['photo_url'] == null
+                              ? const Icon(Icons.person)
+                              : null,
+                        ),
+                        title: Text(item['name'] ?? ''),
+                        subtitle: Text(
+                          'Roll: ${item['roll'] ?? '-'} • Class: ${item['class'] ?? ''}',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PrincipalStudentDetailView(
+                                studentId: item['id'].toString(),
+                                initialData: item,
+                              ),
                             ),
-                            title: Text(item['name'] ?? ''),
-                            subtitle: Text('Roll: ${item['roll'] ?? '-'} • Class: ${item['class'] ?? ''}'),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (_) => PrincipalStudentDetailView(studentId: item['id'].toString(), initialData: item)));
-                            },
                           );
                         },
-                      ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -273,13 +339,19 @@ class _PrincipalStudentProfilePageState extends State<PrincipalStudentProfilePag
 class PrincipalStudentDetailView extends StatefulWidget {
   final String studentId;
   final Map<String, dynamic>? initialData;
-  const PrincipalStudentDetailView({super.key, required this.studentId, this.initialData});
+  const PrincipalStudentDetailView({
+    super.key,
+    required this.studentId,
+    this.initialData,
+  });
 
   @override
-  State<PrincipalStudentDetailView> createState() => _PrincipalStudentDetailViewState();
+  State<PrincipalStudentDetailView> createState() =>
+      _PrincipalStudentDetailViewState();
 }
 
-class _PrincipalStudentDetailViewState extends State<PrincipalStudentDetailView> {
+class _PrincipalStudentDetailViewState
+    extends State<PrincipalStudentDetailView> {
   late final Dio _dio;
   late final TeacherStudentsRepository _repo;
   Map<String, dynamic>? _data;
@@ -298,7 +370,7 @@ class _PrincipalStudentDetailViewState extends State<PrincipalStudentDetailView>
     try {
       final res = await _repo.fetchStudentProfile(widget.studentId);
       final raw = res['data'];
-       if (mounted) {
+      if (mounted) {
         setState(() {
           _data = raw is Map<String, dynamic> ? raw : res;
           _loading = false;
@@ -314,14 +386,16 @@ class _PrincipalStudentDetailViewState extends State<PrincipalStudentDetailView>
     if (data == null) return null;
     if (data is Map) {
       for (final key in keys) {
-        if (data.containsKey(key) && data[key] != null && data[key].toString().trim().isNotEmpty) {
+        if (data.containsKey(key) &&
+            data[key] != null &&
+            data[key].toString().trim().isNotEmpty) {
           return data[key];
         }
       }
       for (final v in data.values) {
         if (v is Map || v is List) {
-           final found = _findValue(v, keys);
-           if (found != null) return found;
+          final found = _findValue(v, keys);
+          if (found != null) return found;
         }
       }
     } else if (data is List) {
@@ -334,8 +408,8 @@ class _PrincipalStudentDetailViewState extends State<PrincipalStudentDetailView>
   }
 
   String _val(List<String> keys) {
-      final v = _findValue(_data, keys);
-      return v?.toString().trim() ?? '';
+    final v = _findValue(_data, keys);
+    return v?.toString().trim() ?? '';
   }
 
   String _composeAddress(String type) {
@@ -349,7 +423,12 @@ class _PrincipalStudentDetailViewState extends State<PrincipalStudentDetailView>
     final upazila = _val(['${type}_upazila', 'upazila']);
     final district = _val(['${type}_district', 'district']);
 
-    final parts = [street, post, upazila, district].where((e) => e.isNotEmpty).toList();
+    final parts = [
+      street,
+      post,
+      upazila,
+      district,
+    ].where((e) => e.isNotEmpty).toList();
     if (parts.isNotEmpty) return parts.join(', ');
 
     return '';
@@ -362,7 +441,12 @@ class _PrincipalStudentDetailViewState extends State<PrincipalStudentDetailView>
     final name = _val(['name', 'full_name', 'student_name']);
     final photo = _val(['photo_url', 'photo', 'image']);
     final roll = _val(['roll', 'class_roll']);
-    final studentId = _val(['student_id', 'admission_no', 'code', 'student_code']);
+    final studentId = _val([
+      'student_id',
+      'admission_no',
+      'code',
+      'student_code',
+    ]);
 
     final className = _val(['class', 'class_name']);
     final section = _val(['section', 'section_name']);
@@ -394,75 +478,93 @@ class _PrincipalStudentDetailViewState extends State<PrincipalStudentDetailView>
       body: _loading && d.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-         padding: const EdgeInsets.all(16),
-         child: Column(
-           children: [
-             // Header
-             Hero(
-               tag: 'avatar_${widget.studentId}',
-               child: CircleAvatar(
-                 radius: 50,
-                 backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
-                 child: photo.isEmpty ? const Icon(Icons.person, size: 50) : null,
-               ),
-             ),
-             const SizedBox(height: 10),
-             Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-             const SizedBox(height: 4),
-             Text('ID: $studentId', style: const TextStyle(color: Colors.grey)),
-              const SizedBox(height: 4),
-             Text('$className - $section (Roll: $roll)', style: const TextStyle(fontSize: 16)),
-             const SizedBox(height: 20),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Header
+                  Hero(
+                    tag: 'avatar_${widget.studentId}',
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundImage: photo.isNotEmpty
+                          ? NetworkImage(photo)
+                          : null,
+                      child: photo.isEmpty
+                          ? const Icon(Icons.person, size: 50)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'ID: $studentId',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$className - $section (Roll: $roll)',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 20),
 
-             _section('Academic Information', [
-               _row('Class', className),
-               _row('Section', section),
-               _row('Roll', roll),
-               _row('Group', group),
-               _row('Shift', shift),
-               _row('Medium', medium),
-               _row('Session', session),
-               _row('Year', year),
-             ]),
+                  _section('Academic Information', [
+                    _row('Class', className),
+                    _row('Section', section),
+                    _row('Roll', roll),
+                    _row('Group', group),
+                    _row('Shift', shift),
+                    _row('Medium', medium),
+                    _row('Session', session),
+                    _row('Year', year),
+                  ]),
 
-             _section('Personal Information', [
-               _row('Gender', gender),
-               _row('Blood Group', blood),
-               _row('Date of Birth', dob),
-               _row('Religion', religion),
-             ]),
+                  _section('Personal Information', [
+                    _row('Gender', gender),
+                    _row('Blood Group', blood),
+                    _row('Date of Birth', dob),
+                    _row('Religion', religion),
+                  ]),
 
-             _section('Contact & Address', [
-               _row('Phone', phone),
-               _row('Email', email),
-               _row('Present Address', presentAddr),
-               _row('Permanent Address', permAddr),
-             ]),
+                  _section('Contact & Address', [
+                    _row('Phone', phone),
+                    _row('Email', email),
+                    _row('Present Address', presentAddr),
+                    _row('Permanent Address', permAddr),
+                  ]),
 
-             _section('Family Information', [
-               _row('Father', father),
-               _row('Mother', mother),
-               _row('Guardian', guardian),
-               _row('Relation', guardianRel),
-               _row('Guardian Phone', guardianPhone),
-             ]),
+                  _section('Family Information', [
+                    _row('Father', father),
+                    _row('Mother', mother),
+                    _row('Guardian', guardian),
+                    _row('Relation', guardianRel),
+                    _row('Guardian Phone', guardianPhone),
+                  ]),
 
-             if (guardianPhone.isNotEmpty)
-               Padding(
-                 padding: const EdgeInsets.symmetric(vertical: 20),
-                 child: SizedBox(
-                   width: double.infinity,
-                   height: 50,
-                   child: ElevatedButton.icon(
-                     icon: const Icon(Icons.call),
-                     label: Text('Call Guardian: $guardianPhone'),
-                     onPressed: () => launchUrl(Uri.parse('tel:$guardianPhone')),
-                   ),
-                 ),
-                ),
-           ],
-         ),
-      ),
+                  if (guardianPhone.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.call),
+                          label: Text('Call Guardian: $guardianPhone'),
+                          onPressed: () =>
+                              launchUrl(Uri.parse('tel:$guardianPhone')),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
     );
   }
 
@@ -479,7 +581,14 @@ class _PrincipalStudentDetailViewState extends State<PrincipalStudentDetailView>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueGrey,
+              ),
+            ),
             const Divider(height: 24),
             ...validChildren,
           ],
@@ -495,8 +604,22 @@ class _PrincipalStudentDetailViewState extends State<PrincipalStudentDetailView>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 130, child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.grey))),
-          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500))),
+          SizedBox(
+            width: 130,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
         ],
       ),
     );

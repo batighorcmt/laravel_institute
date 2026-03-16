@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:flutter/src/widgets/placeholder.dart';
 import 'principal_attendance_details_page.dart';
 import 'lesson_evaluation_report_page.dart';
 import 'extra_class_attendance_report_page.dart';
@@ -43,9 +41,7 @@ class PrincipalReportsPage extends StatelessWidget {
                 color: Colors.orange,
               ),
               title: const Text('Extra Class Attendance Report'),
-              subtitle: const Text(
-                'Daily extra class summaries and reports',
-              ),
+              subtitle: const Text('Daily extra class summaries and reports'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.of(context).push(

@@ -11,8 +11,9 @@ class TeacherDirectoryRepository {
   }) async {
     final qp = <String, dynamic>{'page': page};
     if (search != null && search.isNotEmpty) qp['search'] = search;
-    if (designation != null && designation.isNotEmpty)
+    if (designation != null && designation.isNotEmpty) {
       qp['designation'] = designation;
+    }
     final resp = await _dio.get('teachers', queryParameters: qp);
     final data = resp.data;
     if (data is Map<String, dynamic>) {

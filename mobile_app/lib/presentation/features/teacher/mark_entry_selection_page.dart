@@ -8,10 +8,12 @@ class MarkEntrySelectionPage extends ConsumerStatefulWidget {
   const MarkEntrySelectionPage({super.key});
 
   @override
-  ConsumerState<MarkEntrySelectionPage> createState() => _MarkEntrySelectionPageState();
+  ConsumerState<MarkEntrySelectionPage> createState() =>
+      _MarkEntrySelectionPageState();
 }
 
-class _MarkEntrySelectionPageState extends ConsumerState<MarkEntrySelectionPage> {
+class _MarkEntrySelectionPageState
+    extends ConsumerState<MarkEntrySelectionPage> {
   bool _isLoading = true;
   List<dynamic> _years = [];
   List<dynamic> _classes = [];
@@ -114,14 +116,21 @@ class _MarkEntrySelectionPageState extends ConsumerState<MarkEntrySelectionPage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('শিক্ষাবর্ষ', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text(
+                    'শিক্ষাবর্ষ',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
-                    value: _selectedYearId,
-                    items: _years.map((y) => DropdownMenuItem<int>(
-                      value: y['id'],
-                      child: Text(y['name']),
-                    )).toList(),
+                    initialValue: _selectedYearId,
+                    items: _years
+                        .map(
+                          (y) => DropdownMenuItem<int>(
+                            value: y['id'],
+                            child: Text(y['name']),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (v) {
                       if (v != null) {
                         setState(() {
@@ -132,18 +141,28 @@ class _MarkEntrySelectionPageState extends ConsumerState<MarkEntrySelectionPage>
                         _triggerExamLoad();
                       }
                     },
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12)),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                    ),
                   ),
                   const SizedBox(height: 16),
 
-                  const Text('শ্রেণী', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text(
+                    'শ্রেণী',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
-                    value: _selectedClassId,
-                    items: _classes.map((c) => DropdownMenuItem<int>(
-                      value: c['id'],
-                      child: Text(c['name']),
-                    )).toList(),
+                    initialValue: _selectedClassId,
+                    items: _classes
+                        .map(
+                          (c) => DropdownMenuItem<int>(
+                            value: c['id'],
+                            child: Text(c['name']),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (v) {
                       if (v != null) {
                         setState(() {
@@ -154,51 +173,80 @@ class _MarkEntrySelectionPageState extends ConsumerState<MarkEntrySelectionPage>
                         _triggerExamLoad();
                       }
                     },
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12)),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                    ),
                   ),
                   const SizedBox(height: 16),
 
-                  const Text('পরীক্ষা', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text(
+                    'পরীক্ষা',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
-                    value: _selectedExamId,
-                    items: _exams.map((e) => DropdownMenuItem<int>(
-                      value: e['id'],
-                      child: Text(e['name']),
-                    )).toList(),
+                    initialValue: _selectedExamId,
+                    items: _exams
+                        .map(
+                          (e) => DropdownMenuItem<int>(
+                            value: e['id'],
+                            child: Text(e['name']),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (v) {
                       if (v != null) {
                         setState(() => _selectedExamId = v);
                         _loadSubjects(v);
                       }
                     },
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12)),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                    ),
                   ),
                   const SizedBox(height: 16),
 
-                  const Text('বিষয়', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text(
+                    'বিষয়',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
-                    value: _selectedSubjectId,
-                    items: _subjects.map((s) => DropdownMenuItem<int>(
-                      value: s['id'],
-                      child: Text(s['name']),
-                    )).toList(),
+                    initialValue: _selectedSubjectId,
+                    items: _subjects
+                        .map(
+                          (s) => DropdownMenuItem<int>(
+                            value: s['id'],
+                            child: Text(s['name']),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (v) {
-                      if (v!=null) {
+                      if (v != null) {
                         setState(() {
                           _selectedSubjectId = v;
-                          final s = _subjects.firstWhere((element) => element['id'] == v);
+                          final s = _subjects.firstWhere(
+                            (element) => element['id'] == v,
+                          );
                           _examSubjectId = s['exam_subject_id'];
                         });
                       }
                     },
-                    decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12)),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                    ),
                   ),
                   const SizedBox(height: 24),
 
                   ElevatedButton(
-                    onPressed: (_selectedYearId != null && _selectedClassId != null && _selectedExamId != null && _selectedSubjectId != null)
+                    onPressed:
+                        (_selectedYearId != null &&
+                            _selectedClassId != null &&
+                            _selectedExamId != null &&
+                            _selectedSubjectId != null)
                         ? () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
@@ -207,13 +255,19 @@ class _MarkEntrySelectionPageState extends ConsumerState<MarkEntrySelectionPage>
                                   subjectId: _selectedSubjectId!,
                                   classId: _selectedClassId!,
                                   examSubjectId: _examSubjectId!,
-                                  subjectName: _subjects.firstWhere((s) => s['id'] == _selectedSubjectId)['name'],
+                                  subjectName: _subjects.firstWhere(
+                                    (s) => s['id'] == _selectedSubjectId,
+                                  )['name'],
                                 ),
                               ),
                             );
                           }
                         : null,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 50)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 50),
+                    ),
                     child: const Text('শিক্ষার্থী তালিকা দেখুন'),
                   ),
                 ],

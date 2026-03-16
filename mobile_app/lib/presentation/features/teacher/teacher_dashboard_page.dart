@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../widgets/animated_tile.dart';
-import '../../../widgets/app_snack.dart';
 import 'lesson_evaluation_list_page.dart';
 import 'homework_list_page.dart';
 import 'teacher_leave_list_page.dart';
@@ -107,7 +106,8 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
                 onProfileTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                        builder: (_) => const TeacherProfilePage()),
+                      builder: (_) => const TeacherProfilePage(),
+                    ),
                   );
                 },
               ),
@@ -148,9 +148,9 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
         );
         break;
       case 'exams':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const TeacherExamsPage()),
-        );
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const TeacherExamsPage()));
         break;
       case 'manage_leave':
         Navigator.of(
@@ -168,7 +168,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
         );
         break;
       case 'notices':
-        context.push('/notice-board'); 
+        context.push('/notice-board');
         break;
     }
   }
@@ -241,10 +241,9 @@ class _HeaderCard extends StatelessWidget {
                   CircleAvatar(
                     radius: 28,
                     backgroundColor: const Color(0xFFE6F5EE),
-                    backgroundImage:
-                        (photoUrl != null && photoUrl!.isNotEmpty)
-                            ? NetworkImage(photoUrl!)
-                            : null,
+                    backgroundImage: (photoUrl != null && photoUrl!.isNotEmpty)
+                        ? NetworkImage(photoUrl!)
+                        : null,
                     child: (photoUrl == null || photoUrl!.isEmpty)
                         ? Text(
                             name.isNotEmpty ? name[0].toUpperCase() : 'T',
@@ -278,7 +277,9 @@ class _HeaderCard extends StatelessWidget {
                           Text(
                             schoolName!,
                             style: const TextStyle(
-                                color: Color(0xFF4B5563), fontSize: 12),
+                              color: Color(0xFF4B5563),
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ],
@@ -293,13 +294,20 @@ class _HeaderCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _AttStat(
-                        label: 'আজকের স্ট্যাটাস',
-                        value: _statusLabel(status),
-                        color: _statusColor(status)),
-                    _AttStat(label: 'চেক ইন', value: checkIn,
-                        color: Colors.green),
-                    _AttStat(label: 'চেক আউট', value: checkOut,
-                        color: Colors.red),
+                      label: 'আজকের স্ট্যাটাস',
+                      value: _statusLabel(status),
+                      color: _statusColor(status),
+                    ),
+                    _AttStat(
+                      label: 'চেক ইন',
+                      value: checkIn,
+                      color: Colors.green,
+                    ),
+                    _AttStat(
+                      label: 'চেক আউট',
+                      value: checkOut,
+                      color: Colors.red,
+                    ),
                   ],
                 ),
               ] else ...[
@@ -321,18 +329,29 @@ class _AttStat extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _AttStat({required this.label, required this.value, required this.color});
+  const _AttStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+        ),
         const SizedBox(height: 2),
-        Text(value,
-            style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
       ],
     );
   }

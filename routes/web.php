@@ -334,6 +334,11 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::post('/{exam}/subjects', [App\Http\Controllers\Principal\ExamController::class,'addSubject'])->name('subjects.add');
                 Route::put('/{exam}/subjects/{examSubject}', [App\Http\Controllers\Principal\ExamController::class,'updateSubject'])->name('subjects.update');
                 Route::delete('/{exam}/subjects/{examSubject}', [App\Http\Controllers\Principal\ExamController::class,'removeSubject'])->name('subjects.remove');
+
+                // Print Templates
+                Route::get('/{exam}/admit-v2', [App\Http\Controllers\Principal\ExamPrintController::class, 'admitV2'])->name('admit_v2');
+                Route::get('/{exam}/admit-v3', [App\Http\Controllers\Principal\ExamPrintController::class, 'admitV3'])->name('admit_v3');
+                Route::get('/{exam}/attendance-sheet', [App\Http\Controllers\Principal\ExamPrintController::class, 'attendanceSheet'])->name('attendance_sheet');
             });
 
             // Mark Entry Routes

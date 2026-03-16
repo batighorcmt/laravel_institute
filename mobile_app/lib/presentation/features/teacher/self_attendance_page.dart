@@ -51,104 +51,107 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
           onRefresh: _fetchTodayRecord,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Now: $dateStr', style: const TextStyle(color: Colors.grey)),
-              const SizedBox(height: 12),
-              _StatusHeader(record: _todayRecord),
-              const SizedBox(height: 8),
-              _SettingsBanner(settings: _settings, loading: _loadingSettings),
-              const SizedBox(height: 12),
-              const SizedBox(height: 12),
-              // Action buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Now: $dateStr',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 12),
+                _StatusHeader(record: _todayRecord),
+                const SizedBox(height: 8),
+                _SettingsBanner(settings: _settings, loading: _loadingSettings),
+                const SizedBox(height: 12),
+                const SizedBox(height: 12),
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              (!_busy &&
+                                  !_isTodayCheckedIn &&
+                                  !_isTodayCompleted &&
+                                  _schoolId != null)
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey.shade400,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed:
                             (!_busy &&
                                 !_isTodayCheckedIn &&
                                 !_isTodayCompleted &&
                                 _schoolId != null)
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey.shade400,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed:
-                          (!_busy &&
-                              !_isTodayCheckedIn &&
-                              !_isTodayCompleted &&
-                              _schoolId != null)
-                          ? _startCheckInFlow
-                          : null,
-                      child: _busy
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                            ? _startCheckInFlow
+                            : null,
+                        child: _busy
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Check In',
+                                style: TextStyle(fontWeight: FontWeight.bold),
                               ),
-                            )
-                          : const Text(
-                              'Check In',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        side: BorderSide(
-                          color:
-                              (!_busy &&
-                                  _schoolId != null &&
-                                  _isTodayCheckedIn &&
-                                  !_isTodayCompleted)
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey.shade400,
-                        ),
-                      ),
-                      onPressed:
-                          (!_busy &&
-                              _isTodayCheckedIn &&
-                              !_isTodayCompleted &&
-                              _schoolId != null)
-                          ? _startCheckOutFlow
-                          : null,
-                      child: const Text(
-                        'Check Out',
-                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 12),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          side: BorderSide(
+                            color:
+                                (!_busy &&
+                                    _schoolId != null &&
+                                    _isTodayCheckedIn &&
+                                    !_isTodayCompleted)
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey.shade400,
+                          ),
+                        ),
+                        onPressed:
+                            (!_busy &&
+                                _isTodayCheckedIn &&
+                                !_isTodayCompleted &&
+                                _schoolId != null)
+                            ? _startCheckOutFlow
+                            : null,
+                        child: const Text(
+                          'Check Out',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-            ],
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      _error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -204,7 +207,7 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
                   RegExp(r'\.jpe?g$', caseSensitive: false),
                   '_compressed.jpg',
                 )
-              : image.path + '_compressed.jpg';
+              : '${image.path}_compressed.jpg';
           await File(tmpPath).writeAsBytes(jpeg, flush: true);
           setState(() => _photo = XFile(tmpPath));
         } else {
@@ -348,9 +351,7 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
     if (requirePhoto && _photo == null) return;
     if (requireLocation && _position == null) return;
 
-    final Map<String, dynamic> data = {
-      'school_id': schoolId,
-    };
+    final Map<String, dynamic> data = {'school_id': schoolId};
 
     if (_position != null) {
       data['lat'] = _position!.latitude;
@@ -359,8 +360,10 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
 
     if (_photo != null) {
       final fileName = 'self_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      data['photo'] =
-          await MultipartFile.fromFile(_photo!.path, filename: fileName);
+      data['photo'] = await MultipartFile.fromFile(
+        _photo!.path,
+        filename: fileName,
+      );
     }
 
     final form = FormData.fromMap(data);
@@ -405,9 +408,7 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
     if (requirePhoto && _photo == null) return;
     if (requireLocation && _position == null) return;
 
-    final Map<String, dynamic> data = {
-      'school_id': schoolId,
-    };
+    final Map<String, dynamic> data = {'school_id': schoolId};
 
     if (_position != null) {
       data['lat'] = _position!.latitude;
@@ -416,8 +417,10 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
 
     if (_photo != null) {
       final fileName = 'self_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      data['photo'] =
-          await MultipartFile.fromFile(_photo!.path, filename: fileName);
+      data['photo'] = await MultipartFile.fromFile(
+        _photo!.path,
+        filename: fileName,
+      );
     }
 
     final form = FormData.fromMap(data);

@@ -1,10 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/auth_state.dart';
 import '../../../data/auth/auth_repository.dart';
 import '../../../widgets/app_snack.dart';
-import 'package:go_router/go_router.dart';
 
 class TeacherProfilePage extends ConsumerStatefulWidget {
   const TeacherProfilePage({super.key});
@@ -42,14 +40,21 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
         confirmPassword: _confirmController.text,
       );
       if (mounted) {
-        showAppSnack(context, message: 'Password updated successfully', success: true);
+        showAppSnack(
+          context,
+          message: 'Password updated successfully',
+          success: true,
+        );
         _currentController.clear();
         _newController.clear();
         _confirmController.clear();
       }
     } catch (e) {
       if (mounted) {
-        showAppSnack(context, message: e.toString().replaceAll('Exception: ', ''));
+        showAppSnack(
+          context,
+          message: e.toString().replaceAll('Exception: ', ''),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -62,9 +67,7 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
     final user = userState.value;
 
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -77,20 +80,27 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
             // Profile Header
             Card(
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
                     CircleAvatar(
                       radius: 40,
-                      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                      backgroundImage: (user.photoUrl != null && user.photoUrl!.isNotEmpty)
+                      backgroundColor: Theme.of(
+                        context,
+                      ).primaryColor.withOpacity(0.1),
+                      backgroundImage:
+                          (user.photoUrl != null && user.photoUrl!.isNotEmpty)
                           ? NetworkImage(user.photoUrl!)
                           : null,
                       child: (user.photoUrl == null || user.photoUrl!.isEmpty)
                           ? Text(
-                              user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                              user.name.isNotEmpty
+                                  ? user.name[0].toUpperCase()
+                                  : 'U',
                               style: TextStyle(
                                 fontSize: 32,
                                 color: Theme.of(context).primaryColor,
@@ -102,14 +112,21 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
                     const SizedBox(height: 16),
                     Text(
                       user.name,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     if (user.username != null) ...[
                       const SizedBox(height: 2),
                       Text(
                         'Username: ${user.username}',
-                        style: TextStyle(fontSize: 15, color: Colors.blue[700], fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.blue[700],
+                          fontWeight: FontWeight.w500,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -123,7 +140,8 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
                     ],
                     // Assuming roles might contain school name, but user object structure varies.
                     // Checking implementation plan context, UserRole has schoolName.
-                    if (user.roles.isNotEmpty && user.roles.first.schoolName != null) ...[
+                    if (user.roles.isNotEmpty &&
+                        user.roles.first.schoolName != null) ...[
                       const SizedBox(height: 4),
                       Text(
                         user.roles.first.schoolName!,
@@ -136,7 +154,7 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Password Reset Section
             const Text(
               'Change Password',
@@ -158,11 +176,18 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
                           labelText: 'Current Password',
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
-                            icon: Icon(_obscureCurrent ? Icons.visibility_off : Icons.visibility),
-                            onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
+                            icon: Icon(
+                              _obscureCurrent
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscureCurrent = !_obscureCurrent,
+                            ),
                           ),
                         ),
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Required' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -172,11 +197,17 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
                           labelText: 'New Password',
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
-                            icon: Icon(_obscureNew ? Icons.visibility_off : Icons.visibility),
-                            onPressed: () => setState(() => _obscureNew = !_obscureNew),
+                            icon: Icon(
+                              _obscureNew
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () =>
+                                setState(() => _obscureNew = !_obscureNew),
                           ),
                         ),
-                        validator: (v) => v == null || v.length < 6 ? 'Min 6 chars' : null,
+                        validator: (v) =>
+                            v == null || v.length < 6 ? 'Min 6 chars' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -186,8 +217,14 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
                           labelText: 'Confirm Password',
                           border: const OutlineInputBorder(),
                           suffixIcon: IconButton(
-                            icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
-                            onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                            icon: Icon(
+                              _obscureConfirm
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscureConfirm = !_obscureConfirm,
+                            ),
                           ),
                         ),
                         validator: (v) {
@@ -203,7 +240,9 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
                         child: ElevatedButton(
                           onPressed: _loading ? null : _updatePassword,
                           child: _loading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
                               : const Text('Update Password'),
                         ),
                       ),

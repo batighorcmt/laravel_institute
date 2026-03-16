@@ -18,7 +18,6 @@ class AppTheme {
       onSurface: const Color(0xFF1A1D1F),
       onPrimary: Colors.white,
       onSecondary: Colors.white,
-      onBackground: const Color(0xFF1A1D1F),
     );
 
     final baseInter = GoogleFonts.interTextTheme(base.textTheme);
@@ -43,10 +42,10 @@ class AppTheme {
     return base.copyWith(
       colorScheme: colorScheme,
       textTheme: textTheme,
-      scaffoldBackgroundColor: colorScheme.background,
+      scaffoldBackgroundColor: colorScheme.surface,
       iconTheme: const IconThemeData(color: Color(0xFF111111)),
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.background,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         foregroundColor: const Color(0xFF111111),
         iconTheme: const IconThemeData(color: Color(0xFF111111)),
@@ -110,10 +109,10 @@ class AppTheme {
     return base.copyWith(
       colorScheme: colorScheme,
       textTheme: textTheme,
-      scaffoldBackgroundColor: colorScheme.background,
+      scaffoldBackgroundColor: colorScheme.surface,
       iconTheme: const IconThemeData(color: Colors.white),
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.background,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         foregroundColor: colorScheme.primary,
         iconTheme: const IconThemeData(color: Colors.white),

@@ -42,10 +42,11 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
     } catch (e) {
       _error = 'লোড ব্যর্থ';
     } finally {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _loading = false;
         });
+      }
     }
   }
 
@@ -54,10 +55,18 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('মুছে ফেলুন'),
-        content: const Text('আপনি কি নিশ্চিত যে এই হোমওয়ার্কটি মুছে ফেলতে চান?'),
+        content: const Text(
+          'আপনি কি নিশ্চিত যে এই হোমওয়ার্কটি মুছে ফেলতে চান?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('না')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('হ্যাঁ', style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('না'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('হ্যাঁ', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -66,11 +75,16 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
     try {
       await _dio.delete('teacher/homework/$id');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('মুছে ফেলা হয়েছে')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('মুছে ফেলা হয়েছে')));
         _load();
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('অপারেশন ব্যর্থ')));
+      if (mounted)
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('অপারেশন ব্যর্থ')));
     }
   }
 
@@ -81,7 +95,17 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-          ? RefreshIndicator(onRefresh: _load, child: SingleChildScrollView(physics: const AlwaysScrollableScrollPhysics(), child: Container(height: 500, alignment: Alignment.center, child: Text(_error!))))
+          ? RefreshIndicator(
+              onRefresh: _load,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Container(
+                  height: 500,
+                  alignment: Alignment.center,
+                  child: Text(_error!),
+                ),
+              ),
+            )
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView.separated(
@@ -103,7 +127,9 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
 
                   return Card(
                     elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Column(
@@ -115,7 +141,10 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
                               Expanded(
                                 child: Text(
                                   title,
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -123,17 +152,34 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
                               Row(
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: Colors.blue,
+                                      size: 20,
+                                    ),
                                     onPressed: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(builder: (_) => TeacherHomeworkCreatePage(homework: m)),
-                                      ).then((ok) => ok == true ? _load() : null);
+                                      Navigator.of(context)
+                                          .push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  TeacherHomeworkCreatePage(
+                                                    homework: m,
+                                                  ),
+                                            ),
+                                          )
+                                          .then(
+                                            (ok) => ok == true ? _load() : null,
+                                          );
                                     },
                                     constraints: const BoxConstraints(),
                                     padding: const EdgeInsets.all(8),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                      size: 20,
+                                    ),
                                     onPressed: () => _delete(id),
                                     constraints: const BoxConstraints(),
                                     padding: const EdgeInsets.all(8),
@@ -156,18 +202,30 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
                           _infoLabel(Icons.calendar_today, 'Given: ', date),
                           if (due.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            _infoLabel(Icons.event_available, 'Due: ', due, color: Colors.orange.shade800),
+                            _infoLabel(
+                              Icons.event_available,
+                              'Due: ',
+                              due,
+                              color: Colors.orange.shade800,
+                            ),
                           ],
                           if (desc.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             const Text(
                               'বর্ণনা:',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black54),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black54,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               desc,
-                              style: const TextStyle(fontSize: 13, color: Colors.black87),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.black87,
+                              ),
                             ),
                           ],
                           if (attachmentUrl.isNotEmpty) ...[
@@ -182,11 +240,20 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
                                 onPressed: () async {
                                   final uri = Uri.parse(attachmentUrl);
                                   if (await canLaunchUrl(uri)) {
-                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                    await launchUrl(
+                                      uri,
+                                      mode: LaunchMode.externalApplication,
+                                    );
                                   } else {
                                     if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('অ্যাটাচমেন্ট ওপেন করা সম্ভব হচ্ছে না')),
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'অ্যাটাচমেন্ট ওপেন করা সম্ভব হচ্ছে না',
+                                          ),
+                                        ),
                                       );
                                     }
                                   }
@@ -238,7 +305,11 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
           const SizedBox(width: 4),
           Text(
             label,
-            style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -252,12 +323,20 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            fontSize: 13,
+            color: Colors.black54,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(fontSize: 13, color: color ?? Colors.black87, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 13,
+              color: color ?? Colors.black87,
+              fontWeight: FontWeight.bold,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),

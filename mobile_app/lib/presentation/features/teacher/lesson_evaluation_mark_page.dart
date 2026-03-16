@@ -115,10 +115,11 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
     } catch (e) {
       _error = 'ডাটা লোড ব্যর্থ';
     } finally {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _loading = false;
         });
+      }
     }
   }
 
@@ -232,7 +233,10 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                 _StatsRow(stats: _stats),
                 if (_warningMessage != null && _warningMessage!.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
                     child: Container(
                       padding: const EdgeInsets.all(12.0),
                       decoration: BoxDecoration(
@@ -247,7 +251,10 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                           Expanded(
                             child: Text(
                               _warningMessage!,
-                              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -258,13 +265,15 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                   child: ListView.separated(
                     padding: const EdgeInsets.all(12),
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemCount: _filterStatus == null 
-                        ? _rows.length 
+                    itemCount: _filterStatus == null
+                        ? _rows.length
                         : _rows.where((r) => r.status == _filterStatus).length,
                     itemBuilder: (ctx, i) {
-                      final displayRows = _filterStatus == null 
-                          ? _rows 
-                          : _rows.where((r) => r.status == _filterStatus).toList();
+                      final displayRows = _filterStatus == null
+                          ? _rows
+                          : _rows
+                                .where((r) => r.status == _filterStatus)
+                                .toList();
                       final s = displayRows[i];
                       return _RowWidget(
                         row: s,
@@ -330,15 +339,25 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text('নোট / পাঠ বিষয়:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            const Text(
+                              'নোট / পাঠ বিষয়:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
                             const SizedBox(height: 4),
                             Text(
-                              _notesController.text.isNotEmpty 
-                                  ? _notesController.text 
+                              _notesController.text.isNotEmpty
+                                  ? _notesController.text
                                   : 'কোনো নোট দেওয়া হয়নি',
                               style: TextStyle(
-                                color: _notesController.text.isNotEmpty ? null : Colors.grey.shade600,
-                                fontStyle: _notesController.text.isNotEmpty ? FontStyle.normal : FontStyle.italic,
+                                color: _notesController.text.isNotEmpty
+                                    ? null
+                                    : Colors.grey.shade600,
+                                fontStyle: _notesController.text.isNotEmpty
+                                    ? FontStyle.normal
+                                    : FontStyle.italic,
                               ),
                             ),
                           ],
@@ -418,7 +437,11 @@ class _TopBar extends StatelessWidget {
                   label: readOnly ? 'সম্পন্ন' : 'সব সম্পন্ন',
                   isSelected: filterStatus == EvalStatus.completed,
                   onTap: readOnly
-                      ? () => onSetFilter(filterStatus == EvalStatus.completed ? null : EvalStatus.completed)
+                      ? () => onSetFilter(
+                          filterStatus == EvalStatus.completed
+                              ? null
+                              : EvalStatus.completed,
+                        )
                       : onAllCompleted,
                 ),
                 const SizedBox(width: 8),
@@ -428,7 +451,11 @@ class _TopBar extends StatelessWidget {
                   label: readOnly ? 'আংশিক' : 'সব আংশিক',
                   isSelected: filterStatus == EvalStatus.partial,
                   onTap: readOnly
-                      ? () => onSetFilter(filterStatus == EvalStatus.partial ? null : EvalStatus.partial)
+                      ? () => onSetFilter(
+                          filterStatus == EvalStatus.partial
+                              ? null
+                              : EvalStatus.partial,
+                        )
                       : onAllPartial,
                 ),
                 const SizedBox(width: 8),
@@ -438,7 +465,11 @@ class _TopBar extends StatelessWidget {
                   label: readOnly ? 'হয়নি' : 'সব হয়নি',
                   isSelected: filterStatus == EvalStatus.notDone,
                   onTap: readOnly
-                      ? () => onSetFilter(filterStatus == EvalStatus.notDone ? null : EvalStatus.notDone)
+                      ? () => onSetFilter(
+                          filterStatus == EvalStatus.notDone
+                              ? null
+                              : EvalStatus.notDone,
+                        )
                       : onAllNotDone,
                 ),
                 const SizedBox(width: 8),
@@ -448,7 +479,11 @@ class _TopBar extends StatelessWidget {
                   label: readOnly ? 'অনুপস্থিত' : 'সব অনুপস্থিত',
                   isSelected: filterStatus == EvalStatus.absent,
                   onTap: readOnly
-                      ? () => onSetFilter(filterStatus == EvalStatus.absent ? null : EvalStatus.absent)
+                      ? () => onSetFilter(
+                          filterStatus == EvalStatus.absent
+                              ? null
+                              : EvalStatus.absent,
+                        )
                       : onAllAbsent,
                 ),
               ],
@@ -488,7 +523,10 @@ class _Chip extends StatelessWidget {
           children: [
             Icon(icon, color: isSelected ? Colors.white : color, size: 18),
             const SizedBox(width: 4),
-            Text(label, style: TextStyle(color: isSelected ? Colors.white : null)),
+            Text(
+              label,
+              style: TextStyle(color: isSelected ? Colors.white : null),
+            ),
           ],
         ),
       ),

@@ -31,19 +31,24 @@ class HomeworkListPage extends ConsumerWidget {
                       onPressed: () async {
                         final picked = await showDatePicker(
                           context: context,
-                          initialDate: ref.read(homeworkFromDateFilterProvider) ?? DateTime.now(),
+                          initialDate:
+                              ref.read(homeworkFromDateFilterProvider) ??
+                              DateTime.now(),
                           firstDate: DateTime(2024),
                           lastDate: DateTime(2100),
                         );
                         if (picked != null) {
-                          ref.read(homeworkFromDateFilterProvider.notifier).state = picked;
+                          ref
+                                  .read(homeworkFromDateFilterProvider.notifier)
+                                  .state =
+                              picked;
                         }
                       },
                       icon: const Icon(Icons.calendar_today, size: 14),
                       label: Text(
-                        ref.watch(homeworkFromDateFilterProvider) == null 
-                          ? 'হতে' 
-                          : "${ref.watch(homeworkFromDateFilterProvider)!.day}/${ref.watch(homeworkFromDateFilterProvider)!.month}/${ref.watch(homeworkFromDateFilterProvider)!.year}",
+                        ref.watch(homeworkFromDateFilterProvider) == null
+                            ? 'হতে'
+                            : "${ref.watch(homeworkFromDateFilterProvider)!.day}/${ref.watch(homeworkFromDateFilterProvider)!.month}/${ref.watch(homeworkFromDateFilterProvider)!.year}",
                         style: const TextStyle(fontSize: 11),
                       ),
                     ),
@@ -54,19 +59,24 @@ class HomeworkListPage extends ConsumerWidget {
                       onPressed: () async {
                         final picked = await showDatePicker(
                           context: context,
-                          initialDate: ref.read(homeworkToDateFilterProvider) ?? DateTime.now(),
+                          initialDate:
+                              ref.read(homeworkToDateFilterProvider) ??
+                              DateTime.now(),
                           firstDate: DateTime(2024),
                           lastDate: DateTime(2100),
                         );
                         if (picked != null) {
-                          ref.read(homeworkToDateFilterProvider.notifier).state = picked;
+                          ref
+                                  .read(homeworkToDateFilterProvider.notifier)
+                                  .state =
+                              picked;
                         }
                       },
                       icon: const Icon(Icons.calendar_today, size: 14),
                       label: Text(
-                        ref.watch(homeworkToDateFilterProvider) == null 
-                          ? 'পর্যন্ত' 
-                          : "${ref.watch(homeworkToDateFilterProvider)!.day}/${ref.watch(homeworkToDateFilterProvider)!.month}/${ref.watch(homeworkToDateFilterProvider)!.year}",
+                        ref.watch(homeworkToDateFilterProvider) == null
+                            ? 'পর্যন্ত'
+                            : "${ref.watch(homeworkToDateFilterProvider)!.day}/${ref.watch(homeworkToDateFilterProvider)!.month}/${ref.watch(homeworkToDateFilterProvider)!.year}",
                         style: const TextStyle(fontSize: 11),
                       ),
                     ),
@@ -74,10 +84,14 @@ class HomeworkListPage extends ConsumerWidget {
                   IconButton(
                     icon: const Icon(Icons.refresh, size: 20),
                     onPressed: () {
-                      ref.read(homeworkFromDateFilterProvider.notifier).state = DateTime.now();
-                      ref.read(homeworkToDateFilterProvider.notifier).state = DateTime.now();
-                      ref.read(homeworkSubjectFilterProvider.notifier).state = null;
-                      ref.read(homeworkTeacherFilterProvider.notifier).state = null;
+                      ref.read(homeworkFromDateFilterProvider.notifier).state =
+                          DateTime.now();
+                      ref.read(homeworkToDateFilterProvider.notifier).state =
+                          DateTime.now();
+                      ref.read(homeworkSubjectFilterProvider.notifier).state =
+                          null;
+                      ref.read(homeworkTeacherFilterProvider.notifier).state =
+                          null;
                     },
                   ),
                 ],
@@ -88,50 +102,88 @@ class HomeworkListPage extends ConsumerWidget {
                   Expanded(
                     child: subjectsAsync.when(
                       data: (items) => DropdownButtonFormField<int>(
-                        value: selectedSubjectId,
+                        initialValue: selectedSubjectId,
                         isExpanded: true,
                         decoration: _filterDecoration('বিষয়'),
-                        style: const TextStyle(fontSize: 11, color: Colors.black),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black,
+                        ),
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('সব বিষয়', style: TextStyle(fontSize: 11))),
-                          ...items.map((e) => DropdownMenuItem(
-                                value: e['id'] as int,
-                                child: Text(
-                                  e['name'] ?? '',
-                                  style: const TextStyle(fontSize: 11),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              )),
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text(
+                              'সব বিষয়',
+                              style: TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          ...items.map(
+                            (e) => DropdownMenuItem(
+                              value: e['id'] as int,
+                              child: Text(
+                                e['name'] ?? '',
+                                style: const TextStyle(fontSize: 11),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
                         ],
-                        onChanged: (val) => ref.read(homeworkSubjectFilterProvider.notifier).state = val,
+                        onChanged: (val) =>
+                            ref
+                                    .read(
+                                      homeworkSubjectFilterProvider.notifier,
+                                    )
+                                    .state =
+                                val,
                       ),
-                      loading: () => const Text('...', style: TextStyle(fontSize: 11)),
-                      error: (_, __) => const Text('!', style: TextStyle(fontSize: 11)),
+                      loading: () =>
+                          const Text('...', style: TextStyle(fontSize: 11)),
+                      error: (_, __) =>
+                          const Text('!', style: TextStyle(fontSize: 11)),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: teachersAsync.when(
                       data: (items) => DropdownButtonFormField<int>(
-                        value: selectedTeacherId,
+                        initialValue: selectedTeacherId,
                         isExpanded: true,
                         decoration: _filterDecoration('শিক্ষক'),
-                        style: const TextStyle(fontSize: 11, color: Colors.black),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black,
+                        ),
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('সব শিক্ষক', style: TextStyle(fontSize: 11))),
-                          ...items.map((e) => DropdownMenuItem(
-                                value: e['id'] as int,
-                                child: Text(
-                                  e['name'] ?? '',
-                                  style: const TextStyle(fontSize: 11),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              )),
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text(
+                              'সব শিক্ষক',
+                              style: TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          ...items.map(
+                            (e) => DropdownMenuItem(
+                              value: e['id'] as int,
+                              child: Text(
+                                e['name'] ?? '',
+                                style: const TextStyle(fontSize: 11),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
                         ],
-                        onChanged: (val) => ref.read(homeworkTeacherFilterProvider.notifier).state = val,
+                        onChanged: (val) =>
+                            ref
+                                    .read(
+                                      homeworkTeacherFilterProvider.notifier,
+                                    )
+                                    .state =
+                                val,
                       ),
-                      loading: () => const Text('...', style: TextStyle(fontSize: 11)),
-                      error: (_, __) => const Text('!', style: TextStyle(fontSize: 11)),
+                      loading: () =>
+                          const Text('...', style: TextStyle(fontSize: 11)),
+                      error: (_, __) =>
+                          const Text('!', style: TextStyle(fontSize: 11)),
                     ),
                   ),
                 ],
@@ -144,8 +196,12 @@ class HomeworkListPage extends ConsumerWidget {
           child: homeworkAsync.when(
             data: (homeworks) {
               final filtered = homeworks.where((hw) {
-                if (selectedSubjectId != null && hw['subject_id'] != selectedSubjectId) return false;
-                if (selectedTeacherId != null && hw['teacher_id'] != selectedTeacherId) return false;
+                if (selectedSubjectId != null &&
+                    hw['subject_id'] != selectedSubjectId)
+                  return false;
+                if (selectedTeacherId != null &&
+                    hw['teacher_id'] != selectedTeacherId)
+                  return false;
                 return true;
               }).toList();
 
@@ -172,23 +228,39 @@ class HomeworkListPage extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(4)),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
                                 child: Text(
                                   hw['subject_name']?.toString() ?? 'N/A',
-                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                               Text(
                                 "দেওয়া হয়েছে: ${hw['homework_date'] ?? 'N/A'}",
-                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 10),
                           Text(
                             hw['title']?.toString() ?? 'N/A',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -202,10 +274,19 @@ class HomeworkListPage extends ConsumerWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('শিক্ষক', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                    const Text(
+                                      'শিক্ষক',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
                                     Text(
                                       hw['teacher_name']?.toString() ?? 'N/A',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -215,8 +296,21 @@ class HomeworkListPage extends ConsumerWidget {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  const Text('জমাদানের শেষ তারিখ', style: TextStyle(fontSize: 10, color: Colors.red)),
-                                  Text(hw['submission_date'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 13)),
+                                  const Text(
+                                    'জমাদানের শেষ তারিখ',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                  Text(
+                                    hw['submission_date'] ?? 'N/A',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.red,
+                                      fontSize: 13,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
@@ -227,27 +321,53 @@ class HomeworkListPage extends ConsumerWidget {
                             child: ElevatedButton.icon(
                               onPressed: hasAttachment
                                   ? () async {
-                                      final storageUrl = Env.apiBaseUrl.replaceAll('/api/v1/', '/storage/');
-                                      final attachmentPath = hw['attachment'].toString();
-                                      final encodedPath = attachmentPath.split('/').map((e) => Uri.encodeComponent(e)).join('/');
-                                      final url = Uri.parse(storageUrl + encodedPath);
+                                      final storageUrl = Env.apiBaseUrl
+                                          .replaceAll('/api/v1/', '/storage/');
+                                      final attachmentPath = hw['attachment']
+                                          .toString();
+                                      final encodedPath = attachmentPath
+                                          .split('/')
+                                          .map((e) => Uri.encodeComponent(e))
+                                          .join('/');
+                                      final url = Uri.parse(
+                                        storageUrl + encodedPath,
+                                      );
                                       if (await canLaunchUrl(url)) {
-                                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                                        await launchUrl(
+                                          url,
+                                          mode: LaunchMode.externalApplication,
+                                        );
                                       } else {
                                         if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('ডাউনলোড লিঙ্কটি ওপেন করা সম্ভব হচ্ছে না')),
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'ডাউনলোড লিঙ্কটি ওপেন করা সম্ভব হচ্ছে না',
+                                              ),
+                                            ),
                                           );
                                         }
                                       }
                                     }
                                   : null,
                               icon: const Icon(Icons.file_download, size: 18),
-                              label: Text(hasAttachment ? 'অ্যাটাচমেন্ট ডাউনলোড করুন' : 'অ্যাটাচমেন্ট নেই'),
+                              label: Text(
+                                hasAttachment
+                                    ? 'অ্যাটাচমেন্ট ডাউনলোড করুন'
+                                    : 'অ্যাটাচমেন্ট নেই',
+                              ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: hasAttachment ? Colors.indigo : Colors.grey[300],
-                                foregroundColor: hasAttachment ? Colors.white : Colors.grey,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                backgroundColor: hasAttachment
+                                    ? Colors.indigo
+                                    : Colors.grey[300],
+                                foregroundColor: hasAttachment
+                                    ? Colors.white
+                                    : Colors.grey,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ),

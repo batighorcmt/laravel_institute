@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../state/parent_state.dart';
-import '../../state/auth_state.dart';
 
 class ParentDashboardPage extends ConsumerWidget {
   const ParentDashboardPage({super.key});
@@ -28,10 +27,17 @@ class ParentDashboardPage extends ConsumerWidget {
               final profileAsync = ref.watch(parentStudentProfileProvider);
               return profileAsync.when(
                 data: (profile) {
-                  final parentName = profile['guardian_name_bn'] ?? profile['guardian_name_en'] ?? 'অভিভাবক';
-                  final studentName = profile['name_bn'] ?? profile['name_en'] ?? 'শিক্ষার্থী';
-                  final schoolName = profile['school_name_bn'] ?? profile['school_name'] ?? 'বিদ্যালয়ের নাম';
-                  
+                  final parentName =
+                      profile['guardian_name_bn'] ??
+                      profile['guardian_name_en'] ??
+                      'অভিভাবক';
+                  final studentName =
+                      profile['name_bn'] ?? profile['name_en'] ?? 'শিক্ষার্থী';
+                  final schoolName =
+                      profile['school_name_bn'] ??
+                      profile['school_name'] ??
+                      'বিদ্যালয়ের নাম';
+
                   final studentId = profile['student_id'] ?? 'N/A';
                   final className = profile['class'] ?? 'N/A';
                   final sectionName = profile['section'] ?? 'N/A';
@@ -61,7 +67,11 @@ class ParentDashboardPage extends ConsumerWidget {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.waving_hand, color: Colors.amberAccent, size: 22),
+                            const Icon(
+                              Icons.waving_hand,
+                              color: Colors.amberAccent,
+                              size: 22,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'স্বাগতম, $parentName',
@@ -76,7 +86,10 @@ class ParentDashboardPage extends ConsumerWidget {
                         const SizedBox(height: 12),
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(8),
@@ -95,12 +108,20 @@ class ParentDashboardPage extends ConsumerWidget {
                               const Divider(color: Colors.white24, height: 12),
                               Text(
                                 'শ্রেণি: $className | শাখা: $sectionName | রোল: $rollNo',
-                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 'আইডি: $studentId | বিভাগ: $groupName',
-                                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
                           ),
@@ -108,7 +129,11 @@ class ParentDashboardPage extends ConsumerWidget {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            const Icon(Icons.school, color: Colors.white70, size: 18),
+                            const Icon(
+                              Icons.school,
+                              color: Colors.white70,
+                              size: 18,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -128,13 +153,22 @@ class ParentDashboardPage extends ConsumerWidget {
                 },
                 loading: () => Container(
                   height: 140,
-                  decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(16)),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: const Center(child: CircularProgressIndicator()),
                 ),
                 error: (err, _) => Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: Colors.red[50], borderRadius: BorderRadius.circular(16)),
-                  child: Text('লোডিং ত্রুটি: $err', style: const TextStyle(color: Colors.red)),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    'লোডিং ত্রুটি: $err',
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ),
               );
             },
@@ -198,12 +232,15 @@ class ParentDashboardPage extends ConsumerWidget {
               final profileAsync = ref.watch(parentStudentProfileProvider);
               return profileAsync.when(
                 data: (profile) {
-                  final att = profile['today_attendance'] as Map<String, dynamic>?;
+                  final att =
+                      profile['today_attendance'] as Map<String, dynamic>?;
                   if (att == null) return const SizedBox.shrink();
 
                   final classAtt = att['class'] as Map<String, dynamic>?;
-                  final extras = (att['extra_classes'] as List?)?.cast<Map<String, dynamic>>();
-                  final teams = (att['teams'] as List?)?.cast<Map<String, dynamic>>();
+                  final extras = (att['extra_classes'] as List?)
+                      ?.cast<Map<String, dynamic>>();
+                  final teams = (att['teams'] as List?)
+                      ?.cast<Map<String, dynamic>>();
 
                   return Column(
                     children: [
@@ -215,21 +252,25 @@ class ParentDashboardPage extends ConsumerWidget {
                         color: Colors.green,
                       ),
                       if (extras != null)
-                        ...extras.map((ex) => _AttendanceStatusCard(
-                          title: ex['name'] ?? 'এক্সট্রা ক্লাস',
-                          status: ex['status'],
-                          time: ex['time'],
-                          icon: Icons.more_time,
-                          color: Colors.orange,
-                        )),
+                        ...extras.map(
+                          (ex) => _AttendanceStatusCard(
+                            title: ex['name'] ?? 'এক্সট্রা ক্লাস',
+                            status: ex['status'],
+                            time: ex['time'],
+                            icon: Icons.more_time,
+                            color: Colors.orange,
+                          ),
+                        ),
                       if (teams != null)
-                        ...teams.map((tm) => _AttendanceStatusCard(
-                          title: tm['name'] ?? 'টিম হাজিরা',
-                          status: tm['status'],
-                          time: tm['time'],
-                          icon: Icons.group_work_outlined,
-                          color: Colors.indigo,
-                        )),
+                        ...teams.map(
+                          (tm) => _AttendanceStatusCard(
+                            title: tm['name'] ?? 'টিম হাজিরা',
+                            status: tm['status'],
+                            time: tm['time'],
+                            icon: Icons.group_work_outlined,
+                            color: Colors.indigo,
+                          ),
+                        ),
                     ],
                   );
                 },
@@ -248,22 +289,29 @@ class ParentDashboardPage extends ConsumerWidget {
               final profileAsync = ref.watch(parentStudentProfileProvider);
               return profileAsync.when(
                 data: (profile) {
-                  final evals = (profile['today_evaluations'] as List?)?.cast<Map<String, dynamic>>();
+                  final evals = (profile['today_evaluations'] as List?)
+                      ?.cast<Map<String, dynamic>>();
                   if (evals == null || evals.isEmpty) {
-                    return const _EmptyWidget(message: 'আজকের কোনো লেসন ইভ্যালুয়েশন পাওয়া যায়নি');
+                    return const _EmptyWidget(
+                      message: 'আজকের কোনো লেসন ইভ্যালুয়েশন পাওয়া যায়নি',
+                    );
                   }
 
                   return Column(
-                    children: evals.map((ev) => GestureDetector(
-                      onTap: () => context.push('/parent/evaluations'),
-                      child: _EvaluationStatusCard(
-                        period: ev['period'],
-                        subject: ev['subject'] ?? 'N/A',
-                        status: ev['status'],
-                        time: ev['time'],
-                        notes: ev['notes'],
-                      ),
-                    )).toList(),
+                    children: evals
+                        .map(
+                          (ev) => GestureDetector(
+                            onTap: () => context.push('/parent/evaluations'),
+                            child: _EvaluationStatusCard(
+                              period: ev['period'],
+                              subject: ev['subject'] ?? 'N/A',
+                              status: ev['status'],
+                              time: ev['time'],
+                              notes: ev['notes'],
+                            ),
+                          ),
+                        )
+                        .toList(),
                   );
                 },
                 loading: () => const _ShimmerBlock(height: 80),
@@ -277,22 +325,43 @@ class ParentDashboardPage extends ConsumerWidget {
           const SizedBox(height: 10),
           homeworkAsync.when(
             data: (items) {
-              final todayStr = DateTime.now().toIso8601String().split('T').first;
-              final todayItems = items.where((e) => e['date'] == todayStr).toList();
+              final todayStr = DateTime.now()
+                  .toIso8601String()
+                  .split('T')
+                  .first;
+              final todayItems = items
+                  .where((e) => e['date'] == todayStr)
+                  .toList();
 
-              if (todayItems.isEmpty) return const _EmptyWidget(message: 'আজকের কোনো হোমওয়ার্ক নেই');
+              if (todayItems.isEmpty)
+                return const _EmptyWidget(message: 'আজকের কোনো হোমওয়ার্ক নেই');
               return Column(
                 children: todayItems.map((e) {
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       leading: Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(color: Colors.purple.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-                        child: const Icon(Icons.assignment, color: Colors.purple, size: 22),
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.purple.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.assignment,
+                          color: Colors.purple,
+                          size: 22,
+                        ),
                       ),
-                      title: Text(e['title'] ?? 'Homework', style: const TextStyle(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      subtitle: Text('বিষয়: ${e['subject_name'] ?? 'N/A'} | জমা: ${e['submission_date'] ?? 'N/A'}'),
+                      title: Text(
+                        e['title'] ?? 'Homework',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        'বিষয়: ${e['subject_name'] ?? 'N/A'} | জমা: ${e['submission_date'] ?? 'N/A'}',
+                      ),
                       onTap: () => context.push('/parent/homework'),
                     ),
                   );
@@ -348,7 +417,9 @@ class _AttendanceStatusCard extends StatelessWidget {
     if (time != null) {
       try {
         final dt = DateTime.parse(time!).toLocal();
-        final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+        final hour = dt.hour > 12
+            ? dt.hour - 12
+            : (dt.hour == 0 ? 12 : dt.hour);
         final ampm = dt.hour >= 12 ? 'PM' : 'AM';
         final minute = dt.minute.toString().padLeft(2, '0');
         formattedTime = '$hour:$minute $ampm';
@@ -363,7 +434,10 @@ class _AttendanceStatusCard extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(width: 12),
@@ -371,21 +445,41 @@ class _AttendanceStatusCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
                   if (formattedTime != null)
-                    Text('সময়: $formattedTime', style: TextStyle(color: Colors.grey[600], fontSize: 11)),
+                    Text(
+                      'সময়: $formattedTime',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                    ),
                 ],
               ),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: statusColor.withOpacity(0.2))),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: statusColor.withOpacity(0.2)),
+              ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(statusIcon, color: statusColor, size: 14),
                   const SizedBox(width: 4),
-                  Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11)),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -439,7 +533,9 @@ class _EvaluationStatusCard extends StatelessWidget {
     if (time != null) {
       try {
         final dt = DateTime.parse(time!).toLocal();
-        final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+        final hour = dt.hour > 12
+            ? dt.hour - 12
+            : (dt.hour == 0 ? 12 : dt.hour);
         final ampm = dt.hour >= 12 ? 'PM' : 'AM';
         final minute = dt.minute.toString().padLeft(2, '0');
         formattedTime = '$hour:$minute $ampm';
@@ -456,20 +552,54 @@ class _EvaluationStatusCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                  child: Text('পিরিয়ড: ${period ?? 'N/A'}', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 11)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'পিরিয়ড: ${period ?? 'N/A'}',
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 10),
-                Expanded(child: Text(subject, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                Expanded(
+                  child: Text(
+                    subject,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   child: Row(
                     children: [
                       Icon(statusIcon, color: statusColor, size: 14),
                       const SizedBox(width: 4),
-                      Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11)),
+                      Text(
+                        statusText,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -482,9 +612,16 @@ class _EvaluationStatusCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Row(
                     children: [
-                      const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                      const Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 4),
-                      Text('মূল্যায়নের সময়: $formattedTime', style: TextStyle(color: Colors.grey[600], fontSize: 11)),
+                      Text(
+                        'মূল্যায়নের সময়: $formattedTime',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                      ),
                     ],
                   ),
                 ),
@@ -494,7 +631,16 @@ class _EvaluationStatusCard extends StatelessWidget {
                   children: [
                     const Icon(Icons.notes, size: 14, color: Colors.grey),
                     const SizedBox(width: 4),
-                    Expanded(child: Text('পাঠ বিষয়: $notes', style: TextStyle(color: Colors.grey[700], fontSize: 12, fontWeight: FontWeight.w500))),
+                    Expanded(
+                      child: Text(
+                        'পাঠ বিষয়: $notes',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
             ],
@@ -510,7 +656,10 @@ class _SectionTitle extends StatelessWidget {
   const _SectionTitle({required this.title});
   @override
   Widget build(BuildContext context) {
-    return Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold));
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+    );
   }
 }
 
@@ -519,7 +668,12 @@ class _QuickAccessChip extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
-  const _QuickAccessChip({required this.label, required this.icon, required this.color, required this.onTap});
+  const _QuickAccessChip({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -531,12 +685,19 @@ class _QuickAccessChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 54, height: 54,
-              decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(16)),
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Icon(icon, color: color, size: 28),
             ),
             const SizedBox(height: 6),
-            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
       ),
@@ -551,7 +712,10 @@ class _ShimmerBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: height,
-      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: const Center(child: CircularProgressIndicator()),
     );
   }
@@ -565,7 +729,9 @@ class _EmptyWidget extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: Center(child: Text(message, style: TextStyle(color: Colors.grey[600]))),
+        child: Center(
+          child: Text(message, style: TextStyle(color: Colors.grey[600])),
+        ),
       ),
     );
   }
@@ -578,8 +744,13 @@ class _ErrorWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: Colors.red.withOpacity(0.05),
-      child: Padding(padding: const EdgeInsets.all(16), child: Text('ত্রুটি: $message', style: const TextStyle(color: Colors.red))),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          'ত্রুটি: $message',
+          style: const TextStyle(color: Colors.red),
+        ),
+      ),
     );
   }
 }
-

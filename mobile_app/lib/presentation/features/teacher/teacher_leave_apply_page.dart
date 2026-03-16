@@ -118,7 +118,7 @@ class _TeacherLeaveApplyPageState extends State<TeacherLeaveApplyPage> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _type,
+              initialValue: _type,
               items: _types
                   .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                   .toList(),

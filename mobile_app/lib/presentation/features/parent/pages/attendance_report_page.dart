@@ -15,11 +15,23 @@ class AttendanceReportPage extends ConsumerWidget {
         overallAsync.when(
           data: (history) {
             final total = history.length;
-            final present = history.where((e) => e['status']?.toString().toLowerCase() == 'present').length;
-            final absent = history.where((e) => e['status']?.toString().toLowerCase() == 'absent').length;
-            final late = history.where((e) => e['status']?.toString().toLowerCase() == 'late').length;
-            final leave = history.where((e) => e['status']?.toString().toLowerCase() == 'leave').length;
-            final percentage = total > 0 ? (present / total * 100).toStringAsFixed(1) : '0';
+            final present = history
+                .where(
+                  (e) => e['status']?.toString().toLowerCase() == 'present',
+                )
+                .length;
+            final absent = history
+                .where((e) => e['status']?.toString().toLowerCase() == 'absent')
+                .length;
+            final late = history
+                .where((e) => e['status']?.toString().toLowerCase() == 'late')
+                .length;
+            final leave = history
+                .where((e) => e['status']?.toString().toLowerCase() == 'leave')
+                .length;
+            final percentage = total > 0
+                ? (present / total * 100).toStringAsFixed(1)
+                : '0';
 
             return Padding(
               padding: const EdgeInsets.all(16),
@@ -27,11 +39,23 @@ class AttendanceReportPage extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      _buildStatItem('মোট ক্লাস', total.toString(), Colors.blue),
+                      _buildStatItem(
+                        'মোট ক্লাস',
+                        total.toString(),
+                        Colors.blue,
+                      ),
                       const SizedBox(width: 8),
-                      _buildStatItem('উপস্থিত', present.toString(), Colors.green),
+                      _buildStatItem(
+                        'উপস্থিত',
+                        present.toString(),
+                        Colors.green,
+                      ),
                       const SizedBox(width: 8),
-                      _buildStatItem('অনুপস্থিত', absent.toString(), Colors.red),
+                      _buildStatItem(
+                        'অনুপস্থিত',
+                        absent.toString(),
+                        Colors.red,
+                      ),
                       const SizedBox(width: 8),
                       _buildStatItem('ছুটি', leave.toString(), Colors.orange),
                     ],
@@ -47,9 +71,17 @@ class AttendanceReportPage extends ConsumerWidget {
                           Expanded(
                             child: Column(
                               children: [
-                                _buildSummaryRow('উপস্থিত', present, Colors.green),
+                                _buildSummaryRow(
+                                  'উপস্থিত',
+                                  present,
+                                  Colors.green,
+                                ),
                                 const Divider(),
-                                _buildSummaryRow('অনুপস্থিত', absent, Colors.red),
+                                _buildSummaryRow(
+                                  'অনুপস্থিত',
+                                  absent,
+                                  Colors.red,
+                                ),
                                 const Divider(),
                                 _buildSummaryRow('বিলম্ব', late, Colors.orange),
                               ],
@@ -63,16 +95,25 @@ class AttendanceReportPage extends ConsumerWidget {
               ),
             );
           },
-          loading: () => const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator())),
+          loading: () => const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(child: CircularProgressIndicator()),
+          ),
           error: (err, _) => Center(child: Text('ত্রুটি: $err')),
         ),
-        
+
         Expanded(
           child: monthlyAsync.when(
             data: (attendance) {
               final mTotal = attendance.length;
-              final mPresent = attendance.where((e) => e['status']?.toString().toLowerCase() == 'present').length;
-              final mPercent = mTotal > 0 ? (mPresent / mTotal * 100).toStringAsFixed(1) : '0';
+              final mPresent = attendance
+                  .where(
+                    (e) => e['status']?.toString().toLowerCase() == 'present',
+                  )
+                  .length;
+              final mPercent = mTotal > 0
+                  ? (mPresent / mTotal * 100).toStringAsFixed(1)
+                  : '0';
 
               return ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -85,11 +126,18 @@ class AttendanceReportPage extends ConsumerWidget {
                         children: [
                           const Text(
                             'হাজিরা ইতিহাস',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           Text(
                             'এই মাসের উপস্থিতির হার: $mPercent%',
-                            style: TextStyle(fontSize: 13, color: Colors.blue.shade700, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.blue.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -100,10 +148,12 @@ class AttendanceReportPage extends ConsumerWidget {
                   if (attendance.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 32),
-                      child: Center(child: Text('এই মাসে কোনো হাজিরা পাওয়া যায়নি')),
+                      child: Center(
+                        child: Text('এই মাসে কোনো হাজিরা পাওয়া যায়নি'),
+                      ),
                     )
                   else
-                    ...attendance.map((e) => _buildAttendanceItem(e)).toList(),
+                    ...attendance.map((e) => _buildAttendanceItem(e)),
                   const SizedBox(height: 16),
                 ],
               );
@@ -127,11 +177,22 @@ class AttendanceReportPage extends ConsumerWidget {
         ),
         child: Column(
           children: [
-            Text(title, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               value,
-              style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: color,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -171,7 +232,10 @@ class AttendanceReportPage extends ConsumerWidget {
             const SizedBox(width: 4),
             Text(
               _formatMonthYear(ref.watch(attendanceMonthYearProvider)),
-              style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Colors.blue,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -182,10 +246,20 @@ class AttendanceReportPage extends ConsumerWidget {
   Future<void> _selectMonth(BuildContext context, WidgetRef ref) async {
     final current = ref.read(attendanceMonthYearProvider);
     final months = [
-      'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
-      'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+      'জানুয়ারি',
+      'ফেব্রুয়ারি',
+      'মার্চ',
+      'এপ্রিল',
+      'মে',
+      'জুন',
+      'জুলাই',
+      'আগস্ট',
+      'সেপ্টেম্বর',
+      'অক্টোবর',
+      'নভেম্বর',
+      'ডিসেম্বর',
     ];
-    
+
     showDialog(
       context: context,
       builder: (context) {
@@ -206,7 +280,13 @@ class AttendanceReportPage extends ConsumerWidget {
                           icon: const Icon(Icons.arrow_back_ios, size: 16),
                           onPressed: () => setDialogState(() => tempYear--),
                         ),
-                        Text('$tempYear', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text(
+                          '$tempYear',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         IconButton(
                           icon: const Icon(Icons.arrow_forward_ios, size: 16),
                           onPressed: () => setDialogState(() => tempYear++),
@@ -216,16 +296,24 @@ class AttendanceReportPage extends ConsumerWidget {
                     const Divider(),
                     Expanded(
                       child: GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          childAspectRatio: 2,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              childAspectRatio: 2,
+                            ),
                         itemCount: 12,
                         itemBuilder: (context, index) {
-                          final isSelected = current.month == index + 1 && current.year == tempYear;
+                          final isSelected =
+                              current.month == index + 1 &&
+                              current.year == tempYear;
                           return InkWell(
                             onTap: () {
-                              ref.read(attendanceMonthYearProvider.notifier).state = DateTime(tempYear, index + 1);
+                              ref
+                                  .read(attendanceMonthYearProvider.notifier)
+                                  .state = DateTime(
+                                tempYear,
+                                index + 1,
+                              );
                               Navigator.pop(context);
                             },
                             child: Container(
@@ -238,7 +326,9 @@ class AttendanceReportPage extends ConsumerWidget {
                               child: Text(
                                 months[index],
                                 style: TextStyle(
-                                  color: isSelected ? Colors.white : Colors.black,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black,
                                   fontSize: 13,
                                 ),
                               ),
@@ -251,7 +341,7 @@ class AttendanceReportPage extends ConsumerWidget {
                 ),
               ),
             );
-          }
+          },
         );
       },
     );
@@ -273,7 +363,11 @@ class AttendanceReportPage extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: color,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -286,7 +380,10 @@ class AttendanceReportPage extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: const TextStyle(color: Colors.grey)),
-        Text(value.toString(), style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+        Text(
+          value.toString(),
+          style: TextStyle(color: color, fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }
@@ -315,11 +412,24 @@ class AttendanceReportPage extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: Icon(icon, color: color),
-        title: Text(record['date']?.toString() ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          record['date']?.toString() ?? 'N/A',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-          child: Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );
@@ -327,8 +437,18 @@ class AttendanceReportPage extends ConsumerWidget {
 
   String _formatMonthYear(DateTime dt) {
     final months = [
-      'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
-      'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+      'জানুয়ারি',
+      'ফেব্রুয়ারি',
+      'মার্চ',
+      'এপ্রিল',
+      'মে',
+      'জুন',
+      'জুলাই',
+      'আগস্ট',
+      'সেপ্টেম্বর',
+      'অক্টোবর',
+      'নভেম্বর',
+      'ডিসেম্বর',
     ];
     return '${months[dt.month - 1]} ${dt.year}';
   }
@@ -344,7 +464,7 @@ class CircleProgressPainter extends CustomPainter {
       ..color = Colors.grey[200]!
       ..strokeWidth = 8
       ..style = PaintingStyle.stroke;
-    
+
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     canvas.drawCircle(center, radius, paint);
@@ -356,7 +476,13 @@ class CircleProgressPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final sweepAngle = (progress / 100) * 2 * 3.14159;
-    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), -1.5708, sweepAngle, false, progressPaint);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -1.5708,
+      sweepAngle,
+      false,
+      progressPaint,
+    );
   }
 
   @override

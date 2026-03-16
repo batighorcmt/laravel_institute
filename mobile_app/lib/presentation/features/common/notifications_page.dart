@@ -49,10 +49,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
             e.response != null &&
             e.response?.data != null) {
           final d = e.response?.data;
-          if (d is Map && d['message'] != null)
+          if (d is Map && d['message'] != null) {
             msg = d['message'];
-          else
+          } else {
             msg = e.toString();
+          }
         } else {
           msg = e.toString();
         }
@@ -60,10 +61,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
         msg = e.toString();
       }
 
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(msg)));
+      }
       setState(() => _isLoading = false);
     }
   }
@@ -97,8 +99,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ? const Center(child: CircularProgressIndicator())
           : NotificationListener<ScrollNotification>(
               onNotification: (scroll) {
-                if (scroll.metrics.pixels == scroll.metrics.maxScrollExtent)
+                if (scroll.metrics.pixels == scroll.metrics.maxScrollExtent) {
                   _loadMore();
+                }
                 return false;
               },
               child: ListView.builder(

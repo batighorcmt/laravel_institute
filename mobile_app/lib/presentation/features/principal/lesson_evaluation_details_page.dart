@@ -119,9 +119,9 @@ class _LessonEvaluationDetailsPageState
       if (it['subject_id'] != null) tp['subject_id'] = it['subject_id'];
       if (it['evaluation_date'] != null) tp['date'] = it['evaluation_date'];
       // try a few common names/locations for routine entry id
-      if (it['routine_entry_id'] != null)
+      if (it['routine_entry_id'] != null) {
         tp['routine_entry_id'] = it['routine_entry_id'];
-      else if (it['routine_id'] != null)
+      } else if (it['routine_id'] != null)
         tp['routine_entry_id'] = it['routine_id'];
       else if (it['routine'] is Map && it['routine']['id'] != null)
         tp['routine_entry_id'] = it['routine']['id'];
@@ -169,27 +169,30 @@ class _LessonEvaluationDetailsPageState
   }
 
   String _getName(dynamic s) {
-    if (s is Map)
+    if (s is Map) {
       return (s['name'] ?? s['student_name'] ?? s['full_name'] ?? '')
           .toString();
+    }
     return s.toString();
   }
 
   String _getStatus(dynamic s) {
-    if (s is Map)
+    if (s is Map) {
       return (s['status'] ?? s['attendance_status'] ?? s['status_name'] ?? '')
           .toString();
+    }
     return '';
   }
 
   String _getRoll(dynamic s) {
-    if (s is Map)
+    if (s is Map) {
       return (s['roll_no'] ??
               s['roll'] ??
               s['admission_no'] ??
               s['seat_no'] ??
               '')
           .toString();
+    }
     return '';
   }
 
@@ -198,18 +201,21 @@ class _LessonEvaluationDetailsPageState
     if (l.contains('complete')) return 'পড়া হয়েছে';
     if (l.contains('partial')) return 'আংশিক হয়েছে';
     if (l.contains('absent')) return 'অনুপস্থিত';
-    if (l.contains('not') || l.contains('not_done') || l.contains('not done'))
+    if (l.contains('not') || l.contains('not_done') || l.contains('not done')) {
       return 'পড়া হয়নি';
+    }
     return raw;
   }
 
   Color _statusColorFromRaw(String raw, BuildContext context) {
     final l = raw.toLowerCase();
     final scheme = Theme.of(context).colorScheme;
-    if (l.contains('not') || l.contains('not_done') || l.contains('not done'))
+    if (l.contains('not') || l.contains('not_done') || l.contains('not done')) {
       return Colors.red; // পড়া হয়নি -> red
-    if (l.contains('absent'))
+    }
+    if (l.contains('absent')) {
       return Colors.blueGrey; // অনুপস্থিত -> distinct color
+    }
     if (l.contains('complete')) return Colors.green;
     if (l.contains('partial')) return Colors.orange;
     return scheme.onSurface.withOpacity(0.7);
@@ -246,34 +252,34 @@ class _LessonEvaluationDetailsPageState
     String mother = '';
     String phone = '';
 
-    dynamic _findValue(dynamic node, List<String> keys) {
-      bool _hasVal(dynamic v) => v != null && v.toString().trim().isNotEmpty;
+    dynamic findValue(dynamic node, List<String> keys) {
+      bool hasVal(dynamic v) => v != null && v.toString().trim().isNotEmpty;
 
-      dynamic _search(dynamic cur) {
+      dynamic search(dynamic cur) {
         if (cur is Map) {
           for (final k in keys) {
-            if (_hasVal(cur[k])) return cur[k];
+            if (hasVal(cur[k])) return cur[k];
           }
           // search nested maps
           for (final v in cur.values) {
-            final r = _search(v);
-            if (_hasVal(r)) return r;
+            final r = search(v);
+            if (hasVal(r)) return r;
           }
         } else if (cur is List) {
           for (final e in cur) {
-            final r = _search(e);
-            if (_hasVal(r)) return r;
+            final r = search(e);
+            if (hasVal(r)) return r;
           }
         }
         return null;
       }
 
-      return _search(node);
+      return search(node);
     }
 
     if (raw != null) {
       father =
-          (_findValue(raw, [
+          (findValue(raw, [
                     'father_name',
                     'father',
                     'guardian_father',
@@ -282,7 +288,7 @@ class _LessonEvaluationDetailsPageState
                   '')
               .toString();
       mother =
-          (_findValue(raw, [
+          (findValue(raw, [
                     'mother_name',
                     'mother',
                     'guardian_mother',
@@ -291,7 +297,7 @@ class _LessonEvaluationDetailsPageState
                   '')
               .toString();
       phone =
-          (_findValue(raw, [
+          (findValue(raw, [
                     'guardian_phone',
                     'guardian_mobile',
                     'guardian_number',
@@ -301,9 +307,9 @@ class _LessonEvaluationDetailsPageState
                   ]) ??
                   '')
               .toString();
-      if (photo.isEmpty)
+      if (photo.isEmpty) {
         photo =
-            (_findValue(raw, [
+            (findValue(raw, [
                       'photo_url',
                       'photo',
                       'image',
@@ -312,14 +318,16 @@ class _LessonEvaluationDetailsPageState
                     ]) ??
                     '')
                 .toString();
-      if (name.isEmpty)
-        name = (_findValue(raw, ['name', 'full_name', 'student_name']) ?? '')
+      }
+      if (name.isEmpty) {
+        name = (findValue(raw, ['name', 'full_name', 'student_name']) ?? '')
             .toString();
+      }
     }
 
     final studentId =
-        (_findValue(student, ['id', 'student_id', 'user_id']) ??
-                _findValue(raw, ['id', 'student_id', 'user_id']))
+        (findValue(student, ['id', 'student_id', 'user_id']) ??
+                findValue(raw, ['id', 'student_id', 'user_id']))
             ?.toString();
 
     showDialog(
@@ -391,7 +399,6 @@ class _LessonEvaluationDetailsPageState
                         : null,
                   ),
                   OutlinedButton(
-                    child: const Text('প্রোফাইল'),
                     onPressed: studentId != null
                         ? () {
                             Navigator.of(ctx).pop();
@@ -405,6 +412,7 @@ class _LessonEvaluationDetailsPageState
                             );
                           }
                         : null,
+                    child: const Text('প্রোফাইল'),
                   ),
                   TextButton(
                     child: const Text('বন্ধ'),
@@ -462,15 +470,15 @@ class _LessonEvaluationDetailsPageState
         final roll = _getRoll(person);
         // If the record only contains `student_id` without nested student
         // details, show a fallback label so the table still displays usefully.
-        if ((name == null || name.toString().trim().isEmpty) && id != null) {
+        if ((name.toString().trim().isEmpty) && id != null) {
           name = 'Student #${id.toString()}';
         }
 
         // Status can live on the record (`s`) or on the nested `person`.
         var status = '';
-        if (s['status'] != null)
+        if (s['status'] != null) {
           status = s['status'].toString();
-        else if (s['record_status'] != null)
+        } else if (s['record_status'] != null)
           status = s['record_status'].toString();
         else if (person['status'] != null)
           status = person['status'].toString();
@@ -478,8 +486,7 @@ class _LessonEvaluationDetailsPageState
           status = s['evaluation_status'].toString();
 
         // fallback to report-level status map
-        if ((status == null || status.toString().isEmpty) &&
-            statusMap.isNotEmpty) {
+        if ((status.toString().isEmpty) && statusMap.isNotEmpty) {
           final tryKeys = <String>[];
           if (id != null) tryKeys.add(id.toString());
           if (s['student_id'] != null) tryKeys.add(s['student_id'].toString());
@@ -492,7 +499,7 @@ class _LessonEvaluationDetailsPageState
             }
           }
         }
-        status = status?.toLowerCase() ?? '';
+        status = status.toLowerCase() ?? '';
         final photo = _getPhotoUrl(person);
         out.add({
           'id': id,
@@ -525,20 +532,20 @@ class _LessonEvaluationDetailsPageState
       for (final e in list) {
         if (e is Map) {
           String? id;
-          if (e['id'] != null)
+          if (e['id'] != null) {
             id = e['id'].toString();
-          else if (e['student_id'] != null)
+          } else if (e['student_id'] != null)
             id = e['student_id'].toString();
           String? roll;
-          if (e['roll_no'] != null)
+          if (e['roll_no'] != null) {
             roll = e['roll_no'].toString();
-          else if (e['roll'] != null)
+          } else if (e['roll'] != null)
             roll = e['roll'].toString();
           final name = (e['name'] ?? e['student_name'] ?? '').toString();
           String? status;
-          if (e['status'] != null)
+          if (e['status'] != null) {
             status = e['status'].toString();
-          else if (e['evaluation_status'] != null)
+          } else if (e['evaluation_status'] != null)
             status = e['evaluation_status'].toString();
           else if (e['attendance_status'] != null)
             status = e['attendance_status'].toString();
@@ -819,7 +826,7 @@ class _LessonEvaluationDetailsPageState
             Container(
               margin: const EdgeInsets.only(bottom: 8),
               child: DropdownButtonFormField<String>(
-                value: _statusFilter ?? '',
+                initialValue: _statusFilter ?? '',
                 decoration: InputDecoration(
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
@@ -909,8 +916,9 @@ class _LessonEvaluationDetailsPageState
 
   Widget _buildStudentsTable() {
     final normalized = _normalizedStudents();
-    if (normalized.isEmpty)
+    if (normalized.isEmpty) {
       return const Center(child: Text('No students to show'));
+    }
 
     return ListView.separated(
       padding: EdgeInsets.zero,
@@ -1003,8 +1011,9 @@ class _LessonEvaluationDetailsPageState
 
   Widget _buildStudentsTableForList(List<dynamic> list) {
     final normalized = _normalizeList(list);
-    if (normalized.isEmpty)
+    if (normalized.isEmpty) {
       return const Center(child: Text('No students to show'));
+    }
 
     return ListView.separated(
       physics: const NeverScrollableScrollPhysics(),

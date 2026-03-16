@@ -93,10 +93,10 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
         }
       }
       _classes = grouped.values.toList();
-      
+
       // If editing, make sure current class/section/subject are in the lists if they weren't in today's routine
       if (widget.homework != null && _classes.isNotEmpty) {
-         // (Selection logic continues below)
+        // (Selection logic continues below)
       }
 
       if (_classes.isNotEmpty && widget.homework == null) {
@@ -107,8 +107,9 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
           _selectedSectionId = (_sections.first['id'] as int);
           _subjects = (_sections.first['subjects'] as List)
               .cast<Map<String, dynamic>>();
-          if (_subjects.isNotEmpty)
+          if (_subjects.isNotEmpty) {
             _selectedSubjectId = (_subjects.first['id'] as int);
+          }
         }
       } else if (widget.homework != null) {
         // Sync lists based on selected IDs from initialData
@@ -165,8 +166,9 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
     if (s == null || s.isEmpty) return null;
     try {
       final p = s.split('-');
-      if (p.length == 3)
+      if (p.length == 3) {
         return DateTime(int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
+      }
     } catch (_) {}
     return null;
   }
@@ -191,14 +193,19 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
         if (_attachmentPath == null) {
           // No new file, use JSON PATCH for better reliability
           final url = 'teacher/homework/${widget.homework!['id']}';
-          r = await _dio.patch(url, data: {
-            'class_id': _selectedClassId,
-            'section_id': _selectedSectionId,
-            'subject_id': _selectedSubjectId,
-            'submission_date': _submissionDate,
-            'title': _titleCtrl.text.trim(),
-            'description': _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-          });
+          r = await _dio.patch(
+            url,
+            data: {
+              'class_id': _selectedClassId,
+              'section_id': _selectedSectionId,
+              'subject_id': _selectedSubjectId,
+              'submission_date': _submissionDate,
+              'title': _titleCtrl.text.trim(),
+              'description': _descCtrl.text.trim().isEmpty
+                  ? null
+                  : _descCtrl.text.trim(),
+            },
+          );
         } else {
           // Has file, must use FormData with POST + _method spoofing
           final form = FormData.fromMap({
@@ -207,7 +214,9 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
             'subject_id': _selectedSubjectId,
             'submission_date': _submissionDate,
             'title': _titleCtrl.text.trim(),
-            'description': _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+            'description': _descCtrl.text.trim().isEmpty
+                ? null
+                : _descCtrl.text.trim(),
             '_method': 'PUT',
             'attachment': await MultipartFile.fromFile(
               _attachmentPath!,
@@ -225,7 +234,9 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
           'subject_id': _selectedSubjectId,
           'submission_date': _submissionDate,
           'title': _titleCtrl.text.trim(),
-          'description': _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+          'description': _descCtrl.text.trim().isEmpty
+              ? null
+              : _descCtrl.text.trim(),
           if (_attachmentPath != null)
             'attachment': await MultipartFile.fromFile(
               _attachmentPath!,
@@ -253,12 +264,15 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
           errorMsg = errs.values.first.toString();
         }
       }
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMsg)));
     } finally {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _submitting = false;
         });
+      }
     }
   }
 
@@ -266,7 +280,9 @@ class _TeacherHomeworkCreatePageState extends State<TeacherHomeworkCreatePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.homework == null ? 'Create Homework' : 'Edit Homework'),
+        title: Text(
+          widget.homework == null ? 'Create Homework' : 'Edit Homework',
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

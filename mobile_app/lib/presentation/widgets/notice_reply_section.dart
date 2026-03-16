@@ -1,17 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/notice/notice_repository.dart';
 import '../state/notice_state.dart';
 import 'voice_recorder.dart';
 
 class NoticeReplySection extends ConsumerStatefulWidget {
   final int noticeId;
 
-  const NoticeReplySection({
-    super.key,
-    required this.noticeId,
-  });
+  const NoticeReplySection({super.key, required this.noticeId});
 
   @override
   ConsumerState<NoticeReplySection> createState() => _NoticeReplySectionState();
@@ -23,21 +19,23 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
   bool _showRecorder = false;
 
   Future<void> _handleVoiceCompleted(String filePath, int duration) async {
-    debugPrint('[NoticeReply] ▶ onCompleted: filePath=$filePath | duration=$duration | noticeId=${widget.noticeId}');
+    debugPrint(
+      '[NoticeReply] ▶ onCompleted: filePath=$filePath | duration=$duration | noticeId=${widget.noticeId}',
+    );
 
     setState(() => _isSending = true);
 
     try {
       debugPrint('[NoticeReply] ⏳ Calling submitVoiceReply...');
-      await ref.read(noticeRepositoryProvider).submitVoiceReply(
-        widget.noticeId,
-        filePath,
-        duration.toDouble(),
-      );
+      await ref
+          .read(noticeRepositoryProvider)
+          .submitVoiceReply(widget.noticeId, filePath, duration.toDouble());
       debugPrint('[NoticeReply] ✅ submitVoiceReply SUCCESS');
 
       if (!mounted) {
-        debugPrint('[NoticeReply] ⚠ Widget unmounted after success — cannot setState');
+        debugPrint(
+          '[NoticeReply] ⚠ Widget unmounted after success — cannot setState',
+        );
         return;
       }
       setState(() {
@@ -46,13 +44,14 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
         _showRecorder = false;
       });
       ref.invalidate(noticesListProvider);
-
     } on DioException catch (e) {
-      debugPrint('[NoticeReply] ❌ DioException:'
-          ' type=${e.type.name}'
-          ' | status=${e.response?.statusCode}'
-          ' | data=${e.response?.data}'
-          ' | msg=${e.message}');
+      debugPrint(
+        '[NoticeReply] ❌ DioException:'
+        ' type=${e.type.name}'
+        ' | status=${e.response?.statusCode}'
+        ' | data=${e.response?.data}'
+        ' | msg=${e.message}',
+      );
 
       if (!mounted) {
         debugPrint('[NoticeReply] ⚠ Widget unmounted after DioException');
@@ -61,8 +60,11 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
       setState(() => _isSending = false);
 
       final dynamic respData = e.response?.data;
-      final String? serverMsg = (respData is Map) ? respData['message'] as String? : null;
-      final String displayMsg = serverMsg ?? 'নেটওয়ার্ক সমস্যা (${e.type.name})';
+      final String? serverMsg = (respData is Map)
+          ? respData['message'] as String?
+          : null;
+      final String displayMsg =
+          serverMsg ?? 'নেটওয়ার্ক সমস্যা (${e.type.name})';
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -137,7 +139,10 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
             const SizedBox(height: 12),
             const Text(
               'এই নোটিশের জন্য একটি ভয়েস রিপ্লাই দিন',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -149,7 +154,9 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),

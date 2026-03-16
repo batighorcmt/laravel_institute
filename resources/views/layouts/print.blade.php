@@ -97,29 +97,32 @@
             $logoUrl = 'data:image/' . $ext . ';base64,' . base64_encode($data);
         }
     ?>
-    <div class="print-header">
-        <div class="logo">@if($logoUrl)<img src="{{ $logoUrl }}" alt="logo">@endif</div>
-        <div class="center">
-            @if (\Illuminate\Support\Facades\View::exists('print_common'))
-                @include('print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
-            @elseif (\Illuminate\Support\Facades\View::exists('layouts.print_common'))
-                @include('layouts.print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
-            @elseif (\Illuminate\Support\Facades\View::exists('partials.print_common'))
-                @include('partials.print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
-            @elseif (\Illuminate\Support\Facades\View::exists('common.print_common'))
-                @include('common.print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
-            @else
-                <h1 class="school-name">{{ $lang==='bn' ? ($school->name_bn ?? $school->name) : ($school->name ?? $school->name_bn) }}</h1>
-                @php $addr = $lang==='bn' ? ($school->address_bn ?? $school->address) : ($school->address ?? $school->address_bn); @endphp
-                @if($addr)
-                    <div class="school-address">{{ $addr }}</div>
+    @unless (\Illuminate\Support\Facades\View::hasSection('suppress_header'))
+        <div class="print-header">
+            <div class="logo">@if($logoUrl)<img src="{{ $logoUrl }}" alt="logo">@endif</div>
+            <div class="center">
+                @if (\Illuminate\Support\Facades\View::exists('print_common'))
+                    @include('print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
+                @elseif (\Illuminate\Support\Facades\View::exists('layouts.print_common'))
+                    @include('layouts.print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
+                @elseif (\Illuminate\Support\Facades\View::exists('partials.print_common'))
+                    @include('partials.print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
+                @elseif (\Illuminate\Support\Facades\View::exists('common.print_common'))
+                    @include('common.print_common', ['school' => $school ?? null, 'title' => $printTitle ?? null, 'subtitle' => $printSubtitle ?? null])
+                @else
+                    <h1 class="school-name">{{ $lang==='bn' ? ($school->name_bn ?? $school->name) : ($school->name ?? $school->name_bn) }}</h1>
+                    @php $addr = $lang==='bn' ? ($school->address_bn ?? $school->address) : ($school->address ?? $school->address_bn); @endphp
+                    @if($addr)
+                        <div class="school-address">{{ $addr }}</div>
+                    @endif
+                    @isset($printTitle)<div class="page-title">{{ $printTitle }}</div>@endisset
+                    @isset($printSubtitle)<div class="page-subtitle">{{ $printSubtitle }}</div>@endisset
                 @endif
-                @isset($printTitle)<div class="page-title">{{ $printTitle }}</div>@endisset
-                @isset($printSubtitle)<div class="page-subtitle">{{ $printSubtitle }}</div>@endisset
-            @endif
-            @yield('print_header_right')
+                @yield('print_header_right')
+            </div>
         </div>
-    </div>
+    @endunless
+            
     @if($logoUrl)
         <div class="logo-overlay"><img src="{{ $logoUrl }}" alt="logo watermark"></div>
     @endif

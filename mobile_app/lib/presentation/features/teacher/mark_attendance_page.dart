@@ -137,12 +137,12 @@ class _ClassSectionMarkAttendancePageState
     } catch (e) {
       String msg = 'ডাটা লোড ব্যর্থ';
       try {
-        if (e is DioError) {
+        if (e is DioException) {
           final resp = e.response;
           if (resp != null) {
             msg = 'লোড ব্যর্থ: ${resp.statusCode} ${resp.statusMessage ?? ''}';
             if (resp.data is Map && resp.data['message'] != null) {
-              msg = '${msg} - ${resp.data['message']}';
+              msg = '$msg - ${resp.data['message']}';
             }
           } else {
             msg = 'নেটওয়ার্ক ত্রুটি: ${e.message}';
@@ -185,8 +185,9 @@ class _ClassSectionMarkAttendancePageState
   DateTime? _parseDate(String s) {
     try {
       final p = s.split('-');
-      if (p.length == 3)
+      if (p.length == 3) {
         return DateTime(int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
+      }
     } catch (_) {}
     return null;
   }
@@ -236,7 +237,7 @@ class _ClassSectionMarkAttendancePageState
       String extra = '';
       if (data['sms_report'] is Map) {
         final rpt = data['sms_report'] as Map;
-        final queued = rpt['sent'] ?? rpt['queued_count'] ?? null;
+        final queued = rpt['sent'] ?? rpt['queued_count'];
         if (queued != null) {
           extra = ' SMS queued: $queued';
         }
@@ -301,26 +302,31 @@ class _ClassSectionMarkAttendancePageState
                           onRefresh: _load,
                           child: ListView.separated(
                             padding: const EdgeInsets.all(12),
-                            separatorBuilder: (_, i) => const SizedBox(height: 8),
-                          itemCount: displayedStudents.length,
-                          itemBuilder: (ctx, i) {
-                            final s = displayedStudents[i];
-                            return _StudentRowWidget(
-                              row: s,
-                              enabled: _isToday,
-                              onChanged: (st) {
-                                if (!_isToday) return;
-                                // Find original index if we are filtering
-                                final originalIndex = _students.indexWhere((src) => src.id == s.id);
-                                if (originalIndex != -1) {
-                                  setState(() {
-                                    _students[originalIndex] = s.copyWith(status: st);
-                                  });
-                                }
-                              },
-                            );
-                          },
-                        ),
+                            separatorBuilder: (_, i) =>
+                                const SizedBox(height: 8),
+                            itemCount: displayedStudents.length,
+                            itemBuilder: (ctx, i) {
+                              final s = displayedStudents[i];
+                              return _StudentRowWidget(
+                                row: s,
+                                enabled: _isToday,
+                                onChanged: (st) {
+                                  if (!_isToday) return;
+                                  // Find original index if we are filtering
+                                  final originalIndex = _students.indexWhere(
+                                    (src) => src.id == s.id,
+                                  );
+                                  if (originalIndex != -1) {
+                                    setState(() {
+                                      _students[originalIndex] = s.copyWith(
+                                        status: st,
+                                      );
+                                    });
+                                  }
+                                },
+                              );
+                            },
+                          ),
                         ),
                 ),
                 if (_isToday)
@@ -486,7 +492,9 @@ class _FilterChip extends StatelessWidget {
           color: isSelected ? effectiveColor : effectiveColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? effectiveColor : effectiveColor.withOpacity(0.5),
+            color: isSelected
+                ? effectiveColor
+                : effectiveColor.withOpacity(0.5),
           ),
         ),
         child: Text(

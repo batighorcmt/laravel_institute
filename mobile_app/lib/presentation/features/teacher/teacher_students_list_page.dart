@@ -30,17 +30,17 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   String? _selectedSectionId;
   List<Map<String, dynamic>> _groups = [];
   String? _selectedGroupId;
-  List<String> _genders = [];
+  final List<String> _genders = [];
   String? _selectedGender;
   List<Map<String, dynamic>> _years = [];
   String? _selectedYearId;
   List<String> _religions = [];
   String? _selectedReligion;
   List<String> _statuses = [];
-  String? _selectedStatus = 'active';
+  final String? _selectedStatus = 'active';
 
   final TextEditingController _searchCtrl = TextEditingController();
-  bool _classesLoading = false;
+  final bool _classesLoading = false;
   bool _sectionsLoading = false;
   bool _metaLoading = false;
 
@@ -75,7 +75,8 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
             bool updated = false;
             setState(() {
               if (data['academic_years'] is List && _years.isEmpty) {
-                _years = (data['academic_years'] as List).cast<Map<String, dynamic>>();
+                _years = (data['academic_years'] as List)
+                    .cast<Map<String, dynamic>>();
                 updated = true;
               }
               if (data['religions'] is List && _religions.isEmpty) {
@@ -191,7 +192,7 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
         children: [
           if (_loading || _metaLoading || _sectionsLoading)
             const LinearProgressIndicator(minHeight: 2),
-          
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
             child: Column(
@@ -209,10 +210,19 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                           prefixIcon: const Icon(Icons.search, size: 16),
                           border: const OutlineInputBorder(),
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                          suffixIcon: _searchCtrl.text.isNotEmpty 
-                            ? IconButton(icon: const Icon(Icons.clear, size: 16), onPressed: () { _searchCtrl.clear(); _load(reset: true); }) 
-                            : null,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 8,
+                          ),
+                          suffixIcon: _searchCtrl.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 16),
+                                  onPressed: () {
+                                    _searchCtrl.clear();
+                                    _load(reset: true);
+                                  },
+                                )
+                              : null,
                         ),
                         onSubmitted: (_) => _load(reset: true),
                       ),
@@ -220,17 +230,41 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                     const SizedBox(width: 4),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _selectedClassId,
+                        initialValue: _selectedClassId,
                         isExpanded: true,
-                        hint: const Text('Class', style: TextStyle(fontSize: 11)),
-                        style: const TextStyle(fontSize: 11, color: Colors.black),
-                        decoration: const InputDecoration(isDense: true, border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 8)),
+                        hint: const Text(
+                          'Class',
+                          style: TextStyle(fontSize: 11),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black,
+                        ),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 8,
+                          ),
+                        ),
                         items: [
-                          const DropdownMenuItem<String>(value: null, child: Text('Class: All', style: TextStyle(fontSize: 11))),
-                          ..._classes.map((c) => DropdownMenuItem<String>(
-                                value: c['id']?.toString(),
-                                child: Text(c['name']?.toString() ?? '', style: const TextStyle(fontSize: 11)),
-                              )),
+                          const DropdownMenuItem<String>(
+                            value: null,
+                            child: Text(
+                              'Class: All',
+                              style: TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          ..._classes.map(
+                            (c) => DropdownMenuItem<String>(
+                              value: c['id']?.toString(),
+                              child: Text(
+                                c['name']?.toString() ?? '',
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                            ),
+                          ),
                         ],
                         onChanged: _metaLoading
                             ? null
@@ -245,8 +279,11 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                                 });
                                 if (val != null) {
                                   try {
-                                    final sections = await _repo.fetchSections(classId: val);
-                                    final groups = await _repo.fetchGroupsForClass(val);
+                                    final sections = await _repo.fetchSections(
+                                      classId: val,
+                                    );
+                                    final groups = await _repo
+                                        .fetchGroupsForClass(val);
                                     if (mounted) {
                                       setState(() {
                                         _sections = sections;
@@ -255,7 +292,8 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                                       });
                                     }
                                   } catch (_) {
-                                    if (mounted) setState(() => _sectionsLoading = false);
+                                    if (mounted)
+                                      setState(() => _sectionsLoading = false);
                                   }
                                 }
                                 _load(reset: true);
@@ -269,14 +307,21 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                 Row(
                   children: [
                     Expanded(
-                      child: _metaDropdown('Section', _selectedSectionId, _sections, (val) {
-                        setState(() => _selectedSectionId = val);
-                        _load(reset: true);
-                      }),
+                      child: _metaDropdown(
+                        'Section',
+                        _selectedSectionId,
+                        _sections,
+                        (val) {
+                          setState(() => _selectedSectionId = val);
+                          _load(reset: true);
+                        },
+                      ),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
-                      child: _metaDropdown('Group', _selectedGroupId, _groups, (val) {
+                      child: _metaDropdown('Group', _selectedGroupId, _groups, (
+                        val,
+                      ) {
                         setState(() => _selectedGroupId = val);
                         _load(reset: true);
                       }),
@@ -284,16 +329,46 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                     const SizedBox(width: 4),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _selectedReligion,
+                        initialValue: _selectedReligion,
                         isExpanded: true,
-                        hint: const Text('Religion', style: TextStyle(fontSize: 11)),
-                        style: const TextStyle(fontSize: 11, color: Colors.black),
-                        decoration: const InputDecoration(isDense: true, border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 8)),
+                        hint: const Text(
+                          'Religion',
+                          style: TextStyle(fontSize: 11),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black,
+                        ),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 8,
+                          ),
+                        ),
                         items: [
-                          const DropdownMenuItem<String>(value: null, child: Text('Rel: All', style: TextStyle(fontSize: 11))),
-                          ..._religions.map((r) => DropdownMenuItem<String>(value: r, child: Text(r, style: const TextStyle(fontSize: 11)))),
+                          const DropdownMenuItem<String>(
+                            value: null,
+                            child: Text(
+                              'Rel: All',
+                              style: TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          ..._religions.map(
+                            (r) => DropdownMenuItem<String>(
+                              value: r,
+                              child: Text(
+                                r,
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                            ),
+                          ),
                         ],
-                        onChanged: (v) { setState(() => _selectedReligion = v); _load(reset: true); },
+                        onChanged: (v) {
+                          setState(() => _selectedReligion = v);
+                          _load(reset: true);
+                        },
                       ),
                     ),
                   ],
@@ -305,119 +380,144 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
             child: _loading && _items.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(_error!),
-                              const SizedBox(height: 8),
-                              ElevatedButton(
-                                onPressed: () => _load(reset: true),
-                                child: const Text('Retry'),
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_error!),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () => _load(reset: true),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : _items.isEmpty
+                ? const Center(child: Text('No students found'))
+                : RefreshIndicator(
+                    onRefresh: () => _load(reset: true),
+                    child: ListView.separated(
+                      itemCount: _items.length + (_hasMore ? 1 : 0),
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        if (index >= _items.length) {
+                          if (!_loading) _load();
+                          return const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        final it = _items[index] as Map<String, dynamic>;
+                        final photoUrl = it['photo_url'] as String?;
+                        final name = it['name'] as String? ?? '';
+                        final roll = it['roll']?.toString() ?? '';
+                        final cls = it['class'] as String? ?? '';
+                        final section = it['section'] as String? ?? '';
+                        final phone = it['phone'] as String? ?? '';
+                        final id = it['id']?.toString() ?? '';
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage:
+                                photoUrl != null && photoUrl.isNotEmpty
+                                ? CachedNetworkImageProvider(photoUrl)
+                                : null,
+                            child: (photoUrl == null || photoUrl.isEmpty)
+                                ? const Icon(Icons.person)
+                                : null,
+                          ),
+                          title: Text(name),
+                          subtitle: Text('Roll: $roll  •  $cls-$section'),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.call),
+                            onPressed: phone.isNotEmpty
+                                ? () => _call(phone)
+                                : null,
+                          ),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => TeacherStudentProfilePage(
+                                  studentId: id,
+                                  initialData: it,
+                                ),
                               ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : _items.isEmpty
-                        ? const Center(child: Text('No students found'))
-                        : RefreshIndicator(
-                            onRefresh: () => _load(reset: true),
-                            child: ListView.separated(
-                              itemCount: _items.length + (_hasMore ? 1 : 0),
-                              separatorBuilder: (_, __) => const Divider(height: 1),
-                              itemBuilder: (context, index) {
-                                if (index >= _items.length) {
-                                  if (!_loading) _load();
-                                  return const Padding(
-                                    padding: EdgeInsets.all(16.0),
-                                    child: Center(child: CircularProgressIndicator()),
-                                  );
-                                }
-                                final it = _items[index] as Map<String, dynamic>;
-                                final photoUrl = it['photo_url'] as String?;
-                                final name = it['name'] as String? ?? '';
-                                final roll = it['roll']?.toString() ?? '';
-                                final cls = it['class'] as String? ?? '';
-                                final section = it['section'] as String? ?? '';
-                                final phone = it['phone'] as String? ?? '';
-                                final id = it['id']?.toString() ?? '';
-                                return ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundImage:
-                                        photoUrl != null && photoUrl.isNotEmpty
-                                            ? CachedNetworkImageProvider(photoUrl)
-                                            : null,
-                                    child: (photoUrl == null || photoUrl.isEmpty)
-                                        ? const Icon(Icons.person)
-                                        : null,
-                                  ),
-                                  title: Text(name),
-                                  subtitle: Text('Roll: $roll  •  $cls-$section'),
-                                  trailing: IconButton(
-                                    icon: const Icon(Icons.call),
-                                    onPressed:
-                                        phone.isNotEmpty ? () => _call(phone) : null,
-                                  ),
-                                  onTap: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => TeacherStudentProfilePage(
-                                          studentId: id,
-                                          initialData: it,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                          ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Widget _metaDropdown(String label, String? value, List<Map<String, dynamic>> items, ValueChanged<String?> onChanged) {
+  Widget _metaDropdown(
+    String label,
+    String? value,
+    List<Map<String, dynamic>> items,
+    ValueChanged<String?> onChanged,
+  ) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       isExpanded: true,
       hint: Text(label, style: const TextStyle(fontSize: 11)),
       style: const TextStyle(fontSize: 11, color: Colors.black),
       decoration: const InputDecoration(
-        isDense: true, 
-        border: OutlineInputBorder(), 
-        contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 8)
+        isDense: true,
+        border: OutlineInputBorder(),
+        contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       ),
       items: [
-        DropdownMenuItem<String>(value: null, child: Text('$label: All', style: const TextStyle(fontSize: 11))),
-        ...items.map((i) => DropdownMenuItem<String>(
-              value: i['id']?.toString(),
-              child: Text(i['name']?.toString() ?? '', style: const TextStyle(fontSize: 11)),
-            )),
+        DropdownMenuItem<String>(
+          value: null,
+          child: Text('$label: All', style: const TextStyle(fontSize: 11)),
+        ),
+        ...items.map(
+          (i) => DropdownMenuItem<String>(
+            value: i['id']?.toString(),
+            child: Text(
+              i['name']?.toString() ?? '',
+              style: const TextStyle(fontSize: 11),
+            ),
+          ),
+        ),
       ],
       onChanged: onChanged,
     );
   }
 
-  Widget _filterDropdown(String label, String? value, List<DropdownMenuItem<String>> items, ValueChanged<String?> onChanged) {
+  Widget _filterDropdown(
+    String label,
+    String? value,
+    List<DropdownMenuItem<String>> items,
+    ValueChanged<String?> onChanged,
+  ) {
     return Container(
       constraints: const BoxConstraints(minWidth: 80, maxWidth: 120),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         isExpanded: true,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(fontSize: 11),
           border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 6,
+            vertical: 4,
+          ),
           isDense: true,
         ),
         items: [
-          DropdownMenuItem<String>(value: null, child: Text('All $label', style: const TextStyle(fontSize: 11))),
+          DropdownMenuItem<String>(
+            value: null,
+            child: Text('All $label', style: const TextStyle(fontSize: 11)),
+          ),
           ...items,
         ],
         onChanged: onChanged,
@@ -474,11 +574,12 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
         final Map<String, dynamic> normalized = inner is Map<String, dynamic>
             ? inner
             : res;
-        if (mounted)
+        if (mounted) {
           setState(() {
             _data = normalized;
             _error = null;
           });
+        }
       } catch (_) {
         // Keep initialData visible; don't overwrite with an error.
       }
@@ -508,9 +609,9 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
 
   // Helper: pick first non-empty value among keys, searching nested maps too
   String _pick(Map<String, dynamic> src, List<String> keys) {
-    bool _hasVal(dynamic v) => v != null && v.toString().trim().isNotEmpty;
+    bool hasVal(dynamic v) => v != null && v.toString().trim().isNotEmpty;
 
-    String _stringify(dynamic v) {
+    String stringify(dynamic v) {
       if (v == null) return '';
       if (v is String) return v.trim();
       if (v is num || v is bool) return v.toString();
@@ -518,15 +619,15 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
         final m = v.cast<String, dynamic>();
         for (final k in ['name', 'title', 'code', 'label', 'value', 'en']) {
           final vv = m[k];
-          if (_hasVal(vv)) return vv.toString();
+          if (hasVal(vv)) return vv.toString();
         }
       }
       return v.toString();
     }
 
-    dynamic _searchKey(dynamic node, String key) {
+    dynamic searchKey(dynamic node, String key) {
       if (node is Map<String, dynamic>) {
-        if (_hasVal(node[key])) return node[key];
+        if (hasVal(node[key])) return node[key];
         for (final nest in const [
           'student',
           'profile',
@@ -546,28 +647,28 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
         ]) {
           final nm = node[nest];
           if (nm is Map<String, dynamic>) {
-            final v2 = _searchKey(nm, key);
-            if (_hasVal(v2)) return v2;
+            final v2 = searchKey(nm, key);
+            if (hasVal(v2)) return v2;
           }
         }
         for (final e in node.values) {
           if (e is Map<String, dynamic> || e is List) {
-            final v3 = _searchKey(e, key);
-            if (_hasVal(v3)) return v3;
+            final v3 = searchKey(e, key);
+            if (hasVal(v3)) return v3;
           }
         }
       } else if (node is List) {
         for (final it in node) {
-          final v = _searchKey(it, key);
-          if (_hasVal(v)) return v;
+          final v = searchKey(it, key);
+          if (hasVal(v)) return v;
         }
       }
       return null;
     }
 
     for (final k in keys) {
-      final v = _searchKey(src, k);
-      if (_hasVal(v)) return _stringify(v);
+      final v = searchKey(src, k);
+      if (hasVal(v)) return stringify(v);
     }
     return '';
   }
@@ -594,7 +695,13 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     ]);
     final name = _combine(
       _tc(_pick(d, const ['name', 'student_name', 'full_name', 'studentName'])),
-      _pick(d, const ['name_bn', 'student_name_bn', 'full_name_bn', 'bn_name', 'studentNameBn']),
+      _pick(d, const [
+        'name_bn',
+        'student_name_bn',
+        'full_name_bn',
+        'bn_name',
+        'studentNameBn',
+      ]),
     );
     final cls = _pick(d, const ['class', 'class_name']);
     final section = _pick(d, const ['section', 'section_name']);
@@ -610,22 +717,43 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     final medium = _pick(d, const ['medium']);
     final session = _pick(d, const ['session', 'academic_session']);
     final year = _pick(d, const ['academic_year', 'year']);
-    final optionalSubject = _pick(d, const ['optional_subject', 'optionalSubject']);
+    final optionalSubject = _pick(d, const [
+      'optional_subject',
+      'optionalSubject',
+    ]);
     final schoolName = _combine(
       _pick(d, const ['school_name', 'school']),
       _pick(d, const ['school_name_bn', 'school_bn']),
     );
     final classTeacher = _pick(d, const ['class_teacher', 'teacher_name']);
-    final classTeacherPhone = _pick(d, const ['class_teacher_phone', 'teacher_phone']);
+    final classTeacherPhone = _pick(d, const [
+      'class_teacher_phone',
+      'teacher_phone',
+    ]);
 
-    final att = d['attendance_stats'] is Map ? Map<String, dynamic>.from(d['attendance_stats'] as Map) : null;
-    final history = d['enrollment_history'] is List ? d['enrollment_history'] as List : [];
-    final memberships = d['memberships'] is List ? d['memberships'] as List : [];
+    final att = d['attendance_stats'] is Map
+        ? Map<String, dynamic>.from(d['attendance_stats'] as Map)
+        : null;
+    final history = d['enrollment_history'] is List
+        ? d['enrollment_history'] as List
+        : [];
+    final memberships = d['memberships'] is List
+        ? d['memberships'] as List
+        : [];
 
     final gender = _tc(_pick(d, const ['gender', 'gender_name', 'genderName']));
-    final bloodGroup = _tc(_pick(d, const ['blood_group', 'bloodGroup', 'blood']));
-    final dob = _pick(d, const ['date_of_birth', 'dob', 'birth_date', 'dateOfBirth']);
-    final religion = _tc(_pick(d, const ['religion', 'religion_name', 'religionName']));
+    final bloodGroup = _tc(
+      _pick(d, const ['blood_group', 'bloodGroup', 'blood']),
+    );
+    final dob = _pick(d, const [
+      'date_of_birth',
+      'dob',
+      'birth_date',
+      'dateOfBirth',
+    ]);
+    final religion = _tc(
+      _pick(d, const ['religion', 'religion_name', 'religionName']),
+    );
 
     final phone = _pick(d, const [
       'phone',
@@ -667,11 +795,25 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
         : permanentAddressFallback;
 
     final fatherName = _combine(
-      _tc(_pick(d, const ['father_name', 'father', 'father_name_en', 'fatherName'])),
+      _tc(
+        _pick(d, const [
+          'father_name',
+          'father',
+          'father_name_en',
+          'fatherName',
+        ]),
+      ),
       _pick(d, const ['father_name_bn', 'fatherNameBn']),
     );
     final motherName = _combine(
-      _tc(_pick(d, const ['mother_name', 'mother', 'mother_name_en', 'motherName'])),
+      _tc(
+        _pick(d, const [
+          'mother_name',
+          'mother',
+          'mother_name_en',
+          'motherName',
+        ]),
+      ),
       _pick(d, const ['mother_name_bn', 'motherNameBn']),
     );
     String fatherPhone = _pick(d, const [
@@ -834,19 +976,36 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
                             backgroundColor: Colors.blue.shade100,
-                            child: const Icon(Icons.person_pin, color: Colors.blue),
+                            child: const Icon(
+                              Icons.person_pin,
+                              color: Colors.blue,
+                            ),
                           ),
-                          title: Text(classTeacher, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(classTeacherPhone.isNotEmpty ? classTeacherPhone : 'No phone'),
+                          title: Text(
+                            classTeacher,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            classTeacherPhone.isNotEmpty
+                                ? classTeacherPhone
+                                : 'No phone',
+                          ),
                           trailing: classTeacherPhone.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.call, color: Colors.green),
-                                onPressed: () async {
-                                  final uri = Uri(scheme: 'tel', path: classTeacherPhone);
-                                  if (await canLaunchUrl(uri)) await launchUrl(uri);
-                                },
-                              )
-                            : null,
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.call,
+                                    color: Colors.green,
+                                  ),
+                                  onPressed: () async {
+                                    final uri = Uri(
+                                      scheme: 'tel',
+                                      path: classTeacherPhone,
+                                    );
+                                    if (await canLaunchUrl(uri))
+                                      await launchUrl(uri);
+                                  },
+                                )
+                              : null,
                         ),
                       ],
                     ),
@@ -942,8 +1101,12 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                         onTap: fatherPhone.trim().isEmpty
                             ? null
                             : () async {
-                                final uri = Uri(scheme: 'tel', path: fatherPhone);
-                                if (await canLaunchUrl(uri)) await launchUrl(uri);
+                                final uri = Uri(
+                                  scheme: 'tel',
+                                  path: fatherPhone,
+                                );
+                                if (await canLaunchUrl(uri))
+                                  await launchUrl(uri);
                               },
                       ),
                       _infoRow(
@@ -953,8 +1116,12 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                         onTap: motherPhone.trim().isEmpty
                             ? null
                             : () async {
-                                final uri = Uri(scheme: 'tel', path: motherPhone);
-                                if (await canLaunchUrl(uri)) await launchUrl(uri);
+                                final uri = Uri(
+                                  scheme: 'tel',
+                                  path: motherPhone,
+                                );
+                                if (await canLaunchUrl(uri))
+                                  await launchUrl(uri);
                               },
                       ),
                       _infoRow(
@@ -1000,7 +1167,11 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                         padding: const EdgeInsets.only(bottom: 8.0),
                         child: Row(
                           children: [
-                            Icon(Icons.place, size: 20, color: Colors.blue.shade700),
+                            Icon(
+                              Icons.place,
+                              size: 20,
+                              color: Colors.blue.shade700,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'বর্তমান ঠিকানা',
@@ -1016,37 +1187,67 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       _infoRow(
                         icon: Icons.location_city,
                         label: 'গ্রাম',
-                        value: _pick(d, const ['present_village', 'village', 'gram', 'present_gram']),
+                        value: _pick(d, const [
+                          'present_village',
+                          'village',
+                          'gram',
+                          'present_gram',
+                        ]),
                       ),
                       _infoRow(
                         icon: Icons.home_work,
                         label: 'পাড়া/মহল্লা',
-                        value: _pick(d, const ['present_para_moholla', 'para_moholla', 'para', 'moholla']),
+                        value: _pick(d, const [
+                          'present_para_moholla',
+                          'para_moholla',
+                          'para',
+                          'moholla',
+                        ]),
                       ),
                       _infoRow(
                         icon: Icons.local_post_office,
                         label: 'ডাকঘর',
-                        value: _pick(d, const ['present_post_office', 'post_office', 'po', 'post']),
+                        value: _pick(d, const [
+                          'present_post_office',
+                          'post_office',
+                          'po',
+                          'post',
+                        ]),
                       ),
                       _infoRow(
                         icon: Icons.map,
                         label: 'উপজেলা',
-                        value: _pick(d, const ['present_upazilla', 'present_upazila', 'upazila', 'upazilla', 'thana']),
+                        value: _pick(d, const [
+                          'present_upazilla',
+                          'present_upazila',
+                          'upazila',
+                          'upazilla',
+                          'thana',
+                        ]),
                       ),
                       _infoRow(
                         icon: Icons.location_on,
                         label: 'জেলা',
-                        value: _pick(d, const ['present_district', 'district', 'zilla', 'zila']),
+                        value: _pick(d, const [
+                          'present_district',
+                          'district',
+                          'zilla',
+                          'zila',
+                        ]),
                       ),
-                      
+
                       const Divider(height: 24),
-                      
+
                       // Permanent Address
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8.0),
                         child: Row(
                           children: [
-                            Icon(Icons.home, size: 20, color: Colors.green.shade700),
+                            Icon(
+                              Icons.home,
+                              size: 20,
+                              color: Colors.green.shade700,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'স্থায়ী ঠিকানা',
@@ -1062,27 +1263,59 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       _infoRow(
                         icon: Icons.location_city,
                         label: 'গ্রাম',
-                        value: _pick(d, const ['permanent_village', 'perm_village', 'permanent_gram', 'permanent_gram_bn', 'perm_gram']),
+                        value: _pick(d, const [
+                          'permanent_village',
+                          'perm_village',
+                          'permanent_gram',
+                          'permanent_gram_bn',
+                          'perm_gram',
+                        ]),
                       ),
                       _infoRow(
                         icon: Icons.home_work,
                         label: 'পাড়া/মহল্লা',
-                        value: _pick(d, const ['permanent_para_moholla', 'perm_para_moholla', 'perm_para', 'perm_moholla', 'permanent_para']),
+                        value: _pick(d, const [
+                          'permanent_para_moholla',
+                          'perm_para_moholla',
+                          'perm_para',
+                          'perm_moholla',
+                          'permanent_para',
+                        ]),
                       ),
                       _infoRow(
                         icon: Icons.local_post_office,
                         label: 'ডাকঘর',
-                        value: _pick(d, const ['permanent_post_office', 'perm_post_office', 'perm_po', 'perm_post', 'permanent_po']),
+                        value: _pick(d, const [
+                          'permanent_post_office',
+                          'perm_post_office',
+                          'perm_po',
+                          'perm_post',
+                          'permanent_po',
+                        ]),
                       ),
                       _infoRow(
                         icon: Icons.map,
                         label: 'উপজেলা',
-                        value: _pick(d, const ['permanent_upazilla', 'perm_upazilla', 'perm_upazila', 'permanent_upazila', 'perm_thana', 'permanent_thana']),
+                        value: _pick(d, const [
+                          'permanent_upazilla',
+                          'perm_upazilla',
+                          'perm_upazila',
+                          'permanent_upazila',
+                          'perm_thana',
+                          'permanent_thana',
+                        ]),
                       ),
                       _infoRow(
                         icon: Icons.location_on,
                         label: 'জেলা',
-                        value: _pick(d, const ['permanent_district', 'perm_district', 'perm_zilla', 'perm_zila', 'permanent_zilla', 'permanent_zila']),
+                        value: _pick(d, const [
+                          'permanent_district',
+                          'perm_district',
+                          'perm_zilla',
+                          'perm_zila',
+                          'permanent_zilla',
+                          'permanent_zila',
+                        ]),
                       ),
                     ],
                   ),
@@ -1099,7 +1332,13 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       _infoRow(
                         icon: Icons.school,
                         label: 'Previous School',
-                        value: _pick(d, const ['previous_school', 'last_school', 'prev_school', 'previousSchool', 'lastSchool']),
+                        value: _pick(d, const [
+                          'previous_school',
+                          'last_school',
+                          'prev_school',
+                          'previousSchool',
+                          'lastSchool',
+                        ]),
                       ),
                       Row(
                         children: [
@@ -1107,14 +1346,25 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                             child: _infoRow(
                               icon: Icons.history_edu,
                               label: 'Pass Year',
-                              value: _pick(d, const ['pass_year', 'passing_year', 'passYear', 'passingYear']),
+                              value: _pick(d, const [
+                                'pass_year',
+                                'passing_year',
+                                'passYear',
+                                'passingYear',
+                              ]),
                             ),
                           ),
                           Expanded(
                             child: _infoRow(
                               icon: Icons.assignment_turned_in,
                               label: 'Result',
-                              value: _pick(d, const ['previous_result', 'last_result', 'previousResult', 'result', 'grade']),
+                              value: _pick(d, const [
+                                'previous_result',
+                                'last_result',
+                                'previousResult',
+                                'result',
+                                'grade',
+                              ]),
                             ),
                           ),
                         ],
@@ -1122,22 +1372,47 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       _infoRow(
                         icon: Icons.notes,
                         label: 'Previous Remarks',
-                        value: _pick(d, const ['previous_remarks', 'remarks', 'achievement', 'previousRemarks', 'notes']),
+                        value: _pick(d, const [
+                          'previous_remarks',
+                          'remarks',
+                          'achievement',
+                          'previousRemarks',
+                          'notes',
+                        ]),
                       ),
                       _infoRow(
                         icon: Icons.date_range,
                         label: 'Admission Date',
-                        value: _pick(d, const ['admission_date', 'admissionDate', 'admit_date', 'date_admitted']),
+                        value: _pick(d, const [
+                          'admission_date',
+                          'admissionDate',
+                          'admit_date',
+                          'date_admitted',
+                        ]),
                       ),
                       _infoRow(
                         icon: Icons.verified_user,
                         label: 'Status',
-                        value: _tc(_pick(d, const ['status', 'student_status', 'active_status', 'studentStatus', 'enrollment_status'])),
+                        value: _tc(
+                          _pick(d, const [
+                            'status',
+                            'student_status',
+                            'active_status',
+                            'studentStatus',
+                            'enrollment_status',
+                          ]),
+                        ),
                       ),
                       _infoRow(
                         icon: Icons.account_balance,
                         label: 'School',
-                        value: schoolName.isNotEmpty ? schoolName : _pick(d, const ['school_name', 'schoolName', 'institute_name']),
+                        value: schoolName.isNotEmpty
+                            ? schoolName
+                            : _pick(d, const [
+                                'school_name',
+                                'schoolName',
+                                'institute_name',
+                              ]),
                       ),
                       if (optionalSubject.isNotEmpty)
                         _infoRow(
@@ -1161,17 +1436,36 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _attendanceMiniCard('Present', (att?['present'] ?? '0').toString(), Colors.green),
-                            _attendanceMiniCard('Absent', (att?['absent'] ?? '0').toString(), Colors.red),
-                            _attendanceMiniCard('Late', (att?['late'] ?? '0').toString(), Colors.orange),
-                            _attendanceMiniCard('Leave', (att?['leave'] ?? '0').toString(), Colors.blue),
+                            _attendanceMiniCard(
+                              'Present',
+                              (att?['present'] ?? '0').toString(),
+                              Colors.green,
+                            ),
+                            _attendanceMiniCard(
+                              'Absent',
+                              (att?['absent'] ?? '0').toString(),
+                              Colors.red,
+                            ),
+                            _attendanceMiniCard(
+                              'Late',
+                              (att?['late'] ?? '0').toString(),
+                              Colors.orange,
+                            ),
+                            _attendanceMiniCard(
+                              'Leave',
+                              (att?['leave'] ?? '0').toString(),
+                              Colors.blue,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 12),
                         Center(
                           child: Text(
                             'Total Working Days: ${_pick(d, const ['working_days']).isEmpty ? '0' : _pick(d, const ['working_days'])}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                       ],
@@ -1188,13 +1482,18 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       ),
                       children: [
                         Theme(
-                          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                          data: Theme.of(
+                            context,
+                          ).copyWith(dividerColor: Colors.transparent),
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: DataTable(
                               columnSpacing: 24,
                               horizontalMargin: 0,
-                              headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                              headingTextStyle: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
                               columns: const [
                                 DataColumn(label: Text('Year')),
                                 DataColumn(label: Text('Class')),
@@ -1202,13 +1501,43 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                                 DataColumn(label: Text('Roll')),
                               ],
                               rows: history.map((en) {
-                                final Map<String, dynamic> row = en is Map ? Map<String, dynamic>.from(en as Map) : {};
-                                return DataRow(cells: [
-                                  DataCell(Text(_pick(row, const ['academic_year', 'year', 'session']))),
-                                  DataCell(Text(_pick(row, const ['class', 'class_name']))),
-                                  DataCell(Text(_pick(row, const ['section', 'section_name']))),
-                                  DataCell(Text(_pick(row, const ['roll', 'roll_no']))),
-                                ]);
+                                final Map<String, dynamic> row = en is Map
+                                    ? Map<String, dynamic>.from(en)
+                                    : {};
+                                return DataRow(
+                                  cells: [
+                                    DataCell(
+                                      Text(
+                                        _pick(row, const [
+                                          'academic_year',
+                                          'year',
+                                          'session',
+                                        ]),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Text(
+                                        _pick(row, const [
+                                          'class',
+                                          'class_name',
+                                        ]),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Text(
+                                        _pick(row, const [
+                                          'section',
+                                          'section_name',
+                                        ]),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Text(
+                                        _pick(row, const ['roll', 'roll_no']),
+                                      ),
+                                    ),
+                                  ],
+                                );
                               }).toList(),
                             ),
                           ),
@@ -1226,18 +1555,33 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                         colors: [Color(0xFFf857a6), Color(0xFFff5858)],
                       ),
                       children: memberships.map((tm) {
-                        final Map<String, dynamic> row = tm is Map ? Map<String, dynamic>.from(tm as Map) : {};
+                        final Map<String, dynamic> row = tm is Map
+                            ? Map<String, dynamic>.from(tm)
+                            : {};
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
                             backgroundColor: Colors.pink.withOpacity(0.1),
                             child: const Icon(Icons.group, color: Colors.pink),
                           ),
-                          title: Text(_pick(row, const ['name', 'team_name']), style: const TextStyle(fontWeight: FontWeight.w600)),
-                          subtitle: Text('Status: ${_pick(row, const ['status'])}'),
-                          trailing: _pick(row, const ['joined_at']).isNotEmpty 
-                            ? Text(_pick(row, const ['joined_at']).split(' ').first, style: const TextStyle(fontSize: 12, color: Colors.grey)) 
-                            : null,
+                          title: Text(
+                            _pick(row, const ['name', 'team_name']),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            'Status: ${_pick(row, const ['status'])}',
+                          ),
+                          trailing: _pick(row, const ['joined_at']).isNotEmpty
+                              ? Text(
+                                  _pick(row, const [
+                                    'joined_at',
+                                  ]).split(' ').first,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                )
+                              : null,
                         );
                       }).toList(),
                     ),
@@ -1245,28 +1589,40 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                   const SizedBox(height: 12),
 
                   // Today's Status
-                  if (d.containsKey('today_attendance') || (d['today_evaluations'] as List? ?? []).isNotEmpty)
-                   _sectionCard(
+                  if (d.containsKey('today_attendance') ||
+                      (d['today_evaluations'] as List? ?? []).isNotEmpty)
+                    _sectionCard(
                       title: 'Today\'s Status',
                       gradient: const LinearGradient(
                         colors: [Color(0xFF2193b0), Color(0xFF6dd5ed)],
                       ),
                       children: [
-                        if (d['today_attendance'] != null && d['today_attendance']['class'] != null)
+                        if (d['today_attendance'] != null &&
+                            d['today_attendance']['class'] != null)
                           _infoRow(
                             icon: Icons.check_circle_outline,
                             label: 'Today\'s Class Attendance',
-                            value: _tc((d['today_attendance']['class']['status'] ?? 'N/A').toString()),
+                            value: _tc(
+                              (d['today_attendance']['class']['status'] ??
+                                      'N/A')
+                                  .toString(),
+                            ),
                           ),
                         if ((d['today_evaluations'] as List? ?? []).isNotEmpty)
-                          ... (d['today_evaluations'] as List).map((ev) {
-                            final Map<String, dynamic> row = ev is Map ? Map<String, dynamic>.from(ev as Map) : {};
+                          ...(d['today_evaluations'] as List).map((ev) {
+                            final Map<String, dynamic> row = ev is Map
+                                ? Map<String, dynamic>.from(ev)
+                                : {};
                             return ListTile(
                               dense: true,
                               contentPadding: EdgeInsets.zero,
                               leading: const Icon(Icons.book, size: 20),
-                              title: Text('${row['subject'] ?? 'Subject'} (Period ${row['period'] ?? ''})'),
-                              subtitle: Text('Status: ${row['status'] ?? 'Pending'}'),
+                              title: Text(
+                                '${row['subject'] ?? 'Subject'} (Period ${row['period'] ?? ''})',
+                              ),
+                              subtitle: Text(
+                                'Status: ${row['status'] ?? 'Pending'}',
+                              ),
                             );
                           }),
                       ],
@@ -1312,10 +1668,10 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
             backgroundImage: photoUrl.isNotEmpty
                 ? CachedNetworkImageProvider(photoUrl)
                 : null,
+            backgroundColor: Colors.white.withOpacity(0.2),
             child: photoUrl.isEmpty
                 ? const Icon(Icons.person, size: 48, color: Colors.white)
                 : null,
-            backgroundColor: Colors.white.withOpacity(0.2),
           ),
           const SizedBox(height: 12),
           Text(
@@ -1696,13 +2052,13 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     String pv = _tc(
       _pick(src, [
         '${scope}_village',
-        'village_${scope}',
+        'village_$scope',
         'addresses_${scope}_village',
         '${scope}_address_village',
         'village',
         'gram',
         '${scope}_para_moholla',
-        'para_moholla_${scope}',
+        'para_moholla_$scope',
         'para_moholla',
       ]),
     );
@@ -1719,10 +2075,10 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     String po = _tc(
       _pick(src, [
         '${scope}_post_office',
-        'post_office_${scope}',
+        'post_office_$scope',
         'addresses_${scope}_post_office',
         '${scope}_post',
-        'post_${scope}',
+        'post_$scope',
         '${scope}_po',
         'dakghor',
         'post_office',
@@ -1747,15 +2103,15 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     String upa = _tc(
       _pick(src, [
         '${scope}_upazila',
-        'upazila_${scope}',
+        'upazila_$scope',
         'addresses_${scope}_upazila',
         '${scope}_thana',
-        'thana_${scope}',
+        'thana_$scope',
         '${scope}_subdistrict',
-        'subdistrict_${scope}',
+        'subdistrict_$scope',
         '${scope}_sub_district',
         '${scope}_upazilla',
-        'upazilla_${scope}',
+        'upazilla_$scope',
         'upazila',
         'thana',
         'subdistrict',
@@ -1782,10 +2138,10 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     String dist = _tc(
       _pick(src, [
         '${scope}_district',
-        'district_${scope}',
+        'district_$scope',
         'addresses_${scope}_district',
         '${scope}_zilla',
-        'zilla_${scope}',
+        'zilla_$scope',
         'district',
         'zilla',
       ]),

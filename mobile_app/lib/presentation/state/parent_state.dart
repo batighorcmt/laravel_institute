@@ -9,15 +9,22 @@ class SelectedStudentIdNotifier extends Notifier<int?> {
   void update(int? id) => state = id;
 }
 
-final selectedStudentIdProvider = NotifierProvider<SelectedStudentIdNotifier, int?>(SelectedStudentIdNotifier.new);
+final selectedStudentIdProvider =
+    NotifierProvider<SelectedStudentIdNotifier, int?>(
+      SelectedStudentIdNotifier.new,
+    );
 
 class AttendanceMonthYearNotifier extends Notifier<DateTime> {
   @override
   DateTime build() => DateTime.now();
+  @override
   set state(DateTime value) => super.state = value;
 }
 
-final attendanceMonthYearProvider = NotifierProvider<AttendanceMonthYearNotifier, DateTime>(AttendanceMonthYearNotifier.new);
+final attendanceMonthYearProvider =
+    NotifierProvider<AttendanceMonthYearNotifier, DateTime>(
+      AttendanceMonthYearNotifier.new,
+    );
 
 final parentChildrenProvider = FutureProvider<List<dynamic>>((ref) async {
   final children = await ref.watch(parentRepositoryProvider).getChildren();
@@ -33,36 +40,55 @@ class HomeworkDateFilterNotifier extends Notifier<DateTime?> {
 
   @override
   DateTime? build() => isDefaultToday ? DateTime.now() : null;
+  @override
   set state(DateTime? value) => super.state = value;
 }
 
-final homeworkFromDateFilterProvider = NotifierProvider<HomeworkDateFilterNotifier, DateTime?>(() => HomeworkDateFilterNotifier(isDefaultToday: true));
-final homeworkToDateFilterProvider = NotifierProvider<HomeworkDateFilterNotifier, DateTime?>(() => HomeworkDateFilterNotifier(isDefaultToday: true));
+final homeworkFromDateFilterProvider =
+    NotifierProvider<HomeworkDateFilterNotifier, DateTime?>(
+      () => HomeworkDateFilterNotifier(isDefaultToday: true),
+    );
+final homeworkToDateFilterProvider =
+    NotifierProvider<HomeworkDateFilterNotifier, DateTime?>(
+      () => HomeworkDateFilterNotifier(isDefaultToday: true),
+    );
 
 class HomeworkSubjectFilterNotifier extends Notifier<int?> {
   @override
   int? build() => null;
+  @override
   set state(int? value) => super.state = value;
 }
-final homeworkSubjectFilterProvider = NotifierProvider<HomeworkSubjectFilterNotifier, int?>(HomeworkSubjectFilterNotifier.new);
+
+final homeworkSubjectFilterProvider =
+    NotifierProvider<HomeworkSubjectFilterNotifier, int?>(
+      HomeworkSubjectFilterNotifier.new,
+    );
 
 class HomeworkTeacherFilterNotifier extends Notifier<int?> {
   @override
   int? build() => null;
+  @override
   set state(int? value) => super.state = value;
 }
-final homeworkTeacherFilterProvider = NotifierProvider<HomeworkTeacherFilterNotifier, int?>(HomeworkTeacherFilterNotifier.new);
+
+final homeworkTeacherFilterProvider =
+    NotifierProvider<HomeworkTeacherFilterNotifier, int?>(
+      HomeworkTeacherFilterNotifier.new,
+    );
 
 final parentHomeworkProvider = FutureProvider<List<dynamic>>((ref) {
   final studentId = ref.watch(selectedStudentIdProvider);
   final fromDate = ref.watch(homeworkFromDateFilterProvider);
   final toDate = ref.watch(homeworkToDateFilterProvider);
-  
-  return ref.watch(parentRepositoryProvider).getHomework(
-    studentId: studentId, 
-    fromDate: fromDate?.toIso8601String().split('T').first,
-    toDate: toDate?.toIso8601String().split('T').first,
-  );
+
+  return ref
+      .watch(parentRepositoryProvider)
+      .getHomework(
+        studentId: studentId,
+        fromDate: fromDate?.toIso8601String().split('T').first,
+        toDate: toDate?.toIso8601String().split('T').first,
+      );
 });
 
 final parentRoutineProvider = FutureProvider<List<dynamic>>((ref) {
@@ -73,16 +99,16 @@ final parentRoutineProvider = FutureProvider<List<dynamic>>((ref) {
 final parentAttendanceProvider = FutureProvider<List<dynamic>>((ref) {
   final studentId = ref.watch(selectedStudentIdProvider);
   final dt = ref.watch(attendanceMonthYearProvider);
-  return ref.watch(parentRepositoryProvider).getAttendance(
-    studentId: studentId,
-    month: dt.month,
-    year: dt.year,
-  );
+  return ref
+      .watch(parentRepositoryProvider)
+      .getAttendance(studentId: studentId, month: dt.month, year: dt.year);
 });
 
 final parentOverallAttendanceProvider = FutureProvider<List<dynamic>>((ref) {
   final studentId = ref.watch(selectedStudentIdProvider);
-  return ref.watch(parentRepositoryProvider).getAttendance(studentId: studentId);
+  return ref
+      .watch(parentRepositoryProvider)
+      .getAttendance(studentId: studentId);
 });
 
 final parentEvaluationsProvider = FutureProvider<List<dynamic>>((ref) {
@@ -93,7 +119,9 @@ final parentEvaluationsProvider = FutureProvider<List<dynamic>>((ref) {
   final teacherId = ref.watch(evalTeacherFilterProvider);
   final status = ref.watch(evalStatusFilterProvider);
 
-  return ref.watch(parentRepositoryProvider).getLessonEvaluations(
+  return ref
+      .watch(parentRepositoryProvider)
+      .getLessonEvaluations(
         studentId: studentId,
         fromDate: fromDate?.toIso8601String().split('T').first,
         toDate: toDate?.toIso8601String().split('T').first,
@@ -110,32 +138,53 @@ class EvalDateFilterNotifier extends Notifier<DateTime?> {
 
   @override
   DateTime? build() => isDefaultToday ? DateTime.now() : null;
+  @override
   set state(DateTime? value) => super.state = value;
 }
 
-final evalFromDateFilterProvider = NotifierProvider<EvalDateFilterNotifier, DateTime?>(() => EvalDateFilterNotifier(isDefaultToday: true));
-final evalToDateFilterProvider = NotifierProvider<EvalDateFilterNotifier, DateTime?>(() => EvalDateFilterNotifier(isDefaultToday: true));
+final evalFromDateFilterProvider =
+    NotifierProvider<EvalDateFilterNotifier, DateTime?>(
+      () => EvalDateFilterNotifier(isDefaultToday: true),
+    );
+final evalToDateFilterProvider =
+    NotifierProvider<EvalDateFilterNotifier, DateTime?>(
+      () => EvalDateFilterNotifier(isDefaultToday: true),
+    );
 
 class EvalIntFilterNotifier extends Notifier<int?> {
   @override
   int? build() => null;
+  @override
   set state(int? value) => super.state = value;
 }
 
-final evalSubjectFilterProvider = NotifierProvider<EvalIntFilterNotifier, int?>(EvalIntFilterNotifier.new);
-final evalTeacherFilterProvider = NotifierProvider<EvalIntFilterNotifier, int?>(EvalIntFilterNotifier.new);
+final evalSubjectFilterProvider = NotifierProvider<EvalIntFilterNotifier, int?>(
+  EvalIntFilterNotifier.new,
+);
+final evalTeacherFilterProvider = NotifierProvider<EvalIntFilterNotifier, int?>(
+  EvalIntFilterNotifier.new,
+);
 
 class EvalStringFilterNotifier extends Notifier<String?> {
   @override
   String? build() => null;
+  @override
   set state(String? value) => super.state = value;
 }
 
-final evalStatusFilterProvider = NotifierProvider<EvalStringFilterNotifier, String?>(EvalStringFilterNotifier.new);
+final evalStatusFilterProvider =
+    NotifierProvider<EvalStringFilterNotifier, String?>(
+      EvalStringFilterNotifier.new,
+    );
 
 final parentEvaluationStatsProvider = FutureProvider<List<dynamic>>((ref) {
   final studentId = ref.watch(selectedStudentIdProvider);
-  return ref.watch(parentRepositoryProvider).getLessonEvaluationStats(studentId: studentId, year: DateTime.now().year);
+  return ref
+      .watch(parentRepositoryProvider)
+      .getLessonEvaluationStats(
+        studentId: studentId,
+        year: DateTime.now().year,
+      );
 });
 
 final parentLeavesProvider = FutureProvider<List<dynamic>>((ref) {
@@ -160,7 +209,9 @@ final parentFeedbackProvider = FutureProvider<List<dynamic>>((ref) {
   return ref.watch(parentRepositoryProvider).getFeedback();
 });
 
-final parentStudentProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final parentStudentProfileProvider = FutureProvider<Map<String, dynamic>>((
+  ref,
+) async {
   final studentId = ref.watch(selectedStudentIdProvider);
   return ref.read(parentRepositoryProvider).getProfile(studentId: studentId);
 });

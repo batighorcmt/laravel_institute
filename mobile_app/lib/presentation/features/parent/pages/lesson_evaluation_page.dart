@@ -38,12 +38,15 @@ class LessonEvaluationPage extends ConsumerWidget {
                           lastDate: DateTime(2100),
                         );
                         if (picked != null) {
-                          ref.read(evalFromDateFilterProvider.notifier).state = picked;
+                          ref.read(evalFromDateFilterProvider.notifier).state =
+                              picked;
                         }
                       },
                       icon: const Icon(Icons.calendar_today, size: 14),
                       label: Text(
-                        fromDate == null ? 'হতে' : "${fromDate.day}/${fromDate.month}/${fromDate.year}",
+                        fromDate == null
+                            ? 'হতে'
+                            : "${fromDate.day}/${fromDate.month}/${fromDate.year}",
                         style: const TextStyle(fontSize: 11),
                       ),
                     ),
@@ -59,12 +62,15 @@ class LessonEvaluationPage extends ConsumerWidget {
                           lastDate: DateTime(2100),
                         );
                         if (picked != null) {
-                          ref.read(evalToDateFilterProvider.notifier).state = picked;
+                          ref.read(evalToDateFilterProvider.notifier).state =
+                              picked;
                         }
                       },
                       icon: const Icon(Icons.calendar_today, size: 14),
                       label: Text(
-                        toDate == null ? 'পর্যন্ত' : "${toDate.day}/${toDate.month}/${toDate.year}",
+                        toDate == null
+                            ? 'পর্যন্ত'
+                            : "${toDate.day}/${toDate.month}/${toDate.year}",
                         style: const TextStyle(fontSize: 11),
                       ),
                     ),
@@ -72,8 +78,10 @@ class LessonEvaluationPage extends ConsumerWidget {
                   IconButton(
                     icon: const Icon(Icons.refresh, size: 20),
                     onPressed: () {
-                      ref.read(evalFromDateFilterProvider.notifier).state = DateTime.now();
-                      ref.read(evalToDateFilterProvider.notifier).state = DateTime.now();
+                      ref.read(evalFromDateFilterProvider.notifier).state =
+                          DateTime.now();
+                      ref.read(evalToDateFilterProvider.notifier).state =
+                          DateTime.now();
                       ref.read(evalSubjectFilterProvider.notifier).state = null;
                       ref.read(evalTeacherFilterProvider.notifier).state = null;
                       ref.read(evalStatusFilterProvider.notifier).state = null;
@@ -87,59 +95,123 @@ class LessonEvaluationPage extends ConsumerWidget {
                   Expanded(
                     child: subjectsAsync.when(
                       data: (items) => DropdownButtonFormField<int>(
-                        value: selectedSubjectId,
+                        initialValue: selectedSubjectId,
                         isExpanded: true,
                         decoration: _filterDecoration('বিষয়'),
-                        style: const TextStyle(fontSize: 11, color: Colors.black),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black,
+                        ),
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('সব বিষয়', style: TextStyle(fontSize: 11))),
-                          ...items.map((e) => DropdownMenuItem(
-                                value: e['id'] as int,
-                                child: Text(e['name'] ?? '', style: const TextStyle(fontSize: 11), overflow: TextOverflow.ellipsis),
-                              )),
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text(
+                              'সব বিষয়',
+                              style: TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          ...items.map(
+                            (e) => DropdownMenuItem(
+                              value: e['id'] as int,
+                              child: Text(
+                                e['name'] ?? '',
+                                style: const TextStyle(fontSize: 11),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
                         ],
-                        onChanged: (val) => ref.read(evalSubjectFilterProvider.notifier).state = val,
+                        onChanged: (val) =>
+                            ref.read(evalSubjectFilterProvider.notifier).state =
+                                val,
                       ),
-                      loading: () => const Text('...', style: TextStyle(fontSize: 11)),
-                      error: (_, __) => const Text('!', style: TextStyle(fontSize: 11)),
+                      loading: () =>
+                          const Text('...', style: TextStyle(fontSize: 11)),
+                      error: (_, __) =>
+                          const Text('!', style: TextStyle(fontSize: 11)),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: teachersAsync.when(
                       data: (items) => DropdownButtonFormField<int>(
-                        value: selectedTeacherId,
+                        initialValue: selectedTeacherId,
                         isExpanded: true,
                         decoration: _filterDecoration('শিক্ষক'),
-                        style: const TextStyle(fontSize: 11, color: Colors.black),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black,
+                        ),
                         items: [
-                          const DropdownMenuItem(value: null, child: Text('সব শিক্ষক', style: TextStyle(fontSize: 11))),
-                          ...items.map((e) => DropdownMenuItem(
-                                value: e['id'] as int,
-                                child: Text(e['name'] ?? '', style: const TextStyle(fontSize: 11), overflow: TextOverflow.ellipsis),
-                              )),
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text(
+                              'সব শিক্ষক',
+                              style: TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          ...items.map(
+                            (e) => DropdownMenuItem(
+                              value: e['id'] as int,
+                              child: Text(
+                                e['name'] ?? '',
+                                style: const TextStyle(fontSize: 11),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
                         ],
-                        onChanged: (val) => ref.read(evalTeacherFilterProvider.notifier).state = val,
+                        onChanged: (val) =>
+                            ref.read(evalTeacherFilterProvider.notifier).state =
+                                val,
                       ),
-                      loading: () => const Text('...', style: TextStyle(fontSize: 11)),
-                      error: (_, __) => const Text('!', style: TextStyle(fontSize: 11)),
+                      loading: () =>
+                          const Text('...', style: TextStyle(fontSize: 11)),
+                      error: (_, __) =>
+                          const Text('!', style: TextStyle(fontSize: 11)),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: selectedStatus,
+                      initialValue: selectedStatus,
                       isExpanded: true,
                       decoration: _filterDecoration('অবস্থা'),
                       style: const TextStyle(fontSize: 11, color: Colors.black),
                       items: const [
-                        DropdownMenuItem(value: null, child: Text('সব', style: TextStyle(fontSize: 11))),
-                        DropdownMenuItem(value: 'completed', child: Text('পড়া হয়েছে', style: TextStyle(fontSize: 11))),
-                        DropdownMenuItem(value: 'partial', child: Text('আংশিক', style: TextStyle(fontSize: 11))),
-                        DropdownMenuItem(value: 'not_done', child: Text('পড়া হয়নি', style: TextStyle(fontSize: 11))),
-                        DropdownMenuItem(value: 'absent', child: Text('অনুপস্থিত', style: TextStyle(fontSize: 11))),
+                        DropdownMenuItem(
+                          value: null,
+                          child: Text('সব', style: TextStyle(fontSize: 11)),
+                        ),
+                        DropdownMenuItem(
+                          value: 'completed',
+                          child: Text(
+                            'পড়া হয়েছে',
+                            style: TextStyle(fontSize: 11),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'partial',
+                          child: Text('আংশিক', style: TextStyle(fontSize: 11)),
+                        ),
+                        DropdownMenuItem(
+                          value: 'not_done',
+                          child: Text(
+                            'পড়া হয়নি',
+                            style: TextStyle(fontSize: 11),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'absent',
+                          child: Text(
+                            'অনুপস্থিত',
+                            style: TextStyle(fontSize: 11),
+                          ),
+                        ),
                       ],
-                      onChanged: (val) => ref.read(evalStatusFilterProvider.notifier).state = val,
+                      onChanged: (val) =>
+                          ref.read(evalStatusFilterProvider.notifier).state =
+                              val,
                     ),
                   ),
                 ],
@@ -152,23 +224,37 @@ class LessonEvaluationPage extends ConsumerWidget {
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.analytics_outlined, size: 18, color: Colors.indigo),
+                      Icon(
+                        Icons.analytics_outlined,
+                        size: 18,
+                        color: Colors.indigo,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'বিষয়ভিত্তিক বাৎসরিক পরিসংখ্যান',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.indigo),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.indigo,
+                        ),
                       ),
                     ],
                   ),
                   TextButton.icon(
-                    onPressed: () => context.pushNamed('parent-evaluations-stats'),
+                    onPressed: () =>
+                        context.pushNamed('parent-evaluations-stats'),
                     icon: const Icon(Icons.visibility, size: 16),
                     label: const Text('দেখুন', style: TextStyle(fontSize: 13)),
                     style: TextButton.styleFrom(
                       foregroundColor: Colors.white,
                       backgroundColor: Colors.indigo,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                     ),
                   ),
                 ],
@@ -180,7 +266,9 @@ class LessonEvaluationPage extends ConsumerWidget {
           child: evaluationsAsync.when(
             data: (evaluations) {
               if (evaluations.isEmpty) {
-                return const Center(child: Text('কোনো পাঠ মূল্যায়ন পাওয়া যায়নি'));
+                return const Center(
+                  child: Text('কোনো পাঠ মূল্যায়ন পাওয়া যায়নি'),
+                );
               }
               return ListView.builder(
                 padding: const EdgeInsets.all(12),
@@ -190,7 +278,9 @@ class LessonEvaluationPage extends ConsumerWidget {
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Column(
@@ -202,16 +292,24 @@ class LessonEvaluationPage extends ConsumerWidget {
                               Expanded(
                                 child: Text(
                                   eval['subject']?.toString() ?? 'N/A',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.indigo,
+                                  ),
                                 ),
                               ),
                               Text(
                                 eval['date']?.toString() ?? '',
-                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ],
                           ),
-                          if (eval['notes'] != null && eval['notes'].toString().isNotEmpty) ...[
+                          if (eval['notes'] != null &&
+                              eval['notes'].toString().isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Container(
                               padding: const EdgeInsets.all(10),
@@ -219,14 +317,29 @@ class LessonEvaluationPage extends ConsumerWidget {
                               decoration: BoxDecoration(
                                 color: Colors.blueGrey[50],
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.blueGrey[100]!),
+                                border: Border.all(
+                                  color: Colors.blueGrey[100]!,
+                                ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('পাঠ বিষয়/নোট:', style: TextStyle(fontSize: 10, color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+                                  const Text(
+                                    'পাঠ বিষয়/নোট:',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.blueGrey,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
-                                  Text(eval['notes'].toString(), style: const TextStyle(fontSize: 13, height: 1.4)),
+                                  Text(
+                                    eval['notes'].toString(),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      height: 1.4,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -235,15 +348,27 @@ class LessonEvaluationPage extends ConsumerWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _buildStatusBadge(eval['status_label'], eval['status_color']),
+                              _buildStatusBadge(
+                                eval['status_label'],
+                                eval['status_color'],
+                              ),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    const Text('শিক্ষক', style: TextStyle(fontSize: 9, color: Colors.grey)),
+                                    const Text(
+                                      'শিক্ষক',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
                                     Text(
                                       eval['teacher']?.toString() ?? 'N/A',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -252,9 +377,17 @@ class LessonEvaluationPage extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          if (eval['remarks'] != null && eval['remarks'].toString().isNotEmpty) ...[
+                          if (eval['remarks'] != null &&
+                              eval['remarks'].toString().isNotEmpty) ...[
                             const Divider(height: 20),
-                            Text('মন্তব্য: ${eval['remarks']}', style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.black87)),
+                            Text(
+                              'মন্তব্য: ${eval['remarks']}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontStyle: FontStyle.italic,
+                                color: Colors.black87,
+                              ),
+                            ),
                           ],
                         ],
                       ),
@@ -309,7 +442,11 @@ class LessonEvaluationPage extends ConsumerWidget {
       ),
       child: Text(
         label ?? 'N/A',
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

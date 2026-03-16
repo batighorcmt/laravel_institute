@@ -22,8 +22,9 @@ class TeacherStudentsRepository {
     final params = <String, dynamic>{'page': page};
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (classId != null && classId.isNotEmpty) params['class_id'] = classId;
-    if (sectionId != null && sectionId.isNotEmpty)
+    if (sectionId != null && sectionId.isNotEmpty) {
       params['section_id'] = sectionId;
+    }
     if (groupId != null && groupId.isNotEmpty) params['group_id'] = groupId;
     if (gender != null && gender.isNotEmpty) params['gender'] = gender;
     if (academicYear != null && academicYear.isNotEmpty) {
@@ -34,7 +35,8 @@ class TeacherStudentsRepository {
       params['year_id'] = academicYear;
     }
     if (religion != null && religion.isNotEmpty) params['religion'] = religion;
-    if (studentStatus != null && studentStatus.isNotEmpty) params['status'] = studentStatus;
+    if (studentStatus != null && studentStatus.isNotEmpty)
+      params['status'] = studentStatus;
 
     try {
       // Use relative path so DioClient base `/api/v1` isn't duplicated
@@ -105,14 +107,15 @@ class TeacherStudentsRepository {
         _classMetaCache = [];
       }
     } on DioException catch (e) {
-      // If the teacher meta endpoint is forbidden or fails, 
+      // If the teacher meta endpoint is forbidden or fails,
       // try the mark-entry meta which the user confirmed is working.
       try {
         final resM = await _dio.get('teacher/exams/mark-entry/meta');
         final dataM = resM.data;
         if (dataM is Map<String, dynamic> && dataM['classes'] is List) {
-           _classMetaCache = (dataM['classes'] as List).cast<Map<String, dynamic>>();
-           return;
+          _classMetaCache = (dataM['classes'] as List)
+              .cast<Map<String, dynamic>>();
+          return;
         }
       } catch (_) {}
 
@@ -179,17 +182,19 @@ class TeacherStudentsRepository {
         _classMetaCache = [];
       }
     } catch (_) {
-       // FINAL FALLBACK: try generic meta/classes if everything else failed
-       // This endpoint returns all active classes in the school.
-       try {
-         final res = await _dio.get('meta/classes');
-         final data = res.data;
-         if (data is List) {
-           _classMetaCache = List<Map<String, dynamic>>.from(data.map((x) => Map<String, dynamic>.from(x)));
-         }
-       } catch (_) {
-         _classMetaCache = [];
-       }
+      // FINAL FALLBACK: try generic meta/classes if everything else failed
+      // This endpoint returns all active classes in the school.
+      try {
+        final res = await _dio.get('meta/classes');
+        final data = res.data;
+        if (data is List) {
+          _classMetaCache = List<Map<String, dynamic>>.from(
+            data.map((x) => Map<String, dynamic>.from(x)),
+          );
+        }
+      } catch (_) {
+        _classMetaCache = [];
+      }
     }
 
     // Do not fallback to attendance meta here — prefer the teacher meta
@@ -225,13 +230,13 @@ class TeacherStudentsRepository {
       final an = (ai['numeric_value'] as num?)?.toInt();
       final bn = (bi['numeric_value'] as num?)?.toInt();
       if (an != null && bn != null && an != bn) return an.compareTo(bn);
-      
+
       final nameA = a['name'] as String? ?? '';
       final nameB = b['name'] as String? ?? '';
       final intA = int.tryParse(nameA);
       final intB = int.tryParse(nameB);
       if (intA != null && intB != null) return intA.compareTo(intB);
-      
+
       return nameA.compareTo(nameB);
     });
     return out;
@@ -240,7 +245,7 @@ class TeacherStudentsRepository {
   Future<List<Map<String, dynamic>>> fetchSections({String? classId}) async {
     if (classId == null || classId.isEmpty) return [];
     _classScopedCache ??= {};
-    
+
     // First try the new specific filter endpoint (mirrors principal panel)
     try {
       final res = await _dio.get(
@@ -249,10 +254,7 @@ class TeacherStudentsRepository {
       );
       if (res.data is List) {
         final existing = _classScopedCache![classId] ?? {};
-        _classScopedCache![classId] = {
-           ...existing,
-           'sections': res.data,
-        };
+        _classScopedCache![classId] = {...existing, 'sections': res.data};
       }
     } catch (_) {
       // Fallback: try the meta endpoint
@@ -261,10 +263,12 @@ class TeacherStudentsRepository {
           'teacher/students/meta',
           queryParameters: {'class_id': classId},
         );
-        _classScopedCache![classId] = res.data is Map<String, dynamic> ? res.data : {};
+        _classScopedCache![classId] = res.data is Map<String, dynamic>
+            ? res.data
+            : {};
       } catch (_) {}
     }
-    
+
     final meta = _classScopedCache![classId] ?? {};
     if (meta.isEmpty || (meta['sections'] as List? ?? []).isEmpty) {
       // If primary meta is empty or has no sections, try generic meta/sections
@@ -277,7 +281,9 @@ class TeacherStudentsRepository {
         if (data is List) {
           _classScopedCache![classId] = {
             ...meta,
-            'sections': List<Map<String, dynamic>>.from(data.map((x) => Map<String, dynamic>.from(x))),
+            'sections': List<Map<String, dynamic>>.from(
+              data.map((x) => Map<String, dynamic>.from(x)),
+            ),
           };
         }
       } catch (_) {}
@@ -288,16 +294,16 @@ class TeacherStudentsRepository {
         .map((e) => {'id': e['id']?.toString(), 'name': e['name']?.toString()})
         .toList();
     sections.sort((a, b) {
-      final nameA = a['name'] as String? ?? '';
-      final nameB = b['name'] as String? ?? '';
-      
+      final nameA = a['name'] ?? '';
+      final nameB = b['name'] ?? '';
+
       // Try numeric sort if both names are integers
       final intA = int.tryParse(nameA);
       final intB = int.tryParse(nameB);
       if (intA != null && intB != null) {
         return intA.compareTo(intB);
       }
-      
+
       // Fallback to lexicographical sort
       return nameA.compareTo(nameB);
     });
@@ -312,7 +318,7 @@ class TeacherStudentsRepository {
   Future<List<Map<String, dynamic>>> fetchGroupsForClass(String classId) async {
     if (classId.isEmpty) return [];
     _classScopedCache ??= {};
-    
+
     // Try the specific filter endpoint
     try {
       final res = await _dio.get(
@@ -321,20 +327,17 @@ class TeacherStudentsRepository {
       );
       if (res.data is List) {
         final existing = _classScopedCache![classId] ?? {};
-        _classScopedCache![classId] = {
-          ...existing,
-          'groups': res.data,
-        };
+        _classScopedCache![classId] = {...existing, 'groups': res.data};
       }
     } catch (_) {}
-    
+
     final groups = ((_classScopedCache![classId]?['groups']) as List? ?? [])
         .cast<Map<String, dynamic>>()
         .map((e) => {'id': e['id']?.toString(), 'name': e['name']?.toString()})
         .toList();
     groups.sort((a, b) {
-      final n1 = a['name'] as String? ?? '';
-      final n2 = b['name'] as String? ?? '';
+      final n1 = a['name'] ?? '';
+      final n2 = b['name'] ?? '';
       final i1 = int.tryParse(n1);
       final i2 = int.tryParse(n2);
       if (i1 != null && i2 != null) return i1.compareTo(i2);

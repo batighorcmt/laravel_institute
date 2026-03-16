@@ -91,7 +91,10 @@ class _LessonEvaluationReportPageState
                       decoration: const InputDecoration(
                         labelText: 'Date',
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
                         border: OutlineInputBorder(),
                       ),
                       child: Row(
@@ -100,7 +103,9 @@ class _LessonEvaluationReportPageState
                           Text(
                             _selectedDate == null
                                 ? 'Select Date'
-                                : _selectedDate!.toLocal().toString().split(' ')[0],
+                                : _selectedDate!.toLocal().toString().split(
+                                    ' ',
+                                  )[0],
                             style: const TextStyle(fontSize: 13),
                           ),
                           const Icon(Icons.calendar_today, size: 16),
@@ -115,19 +120,42 @@ class _LessonEvaluationReportPageState
                     decoration: const InputDecoration(
                       labelText: 'Status',
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
                       border: OutlineInputBorder(),
                     ),
                     items: const [
-                      DropdownMenuItem(value: '', child: Text('Any', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 'completed', child: Text('Completed', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 'partial', child: Text('Partial', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 'not_done', child: Text('Not done', style: TextStyle(fontSize: 13))),
-                      DropdownMenuItem(value: 'absent', child: Text('Absent', style: TextStyle(fontSize: 13))),
+                      DropdownMenuItem(
+                        value: '',
+                        child: Text('Any', style: TextStyle(fontSize: 13)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'completed',
+                        child: Text(
+                          'Completed',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'partial',
+                        child: Text('Partial', style: TextStyle(fontSize: 13)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'not_done',
+                        child: Text('Not done', style: TextStyle(fontSize: 13)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'absent',
+                        child: Text('Absent', style: TextStyle(fontSize: 13)),
+                      ),
                     ],
-                    value: _statusFilter ?? '',
+                    initialValue: _statusFilter ?? '',
                     style: const TextStyle(fontSize: 13, color: Colors.black),
-                    onChanged: (v) => setState(() => _statusFilter = (v == null || v.isEmpty) ? null : v),
+                    onChanged: (v) => setState(
+                      () => _statusFilter = (v == null || v.isEmpty) ? null : v,
+                    ),
                   ),
                 ),
               ],
@@ -142,18 +170,36 @@ class _LessonEvaluationReportPageState
                     decoration: const InputDecoration(
                       labelText: 'Class',
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
                       border: OutlineInputBorder(),
                     ),
                     dropdownColor: Colors.white,
-                    items: (<Map<String, dynamic>>[{'id': -1, 'name': 'All'}] + _classes)
-                        .map((c) => DropdownMenuItem<int>(
-                              value: c['id'] is int ? c['id'] as int : int.tryParse(c['id']?.toString() ?? ''),
-                              child: Text((c['name'] ?? '').toString(), style: const TextStyle(fontSize: 13)),
-                            ))
-                        .where((it) => it.value != null)
-                        .toList(),
-                    value: _selectedClassId ?? (_classes.isEmpty ? null : (_classes.any((c) => c['id'] == -1) ? -1 : null)),
+                    items:
+                        (<Map<String, dynamic>>[
+                                  {'id': -1, 'name': 'All'},
+                                ] +
+                                _classes)
+                            .map(
+                              (c) => DropdownMenuItem<int>(
+                                value: c['id'] is int
+                                    ? c['id'] as int
+                                    : int.tryParse(c['id']?.toString() ?? ''),
+                                child: Text(
+                                  (c['name'] ?? '').toString(),
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                            )
+                            .where((it) => it.value != null)
+                            .toList(),
+                    initialValue:
+                        _selectedClassId ??
+                        (_classes.isEmpty
+                            ? null
+                            : (_classes.any((c) => c['id'] == -1) ? -1 : null)),
                     onChanged: (v) async {
                       final selectedIsAll = v != null && v == -1;
                       setState(() {
@@ -174,18 +220,28 @@ class _LessonEvaluationReportPageState
                     decoration: const InputDecoration(
                       labelText: 'Section',
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
                       border: OutlineInputBorder(),
                     ),
                     dropdownColor: Colors.white,
                     items: _sections
-                        .map((s) => DropdownMenuItem<int>(
-                              value: s['id'] is int ? s['id'] as int : int.tryParse(s['id']?.toString() ?? ''),
-                              child: Text((s['name'] ?? '').toString(), style: const TextStyle(fontSize: 13)),
-                            ))
+                        .map(
+                          (s) => DropdownMenuItem<int>(
+                            value: s['id'] is int
+                                ? s['id'] as int
+                                : int.tryParse(s['id']?.toString() ?? ''),
+                            child: Text(
+                              (s['name'] ?? '').toString(),
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        )
                         .where((it) => it.value != null)
                         .toList(),
-                    value: _selectedSectionId,
+                    initialValue: _selectedSectionId,
                     onChanged: (v) async {
                       setState(() {
                         _selectedSectionId = v;
@@ -205,13 +261,24 @@ class _LessonEvaluationReportPageState
               popupProps: PopupProps.menu(
                 showSearchBox: true,
                 searchFieldProps: TextFieldProps(
-                  decoration: const InputDecoration(labelText: 'Search teacher', isDense: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Search teacher',
+                    isDense: true,
+                  ),
                   style: const TextStyle(fontSize: 13, color: Colors.black),
                 ),
                 itemBuilder: (context, item, isSelected) => ListTile(
                   dense: true,
-                  title: Text((item['name'] ?? '').toString(), style: const TextStyle(fontSize: 13)),
-                  subtitle: item['designation'] != null ? Text(item['designation'].toString(), style: const TextStyle(fontSize: 11)) : null,
+                  title: Text(
+                    (item['name'] ?? '').toString(),
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  subtitle: item['designation'] != null
+                      ? Text(
+                          item['designation'].toString(),
+                          style: const TextStyle(fontSize: 11),
+                        )
+                      : null,
                 ),
               ),
               items: _teachers,
@@ -221,12 +288,17 @@ class _LessonEvaluationReportPageState
                 dropdownSearchDecoration: const InputDecoration(
                   labelText: 'Teacher',
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   border: OutlineInputBorder(),
                 ),
               ),
               dropdownBuilder: (context, selectedItem) => Text(
-                selectedItem == null ? 'Select Teacher' : (selectedItem['name'] ?? '').toString(),
+                selectedItem == null
+                    ? 'Select Teacher'
+                    : (selectedItem['name'] ?? '').toString(),
                 style: const TextStyle(fontSize: 13),
               ),
               selectedItem: _selectedTeacherObj,
@@ -247,12 +319,18 @@ class _LessonEvaluationReportPageState
               popupProps: PopupProps.menu(
                 showSearchBox: true,
                 searchFieldProps: TextFieldProps(
-                  decoration: const InputDecoration(labelText: 'Search subject', isDense: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Search subject',
+                    isDense: true,
+                  ),
                   style: const TextStyle(fontSize: 13, color: Colors.black),
                 ),
                 itemBuilder: (context, item, isSelected) => ListTile(
                   dense: true,
-                  title: Text((item['name'] ?? '').toString(), style: const TextStyle(fontSize: 13)),
+                  title: Text(
+                    (item['name'] ?? '').toString(),
+                    style: const TextStyle(fontSize: 13),
+                  ),
                 ),
               ),
               items: _subjects,
@@ -262,23 +340,36 @@ class _LessonEvaluationReportPageState
                 dropdownSearchDecoration: const InputDecoration(
                   labelText: 'Subject',
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   border: OutlineInputBorder(),
                 ),
               ),
               dropdownBuilder: (context, selectedItem) => Text(
-                selectedItem == null ? 'Select Subject' : (selectedItem['name'] ?? '').toString(),
+                selectedItem == null
+                    ? 'Select Subject'
+                    : (selectedItem['name'] ?? '').toString(),
                 style: const TextStyle(fontSize: 13),
               ),
               selectedItem: _subjects.firstWhere(
-                (s) => (s['id'] is int ? s['id'] as int : int.tryParse(s['id']?.toString() ?? '')) == _selectedSubjectId,
-                orElse: () => _selectedClassId == null ? {'id': -1, 'name': 'All Subjects'} : {'id': -1, 'name': 'Any Subject'},
+                (s) =>
+                    (s['id'] is int
+                        ? s['id'] as int
+                        : int.tryParse(s['id']?.toString() ?? '')) ==
+                    _selectedSubjectId,
+                orElse: () => _selectedClassId == null
+                    ? {'id': -1, 'name': 'All Subjects'}
+                    : {'id': -1, 'name': 'Any Subject'},
               ),
               onChanged: (m) => setState(() {
                 if (m == null || m.isEmpty || m['id'] == -1) {
                   _selectedSubjectId = null;
                 } else {
-                  _selectedSubjectId = m['id'] is int ? m['id'] as int : int.tryParse(m['id']?.toString() ?? '');
+                  _selectedSubjectId = m['id'] is int
+                      ? m['id'] as int
+                      : int.tryParse(m['id']?.toString() ?? '');
                 }
               }),
             ),
@@ -289,7 +380,9 @@ class _LessonEvaluationReportPageState
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 10)),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
                     onPressed: _loading
                         ? null
                         : () async => await _fetchReport(),
@@ -299,12 +392,17 @@ class _LessonEvaluationReportPageState
                             width: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Generate Report', style: TextStyle(fontSize: 13)),
+                        : const Text(
+                            'Generate Report',
+                            style: TextStyle(fontSize: 13),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton(
-                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 10)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
                   onPressed: () {
                     setState(() {
                       _selectedDate = null;
@@ -346,18 +444,20 @@ class _LessonEvaluationReportPageState
     try {
       final dio = DioClient().dio;
       final params = <String, dynamic>{};
-      
+
       if (schoolId != null) params['school_id'] = schoolId;
 
-      if (_selectedDate != null)
+      if (_selectedDate != null) {
         params['date'] = _selectedDate!.toIso8601String().split('T')[0];
+      }
       if (_selectedClassId != null) params['class_id'] = _selectedClassId;
       if (_selectedSectionId != null) params['section_id'] = _selectedSectionId;
       if (_selectedSubjectId != null) params['subject_id'] = _selectedSubjectId;
       if (_statusFilter != null) params['status'] = _statusFilter;
-      if (_selectedTeacherObj != null)
+      if (_selectedTeacherObj != null) {
         params['teacher'] =
             _selectedTeacherObj!['id'] ?? _selectedTeacherObj!['name'];
+      }
 
       final resp = await dio.get(
         'principal/reports/lesson-evaluations',
@@ -405,7 +505,7 @@ class _LessonEvaluationReportPageState
     try {
       final params = <String, dynamic>{};
       if (schoolId != null) params['school_id'] = schoolId;
-      
+
       final resp = await DioClient().dio.get(
         'principal/students/filters/classes',
         queryParameters: params,
@@ -414,12 +514,16 @@ class _LessonEvaluationReportPageState
       _addLog('Resp: ${resp.data}');
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
-        final rawData = data.map((e) => {
-          'id': e['id'], 
-          'name': e['name'],
-          'numeric_value': e['numeric_value']
-        }).toList();
-        
+        final rawData = data
+            .map(
+              (e) => {
+                'id': e['id'],
+                'name': e['name'],
+                'numeric_value': e['numeric_value'],
+              },
+            )
+            .toList();
+
         // Numerical sort for classes
         rawData.sort((a, b) {
           final an = int.tryParse(a['numeric_value']?.toString() ?? '');
@@ -434,7 +538,7 @@ class _LessonEvaluationReportPageState
       } else {
         _addLog('Classes endpoint returned status ${resp.statusCode}');
       }
-      
+
       if (_classes.isEmpty && schoolId != null) {
         try {
           final dbg = await DioClient().dio.get(
@@ -478,8 +582,10 @@ class _LessonEvaluationReportPageState
       _addLog('Resp: ${resp.data}');
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
-        final rawData = data.map((e) => {'id': e['id'], 'name': e['name']}).toList();
-        
+        final rawData = data
+            .map((e) => {'id': e['id'], 'name': e['name']})
+            .toList();
+
         // Natural sort for sections
         rawData.sort((a, b) {
           final s1 = a['name'].toString();
@@ -502,7 +608,7 @@ class _LessonEvaluationReportPageState
           final meta = await DioClient().dio.get(
             'meta/sections',
             // meta/sections often filters by class_id globally but passing school_id is safer
-             queryParameters: params,
+            queryParameters: params,
           );
           _addLog('GET meta/sections?class_id=$classId -> ${meta.statusCode}');
           if (meta.statusCode == 200) {
@@ -518,14 +624,16 @@ class _LessonEvaluationReportPageState
           _addLog('Exception fetching meta sections: $e');
         }
       }
-      
+
       if (_sections.isEmpty && schoolId != null) {
         try {
           final dbg2 = await DioClient().dio.get(
             'debug/sections',
             queryParameters: {'school_id': schoolId},
           );
-          _addLog('GET debug/sections?school_id=$schoolId -> ${dbg2.statusCode}');
+          _addLog(
+            'GET debug/sections?school_id=$schoolId -> ${dbg2.statusCode}',
+          );
           if (dbg2.statusCode == 200) {
             final ddata2 = _extractList(dbg2.data);
             setState(() {
@@ -573,11 +681,19 @@ class _LessonEvaluationReportPageState
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
         setState(() {
-          _subjects = <Map<String, dynamic>>[
-                {'id': -1, 'name': _selectedClassId == null ? 'All Subjects' : 'Any Subject'}
+          _subjects =
+              <Map<String, dynamic>>[
+                {
+                  'id': -1,
+                  'name': _selectedClassId == null
+                      ? 'All Subjects'
+                      : 'Any Subject',
+                },
               ] +
               data
-                  .map((e) => <String, dynamic>{'id': e['id'], 'name': e['name']})
+                  .map(
+                    (e) => <String, dynamic>{'id': e['id'], 'name': e['name']},
+                  )
                   .toList();
         });
       } else {
@@ -646,37 +762,44 @@ class _LessonEvaluationReportPageState
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
         setState(() {
-          _teachers = <Map<String, dynamic>>[
-            {'id': -1, 'name': 'All Teachers', 'designation': ''}
-          ] +
+          _teachers =
+              <Map<String, dynamic>>[
+                {'id': -1, 'name': 'All Teachers', 'designation': ''},
+              ] +
               data
-                  .map((e) => <String, dynamic>{
-                        'id': e['id'],
-                        'name': e['name'],
-                        'designation': e['designation']
-                      })
+                  .map(
+                    (e) => <String, dynamic>{
+                      'id': e['id'],
+                      'name': e['name'],
+                      'designation': e['designation'],
+                    },
+                  )
                   .toList();
         });
       } else {
         _addLog('Teachers endpoint returned status ${resp.statusCode}');
       }
-      
+
       if (_teachers.isEmpty && schoolId != null) {
         try {
           final dbg = await DioClient().dio.get(
             'debug/teachers',
             queryParameters: {'school_id': schoolId},
           );
-          _addLog('GET debug/teachers?school_id=$schoolId -> ${dbg.statusCode}');
+          _addLog(
+            'GET debug/teachers?school_id=$schoolId -> ${dbg.statusCode}',
+          );
           if (dbg.statusCode == 200) {
             final ddata = _extractList(dbg.data);
             setState(() {
               _teachers = ddata
-                  .map((e) => {
-                        'id': e['id'], 
-                        'name': e['name'],
-                        'designation': e['designation'] ?? 'Teacher'
-                       })
+                  .map(
+                    (e) => {
+                      'id': e['id'],
+                      'name': e['name'],
+                      'designation': e['designation'] ?? 'Teacher',
+                    },
+                  )
                   .toList()
                   .cast<Map<String, dynamic>>();
             });

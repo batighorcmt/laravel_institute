@@ -16,8 +16,9 @@ class NoticeDetailPage extends ConsumerWidget {
       body: FutureBuilder<Map<String, dynamic>>(
         future: ref.read(noticeRepositoryProvider).getNoticeDetails(noticeId),
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done)
+          if (snap.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
+          }
           if (snap.hasError) return Center(child: Text('Error: ${snap.error}'));
           final notice = snap.data!;
           final publishAt =
