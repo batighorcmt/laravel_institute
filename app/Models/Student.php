@@ -137,6 +137,16 @@ class Student extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    public function fees()
+    {
+        return $this->hasMany(StudentFee::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     /**
      * Generate unique student ID
      * New Format: <school_code>S<sequential_5digits>

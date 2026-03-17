@@ -6,6 +6,15 @@ use App\Http\Controllers\Api\AuthController;
 Route::prefix('v1')->group(function () {
     // Auth
     Route::post('auth/login', [AuthController::class, 'login']);
+
+    // Public SSLCommerz Callbacks (Move outside auth middleware)
+    Route::prefix('billing')->group(function () {
+        Route::match(['get', 'post'], '/payment/ssl/success', [\App\Http\Controllers\Billing\SSLCommerzCallbackController::class, 'success'])->name('api.billing.ssl.success');
+        Route::match(['get', 'post'], '/payment/ssl/fail', [\App\Http\Controllers\Billing\SSLCommerzCallbackController::class, 'fail'])->name('api.billing.ssl.fail');
+        Route::match(['get', 'post'], '/payment/ssl/cancel', [\App\Http\Controllers\Billing\SSLCommerzCallbackController::class, 'cancel'])->name('api.billing.ssl.cancel');
+        Route::post('/payment/ssl/ipn', [\App\Http\Controllers\Billing\SSLCommerzCallbackController::class, 'ipn'])->name('api.billing.ssl.ipn');
+    });
+
     Route::middleware(['auth:sanctum','throttle:120,1', 'active_school'])->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::post('auth/change-password', [AuthController::class, 'changePassword']);
@@ -18,7 +27,7 @@ Route::prefix('v1')->group(function () {
     Route::match(['put', 'patch'], 'notices/{notice}', [\App\Http\Controllers\Api\NoticeController::class, 'update'])->middleware('role:principal');
     Route::delete('notices/{notice}', [\App\Http\Controllers\Api\NoticeController::class, 'destroy'])->middleware('role:principal');
     Route::get('notices/{notice}/stats', [\App\Http\Controllers\Api\NoticeController::class, 'stats'])->middleware('role:principal');
-    
+
     // Interactions
     Route::post('notices/{notice}/read', [\App\Http\Controllers\Api\NoticeInteractionController::class, 'markAsRead']);
     Route::post('notices/{notice}/reply', [\App\Http\Controllers\Api\NoticeInteractionController::class, 'storeReply'])->middleware('role:parent,teacher,principal');
@@ -91,7 +100,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/room-attendance', [\App\Http\Controllers\Api\TeacherExamController::class, 'roomAttendanceStudents']);
         Route::post('/submit-room-attendance', [\App\Http\Controllers\Api\TeacherExamController::class, 'submitRoomAttendance']);
         Route::post('/bulk-submit-room-attendance', [\App\Http\Controllers\Api\TeacherExamController::class, 'bulkSubmitRoomAttendance']);
-        
+
         // Duty Allocation
         Route::get('/teachers', [\App\Http\Controllers\Api\TeacherExamController::class, 'teachersList']);
         Route::post('/assign-duty', [\App\Http\Controllers\Api\TeacherExamController::class, 'assignDuty']);
@@ -141,12 +150,31 @@ Route::prefix('v1')->group(function () {
         return response()->json(['message' => 'Push জব কিউ হয়েছে','count' => count($tokens)]);
     });
 
-    // Billing endpoints (v1)
+    // Billing & Fees endpoints (v1)
     Route::prefix('billing')->group(function () {
+        Route::get('/fees/student/{studentId}/due', [\App\Http\Controllers\Api\FeeCollectionController::class, 'getDueFees']);
+        Route::post('/fees/collect', [\App\Http\Controllers\Api\FeeCollectionController::class, 'collectFees']);
+        Route::post('/fees/initiate-ssl', [\App\Http\Controllers\Api\FeeCollectionController::class, 'initiateSSLPayment']);
+
+        // Fee Configuration
+        Route::get('/config', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'index']);
+        Route::post('/config/categories', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'storeCategory']);
+        Route::post('/config/structures', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'saveStructure']);
+        Route::delete('/config/structures/{id}', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'deleteStructure']);
+        Route::post('/config/generate-dues', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'generateDues']);
+
+        // Reports
+        Route::get('/reports/collection-by-date', [\App\Http\Controllers\Api\FeeReportController::class, 'collectionByDate']);
+        Route::get('/reports/collection-by-teacher', [\App\Http\Controllers\Api\FeeReportController::class, 'collectionByTeacher']);
+        Route::get('/reports/collection-paid-students', [\App\Http\Controllers\Api\FeeReportController::class, 'collectionPaidStudents']);
+        Route::get('/reports/due-summary', [\App\Http\Controllers\Api\FeeReportController::class, 'dueReport']);
+        Route::get('/reports/student-dues', [\App\Http\Controllers\Api\FeeReportController::class, 'studentDues']);
+
+        // Legacy/Generic payments
         Route::post('/payments', [\App\Http\Controllers\Billing\PaymentController::class, 'store']);
         Route::get('/receipts/{id}', [\App\Http\Controllers\Billing\ReceiptController::class, 'show']);
-            Route::get('/students/{student}/due', [\App\Http\Controllers\Billing\DueController::class, 'show']);
-            Route::get('/students/{student}/statement', [\App\Http\Controllers\Billing\StatementController::class, 'monthly']);
+        Route::get('/students/{student}/due', [\App\Http\Controllers\Billing\DueController::class, 'show']);
+        Route::get('/students/{student}/statement', [\App\Http\Controllers\Billing\StatementController::class, 'monthly']);
     });
 
     // Principal student management endpoints
@@ -156,6 +184,7 @@ Route::prefix('v1')->group(function () {
         Route::get('students/filters/sections', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getSections']);
         Route::get('students/filters/groups', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getGroups']);
         Route::get('students/filters/subjects', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'getSubjects']);
+        Route::get('students/{id}', [\App\Http\Controllers\Api\PrincipalStudentController::class, 'show']);
     });
 
     // Meta endpoints
@@ -165,6 +194,7 @@ Route::prefix('v1')->group(function () {
         Route::get('groups', [\App\Http\Controllers\Api\SchoolMetaController::class, 'groups']);
         Route::get('subjects', [\App\Http\Controllers\Api\SchoolMetaController::class, 'subjects']);
         Route::get('teachers', [\App\Http\Controllers\Api\SchoolMetaController::class, 'teachers']);
+        Route::get('school', [\App\Http\Controllers\Api\SchoolMetaController::class, 'school']);
     });
     });
 });

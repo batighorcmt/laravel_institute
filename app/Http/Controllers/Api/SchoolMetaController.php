@@ -119,4 +119,16 @@ class SchoolMetaController extends Controller
 
         return response()->json($out);
     }
+
+    public function school(Request $request)
+    {
+        $schoolId = $this->resolveSchoolId($request);
+        $school = \App\Models\School::find($schoolId, ['id', 'name', 'name_bn', 'address', 'address_bn', 'logo', 'phone', 'email']);
+        
+        if ($school && $school->logo) {
+            $school->logo_url = asset('storage/' . $school->logo);
+        }
+
+        return response()->json($school);
+    }
 }

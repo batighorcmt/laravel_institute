@@ -20,6 +20,7 @@
         "concurrently": "^9.0.1",
         "jquery": "^3.7.1",
         "laravel-vite-plugin": "^2.0.0",
+        "lodash": "^4.17.23",
         "overlayscrollbars": "^2.10.1",
         "patch-package": "^8.0.0",
         "popper.js": "^1.16.1",

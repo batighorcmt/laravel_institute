@@ -746,6 +746,15 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/billing/collect', function () {
                     return view('billing.collect'); }
                 )->name('billing.collect');
+                Route::get('/billing/config', function () {
+                    return view('billing.config'); }
+                )->name('billing.config');
+                Route::get('/billing/reports', function () { return view('billing.reports'); })->name('billing.reports');
+                Route::get('/billing/collection-reports', function () { return view('billing.collection_reports'); })->name('billing.collection_reports');
+                Route::get('/billing/receipts/{id}', [\App\Http\Controllers\Billing\ReceiptController::class, 'showWeb'])->name('billing.receipts.show');
+
+                // SSLCommerz Callbacks moved to top level
+
             }
             );
 

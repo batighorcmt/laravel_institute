@@ -10,8 +10,13 @@ class FeeCategory extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'is_common', 'frequency', 'active',
+        'school_id', 'name', 'is_common', 'frequency', 'active',
     ];
+
+    public function school()
+    {
+        return $this->belongsTo(School::class);
+    }
 
     public function feeStructures()
     {

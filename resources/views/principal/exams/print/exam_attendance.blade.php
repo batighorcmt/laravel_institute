@@ -109,15 +109,16 @@
 
 @section('content')
   <div class="page">
+@foreach ($students as $stu)
 @php
 foreach ($students as $stu):
   $stu_name = langField($stu, 'full_name', $lang) ?: langField($stu, 'name', $lang) ?: ($stu->student_id ?? $stu->id ?? '');
   $enrollment = $stu->enrollments->first();
   $stu_roll = $enrollment ? $enrollment->roll_no : '';
   $stu_id_show = (string)($stu->student_id ?? $stu->id);
-  
+
   $photoUrl = $stu->photo_url;
-  
+
   $sec_name = '';
   $division = '';
   if ($enrollment) {
@@ -133,15 +134,15 @@ foreach ($students as $stu):
 
   $sched_for_student = [];
   if (!empty($assigned_subs)) {
-    foreach ($schedule as $row) { 
-        if (isset($row->subject_id) && in_array(intval($row->subject_id), $assigned_subs, true)) { 
-            $sched_for_student[] = $row; 
-        } 
+    foreach ($schedule as $row) {
+        if (isset($row->subject_id) && in_array(intval($row->subject_id), $assigned_subs, true)) {
+            $sched_for_student[] = $row;
+        }
     }
   } else {
     $sched_for_student = is_object($schedule) ? $schedule->toArray() : $schedule;
   }
-  
+
   usort($sched_for_student, function($a,$b){
     $ad = $a->exam_date ? strtotime($a->exam_date) : PHP_INT_MAX;
     $bd = $b->exam_date ? strtotime($b->exam_date) : PHP_INT_MAX;
@@ -229,6 +230,6 @@ foreach ($students as $stu):
       </div>
       <div class="brandbar">{{ t('Technical support: Batighor Computers','কারিগরি সহযোগীতায়ঃ বাতিঘর কম্পিউটার’স') }}</div>
   </div>
-<?php endforeach; ?>
+@endforeach
   </div>
 @endsection

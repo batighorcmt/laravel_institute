@@ -18,6 +18,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\EnsurePdfDownload::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'api/v1/billing/payment/ssl/*',
+            'billing/payment/ssl/*',
+            'admission/payment/ssl/*',
+        ]);
         // Route middleware aliases
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,

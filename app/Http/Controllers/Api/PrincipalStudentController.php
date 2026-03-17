@@ -16,33 +16,54 @@ class PrincipalStudentController extends Controller
      */
     public function search(Request $request)
     {
-        /** @var \App\Models\User $user */
         $user = Auth::user();
-        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        
+        // Robust school_id resolution
+        $schoolId = $request->attributes->get('current_school_id');
+        if (!$schoolId) {
+            $primary = $user->primarySchool();
+            $schoolId = $primary?->id;
+        }
+        if (!$schoolId) {
+            $schoolId = $user->activeSchoolRoles()->value('school_id');
+        }
 
-        // Require a resolved school context and allow principals, teachers (for their school), or superadmins
-        if (empty($schoolId) || ! ($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        // Allow principals, teachers or super admins
+        if (!$user->isSuperAdmin() && !$schoolId) {
+            return response()->json(['message' => 'School context not found'], 403);
         }
 
         $query = $request->get('q');
-        $limit = $request->get('limit', 10);
+        $classId = $request->get('class_id');
+        $sectionId = $request->get('section_id');
+        $rollNo = $request->get('roll_no');
+        $limit = min((int)$request->get('limit', 50), 500);
 
-        if (empty($query) || strlen($query) < 2) {
+        // If no filters provided, return empty list
+        if (empty($query) && empty($classId) && empty($rollNo)) {
             return response()->json([]);
         }
 
         $students = Student::forSchool($schoolId)->active()
-            ->where(function($q) use ($query) {
-                $q->where('student_name_en', 'like', "%{$query}%")
-                  ->orWhere('student_name_bn', 'like', "%{$query}%")
-                  ->orWhere('student_id', 'like', "%{$query}%")
-                  ->orWhere('father_name', 'like', "%{$query}%")
-                  ->orWhere('mother_name', 'like', "%{$query}%")
-                  ->orWhere('guardian_phone', 'like', "%{$query}%");
+            ->when($query, function($q) use ($query) {
+                $q->where(function($inner) use ($query) {
+                    $inner->where('student_name_en', 'like', "%{$query}%")
+                        ->orWhere('student_name_bn', 'like', "%{$query}%")
+                        ->orWhere('student_id', 'like', "%{$query}%")
+                        ->orWhere('father_name', 'like', "%{$query}%")
+                        ->orWhere('guardian_phone', 'like', "%{$query}%");
+                });
+            })
+            ->when($classId || $sectionId || $rollNo, function($q) use ($classId, $sectionId, $rollNo) {
+                $q->whereHas('enrollments', function($en) use ($classId, $sectionId, $rollNo) {
+                    $en->where('status', 'active');
+                    if ($classId) $en->where('class_id', (int)$classId);
+                    if ($sectionId) $en->where('section_id', (int)$sectionId);
+                    if ($rollNo) $en->where('roll_no', $rollNo);
+                });
             })
             ->with(['enrollments' => function($en) {
-                $en->where('status','active')->with(['class', 'section', 'group']);
+                $en->where('status', 'active')->with(['class', 'section', 'group']);
             }])
             ->limit($limit)
             ->get()
@@ -56,12 +77,17 @@ class PrincipalStudentController extends Controller
                     'full_name' => $student->full_name,
                     'father_name' => $student->father_name,
                     'guardian_phone' => $student->guardian_phone,
-                    'class_name' => $enrollment ? $enrollment->class->name : null,
-                    'section_name' => $enrollment ? $enrollment->section->name : null,
-                    'group_name' => $enrollment ? $enrollment->group->name : null,
+                    'photo_url' => $student->photo_url,
+                    'class_name' => $enrollment?->class?->name,
+                    'section_name' => $enrollment?->section?->name,
+                    'group_name' => $enrollment?->group?->name,
+                    'roll_no' => $enrollment?->roll_no,
+                    'roll_no_int' => $enrollment?->roll_no ? (int)$enrollment->roll_no : 9999,
                     'status' => $student->status,
                 ];
-            });
+            })
+            ->sortBy('roll_no_int')
+            ->values();
 
         return response()->json($students);
     }
@@ -198,5 +224,27 @@ class PrincipalStudentController extends Controller
         }
 
         return response()->json($subjects->map(fn($s)=>['id'=>$s->id,'name'=>$s->name])->values());
+    }
+    public function show(Request $request, int $id)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $schoolId = $request->attributes->get('current_school_id') ?? 
+                   $user->primarySchool()?->id ?? 
+                   $user->activeSchoolRoles()->first()?->school_id;
+
+        $student = \App\Models\Student::where('school_id', $schoolId)->findOrFail($id);
+        $enrollment = $student->currentEnrollment()->with(['class', 'section'])->first();
+
+        return response()->json([
+            'id' => $student->id,
+            'student_id' => $student->student_id,
+            'name_en' => $student->student_name_en,
+            'name_bn' => $student->student_name_bn,
+            'photo_url' => $student->photo_url,
+            'class_name' => $enrollment?->class?->name,
+            'section_name' => $enrollment?->section?->name,
+            'roll_no' => $enrollment?->roll_no,
+        ]);
     }
 }

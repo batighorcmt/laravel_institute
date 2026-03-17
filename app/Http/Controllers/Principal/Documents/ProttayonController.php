@@ -95,12 +95,6 @@ class ProttayonController extends Controller
         return redirect()->route('principal.institute.documents.prottayon.print', [$school, $record->id]);
     }
 
-    private function toBengaliNumber($number)
-    {
-        $bn_digits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-        return str_replace(range(0, 9), $bn_digits, $number);
-    }
-
     private function parseTemplate($school, $student, $content, $templateId = null)
     {
         if (!$content) return '';
@@ -121,7 +115,7 @@ class ProttayonController extends Controller
             '[class_name_en]' => $enrollment->class->name ?? '',
             '[section_name_bn]' => $enrollment->section->bangla_name ?: ($enrollment->section->name ?? ''),
             '[section_name_en]' => $enrollment->section->name ?? '',
-            '[roll_no_bn]' => $enrollment ? $this->toBengaliNumber($enrollment->roll_no) : '',
+            '[roll_no_bn]' => $enrollment ? toBengaliNumber($enrollment->roll_no) : '',
             '[roll_no_en]' => $enrollment ? $enrollment->roll_no : '',
             '[student_id]' => $student->student_id,
             '[session_bn]' => $enrollment->academicYear->name_bn ?: ($enrollment->academicYear->name ?? ''),
@@ -146,7 +140,7 @@ class ProttayonController extends Controller
             '[permanent_district_bn]' => $student->permanent_district ?: '',
             '[permanent_district_en]' => $student->permanent_district_en ?: '',
             '[guardian_phone]' => $student->guardian_phone ?: '',
-            '[date]' => $lang === 'en' ? date('d/m/Y') : $this->toBengaliNumber(date('d/m/Y')),
+            '[date]' => $lang === 'en' ? date('d/m/Y') : toBengaliNumber(date('d/m/Y')),
             '[school_name_bn]' => $school->name_bn ?: $school->name,
             '[school_name_en]' => $school->name,
         ];
@@ -167,7 +161,7 @@ class ProttayonController extends Controller
             $tokens['[student_name]'] = $student->student_name_bn ?: $student->student_name_en;
             $tokens['[father_name]'] = $student->father_name_bn ?: $student->father_name;
             $tokens['[mother_name]'] = $student->mother_name_bn ?: $student->mother_name;
-            $tokens['[roll_no]'] = $enrollment ? $this->toBengaliNumber($enrollment->roll_no) : '';
+            $tokens['[roll_no]'] = $enrollment ? toBengaliNumber($enrollment->roll_no) : '';
             $tokens['[class_name]'] = $enrollment->class->bangla_name ?: ($enrollment->class->name ?? '');
             $tokens['[section_name]'] = $enrollment->section->bangla_name ?: ($enrollment->section->name ?? '');
         }

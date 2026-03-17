@@ -184,8 +184,16 @@
 
     <!-- Sidebar -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        @php
+            $__u = auth()->user();
+            $__school = null;
+            if ($__u && method_exists($__u, 'primarySchool')) {
+                $__school = $__u->primarySchool();
+            }
+            $logoUrl = ($__school && $__school->logo) ? asset('storage/'.$__school->logo).'?v=' . ($__school->id ?? time()) : asset('images/batighorsoft.png');
+        @endphp
         <a href="#" class="brand-link">
-            <img src="{{ asset('images/batighorsoft.png') }}" alt="Logo" class="brand-image img-circle elevation-3" width="33" height="33" style="opacity:.9">
+            <img src="{{ $logoUrl }}" alt="Logo" class="brand-image img-circle elevation-3" width="33" height="33" style="opacity:.9">
             <span class="brand-text font-weight-light">Batighor EIMS</span>
         </a>
         <div class="sidebar">
@@ -416,14 +424,17 @@
             @endif
 
                             @if(auth()->user()->hasModule('accounts'))
-                            <li class="nav-item has-treeview {{ request()->routeIs('billing.*') ? 'menu-open' : '' }}">
-                                <a href="#" class="nav-link {{ request()->routeIs('billing.*') ? 'active' : '' }}">
+                            <li class="nav-item has-treeview {{ request()->is('billing*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->is('billing*') ? 'active' : '' }}">
                                     <i class="nav-icon fas fa-money-bill-wave"></i>
                                     <p>Billing <i class="right fas fa-angle-left"></i></p>
                                 </a>
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item"><a href="{{ route('billing.collect') }}" class="nav-link {{ request()->routeIs('billing.collect') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Collect</p></a></li>
-                                    <li class="nav-item"><a href="{{ route('billing.due') }}" class="nav-link {{ request()->routeIs('billing.due') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Due</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.config') }}" class="nav-link {{ request()->routeIs('billing.config') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Fees</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.reports') }}" class="nav-link {{ request()->routeIs('billing.reports') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Reports</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.collection_reports') }}" class="nav-link {{ request()->routeIs('billing.collection_reports') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Collection Reports</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.due') }}" class="nav-link {{ request()->routeIs('billing.due') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Due Preview</p></a></li>
                                     <li class="nav-item"><a href="{{ route('billing.statement') }}" class="nav-link {{ request()->routeIs('billing.statement') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Statement</p></a></li>
                                 </ul>
                             </li>

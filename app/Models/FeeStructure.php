@@ -10,8 +10,13 @@ class FeeStructure extends Model
     use HasFactory;
 
     protected $fillable = [
-        'class_id', 'fee_category_id', 'amount', 'currency', 'effective_from', 'effective_to', 'due_day_of_month', 'due_date', 'active',
+        'school_id', 'class_id', 'fee_category_id', 'amount', 'currency', 'effective_from', 'effective_to', 'due_day_of_month', 'due_date', 'active',
     ];
+
+    public function school()
+    {
+        return $this->belongsTo(School::class);
+    }
 
     protected $casts = [
         'effective_from' => 'date',

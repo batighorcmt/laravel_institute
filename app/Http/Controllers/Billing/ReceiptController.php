@@ -3,13 +3,32 @@
 namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
-use App\Models\Receipt;
+use App\Models\Payment;
+use Illuminate\Http\Request;
 
 class ReceiptController extends Controller
 {
-    public function show(int $id)
+    /**
+     * API Response
+     */
+    public function show($id)
     {
-        $receipt = Receipt::findOrFail($id);
-        return response()->json(['receipt' => $receipt]);
+        $payment = Payment::with(['student', 'paymentItems.studentFee.feeStructure.category'])->findOrFail($id);
+        return response()->json(['receipt' => $payment]);
+    }
+
+    /**
+     * Web View Rendering
+     */
+    public function showWeb(Request $request, $id)
+    {
+        $payment = Payment::with([
+            'student.currentEnrollment.class', 
+            'student.currentEnrollment.section',
+            'paymentItems.studentFee.feeStructure.category',
+            'school'
+        ])->findOrFail($id);
+
+        return view('billing.receipt', compact('payment'));
     }
 }
