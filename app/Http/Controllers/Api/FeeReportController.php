@@ -10,6 +10,7 @@ use App\Models\StudentFee;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class FeeReportController extends Controller
 {
@@ -26,10 +27,15 @@ class FeeReportController extends Controller
             ]);
 
             $schoolId = $request->attributes->get('current_school_id') ?? $request->user()?->primarySchool()?->id;
+
+            // Normalize date range to include whole "to" day (front-end sends YYYY-MM-DD)
+            $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            $toDate = Carbon::parse($request->to_date)->endOfDay();
+
             // Compute totals from payment_items first
             $itemsQuery = \App\Models\PaymentItem::join('payments', 'payment_items.payment_id', '=', 'payments.id')
                 ->where('payments.school_id', $schoolId)
-                ->whereBetween('payments.received_at', [$request->from_date, $request->to_date])
+                ->whereBetween('payments.received_at', [$fromDate, $toDate])
                 ->where('payments.status', 'settled');
 
             if ($request->payment_method) {
@@ -49,7 +55,7 @@ class FeeReportController extends Controller
 
             // Compute totals for payments that don't have payment_items (fallback)
             $paymentsOnlyQuery = \App\Models\Payment::where('payments.school_id', $schoolId)
-                ->whereBetween('payments.received_at', [$request->from_date, $request->to_date])
+                ->whereBetween('payments.received_at', [$fromDate, $toDate])
                 ->where('payments.status', 'settled')
                 ->leftJoin('payment_items', 'payments.id', '=', 'payment_items.payment_id')
                 ->whereNull('payment_items.id');
@@ -87,7 +93,7 @@ class FeeReportController extends Controller
 
             // For details keep returning payments (with their items) so UI can show receipts;
             $payments = \App\Models\Payment::where('payments.school_id', $schoolId)
-                ->whereBetween('received_at', [$request->from_date, $request->to_date])
+                ->whereBetween('received_at', [$fromDate, $toDate])
                 ->where('payments.status', 'settled')
                 ->with('paymentItems')
                 ->latest('received_at')
@@ -119,9 +125,15 @@ class FeeReportController extends Controller
             'from_date' => 'required|date',
             'to_date' => 'required|date'
         ]);
+
         $schoolId = $request->attributes->get('current_school_id') ?? $request->user()->primarySchool()?->id;
+
+        // include entire to-day
+        $fromDate = Carbon::parse($request->from_date)->startOfDay();
+        $toDate = Carbon::parse($request->to_date)->endOfDay();
+
         $report = Payment::where('payments.school_id', $schoolId)
-            ->whereBetween('received_at', [$request->from_date, $request->to_date])
+            ->whereBetween('received_at', [$fromDate, $toDate])
             ->where('payments.status', 'settled')
             ->join('users', 'payments.collected_by_user_id', '=', 'users.id')
             ->select(
@@ -200,7 +212,55 @@ class FeeReportController extends Controller
 
             $rows = $query->orderBy('payments.received_at', 'desc')->get();
 
-            return response()->json($rows);
+            // Also include payments that don't have payment_items (fallback),
+            // so the paid-students list matches the summary which merges both.
+            $paymentsOnlyQuery = DB::table('payments')
+                ->leftJoin('payment_items', 'payments.id', '=', 'payment_items.payment_id')
+                ->leftJoin('students', 'payments.student_id', '=', 'students.id')
+                ->leftJoin('student_enrollments as se', function($j) use ($schoolId) {
+                    $j->on('payments.student_id', '=', 'se.student_id')
+                      ->where('se.school_id', '=', $schoolId)
+                      ->where('se.status', '=', 'active');
+                })
+                ->leftJoin('classes', 'se.class_id', '=', 'classes.id')
+                ->leftJoin('sections', 'se.section_id', '=', 'sections.id')
+                ->where('payments.school_id', $schoolId)
+                ->where('payments.status', 'settled')
+                ->whereNull('payment_items.id')
+                ->select(
+                    'payments.id as payment_id',
+                    'payments.received_at as paid_at',
+                    DB::raw('COALESCE(payments.amount_paid, 0) as amount'),
+                    'students.student_name_bn',
+                    'students.student_name_en',
+                    'payments.student_id as student_id',
+                    'classes.name as class_name_en',
+                    'classes.bangla_name as class_name_bn',
+                    'sections.name as section_name_en',
+                    'sections.bangla_name as section_name_bn',
+                    'se.roll_no as roll_no',
+                    DB::raw('NULL as fee_month'),
+                    DB::raw('COALESCE(NULL, "General") as category_name_bn'),
+                    DB::raw('COALESCE(NULL, "General") as category_name_en')
+                );
+
+            if ($request->filled('from_date') && $request->filled('to_date')) {
+                $paymentsOnlyQuery->whereDate('payments.received_at', '>=', $request->from_date)
+                                  ->whereDate('payments.received_at', '<=', $request->to_date);
+            }
+            if ($request->filled('class_id')) {
+                $paymentsOnlyQuery->where('se.class_id', $request->class_id);
+            }
+            if ($request->filled('section_id')) {
+                $paymentsOnlyQuery->where('se.section_id', $request->section_id);
+            }
+
+            $paymentsOnlyRows = $paymentsOnlyQuery->orderBy('payments.received_at', 'desc')->get();
+
+            // Merge itemized rows with payments-only rows and sort by paid_at desc
+            $all = $rows->merge($paymentsOnlyRows)->sortByDesc('paid_at')->values();
+
+            return response()->json($all);
         } catch (\Throwable $e) {
             \Log::error('FeeReportController.collectionPaidStudents error', [
                 'message' => $e->getMessage(),

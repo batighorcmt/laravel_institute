@@ -751,6 +751,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 )->name('billing.config');
                 Route::get('/billing/reports', function () { return view('billing.reports'); })->name('billing.reports');
                 Route::get('/billing/collection-reports', function () { return view('billing.collection_reports'); })->name('billing.collection_reports');
+                Route::get('/billing/waivers', function () { return view('billing.waivers'); })->name('billing.waivers');
                 Route::get('/billing/receipts/{id}', [\App\Http\Controllers\Billing\ReceiptController::class, 'showWeb'])->name('billing.receipts.show');
 
                 // SSLCommerz Callbacks moved to top level

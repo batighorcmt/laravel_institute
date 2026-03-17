@@ -13,8 +13,8 @@ class SchoolMetaController extends Controller
 {
     protected function resolveSchoolId(Request $request)
     {
-        return $request->query('school_id') ?? 
-               $request->attributes->get('current_school_id') ?? 
+        return $request->query('school_id') ??
+               $request->attributes->get('current_school_id') ??
                $request->user()->primarySchool()?->id;
     }
 
@@ -48,7 +48,7 @@ class SchoolMetaController extends Controller
         }
 
         $sections = $query->with('class:id,name')->ordered()->get(['sections.id','sections.name','sections.class_id']);
-        
+
         return response()->json($sections->map(fn($s)=>[
             'id'=>$s->id,
             'name'=>$s->name,
@@ -124,11 +124,35 @@ class SchoolMetaController extends Controller
     {
         $schoolId = $this->resolveSchoolId($request);
         $school = \App\Models\School::find($schoolId, ['id', 'name', 'name_bn', 'address', 'address_bn', 'logo', 'phone', 'email']);
-        
+
         if ($school && $school->logo) {
             $school->logo_url = asset('storage/' . $school->logo);
         }
 
-        return response()->json($school);
+        // Include list of academic years for the school, with current marker
+        $years = \App\Models\AcademicYear::forSchool($schoolId)
+                    ->orderByDesc('start_date')
+                    ->get(['id','name','name_bn','start_date','end_date','is_current']);
+
+        $outYears = $years->map(function($y){
+            return [
+                'id' => $y->id,
+                'name' => $y->name,
+                'name_bn' => $y->name_bn,
+                'start_date' => $y->start_date?->toDateString(),
+                'end_date' => $y->end_date?->toDateString(),
+                'is_current' => (bool)$y->is_current,
+            ];
+        })->values();
+
+        $current = $years->firstWhere('is_current', true);
+
+        $payload = $school ? $school->toArray() : null;
+        $payload = array_merge($payload ?? [], [
+            'academic_years' => $outYears,
+            'current_academic_year' => $current ? [ 'id'=>$current->id, 'name'=>$current->name, 'name_bn'=>$current->name_bn ] : null
+        ]);
+
+        return response()->json($payload);
     }
 }

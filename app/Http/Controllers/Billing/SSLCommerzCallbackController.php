@@ -10,6 +10,7 @@ use App\Models\Ledger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\ReceiptService;
 
 class SSLCommerzCallbackController extends Controller
 {
@@ -41,7 +42,7 @@ class SSLCommerzCallbackController extends Controller
     {
         $tranId = $request->get('tran_id');
         $payment = Payment::where('tran_id', $tranId)->first();
-        
+
         $url = route('billing.collect');
         if ($payment) {
             $url .= "?student_id=" . $payment->student_id;
@@ -57,7 +58,7 @@ class SSLCommerzCallbackController extends Controller
     {
         $tranId = $request->get('tran_id');
         $payment = Payment::where('tran_id', $tranId)->first();
-        
+
         $url = route('billing.collect');
         if ($payment) {
             $url .= "?student_id=" . $payment->student_id;
@@ -124,6 +125,17 @@ class SSLCommerzCallbackController extends Controller
                 'reference_id' => $payment->id,
                 'description' => "Online payment (SSLCommerz) for student {$payment->student->student_id}. " . $remarks,
             ]);
+
+            // Issue receipt for settled online payment if not already issued
+            if (! $payment->receipt_id) {
+                try {
+                    $receipt = (new ReceiptService())->issue($payment->student_id, (float) $payment->amount_paid, null);
+                    $payment->receipt_id = $receipt->id;
+                    $payment->save();
+                } catch (\Throwable $e) {
+                    Log::error('Receipt issuance failed for SSLCommerz payment '.$payment->id.': '.$e->getMessage());
+                }
+            }
         });
     }
 }

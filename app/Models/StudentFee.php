@@ -12,6 +12,8 @@ class StudentFee extends Model
         'fee_structure_id',
         'month',
         'amount',
+        'original_amount',
+        'waiver_id',
         'paid_amount',
         'status',
         'due_date',
@@ -30,6 +32,11 @@ class StudentFee extends Model
     public function feeStructure()
     {
         return $this->belongsTo(FeeStructure::class);
+    }
+
+    public function waiver()
+    {
+        return $this->belongsTo(\App\Models\FeeWaiver::class, 'waiver_id');
     }
 
     public function paymentItems()

@@ -159,6 +159,8 @@ Route::prefix('v1')->group(function () {
         // Fee Configuration
         Route::get('/config', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'index']);
         Route::post('/config/categories', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'storeCategory']);
+        Route::match(['put','patch'], '/config/categories/{id}', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'updateCategory']);
+        Route::delete('/config/categories/{id}', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'deleteCategory']);
         Route::post('/config/structures', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'saveStructure']);
         Route::delete('/config/structures/{id}', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'deleteStructure']);
         Route::post('/config/generate-dues', [\App\Http\Controllers\Api\FeeConfigurationController::class, 'generateDues']);
@@ -169,6 +171,13 @@ Route::prefix('v1')->group(function () {
         Route::get('/reports/collection-paid-students', [\App\Http\Controllers\Api\FeeReportController::class, 'collectionPaidStudents']);
         Route::get('/reports/due-summary', [\App\Http\Controllers\Api\FeeReportController::class, 'dueReport']);
         Route::get('/reports/student-dues', [\App\Http\Controllers\Api\FeeReportController::class, 'studentDues']);
+
+        // Fee Waivers management (principal/admin)
+        Route::get('/waivers', [\App\Http\Controllers\Api\FeeWaiverController::class, 'index'])->middleware('role:principal,school');
+        Route::get('/waivers/{id}', [\App\Http\Controllers\Api\FeeWaiverController::class, 'show'])->middleware('role:principal,school');
+        Route::post('/waivers', [\App\Http\Controllers\Api\FeeWaiverController::class, 'store'])->middleware('role:principal,school');
+        Route::match(['put','patch'], '/waivers/{id}', [\App\Http\Controllers\Api\FeeWaiverController::class, 'update'])->middleware('role:principal,school');
+        Route::delete('/waivers/{id}', [\App\Http\Controllers\Api\FeeWaiverController::class, 'destroy'])->middleware('role:principal,school');
 
         // Legacy/Generic payments
         Route::post('/payments', [\App\Http\Controllers\Billing\PaymentController::class, 'store']);

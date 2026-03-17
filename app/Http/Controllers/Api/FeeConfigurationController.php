@@ -9,6 +9,7 @@ use App\Models\SchoolClass;
 use App\Models\StudentEnrollment;
 use App\Models\StudentFee;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class FeeConfigurationController extends Controller
 {
@@ -103,6 +104,54 @@ class FeeConfigurationController extends Controller
     }
 
     /**
+     * Update a fee category
+     */
+    public function updateCategory(Request $request, $id)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id') ??
+                   $user->primarySchool()?->id ??
+                   $user->activeSchoolRoles()->first()?->school_id;
+
+        $category = FeeCategory::where('school_id', $schoolId)->findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'frequency' => 'required|in:monthly,one_time,termly,annual',
+            'is_common' => 'boolean',
+            'active' => 'boolean'
+        ]);
+
+        // Check uniqueness within the school (exclude current)
+        if (FeeCategory::where('school_id', $schoolId)->where('name', $validated['name'])->where('id', '!=', $category->id)->exists()) {
+            return response()->json(['message' => 'এই নামে অন্য একটি ক্যাটাগরি ইতিমধ্যে বিদ্যমান'], 422);
+        }
+
+        $category->update($validated);
+
+        return response()->json(['message' => 'ক্যাটাগরি আপডেট হয়েছে', 'category' => $category]);
+    }
+
+    /**
+     * Delete or deactivate a category
+     */
+    public function deleteCategory(Request $request, $id)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id') ??
+                   $user->primarySchool()?->id ??
+                   $user->activeSchoolRoles()->first()?->school_id;
+
+        $category = FeeCategory::where('school_id', $schoolId)->findOrFail($id);
+
+        // Prefer soft-deactivate to avoid orphaning data
+        $category->active = false;
+        $category->save();
+
+        return response()->json(['message' => 'ক্যাটাগরি নিষ্ক্রিয় করা হয়েছে']);
+    }
+
+    /**
      * Delete a structure
      */
     public function deleteStructure(Request $request, $id)
@@ -170,19 +219,54 @@ class FeeConfigurationController extends Controller
                     ->when($month, fn($q) => $q->where('month', $month))
                     ->exists();
 
-                if (!$exists) {
-                    StudentFee::create([
-                        'school_id' => $schoolId,
-                        'student_id' => $enrollment->student_id,
-                        'fee_structure_id' => $struct->id,
-                        'month' => $month,
-                        'amount' => $struct->amount,
-                        'paid_amount' => 0,
-                        'status' => 'unpaid',
-                        'due_date' => $struct->due_date ?: now()->addDays(15),
-                    ]);
-                    $generatedCount++;
+                if ($exists) continue;
+
+                // Check for applicable waiver(s)
+                $monthStart = $month ? Carbon::parse($month . '-01')->startOfMonth() : null;
+                $monthEnd = $month ? Carbon::parse($month . '-01')->endOfMonth() : null;
+
+                $waivers = \App\Models\FeeWaiver::where('school_id', $schoolId)
+                    ->where('student_id', $enrollment->student_id)
+                    ->get();
+
+                $applyingWaiver = null;
+                foreach ($waivers as $w) {
+                    if ($w->appliesTo($struct->id, $struct->fee_category_id, $monthStart, $monthEnd)) {
+                        $applyingWaiver = $w;
+                        break;
+                    }
                 }
+
+                // If a full waiver applies, skip creating the fee
+                if ($applyingWaiver && $applyingWaiver->waiver_type === 'full') {
+                    continue;
+                }
+
+                // Compute amount taking partial waiver into account
+                $finalAmount = $struct->amount;
+                $waiverId = null;
+                if ($applyingWaiver) {
+                    $waiverId = $applyingWaiver->id;
+                    if ($applyingWaiver->waiver_type === 'amount' && $applyingWaiver->waiver_value) {
+                        $finalAmount = max(0, $struct->amount - (float)$applyingWaiver->waiver_value);
+                    } elseif ($applyingWaiver->waiver_type === 'percent' && $applyingWaiver->waiver_value) {
+                        $finalAmount = max(0, $struct->amount * (1 - ((float)$applyingWaiver->waiver_value / 100)));
+                    }
+                }
+
+                StudentFee::create([
+                    'school_id' => $schoolId,
+                    'student_id' => $enrollment->student_id,
+                    'fee_structure_id' => $struct->id,
+                    'month' => $month,
+                    'amount' => $finalAmount,
+                    'original_amount' => $struct->amount,
+                    'paid_amount' => 0,
+                    'status' => $finalAmount <= 0 ? 'paid' : 'unpaid',
+                    'due_date' => $struct->due_date ?: now()->addDays(15),
+                    'waiver_id' => $waiverId ?? null,
+                ]);
+                $generatedCount++;
             }
         }
 

@@ -30,9 +30,9 @@
 
             <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Fee Category Cards -->
-                <div 
-                    v-for="category in categories" 
-                    :key="category.id" 
+                <div
+                    v-for="category in categories"
+                    :key="category.id"
                     class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
                 >
                     <div class="p-6 border-b border-gray-50 flex justify-between items-start">
@@ -53,8 +53,8 @@
                         <div v-if="category.fee_structures.length === 0" class="text-center py-6 text-gray-400 text-sm">
                             টেবিলের ডাটা পাওয়া যায়নি
                         </div>
-                        <div 
-                            v-for="struct in category.fee_structures" 
+                        <div
+                            v-for="struct in category.fee_structures"
                             :key="struct.id"
                             class="p-3 bg-gray-50 rounded-xl flex justify-between items-center group"
                         >
@@ -68,7 +68,12 @@
                             </div>
                             <div class="flex items-center gap-3">
                                 <span class="text-lg font-black text-indigo-600">৳{{ struct.amount }}</span>
-                                <button @click="deleteStructure(struct.id)" class="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:text-red-600 transition-all">
+                                <button @click="editStructure(struct)" class="opacity-0 group-hover:opacity-100 p-1.5 text-indigo-500 hover:text-indigo-700 transition-all" title="সম্পাদনা">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-6 6H9v-3z" />
+                                    </svg>
+                                </button>
+                                <button @click="deleteStructure(struct.id)" class="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:text-red-600 transition-all" title="মুছুন">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
@@ -113,7 +118,7 @@
                     <h2 class="text-2xl font-bold text-gray-800">ফি নির্ধারণ ({{ selectedCategory.name }})</h2>
                     <span class="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full capitalize">{{ selectedCategory.frequency }}</span>
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-4">
                     <div class="col-span-2">
                         <label class="block text-sm font-bold text-gray-700 mb-2">শ্রেণী</label>
@@ -153,7 +158,7 @@
                 </div>
                 <h2 class="text-2xl font-bold text-gray-800">ফি জেনারেট করুন</h2>
                 <p class="text-gray-500">নির্বাচিত সেশন এবং মাসের জন্য শিক্ষার্থীদের প্রোফাইলে বকেয়া ফি যুক্ত করা হবে।</p>
-                
+
                 <div class="text-left space-y-4">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">সেশন</label>
@@ -196,8 +201,10 @@ export default {
             newCategory: {
                 name: '',
                 frequency: 'monthly',
-                is_common: false
+                is_common: false,
+                active: true
             },
+            editingCategoryId: null,
             newStructure: {
                 fee_category_id: null,
                 class_id: null,
@@ -253,12 +260,22 @@ export default {
         },
 
         saveCategory() {
-            axios.post('/api/v1/billing/config/categories', this.newCategory)
-                .then(res => {
-                    this.showCategoryModal = false;
-                    this.fetchData();
-                })
-                .catch(err => alert(err.response?.data?.message || 'ত্রুটি হয়েছে'));
+            if (this.editingCategoryId) {
+                axios.patch(`/api/v1/billing/config/categories/${this.editingCategoryId}`, this.newCategory)
+                    .then(res => {
+                        this.showCategoryModal = false;
+                        this.editingCategoryId = null;
+                        this.fetchData();
+                    })
+                    .catch(err => alert(err.response?.data?.message || 'ত্রুটি হয়েছে'));
+            } else {
+                axios.post('/api/v1/billing/config/categories', this.newCategory)
+                    .then(res => {
+                        this.showCategoryModal = false;
+                        this.fetchData();
+                    })
+                    .catch(err => alert(err.response?.data?.message || 'ত্রুটি হয়েছে'));
+            }
         },
 
         addStructure(category) {
@@ -274,6 +291,24 @@ export default {
             this.showStructureModal = true;
         },
 
+        editCategory(category) {
+            this.editingCategoryId = category.id;
+            this.newCategory = {
+                name: category.name || '',
+                frequency: category.frequency || 'monthly',
+                is_common: !!category.is_common,
+                active: category.active !== undefined ? !!category.active : true
+            };
+            this.showCategoryModal = true;
+        },
+
+        deactivateCategory(id) {
+            if (!confirm('আপনি কি নিশ্চিত যে ক্যাটাগরিটি নিষ্ক্রিয় করতে চান?')) return;
+            axios.delete(`/api/v1/billing/config/categories/${id}`)
+                .then(() => this.fetchData())
+                .catch(err => alert(err.response?.data?.message || 'ত্রুটি হয়েছে'));
+        },
+
         saveStructure() {
             axios.post('/api/v1/billing/config/structures', this.newStructure)
                 .then(res => {
@@ -281,6 +316,20 @@ export default {
                     this.fetchData();
                 })
                 .catch(err => alert(err.response?.data?.message || 'ত্রুটি হয়েছে'));
+        },
+
+        editStructure(struct) {
+            this.selectedCategory = this.categories.find(c => c.id === struct.fee_category_id) || this.selectedCategory;
+            this.newStructure = {
+                id: struct.id,
+                fee_category_id: struct.fee_category_id,
+                class_id: struct.class_id,
+                amount: struct.amount,
+                effective_from: struct.effective_from,
+                effective_to: struct.effective_to,
+                due_day_of_month: struct.due_day_of_month || 10
+            };
+            this.showStructureModal = true;
         },
 
         deleteStructure(id) {

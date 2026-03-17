@@ -432,6 +432,7 @@
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item"><a href="{{ route('billing.collect') }}" class="nav-link {{ request()->routeIs('billing.collect') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Collect</p></a></li>
                                     <li class="nav-item"><a href="{{ route('billing.config') }}" class="nav-link {{ request()->routeIs('billing.config') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Fees</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.waivers') }}" class="nav-link {{ request()->routeIs('billing.waivers') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Waivers</p></a></li>
                                     <li class="nav-item"><a href="{{ route('billing.reports') }}" class="nav-link {{ request()->routeIs('billing.reports') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Reports</p></a></li>
                                     <li class="nav-item"><a href="{{ route('billing.collection_reports') }}" class="nav-link {{ request()->routeIs('billing.collection_reports') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Collection Reports</p></a></li>
                                     <li class="nav-item"><a href="{{ route('billing.due') }}" class="nav-link {{ request()->routeIs('billing.due') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Due Preview</p></a></li>
