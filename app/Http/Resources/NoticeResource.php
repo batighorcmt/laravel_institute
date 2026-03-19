@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class NoticeResource extends JsonUserResource
+class NoticeResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -33,7 +33,7 @@ class NoticeResource extends JsonUserResource
                     ];
                     return [
                         'id' => $t->targetable_id,
-                        'type' => $typeMap[$t->targetable_type_] ?? $t->targetable_type__
+                        'type' => $typeMap[$t->targetable_type] ?? $t->targetable_type_
                     ];
                 });
             }),
