@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class NoticeResource extends JsonUserResource
+class NoticeResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -19,7 +19,6 @@ class NoticeResource extends JsonUserResource
             'reply_required' => $this->reply_required,
             'attachment_url' => $this->attachment_path ? asset('storage/' . $this->attachment_path) : null,
             'is_read' => $request->user() ? $this->reads()->where('user_id', $request->user()->id)->exists() : false,
-            'has_replied' => $request->user() ? $this->replies()->where('parent_id', $request->user()->id)->exists() : false,
             'read_count' => $this->when(auth()->user()?->isPrincipal(), $this->reads()->count()),
             'reply_count' => $this->when(auth()->user()?->isPrincipal(), $this->replies()->count()),
             'targets' => $this->when(auth()->user()?->isPrincipal(), function() {
@@ -33,10 +32,11 @@ class NoticeResource extends JsonUserResource
                     ];
                     return [
                         'id' => $t->targetable_id,
-                        'type' => $typeMap[$t->targetable_type_] ?? $t->targetable_type__
+                        'type' => $typeMap[$t->targetable_type] ?? $t->targetable_type
                     ];
                 });
             }),
         ];
     }
 }
+// test
