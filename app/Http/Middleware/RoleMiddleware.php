@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class RoleMiddleware
 {
@@ -23,7 +24,7 @@ class RoleMiddleware
         }
 
         $user = Auth::user();
-        
+
         // For super admin, allow access to everything
         if ($user->isSuperAdmin()) {
             return $next($request);
@@ -36,7 +37,8 @@ class RoleMiddleware
             if ($schoolParam) {
                 if (is_object($schoolParam)) {
                     $schoolId = method_exists($schoolParam, 'getKey') ? $schoolParam->getKey() : ($schoolParam->id ?? null);
-                } else {
+                }
+                else {
                     $schoolId = $schoolParam;
                 }
             }
@@ -56,7 +58,12 @@ class RoleMiddleware
         }
 
         if (!$hasAccess) {
-            Log::error(" RoleMiddleware 403: User lacks roles\, [\user\ => \->id, \roles\ => \, \school\ => \]); abort(403, \Insufficient permissions.\);
+            Log::error("RoleMiddleware 403: User lacks roles", [
+                'user' => $user->id,
+                'roles' => $roles,
+                'school' => $schoolId
+            ]);
+            abort(403, "Insufficient permissions.");
         }
 
         // Store context
