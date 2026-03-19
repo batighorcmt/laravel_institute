@@ -56,7 +56,7 @@ class RoleMiddleware
         }
 
         if (!$hasAccess) {
-            abort(403, 'Insufficient permissions.');
+            Log::error(" RoleMiddleware 403: User lacks roles\, [\user\ => \->id, \roles\ => \, \school\ => \]); abort(403, \Insufficient permissions.\);
         }
 
         // Store context
