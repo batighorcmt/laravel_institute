@@ -158,6 +158,7 @@ Route::prefix('v1')->group(function () {
                 Route::prefix('billing')->group(function () {
                     Route::get('/fees/student/{studentId}/due', [\App\Http\Controllers\Api\FeeCollectionController::class , 'getDueFees']);
                     Route::post('/fees/collect', [\App\Http\Controllers\Api\FeeCollectionController::class , 'collectFees']);
+                    Route::post('/fees/{id}/waive-fine', [\App\Http\Controllers\Api\FeeCollectionController::class , 'waiveFine'])->middleware('role:principal,school');
                     Route::post('/fees/initiate-ssl', [\App\Http\Controllers\Api\FeeCollectionController::class , 'initiateSSLPayment']);
 
                     // Fee Configuration

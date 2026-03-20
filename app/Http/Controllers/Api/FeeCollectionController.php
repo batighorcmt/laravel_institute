@@ -13,6 +13,7 @@ use App\Services\SSLCommerzClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class FeeCollectionController extends Controller
@@ -140,7 +141,12 @@ class FeeCollectionController extends Controller
                 if (isset($feeData['fine_amount']) && $feeData['fine_amount'] > 0) {
                     $studentFee->fine_amount += $feeData['fine_amount'];
                 }
-                $studentFee->status = $studentFee->paid_amount >= ($studentFee->amount + $studentFee->fine_amount) ? 'paid' : 'partial';
+                
+                // Status check considering base amount and any remaining fine
+                $remainingBasic = max(0, $studentFee->amount - $studentFee->paid_amount);
+                $remainingFine = $studentFee->calculateFine();
+                
+                $studentFee->status = ($remainingBasic + $remainingFine <= 0) ? 'paid' : 'partial';
                 $studentFee->save();
             }
 
@@ -168,7 +174,7 @@ class FeeCollectionController extends Controller
                     $payment->receipt_id = $receipt->id;
                     $payment->save();
                 } catch (\Throwable $e) {
-                    \Log::error('Receipt issuance failed for payment '.$payment->id.': '.$e->getMessage());
+                    Log::error('Receipt issuance failed for payment '.$payment->id.': '.$e->getMessage());
                 }
             }
 
@@ -312,5 +318,44 @@ class FeeCollectionController extends Controller
         if ($user->isPrincipal($schoolId)) return 'headmaster';
         if ($user->isTeacher($schoolId))   return 'teacher';
         return 'online';
+    }
+
+    public function waiveFine(Request $request, $id)
+    {
+        try {
+            $user = $request->user();
+            $schoolId = $request->attributes->get('current_school_id') ?? 
+                       $user?->primarySchool()?->id ??
+                       $user?->activeSchoolRoles()?->first()?->school_id;
+            
+            $fee = StudentFee::where('school_id', $schoolId)->findOrFail($id);
+            
+            $validated = $request->validate([
+                'waiver_amount' => 'required|numeric|min:0',
+                'reason'        => 'nullable|string|max:255'
+            ]);
+            
+            $fee->fine_waiver = $validated['waiver_amount'];
+            $fee->fine_waiver_reason = $validated['reason'];
+            
+            // Recalculate status: if base is paid and fine is now 0 (due to waiver), it's 'paid'
+            $remainingBasic = max(0, $fee->amount - $fee->paid_amount);
+            $remainingFine = $fee->calculateFine();
+            
+            if ($remainingBasic + $remainingFine <= 0) {
+                $fee->status = 'paid';
+            }
+            
+            $fee->save();
+            
+            return response()->json([
+                'message' => 'জরিমানা মওকুফ সফল হয়েছে',
+                'fine_waiver' => $fee->fine_waiver,
+                'calculated_fine' => $fee->calculateFine()
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('FeeCollectionController.waiveFine error', ['m' => $e->getMessage()]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

@@ -194,8 +194,13 @@
                                                 </div>
                                                 <div class="text-right">
                                                     <span class="text-lg font-bold text-indigo-700">৳{{ (parseFloat(fee.amount) - parseFloat(fee.paid_amount) + (parseFloat(fee.calculated_fine) || 0)).toFixed(2) }}</span>
-                                                    <div v-if="fee.calculated_fine > 0" class="text-[10px] text-red-600 font-bold bg-red-50 px-2 rounded-full mt-1">
-                                                        জরিমানা: ৳{{ fee.calculated_fine }}
+                                                    <div v-if="fee.calculated_fine > 0" class="flex items-center justify-end gap-2 mt-1">
+                                                        <div class="text-[10px] text-red-600 font-bold bg-red-50 px-2 rounded-full">
+                                                            জরিমানা: ৳{{ fee.calculated_fine }}
+                                                        </div>
+                                                        <button @click.stop="openWaiverModal(fee)" class="text-[10px] text-indigo-600 font-black hover:underline">
+                                                            মওকুফ
+                                                        </button>
                                                     </div>
                                                     <div v-if="fee.paid_amount > 0" class="text-[10px] text-orange-600 font-bold bg-orange-50 px-2 rounded-full mt-1">
                                                         আংশিক পরিশোধিত: ৳{{ fee.paid_amount }}
@@ -303,6 +308,45 @@
                 </div>
             </div>
         </div>
+
+        <!-- Waiver Modal -->
+        <div v-if="waiverModal.show" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full space-y-6 animate-scale-up">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-slate-800">জরিমানা মওকুফ করুন</h3>
+                    <button @click="waiverModal.show = false" class="text-slate-400 hover:text-slate-600 font-bold text-2xl">&times;</button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">মওকুফের পরিমাণ (টাকা)</label>
+                        <input 
+                            type="number" 
+                            v-model="waiverModal.amount" 
+                            class="w-full bg-slate-50 border-slate-100 rounded-2xl px-5 py-3 text-lg font-black focus:ring-4 focus:ring-indigo-500/10 outline-none border"
+                            placeholder="0.00"
+                        >
+                        <p class="text-[10px] text-slate-400 mt-1 font-bold italic">সর্বোচ্চ মওকুফযোগ্য: ৳{{ waiverModal.maxFine }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">কারন (ঐচ্ছিক)</label>
+                        <textarea 
+                            v-model="waiverModal.reason" 
+                            class="w-full bg-slate-50 border-slate-100 rounded-2xl px-5 py-3 text-sm focus:ring-4 focus:ring-indigo-500/10 outline-none border h-24"
+                            placeholder="কি কারনে মওকুফ করা হচ্ছে?"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button @click="waiverModal.show = false" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-colors">বাতিল</button>
+                    <button @click="submitWaiver" :disabled="waiverModal.loading || !waiverModal.amount" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
+                        <svg v-if="waiverModal.loading" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        নিশ্চিত করুন
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -348,7 +392,15 @@ export default {
             showSuccessModal: false,
             paymentInfo: null,
             totalPayable: 0,
-            feeLoadError: null
+            feeLoadError: null,
+            waiverModal: {
+                show: false,
+                loading: false,
+                fee: null,
+                amount: 0,
+                reason: '',
+                maxFine: 0
+            }
         }
     },
     async mounted() {
@@ -633,6 +685,40 @@ export default {
             this.paymentMethod = 'cash';
             this.remarks = '';
             this.totalPayable = 0;
+        },
+
+        openWaiverModal(fee) {
+            this.waiverModal.fee = fee;
+            this.waiverModal.maxFine = fee.calculated_fine;
+            this.waiverModal.amount = fee.calculated_fine;
+            this.waiverModal.reason = '';
+            this.waiverModal.show = true;
+        },
+
+        async submitWaiver() {
+            if (!this.waiverModal.fee) return;
+            
+            this.waiverModal.loading = true;
+            try {
+                const res = await axios.post(`/api/v1/billing/fees/${this.waiverModal.fee.id}/waive-fine`, {
+                    waiver_amount: this.waiverModal.amount,
+                    reason: this.waiverModal.reason
+                });
+                
+                toastr.success(res.data.message);
+                this.waiverModal.show = false;
+                
+                // Refresh fees after waiver
+                if (this.selectedStudent) {
+                    this.fetchDueFees(this.selectedStudent.id);
+                }
+            } catch (err) {
+                console.error('Waiver failed:', err);
+                const msg = err.response?.data?.message || 'মওকুফ সম্পন্ন করা যায়নি।';
+                toastr.error(msg);
+            } finally {
+                this.waiverModal.loading = false;
+            }
         }
     }
 }
