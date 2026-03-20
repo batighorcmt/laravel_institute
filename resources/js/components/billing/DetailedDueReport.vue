@@ -93,22 +93,40 @@
 
             <div v-else class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden print:shadow-none print:border-none print:m-0 print:p-0 print:bg-white">
                 <!-- Single Report Header -->
-                <div class="p-8 pb-4 text-center border-b-2 border-red-600 print:p-0 print:border-b-2 print:border-black">
-                    <div class="flex items-center gap-10 mb-4 px-4 overflow-hidden print:mb-2">
-                        <img v-if="school.logo_url" :src="school.logo_url" class="w-24 h-24 object-contain print:float-left">
-                        <div class="text-left flex-1 p-2">
-                            <h2 class="text-4xl font-black text-slate-900 tracking-tight mb-2 print:text-black print:text-3xl">{{ school.name_bn || school.name }}</h2>
-                            <p class="text-slate-700 font-bold text-xl mb-2 print:text-black leading-tight print:text-xs">{{ school.address_bn || school.address }}</p>
-                            <div class="flex gap-6 text-slate-600 font-black text-lg print:text-black print:text-xs">
+                <div class="report-header-container p-8 pb-4 text-center border-b-2 border-red-600 hidden print:block">
+                    <div class="report-header-inner flex items-center gap-10 mb-4 px-4 overflow-hidden">
+                        <!-- Logo -->
+                        <img v-if="school.logo_url" :src="school.logo_url" class="w-24 h-24 object-contain report-logo-print">
+                        
+                        <!-- Header Content -->
+                        <div class="report-text-area text-left flex-1 p-2">
+                            <!-- Institution Name -->
+                            <h1 class="school-name-print text-4xl font-black text-slate-900 tracking-tight mb-2">{{ school.name_bn || school.name }}</h1>
+                            
+                            <!-- Address -->
+                            <p class="school-address-print text-slate-700 font-bold text-xl mb-2 leading-tight">{{ school.address_bn || school.address }}</p>
+                            
+                            <!-- Phone & Email (Web Only) -->
+                            <div class="flex gap-6 text-slate-600 font-black text-lg no-print">
                                 <span v-if="school.phone">ফোন: {{ school.phone }}</span>
                                 <span v-if="school.email">ই-মেইল: {{ school.email }}</span>
                             </div>
+
+                            <!-- Report Name -->
+                            <div class="report-title-print mt-4">
+                                <span class="no-print bg-red-600 text-white py-2 px-10 inline-block rounded-full font-black text-2xl">বকেয়া আদায় রিপোর্ট</span>
+                                <span class="print-only-text">বকেয়া আদায় রিপোর্ট</span>
+                            </div>
+
+                            <!-- Filters -->
+                            <div class="report-filter-print mt-6 text-base font-black text-slate-600 border-t border-b border-slate-100 py-3 px-4 no-print">
+                                <span>ফিল্টার: {{ activeFilterText }}</span>
+                            </div>
+                            <!-- Separated Filter line for print to match image style -->
+                            <div class="report-filter-print print-only-text no-web" style="display:none">
+                                {{ activeFilterText }}
+                            </div>
                         </div>
-                    </div>
-                    <div class="clear-both no-print"></div>
-                    <h3 class="text-2xl font-black mt-4 bg-red-600 text-white py-2 px-10 inline-block rounded-full print:bg-white print:text-black print:mt-1 print:py-1 print:text-xl">বকেয়া আদায় রিপোর্ট</h3>
-                    <div class="mt-6 text-sm font-black text-slate-600 border-t border-b border-slate-100 py-3 px-4 print:text-black print:border-black print:mt-2 print:py-2 text-center">
-                        <span>ফিল্টার: {{ activeFilterText }}</span>
                     </div>
                 </div>
 
@@ -254,7 +272,7 @@ export default {
             let text = [];
             if (this.filters.academic_year_id) {
                 const y = this.academicYears.find(x => x.id == this.filters.academic_year_id);
-                if (y) text.push('শিক্ষাবর্ষ: ' + (y.name_bn || y.name));
+                if (y) text.push('বর্ষ: ' + (y.name_bn || y.name));
             }
             if (this.filters.class_id) {
                 const c = this.classes.find(x => x.id == this.filters.class_id);
@@ -428,6 +446,99 @@ export default {
     
     .bg-white, .bg-white * { visibility: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     
+    .no-web { display: none !important; }
+
+    /* Remove container artifacts in print */
+    .bg-white.rounded-3xl.shadow-sm.border.border-slate-200 {
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .p-4, .p-6, .md\:p-6, .p-8 { padding: 0 !important; }
+    .space-y-6 > * + * { margin-top: 0 !important; }
+    .bg-slate-50 { background: white !important; }
+
+    /* Dedicated Print Header Styles */
+    .report-header-container {
+        border-bottom: 4px solid #000 !important;
+        padding-bottom: 2rem !important;
+        margin-bottom: 2rem !important;
+        text-align: center !important;
+        background: white !important;
+    }
+    
+    .report-header-inner {
+        position: relative !important;
+        display: block !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .report-logo-print {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 120px !important;
+        height: 120px !important;
+        object-fit: contain !important;
+        visibility: visible !important;
+    }
+    
+    .report-text-area {
+        width: 100% !important;
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    .school-name-print {
+        font-size: 36pt !important;
+        font-weight: 900 !important;
+        color: #000 !important;
+        margin: 0 !important;
+        line-height: 1.1 !important;
+        text-align: center !important;
+    }
+    
+    .school-address-print {
+        font-size: 18pt !important;
+        font-weight: 700 !important;
+        color: #000 !important;
+        margin: 8px 0 0 0 !important;
+        text-align: center !important;
+    }
+    
+    .report-title-print {
+        margin: 15px 0 0 0 !important;
+        text-align: center !important;
+    }
+    
+    .print-only-text {
+        display: block !important;
+        font-size: 24pt !important;
+        font-weight: 800 !important;
+        color: #000 !important;
+        text-align: center !important;
+    }
+    
+    .report-filter-print {
+        font-size: 16pt !important;
+        font-weight: 700 !important;
+        color: #000 !important;
+        margin-top: 10px !important;
+        text-align: center !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    .no-web.report-filter-print {
+        display: block !important;
+    }
+    
     table { 
         width: 100% !important; 
         border-collapse: collapse !important; 
@@ -436,9 +547,14 @@ export default {
     }
     th, td { 
         border: 1px solid #000 !important;
-        padding: 4px 6px !important;
+        padding: 6px 8px !important;
         color: #000 !important;
+        font-size: 11pt !important;
     }
+    
+    td div { font-size: 11pt !important; }
+    td .text-\[10px\], td .text-xs { font-size: 10pt !important; }
+    td span { font-size: 10pt !important; }
     
     .print\:table-header-group { display: table-header-group !important; }
     .print\:table-footer-group { display: table-footer-group !important; }

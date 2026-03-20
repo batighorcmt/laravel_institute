@@ -27,9 +27,9 @@ class SchoolMetaController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $classes = SchoolClass::forSchool($schoolId)->active()->ordered()->get(['id','name']);
-
-        return response()->json($classes->map(fn($c)=>['id'=>$c->id,'name'=>$c->name])->values());
+        $classes = SchoolClass::forSchool($schoolId)->active()->ordered()->get(['id','name','bangla_name']);
+        
+        return response()->json($classes->map(fn($c)=>['id'=>$c->id,'name'=>$c->name,'bangla_name'=>$c->bangla_name])->values());
     }
 
     public function sections(Request $request)
@@ -47,13 +47,15 @@ class SchoolMetaController extends Controller
             $query->where('sections.class_id', $classId);
         }
 
-        $sections = $query->with('class:id,name')->ordered()->get(['sections.id','sections.name','sections.class_id']);
+        $sections = $query->with('class:id,name,bangla_name')->ordered()->get(['sections.id','sections.name','sections.bangla_name','sections.class_id']);
 
         return response()->json($sections->map(fn($s)=>[
             'id'=>$s->id,
             'name'=>$s->name,
+            'bangla_name'=>$s->bangla_name,
             'class_id'=>$s->class_id,
-            'class_name'=>$s->class?->name
+            'class_name'=>$s->class?->name,
+            'class_bangla_name'=>$s->class?->bangla_name
         ])->values());
     }
 
