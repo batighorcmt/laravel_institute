@@ -11,6 +11,7 @@ class FeeCategory extends Model
 
     protected $fillable = [
         'school_id', 'name', 'is_common', 'frequency', 'active',
+        'has_fine', 'fine_amount', 'fine_type', 'late_fee_day',
     ];
 
     public function school()

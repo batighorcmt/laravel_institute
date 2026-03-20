@@ -23,12 +23,13 @@ class School extends Model
     protected $fillable = [
         'name', 'name_bn', 'code', 'address', 'address_bn', 'phone', 'email', 'website', 
         'description', 'logo', 'status', 'admissions_enabled',
-        'admission_academic_year_id'
+        'admission_academic_year_id', 'fine_enabled'
     ];
 
     protected $casts = [
         'status' => 'string',
         'admissions_enabled' => 'boolean',
+        'fine_enabled' => 'boolean',
     ];
 
     // Relationships

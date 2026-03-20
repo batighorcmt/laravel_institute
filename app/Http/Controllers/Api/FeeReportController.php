@@ -10,6 +10,7 @@ use App\Models\StudentFee;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class FeeReportController extends Controller
@@ -105,7 +106,7 @@ class FeeReportController extends Controller
                 'details' => $payments
             ]);
         } catch (\Throwable $e) {
-            \Log::error('FeeReportController.collectionByDate error', [
+            Log::error('FeeReportController.collectionByDate error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -262,7 +263,7 @@ class FeeReportController extends Controller
 
             return response()->json($all);
         } catch (\Throwable $e) {
-            \Log::error('FeeReportController.collectionPaidStudents error', [
+            Log::error('FeeReportController.collectionPaidStudents error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'request' => $request->all()
@@ -349,29 +350,36 @@ class FeeReportController extends Controller
 
             $students = $query->get()->map(function($enrollment) {
                 $student = $enrollment->student ?? null;
-                $totalDue = 0;
+                $basicDue = 0;
+                $fineDue = 0;
+                
                 if ($student && isset($student->fees)) {
-                    $totalDue = $student->fees->sum(function($f) {
-                        return (float)$f->amount - (float)$f->paid_amount;
-                    });
+                    foreach ($student->fees as $f) {
+                        $basicDue += max(0, (float)$f->amount - (float)$f->paid_amount);
+                        $fineDue += (float)$f->calculateFine();
+                    }
                 }
 
+                $totalDue = $basicDue + $fineDue;
+
                 // fallback values using selected columns
-                $studentId = $enrollment->student_code ?? ($student->student_id ?? null);
+                $studentIdStr = $enrollment->student_code ?? ($student->student_id ?? null);
                 $name = $enrollment->student_name_bn ?: ($enrollment->student_name_en ?? ($student->student_name_en ?? null));
 
                 return [
                     'id' => $enrollment->student_real_id ?? ($student->id ?? null),
-                    'student_id' => $studentId,
+                    'student_id' => $studentIdStr,
                     'name' => $name,
                     'roll' => $enrollment->roll_no ?? null,
-                    'total_due' => $totalDue,
+                    'basic_due' => round($basicDue, 2),
+                    'fine_due' => round($fineDue, 2),
+                    'total_due' => round($totalDue, 2),
                 ];
             })->filter(fn($s) => $s['total_due'] > 0)->values();
 
             return response()->json($students);
         } catch (\Throwable $e) {
-            \Log::error('FeeReportController.studentDues error', [
+            Log::error('FeeReportController.studentDues error', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -379,6 +387,83 @@ class FeeReportController extends Controller
                 'error' => 'internal_exception',
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function detailedDues(Request $request)
+    {
+        try {
+            $schoolId = $request->attributes->get('current_school_id') ?? $request->user()?->primarySchool()?->id;
+
+            $query = StudentFee::with(['student', 'feeStructure.category'])
+                ->where('school_id', $schoolId);
+
+            // Filters
+            if ($request->academic_year_id) {
+                $query->whereHas('student.enrollments', function($q) use ($request) {
+                    $q->where('academic_year_id', $request->academic_year_id);
+                });
+            }
+
+            if ($request->class_id) {
+                $query->whereHas('student.enrollments', function($q) use ($request) {
+                    $q->where('class_id', $request->class_id);
+                });
+            }
+
+            if ($request->section_id) {
+                $query->whereHas('student.enrollments', function($q) use ($request) {
+                    $q->where('section_id', $request->section_id);
+                });
+            }
+
+            if ($request->fee_category_id) {
+                $query->whereHas('feeStructure', function($q) use ($request) {
+                    $q->where('fee_category_id', $request->fee_category_id);
+                });
+            }
+
+            if ($request->month) {
+                $query->where('month', $request->month);
+            }
+
+            if ($request->status && $request->status !== 'all') {
+                if ($request->status === 'due') {
+                    $query->where('status', '!=', 'paid');
+                } else {
+                    $query->where('status', $request->status);
+                }
+            }
+
+            $fees = $query->get()->map(function($f) use ($schoolId) {
+                $enrollment = $f->student->enrollments()
+                    ->where('school_id', $schoolId)
+                    ->latest('id')
+                    ->first();
+
+                return [
+                    'student_name_bn' => $f->student->student_name_bn,
+                    'student_name_en' => $f->student->student_name_en,
+                    'student_code' => $f->student->student_id,
+                    'roll_no' => $enrollment->roll_no ?? null,
+                    'class_bangla_name' => $enrollment->class->bangla_name ?? null,
+                    'class_name' => $enrollment->class->name ?? null,
+                    'section_bangla_name' => $enrollment->section->bangla_name ?? null,
+                    'section_name' => $enrollment->section->name ?? null,
+                    'category_name' => $f->feeStructure->category->name ?? null,
+                    'month' => $f->month,
+                    'amount' => $f->amount,
+                    'paid_amount' => $f->paid_amount,
+                    'fine_amount' => $f->calculateFine(), // Calculated on the fly
+                    'fine_waiver' => $f->fine_waiver ?? 0,
+                    'status' => $f->status,
+                ];
+            });
+
+            return response()->json($fees);
+        } catch (\Throwable $e) {
+            Log::error('Detailed Dues Report Error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 }

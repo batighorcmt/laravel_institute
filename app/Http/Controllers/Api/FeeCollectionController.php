@@ -32,11 +32,17 @@ class FeeCollectionController extends Controller
                 ->where('student_id', (int)$studentId)
                 ->whereIn('status', ['unpaid', 'partial'])
                 ->orderBy('due_date', 'asc')
-                ->get();
+                ->get()
+                ->map(function ($fee) {
+                    $fine = (float)$fee->calculateFine();
+                    $fee->calculated_fine = $fine;
+                    return $fee;
+                });
 
             return response()->json([
                 'student'  => ['id' => (int)$studentId, 'student_id' => null, 'name' => 'Unknown'],
                 'due_fees' => $fees,
+                'is_fine_enabled' => true, // default when unknown
                 '_debug'   => ['warning' => 'Student model not found, fees fetched by raw id', 'fees_count' => $fees->count()]
             ]);
         }
@@ -45,10 +51,18 @@ class FeeCollectionController extends Controller
             ->where('student_id', $student->id)
             ->whereIn('status', ['unpaid', 'partial'])
             ->orderBy('due_date', 'asc')
-            ->get();
+            ->get()
+            ->map(function ($fee) {
+                $fine = (float)$fee->calculateFine();
+                $fee->calculated_fine = $fine;
+                $fee->fine_reason = $fine > 0 ? "Late Fee Applied" : null;
+                return $fee;
+            });
 
         $allFees = StudentFee::where('student_id', $student->id)
             ->get(['id', 'school_id', 'status', 'amount', 'paid_amount', 'fee_structure_id']);
+
+        $school = \App\Models\School::find($student->school_id);
 
         return response()->json([
             'student'  => [
@@ -58,6 +72,7 @@ class FeeCollectionController extends Controller
                 'school_id'  => $student->school_id,
             ],
             'due_fees' => $fees,
+            'is_fine_enabled' => $school ? (bool)$school->fine_enabled : false,
             '_debug'   => [
                 'all_fees'  => $allFees,
                 'due_count' => $fees->count(),
@@ -78,6 +93,7 @@ class FeeCollectionController extends Controller
             'fees'                   => 'required|array|min:1',
             'fees.*.student_fee_id'  => 'required|exists:student_fees,id',
             'fees.*.amount'          => 'required|numeric|min:0.01',
+            'fees.*.fine_amount'     => 'nullable|numeric|min:0',
             'received_at'            => 'nullable|date',
             'remarks'                => 'nullable|string',
         ]);
@@ -97,6 +113,7 @@ class FeeCollectionController extends Controller
                 'academic_year_id'     => $validated['academic_year_id'],
                 'payment_number'       => $this->generatePaymentNumber($schoolId),
                 'amount_paid'          => $totalAmount,
+                'fine_applied'         => collect($validated['fees'])->sum('fine_amount'),
                 'payment_method'       => $validated['payment_method'],
                 'collected_by_user_id' => Auth::id(),
                 'role'                 => $this->getCollectorRole(Auth::user(), $schoolId),
@@ -120,7 +137,10 @@ class FeeCollectionController extends Controller
                 ]);
 
                 $studentFee->paid_amount += $feeData['amount'];
-                $studentFee->status = $studentFee->paid_amount >= $studentFee->amount ? 'paid' : 'partial';
+                if (isset($feeData['fine_amount']) && $feeData['fine_amount'] > 0) {
+                    $studentFee->fine_amount += $feeData['fine_amount'];
+                }
+                $studentFee->status = $studentFee->paid_amount >= ($studentFee->amount + $studentFee->fine_amount) ? 'paid' : 'partial';
                 $studentFee->save();
             }
 

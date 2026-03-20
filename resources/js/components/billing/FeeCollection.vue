@@ -193,7 +193,10 @@
                                                     </p>
                                                 </div>
                                                 <div class="text-right">
-                                                    <span class="text-lg font-bold text-indigo-700">৳{{ fee.amount - fee.paid_amount }}</span>
+                                                    <span class="text-lg font-bold text-indigo-700">৳{{ (parseFloat(fee.amount) - parseFloat(fee.paid_amount) + (parseFloat(fee.calculated_fine) || 0)).toFixed(2) }}</span>
+                                                    <div v-if="fee.calculated_fine > 0" class="text-[10px] text-red-600 font-bold bg-red-50 px-2 rounded-full mt-1">
+                                                        জরিমানা: ৳{{ fee.calculated_fine }}
+                                                    </div>
                                                     <div v-if="fee.paid_amount > 0" class="text-[10px] text-orange-600 font-bold bg-orange-50 px-2 rounded-full mt-1">
                                                         আংশিক পরিশোধিত: ৳{{ fee.paid_amount }}
                                                     </div>
@@ -225,8 +228,9 @@
                                 <div>
                                     <p class="text-sm font-semibold text-gray-800">{{ fee.fee_structure.category.name }}</p>
                                     <p class="text-[10px] text-gray-400 capitalize">{{ fee.month ? translateMonthBn(fee.month) : 'এককালীন' }}</p>
+                                    <p v-if="fee.calculated_fine > 0" class="text-[10px] text-red-500 font-bold">+ জরিমানা: ৳{{ fee.calculated_fine }}</p>
                                 </div>
-                                <span class="font-bold text-gray-700">৳{{ fee.amount - fee.paid_amount }}</span>
+                                <span class="font-bold text-gray-700">৳{{ (parseFloat(fee.amount) - parseFloat(fee.paid_amount) + (parseFloat(fee.calculated_fine) || 0)).toFixed(2) }}</span>
                             </div>
 
                             <div class="border-t border-dashed border-gray-200 pt-4 mt-4">
@@ -485,6 +489,7 @@ export default {
                     if (res.data.due_fees) {
                         this.dueFees = res.data.due_fees.map(f => ({
                             ...f,
+                            calculated_fine: parseFloat(f.calculated_fine) || 0,
                             selected: true
                         }));
                     } else {
@@ -513,8 +518,10 @@ export default {
 
         calculateTotal() {
             this.totalPayable = this.selectedFees.reduce((acc, fee) => {
-                return acc + (parseFloat(fee.amount) - parseFloat(fee.paid_amount));
-            }, 0);
+                const due = (parseFloat(fee.amount) - parseFloat(fee.paid_amount));
+                const fine = (parseFloat(fee.calculated_fine) || 0);
+                return acc + due + fine;
+            }, 0).toFixed(2);
         },
 
         processPayment() {
@@ -539,7 +546,8 @@ export default {
                 received_at: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
                 fees: this.selectedFees.map(f => ({
                     student_fee_id: f.id,
-                    amount: f.amount - f.paid_amount
+                    amount: (parseFloat(f.amount) - parseFloat(f.paid_amount) + (parseFloat(f.calculated_fine) || 0)).toFixed(2),
+                    fine_amount: parseFloat(f.calculated_fine) || 0
                 }))
             };
 

@@ -436,6 +436,7 @@
                                     <li class="nav-item"><a href="{{ route('billing.reports') }}" class="nav-link {{ request()->routeIs('billing.reports') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Reports</p></a></li>
                                     <li class="nav-item"><a href="{{ route('billing.collection_reports') }}" class="nav-link {{ request()->routeIs('billing.collection_reports') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Collection Reports</p></a></li>
                                     <li class="nav-item"><a href="{{ route('billing.due') }}" class="nav-link {{ request()->routeIs('billing.due') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Due Preview</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.detailed_due_report') }}" class="nav-link {{ request()->routeIs('billing.detailed_due_report') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>বকেয়া আদায় তালিকা</p></a></li>
                                     <li class="nav-item"><a href="{{ route('billing.statement') }}" class="nav-link {{ request()->routeIs('billing.statement') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Statement</p></a></li>
                                 </ul>
                             </li>

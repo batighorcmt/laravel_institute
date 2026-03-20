@@ -8,6 +8,12 @@
                     <p class="text-gray-500 mt-1">বিভিন্ন ফি-র হার এবং সময়কাল নির্ধারণ করুন</p>
                 </div>
                 <div class="flex gap-3">
+                    <button @click="toggleGlobalFine" :class="globalFineEnabled ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700'" class="px-5 py-2.5 text-white rounded-xl font-bold shadow-sm transition-all flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        জরিমানা সিস্টেম {{ globalFineEnabled ? 'বন্ধ' : 'চালু' }}
+                    </button>
                     <button @click="openGenerateModal" class="px-5 py-2.5 bg-green-600 text-white rounded-xl font-bold shadow-sm hover:bg-green-700 transition-all flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -38,15 +44,41 @@
                     <div class="p-6 border-b border-gray-50 flex justify-between items-start">
                         <div>
                             <h3 class="text-xl font-bold text-gray-800">{{ category.name }}</h3>
-                            <span class="inline-block mt-2 px-2 py-1 bg-gray-100 text-gray-600 text-[10px] uppercase font-bold rounded">
-                                {{ category.frequency }}
-                            </span>
+                            <div class="flex gap-2 mt-2">
+                                <span class="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-[10px] uppercase font-bold rounded">
+                                    {{ category.frequency }}
+                                </span>
+                                <span v-if="category.has_fine" class="inline-block px-2 py-1 bg-red-50 text-red-600 text-[10px] uppercase font-bold rounded border border-red-100 flex items-center gap-1" title="জরিমানা প্রযোজ্য">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    জরিমানা চালু
+                                </span>
+                            </div>
                         </div>
-                        <button @click="addStructure(category)" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="ফি যুক্ত করুন">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </button>
+                        <div class="flex gap-2">
+                            <!-- Quick Fine Toggle -->
+                            <button
+                                @click="toggleCategoryFine(category)"
+                                :class="category.has_fine ? 'text-red-500 hover:bg-red-50' : 'text-gray-400 hover:bg-gray-50'"
+                                class="p-2 rounded-lg transition-colors"
+                                :title="category.has_fine ? 'জরিমানা বন্ধ করুন' : 'জরিমানা চালু করুন'"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </button>
+                            <button @click="editCategory(category)" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="ক্যাটাগরি ইডিট করুন">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-6 6H9v-3z" />
+                                </svg>
+                            </button>
+                            <button @click="addStructure(category)" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="ফি যুক্ত করুন">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="p-4 space-y-3">
@@ -85,10 +117,10 @@
             </div>
         </div>
 
-        <!-- Add Category Modal -->
+        <!-- Add/Edit Category Modal -->
         <div v-if="showCategoryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full space-y-6">
-                <h2 class="text-2xl font-bold text-gray-800">নতুন ক্যাটাগরি</h2>
+                <h2 class="text-2xl font-bold text-gray-800">{{ editingCategoryId ? 'ক্যাটাগরি সম্পাদনা' : 'নতুন ক্যাটাগরি' }}</h2>
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-bold text-gray-700 mb-2">নাম</label>
@@ -102,6 +134,28 @@
                             <option value="one_time">এককালীন (One-time)</option>
                             <option value="termly">টার্ম ভিত্তিক (Termly)</option>
                         </select>
+                    </div>
+                    
+                    <div class="flex items-center mt-4">
+                        <input type="checkbox" id="has_fine" v-model="newCategory.has_fine" class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                        <label for="has_fine" class="ml-2 block text-sm font-bold text-gray-700 cursor-pointer">এই ফি-তে জরিমানা প্রযোজ্য</label>
+                    </div>
+                    <div v-if="newCategory.has_fine" class="grid grid-cols-2 gap-4 mt-2 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">জরিমানার ধরন</label>
+                            <select v-model="newCategory.fine_type" class="w-full px-3 py-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm">
+                                <option value="fixed">স্ট্যাটিক (Fixed ৳)</option>
+                                <option value="percentage">শতকরা (Percentage %)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">পরিমাণ/শতকরা হার</label>
+                            <input v-model="newCategory.fine_amount" type="number" class="w-full px-3 py-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="উদাঃ 50">
+                        </div>
+                        <div class="col-span-2" v-if="newCategory.frequency === 'monthly'">
+                            <label class="block text-xs font-bold text-gray-700 mb-1">যেই তারিখের পর জরিমানা (মাসের)</label>
+                            <input v-model="newCategory.late_fee_day" type="number" min="1" max="31" class="w-full px-3 py-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="উদাঃ 10">
+                        </div>
                     </div>
                 </div>
                 <div class="flex gap-3 pt-4">
@@ -194,6 +248,7 @@ export default {
             categories: [],
             classes: [],
             academicYears: [],
+            globalFineEnabled: false,
             showCategoryModal: false,
             showStructureModal: false,
             showGenerateModal: false,
@@ -202,7 +257,11 @@ export default {
                 name: '',
                 frequency: 'monthly',
                 is_common: false,
-                active: true
+                active: true,
+                has_fine: false,
+                fine_amount: null,
+                fine_type: 'fixed',
+                late_fee_day: 10
             },
             editingCategoryId: null,
             newStructure: {
@@ -234,9 +293,25 @@ export default {
                         const current = this.academicYears.find(y => y.is_current) || this.academicYears[0];
                         this.generateForm.academic_year_id = current.id;
                     }
+                    this.globalFineEnabled = !!res.data.school_fine_enabled;
                     this.loading = false;
+                })
+                .catch(err => {
+                    this.loading = false;
+                    alert(err.response?.data?.message || 'ডাটা লোড করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।');
                 });
         },
+
+        toggleGlobalFine() {
+            const newStatus = !this.globalFineEnabled;
+            if(!confirm(`আপনি কি নিশ্চিত যে জরিমানা সিস্টেম ${newStatus ? 'চালু' : 'বন্ধ'} করতে চান?`)) return;
+            axios.post('/api/v1/billing/config/toggle-fine', { fine_enabled: newStatus })
+                .then(res => {
+                    this.globalFineEnabled = res.data.fine_enabled;
+                })
+                .catch(err => alert(err.response?.data?.message || 'ত্রুটি হয়েছে'));
+        },
+
 
         openGenerateModal() {
             this.showGenerateModal = true;
@@ -255,7 +330,8 @@ export default {
         },
 
         openCategoryModal() {
-            this.newCategory = { name: '', frequency: 'monthly', is_common: false };
+            this.editingCategoryId = null;
+            this.newCategory = { name: '', frequency: 'monthly', is_common: false, active: true, has_fine: false, fine_amount: null, fine_type: 'fixed', late_fee_day: 10 };
             this.showCategoryModal = true;
         },
 
@@ -297,9 +373,45 @@ export default {
                 name: category.name || '',
                 frequency: category.frequency || 'monthly',
                 is_common: !!category.is_common,
-                active: category.active !== undefined ? !!category.active : true
+                active: category.active !== undefined ? !!category.active : true,
+                has_fine: !!category.has_fine,
+                fine_amount: category.fine_amount || null,
+                fine_type: category.fine_type || 'fixed',
+                late_fee_day: category.late_fee_day || 10
             };
             this.showCategoryModal = true;
+        },
+
+        toggleCategoryFine(category) {
+            const newStatus = !category.has_fine;
+            axios.patch(`/api/v1/billing/config/categories/${category.id}`, {
+                name: category.name,
+                frequency: category.frequency,
+                is_common: !!category.is_common,
+                active: category.active !== undefined ? !!category.active : true,
+                has_fine: newStatus,
+                fine_type: category.fine_type || 'fixed',
+                fine_amount: category.fine_amount || null,
+                late_fee_day: category.late_fee_day || null,
+            })
+            .then(() => { category.has_fine = newStatus; })
+            .catch(err => alert(err.response?.data?.message || 'ত্রুটি হয়েছে'));
+        },
+
+        toggleCategoryFine(category) {
+            const newStatus = !category.has_fine;
+            axios.patch(`/api/v1/billing/config/categories/${category.id}`, {
+                name: category.name,
+                frequency: category.frequency,
+                is_common: !!category.is_common,
+                active: category.active !== undefined ? !!category.active : true,
+                has_fine: newStatus,
+                fine_type: category.fine_type || 'fixed',
+                fine_amount: category.fine_amount || null,
+                late_fee_day: category.late_fee_day || null,
+            })
+            .then(() => { category.has_fine = newStatus; })
+            .catch(err => alert(err.response?.data?.message || 'ত্রুতি হয়েছে'));
         },
 
         deactivateCategory(id) {

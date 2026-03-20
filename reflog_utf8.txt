@@ -1,0 +1,100 @@
+﻿7e103be HEAD@{2026-03-20 00:24:38 +0600}: commit: Update RoleMiddleware.php
+808d4ac HEAD@{2026-03-20 00:19:37 +0600}: commit: αª╕
+c34f6b6 HEAD@{2026-03-20 00:11:24 +0600}: reset: moving to c34f6b6
+4034e7a HEAD@{2026-03-19 23:53:45 +0600}: commit: upload
+5a01762 HEAD@{2026-03-19 23:43:41 +0600}: commit: notification sound
+c0278a0 HEAD@{2026-03-19 23:37:56 +0600}: commit: Re-upload previous files
+5cf7c24 HEAD@{2026-03-19 23:27:44 +0600}: reset: moving to HEAD~5
+c34f6b6 HEAD@{2026-03-19 23:22:17 +0600}: pull --ff --recurse-submodules --progress origin: Fast-forward
+5cf7c24 HEAD@{2026-03-19 23:21:47 +0600}: reset: moving to 5cf7c2410e402ec436e6db3fad93322f02b2f56f
+c34f6b6 HEAD@{2026-03-19 23:11:12 +0600}: commit: Update RoleMiddleware.php
+5ad3bdf HEAD@{2026-03-19 22:52:40 +0600}: commit: g
+4faf238 HEAD@{2026-03-19 22:47:53 +0600}: reset: moving to HEAD
+4faf238 HEAD@{2026-03-19 22:21:08 +0600}: commit: Update NoticeInteractionController.php
+100fc3a HEAD@{2026-03-19 21:22:24 +0600}: commit: Update NoticeResource.php
+d650216 HEAD@{2026-03-19 21:13:46 +0600}: commit: notice
+5cf7c24 HEAD@{2026-03-19 19:51:54 +0600}: commit: Update StudentDirectoryController.php
+657b789 HEAD@{2026-03-18 01:33:42 +0600}: commit: waiver added
+96274ad HEAD@{2026-03-17 20:13:09 +0600}: commit: billing added
+34cda02 HEAD@{2026-03-16 18:02:04 +0600}: commit: αªñ
+a3f7ac2 HEAD@{2026-03-16 17:45:32 +0600}: commit: αª¼
+51158bd HEAD@{2026-03-16 17:35:28 +0600}: commit: αª╛
+608caaa HEAD@{2026-03-16 17:24:37 +0600}: commit: αªò
+a9efc9f HEAD@{2026-03-16 16:59:05 +0600}: commit: αª¿
+cb68778 HEAD@{2026-03-16 15:51:54 +0600}: pull --ff --recurse-submodules --progress origin: Fast-forward
+0d4d273 HEAD@{2026-03-16 05:31:52 +0600}: commit: αª¼
+0b4e7da HEAD@{2026-03-15 02:35:22 +0600}: commit: Update TestimonialController.php
+d924bac HEAD@{2026-03-15 02:27:25 +0600}: commit: b
+933f4c2 HEAD@{2026-03-15 02:11:45 +0600}: commit: Update subjects.blade.php
+0a7177d HEAD@{2026-03-15 02:08:20 +0600}: commit: Update StudentSubjectController.php
+075ea61 HEAD@{2026-03-14 23:53:06 +0600}: commit: g
+723d21a HEAD@{2026-03-14 23:15:45 +0600}: commit: h
+bd589dd HEAD@{2026-03-14 20:54:16 +0600}: pull --ff --recurse-submodules --progress origin: Fast-forward
+3e4b774 HEAD@{2026-03-13 05:26:57 +0600}: commit: pdf added
+7191a5d HEAD@{2026-03-13 03:27:47 +0600}: commit: prottayon updated
+831e49f HEAD@{2026-03-13 01:13:56 +0600}: commit: module seeder
+4bee12d HEAD@{2026-03-13 00:53:31 +0600}: commit: font added
+115d9ee HEAD@{2026-03-12 14:09:28 +0600}: commit: αª╕αªò
+cc22279 HEAD@{2026-03-12 13:45:35 +0600}: commit: αª░
+fa20753 HEAD@{2026-03-12 13:23:50 +0600}: commit: Update ClassController.php
+5dc9ba1 HEAD@{2026-03-08 00:14:52 +0600}: commit: att notificatoin
+57169ec HEAD@{2026-03-08 00:00:32 +0600}: commit: notification sound
+4859161 HEAD@{2026-03-07 23:51:57 +0600}: pull --ff --recurse-submodules --progress origin: Fast-forward
+15646f3 HEAD@{2026-03-06 16:16:25 +0600}: commit: k
+4708451 HEAD@{2026-03-06 15:56:31 +0600}: commit: g
+c576068 HEAD@{2026-03-06 15:40:26 +0600}: commit: αª¼αª¼
+f1e62b7 HEAD@{2026-03-06 15:28:32 +0600}: commit: Update notifications_page.dart
+66f8565 HEAD@{2026-03-06 15:28:29 +0600}: commit: Update NotificationLogController.php
+55cfca8 HEAD@{2026-03-06 15:23:10 +0600}: commit: g
+d52cafc HEAD@{2026-03-06 15:19:25 +0600}: commit: notification page added
+71c382d HEAD@{2026-03-06 15:19:14 +0600}: pull --ff --recurse-submodules --progress origin: Fast-forward
+c7b14c4 HEAD@{2026-03-06 15:19:10 +0600}: reset: moving to HEAD
+c7b14c4 HEAD@{2026-03-03 09:05:06 +0600}: commit: Update PushNotificationService.php
+d91e8f6 HEAD@{2026-03-03 08:28:59 +0600}: commit: hu
+18168c3 HEAD@{2026-03-03 08:15:56 +0600}: commit: k
+eaa5bc8 HEAD@{2026-03-03 08:08:27 +0600}: commit: fcm added
+19fe2a9 HEAD@{2026-03-03 08:03:36 +0600}: commit: αª¼αª╣
+8cee223 HEAD@{2026-03-03 08:01:44 +0600}: commit: αª¼αª£
+951ed56 HEAD@{2026-03-03 07:55:23 +0600}: commit: fcm
+eaff934 HEAD@{2026-03-03 07:47:30 +0600}: commit: αªƒ
+4ca7aaa HEAD@{2026-03-03 07:41:56 +0600}: commit: αª£
+954ee1e HEAD@{2026-03-03 07:36:23 +0600}: commit: b
+66594b8 HEAD@{2026-03-03 07:15:40 +0600}: commit: j
+846204d HEAD@{2026-03-03 07:04:36 +0600}: commit: firebase added
+50acdf9 HEAD@{2026-03-03 06:42:12 +0600}: commit: Update notice_stats_page.dart
+7057a69 HEAD@{2026-03-03 06:40:11 +0600}: commit: αª¼
+6eb7d7c HEAD@{2026-03-03 06:34:22 +0600}: commit: techers photo
+41cf20b HEAD@{2026-03-03 06:28:31 +0600}: commit: Update NoticeController.php
+63a8c9d HEAD@{2026-03-03 06:21:02 +0600}: commit: Update NoticeController.php
+b8a9612 HEAD@{2026-03-03 06:08:45 +0600}: commit: Update NoticeController.php
+330f975 HEAD@{2026-03-03 06:01:59 +0600}: commit: Update NoticeController.php
+64c21da HEAD@{2026-03-03 05:52:31 +0600}: commit: g
+a273498 HEAD@{2026-03-03 05:49:39 +0600}: commit: notice stats
+a55e3fe HEAD@{2026-03-03 05:40:20 +0600}: commit: Update NoticeInteractionController.php
+4cf7ddd HEAD@{2026-03-03 05:37:34 +0600}: commit: voice
+8267d59 HEAD@{2026-03-03 05:22:28 +0600}: commit: voice reply
+0d9197c HEAD@{2026-03-03 03:02:29 +0600}: commit: voice record added
+37d3679 HEAD@{2026-03-03 02:50:00 +0600}: commit: upload
+d7af92e HEAD@{2026-03-03 02:26:51 +0600}: commit: notice system added with reply
+63bb320 HEAD@{2026-03-03 00:22:08 +0600}: commit: vue.js added, prottayon updated, class, section bangla name added
+92c177c HEAD@{2026-03-01 02:22:48 +0600}: commit: Update lesson_evaluation_mark_page.dart
+c2e2b02 HEAD@{2026-03-01 02:09:13 +0600}: commit: αª¿
+1c80f34 HEAD@{2026-03-01 01:59:07 +0600}: commit: αª¼αª╣
+dff6277 HEAD@{2026-03-01 01:43:45 +0600}: commit: αª¿
+b34cabe HEAD@{2026-03-01 01:28:59 +0600}: commit: Update PrincipalReportController.php
+4de5b4f HEAD@{2026-03-01 01:16:51 +0600}: commit: Update PrincipalReportController.php
+7ddf030 HEAD@{2026-03-01 01:14:08 +0600}: commit: Update PrincipalReportController.php
+094c7c3 HEAD@{2026-03-01 01:09:01 +0600}: commit: Update PrincipalReportController.php
+b063b7e HEAD@{2026-03-01 01:06:30 +0600}: commit: up
+a37ec41 HEAD@{2026-03-01 01:01:16 +0600}: commit: αªñ
+272f2e8 HEAD@{2026-03-01 00:50:49 +0600}: commit: αª¼
+afb20c4 HEAD@{2026-03-01 00:23:06 +0600}: commit: αª░
+d1bf2d1 HEAD@{2026-03-01 00:09:35 +0600}: commit: Update lesson_evaluation_report_page.dart
+cb33bbb HEAD@{2026-03-01 00:08:46 +0600}: commit: αª¼
+3296dca HEAD@{2026-02-28 23:52:43 +0600}: commit: f
+f10a076 HEAD@{2026-02-28 23:49:20 +0600}: pull --ff --recurse-submodules --progress origin: Merge made by the 'ort' strategy.
+dda8120 HEAD@{2026-02-28 23:49:17 +0600}: commit: l
+60f6621 HEAD@{2026-02-27 21:20:46 +0600}: commit: αªñ
+51cb348 HEAD@{2026-02-27 21:16:38 +0600}: commit: αª░
+5c260f5 HEAD@{2026-02-27 20:54:26 +0600}: commit: αªñ
+a235324 HEAD@{2026-02-27 20:42:28 +0600}: commit: b

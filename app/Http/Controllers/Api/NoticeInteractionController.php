@@ -1,1 +1,7 @@
-﻿<?php namespace App\Http\Controllers\Api; use App\Http\Controllers\Controller; class NoticeInteractionController extends Controller { }
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+
+class NoticeInteractionController extends Controller { }

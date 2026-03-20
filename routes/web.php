@@ -83,7 +83,8 @@ Route::prefix('admission/{schoolCode}')->group(function () {
             ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
             ->name('admission.fee.cancel');
         // Printable receipt for admission fee
-        Route::get('/admission-fee/receipt/{appId}/{payment}', [AdmissionFlowController::class , 'admissionFeeReceipt'])->name('admission.fee.receipt');    });
+        Route::get('/admission-fee/receipt/{appId}/{payment}', [AdmissionFlowController::class , 'admissionFeeReceipt'])->name('admission.fee.receipt');
+    });
 Route::post('/admission-fee/ipn', [AdmissionFlowController::class , 'admissionFeeIpn'])
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
     ->name('admission.fee.ipn');
@@ -444,7 +445,8 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::prefix('sms')->name('sms.')->middleware('module:sms')->group(function () {
                                     Route::get('/', [\App\Http\Controllers\Principal\SmsSettingsController::class , 'index'])->name('index');
                                     Route::match (['post', 'patch'], '/', function () {
-                                            abort(405, 'Method not allowed for this route. Use the appropriate form.'); }
+                                            abort(405, 'Method not allowed for this route. Use the appropriate form.');
+                                        }
                                         );
                                         Route::match (['post', 'patch'], '/api', [\App\Http\Controllers\Principal\SmsSettingsController::class , 'saveApi'])->name('api.save');
                                         Route::match (['post', 'patch'], '/class-attendance', [\App\Http\Controllers\Principal\SmsSettingsController::class , 'saveClassAttendance'])->name('class-attendance.save');
@@ -635,7 +637,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::get('/take', [App\Http\Controllers\Teacher\ExtraClassAttendanceController::class , 'take'])->name('take');
                             Route::post('/store', [App\Http\Controllers\Teacher\ExtraClassAttendanceController::class , 'store'])->name('store');
                         }
-                        );                        Condition:
+                        );
 
                         // Notices
                         Route::get('/notices', [TeacherController::class , 'notices'])->middleware('module:notices')->name('notices');
@@ -738,24 +740,41 @@ Route::middleware(['auth', 'active_school'])->group(function () {
         // Billing blades (simple views; access limited by nav visibility and auth)
         Route::middleware('module:accounts')->group(function () {
             Route::get('/billing/due', function () {
-                    return view('billing.due'); }
+                    return view('billing.due');
+                }
                 )->name('billing.due');
+                Route::get('/billing/detailed-due-report', function () {
+                    return view('billing.detailed-due-report');
+                }
+                )->name('billing.detailed_due_report');
                 Route::get('/billing/statement', function () {
-                    return view('billing.statement'); }
+                    return view('billing.statement');
+                }
                 )->name('billing.statement');
                 Route::get('/billing/collect', function () {
-                    return view('billing.collect'); }
+                    return view('billing.collect');
+                }
                 )->name('billing.collect');
                 Route::get('/billing/config', function () {
-                    return view('billing.config'); }
+                    return view('billing.config');
+                }
                 )->name('billing.config');
-                Route::get('/billing/reports', function () { return view('billing.reports'); })->name('billing.reports');
-                Route::get('/billing/collection-reports', function () { return view('billing.collection_reports'); })->name('billing.collection_reports');
-                Route::get('/billing/waivers', function () { return view('billing.waivers'); })->name('billing.waivers');
-                Route::get('/billing/receipts/{id}', [\App\Http\Controllers\Billing\ReceiptController::class, 'showWeb'])->name('billing.receipts.show');
+                Route::get('/billing/reports', function () {
+                    return view('billing.reports');
+                }
+                )->name('billing.reports');
+                Route::get('/billing/collection-reports', function () {
+                    return view('billing.collection_reports');
+                }
+                )->name('billing.collection_reports');
+                Route::get('/billing/waivers', function () {
+                    return view('billing.waivers');
+                }
+                )->name('billing.waivers');
+                Route::get('/billing/receipts/{id}', [\App\Http\Controllers\Billing\ReceiptController::class , 'showWeb'])->name('billing.receipts.show');
 
-                // SSLCommerz Callbacks moved to top level
-
+            // SSLCommerz Callbacks moved to top level
+        
             }
             );
 
@@ -776,7 +795,8 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             Route::get('/billing/settings/fines', [\App\Http\Controllers\Billing\SettingsController::class , 'fineIndex'])->name('billing.settings.fines');
             Route::post('/billing/settings/fines', [\App\Http\Controllers\Billing\SettingsController::class , 'fineStore'])->name('billing.settings.fines.store');
         }
-        );    });
+        );
+    });
 
 // Public document verification endpoint (QR target)
 Route::get('/verify/document/{code}', [\App\Http\Controllers\Documents\VerificationController::class , 'show'])->name('documents.verify');

@@ -23,6 +23,8 @@ class FeeConfigurationController extends Controller
                    $user->primarySchool()?->id ??
                    $user->activeSchoolRoles()->first()?->school_id;
 
+        $school = \App\Models\School::find($schoolId);
+
         $categories = FeeCategory::where('school_id', $schoolId)
             ->with(['feeStructures' => function($q) use ($schoolId) {
                 $q->where('school_id', $schoolId);
@@ -41,7 +43,37 @@ class FeeConfigurationController extends Controller
             'categories' => $categories,
             'classes' => $classes,
             'academic_years' => $academicYears,
-            'frequencies' => ['monthly', 'one_time', 'termly', 'annual']
+            'frequencies' => ['monthly', 'one_time', 'termly', 'annual'],
+            'school_fine_enabled' => $school ? (bool) $school->fine_enabled : true,
+        ]);
+    }
+
+    /**
+     * Toggle global fine system on/off for the school
+     */
+    public function toggleGlobalFine(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id') ??
+                   $user->primarySchool()?->id ??
+                   $user->activeSchoolRoles()->first()?->school_id;
+
+        $school = \App\Models\School::findOrFail($schoolId);
+
+        $newStatus = $request->input('fine_enabled');
+        if (!is_bool($newStatus)) {
+            $newStatus = filter_var($newStatus, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        }
+        if (is_null($newStatus)) {
+            return response()->json(['message' => 'fine_enabled মান প্রয়োজন'], 422);
+        }
+
+        $school->fine_enabled = $newStatus;
+        $school->save();
+
+        return response()->json([
+            'message' => 'জরিমানা সিস্টেম ' . ($newStatus ? 'চালু' : 'বন্ধ') . ' করা হয়েছে',
+            'fine_enabled' => $school->fine_enabled,
         ]);
     }
 
@@ -56,9 +88,13 @@ class FeeConfigurationController extends Controller
                    $user->activeSchoolRoles()->first()?->school_id;
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'frequency' => 'required|in:monthly,one_time,termly,annual',
-            'is_common' => 'boolean'
+            'name'         => 'required|string|max:255',
+            'frequency'    => 'required|in:monthly,one_time,termly,annual',
+            'is_common'    => 'boolean',
+            'has_fine'     => 'boolean',
+            'fine_type'    => 'nullable|in:fixed,percentage',
+            'fine_amount'  => 'nullable|numeric|min:0',
+            'late_fee_day' => 'nullable|integer|min:1|max:31',
         ]);
 
         // Check uniqueness within the school
@@ -116,10 +152,14 @@ class FeeConfigurationController extends Controller
         $category = FeeCategory::where('school_id', $schoolId)->findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'frequency' => 'required|in:monthly,one_time,termly,annual',
-            'is_common' => 'boolean',
-            'active' => 'boolean'
+            'name'         => 'required|string|max:255',
+            'frequency'    => 'required|in:monthly,one_time,termly,annual',
+            'is_common'    => 'boolean',
+            'active'       => 'boolean',
+            'has_fine'     => 'boolean',
+            'fine_type'    => 'nullable|in:fixed,percentage',
+            'fine_amount'  => 'nullable|numeric|min:0',
+            'late_fee_day' => 'nullable|integer|min:1|max:31',
         ]);
 
         // Check uniqueness within the school (exclude current)
@@ -263,7 +303,11 @@ class FeeConfigurationController extends Controller
                     'original_amount' => $struct->amount,
                     'paid_amount' => 0,
                     'status' => $finalAmount <= 0 ? 'paid' : 'unpaid',
-                    'due_date' => $struct->due_date ?: now()->addDays(15),
+                    'due_date' => $struct->due_date ?: (
+                        ($struct->category->frequency === 'monthly' && $month && $struct->category->late_fee_day)
+                            ? \Carbon\Carbon::parse($month . '-' . $struct->category->late_fee_day)
+                            : now()->addDays(15)
+                    ),
                     'waiver_id' => $waiverId ?? null,
                 ]);
                 $generatedCount++;
