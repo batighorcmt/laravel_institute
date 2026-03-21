@@ -237,7 +237,7 @@
                 <!-- Tab: Due Summary -->
                 <div v-if="activeTab === 'due'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <div v-for="item in dueData" :key="item.category_name" class="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 hover:shadow-2xl hover:shadow-red-100/50 transition-all duration-500 group border-t-[8px]" :style="{ borderTopColor: '#ef4444' }">
-                        <div class="flex justify-between items-start mb-8">
+                        <div class="flex justify-between items-start mb-6">
                             <div>
                                 <h3 class="text-slate-900 font-black text-2xl tracking-tight">{{ item.category_name }}</h3>
                                 <p class="text-slate-400 text-xs font-bold mt-1 uppercase tracking-widest">মোট {{ item.record_count }} টি এন্ট্রি</p>
@@ -247,26 +247,50 @@
                             </div>
                         </div>
 
-                        <div class="space-y-6">
-                            <div class="flex justify-between items-center group/item">
+                        <!-- Progress Bar (Main) -->
+                        <div class="mb-8">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-slate-450 text-[10px] font-black uppercase tracking-widest">সংগ্রহের হাড়</span>
+                                <span class="text-slate-950 font-black text-sm">{{ Math.round(item.total_paid / item.total_amount * 100) }}%</span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-50 rounded-full overflow-hidden">
+                                <div class="h-full bg-green-500 rounded-full transition-all duration-700" :style="{ width: (item.total_paid / item.total_amount * 100) + '%' }"></div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center group/item hover:bg-slate-50 p-2 rounded-xl transition-all">
                                 <span class="text-slate-400 text-[10px] font-black uppercase tracking-widest">ধার্যকৃত</span>
-                                <span class="text-slate-900 font-black text-lg tracking-tight">৳{{ formatNumber(item.total_amount) }}</span>
+                                <span class="text-slate-900 font-black">৳{{ formatNumber(item.total_amount) }}</span>
                             </div>
-                            <div class="flex justify-between items-center group/item">
+                            <div class="flex justify-between items-center group/item hover:bg-slate-50 p-2 rounded-xl transition-all">
                                 <span class="text-slate-400 text-[10px] font-black uppercase tracking-widest">সংগৃহীত</span>
-                                <span class="text-green-500 font-black text-lg tracking-tight">৳{{ formatNumber(item.total_paid) }}</span>
+                                <span class="text-green-500 font-black">৳{{ formatNumber(item.total_paid) }}</span>
                             </div>
-                            <div class="pt-6 border-t border-slate-50 flex flex-col gap-2">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-slate-950 font-black uppercase text-xs tracking-widest">বকেয়া পরিমাণ</span>
-                                    <span class="text-red-500 text-3xl font-black tracking-tighter shadow-red-100 drop-shadow-sm">৳{{ formatNumber(item.total_due) }}</span>
-                                </div>
-                                <!-- Progress Bar -->
-                                <div class="w-full h-2 bg-slate-50 rounded-full mt-2 overflow-hidden">
-                                    <div class="h-full bg-green-500 rounded-full" :style="{ width: (item.total_paid / item.total_amount * 100) + '%' }"></div>
-                                </div>
-                                <div class="text-[10px] text-slate-400 font-bold text-right">{{ Math.round(item.total_paid / item.total_amount * 100) }}% সংগৃহীত</div>
+                            <div class="flex justify-between items-center pt-2 border-t border-slate-50 p-2">
+                                <span class="text-slate-950 font-black uppercase text-xs tracking-widest">বকেয়া</span>
+                                <span class="text-red-500 text-2xl font-black tracking-tighter">৳{{ formatNumber(item.total_due) }}</span>
                             </div>
+                        </div>
+
+                        <!-- Monthly Breakdown Toggle -->
+                        <div v-if="item.frequency === 'monthly' && item.monthly_stats?.length" class="mt-6 pt-6 border-t border-slate-100">
+                             <button @click="item.showDetails = !item.showDetails" class="w-full flex items-center justify-between text-indigo-600 hover:text-indigo-800 transition-colors">
+                                <span class="text-xs font-black uppercase tracking-widest">মাসের তথ্য</span>
+                                <svg class="w-4 h-4 transition-transform duration-300" :class="{'rotate-180': item.showDetails}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                             </button>
+                             
+                             <div v-if="item.showDetails" class="mt-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                 <div v-for="m in item.monthly_stats" :key="m.month" class="bg-slate-50 rounded-2xl p-4 flex flex-col gap-2">
+                                     <div class="flex justify-between items-center">
+                                         <span class="text-slate-900 font-black text-xs">{{ translateMonthBn(m.month) }}</span>
+                                         <span class="text-red-500 font-black text-xs">বকেয়া ৳{{ formatNumber(m.total_due) }}</span>
+                                     </div>
+                                     <div class="w-full h-1 bg-white rounded-full overflow-hidden">
+                                         <div class="h-full bg-green-400" :style="{ width: (m.total_paid / m.total_amount * 100) + '%' }"></div>
+                                     </div>
+                                 </div>
+                             </div>
                         </div>
                     </div>
                     <div v-if="dueData.length === 0" class="col-span-full py-32 text-center text-slate-300 italic font-medium">কোন বকেয়া পাওয়া যায়নি</div>
@@ -375,7 +399,10 @@ export default {
                     } else if (this.activeTab === 'teacher') {
                         this.teacherData = res.data;
                     } else if (this.activeTab === 'due') {
-                        this.dueData = res.data;
+                        this.dueData = res.data.map(item => ({
+                            ...item,
+                            showDetails: false
+                        }));
                     } else if (this.activeTab === 'student_due') {
                         this.studentDueList = res.data;
                     }
@@ -504,6 +531,19 @@ export default {
             if (!dateStr) return '';
             const options = { day: 'numeric', month: 'short' };
             return new Date(dateStr).toLocaleDateString('bn-BD', options);
+        },
+        translateMonthBn(monthStr) {
+            if (!monthStr) return 'এককালীন';
+            const months = {
+                '01': 'জানুয়ারি', '02': 'ফেব্রুয়ারি', '03': 'মার্চ', '04': 'এপ্রিল',
+                '05': 'মে', '06': 'জুন', '07': 'জুলাই', '08': 'আগস্ট',
+                '09': 'সেপ্টেম্বর', '10': 'অক্টোবর', '11': 'নভেম্বর', '12': 'ডিসেম্বর'
+            };
+            const parts = monthStr.split('-');
+            if (parts.length < 2) return monthStr;
+            const year = parts[0];
+            const month = parts[1];
+            return months[month] ? `${months[month]}-${year}` : monthStr;
         }
     }
 }

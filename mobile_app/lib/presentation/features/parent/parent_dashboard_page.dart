@@ -17,6 +17,8 @@ class ParentDashboardPage extends ConsumerWidget {
       onRefresh: () async {
         ref.invalidate(parentChildrenProvider);
         ref.invalidate(parentHomeworkProvider);
+        ref.invalidate(parentFeesProvider);
+        ref.invalidate(parentStudentProfileProvider);
       },
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -184,6 +186,12 @@ class ParentDashboardPage extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               children: [
                 _QuickAccessChip(
+                  label: 'ফিস হিসাব',
+                  icon: Icons.wallet,
+                  color: Colors.pink,
+                  onTap: () => context.push('/parent/fees'),
+                ),
+                _QuickAccessChip(
                   label: 'ক্লাস রুটিন',
                   icon: Icons.schedule,
                   color: Colors.orange,
@@ -223,6 +231,100 @@ class ParentDashboardPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 10),
+
+          // Fee Payment Alert Card
+          Consumer(
+            builder: (context, ref, _) {
+              final feesAsync = ref.watch(parentFeesProvider);
+              return feesAsync.when(
+                data: (data) {
+                  final dueFees = data['due_fees'] as List?;
+                  if (dueFees == null || dueFees.isEmpty)
+                    return const SizedBox.shrink();
+
+                  double totalDue = 0;
+                  for (var f in dueFees) {
+                    totalDue += (f['total_due'] as num).toDouble();
+                  }
+
+                  if (totalDue <= 0) return const SizedBox.shrink();
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 20, top: 5),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.red[400]!, Colors.red[700]!],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.priority_high,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'বকেয়া ফিস alert!',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Text(
+                                'আপনার মোট বকেয়া: ৳${totalDue.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.red[700],
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () => context.push('/parent/fees'),
+                          child: const Text(
+                            'পেমেন্ট করুন',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (err, _) => const SizedBox.shrink(),
+              );
+            },
+          ),
 
           // Attendance Status Section
           const _SectionTitle(title: 'আজকের হাজিরার অবস্থা'),

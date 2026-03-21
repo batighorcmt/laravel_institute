@@ -29,6 +29,7 @@ import '../features/parent/pages/notice_board_page.dart';
 import '../features/parent/pages/teacher_list_page.dart';
 import '../features/parent/pages/feedback_page.dart';
 import '../features/parent/pages/my_child_details_page.dart';
+import '../features/parent/pages/fees_page.dart';
 import '../features/principal/notification_logs_page.dart';
 import '../features/principal/notice_create_page.dart';
 import '../features/principal/notice_stats_page.dart';
@@ -246,6 +247,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/parent/feedback',
             name: 'parent-feedback',
             builder: (context, state) => const FeedbackPage(),
+          ),
+          GoRoute(
+            path: '/parent/fees',
+            name: 'parent-fees',
+            builder: (context, state) => const FeesPage(),
           ),
         ],
       ),

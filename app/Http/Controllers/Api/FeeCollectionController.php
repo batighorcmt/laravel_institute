@@ -68,12 +68,18 @@ class FeeCollectionController extends Controller
             ->get()
             ->map(function ($fee) {
                 $fine = (float)$fee->calculateFine();
+                $dueAmount = (float)$fee->amount - (float)$fee->paid_amount;
+                
+                if ($dueAmount <= 0.01 && $fine <= 0.01) {
+                    return null;
+                }
+
                 $fee->calculated_fine = $fine;
                 $fee->fine_reason = $fine > 0 ? "Late Fee Applied" : null;
                 $fee->formatted_category_name = $fee->getFormattedName();
                 $fee->effective_due_date = $fee->getEffectiveDueDate();
                 return $fee;
-            });
+            })->filter()->values();
 
         $allFees = StudentFee::where('student_id', $student->id)
             ->get(['id', 'school_id', 'status', 'amount', 'paid_amount', 'fee_structure_id']);
@@ -158,24 +164,26 @@ class FeeCollectionController extends Controller
 
             foreach ($validated['fees'] as $feeData) {
                 $studentFee = StudentFee::lockForUpdate()->findOrFail($feeData['student_fee_id']);
+                
+                // Track fine payment separately from base fee payment
+                $finePayment = (float)($feeData['fine_amount'] ?? 0);
+                $basePayment = (float)$feeData['amount'] - $finePayment;
 
                 PaymentItem::create([
                     'school_id'      => $schoolId,
                     'payment_id'     => $payment->id,
                     'student_fee_id' => $studentFee->id,
-                    'amount'         => $feeData['amount'],
+                    'amount'         => $feeData['amount'], // Itemized total (base + fine)
                 ]);
 
-                $studentFee->paid_amount += $feeData['amount'];
-                if (isset($feeData['fine_amount']) && $feeData['fine_amount'] > 0) {
-                    $studentFee->fine_amount += $feeData['fine_amount'];
-                }
+                $studentFee->paid_amount += $basePayment;
+                $studentFee->fine_amount += $finePayment;
                 
-                // Status check considering base amount and any remaining fine
-                $remainingBasic = max(0, $studentFee->amount - $studentFee->paid_amount);
-                $remainingFine = $studentFee->calculateFine();
+                // Status check: fully paid if base and fine are zero
+                $remainingBasic = max(0, (float)$studentFee->amount - (float)$studentFee->paid_amount);
+                $remainingFine = (float)$studentFee->calculateFine();
                 
-                $studentFee->status = ($remainingBasic + $remainingFine <= 0) ? 'paid' : 'partial';
+                $studentFee->status = ($remainingBasic + $remainingFine <= 0.01) ? 'paid' : 'partial';
                 $studentFee->save();
             }
 
@@ -241,6 +249,7 @@ class FeeCollectionController extends Controller
             'fees'                  => 'required|array|min:1',
             'fees.*.student_fee_id' => 'required|exists:student_fees,id',
             'fees.*.amount'         => 'required|numeric|min:0.01',
+            'fees.*.fine_amount'    => 'nullable|numeric|min:0',
             'remarks'               => 'nullable|string',
         ]);
 
@@ -253,8 +262,9 @@ class FeeCollectionController extends Controller
                 'message' => 'পেমেন্ট গেটওয়ে সক্রিয় নেই। প্রিন্সিপাল প্যানেল থেকে SSLCommerz সেটিংস চালু করুন।'
             ], 422);
         }
-
-        $totalAmount = collect($validated['fees'])->sum('amount');
+        $totalAmount = collect($validated['fees'])->sum(function($f) {
+            return (float)$f['amount'] + (float)($f['fine_amount'] ?? 0);
+        });
         $tranId      = 'BILL' . strtoupper(Str::random(12));
 
         $payment = DB::transaction(function () use ($validated, $student, $totalAmount, $schoolId, $tranId, $request) {

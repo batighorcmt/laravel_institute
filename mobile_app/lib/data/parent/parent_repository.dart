@@ -116,6 +116,30 @@ class ParentRepository {
     });
   }
 
+  Future<Map<String, dynamic>> getFees({int? studentId}) async {
+    final params = <String, dynamic>{};
+    if (studentId != null) params['student_id'] = studentId;
+    final resp = await _dio.get('parent/fees', queryParameters: params);
+    return resp.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> initiateSslPayment({
+    required int studentId,
+    required List<Map<String, dynamic>> fees,
+    int? academicYearId,
+    String? remarks,
+  }) async {
+    final data = {
+      'student_id': studentId,
+      'fees': fees,
+      'academic_year_id': academicYearId,
+      'remarks': remarks,
+      'payment_method': 'sslcommerz',
+    };
+    final resp = await _dio.post('billing/fees/initiate-ssl', data: data);
+    return resp.data as Map<String, dynamic>;
+  }
+
   List<dynamic> _parseList(dynamic data) {
     if (data is List) return data;
     if (data is Map<String, dynamic> && data['data'] is List) {

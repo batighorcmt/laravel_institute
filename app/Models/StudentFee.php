@@ -139,6 +139,6 @@ class StudentFee extends Model
      */
     public function calculateFine()
     {
-        return max(0, $this->calculateOriginalFine() - ($this->fine_waiver ?? 0));
+        return max(0, $this->calculateOriginalFine() - ($this->fine_waiver ?? 0) - ($this->fine_amount ?? 0));
     }
 }

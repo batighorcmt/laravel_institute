@@ -24,6 +24,11 @@ const _navItems = [
     path: '/parent/profile',
   ),
   _NavItem(
+    label: 'ফিস হিসাব',
+    icon: Icons.wallet_outlined,
+    path: '/parent/fees',
+  ),
+  _NavItem(
     label: 'আমার সন্তান',
     icon: Icons.child_care_outlined,
     path: '/parent/my-child',
@@ -185,6 +190,7 @@ class ParentShellPage extends ConsumerWidget {
                 ref.invalidate(parentFeedbackProvider);
                 ref.invalidate(parentEvaluationStatsProvider);
                 ref.invalidate(parentStudentProfileProvider);
+                ref.invalidate(parentFeesProvider);
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('উপাত্ত রিফ্রেশ করা হচ্ছে...')),

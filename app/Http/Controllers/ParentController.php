@@ -67,7 +67,23 @@ class ParentController extends Controller
             ->limit(5)
             ->get();
 
-        return view('parent.dashboard', compact('children', 'selectedStudent', 'attendanceStats', 'latestResults', 'notices', 'currentYear'));
+        // Calculate total due amount for the dashboard summary
+        $totalDueAmount = 0;
+        if ($selectedStudent) {
+            $unpaidFees = $selectedStudent->fees()
+                ->where('school_id', $selectedStudent->school_id)
+                ->whereIn('status', ['unpaid', 'partial'])
+                ->get();
+            
+            foreach ($unpaidFees as $fee) {
+                $totalDueAmount += max(0, (float)$fee->amount - (float)$fee->paid_amount) + (float)$fee->calculateFine();
+            }
+        }
+
+        return view('parent.dashboard', compact(
+            'children', 'selectedStudent', 'attendanceStats', 
+            'latestResults', 'notices', 'currentYear', 'totalDueAmount'
+        ));
     }
 
     public function profile(Request $request)
