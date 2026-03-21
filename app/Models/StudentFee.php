@@ -103,6 +103,11 @@ class StudentFee extends Model
      */
     public function calculateOriginalFine()
     {
+        // For fully paid records, return what was actually recorded (paid fine + waived fine)
+        if ($this->status === 'paid') {
+            return ($this->fine_amount ?? 0) + ($this->fine_waiver ?? 0);
+        }
+
         $school = School::find($this->school_id);
         if (!$school || !$school->fine_enabled) return 0;
 
@@ -112,8 +117,9 @@ class StudentFee extends Model
 
         if (!$category || !$category->has_fine) return 0;
 
-        $baseDue = max(0, $this->amount - $this->paid_amount);
-        if ($baseDue <= 0) return 0;
+        // Use the base amount for current potential fine calculation
+        $baseAmount = $this->amount; 
+        if ($baseAmount <= 0) return 0;
 
         $dueDate = \Carbon\Carbon::parse($this->getEffectiveDueDate());
 
@@ -123,7 +129,7 @@ class StudentFee extends Model
         if ($category->fine_type === 'fixed') {
             $fine = floatval($category->fine_amount);
         } else {
-            $fine = ($baseDue * floatval($category->fine_amount)) / 100;
+            $fine = ($baseAmount * floatval($category->fine_amount)) / 100;
         }
         return $fine;
     }

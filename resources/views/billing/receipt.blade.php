@@ -221,13 +221,13 @@
                                 @endif
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap text-sm text-black text-right">
-                                {{ toBN(number_format($item->studentFee->amount ?? $item->amount, 0)) }}
+                                {{ toBN(number_format(($item->studentFee->original_amount ?: $item->studentFee->amount), 0)) }}
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap text-sm text-black text-right">
-                                {{ toBN(number_format($item->studentFee->fine_amount ?? 0, 0)) }}
+                                {{ toBN(number_format($item->studentFee->calculateOriginalFine(), 0)) }}
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap text-sm text-black text-right text-red-600">
-                                -{{ toBN(number_format($item->studentFee->fine_waiver ?? 0, 0)) }}
+                                -{{ toBN(number_format(( (($item->studentFee->original_amount ?: $item->studentFee->amount) - $item->studentFee->amount) + ($item->studentFee->fine_waiver ?? 0) ), 0)) }}
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap text-sm text-black text-right font-bold">
                                 ৳ {{ toBN(number_format($item->amount, 0)) }}

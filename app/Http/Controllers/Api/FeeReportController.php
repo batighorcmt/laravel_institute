@@ -529,9 +529,8 @@ class FeeReportController extends Controller
                $request->user()?->primarySchool()?->id ??
                $request->user()?->activeSchoolRoles()?->first()?->school_id;
 
-        // Compute totals using student_fees for total assigned amounts and payment_items/payments
-        // for actual collected amounts so the summary reflects real collections.
-        $report = StudentFee::from('student_fees')
+        // Group by category AND month for detailed statistics
+        $rawRecords = StudentFee::from('student_fees')
             ->where('student_fees.school_id', $schoolId)
             ->join('fee_structures', 'student_fees.fee_structure_id', '=', 'fee_structures.id')
             ->join('fee_categories', 'fee_structures.fee_category_id', '=', 'fee_categories.id')
@@ -543,16 +542,42 @@ class FeeReportController extends Controller
             })
             ->select(
                 'fee_categories.name as category_name',
+                'fee_categories.frequency',
+                'student_fees.month',
                 DB::raw('SUM(student_fees.amount) as total_amount'),
                 DB::raw('COALESCE(SUM(payment_items.amount), 0) as total_paid'),
-                DB::raw('SUM(student_fees.amount) - COALESCE(SUM(payment_items.amount), 0) as total_due'),
                 DB::raw('COUNT(DISTINCT student_fees.id) as record_count')
             )
-            // include all student_fees so collected (payment_items) is counted even when
-            // a fee is fully paid (status = 'paid') — otherwise collected appears as 0
-            // for categories where fees were already settled.
-            ->groupBy('fee_categories.name')
+            ->groupBy('fee_categories.name', 'fee_categories.frequency', 'student_fees.month')
             ->get();
+
+        // Group the results by category
+        $report = $rawRecords->groupBy('category_name')->map(function ($items, $categoryName) {
+            $first = $items->first();
+            $summary = [
+                'category_name' => $categoryName,
+                'frequency' => $first->frequency,
+                'total_amount' => $items->sum('total_amount'),
+                'total_paid' => $items->sum('total_paid'),
+                'total_due' => $items->sum('total_amount') - $items->sum('total_paid'),
+                'record_count' => $items->sum('record_count'),
+                'monthly_stats' => []
+            ];
+
+            if ($first->frequency === 'monthly') {
+                $summary['monthly_stats'] = $items->map(function($m) {
+                    return [
+                        'month' => $m->month,
+                        'total_amount' => (float)$m->total_amount,
+                        'total_paid' => (float)$m->total_paid,
+                        'total_due' => (float)$m->total_amount - (float)$m->total_paid,
+                        'record_count' => $m->record_count
+                    ];
+                })->sortByDesc('month')->values();
+            }
+
+            return $summary;
+        })->values();
 
         return response()->json($report);
     }
@@ -718,10 +743,10 @@ class FeeReportController extends Controller
                     'section_name' => $enrollment->section->name ?? null,
                     'category_name' => $f->getFormattedName(),
                     'month' => $f->month,
-                    'amount' => $f->amount,
-                    'paid_amount' => $f->paid_amount,
-                    'fine_amount' => $f->calculateOriginalFine(), // Original fine
-                    'fine_waiver' => $f->fine_waiver ?? 0,
+                    'amount' => $f->original_amount ?: $f->amount, // Show full amount before waiver
+                    'paid_amount' => $f->paid_amount + $f->fine_amount, // Total of base paid + fine paid
+                    'fine_amount' => $f->calculateOriginalFine(), // Original potential fine charge
+                    'fine_waiver' => ( ($f->original_amount ?: $f->amount) - $f->amount) + ($f->fine_waiver ?? 0), // Total of fee waiver + fine waiver
                     'status' => $f->status,
                     'due_date' => $f->getEffectiveDueDate(),
                 ];
