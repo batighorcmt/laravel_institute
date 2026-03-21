@@ -99,9 +99,9 @@ class StudentFee extends Model
     }
 
     /**
-     * Calculate and return the fine for this fee record dynamically.
+     * Calculate and return the original fine before waiver.
      */
-    public function calculateFine()
+    public function calculateOriginalFine()
     {
         $school = School::find($this->school_id);
         if (!$school || !$school->fine_enabled) return 0;
@@ -125,7 +125,14 @@ class StudentFee extends Model
         } else {
             $fine = ($baseDue * floatval($category->fine_amount)) / 100;
         }
+        return $fine;
+    }
 
-        return max(0, $fine - ($this->fine_waiver ?? 0));
+    /**
+     * Calculate and return the net fine after waiver.
+     */
+    public function calculateFine()
+    {
+        return max(0, $this->calculateOriginalFine() - ($this->fine_waiver ?? 0));
     }
 }

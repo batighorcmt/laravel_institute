@@ -720,7 +720,7 @@ class FeeReportController extends Controller
                     'month' => $f->month,
                     'amount' => $f->amount,
                     'paid_amount' => $f->paid_amount,
-                    'fine_amount' => $f->calculateFine(), // Calculated on the fly
+                    'fine_amount' => $f->calculateOriginalFine(), // Original fine
                     'fine_waiver' => $f->fine_waiver ?? 0,
                     'status' => $f->status,
                     'due_date' => $f->getEffectiveDueDate(),
