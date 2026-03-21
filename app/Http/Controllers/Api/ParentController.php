@@ -500,8 +500,8 @@ class ParentController extends Controller
                 $fine = (float)$fee->calculateFine();
                 return [
                     'id' => $fee->id,
-                    'category_name' => $fee->feeStructure->category->name ?? 'N/A',
-                    'due_date' => $fee->due_date, // Handle as string if not cast
+                    'category_name' => $fee->getFormattedName(),
+                    'due_date' => $fee->getEffectiveDueDate(),
                     'amount' => (float)$fee->amount,
                     'paid_amount' => (float)$fee->paid_amount,
                     'fine' => $fine,

@@ -70,6 +70,8 @@ class FeeCollectionController extends Controller
                 $fine = (float)$fee->calculateFine();
                 $fee->calculated_fine = $fine;
                 $fee->fine_reason = $fine > 0 ? "Late Fee Applied" : null;
+                $fee->formatted_category_name = $fee->getFormattedName();
+                $fee->effective_due_date = $fee->getEffectiveDueDate();
                 return $fee;
             });
 

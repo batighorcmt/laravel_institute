@@ -716,13 +716,14 @@ class FeeReportController extends Controller
                     'class_numeric' => $enrollment->class->numeric_value ?? 0,
                     'section_bangla_name' => $enrollment->section->bangla_name ?? null,
                     'section_name' => $enrollment->section->name ?? null,
-                    'category_name' => $f->feeStructure->category->name ?? null,
+                    'category_name' => $f->getFormattedName(),
                     'month' => $f->month,
                     'amount' => $f->amount,
                     'paid_amount' => $f->paid_amount,
                     'fine_amount' => $f->calculateFine(), // Calculated on the fly
                     'fine_waiver' => $f->fine_waiver ?? 0,
                     'status' => $f->status,
+                    'due_date' => $f->getEffectiveDueDate(),
                 ];
             })
             ->sort(function($a, $b) {

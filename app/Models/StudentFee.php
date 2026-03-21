@@ -50,6 +50,55 @@ class StudentFee extends Model
     }
 
     /**
+     * Get the effective due date based on category configuration for monthly fees.
+     */
+    public function getEffectiveDueDate()
+    {
+        $category = FeeCategory::whereHas('feeStructures', function ($q) {
+            $q->where('id', $this->fee_structure_id);
+        })->first();
+
+        if ($category && $category->late_fee_day && $this->month) {
+            try {
+                return \Carbon\Carbon::parse($this->month . '-' . $category->late_fee_day)->toDateString();
+            } catch (\Exception $e) {
+                return $this->due_date;
+            }
+        }
+        return $this->due_date;
+    }
+
+    /**
+     * Get the formatted fee name including the month if applicable.
+     */
+    public function getFormattedName()
+    {
+        $category = FeeCategory::whereHas('feeStructures', function ($q) {
+            $q->where('id', $this->fee_structure_id);
+        })->first();
+        
+        $name = $category->name ?? 'N/A';
+        
+        if ($this->month) {
+            try {
+                $date = \Carbon\Carbon::parse($this->month . '-01');
+                $months = [
+                    1 => 'জানুয়ারি', 2 => 'ফেব্রুয়ারি', 3 => 'মার্চ', 4 => 'এপ্রিল',
+                    5 => 'মে', 6 => 'জুন', 7 => 'জুলাই', 8 => 'আগস্ট',
+                    9 => 'সেপ্টেম্বর', 10 => 'অক্টোবর', 11 => 'নভেম্বর', 12 => 'ডিসেম্বর'
+                ];
+                $bnMonth = $months[$date->month] ?? '';
+                $bnYear = str_replace(range(0, 9), ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'], $date->year);
+                $name .= " ($bnMonth, $bnYear)";
+            } catch (\Exception $e) {
+                // fall back to default name
+            }
+        }
+        
+        return $name;
+    }
+
+    /**
      * Calculate and return the fine for this fee record dynamically.
      */
     public function calculateFine()
@@ -66,24 +115,7 @@ class StudentFee extends Model
         $baseDue = max(0, $this->amount - $this->paid_amount);
         if ($baseDue <= 0) return 0;
 
-        $dueDate = \Carbon\Carbon::parse($this->due_date);
-        
-        // Handle logical deadline based on late_fee_day setting if it exists
-        if ($category->late_fee_day) {
-            try {
-                // Use the 'month' field for monthly fees, or the creation month for others
-                $refMonth = $this->month ?: \Carbon\Carbon::parse($this->created_at)->format('Y-m');
-                $logicalDeadline = \Carbon\Carbon::parse($refMonth . '-' . $category->late_fee_day);
-                
-                // If today is past the logical deadline (e.g., the 10th of the month), 
-                // use that as the threshold for fine calculation.
-                if ($logicalDeadline->isPast()) {
-                    $dueDate = $logicalDeadline;
-                }
-            } catch (\Exception $e) {
-                // Fallback to record due_date if month parsing fails
-            }
-        }
+        $dueDate = \Carbon\Carbon::parse($this->getEffectiveDueDate());
 
         if ($dueDate->isFuture()) return 0;
 
