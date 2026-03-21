@@ -37,17 +37,24 @@ class ReceiptController extends Controller
      */
     public function downloadPdf($id)
     {
-        $payment = Payment::with([
-            'student.currentEnrollment.class', 
-            'student.currentEnrollment.section',
-            'paymentItems.studentFee.feeStructure.category',
-            'school'
-        ])->findOrFail($id);
+        try {
+            $payment = Payment::with([
+                'student.currentEnrollment.class', 
+                'student.currentEnrollment.section',
+                'paymentItems.studentFee.feeStructure.category',
+                'school'
+            ])->findOrFail($id);
 
-        @ini_set('memory_limit', '512M');
-        @ini_set('max_execution_time', '120');
+            @ini_set('memory_limit', '512M');
+            @ini_set('max_execution_time', '120');
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing.receipt_pdf', compact('payment'));
-        return $pdf->download("Receipt-{$payment->payment_number}.pdf");
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing.receipt_pdf', compact('payment'));
+            return $pdf->download("Receipt-{$payment->payment_number}.pdf");
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'পিডিএফ তৈরি করতে সমস্যা হয়েছে',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
 }
