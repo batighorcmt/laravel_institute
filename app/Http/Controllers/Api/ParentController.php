@@ -529,7 +529,8 @@ class ParentController extends Controller
                     'fine_applied' => (float)$payment->fine_applied,
                     'payment_method' => $payment->payment_method,
                     'received_at' => $payment->received_at ? $payment->received_at->toDateTimeString() : null,
-                    'receipt_url' => url("api/v1/billing/fees/receipt/{$payment->id}/download"), // API PDF Link
+                    'receipt_id'  => $payment->id,
+                    'receipt_url' => 'billing/fees/receipt/' . $payment->id . '/download',
                 ];
             });
 

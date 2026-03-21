@@ -195,13 +195,15 @@
                                         <p v-if="payment.fine_applied > 0" class="text-[10px] text-red-500 mt-0.5">জরিমানা সহ</p>
                                     </td>
                                     <td class="px-6 py-4 text-right">
-                                        <a 
-                                            :href="payment.receipt_url" 
-                                            target="_blank"
-                                            class="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg transition-all text-xs font-bold"
+                                        <button 
+                                            @click="downloadReceipt(payment)"
+                                            :disabled="downloadingId === payment.id"
+                                            class="inline-flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-600 hover:text-white rounded-lg transition-all text-xs font-bold disabled:opacity-50 disabled:cursor-wait"
                                         >
-                                            <i class="fas fa-print"></i> রিসিট
-                                        </a>
+                                            <span v-if="downloadingId === payment.id" class="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></span>
+                                            <i v-else class="fas fa-file-pdf"></i>
+                                            {{ downloadingId === payment.id ? 'ডাউনলোড হচ্ছে...' : 'পিডিএফ' }}
+                                        </button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -233,6 +235,7 @@ export default {
             activeTab: 'due',
             loading: false,
             processing: false,
+            downloadingId: null,
             dueFees: [],
             paidFees: [],
             studentData: null,
@@ -311,6 +314,27 @@ export default {
                 day: 'numeric', month: 'short', year: 'numeric',
                 hour: '2-digit', minute: '2-digit'
             });
+        },
+        downloadReceipt(payment) {
+            if (this.downloadingId) return;
+            this.downloadingId = payment.id;
+            axios.get('/api/v1/' + payment.receipt_url, { responseType: 'blob' })
+                .then(res => {
+                    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.setAttribute('download', `Receipt-${payment.payment_number}.pdf`);
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(() => {
+                    toastr.error('পিডিএফ ডাউনলোড করতে ব্যর্থ হয়েছে।');
+                })
+                .finally(() => {
+                    this.downloadingId = null;
+                });
         }
     }
 }

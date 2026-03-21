@@ -122,7 +122,7 @@
             $res .= $convert($number);
         }
         
-        return trim($res) . " টাকা মাত্র";
+        return trim($res) . " টাকা মাত্র।";
     }
 @endphp
 <div class="py-4 no-print">
@@ -130,6 +130,10 @@
         <h1 class="text-2xl font-bold text-slate-800 hind-siliguri">পেমেন্ট রিসিট</h1>
         <div class="space-x-4">
             <a href="{{ route('billing.collect') }}" class="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition">ফিরে যান</a>
+            <a href="{{ route('billing.receipts.download', $payment->id) }}" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-sm transition inline-flex items-center">
+                <i class="fas fa-file-pdf mr-2"></i>
+                পিডিএফ ডাউনলোড
+            </a>
             <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm transition inline-flex items-center">
                 <i class="fas fa-print mr-2"></i>
                 প্রিন্ট করুন
