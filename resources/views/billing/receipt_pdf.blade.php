@@ -4,188 +4,180 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Receipt - {{ $payment->payment_number }}</title>
     <style>
-        body, table, td, th, div, p, span, h1, h2, h3, h4 {
-            font-family: 'kalpurush', sans-serif;
-            color: #000;
+        /* Force normal font weight everywhere to prevent mPDF from falling back to non-Bengali bold fonts */
+        body, table, td, th, div, p, span, h1, h2, h3, h4, b, strong {
+            font-family: 'kalpurush', sans-serif !important;
+            font-weight: normal !important;
         }
         body {
-            font-size: 13px;
+            font-size: 14px;
+            color: #000;
             line-height: 1.5;
             margin: 0;
             padding: 0;
             background: #fff;
         }
-        .page {
-            padding: 18px 22px;
+        .wrapper {
+            padding: 5px 15px;
         }
 
-        /* ===== SCHOOL HEADER ===== */
-        .header-border {
+        /* ===== HEADER ===== */
+        .header-container {
+            width: 100%;
             border-bottom: 2px solid #cbd5e1;
             padding-bottom: 12px;
-            margin-bottom: 18px;
+            margin-bottom: 25px;
         }
-        .header-table {
+        table.header-table {
             width: 100%;
+            border-collapse: collapse;
         }
-        .logo-cell {
-            width: 80px;
+        .logo-td {
+            width: 90px;
             vertical-align: middle;
+            text-align: left;
         }
-        .logo-cell img {
-            width: 72px;
-            height: 72px;
-        }
-        .school-info-cell {
+        .school-info-td {
             text-align: center;
             vertical-align: middle;
         }
         .school-name {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 0 0 3px 0;
+            font-size: 26px;
+            color: #000;
+            margin-bottom: 3px;
         }
-        .school-sub {
-            font-size: 12px;
-            margin: 2px 0;
+        .school-address {
+            font-size: 13px;
             color: #000;
         }
-        .receipt-pill {
+        .school-contact {
+            font-size: 13px;
+            color: #000;
+        }
+        .receipt-badge {
             display: inline-block;
-            margin-top: 8px;
-            padding: 3px 16px;
-            background-color: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            font-size: 12px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
+            margin-top: 5px;
+            padding: 4px 18px;
+            background-color: #e2e8f0;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #000;
+            border: 1px solid #cbd5e1;
         }
 
-        /* ===== META INFO ===== */
-        .meta-table {
+        /* ===== INFO SECTION ===== */
+        table.info-table {
             width: 100%;
-            margin-bottom: 18px;
+            margin-bottom: 20px;
+            border-collapse: collapse;
         }
-        .meta-left {
+        .info-left {
             width: 50%;
             vertical-align: top;
-            padding-right: 10px;
+            padding-right: 15px;
         }
-        .meta-right {
+        .info-right {
             width: 50%;
             vertical-align: top;
             text-align: right;
+            padding-left: 15px;
         }
-        .section-label {
-            font-size: 9px;
-            font-weight: bold;
-            color: #94a3b8;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
+        .info-title {
+            font-size: 12px;
+            color: #475569;
+            margin-bottom: 8px;
+            text-decoration: underline;
         }
         .student-name {
-            font-size: 16px;
-            font-weight: bold;
-            color: #1e3a8a;
-            margin-bottom: 3px;
+            font-size: 18px;
+            color: #000; 
+            margin-bottom: 5px;
         }
-        .meta-row {
-            font-size: 12px;
-            color: #334155;
-            margin-bottom: 2px;
+        .info-row {
+            font-size: 13px;
+            color: #1e293b;
+            margin-bottom: 4px;
         }
-        .meta-row span {
-            font-weight: bold;
+        .info-row span {
             color: #000;
         }
 
         /* ===== ITEMS TABLE ===== */
-        .items-wrapper {
-            border: 1px solid #e2e8f0;
-            margin-bottom: 14px;
-        }
-        table.items {
+        table.items-table {
             width: 100%;
             border-collapse: collapse;
+            border: 1px solid #94a3b8;
+            margin-bottom: 15px;
+            table-layout: fixed;
         }
-        table.items thead tr {
-            background-color: #f8fafc;
-        }
-        table.items th {
-            padding: 7px 5px;
-            font-size: 10px;
-            font-weight: bold;
+        table.items-table th {
+            background-color: #f1f5f9;
             color: #000;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        table.items tbody tr {
-            border-bottom: 1px solid #f1f5f9;
-        }
-        table.items tbody td {
-            padding: 7px 5px;
             font-size: 12px;
-            color: #000;
+            padding: 8px;
+            border: 1px solid #94a3b8; 
         }
-        table.items tfoot {
-            background-color: #f8fafc;
-            border-top: 2px solid #000;
-        }
-        table.items tfoot td {
-            padding: 8px 5px;
+        table.items-table td {
             font-size: 13px;
-            font-weight: bold;
+            color: #000;
+            padding: 8px;
+            border-left: 1px solid #94a3b8;
+            border-right: 1px solid #94a3b8;
+            border-bottom: 1px dotted #cbd5e1;
+        }
+        table.items-table tfoot th, table.items-table tfoot td {
+            background-color: #f1f5f9;
+            border-top: 2px solid #000;
+            border-bottom: 1px solid #94a3b8;
+            color: #000;
+            font-size: 15px;
+            padding: 10px;
         }
 
         /* ===== AMOUNT IN WORDS ===== */
-        .amount-words {
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 18px;
+        .amount-in-words {
+            font-size: 14px;
+            margin-bottom: 40px;
             color: #000;
-            padding-bottom: 8px;
-            border-bottom: 1px dotted #94a3b8;
         }
 
-        /* ===== SIGNATURE ===== */
-        .sig-table {
+        /* ===== SIGNATURES ===== */
+        table.signature-table {
             width: 100%;
-            margin-top: 55px;
+            margin-top: 70px;
         }
-        .sig-cell {
+        .signature-cell {
             width: 50%;
             vertical-align: bottom;
         }
-        .sig-line {
-            border-top: 1px solid #94a3b8;
-            width: 180px;
-            padding-top: 5px;
-            font-size: 11px;
-            color: #475569;
-            font-weight: bold;
+        .signature-line {
+            border-top: 1px solid #475569;
+            width: 190px;
+            padding-top: 6px;
+            font-size: 13px;
+            color: #1e293b;
         }
         .sig-right {
             text-align: right;
         }
-        .sig-right .sig-line {
+        .sig-right .signature-line {
             margin-left: auto;
         }
 
         /* ===== FOOTER ===== */
-        .footer {
-            margin-top: 25px;
+        .footer-note {
+            margin-top: 40px;
             text-align: center;
-            font-size: 9px;
-            color: #94a3b8;
-            border-top: 1px solid #f1f5f9;
-            padding-top: 8px;
+            font-size: 11px;
+            color: #64748b;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 10px;
         }
 
-        .text-right  { text-align: right; }
+        .text-left { text-align: left; }
         .text-center { text-align: center; }
-        .text-left   { text-align: left; }
-        .bold        { font-weight: bold; }
-        .red         { color: #dc2626; }
+        .text-right { text-align: right; }
+        .text-red { color: #dc2626; }
     </style>
 </head>
 <body>
@@ -231,138 +223,138 @@
         return trim($res)." টাকা মাত্র।";
     }
 
-    // Resolve logo (works local and on live server)
-    $logoBase64 = null;
+    // Resolve Logo path properly for mPDF
+    $logoSrc = null;
     if ($payment->school && $payment->school->logo) {
-        $logoPath = public_path('storage/' . $payment->school->logo);
-        if (!file_exists($logoPath)) {
-            // Try alternative: storage_path
-            $logoPath = storage_path('app/public/' . $payment->school->logo);
+        if (file_exists(public_path('storage/' . $payment->school->logo))) {
+             $logoPath = public_path('storage/' . $payment->school->logo);
+        } elseif (file_exists(storage_path('app/public/' . $payment->school->logo))) {
+             $logoPath = storage_path('app/public/' . $payment->school->logo);
+        } else {
+             $logoPath = null;
         }
-        if (file_exists($logoPath)) {
-            $ext = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
-            $mime = in_array($ext, ['png']) ? 'image/png' : 'image/jpeg';
-            $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+
+        if ($logoPath) {
+            $mime = mime_content_type($logoPath);
+            $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
         }
     }
 @endphp
 
-<div class="page">
+<div class="wrapper">
 
-    {{-- ===== SCHOOL HEADER ===== --}}
-    <div class="header-border">
+    {{-- ===== HEADER ===== --}}
+    <div class="header-container">
         <table class="header-table">
             <tr>
-                @if($logoBase64)
-                <td class="logo-cell">
-                    <img src="{{ $logoBase64 }}">
+                @if($logoSrc)
+                <td class="logo-td">
+                    <img src="{{ $logoSrc }}" width="80" height="80">
                 </td>
                 @endif
-                <td class="school-info-cell">
+                <td class="school-info-td">
                     <div class="school-name">{{ $payment->school->name_bn ?? $payment->school->name ?? 'প্রতিষ্ঠান' }}</div>
                     @if($payment->school && ($payment->school->address_bn || $payment->school->address))
-                        <div class="school-sub">{{ $payment->school->address_bn ?? $payment->school->address }}</div>
-                        <div class="school-sub">
+                        <div class="school-address">{{ $payment->school->address_bn ?? $payment->school->address }}</div>
+                        <div class="school-contact">
                             ফোন: {{ toBN($payment->school->phone ?? '') }}
                             @if($payment->school->email) | ইমেইল: {{ $payment->school->email }} @endif
+                            @if($payment->school->website) | {{ $payment->school->website }} @endif
                         </div>
                     @endif
-                    <div class="receipt-pill">ফিস কালেকশন রিসিট</div>
+                    <div class="receipt-badge">ফিস কালেকশন রিসিট</div>
                 </td>
-                @if($logoBase64)
-                <td style="width: 80px;"></td>
+                @if($logoSrc)
+                <td style="width: 90px;"></td> <!-- Spacer to keep center alignment -->
                 @endif
             </tr>
         </table>
     </div>
 
-    {{-- ===== META INFO ===== --}}
-    <table class="meta-table">
+    {{-- ===== INFO SECTION ===== --}}
+    <table class="info-table">
         <tr>
-            <td class="meta-left">
-                <div class="section-label">শিক্ষার্থীর তথ্য</div>
+            <td class="info-left">
+                <div class="info-title">শিক্ষার্থীর তথ্য</div>
                 <div class="student-name">{{ $payment->student->student_name_bn ?? $payment->student->student_name_en }}</div>
-                <div class="meta-row">আইডি: <span>{{ $payment->student->student_id }}</span></div>
-                <div class="meta-row">
+                <div class="info-row">আইডি: <span>{{ $payment->student->student_id }}</span></div>
+                <div class="info-row">
                     শ্রেণি: <span>{{ $payment->student->currentEnrollment->class->bangla_name ?? $payment->student->currentEnrollment->class->name ?? '...' }}</span>
                     @if($payment->student->currentEnrollment && $payment->student->currentEnrollment->section)
                         | শাখা: <span>{{ $payment->student->currentEnrollment->section->bangla_name ?? $payment->student->currentEnrollment->section->name }}</span>
                     @endif
                 </div>
-                <div class="meta-row">রোল: <span>{{ toBN($payment->student->currentEnrollment->roll_no ?? '') }}</span></div>
+                <div class="info-row">রোল: <span>{{ toBN($payment->student->currentEnrollment->roll_no ?? '') }}</span></div>
             </td>
-            <td class="meta-right">
-                <div class="section-label">রিসিট তথ্য</div>
-                <div class="meta-row">রিসিট নং: <span>{{ toBN($payment->payment_number) }}</span></div>
-                <div class="meta-row">তারিখ: <span>{{ toBN($payment->received_at->format('d/m/Y')) }}</span></div>
-                <div class="meta-row">পেমেন্ট মাধ্যম: <span>{{ $methodsBN[strtolower($payment->payment_method)] ?? $payment->payment_method }}</span></div>
+            <td class="info-right">
+                <div class="info-title">রিসিট তথ্য</div>
+                <div class="info-row">রিসিট নং: <span>{{ toBN($payment->payment_number) }}</span></div>
+                <div class="info-row">তারিখ: <span>{{ toBN($payment->received_at->format('d/m/Y')) }}</span></div>
+                <div class="info-row">পেমেন্ট মাধ্যম: <span>{{ $methodsBN[strtolower($payment->payment_method)] ?? $payment->payment_method }}</span></div>
                 @if($payment->tran_id || $payment->external_txn_id)
-                    <div class="meta-row" style="font-size:11px;">ট্রানজেকশন আইডি: <span>{{ $payment->tran_id ?? $payment->external_txn_id }}</span></div>
+                    <div class="info-row">ট্রানজেকশন আইডি: <span>{{ $payment->tran_id ?? $payment->external_txn_id }}</span></div>
                 @endif
             </td>
         </tr>
     </table>
 
-    {{-- ===== PAYMENT ITEMS TABLE ===== --}}
-    <div class="items-wrapper">
-        <table class="items">
-            <thead>
-                <tr>
-                    <th style="text-align:left;">বিবরণ (ফি-এর খাত)</th>
-                    <th style="text-align:center; width:100px;">মাস</th>
-                    <th style="text-align:right; width:65px;">ফি</th>
-                    <th style="text-align:right; width:65px;">জরিমানা</th>
-                    <th style="text-align:right; width:65px;">মওকুফ</th>
-                    <th style="text-align:right; width:80px;">মোট</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($payment->paymentItems as $item)
-                <tr>
-                    <td style="font-weight:500;">{{ $item->studentFee->feeStructure->category->name ?? 'ফি' }}</td>
-                    <td style="text-align:center;">
-                        @if($item->studentFee->month)
-                            {{ $monthsBN[date('F', strtotime($item->studentFee->month.'-01'))] ?? '' }},
-                            {{ toBN(date('Y', strtotime($item->studentFee->month.'-01'))) }}
-                        @else
-                            এককালীন
-                        @endif
-                    </td>
-                    <td style="text-align:right;">{{ toBN(number_format(($item->studentFee->original_amount ?: $item->studentFee->amount), 0)) }}</td>
-                    <td style="text-align:right;">{{ toBN(number_format($item->studentFee->calculateOriginalFine(), 0)) }}</td>
-                    <td style="text-align:right;" class="red">-{{ toBN(number_format(((($item->studentFee->original_amount ?: $item->studentFee->amount) - $item->studentFee->amount) + ($item->studentFee->fine_waiver ?? 0)), 0)) }}</td>
-                    <td style="text-align:right;" class="bold">৳ {{ toBN(number_format($item->amount, 0)) }}</td>
-                </tr>
-                @endforeach
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="5" style="text-align:right;">সর্বমোট পরিশোধিত:</td>
-                    <td style="text-align:right; font-size:15px;">৳ {{ toBN(number_format($payment->amount_paid, 0)) }}</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
+    {{-- ===== ITEMS TABLE ===== --}}
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th class="text-left" style="width: 38%;">বিবরণ (ফি-এর খাত)</th>
+                <th class="text-center" style="width: 16%;">মাস</th>
+                <th class="text-right" style="width: 12%;">ফি</th>
+                <th class="text-right" style="width: 10%;">জরিমানা</th>
+                <th class="text-right" style="width: 10%;">মওকুফ</th>
+                <th class="text-right" style="width: 14%;">মোট</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($payment->paymentItems as $item)
+            <tr>
+                <td>{{ $item->studentFee->feeStructure->category->name ?? 'ফি' }}</td>
+                <td class="text-center">
+                    @if($item->studentFee->month)
+                        {{ $monthsBN[date('F', strtotime($item->studentFee->month.'-01'))] ?? '' }}, 
+                        {{ toBN(date('Y', strtotime($item->studentFee->month.'-01'))) }}
+                    @else
+                        এককালীন
+                    @endif
+                </td>
+                <td class="text-right">{{ toBN(number_format(($item->studentFee->original_amount ?: $item->studentFee->amount), 0)) }}</td>
+                <td class="text-right">{{ toBN(number_format($item->studentFee->calculateOriginalFine(), 0)) }}</td>
+                <td class="text-right text-red">-{{ toBN(number_format(((($item->studentFee->original_amount ?: $item->studentFee->amount) - $item->studentFee->amount) + ($item->studentFee->fine_waiver ?? 0)), 0)) }}</td>
+                <td class="text-right">৳ {{ toBN(number_format($item->amount, 0)) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="5" class="text-right">সর্বমোট পরিশোধিত:</td>
+                <td class="text-right">৳ {{ toBN(number_format($payment->amount_paid, 0)) }}</td>
+            </tr>
+        </tfoot>
+    </table>
 
     {{-- ===== AMOUNT IN WORDS ===== --}}
-    <div class="amount-words">
+    <div class="amount-in-words">
         কথায়: {{ amountInWordsBN($payment->amount_paid) }}
     </div>
 
     {{-- ===== SIGNATURES ===== --}}
-    <table class="sig-table">
+    <table class="signature-table">
         <tr>
-            <td class="sig-cell">
-                <div class="sig-line">শিক্ষার্থীর/অভিভাবকের স্বাক্ষর</div>
+            <td class="signature-cell">
+                <div class="signature-line">শিক্ষার্থীর/অভিভাবকের স্বাক্ষর</div>
             </td>
-            <td class="sig-cell sig-right">
-                <div class="sig-line">আদায়কারীর স্বাক্ষর</div>
+            <td class="signature-cell sig-right">
+                <div class="signature-line">আদায়কারীর স্বাক্ষর</div>
             </td>
         </tr>
     </table>
 
-    {{-- ===== FOOTER ===== --}}
-    <div class="footer">
+    <div class="footer-note">
         Generated by Batighor EIMS &bull; batighorbd.com
     </div>
 
