@@ -2,7 +2,7 @@
     <div class="fee-config-container p-6 bg-gray-50 min-h-screen">
         <div class="max-w-7xl mx-auto">
             <!-- Header Section -->
-            <div class="flex justify-between items-center mb-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-800">ফি কনফিগারেশন</h1>
                     <p class="text-gray-500 mt-1">বিভিন্ন ফি-র হার এবং সময়কাল নির্ধারণ করুন</p>

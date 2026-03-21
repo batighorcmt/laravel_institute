@@ -685,6 +685,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
 
                         // Billing collection page for teachers (restricted by assigned class in controller)
                         Route::get('/billing/collect', [App\Http\Controllers\Teacher\Billing\CollectController::class , 'create'])->name('billing.collect');
+                        Route::get('/billing/my-collections', function() { return view('billing.teacher_collections'); })->name('billing.my_collections');
 
                         // Manage Exams (all teachers)
                         Route::prefix('exams')->name('exams.')->middleware('module:exams')->group(function () {
@@ -752,7 +753,9 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 }
                 )->name('billing.statement');
                 Route::get('/billing/collect', function () {
-                    return view('billing.collect');
+                    $schoolId = request()->attributes->get('current_school_id');
+                    $school = $schoolId ? \App\Models\School::find($schoolId) : auth()->user()->primarySchool();
+                    return view('billing.collect', ['school' => $school]);
                 }
                 )->name('billing.collect');
                 Route::get('/billing/config', function () {

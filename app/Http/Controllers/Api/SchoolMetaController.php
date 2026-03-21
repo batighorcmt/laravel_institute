@@ -27,7 +27,24 @@ class SchoolMetaController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $classes = SchoolClass::forSchool($schoolId)->active()->ordered()->get(['id','name','bangla_name']);
+        $teacher = \App\Models\Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
+        $teacherId = $teacher ? $teacher->id : null;
+
+        if ($user->isTeacher($schoolId) && !$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+            if ($teacherId) {
+                $allowedClassIds = Section::where('school_id', $schoolId)
+                    ->where('class_teacher_id', $teacherId)
+                    ->where('status', 'active')
+                    ->pluck('class_id')
+                    ->unique();
+
+                $classes = SchoolClass::forSchool($schoolId)->active()->whereIn('id', $allowedClassIds)->ordered()->get(['id','name','bangla_name']);
+            } else {
+                $classes = collect([]);
+            }
+        } else {
+            $classes = SchoolClass::forSchool($schoolId)->active()->ordered()->get(['id','name','bangla_name']);
+        }
         
         return response()->json($classes->map(fn($c)=>['id'=>$c->id,'name'=>$c->name,'bangla_name'=>$c->bangla_name])->values());
     }
@@ -45,6 +62,16 @@ class SchoolMetaController extends Controller
         $query = Section::where('sections.school_id', $schoolId)->where('sections.status', 'active');
         if ($classId) {
             $query->where('sections.class_id', $classId);
+        }
+
+        if ($user->isTeacher($schoolId) && !$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+            $teacher = \App\Models\Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
+            $teacherId = $teacher ? $teacher->id : null;
+            if ($teacherId) {
+                $query->where('sections.class_teacher_id', $teacherId);
+            } else {
+                return response()->json([]);
+            }
         }
 
         $sections = $query->with('class:id,name,bangla_name')->ordered()->get(['sections.id','sections.name','sections.bangla_name','sections.class_id']);

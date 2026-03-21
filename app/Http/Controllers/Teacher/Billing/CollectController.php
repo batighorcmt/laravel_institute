@@ -14,6 +14,10 @@ class CollectController extends Controller
     public function create(Request $request, \App\Models\School $school)
     {
         $user = $request->user();
+
+        if (!$user->hasModule('accounts')) {
+            abort(403, 'আপনার স্কুলের জন্য অ্যাকাউন্টস মডিউল সক্রিয় নেই।');
+        }
         
         // Get the teacher record for this user and school
         $teacher = Teacher::where('user_id', $user->id)
@@ -37,8 +41,8 @@ class CollectController extends Controller
             ->pluck('class_id')
             ->unique();
 
-        // Combine both sources and get unique class IDs
-        $allClassIds = $classIdsFromSections->merge($routineClasses)->unique();
+        // Combine both sources and get unique class IDs (Actually only use class teacher assignments as per updated policy)
+        $allClassIds = $classIdsFromSections;
 
         // Fetch the actual class models
         $classes = SchoolClass::forSchool($school->id)

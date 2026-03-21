@@ -20,35 +20,53 @@
 
             <!-- Enhanced Filter Bar -->
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 items-end">
                     <div class="space-y-2">
-                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider">শ্রেণি</label>
-                        <select v-model="filters.class_id" @change="fetchSections" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 appearance-none">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider px-1">শ্রেণি</label>
+                        <select v-model="filters.class_id" @change="fetchSections" class="w-full bg-slate-50 border-slate-100 border rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all">
                             <option value="">সকল শ্রেণি</option>
                             <option v-for="cls in classes" :key="cls.id" :value="cls.id">{{ cls.name }}</option>
                         </select>
                     </div>
 
                     <div class="space-y-2">
-                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider">শাখা</label>
-                        <select v-model="filters.section_id" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 appearance-none">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider px-1">শাখা</label>
+                        <select v-model="filters.section_id" class="w-full bg-slate-50 border-slate-100 border rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all disabled:opacity-50">
                             <option value="">সকল শাখা</option>
                             <option v-for="sec in sections" :key="sec.id" :value="sec.id">{{ sec.name }}</option>
                         </select>
                     </div>
 
                     <div class="space-y-2">
-                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider">মিনিমাম বকেয়া</label>
-                        <input type="number" v-model="filters.min_due" class="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500" placeholder="৳ ০.০০">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider px-1">ফি ক্যাটাগরি</label>
+                        <select v-model="filters.fee_category_id" class="w-full bg-slate-50 border-slate-100 border rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none appearance-none transition-all">
+                            <option value="">সকল ক্যাটাগরি</option>
+                            <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                        </select>
                     </div>
 
-                    <button @click="fetchDueStudents" :disabled="loading" class="bg-indigo-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-50">
-                        <svg v-if="loading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        তালিকা দেখুন
-                    </button>
+                    <div class="space-y-2">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider px-1">মাসের নাম</label>
+                        <input type="month" v-model="filters.month" class="w-full bg-slate-50 border-slate-100 border rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-wider px-1">শিক্ষার্থী আইডি</label>
+                        <input type="text" v-model="filters.student_id" placeholder="ID লিখুন" class="w-full bg-slate-50 border-slate-100 border rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button @click="resetFilters" class="bg-slate-100 text-slate-600 px-4 py-3.5 rounded-xl font-bold hover:bg-slate-200 transition-all">
+                            রিসেট
+                        </button>
+                        <button @click="fetchDueStudents" :disabled="loading" class="flex-1 bg-indigo-600 text-white px-4 py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-50">
+                            <svg v-if="loading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            খুঁজুন
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -149,8 +167,12 @@ export default {
             filters: {
                 class_id: '',
                 section_id: '',
+                fee_category_id: '',
+                month: '',
+                student_id: '',
                 min_due: 0
-            }
+            },
+            categories: []
         }
     },
     computed: {
@@ -166,9 +188,8 @@ export default {
     },
     methods: {
         fetchFilters() {
-            axios.get('/api/v1/meta/classes').then(res => {
-                this.classes = res.data;
-            });
+            axios.get('/api/v1/meta/classes').then(res => { this.classes = res.data; });
+            axios.get('/api/v1/billing/config').then(res => { this.categories = res.data.categories || []; });
         },
         fetchSections() {
             this.filters.section_id = '';
@@ -182,11 +203,9 @@ export default {
         },
         fetchDueStudents() {
             this.loading = true;
-            const params = new URLSearchParams();
-            if (this.filters.class_id) params.append('class_id', this.filters.class_id);
-            if (this.filters.section_id) params.append('section_id', this.filters.section_id);
+            const params = { ...this.filters };
 
-            axios.get(`/api/v1/billing/reports/student-dues?${params.toString()}`)
+            axios.get(`/api/v1/billing/reports/student-dues`, { params })
                 .then(res => {
                     this.students = res.data;
                 })
@@ -203,6 +222,9 @@ export default {
         resetFilters() {
             this.filters.class_id = '';
             this.filters.section_id = '';
+            this.filters.fee_category_id = '';
+            this.filters.month = '';
+            this.filters.student_id = '';
             this.filters.min_due = 0;
             this.students = [];
         },

@@ -178,6 +178,7 @@ Route::prefix('v1')->group(function () {
                     Route::get('/reports/due-summary', [\App\Http\Controllers\Api\FeeReportController::class , 'dueReport']);
                     Route::get('/reports/detailed-dues', [\App\Http\Controllers\Api\FeeReportController::class , 'detailedDues']);
                     Route::get('/reports/student-dues', [\App\Http\Controllers\Api\FeeReportController::class , 'studentDues']);
+                    Route::get('/reports/teacher-collections', [\App\Http\Controllers\Api\FeeReportController::class, 'teacherCollections'])->middleware('role:teacher');
 
                     // Fee Waivers management (principal/admin)
                     Route::get('/waivers', [\App\Http\Controllers\Api\FeeWaiverController::class , 'index'])->middleware('role:principal,school');
@@ -194,16 +195,15 @@ Route::prefix('v1')->group(function () {
                 }
                 );
 
-                // Principal student management endpoints
-                Route::prefix('principal')->middleware('role:principal')->group(function () {
+                // SHARED student search and filter endpoints
+                Route::prefix('principal')->middleware('role:principal,teacher,school')->group(function () {
                     Route::get('students/search', [\App\Http\Controllers\Api\PrincipalStudentController::class , 'search']);
                     Route::get('students/filters/classes', [\App\Http\Controllers\Api\PrincipalStudentController::class , 'getClasses']);
                     Route::get('students/filters/sections', [\App\Http\Controllers\Api\PrincipalStudentController::class , 'getSections']);
                     Route::get('students/filters/groups', [\App\Http\Controllers\Api\PrincipalStudentController::class , 'getGroups']);
                     Route::get('students/filters/subjects', [\App\Http\Controllers\Api\PrincipalStudentController::class , 'getSubjects']);
                     Route::get('students/{id}', [\App\Http\Controllers\Api\PrincipalStudentController::class , 'show']);
-                }
-                );
+                });
 
                 // Meta endpoints
                 Route::prefix('meta')->group(function () {

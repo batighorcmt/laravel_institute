@@ -589,6 +589,30 @@
                         </li>
                         @endif
 
+                        @if(auth()->user()->hasModule('accounts'))
+                        {{-- Billing (Teacher) --}}
+                        <li class="nav-item has-treeview {{ request()->is('teacher/institute/*/billing*') ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->is('teacher/institute/*/billing*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-money-bill-wave"></i>
+                                <p>Billing <i class="right fas fa-angle-left"></i></p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('teacher.institute.billing.collect', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.billing.collect') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Fees Collect</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('teacher.institute.billing.my_collections', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.billing.my_collections') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>My Collections</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        @endif
+
                     @elseif($u && $u->isParent())
                         {{-- Parent Menu --}}
                         <li class="nav-item">

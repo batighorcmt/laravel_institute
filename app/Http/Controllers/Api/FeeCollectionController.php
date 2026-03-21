@@ -28,6 +28,19 @@ class FeeCollectionController extends Controller
 
         $student = Student::find((int)$studentId);
 
+        if ($student) {
+            $schoolId = $request->attributes->get('current_school_id') ?? $student->school_id;
+            if ($user->isTeacher($schoolId) && !$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+                $enrollment = $student->currentEnrollment()->with('section')->first();
+                $teacher = \App\Models\Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
+                $teacherId = $teacher ? $teacher->id : null;
+
+                if (!$enrollment || !$teacherId || !$enrollment->section || $enrollment->section->class_teacher_id !== $teacherId) {
+                    return response()->json(['message' => 'দুঃখিত, আপনি শুধুমাত্র আপনার নিজের শ্রেণির শিক্ষার্থীদের বকেয়া দেখতে পারবেন।'], 403);
+                }
+            }
+        }
+
         if (!$student) {
             $fees = StudentFee::with(['feeStructure.category'])
                 ->where('student_id', (int)$studentId)
@@ -102,6 +115,20 @@ class FeeCollectionController extends Controller
         $student     = Student::findOrFail($validated['student_id']);
         $totalAmount = collect($validated['fees'])->sum('amount');
         $schoolId    = $request->attributes->get('current_school_id') ?? $student->school_id;
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // Enforce teacher restriction: Only class teachers can collect fees for their students
+        if ($user->isTeacher($schoolId) && !$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+            $enrollment = $student->currentEnrollment()->with('section')->first();
+            $teacher = \App\Models\Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
+            $teacherId = $teacher ? $teacher->id : null;
+            
+            if (!$enrollment || !$teacherId || !$enrollment->section || $enrollment->section->class_teacher_id !== $teacherId) {
+                return response()->json(['message' => 'দুঃখিত, আপনি এই শিক্ষার্থীর ফি আদায় করার জন্য নির্ধারিত শ্রেণি শিক্ষক নন।'], 403);
+            }
+        }
 
         if (!$schoolId) {
             return response()->json(['message' => 'স্কুল আইডি পাওয়া যায়নি'], 400);

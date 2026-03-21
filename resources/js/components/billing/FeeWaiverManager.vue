@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
       <div>
         <h1 class="text-2xl font-extrabold">ফি ওয়েভার</h1>
         <p class="text-sm text-slate-500">শিক্ষার্থীর ফি ওয়েভার যোগ/সম্পাদনা করুন (পূর্ণ/পরিমাণ/শতাংশ)</p>
@@ -34,8 +34,8 @@
       </div>
     </div>
 
-    <div class="bg-white rounded shadow-sm">
-      <table class="w-full">
+    <div class="bg-white rounded shadow-sm overflow-x-auto">
+      <table class="w-full text-sm">
         <thead class="bg-slate-50 text-left">
           <tr>
               <th class="px-4 py-3">#</th>

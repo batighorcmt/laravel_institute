@@ -10,6 +10,9 @@
 <div id="app">
     <fee-collection 
         :academic-year-id="{{ \App\Models\AcademicYear::where('is_current', true)->first()->id ?? 0 }}"
+        role="{{ auth()->user()->isPrincipal($school?->id) ? 'principal' : (auth()->user()->isTeacher($school?->id) ? 'teacher' : 'principal') }}"
+        :initial-classes="{{ isset($classes) ? $classes->toJson() : '[]' }}"
+        :initial-sections="{{ isset($sections) ? $sections->toJson() : (isset($sectionsByClass) ? $sectionsByClass->flatten()->toJson() : '[]') }}"
     ></fee-collection>
 </div>
 @endsection

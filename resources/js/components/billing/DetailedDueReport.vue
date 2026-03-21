@@ -13,7 +13,7 @@
                     <p class="text-slate-500 mt-1 font-medium italic">শিক্ষাবর্ষ, শ্রেণি ও মাস অনুযায়ী বকেয়া তালিকা</p>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <button @click="printReport" class="bg-slate-900 text-white px-6 py-2.5 rounded-xl font-black hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                         প্রিন্ট করুন
@@ -26,7 +26,7 @@
 
             <!-- Filters -->
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 no-print">
-                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
                     <div class="space-y-1">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">শিক্ষাবর্ষ</label>
                         <select v-model="filters.academic_year_id" class="w-full bg-slate-50 border-slate-100 rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-4 focus:ring-red-500/10 outline-none border appearance-none">
@@ -57,6 +57,10 @@
                     <div class="space-y-1">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">মাসের নাম</label>
                         <input type="month" v-model="filters.month" class="w-full bg-slate-50 border-slate-100 rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-4 focus:ring-red-500/10 outline-none border transition-all">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">শিক্ষার্থী আইডি</label>
+                        <input type="text" v-model="filters.student_id" placeholder="ID লিখুন..." class="w-full bg-slate-50 border-slate-100 rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-4 focus:ring-red-500/10 outline-none border transition-all">
                     </div>
                     <div class="space-y-1">
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">পরিশোধের অবস্থা</label>
@@ -234,6 +238,7 @@ export default {
                 section_id: '',
                 fee_category_id: '',
                 month: '',
+                student_id: '',
                 status: 'all'
             }
         }
@@ -341,6 +346,7 @@ export default {
                 section_id: '',
                 fee_category_id: '',
                 month: '',
+                student_id: '',
                 status: 'all'
             };
             this.fees = [];

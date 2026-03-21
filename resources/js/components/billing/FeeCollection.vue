@@ -20,30 +20,38 @@
                     <!-- Student Search Card -->
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 overflow-visible">
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                            <div>
+                            <!-- Class Selection -->
+                            <div v-if="role === 'principal' || (role === 'teacher' && classes.length > 1)" class="md:col-span-1">
                                 <label class="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">শ্রেণী</label>
                                 <select v-model="filters.class_id" @change="fetchSections" class="w-full bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm">
                                     <option :value="null">সকল শ্রেণী</option>
                                     <option v-for="cls in classes" :key="cls.id" :value="cls.id">{{ cls.name }}</option>
                                 </select>
                             </div>
-                            <div>
+
+                            <!-- Section Selection -->
+                            <div v-if="role === 'principal' || (role === 'teacher' && sections.length > 1)" class="md:col-span-1">
                                 <label class="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">শাখা</label>
                                 <select v-model="filters.section_id" @change="fetchStudentsList" class="w-full bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm">
                                     <option :value="null">সকল শাখা</option>
                                     <option v-for="sec in sections" :key="sec.id" :value="sec.id">{{ sec.name }}</option>
                                 </select>
                             </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">শিক্ষার্থী নির্বাচন</label>
+
+                            <!-- Search Inputs -->
+                            <!-- Roll Number/ID Selection -->
+                            <div :class="(role === 'teacher' && classes.length <= 1 && sections.length <= 1) ? 'md:col-span-2' : 'md:col-span-1'">
+                                <label class="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">রোল বা নাম</label>
                                 <div class="relative group">
                                     <input 
                                         type="text" 
-                                        v-model="studentSearchTerms" 
+                                        v-model="filters.roll_no" 
                                         @focus="showStudentDropdown = true"
-                                        placeholder="নাম বা রোল দিয়ে খুঁজুন..."
+                                        placeholder="খুঁজুন..."
                                         class="w-full bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm py-2 px-3"
+                                        @keyup.enter="searchStudents"
                                     >
+                                    <!-- Simplified dropdown for roll search -->
                                     <div v-if="showStudentDropdown && filteredStudents.length > 0" class="absolute z-[100] mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto overflow-x-hidden">
                                         <div 
                                             v-for="std in filteredStudents" 
@@ -57,19 +65,24 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div v-if="showStudentDropdown && filteredStudents.length === 0 && studentsList.length > 0" class="absolute z-[100] mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-xl p-4 text-center text-xs text-gray-500">
-                                        ম্যাচিং শিক্ষার্থী পাওয়া যায়নি
-                                    </div>
                                     <div v-if="showStudentDropdown" class="fixed inset-0 z-[90]" @click="showStudentDropdown = false"></div>
                                 </div>
                             </div>
-                            <div>
+
+                            <!-- Global Search / Student ID -->
+                            <div :class="(role === 'teacher' && classes.length <= 1 && sections.length <= 1) ? 'md:col-span-2' : 'md:col-span-1'">
                                 <label class="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">সরাসরি আইডি সার্চ</label>
-                                <input v-model="filters.q" type="text" placeholder="উদাঃ S26001" class="w-full bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm">
+                                <input v-model="filters.q" type="text" placeholder="উদাঃ S26001" 
+                                    class="w-full bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
+                                    @keyup.enter="searchStudents"
+                                >
                             </div>
                         </div>
                         
-                        <div class="flex justify-end">
+                        <div class="flex justify-end gap-3">
+                            <button @click="resetFilters" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-all">
+                                রিসেট
+                            </button>
                             <button @click="searchStudents" :disabled="searching" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all flex items-center gap-2">
                                 <span v-if="searching" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
                                 খুঁজুন
@@ -359,6 +372,18 @@ export default {
         academicYearId: {
             type: Number,
             required: true
+        },
+        role: {
+            type: String,
+            default: 'principal'
+        },
+        initialClasses: {
+            type: Array,
+            default: () => []
+        },
+        initialSections: {
+            type: Array,
+            default: () => []
         }
     },
     data() {
@@ -367,7 +392,7 @@ export default {
                 class_id: null,
                 section_id: null,
                 student_id: null,
-                role_no: '',
+                roll_no: '',
                 q: ''
             },
             classes: [],
@@ -426,8 +451,10 @@ export default {
         },
         filteredStudents() {
             let list = this.studentsList;
-            if (this.studentSearchTerms) {
-                const q = this.studentSearchTerms.toLowerCase();
+            
+            // If user is typing in the Roll field, filter the studentsList
+            const q = (this.filters.roll_no || '').toLowerCase();
+            if (q) {
                 list = list.filter(s => 
                     (s.name_bn && s.name_bn.toLowerCase().includes(q)) || 
                     (s.name_en && s.name_en.toLowerCase().includes(q)) || 
@@ -453,6 +480,14 @@ export default {
     },
     methods: {
         fetchClasses() {
+            if (this.role === 'teacher' && this.initialClasses && this.initialClasses.length > 0) {
+                this.classes = this.initialClasses;
+                if (this.classes.length === 1) {
+                    this.filters.class_id = this.classes[0].id;
+                    this.fetchSections();
+                }
+                return;
+            }
             axios.get('/api/v1/meta/classes').then(res => this.classes = res.data);
         },
 
@@ -463,6 +498,15 @@ export default {
             this.filters.section_id = null;
             this.filters.student_id = null;
             if (!this.filters.class_id) return;
+
+            if (this.role === 'teacher' && this.initialSections && this.initialSections.length > 0) {
+                this.sections = this.initialSections.filter(s => s.class_id == this.filters.class_id);
+                if (this.sections.length === 1) {
+                    this.filters.section_id = this.sections[0].id;
+                    this.fetchStudentsList();
+                }
+                return;
+            }
             axios.get(`/api/v1/meta/sections?class_id=${this.filters.class_id}`).then(res => {
                 this.sections = res.data;
                 this.fetchStudentsList();
@@ -476,6 +520,7 @@ export default {
             if (!this.filters.class_id) return;
             
             const params = new URLSearchParams();
+            params.append('academic_year_id', this.academicYearId);
             params.append('class_id', this.filters.class_id);
             if (this.filters.section_id) params.append('section_id', this.filters.section_id);
             params.append('limit', 500);
@@ -488,7 +533,7 @@ export default {
 
         selectStudentFromDropdown(student) {
             this.filters.student_id = student.id;
-            this.studentSearchTerms = student.name_bn || student.name_en;
+            this.filters.roll_no = student.roll_no;
             this.showStudentDropdown = false;
             this.selectStudent(student);
         },
@@ -509,10 +554,21 @@ export default {
             this.searchResults = [];
             
             const params = new URLSearchParams();
+            params.append('academic_year_id', this.academicYearId);
             if (this.filters.class_id) params.append('class_id', this.filters.class_id);
             if (this.filters.section_id) params.append('section_id', this.filters.section_id);
             if (this.filters.roll_no) params.append('roll_no', this.filters.roll_no);
             if (this.filters.q) params.append('q', this.filters.q);
+
+            // For teachers, ensure they only search their own students
+            if (this.role === 'teacher' && !this.filters.class_id && !this.filters.section_id) {
+                if (this.initialClasses && this.initialClasses.length > 0) {
+                    params.append('allowed_class_ids', this.initialClasses.map(c => c.id).join(','));
+                }
+                if (this.initialSections && this.initialSections.length > 0) {
+                    params.append('allowed_section_ids', this.initialSections.map(s => s.id).join(','));
+                }
+            }
 
             axios.get(`/api/v1/principal/students/search?${params.toString()}`)
                 .then(res => {
@@ -675,6 +731,24 @@ export default {
             this.selectedStudent = null;
             this.dueFees = [];
             this.totalPayable = 0;
+        },
+
+        resetFilters() {
+            this.filters.roll_no = '';
+            this.filters.q = '';
+            if (this.role === 'principal' || (this.role === 'teacher' && this.classes.length > 1)) {
+                this.filters.class_id = null;
+                this.filters.section_id = null;
+                this.sections = [];
+            } else if (this.role === 'teacher' && this.sections.length > 1) {
+                this.filters.section_id = null;
+            }
+            this.searchResults = [];
+            this.selectedStudent = null;
+            this.dueFees = [];
+            this.selectedFees = [];
+            this.totalPayable = 0;
+            this.searching = false;
         },
 
         resetForm() {

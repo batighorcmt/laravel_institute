@@ -9,12 +9,103 @@ use App\Models\PaymentItem;
 use App\Models\StudentFee;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\FeeStructure;
+use App\Models\SchoolClass;
+use App\Models\Section;
+use App\Models\StudentEnrollment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class FeeReportController extends Controller
 {
+    /**
+     * Teacher Collections & Summary
+     */
+    public function teacherCollections(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $schoolId = $request->attributes->get('current_school_id') ?? $user?->primarySchool()?->id;
+
+            // 1. Identify teacher and assigned sections
+            $teacher = $user->teacher; // Assuming Teacher has user_id
+            if (!$teacher) {
+                return response()->json(['error' => 'Teacher profile not found'], 404);
+            }
+
+            $sections = Section::where('class_teacher_id', $teacher->id)
+                ->where('school_id', $schoolId)
+                ->with('class')
+                ->get();
+
+            $sectionIds = $sections->pluck('id')->toArray();
+
+            // 2. Summary for these sections
+            $summary = [];
+            if (!empty($sectionIds)) {
+                $summary = StudentFee::join('students', 'student_fees.student_id', '=', 'students.id')
+                    ->join('student_enrollments', function($join) use ($sectionIds) {
+                        $join->on('students.id', '=', 'student_enrollments.student_id')
+                            ->whereIn('student_enrollments.section_id', $sectionIds);
+                    })
+                    ->join('fee_structures', 'student_fees.fee_structure_id', '=', 'fee_structures.id')
+                    ->join('fee_categories', 'fee_structures.fee_category_id', '=', 'fee_categories.id')
+                    ->where('student_fees.school_id', $schoolId)
+                    ->select(
+                        'fee_categories.name as category_name',
+                        DB::raw('COUNT(DISTINCT student_fees.student_id) as student_count'),
+                        DB::raw('SUM(student_fees.amount + student_fees.fine_amount - student_fees.fine_waiver) as total_payable'),
+                        DB::raw('SUM(student_fees.paid_amount) as total_paid')
+                    )
+                    ->groupBy('fee_categories.id', 'fee_categories.name')
+                    ->get()
+                    ->map(function($item) {
+                        return [
+                            'category' => $item->category_name,
+                            'student_count' => $item->student_count,
+                            'payable' => round($item->total_payable, 2),
+                            'paid' => round($item->total_paid, 2),
+                            'due' => round($item->total_payable - $item->total_paid, 2)
+                        ];
+                    });
+            }
+
+            // 3. Detailed collections by THIS teacher
+            $query = Payment::where('collected_by_user_id', $user->id)
+                ->where('school_id', $schoolId)
+                ->where('status', 'settled')
+                ->with(['student', 'category']);
+
+            if ($request->filled('from_date')) {
+                $query->whereDate('received_at', '>=', $request->from_date);
+            }
+            if ($request->filled('to_date')) {
+                $query->whereDate('received_at', '<=', $request->to_date);
+            }
+            if ($request->filled('fee_category_id')) {
+                $query->where('fee_category_id', $request->fee_category_id);
+            }
+            if ($request->filled('student_id')) {
+                $query->whereHas('student', function($q) use ($request) {
+                    $q->where('student_id', 'like', '%' . $request->student_id . '%');
+                });
+            }
+
+            $collections = $query->latest('received_at')->get();
+
+            return response()->json([
+                'teacher_name' => $user->name,
+                'sections' => $sections->map(fn($s) => ($s->class->name ?? '') . ' (' . $s->name . ')')->implode(', '),
+                'summary' => $summary,
+                'collections' => $collections
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Teacher Collections Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal server error'], 500);
+        }
+    }
     /**
      * Date Range Collection Report
      */
@@ -184,6 +275,7 @@ class FeeReportController extends Controller
                     'students.student_id as student_id',
                     'classes.name as class_name_en',
                     'classes.bangla_name as class_name_bn',
+                    'classes.numeric_value as class_numeric',
                     'sections.name as section_name_en',
                     'sections.bangla_name as section_name_bn',
                     'se.roll_no as roll_no',
@@ -237,6 +329,7 @@ class FeeReportController extends Controller
                     'payments.student_id as student_id',
                     'classes.name as class_name_en',
                     'classes.bangla_name as class_name_bn',
+                    'classes.numeric_value as class_numeric',
                     'sections.name as section_name_en',
                     'sections.bangla_name as section_name_bn',
                     'se.roll_no as roll_no',
@@ -258,7 +351,7 @@ class FeeReportController extends Controller
 
             $paymentsOnlyRows = $paymentsOnlyQuery->orderBy('payments.received_at', 'desc')->get();
 
-            // Merge itemized rows with payments-only rows and sort by paid_at desc
+            // Merge itemized rows with payments-only rows and sort by paid_at desc (requested for this report)
             $all = $rows->merge($paymentsOnlyRows)->sortByDesc('paid_at')->values();
 
             return response()->json($all);
@@ -337,8 +430,16 @@ class FeeReportController extends Controller
                     'students.student_name_bn',
                     'students.student_name_en'
                 )
-                ->with(['student.fees' => function($q) use ($schoolId) {
+                ->with(['student.fees' => function($q) use ($schoolId, $request) {
                     $q->where('school_id', $schoolId)->whereIn('status', ['unpaid', 'partial']);
+                    if ($request->filled('fee_category_id')) {
+                        $q->whereHas('feeStructure', function($fs) use ($request) {
+                            $fs->where('fee_category_id', $request->fee_category_id);
+                        });
+                    }
+                    if ($request->filled('month')) {
+                        $q->where('month', $request->month);
+                    }
                 }]);
 
             if ($classId) {
@@ -346,6 +447,9 @@ class FeeReportController extends Controller
             }
             if ($sectionId) {
                 $query->where('student_enrollments.section_id', $sectionId);
+            }
+            if ($request->filled('student_id')) {
+                $query->where('students.student_id', 'like', '%' . $request->student_id . '%');
             }
 
             $students = $query->get()->map(function($enrollment) {
@@ -375,7 +479,11 @@ class FeeReportController extends Controller
                     'fine_due' => round($fineDue, 2),
                     'total_due' => round($totalDue, 2),
                 ];
-            })->filter(fn($s) => $s['total_due'] > 0)->values();
+            })->filter(fn($s) => $s['total_due'] > 0)
+            ->sort(function($a, $b) {
+                return (int)$a['roll'] <=> (int)$b['roll'];
+            })
+            ->values();
 
             return response()->json($students);
         } catch (\Throwable $e) {
@@ -417,6 +525,12 @@ class FeeReportController extends Controller
                 });
             }
 
+            if ($request->student_id) {
+                $query->whereHas('student', function($q) use ($request) {
+                    $q->where('student_id', 'like', '%' . $request->student_id . '%');
+                });
+            }
+
             if ($request->fee_category_id) {
                 $query->whereHas('feeStructure', function($q) use ($request) {
                     $q->where('fee_category_id', $request->fee_category_id);
@@ -448,6 +562,7 @@ class FeeReportController extends Controller
                     'roll_no' => $enrollment->roll_no ?? null,
                     'class_bangla_name' => $enrollment->class->bangla_name ?? null,
                     'class_name' => $enrollment->class->name ?? null,
+                    'class_numeric' => $enrollment->class->numeric_value ?? 0,
                     'section_bangla_name' => $enrollment->section->bangla_name ?? null,
                     'section_name' => $enrollment->section->name ?? null,
                     'category_name' => $f->feeStructure->category->name ?? null,
@@ -458,7 +573,17 @@ class FeeReportController extends Controller
                     'fine_waiver' => $f->fine_waiver ?? 0,
                     'status' => $f->status,
                 ];
-            });
+            })
+            ->sort(function($a, $b) {
+                $cA = $a['class_numeric'] ?? 0;
+                $cB = $b['class_numeric'] ?? 0;
+                if ($cA !== $cB) return $cA <=> $cB;
+                
+                if ($a['section_name'] !== $b['section_name']) return $a['section_name'] <=> $b['section_name'];
+                
+                return (int)$a['roll_no'] <=> (int)$b['roll_no'];
+            })
+            ->values();
 
             return response()->json($fees);
         } catch (\Throwable $e) {

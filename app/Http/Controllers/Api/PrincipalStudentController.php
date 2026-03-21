@@ -34,13 +34,17 @@ class PrincipalStudentController extends Controller
         }
 
         $query = $request->get('q');
+        $academicYearId = $request->get('academic_year_id');
         $classId = $request->get('class_id');
         $sectionId = $request->get('section_id');
         $rollNo = $request->get('roll_no');
         $limit = min((int)$request->get('limit', 50), 500);
 
+        $allowedClassIds = $request->get('allowed_class_ids');
+        $allowedSectionIds = $request->get('allowed_section_ids');
+
         // If no filters provided, return empty list
-        if (empty($query) && empty($classId) && empty($rollNo)) {
+        if (empty($query) && empty($classId) && empty($rollNo) && empty($allowedClassIds) && empty($allowedSectionIds)) {
             return response()->json([]);
         }
 
@@ -54,16 +58,27 @@ class PrincipalStudentController extends Controller
                         ->orWhere('guardian_phone', 'like', "%{$query}%");
                 });
             })
-            ->when($classId || $sectionId || $rollNo, function($q) use ($classId, $sectionId, $rollNo) {
-                $q->whereHas('enrollments', function($en) use ($classId, $sectionId, $rollNo) {
-                    $en->where('status', 'active');
-                    if ($classId) $en->where('class_id', (int)$classId);
-                    if ($sectionId) $en->where('section_id', (int)$sectionId);
-                    if ($rollNo) $en->where('roll_no', $rollNo);
-                });
+            ->whereHas('enrollments', function($en) use ($academicYearId, $classId, $sectionId, $rollNo, $allowedClassIds, $allowedSectionIds) {
+                $en->where('status', 'active');
+                if ($academicYearId) $en->where('academic_year_id', $academicYearId);
+                
+                if ($classId) $en->where('class_id', (int)$classId);
+                if ($sectionId) $en->where('section_id', (int)$sectionId);
+                if ($rollNo) $en->where('roll_no', $rollNo);
+                
+                if ($allowedClassIds) {
+                    $ids = explode(',', $allowedClassIds);
+                    $en->whereIn('class_id', $ids);
+                }
+                if ($allowedSectionIds) {
+                    $ids = explode(',', $allowedSectionIds);
+                    $en->whereIn('section_id', $ids);
+                }
             })
-            ->with(['enrollments' => function($en) {
-                $en->where('status', 'active')->with(['class', 'section', 'group']);
+            ->with(['enrollments' => function($en) use ($academicYearId) {
+                $en->where('status', 'active');
+                if ($academicYearId) $en->where('academic_year_id', $academicYearId);
+                $en->with(['class', 'section', 'group']);
             }])
             ->limit($limit)
             ->get()
@@ -79,6 +94,7 @@ class PrincipalStudentController extends Controller
                     'guardian_phone' => $student->guardian_phone,
                     'photo_url' => $student->photo_url,
                     'class_name' => $enrollment?->class?->name,
+                    'class_numeric' => $enrollment?->class?->numeric_value ?? 0,
                     'section_name' => $enrollment?->section?->name,
                     'group_name' => $enrollment?->group?->name,
                     'roll_no' => $enrollment?->roll_no,
@@ -86,7 +102,15 @@ class PrincipalStudentController extends Controller
                     'status' => $student->status,
                 ];
             })
-            ->sortBy('roll_no_int')
+            ->sort(function($a, $b) {
+                if ($a['class_numeric'] !== $b['class_numeric']) {
+                    return $a['class_numeric'] <=> $b['class_numeric'];
+                }
+                if ($a['section_name'] !== $b['section_name']) {
+                    return $a['section_name'] <=> $b['section_name'];
+                }
+                return $a['roll_no_int'] <=> $b['roll_no_int'];
+            })
             ->values();
 
         return response()->json($students);

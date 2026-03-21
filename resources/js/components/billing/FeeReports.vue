@@ -13,7 +13,7 @@
                     <p class="text-slate-500 mt-2 font-medium">প্রতিষ্ঠানের আয় এবং বকেয়ার বিস্তারিত পরিসংখ্যান দেখুন</p>
                 </div>
 
-                <div class="flex items-center gap-2 bg-white/80 backdrop-blur-md p-1.5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex flex-wrap items-center gap-2 bg-white/80 backdrop-blur-md p-2 rounded-2xl shadow-sm border border-slate-200">
                     <button
                         v-for="tab in tabs"
                         :key="tab.id"
@@ -172,7 +172,7 @@
                                 <template v-for="(methods, teacher) in teacherData" :key="teacher">
                                     <tr v-for="(data, idx) in methods" :key="teacher + idx" class="group hover:bg-slate-50/80 transition-all">
                                         <td v-if="idx === 0" :rowspan="methods.length" class="px-8 py-6 text-slate-900 font-black border-r border-slate-50/50">
-                                            <div class="flex items-center gap-3">
+                                            <div class="flex flex-wrap items-center gap-3">
                                                 <div class="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 font-black">
                                                     {{ teacher.charAt(0) }}
                                                 </div>

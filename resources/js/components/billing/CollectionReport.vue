@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
       <div>
         <h1 class="text-2xl font-extrabold">কালেকশন রিপোর্ট</h1>
         <p class="text-sm text-slate-500">তারিখ, শ্রেণি, সেকশন, ফি ক্যাটেগরি ও মাস দিয়ে পরিশোধকৃত শিক্ষার্থীদের তালিকা দেখুন</p>
@@ -45,7 +45,7 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-3 mt-4">
+      <div class="flex flex-wrap items-center gap-3 mt-4">
         <button @click="fetch" :disabled="loading" class="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 disabled:opacity-60">
           <span v-if="loading">লোড হচ্ছে...</span>
           <span v-else>Search</span>
