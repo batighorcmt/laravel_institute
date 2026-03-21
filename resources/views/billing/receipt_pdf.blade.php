@@ -118,10 +118,10 @@
         <tr>
             <td>
                 <div class="label">শিক্ষার্থীর তথ্য</div>
-                <div class="value">{{ $payment->student->student_name_bn ?? $payment->student->student_name_en }}</div>
+                <div class="value">{{ $payment->student->student_name_bn ?? ($payment->student->student_name_en ?? 'শিক্ষার্থী') }}</div>
                 <div>আইডি: {{ $payment->student->student_id }}</div>
-                <div>শ্রেণি: {{ $payment->student->currentEnrollment->class->name ?? '...' }} | শাখা: {{ $payment->student->currentEnrollment->section->name ?? '...' }}</div>
-                <div>রোল: {{ toBN($payment->student->currentEnrollment->roll_no ?? '...') }}</div>
+                <div>শ্রেণি: {{ $payment->student->currentEnrollment?->class?->name ?? '...' }} | শাখা: {{ $payment->student->currentEnrollment?->section?->name ?? '...' }}</div>
+                <div>রোল: {{ toBN($payment->student->currentEnrollment?->roll_no ?? '...') }}</div>
             </td>
             <td style="text-align: right;">
                 <div class="label">রিসিট তথ্য</div>

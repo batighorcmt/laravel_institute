@@ -44,6 +44,9 @@ class ReceiptController extends Controller
             'school'
         ])->findOrFail($id);
 
+        @ini_set('memory_limit', '512M');
+        @ini_set('max_execution_time', '120');
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing.receipt_pdf', compact('payment'));
         return $pdf->download("Receipt-{$payment->payment_number}.pdf");
     }
