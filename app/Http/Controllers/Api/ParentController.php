@@ -480,6 +480,77 @@ class ParentController extends Controller
         return response()->json(['message' => 'পাসওয়ার্ড সফলভাবে পরিবর্তিত হয়েছে']);
     }
 
+    public function fees(Request $request)
+    {
+        $studentId = $request->get('student_id');
+        $children = $this->resolveChildren($request);
+        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        // 1. Pending/Due Fees
+        $dueFees = \App\Models\StudentFee::with(['feeStructure.category'])
+            ->where('student_id', $student->id)
+            ->whereIn('status', ['unpaid', 'partial'])
+            ->orderBy('due_date', 'asc')
+            ->get()
+            ->map(function ($fee) {
+                $fine = (float)$fee->calculateFine();
+                return [
+                    'id' => $fee->id,
+                    'category_name' => $fee->feeStructure->category->name ?? 'N/A',
+                    'due_date' => $fee->due_date, // Handle as string if not cast
+                    'amount' => (float)$fee->amount,
+                    'paid_amount' => (float)$fee->paid_amount,
+                    'fine' => $fine,
+                    'total_due' => (float)max(0, $fee->amount - $fee->paid_amount + $fine),
+                    'status' => $fee->status,
+                ];
+            });
+
+        // 2. Paid Fees (Payments)
+        $paidPayments = \App\Models\Payment::where('student_id', $student->id)
+            ->where('status', 'settled')
+            ->orderByDesc('received_at')
+            ->get()
+            ->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'payment_number' => $payment->payment_number,
+                    'amount_paid' => (float)$payment->amount_paid,
+                    'fine_applied' => (float)$payment->fine_applied,
+                    'payment_method' => $payment->payment_method,
+                    'received_at' => $payment->received_at ? $payment->received_at->toDateTimeString() : null,
+                    'receipt_url' => url("/billing/receipts/{$payment->id}"), // URL for receipt
+                ];
+            });
+
+        // Get current academic year for payment
+        $currentYear = \App\Models\AcademicYear::where('school_id', $student->school_id)
+            ->where('is_current', true)
+            ->first();
+
+        $enrollment = $student->currentEnrollment()->with(['class', 'section'])->first();
+
+        return response()->json([
+            'due_fees' => $dueFees,
+            'paid_fees' => $paidPayments,
+            'student' => [
+                'id' => $student->id,
+                'name' => $student->full_name,
+                'student_id' => $student->student_id,
+                'photo' => $student->photo,
+                'class' => $enrollment->class->name ?? 'N/A',
+                'section' => $enrollment->section->name ?? 'N/A',
+                'roll' => $enrollment->roll_no ?? 'N/A',
+            ],
+            'academic_year_id' => $currentYear ? $currentYear->id : null,
+            'message' => 'ফিসের হিসাব'
+        ]);
+    }
+
     /* Utility: resolve parent children set */
     private function resolveChildren(Request $request)
     {

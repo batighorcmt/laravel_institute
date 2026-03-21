@@ -30,13 +30,21 @@
 
                     <ul class="list-group list-group-unbordered mb-3">
                         <li class="list-group-item">
-                            <b>শ্রেণী</b> <a class="float-right">{{ $selectedStudent->class->name ?? 'N/A' }}</a>
+                            <b>শ্রেণী</b> <a class="float-right text-indigo font-weight-bold">{{ $selectedStudent->currentEnrollment->class->name ?? 'N/A' }}</a>
                         </li>
                         <li class="list-group-item">
-                            <b>রোল</b> <a class="float-right">{{ $selectedStudent->enrollments()->latest()->first()?->roll_no ?? 'N/A' }}</a>
+                            <b>শাখা</b> <a class="float-right text-dark">{{ $selectedStudent->currentEnrollment->section->name ?? 'N/A' }}</a>
+                        </li>
+                        @if($selectedStudent->currentEnrollment && $selectedStudent->currentEnrollment->group)
+                        <li class="list-group-item">
+                            <b>বিভাগ</b> <a class="float-right text-dark">{{ $selectedStudent->currentEnrollment->group->name }}</a>
+                        </li>
+                        @endif
+                        <li class="list-group-item">
+                            <b>রোল</b> <a class="float-right text-dark">{{ $selectedStudent->currentEnrollment->roll_no ?? 'N/A' }}</a>
                         </li>
                         <li class="list-group-item">
-                            <b>লিঙ্গ</b> <a class="float-right">{{ ucfirst($selectedStudent->gender) }}</a>
+                            <b>লিঙ্গ</b> <a class="float-right">{{ $selectedStudent->gender === 'male' ? 'ছেলে' : ($selectedStudent->gender === 'female' ? 'মেয়ে' : $selectedStudent->gender) }}</a>
                         </li>
                     </ul>
                 </div>
@@ -56,26 +64,43 @@
                     <div class="tab-content">
                         <div class="active tab-pane" id="details">
                             <table class="table">
+                                <tr><th>নিবন্ধন/ভর্তি আইডি</th><td>{{ $selectedStudent->student_id }}</td></tr>
                                 <tr><th>নাম (বাংলা)</th><td>{{ $selectedStudent->student_name_bn }}</td></tr>
+                                <tr><th>নাম (ইংরেজী)</th><td>{{ $selectedStudent->student_name_en }}</td></tr>
                                 <tr><th>জন্ম তারিখ</th><td>{{ $selectedStudent->date_of_birth ? $selectedStudent->date_of_birth->format('d M, Y') : 'N/A' }}</td></tr>
                                 <tr><th>রক্তের গ্রুপ</th><td>{{ $selectedStudent->blood_group ?? 'N/A' }}</td></tr>
                                 <tr><th>ধর্ম</th><td>{{ $selectedStudent->religion ?? 'N/A' }}</td></tr>
+                                <tr><th>ভর্তির তারিখ</th><td>{{ $selectedStudent->admission_date ? $selectedStudent->admission_date->format('d M, Y') : 'N/A' }}</td></tr>
                             </table>
                         </div>
                         <div class="tab-pane" id="guardian">
                             <table class="table">
-                                <tr><th>পিতার নাম</th><td>{{ $selectedStudent->father_name }}</td></tr>
-                                <tr><th>মাতার নাম</th><td>{{ $selectedStudent->mother_name }}</td></tr>
+                                <tr><th>পিতার নাম (en)</th><td>{{ $selectedStudent->father_name }}</td></tr>
+                                <tr><th>পিতার নাম (bn)</th><td>{{ $selectedStudent->father_name_bn ?? 'N/A' }}</td></tr>
+                                <tr><th>মাতার নাম (en)</th><td>{{ $selectedStudent->mother_name }}</td></tr>
+                                <tr><th>মাতার নাম (bn)</th><td>{{ $selectedStudent->mother_name_bn ?? 'N/A' }}</td></tr>
                                 <tr><th>অভিভাবকের ফোন</th><td>{{ $selectedStudent->guardian_phone }}</td></tr>
                                 <tr><th>সম্পর্ক</th><td>{{ $selectedStudent->guardian_relation }}</td></tr>
                             </table>
                         </div>
                         <div class="tab-pane" id="address">
                             <h6>বর্তমান ঠিকানা</h6>
-                            <p>{{ $selectedStudent->present_village }}, {{ $selectedStudent->present_post_office }}, {{ $selectedStudent->present_upazilla }}, {{ $selectedStudent->present_district }}</p>
+                            <p>
+                                {{ $selectedStudent->present_village ?: $selectedStudent->present_village_en }}, 
+                                {{ $selectedStudent->present_para_moholla }}, 
+                                {{ $selectedStudent->present_post_office ?: $selectedStudent->present_post_office_en }}, 
+                                {{ $selectedStudent->present_upazilla ?: $selectedStudent->present_upazilla_en }}, 
+                                {{ $selectedStudent->present_district ?: $selectedStudent->present_district_en }}
+                            </p>
                             <hr>
                             <h6>স্থায়ী ঠিকানা</h6>
-                            <p>{{ $selectedStudent->permanent_village }}, {{ $selectedStudent->permanent_post_office }}, {{ $selectedStudent->permanent_upazilla }}, {{ $selectedStudent->permanent_district }}</p>
+                            <p>
+                                {{ $selectedStudent->permanent_village ?: $selectedStudent->permanent_village_en }}, 
+                                {{ $selectedStudent->permanent_para_moholla }}, 
+                                {{ $selectedStudent->permanent_post_office ?: $selectedStudent->permanent_post_office_en }}, 
+                                {{ $selectedStudent->permanent_upazilla ?: $selectedStudent->permanent_upazilla_en }}, 
+                                {{ $selectedStudent->permanent_district ?: $selectedStudent->permanent_district_en }}
+                            </p>
                         </div>
                     </div>
                 </div>

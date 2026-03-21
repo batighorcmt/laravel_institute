@@ -438,6 +438,7 @@
                                     <li class="nav-item"><a href="{{ route('billing.due') }}" class="nav-link {{ request()->routeIs('billing.due') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Due Preview</p></a></li>
                                     <li class="nav-item"><a href="{{ route('billing.detailed_due_report') }}" class="nav-link {{ request()->routeIs('billing.detailed_due_report') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>বকেয়া আদায় তালিকা</p></a></li>
                                     <li class="nav-item"><a href="{{ route('billing.statement') }}" class="nav-link {{ request()->routeIs('billing.statement') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Statement</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('billing.cashier_setup') }}" class="nav-link {{ request()->routeIs('billing.cashier_setup') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Cashier Settings</p></a></li>
                                 </ul>
                             </li>
                             @endif
@@ -609,6 +610,26 @@
                                         <p>My Collections</p>
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('teacher.institute.billing.cash_transfer', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.billing.cash_transfer') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Cash Transfer</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('teacher.institute.billing.deposit_history', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('teacher.institute.billing.deposit_history') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Deposit History</p>
+                                    </a>
+                                </li>
+                                @if(auth()->user()->isCashier($u->primarySchool()?->id))
+                                <li class="nav-item">
+                                    <a href="{{ route('billing.cashier_dashboard') }}" class="nav-link {{ request()->routeIs('billing.cashier_dashboard') ? 'active' : '' }}">
+                                        <i class="fas fa-cash-register nav-icon text-emerald-400"></i>
+                                        <p>Cashier Dashboard</p>
+                                    </a>
+                                </li>
+                                @endif
                             </ul>
                         </li>
                         @endif
@@ -631,6 +652,12 @@
                             <a href="{{ route('parent.subjects') }}" class="nav-link {{ request()->routeIs('parent.subjects') ? 'active' : '' }}">
                                 <i class="nav-icon fas fa-book"></i>
                                 <p>পঠিত বিষয়</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('parent.fees') }}" class="nav-link {{ request()->routeIs('parent.fees') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-wallet"></i>
+                                <p>ফিস হিসাব</p>
                             </a>
                         </li>
                         @if(auth()->user()->hasModule('routine'))

@@ -316,8 +316,8 @@
                     </div>
                 </div>
                 <div class="flex gap-3">
-                    <button @click="printReceipt" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors">প্রিন্ট রিসিট</button>
-                    <button @click="resetForm" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-colors">পরবর্তী</button>
+                    <button @click="printReceipt" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors">রিসিট প্রিন্ট করুন</button>
+                    <button @click="closeAndReload" class="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition-colors">বন্ধ করুন</button>
                 </div>
             </div>
         </div>
@@ -450,10 +450,10 @@ export default {
             return this.dueFees.filter(f => f.selected);
         },
         filteredStudents() {
-            let list = this.studentsList;
+            let list = this.studentsList || [];
             
             // If user is typing in the Roll field, filter the studentsList
-            const q = (this.filters.roll_no || '').toLowerCase();
+            const q = String(this.filters.roll_no || '').toLowerCase();
             if (q) {
                 list = list.filter(s => 
                     (s.name_bn && s.name_bn.toLowerCase().includes(q)) || 
@@ -746,7 +746,6 @@ export default {
             this.searchResults = [];
             this.selectedStudent = null;
             this.dueFees = [];
-            this.selectedFees = [];
             this.totalPayable = 0;
             this.searching = false;
         },
@@ -759,6 +758,10 @@ export default {
             this.paymentMethod = 'cash';
             this.remarks = '';
             this.totalPayable = 0;
+        },
+
+        closeAndReload() {
+            window.location.reload();
         },
 
         openWaiverModal(fee) {

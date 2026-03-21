@@ -29,7 +29,7 @@ class FeeReportController extends Controller
             $schoolId = $request->attributes->get('current_school_id') ?? $user?->primarySchool()?->id;
 
             // 1. Identify teacher and assigned sections
-            $teacher = $user->teacher; // Assuming Teacher has user_id
+            $teacher = $user->teacher; 
             if (!$teacher) {
                 return response()->json(['error' => 'Teacher profile not found'], 404);
             }
@@ -44,15 +44,24 @@ class FeeReportController extends Controller
             // 2. Summary for these sections
             $summary = [];
             if (!empty($sectionIds)) {
-                $summary = StudentFee::join('students', 'student_fees.student_id', '=', 'students.id')
+                $summaryQuery = StudentFee::join('students', 'student_fees.student_id', '=', 'students.id')
                     ->join('student_enrollments', function($join) use ($sectionIds) {
                         $join->on('students.id', '=', 'student_enrollments.student_id')
                             ->whereIn('student_enrollments.section_id', $sectionIds);
                     })
                     ->join('fee_structures', 'student_fees.fee_structure_id', '=', 'fee_structures.id')
                     ->join('fee_categories', 'fee_structures.fee_category_id', '=', 'fee_categories.id')
-                    ->where('student_fees.school_id', $schoolId)
-                    ->select(
+                    ->where('student_fees.school_id', $schoolId);
+
+                // Apply filters to summary if applicable (e.g. Month)
+                if ($request->filled('month')) {
+                    $summaryQuery->where('student_fees.month', $request->month);
+                }
+                if ($request->filled('fee_category_id')) {
+                    $summaryQuery->where('fee_structures.fee_category_id', $request->fee_category_id);
+                }
+
+                $summary = $summaryQuery->select(
                         'fee_categories.name as category_name',
                         DB::raw('COUNT(DISTINCT student_fees.student_id) as student_count'),
                         DB::raw('SUM(student_fees.amount + student_fees.fine_amount - student_fees.fine_waiver) as total_payable'),
@@ -71,28 +80,51 @@ class FeeReportController extends Controller
                     });
             }
 
-            // 3. Detailed collections by THIS teacher
-            $query = Payment::where('collected_by_user_id', $user->id)
-                ->where('school_id', $schoolId)
-                ->where('status', 'settled')
-                ->with(['student', 'category']);
+            // 3. Detailed collections by THIS teacher (Itemized by fee category)
+            $itemsQuery = \App\Models\PaymentItem::query()
+                ->select('payment_items.*')
+                ->join('payments', 'payment_items.payment_id', '=', 'payments.id')
+                ->where('payments.collected_by_user_id', $user->id)
+                ->where('payments.school_id', $schoolId)
+                ->where('payments.status', 'settled')
+                ->with(['payment.student', 'studentFee.feeStructure.category']);
 
             if ($request->filled('from_date')) {
-                $query->whereDate('received_at', '>=', $request->from_date);
+                $itemsQuery->whereDate('payments.received_at', '>=', $request->from_date);
             }
             if ($request->filled('to_date')) {
-                $query->whereDate('received_at', '<=', $request->to_date);
+                $itemsQuery->whereDate('payments.received_at', '<=', $request->to_date);
             }
             if ($request->filled('fee_category_id')) {
-                $query->where('fee_category_id', $request->fee_category_id);
+                $itemsQuery->whereHas('studentFee.feeStructure', function($q) use ($request) {
+                    $q->where('fee_category_id', $request->fee_category_id);
+                });
+            }
+            if ($request->filled('month')) {
+                $itemsQuery->whereHas('studentFee', function($q) use ($request) {
+                    $q->where('month', $request->month);
+                });
             }
             if ($request->filled('student_id')) {
-                $query->whereHas('student', function($q) use ($request) {
+                $itemsQuery->whereHas('payment.student', function($q) use ($request) {
                     $q->where('student_id', 'like', '%' . $request->student_id . '%');
                 });
             }
 
-            $collections = $query->latest('received_at')->get();
+            $paymentItems = $itemsQuery->orderBy('payments.received_at', 'desc')->get();
+
+            $collections = $paymentItems->map(function($item) {
+                return [
+                    'id' => $item->id . '_item',
+                    'received_at' => $item->payment->received_at ?? null,
+                    'trx_id' => $item->payment->payment_number ?? ($item->payment->trx_id ?? 'N/A'),
+                    'student' => $item->payment->student ?? null,
+                    'category' => $item->studentFee->feeStructure->category ?? null,
+                    'fee_month' => $item->studentFee->month ?? null,
+                    'payment_method' => $item->payment->payment_method ?? 'Cash',
+                    'amount_paid' => $item->amount
+                ];
+            });
 
             return response()->json([
                 'teacher_name' => $user->name,
@@ -103,7 +135,126 @@ class FeeReportController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Teacher Collections Error: ' . $e->getMessage());
-            return response()->json(['error' => 'Internal server error'], 500);
+            return response()->json(['error' => 'Internal server error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Teacher Cash Transfer (calculated)
+     */
+    public function teacherCashTransfer(Request $request)
+    {
+        try {
+            $request->validate([
+                'from_date' => 'required|date',
+                'to_date' => 'required|date'
+            ]);
+
+            $user = $request->user();
+            $schoolId = $request->attributes->get('current_school_id') ?? $user?->primarySchool()?->id;
+
+            $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            $toDate = Carbon::parse($request->to_date)->endOfDay();
+
+            // Total Collected by teacher in date range
+            $collectedQuery = \App\Models\Payment::where('school_id', $schoolId)
+                ->where('collected_by_user_id', $user->id)
+                ->where('status', 'settled')
+                ->whereBetween('received_at', [$fromDate, $toDate]);
+
+            $total_collected = $collectedQuery->sum('amount_paid');
+
+            // Total Deposited by teacher in date range
+            // Assumed teacher_deposits is linked to user via teacher_id
+            $depositedQuery = \DB::table('teacher_deposits')
+                ->where('teacher_id', $user->id)
+                ->whereIn('status', ['pending', 'received'])
+                ->whereBetween('deposit_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')]);
+
+            $total_deposited = $depositedQuery->sum('amount');
+            $total_remaining = $total_collected - $total_deposited;
+
+            return response()->json([
+                'total_collected' => round($total_collected, 2),
+                'total_deposited' => round($total_deposited, 2),
+                'total_remaining' => round($total_remaining, 2)
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Teacher Cash Transfer Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
+        }
+    }
+
+    /**
+     * Teacher Deposit Cash
+     */
+    public function teacherDepositCash(Request $request)
+    {
+        try {
+            $request->validate([
+                'amount' => 'required|numeric|min:1',
+                // category and month optional if we just want bulk deposit
+            ]);
+
+            $user = $request->user();
+            
+            \DB::table('teacher_deposits')->insert([
+                'teacher_id' => $user->id,
+                'amount' => $request->amount,
+                'deposit_date' => now()->toDateString(),
+                'status' => 'pending',
+                'fee_category_id' => $request->fee_category_id ?? null,
+                'month' => $request->month ?? null,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            return response()->json(['message' => 'Cash deposited successfully']);
+        } catch (\Exception $e) {
+            Log::error('Teacher Deposit Cash Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
+        }
+    }
+
+    /**
+     * Teacher Deposit History
+     */
+    public function teacherDepositHistory(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            $query = \DB::table('teacher_deposits')
+                ->leftJoin('users as cashier', 'teacher_deposits.cashier_id', '=', 'cashier.id')
+                ->leftJoin('fee_categories', 'teacher_deposits.fee_category_id', '=', 'fee_categories.id')
+                ->where('teacher_deposits.teacher_id', $user->id)
+                ->select(
+                    'teacher_deposits.*', 
+                    'cashier.name as cashier_name',
+                    'fee_categories.name as fee_category_name'
+                );
+
+            if ($request->filled('from_date')) {
+                $query->whereDate('teacher_deposits.deposit_date', '>=', $request->from_date);
+            }
+            if ($request->filled('to_date')) {
+                $query->whereDate('teacher_deposits.deposit_date', '<=', $request->to_date);
+            }
+            if ($request->filled('fee_category_id')) {
+                $query->where('teacher_deposits.fee_category_id', $request->fee_category_id);
+            }
+            if ($request->filled('month')) {
+                $query->where('teacher_deposits.month', $request->month);
+            }
+
+            $deposits = $query->orderBy('teacher_deposits.deposit_date', 'desc')->get();
+
+            return response()->json([
+                'deposits' => $deposits
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Teacher Deposit History Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
     /**

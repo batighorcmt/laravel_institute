@@ -686,6 +686,8 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                         // Billing collection page for teachers (restricted by assigned class in controller)
                         Route::get('/billing/collect', [App\Http\Controllers\Teacher\Billing\CollectController::class , 'create'])->name('billing.collect');
                         Route::get('/billing/my-collections', function() { return view('billing.teacher_collections'); })->name('billing.my_collections');
+                        Route::get('/billing/cash-transfer', function() { return view('billing.teacher_cash_transfer'); })->name('billing.cash_transfer');
+                        Route::get('/billing/deposit-history', function() { return view('billing.teacher_deposit_history'); })->name('billing.deposit_history');
 
                         // Manage Exams (all teachers)
                         Route::prefix('exams')->name('exams.')->middleware('module:exams')->group(function () {
@@ -735,6 +737,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             Route::get('/teachers', [ParentController::class , 'teachers'])->name('teachers');
             Route::get('/feedback', [ParentController::class , 'feedback'])->name('feedback');
             Route::post('/feedback', [ParentController::class , 'submitFeedback'])->name('feedback.store');
+            Route::get('/fees', [ParentController::class , 'fees'])->name('fees');
         }
         );
 
@@ -752,6 +755,14 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                     return view('billing.statement');
                 }
                 )->name('billing.statement');
+                Route::get('/billing/cashier-setup', function() {
+                    return view('billing.principal_cashier_setup');
+                }
+                )->name('billing.cashier_setup');
+                Route::get('/billing/cashier-dashboard', function() {
+                    return view('billing.cashier_dashboard');
+                }
+                )->name('billing.cashier_dashboard');
                 Route::get('/billing/collect', function () {
                     $schoolId = request()->attributes->get('current_school_id');
                     $school = $schoolId ? \App\Models\School::find($schoolId) : auth()->user()->primarySchool();

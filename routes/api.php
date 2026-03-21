@@ -124,6 +124,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('parent/teachers', [\App\Http\Controllers\Api\ParentController::class , 'teachers'])->middleware('role:parent');
                 Route::get('parent/feedback', [\App\Http\Controllers\Api\ParentController::class , 'feedbackIndex'])->middleware('role:parent');
                 Route::post('parent/feedback', [\App\Http\Controllers\Api\ParentController::class , 'feedbackStore'])->middleware('role:parent');
+                Route::get('parent/fees', [\App\Http\Controllers\Api\ParentController::class , 'fees'])->middleware('role:parent');
                 Route::post('parent/update-photo', [\App\Http\Controllers\Api\ParentController::class , 'updatePhoto'])->middleware('role:parent');
                 Route::post('parent/change-password', [\App\Http\Controllers\Api\ParentController::class , 'changePassword'])->middleware('role:parent');
                 // Device token endpoints
@@ -179,6 +180,9 @@ Route::prefix('v1')->group(function () {
                     Route::get('/reports/detailed-dues', [\App\Http\Controllers\Api\FeeReportController::class , 'detailedDues']);
                     Route::get('/reports/student-dues', [\App\Http\Controllers\Api\FeeReportController::class , 'studentDues']);
                     Route::get('/reports/teacher-collections', [\App\Http\Controllers\Api\FeeReportController::class, 'teacherCollections'])->middleware('role:teacher');
+                    Route::get('/reports/teacher-cash-transfer', [\App\Http\Controllers\Api\FeeReportController::class, 'teacherCashTransfer'])->middleware('role:teacher');
+                    Route::post('/reports/teacher-cash-transfer/deposit', [\App\Http\Controllers\Api\FeeReportController::class, 'teacherDepositCash'])->middleware('role:teacher');
+                    Route::get('/reports/teacher-deposit-history', [\App\Http\Controllers\Api\FeeReportController::class, 'teacherDepositHistory'])->middleware('role:teacher');
 
                     // Fee Waivers management (principal/admin)
                     Route::get('/waivers', [\App\Http\Controllers\Api\FeeWaiverController::class , 'index'])->middleware('role:principal,school');
@@ -192,6 +196,18 @@ Route::prefix('v1')->group(function () {
                     Route::get('/receipts/{id}', [\App\Http\Controllers\Billing\ReceiptController::class , 'show']);
                     Route::get('/students/{student}/due', [\App\Http\Controllers\Billing\DueController::class , 'show']);
                     Route::get('/students/{student}/statement', [\App\Http\Controllers\Billing\StatementController::class , 'monthly']);
+
+                    // Cashier Management
+                    Route::get('/cashier-setup', [\App\Http\Controllers\Api\CashierManagementController::class, 'getCashierSetup'])->middleware('role:principal');
+                    Route::post('/cashier-setup/assign', [\App\Http\Controllers\Api\CashierManagementController::class, 'assignCashier'])->middleware('role:principal');
+                    Route::get('/cashier-setup/statement/{id}', [\App\Http\Controllers\Api\CashierManagementController::class, 'getCashierStatement'])->middleware('role:principal');
+                    
+                    Route::get('/cashier-pending-deposits', [\App\Http\Controllers\Api\CashierManagementController::class, 'getPendingDeposits']);
+                    Route::post('/cashier-accept-deposit/{id}', [\App\Http\Controllers\Api\CashierManagementController::class, 'acceptDeposit']);
+                    
+                    // Cashier Dashboard
+                    Route::get('/cashier-dashboard/data', [\App\Http\Controllers\Api\CashierManagementController::class, 'getCashierDashboardData']);
+                    Route::post('/cashier-dashboard/add-expense', [\App\Http\Controllers\Api\CashierManagementController::class, 'addExpense']);
                 }
                 );
 

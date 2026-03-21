@@ -86,6 +86,19 @@ class User extends Authenticatable
         return $this->hasRole(Role::PRINCIPAL, $schoolId);
     }
 
+    public function isCashier($schoolId = null): bool
+    {
+        $query = \DB::table('cashier_assignments')
+            ->where('user_id', $this->id)
+            ->where('is_active', true);
+            
+        if ($schoolId) {
+            $query->where('school_id', $schoolId);
+        }
+        
+        return $query->exists();
+    }
+
     public function isTeacher($schoolId = null): bool
     {
         return $this->hasRole(Role::TEACHER, $schoolId);

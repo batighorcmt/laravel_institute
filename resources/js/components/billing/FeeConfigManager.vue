@@ -7,21 +7,21 @@
                     <h1 class="text-3xl font-bold text-gray-800">ফি কনফিগারেশন</h1>
                     <p class="text-gray-500 mt-1">বিভিন্ন ফি-র হার এবং সময়কাল নির্ধারণ করুন</p>
                 </div>
-                <div class="flex gap-3">
-                    <button @click="toggleGlobalFine" :class="globalFineEnabled ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700'" class="px-5 py-2.5 text-white rounded-xl font-bold shadow-sm transition-all flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:flex gap-3 w-full md:w-auto mt-4 md:mt-0">
+                    <button @click="toggleGlobalFine" :class="globalFineEnabled ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 hover:bg-gray-700'" class="px-4 py-2.5 text-white rounded-xl font-bold shadow-sm transition-all flex justify-center items-center gap-2 text-sm sm:col-span-2 md:col-span-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        জরিমানা সিস্টেম {{ globalFineEnabled ? 'বন্ধ' : 'চালু' }}
+                        জরিমানা {{ globalFineEnabled ? 'বন্ধ' : 'চালু' }}
                     </button>
-                    <button @click="openGenerateModal" class="px-5 py-2.5 bg-green-600 text-white rounded-xl font-bold shadow-sm hover:bg-green-700 transition-all flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <button @click="openGenerateModal" class="px-4 py-2.5 bg-green-600 text-white rounded-xl font-bold shadow-sm hover:bg-green-700 transition-all flex justify-center items-center gap-2 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        ফি জেনারেট করুন
+                        ফি জেনারেট
                     </button>
-                    <button @click="openCategoryModal" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold shadow-sm hover:bg-indigo-700 transition-all flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <button @click="openCategoryModal" class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold shadow-sm hover:bg-indigo-700 transition-all flex justify-center items-center gap-2 text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                         নতুন ক্যাটাগরি
@@ -41,10 +41,10 @@
                     :key="category.id"
                     class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
                 >
-                    <div class="p-6 border-b border-gray-50 flex justify-between items-start">
+                    <div class="p-5 border-b border-gray-50 flex flex-col sm:flex-row justify-between items-start gap-3">
                         <div>
-                            <h3 class="text-xl font-bold text-gray-800">{{ category.name }}</h3>
-                            <div class="flex gap-2 mt-2">
+                            <h3 class="text-lg font-bold text-gray-800">{{ category.name }}</h3>
+                            <div class="flex flex-wrap gap-2 mt-2">
                                 <span class="inline-block px-2 py-1 bg-gray-100 text-gray-600 text-[10px] uppercase font-bold rounded">
                                     {{ category.frequency }}
                                 </span>
@@ -56,25 +56,25 @@
                                 </span>
                             </div>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 w-full sm:w-auto justify-end mt-2 sm:mt-0 p-2 bg-gray-50 sm:bg-transparent rounded-lg sm:rounded-none">
                             <!-- Quick Fine Toggle -->
                             <button
                                 @click="toggleCategoryFine(category)"
-                                :class="category.has_fine ? 'text-red-500 hover:bg-red-50' : 'text-gray-400 hover:bg-gray-50'"
-                                class="p-2 rounded-lg transition-colors"
+                                :class="category.has_fine ? 'text-red-500 hover:bg-red-50 bg-white shadow-sm sm:shadow-none sm:bg-transparent' : 'text-gray-400 hover:bg-gray-100 bg-white shadow-sm sm:shadow-none sm:bg-transparent'"
+                                class="p-2 aspect-square rounded-lg transition-colors flex items-center justify-center"
                                 :title="category.has_fine ? 'জরিমানা বন্ধ করুন' : 'জরিমানা চালু করুন'"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                 </svg>
                             </button>
-                            <button @click="editCategory(category)" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="ক্যাটাগরি ইডিট করুন">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <button @click="editCategory(category)" class="p-2 aspect-square text-indigo-600 bg-white shadow-sm sm:shadow-none sm:bg-transparent hover:bg-indigo-50 rounded-lg transition-colors flex items-center justify-center" title="ক্যাটাগরি ইডিট করুন">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-6 6H9v-3z" />
                                 </svg>
                             </button>
-                            <button @click="addStructure(category)" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="ফি যুক্ত করুন">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <button @click="addStructure(category)" class="p-2 aspect-square text-indigo-600 bg-white shadow-sm sm:shadow-none sm:bg-transparent hover:bg-indigo-50 rounded-lg transition-colors flex items-center justify-center" title="ফি যুক্ত করুন">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </button>
@@ -88,28 +88,30 @@
                         <div
                             v-for="struct in category.fee_structures"
                             :key="struct.id"
-                            class="p-3 bg-gray-50 rounded-xl flex justify-between items-center group"
+                            class="p-3 bg-gray-50 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 lg:group"
                         >
-                            <div>
+                            <div class="w-full sm:w-auto flex flex-row sm:flex-col justify-between items-center sm:items-start">
                                 <p class="text-sm font-bold text-gray-700">
                                     {{ getClassName(struct.class_id) }}
                                 </p>
-                                <p class="text-[10px] text-gray-500">
+                                <p class="text-[10px] text-gray-500 hidden sm:block">
                                     {{ formatDate(struct.effective_from) }} - {{ struct.effective_to ? formatDate(struct.effective_to) : 'চলমান' }}
                                 </p>
                             </div>
-                            <div class="flex items-center gap-3">
+                            <div class="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3 border-t sm:border-0 pt-2 sm:pt-0 border-gray-200 mt-1 sm:mt-0">
                                 <span class="text-lg font-black text-indigo-600">৳{{ struct.amount }}</span>
-                                <button @click="editStructure(struct)" class="opacity-0 group-hover:opacity-100 p-1.5 text-indigo-500 hover:text-indigo-700 transition-all" title="সম্পাদনা">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-6 6H9v-3z" />
-                                    </svg>
-                                </button>
-                                <button @click="deleteStructure(struct.id)" class="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:text-red-600 transition-all" title="মুছুন">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
+                                <div class="flex gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
+                                    <button @click="editStructure(struct)" class="p-1.5 text-indigo-500 hover:text-indigo-700 bg-indigo-50 sm:bg-transparent rounded-md" title="সম্পাদনা">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-6 6H9v-3z" />
+                                        </svg>
+                                    </button>
+                                    <button @click="deleteStructure(struct.id)" class="p-1.5 text-red-500 hover:text-red-700 bg-red-50 sm:bg-transparent rounded-md" title="মুছুন">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -74,6 +74,9 @@ class ParentController extends Controller
     {
         $children = $this->resolveChildren();
         $selectedStudent = $this->getSelectedStudent($children, $request);
+        if ($selectedStudent) {
+            $selectedStudent->load(['currentEnrollment.class', 'currentEnrollment.section', 'currentEnrollment.group']);
+        }
         return view('parent.profile', compact('children', 'selectedStudent'));
     }
 
@@ -417,6 +420,13 @@ class ParentController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'আপনার মতামত/অভিযোগ জমা হয়েছে।');
+    }
+
+    public function fees(Request $request)
+    {
+        $children = $this->resolveChildren();
+        $selectedStudent = $this->getSelectedStudent($children, $request);
+        return view('parent.fees', compact('children', 'selectedStudent'));
     }
 
     private function getSelectedStudent($children, Request $request)
