@@ -161,6 +161,7 @@ Route::prefix('v1')->group(function () {
                     Route::post('/fees/collect', [\App\Http\Controllers\Api\FeeCollectionController::class , 'collectFees']);
                     Route::post('/fees/{id}/waive-fine', [\App\Http\Controllers\Api\FeeCollectionController::class , 'waiveFine'])->middleware('role:principal,school');
                     Route::post('/fees/initiate-ssl', [\App\Http\Controllers\Api\FeeCollectionController::class , 'initiateSSLPayment']);
+                    Route::get('/fees/receipt/{id}/download', [\App\Http\Controllers\Billing\ReceiptController::class , 'downloadPdf'])->name('api.billing.fees.receipt.download');
 
                     // Fee Configuration
                     Route::get('/config', [\App\Http\Controllers\Api\FeeConfigurationController::class , 'index']);
