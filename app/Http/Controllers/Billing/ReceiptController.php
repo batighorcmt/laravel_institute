@@ -92,7 +92,7 @@ class ReceiptController extends Controller
                 ->header('Content-Disposition', 'attachment; filename="Receipt-' . $payment->payment_number . '.pdf"');
 
         }
-        catch (\Exception $e) {
+        catch (\Throwable $e) {
             return response()->json([
                 'error' => 'পিডিএফ তৈরি করতে সমস্যা হয়েছে: ' . $e->getMessage(),
                 'details' => $e->getTraceAsString(),

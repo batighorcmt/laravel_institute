@@ -235,7 +235,8 @@
         }
 
         if ($logoPath) {
-            $mime = mime_content_type($logoPath);
+            $ext = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
+            $mime = in_array($ext, ['png']) ? 'image/png' : 'image/jpeg';
             $logoSrc = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
         }
     }
