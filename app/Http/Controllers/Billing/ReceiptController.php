@@ -31,4 +31,20 @@ class ReceiptController extends Controller
 
         return view('billing.receipt', compact('payment'));
     }
+
+    /**
+     * PDF Download
+     */
+    public function downloadPdf($id)
+    {
+        $payment = Payment::with([
+            'student.currentEnrollment.class', 
+            'student.currentEnrollment.section',
+            'paymentItems.studentFee.feeStructure.category',
+            'school'
+        ])->findOrFail($id);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing.receipt', compact('payment'));
+        return $pdf->download("Receipt-{$payment->payment_number}.pdf");
+    }
 }

@@ -786,6 +786,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 }
                 )->name('billing.waivers');
                 Route::get('/billing/receipts/{id}', [\App\Http\Controllers\Billing\ReceiptController::class , 'showWeb'])->name('billing.receipts.show');
+Route::get('/billing/receipts/{id}/download', [\App\Http\Controllers\Billing\ReceiptController::class , 'downloadPdf'])->name('billing.receipts.download');
 
             // SSLCommerz Callbacks moved to top level
         
