@@ -10,6 +10,8 @@ class TeacherDeposit extends Model
         'teacher_id',
         'cashier_id',
         'amount',
+        'fee_category_id',
+        'month',
         'deposit_date',
         'status',
         'remarks',

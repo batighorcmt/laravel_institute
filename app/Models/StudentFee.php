@@ -17,6 +17,9 @@ class StudentFee extends Model
         'original_amount',
         'waiver_id',
         'paid_amount',
+        'fine_amount',
+        'fine_waiver',
+        'fine_waiver_reason',
         'status',
         'due_date',
     ];
