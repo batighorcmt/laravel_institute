@@ -72,7 +72,7 @@ class ParentRepository {
   }
 
   Future<List<dynamic>> getNotices() async {
-    final resp = await _dio.get('notices');
+    final resp = await _dio.get('parent/notices');
     return _parseList(resp.data);
   }
 

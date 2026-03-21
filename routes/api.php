@@ -124,7 +124,10 @@ Route::prefix('v1')->group(function () {
                 Route::get('parent/teachers', [\App\Http\Controllers\Api\ParentController::class , 'teachers'])->middleware('role:parent');
                 Route::get('parent/feedback', [\App\Http\Controllers\Api\ParentController::class , 'feedbackIndex'])->middleware('role:parent');
                 Route::post('parent/feedback', [\App\Http\Controllers\Api\ParentController::class , 'feedbackStore'])->middleware('role:parent');
-                Route::get('parent/fees', [\App\Http\Controllers\Api\ParentController::class , 'fees'])->middleware('role:parent');
+                Route::get('/parent/fees', [\App\Http\Controllers\Api\ParentController::class , 'getFees']);
+                Route::get('/parent/notices', [\App\Http\Controllers\Api\ParentController::class , 'getNotices']);
+    
+                // Quick Dashboard Stats
                 Route::post('parent/update-photo', [\App\Http\Controllers\Api\ParentController::class , 'updatePhoto'])->middleware('role:parent');
                 Route::post('parent/change-password', [\App\Http\Controllers\Api\ParentController::class , 'changePassword'])->middleware('role:parent');
                 // Device token endpoints

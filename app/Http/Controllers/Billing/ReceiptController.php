@@ -44,7 +44,7 @@ class ReceiptController extends Controller
             'school'
         ])->findOrFail($id);
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing.receipt', compact('payment'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('billing.receipt_pdf', compact('payment'));
         return $pdf->download("Receipt-{$payment->payment_number}.pdf");
     }
 }

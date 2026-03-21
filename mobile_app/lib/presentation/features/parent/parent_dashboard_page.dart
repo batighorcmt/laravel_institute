@@ -247,7 +247,7 @@ class ParentDashboardPage extends ConsumerWidget {
                     totalDue += (f['total_due'] as num).toDouble();
                   }
 
-                  if (totalDue <= 0) return const SizedBox.shrink();
+                  if (totalDue <= 0.01) return const SizedBox.shrink();
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 20, top: 5),
@@ -284,7 +284,7 @@ class ParentDashboardPage extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'বকেয়া ফিস alert!',
+                                'বকেয়া ফিস',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -292,7 +292,7 @@ class ParentDashboardPage extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                'আপনার মোট বকেয়া: ৳${totalDue.toStringAsFixed(2)}',
+                                'মোট বকেয়া: ৳${totalDue.toStringAsFixed(2)}',
                                 style: TextStyle(
                                   color: Colors.white.withOpacity(0.9),
                                   fontSize: 13,
@@ -322,6 +322,67 @@ class ParentDashboardPage extends ConsumerWidget {
                 },
                 loading: () => const SizedBox.shrink(),
                 error: (err, _) => const SizedBox.shrink(),
+              );
+            },
+          ),
+
+          // Latest Notices Section (Unread 2)
+          Consumer(
+            builder: (context, ref, _) {
+              final noticesAsync = ref.watch(parentNoticesProvider);
+              return noticesAsync.when(
+                data: (notices) {
+                  final unreadNotices = notices
+                      .where((n) => n['is_unread'] == true)
+                      .take(2)
+                      .toList();
+
+                  if (unreadNotices.isEmpty) return const SizedBox.shrink();
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const _SectionTitle(title: 'সর্বশেষ নোটিশ'),
+                          TextButton(
+                            onPressed: () => context.push('/notice-board'),
+                            child: const Text('সব দেখুন'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...unreadNotices.map((n) => Card(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
+                              onTap: () => context.push('/notice-board'),
+                              leading: const CircleAvatar(
+                                backgroundColor: Colors.indigo,
+                                child: Icon(Icons.campaign, color: Colors.white),
+                              ),
+                              title: Text(
+                                n['title'] ?? 'N/A',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                '${n['date']} | ${n['author']}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios,
+                                  size: 14, color: Colors.grey),
+                            ),
+                          )),
+                      const SizedBox(height: 20),
+                    ],
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
               );
             },
           ),

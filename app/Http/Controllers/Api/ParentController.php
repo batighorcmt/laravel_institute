@@ -480,7 +480,7 @@ class ParentController extends Controller
         return response()->json(['message' => 'পাসওয়ার্ড সফলভাবে পরিবর্তিত হয়েছে']);
     }
 
-    public function fees(Request $request)
+    public function getFees(Request $request)
     {
         $studentId = $request->get('student_id');
         $children = $this->resolveChildren($request);
@@ -555,6 +555,45 @@ class ParentController extends Controller
             'academic_year_id' => $currentYear ? $currentYear->id : null,
             'message' => 'ফিসের হিসাব'
         ]);
+    }
+
+    public function getNotices(Request $request)
+    {
+        $children = $this->resolveChildren($request);
+        if ($children->isEmpty()) return response()->json(['data' => []]);
+        
+        $schoolId = $children->first()->school_id;
+        $classIds = $children->map(fn($s) => $s->class_id ?? $s->currentEnrollment?->class_id)->filter()->unique();
+        $sectionIds = $children->map(fn($s) => $s->currentEnrollment?->section_id)->filter()->unique();
+
+        $notices = \App\Models\Notice::published()
+            ->where('school_id', $schoolId)
+            ->where(function ($q) use ($classIds, $sectionIds) {
+                $q->where('audience_type', 'all')
+                  ->orWhere('audience_type', 'parents')
+                  ->orWhere(function ($qq) use ($classIds) {
+                      $qq->where('audience_type', 'classes')->whereHas('targets', fn($t) => $t->whereIn('class_id', $classIds));
+                  })
+                  ->orWhere(function ($qq) use ($sectionIds) {
+                      $qq->where('audience_type', 'sections')->whereHas('targets', fn($t) => $t->whereIn('section_id', $sectionIds));
+                  });
+            })
+            ->with(['author:id,name'])
+            ->orderByDesc('publish_at')
+            ->limit(10)
+            ->get()
+            ->map(function ($notice) use ($request) {
+                return [
+                    'id' => $notice->id,
+                    'title' => $notice->title,
+                    'body' => $notice->body,
+                    'author' => $notice->author->name ?? 'Admin',
+                    'date' => $notice->publish_at->format('d M, Y'),
+                    'is_unread' => !$notice->reads()->where('user_id', $request->user()->id)->exists()
+                ];
+            });
+
+        return response()->json(['data' => $notices]);
     }
 
     /* Utility: resolve parent children set */
