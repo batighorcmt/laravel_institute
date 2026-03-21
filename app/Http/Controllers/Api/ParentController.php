@@ -498,6 +498,12 @@ class ParentController extends Controller
             ->get()
             ->map(function ($fee) {
                 $fine = (float)$fee->calculateFine();
+                $dueBase = (float)($fee->amount - $fee->paid_amount);
+                
+                if ($dueBase <= 0.01 && $fine <= 0.01) {
+                    return null;
+                }
+
                 return [
                     'id' => $fee->id,
                     'category_name' => $fee->getFormattedName(),
@@ -505,10 +511,10 @@ class ParentController extends Controller
                     'amount' => (float)$fee->amount,
                     'paid_amount' => (float)$fee->paid_amount,
                     'fine' => $fine,
-                    'total_due' => (float)max(0, $fee->amount - $fee->paid_amount + $fine),
+                    'total_due' => (float)max(0, $dueBase + $fine),
                     'status' => $fee->status,
                 ];
-            });
+            })->filter()->values();
 
         // 2. Paid Fees (Payments)
         $paidPayments = \App\Models\Payment::where('student_id', $student->id)
