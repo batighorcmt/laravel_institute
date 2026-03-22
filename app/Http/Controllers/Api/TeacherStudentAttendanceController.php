@@ -148,6 +148,7 @@ class TeacherStudentAttendanceController extends Controller
             $st = $en->student;
             return [
                 'id' => $st?->id,
+                'student_id' => $st?->student_id,
                 'name' => $st?->full_name,
                 'roll' => $en->roll_no,
                 'photo_url' => $st?->photo_url,
@@ -337,6 +338,7 @@ class TeacherStudentAttendanceController extends Controller
             $st = $en->student;
             return [
                 'id' => $st?->id,
+                'student_id' => $st?->student_id,
                 'name' => $st?->full_name,
                 'roll' => (int)($st?->currentEnrollment?->roll_no ?? 0),
                 'photo_url' => $st?->photo_url,

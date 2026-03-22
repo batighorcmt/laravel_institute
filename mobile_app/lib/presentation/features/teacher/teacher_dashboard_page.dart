@@ -13,6 +13,7 @@ import 'teacher_exams_page.dart';
 import 'teacher_profile_page.dart';
 import '../../state/auth_state.dart';
 import '../../../domain/auth/user_profile.dart';
+import 'billing/teacher_billing_menu_page.dart';
 
 class TeacherDashboardPage extends ConsumerStatefulWidget {
   const TeacherDashboardPage({super.key});
@@ -169,6 +170,11 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
         break;
       case 'notices':
         context.push('/notice-board');
+        break;
+      case 'billing':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const TeacherBillingMenuPage()),
+        );
         break;
     }
   }
@@ -425,6 +431,12 @@ class _OperationsGrid extends StatelessWidget {
         'Notices',
         Icons.campaign_outlined,
         Color(0xFFFFF3E0),
+      ),
+      const _OpItem(
+        'billing',
+        'Billing',
+        Icons.account_balance_wallet_outlined,
+        Color(0xFFE0F7FA),
       ),
     ];
     return GridView.count(
