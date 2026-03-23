@@ -14,6 +14,37 @@
 
 <section class="content">
     <div class="container-fluid">
+        <!-- Welcome Card -->
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-user-circle mr-2"></i>Welcome, {{ auth()->user()->first_name }} {{ auth()->user()->last_name }}</h3>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">You are logged in. Use this dashboard to manage your daily tasks.</p>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-box bg-light">
+                            <span class="info-box-icon bg-info"><i class="fas fa-id-card"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Username</span>
+                                <span class="info-box-number">{{ auth()->user()->username ?? 'N/A' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-box bg-light">
+                            <span class="info-box-icon bg-success"><i class="fas fa-phone"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Mobile</span>
+                                <span class="info-box-number">{{ auth()->user()->phone ?? 'N/A' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Unread Notices Highlight -->
         @if(isset($unreadNotices) && $unreadNotices->count() > 0)
         <div class="card card-danger card-outline mb-4">
@@ -48,37 +79,6 @@
             </div>
         </div>
         @endif
-
-        <!-- Welcome Card -->
-        <div class="card card-primary card-outline">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-user-circle mr-2"></i>Welcome, {{ auth()->user()->first_name }} {{ auth()->user()->last_name }}</h3>
-            </div>
-            <div class="card-body">
-                <p class="mb-3">You are logged in. Use this dashboard to manage your daily tasks.</p>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="info-box bg-light">
-                            <span class="info-box-icon bg-info"><i class="fas fa-id-card"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Username</span>
-                                <span class="info-box-number">{{ auth()->user()->username ?? 'N/A' }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="info-box bg-light">
-                            <span class="info-box-icon bg-success"><i class="fas fa-phone"></i></span>
-                            <div class="info-box-content">
-                                <span class="info-box-text">Mobile</span>
-                                <span class="info-box-number">{{ auth()->user()->phone ?? 'N/A' }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Assigned Classes -->
         @if($assignedClasses->count() > 0)

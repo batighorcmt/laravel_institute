@@ -123,16 +123,6 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_unreadNotices.isNotEmpty) ...[
-                _UnreadNoticesHighlight(
-                  notices: _unreadNotices,
-                  onTap: (n) {
-                    // Navigate to notice detail or board
-                    context.push('/notice-board');
-                  },
-                ),
-                const SizedBox(height: 16),
-              ],
               _HeaderCard(
                 name: name,
                 designation: designation,
@@ -148,6 +138,16 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
                   );
                 },
               ),
+              if (_unreadNotices.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _UnreadNoticesHighlight(
+                  notices: _unreadNotices,
+                  onTap: (n) {
+                    // Navigate to notice detail or board
+                    context.push('/notice-board');
+                  },
+                ),
+              ],
               const SizedBox(height: 16),
               _OperationsGrid(onTap: _onOperationTap),
               const SizedBox(height: 24),
