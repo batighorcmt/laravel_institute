@@ -3,13 +3,6 @@
 @php
   $lang = request('lang','bn');
 
-  // Function to convert English numbers to Bengali
-  function toBengaliNumber($number) {
-    $englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    $bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-    return str_replace($englishDigits, $bengaliDigits, (string)$number);
-  }
-
   $printTitle = $lang==='bn' ? 'বিষয়ভিত্তিক মার্কশিট ফরম (খালি)' : 'Subject-wise Marksheet Form (Blank)';
   $examInfo = $lang==='bn' ?
     'পরীক্ষা: ' . ($exam->name_bn ?: $exam->name) . ' | শ্রেণি: ' . $exam->class->name :
