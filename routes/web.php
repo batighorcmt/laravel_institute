@@ -685,9 +685,18 @@ Route::middleware(['auth', 'active_school'])->group(function () {
 
                         // Billing collection page for teachers (restricted by assigned class in controller)
                         Route::get('/billing/collect', [App\Http\Controllers\Teacher\Billing\CollectController::class , 'create'])->name('billing.collect');
-                        Route::get('/billing/my-collections', function() { return view('billing.teacher_collections'); })->name('billing.my_collections');
-                        Route::get('/billing/cash-transfer', function() { return view('billing.teacher_cash_transfer'); })->name('billing.cash_transfer');
-                        Route::get('/billing/deposit-history', function() { return view('billing.teacher_deposit_history'); })->name('billing.deposit_history');
+                        Route::get('/billing/my-collections', function () {
+                            return view('billing.teacher_collections');
+                        }
+                        )->name('billing.my_collections');
+                        Route::get('/billing/cash-transfer', function () {
+                            return view('billing.teacher_cash_transfer');
+                        }
+                        )->name('billing.cash_transfer');
+                        Route::get('/billing/deposit-history', function () {
+                            return view('billing.teacher_deposit_history');
+                        }
+                        )->name('billing.deposit_history');
 
                         // Manage Exams (all teachers)
                         Route::prefix('exams')->name('exams.')->middleware('module:exams')->group(function () {
@@ -755,17 +764,17 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                     return view('billing.statement');
                 }
                 )->name('billing.statement');
-                Route::get('/billing/cashier-setup', function() {
+                Route::get('/billing/cashier-setup', function () {
                     return view('billing.principal_cashier_setup');
                 }
                 )->name('billing.cashier_setup');
-                Route::get('/billing/cashier-dashboard', function() {
+                Route::get('/billing/cashier-dashboard', function () {
                     return view('billing.cashier_dashboard');
                 }
                 )->name('billing.cashier_dashboard');
                 Route::get('/billing/collect', function () {
                     $schoolId = request()->attributes->get('current_school_id');
-                    $school = $schoolId ? \App\Models\School::find($schoolId) : auth()->user()->primarySchool();
+                    $school = $schoolId ?\App\Models\School::find($schoolId) : auth()->user()->primarySchool();
                     return view('billing.collect', ['school' => $school]);
                 }
                 )->name('billing.collect');
@@ -786,7 +795,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 }
                 )->name('billing.waivers');
                 Route::get('/billing/receipts/{id}', [\App\Http\Controllers\Billing\ReceiptController::class , 'showWeb'])->name('billing.receipts.show');
-Route::get('/billing/receipts/{id}/download', [\App\Http\Controllers\Billing\ReceiptController::class , 'downloadPdf'])->name('billing.receipts.download');
+                Route::get('/billing/receipts/{id}/download', [\App\Http\Controllers\Billing\ReceiptController::class , 'downloadPdf'])->name('billing.receipts.download');
 
             // SSLCommerz Callbacks moved to top level
         
@@ -818,4 +827,5 @@ Route::get('/verify/document/{code}', [\App\Http\Controllers\Documents\Verificat
 
 // Portable (Signed) Marks Print routes - specifically for mobile app access
 Route::get('/print/marks/{exam}/{examSubject}/{type}', [App\Http\Controllers\Principal\MarkEntryController::class , 'printPortable'])
-    ->name('print.marks.portable');
+    ->name('print.marks.portable')
+    ->middleware('signed');
