@@ -41,19 +41,19 @@ class FeeReportController extends Controller
 
             $sectionIds = $sections->pluck('id')->toArray();
 
-            // 2. Summary for these sections
+            // 2. Summary remains similar but we ensure we use provided filters
             $summary = [];
             if (!empty($sectionIds)) {
                 $summaryQuery = StudentFee::join('students', 'student_fees.student_id', '=', 'students.id')
                     ->join('student_enrollments', function($join) use ($sectionIds) {
                         $join->on('students.id', '=', 'student_enrollments.student_id')
-                            ->whereIn('student_enrollments.section_id', $sectionIds);
+                            ->whereIn('student_enrollments.section_id', $sectionIds)
+                            ->where('student_enrollments.status', 'active');
                     })
                     ->join('fee_structures', 'student_fees.fee_structure_id', '=', 'fee_structures.id')
                     ->join('fee_categories', 'fee_structures.fee_category_id', '=', 'fee_categories.id')
                     ->where('student_fees.school_id', $schoolId);
 
-                // Apply filters to summary if applicable (e.g. Month)
                 if ($request->filled('month')) {
                     $summaryQuery->where('student_fees.month', $request->month);
                 }
@@ -80,49 +80,68 @@ class FeeReportController extends Controller
                     });
             }
 
-            // 3. Detailed collections by THIS teacher (Itemized by fee category)
-            $itemsQuery = \App\Models\PaymentItem::query()
-                ->select('payment_items.*')
-                ->join('payments', 'payment_items.payment_id', '=', 'payments.id')
-                ->where('payments.collected_by_user_id', $user->id)
-                ->where('payments.school_id', $schoolId)
-                ->where('payments.status', 'settled')
-                ->with(['payment.student', 'studentFee.feeStructure.category']);
+            // 3. Detailed Collections: Paginated and Grouped by Receipt (Payment)
+            $paymentsQuery = \App\Models\Payment::query()
+                ->where('collected_by_user_id', $user->id)
+                ->where('school_id', $schoolId)
+                ->where('status', 'settled')
+                ->with([
+                    'student.currentEnrollment.class', 
+                    'student.currentEnrollment.section',
+                    'paymentItems.studentFee.feeStructure.category'
+                ]);
 
             if ($request->filled('from_date')) {
-                $itemsQuery->whereDate('payments.received_at', '>=', $request->from_date);
+                $paymentsQuery->whereDate('received_at', '>=', $request->from_date);
             }
             if ($request->filled('to_date')) {
-                $itemsQuery->whereDate('payments.received_at', '<=', $request->to_date);
+                $paymentsQuery->whereDate('received_at', '<=', $request->to_date);
             }
             if ($request->filled('fee_category_id')) {
-                $itemsQuery->whereHas('studentFee.feeStructure', function($q) use ($request) {
+                $paymentsQuery->whereHas('paymentItems.studentFee.feeStructure', function($q) use ($request) {
                     $q->where('fee_category_id', $request->fee_category_id);
                 });
             }
             if ($request->filled('month')) {
-                $itemsQuery->whereHas('studentFee', function($q) use ($request) {
+                $paymentsQuery->whereHas('paymentItems.studentFee', function($q) use ($request) {
                     $q->where('month', $request->month);
                 });
             }
             if ($request->filled('student_id')) {
-                $itemsQuery->whereHas('payment.student', function($q) use ($request) {
+                $paymentsQuery->whereHas('student', function($q) use ($request) {
                     $q->where('student_id', 'like', '%' . $request->student_id . '%');
                 });
             }
 
-            $paymentItems = $itemsQuery->orderBy('payments.received_at', 'desc')->get();
+            $paginatedPayments = $paymentsQuery->orderBy('received_at', 'desc')->paginate(10);
 
-            $collections = $paymentItems->map(function($item) {
+            $collections = collect($paginatedPayments->items())->map(function($p) {
+                $enrollment = $p->student->currentEnrollment ?? null;
+                
                 return [
-                    'id' => $item->id . '_item',
-                    'received_at' => $item->payment->received_at ?? null,
-                    'trx_id' => $item->payment->payment_number ?? ($item->payment->trx_id ?? 'N/A'),
-                    'student' => $item->payment->student ?? null,
-                    'category' => $item->studentFee->feeStructure->category ?? null,
-                    'fee_month' => $item->studentFee->month ?? null,
-                    'payment_method' => $item->payment->payment_method ?? 'Cash',
-                    'amount_paid' => $item->amount
+                    'id' => $p->id,
+                    'receipt_no' => $p->payment_number ?? ($p->trx_id ?? 'N/A'),
+                    'received_at' => $p->received_at ? $p->received_at->format('Y-m-d H:i:s') : null,
+                    'amount_paid' => $p->amount_paid,
+                    'payment_method' => $p->payment_method,
+                    'student' => [
+                        'id' => $p->student->id ?? null,
+                        'student_id' => $p->student->student_id ?? null,
+                        'name' => $p->student->student_name_bn ?: ($p->student->student_name_en ?? 'Unknown'),
+                        'photo_url' => $p->student->photo_url ?? null,
+                        'class_name' => $enrollment->class->name ?? ($enrollment->class->bangla_name ?? 'N/A'),
+                        'section_name' => $enrollment->section->name ?? ($enrollment->section->bangla_name ?? 'N/A'),
+                        'roll' => $enrollment->roll_no ?? 'N/A',
+                    ],
+                    'items' => $p->paymentItems->map(function($item) {
+                        return [
+                            'category' => $item->studentFee->feeStructure->category->name ?? 'Fee',
+                            'month' => $item->studentFee->month ?? null,
+                            'amount' => $item->amount,
+                            'fine' => $item->studentFee->fine_amount ?? 0,
+                            'waiver' => $item->studentFee->fine_waiver ?? 0,
+                        ];
+                    })
                 ];
             });
 
@@ -130,7 +149,12 @@ class FeeReportController extends Controller
                 'teacher_name' => $user->name,
                 'sections' => $sections->map(fn($s) => ($s->class->name ?? '') . ' (' . $s->name . ')')->implode(', '),
                 'summary' => $summary,
-                'collections' => $collections
+                'collections' => $collections,
+                'meta' => [
+                    'current_page' => $paginatedPayments->currentPage(),
+                    'last_page' => $paginatedPayments->lastPage(),
+                    'total' => $paginatedPayments->total(),
+                ]
             ]);
 
         } catch (\Exception $e) {
