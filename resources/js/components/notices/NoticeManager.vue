@@ -486,9 +486,10 @@ export default {
       if (!confirm('আপনি কি নিশ্চিত যে এই নোটিশটি মুছে ফেলতে চান?')) return;
       try {
         await axios.delete(`/api/v1/notices/${notice.id}`);
+        if (window.toastr) window.toastr.success('নোটিশ সফলভাবে মুছে ফেলা হয়েছে।');
         this.fetchNotices();
       } catch (err) {
-        alert('মুছে ফেলতে সমস্যা হয়েছে।');
+        if (window.toastr) window.toastr.error('মুছে ফেলতে সমস্যা হয়েছে।');
       }
     },
     async saveNotice() {
@@ -540,10 +541,18 @@ export default {
            targets: finalTargets
         });
 
+        if (window.toastr) {
+            window.toastr.success(this.editingId ? 'নোটিশ আপডেট করা হয়েছে।' : 'নোটিশ তৈরি ও প্রচার করা হয়েছে।');
+        }
+
         this.showCreator = false;
         this.fetchNotices();
       } catch (err) {
-        alert('সেভ করতে সমস্যা হয়েছে: ' + (err.response?.data?.message || err.message));
+        if (window.toastr) {
+            window.toastr.error('সেভ করতে সমস্যা হয়েছে: ' + (err.response?.data?.message || err.message));
+        } else {
+            alert('সেভ করতে সমস্যা হয়েছে: ' + (err.response?.data?.message || err.message));
+        }
       } finally {
         this.saving = false;
       }
