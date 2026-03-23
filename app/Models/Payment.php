@@ -62,4 +62,9 @@ class Payment extends Model
     {
         return $this->belongsTo(FeeCategory::class, 'fee_category_id');
     }
+
+    public function collectedBy()
+    {
+        return $this->belongsTo(User::class, 'collected_by_user_id');
+    }
 }

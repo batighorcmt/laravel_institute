@@ -351,6 +351,9 @@
             </td>
             <td class="signature-cell sig-right">
                 <div class="signature-line">আদায়কারীর স্বাক্ষর</div>
+                @if($payment->collectedBy)
+                    <div style="font-size: 11px; margin-top: 3px; font-weight: bold;">({{ $payment->collectedBy->name ?? '' }})</div>
+                @endif
             </td>
         </tr>
     </table>
