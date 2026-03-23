@@ -28,7 +28,12 @@ class FeeReportController extends Controller
             $user = $request->user();
             $schoolId = $request->attributes->get('current_school_id') ?? $user?->primarySchool()?->id;
 
+            if (!$schoolId) {
+                return response()->json([]);
+            }
+
             $categories = FeeCategory::where('school_id', $schoolId)
+                ->where('active', true)
                 ->orderBy('name', 'asc')
                 ->get();
 
