@@ -29,7 +29,8 @@ class ReceiptController extends Controller
             'student.currentEnrollment.class',
             'student.currentEnrollment.section',
             'paymentItems.studentFee.feeStructure.category',
-            'school'
+            'school',
+            'collectedBy'
         ])->findOrFail($id);
 
         return view('billing.receipt', compact('payment'));

@@ -263,7 +263,7 @@
                             @if($payment->school->website) | {{ $payment->school->website }} @endif
                         </div>
                     @endif
-                    <div class="receipt-badge">ফিস কালেকশন রিসিট</div>
+                    <div class="receipt-badge">ফিস আদায় রশিদ</div>
                 </td>
                 @if($logoSrc)
                 <td style="width: 90px;"></td> <!-- Spacer to keep center alignment -->

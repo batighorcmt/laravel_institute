@@ -165,7 +165,7 @@
                         </p>
                     @endif
                     <div class="inline-block mt-3 px-4 py-1 bg-slate-100 rounded-full text-sm font-semibold text-black tracking-wider">
-                        ফিস কালেকশন রিসিট
+                        ফিস আদায় রশিদ
                     </div>
                 </div>
             </div>
@@ -264,6 +264,9 @@
                 <div class="text-right flex flex-col items-end">
                     <div class="border-t border-slate-300 w-48 text-center pt-2">
                         <p class="text-sm text-slate-600 font-medium">আদায়কারীর স্বাক্ষর</p>
+                        @if($payment->collectedBy)
+                            <p class="text-xs font-bold text-black mt-1">({{ $payment->collectedBy->name ?? '' }})</p>
+                        @endif
                     </div>
                 </div>
             </div>
