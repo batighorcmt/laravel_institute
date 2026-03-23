@@ -20,6 +20,26 @@ use Carbon\Carbon;
 class FeeReportController extends Controller
 {
     /**
+     * Get All Fee Categories
+     */
+    public function getCategories(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $schoolId = $request->attributes->get('current_school_id') ?? $user?->primarySchool()?->id;
+
+            $categories = FeeCategory::where('school_id', $schoolId)
+                ->orderBy('name', 'asc')
+                ->get();
+
+            return response()->json($categories);
+        } catch (\Exception $e) {
+            Log::error('Get Categories Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal Server Error'], 500);
+        }
+    }
+
+    /**
      * Teacher Collections & Summary
      */
     public function teacherCollections(Request $request)
