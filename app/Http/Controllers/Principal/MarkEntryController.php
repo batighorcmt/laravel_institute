@@ -240,9 +240,15 @@ class MarkEntryController extends Controller
 
     /**
      * Portable print method for mobile apps (Internal signatures)
+     * Handles manual signature verification while allowing language/print switches
      */
     public function printPortable(Request $request, Exam $exam, ExamSubject $examSubject, $type)
     {
+        // Check for official signature while ignoring dynamic UI parameters
+        if (!URL::hasValidSignature($request, true, ['lang', 'print', 'pdf'])) {
+            abort(403, 'Invalid signature.');
+        }
+
         $school = School::findOrFail($exam->school_id);
         
         if ($type === 'print-blank') {
