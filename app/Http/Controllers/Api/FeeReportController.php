@@ -180,32 +180,62 @@ class FeeReportController extends Controller
             $fromDate = Carbon::parse($request->from_date)->startOfDay();
             $toDate = Carbon::parse($request->to_date)->endOfDay();
 
-            // Total Collected by teacher in date range
-            $collectedQuery = \App\Models\Payment::where('school_id', $schoolId)
+            // Total Collected by teacher in date range (across ALL methods for summary)
+            $total_collected = \App\Models\Payment::where('school_id', $schoolId)
                 ->where('collected_by_user_id', $user->id)
                 ->where('status', 'settled')
-                ->whereBetween('received_at', [$fromDate, $toDate]);
+                ->whereBetween('received_at', [$fromDate, $toDate])
+                ->sum('amount_paid');
 
-            $total_collected = $collectedQuery->sum('amount_paid');
-
-            // Total Deposited by teacher in date range
-            // Assumed teacher_deposits is linked to user via teacher_id
-            $depositedQuery = \DB::table('teacher_deposits')
+            // Total Deposited (or pending) by teacher in date range
+            $total_deposited = \DB::table('teacher_deposits')
                 ->where('teacher_id', $user->id)
                 ->whereIn('status', ['pending', 'received'])
-                ->whereBetween('deposit_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')]);
+                ->whereBetween('deposit_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')])
+                ->sum('amount');
 
-            $total_deposited = $depositedQuery->sum('amount');
             $total_remaining = $total_collected - $total_deposited;
+
+            // Breakdown of CASH collections only (not yet deposited)
+            // We group by category and month
+            $breakdown = \App\Models\PaymentItem::join('payments', 'payment_items.payment_id', '=', 'payments.id')
+                ->join('student_fees', 'payment_items.student_fee_id', '=', 'student_fees.id')
+                ->join('fee_structures', 'student_fees.fee_structure_id', '=', 'fee_structures.id')
+                ->join('fee_categories', 'fee_structures.fee_category_id', '=', 'fee_categories.id')
+                ->where('payments.school_id', $schoolId)
+                ->where('payments.collected_by_user_id', $user->id)
+                ->where('payments.payment_method', 'cash')
+                ->where('payments.status', 'settled')
+                ->whereBetween('payments.received_at', [$fromDate, $toDate])
+                ->select(
+                    'fee_categories.id as fee_category_id',
+                    'fee_categories.name as category_name',
+                    'student_fees.month',
+                    \DB::raw('SUM(payment_items.amount) as collected_amount')
+                )
+                ->groupBy('fee_categories.id', 'fee_categories.name', 'student_fees.month')
+                ->get();
+
+            // Subtract what's already been deposited for each specific breakdown item
+            foreach ($breakdown as $item) {
+                $item->deposited_amount = (float) \DB::table('teacher_deposits')
+                    ->where('teacher_id', $user->id)
+                    ->where('fee_category_id', $item->fee_category_id)
+                    ->where('month', $item->month)
+                    ->whereIn('status', ['pending', 'received'])
+                    ->sum('amount');
+                $item->remaining_amount = max(0, (float)$item->collected_amount - $item->deposited_amount);
+            }
 
             return response()->json([
                 'total_collected' => round($total_collected, 2),
                 'total_deposited' => round($total_deposited, 2),
-                'total_remaining' => round($total_remaining, 2)
+                'total_remaining' => round($total_remaining, 2),
+                'breakdown' => $breakdown
             ]);
         } catch (\Exception $e) {
             Log::error('Teacher Cash Transfer Error: ' . $e->getMessage());
-            return response()->json(['error' => 'Internal Server Error'], 500);
+            return response()->json(['error' => 'Internal Server Error', 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -216,27 +246,33 @@ class FeeReportController extends Controller
     {
         try {
             $request->validate([
-                'amount' => 'required|numeric|min:1',
-                // category and month optional if we just want bulk deposit
+                'items' => 'required|array',
+                'items.*.amount' => 'required|numeric|min:0.01',
+                'items.*.fee_category_id' => 'required|exists:fee_categories,id',
+                'items.*.month' => 'nullable|string'
             ]);
 
             $user = $request->user();
             
-            \DB::table('teacher_deposits')->insert([
-                'teacher_id' => $user->id,
-                'amount' => $request->amount,
-                'deposit_date' => now()->toDateString(),
-                'status' => 'pending',
-                'fee_category_id' => $request->fee_category_id ?? null,
-                'month' => $request->month ?? null,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
+            \DB::transaction(function() use ($request, $user) {
+                foreach ($request->items as $item) {
+                    \DB::table('teacher_deposits')->insert([
+                        'teacher_id' => $user->id,
+                        'amount' => $item['amount'],
+                        'deposit_date' => now()->toDateString(),
+                        'status' => 'pending',
+                        'fee_category_id' => $item['fee_category_id'],
+                        'month' => $item['month'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                }
+            });
 
-            return response()->json(['message' => 'Cash deposited successfully']);
+            return response()->json(['message' => 'Cash deposit requests submitted successfully']);
         } catch (\Exception $e) {
             Log::error('Teacher Deposit Cash Error: ' . $e->getMessage());
-            return response()->json(['error' => 'Internal Server Error'], 500);
+            return response()->json(['error' => 'Internal Server Error', 'message' => $e->getMessage()], 500);
         }
     }
 
