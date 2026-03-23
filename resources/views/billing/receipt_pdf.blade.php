@@ -258,8 +258,8 @@
                     @if($payment->school && ($payment->school->address_bn || $payment->school->address))
                         <div class="school-address">{{ $payment->school->address_bn ?? $payment->school->address }}</div>
                         <div class="school-contact">
-                            ফোন: {{ toBN($payment->school->phone ?? '') }}
-                            @if($payment->school->email) | ইমেইল: {{ $payment->school->email }} @endif
+                            {{ toBN($payment->school->phone ?? '') }}
+                            @if($payment->school->email) | {{ $payment->school->email }} @endif
                             @if($payment->school->website) | {{ $payment->school->website }} @endif
                         </div>
                     @endif
