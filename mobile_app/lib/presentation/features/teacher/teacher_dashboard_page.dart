@@ -17,6 +17,7 @@ import '../../../domain/auth/user_profile.dart';
 import 'billing/teacher_billing_menu_page.dart';
 import 'dart:developer' as developer;
 import '../../routes/app_router.dart';
+import '../../widgets/notice_details_modal.dart';
 
 class TeacherDashboardPage extends ConsumerStatefulWidget {
   const TeacherDashboardPage({super.key});
@@ -182,7 +183,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> wit
                 _UnreadNoticesHighlight(
                   notices: _unreadNotices,
                   onTap: (n) {
-                    context.push('/notice-board');
+                    NoticeDetailsModal.show(context, ref, n);
                   },
                 ),
               ],

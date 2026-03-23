@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../state/notice_state.dart';
+import '../../widgets/notice_reply_section.dart';
 
 class NoticeDetailPage extends ConsumerWidget {
   final int noticeId;
@@ -9,7 +10,12 @@ class NoticeDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final future = ref.watch(noticeStatsProvider(noticeId));
+    // Mark as read when entering
+    Future.microtask(() {
+      ref.read(noticeRepositoryProvider).markAsRead(noticeId);
+      ref.invalidate(noticesListProvider);
+    });
+
     // We'll actually fetch details directly via repository
     return Scaffold(
       appBar: AppBar(title: const Text('নোটিশ')),
@@ -52,6 +58,14 @@ class NoticeDetailPage extends ConsumerWidget {
                   notice['body'] ?? '',
                   style: const TextStyle(fontSize: 16, height: 1.6),
                 ),
+                const SizedBox(height: 32),
+                if (notice['reply_required'] == true || notice['reply_required'] == 1) ...[
+                  NoticeReplySection(
+                    noticeId: noticeId,
+                    initialHasReplied: notice['has_replied'] ?? false,
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ],
             ),
           );

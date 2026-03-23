@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../state/parent_state.dart';
 import '../../routes/app_router.dart';
+import '../../widgets/notice_details_modal.dart';
 
 class ParentDashboardPage extends ConsumerStatefulWidget {
   const ParentDashboardPage({super.key});
@@ -387,7 +388,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
                             child: ListTile(
-                              onTap: () => context.push('/notice-board'),
+                              onTap: () => NoticeDetailsModal.show(context, ref, n),
                               leading: const CircleAvatar(
                                 backgroundColor: Colors.indigo,
                                 child: Icon(Icons.campaign, color: Colors.white),
