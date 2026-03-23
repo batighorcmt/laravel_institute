@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
+import 'package:intl/intl.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../widgets/animated_tile.dart';
 import 'lesson_evaluation_list_page.dart';
@@ -14,6 +15,7 @@ import 'teacher_profile_page.dart';
 import '../../state/auth_state.dart';
 import '../../../domain/auth/user_profile.dart';
 import 'billing/teacher_billing_menu_page.dart';
+import 'dart:developer' as developer;
 
 class TeacherDashboardPage extends ConsumerStatefulWidget {
   const TeacherDashboardPage({super.key});
@@ -32,18 +34,32 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
   @override
   void initState() {
     super.initState();
-    _fetchTodayAttendance();
-    _fetchUnreadNotices();
+    _refreshData();
+  }
+
+  Future<void> _refreshData() async {
+    await Future.wait([
+      _fetchTodayAttendance(),
+      _fetchUnreadNotices(),
+    ]);
   }
 
   Future<void> _fetchUnreadNotices() async {
     try {
-      setState(() => _noticesLoading = true);
+      if (mounted) setState(() => _noticesLoading = true);
+      
+      developer.log('Fetching unread notices...', name: 'TeacherDashboard');
       final resp = await _dio.get('notices', queryParameters: {'filter': 'unread', 'limit': 5});
       final data = resp.data;
+      
       List list = [];
-      if (data is List) list = data;
-      if (data is Map && data['data'] is List) list = data['data'];
+      if (data is List) {
+        list = data;
+      } else if (data is Map && data['data'] is List) {
+        list = data['data'];
+      }
+      
+      developer.log('Fetched ${list.length} unread notices', name: 'TeacherDashboard');
 
       if (mounted) {
         setState(() {
@@ -51,7 +67,8 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
           _noticesLoading = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      developer.log('Error fetching notices: $e', name: 'TeacherDashboard', error: e);
       if (mounted) setState(() => _noticesLoading = false);
     }
   }
@@ -79,7 +96,9 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
         }
       }
       if (mounted) setState(() => _todayRecord = todayRec);
-    } catch (_) {}
+    } catch (e) {
+       developer.log('Error fetching attendance: $e', name: 'TeacherDashboard');
+    }
   }
 
   @override
@@ -113,10 +132,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          await _fetchTodayAttendance();
-          await _fetchUnreadNotices();
-        },
+        onRefresh: _refreshData,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
@@ -138,16 +154,21 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
                   );
                 },
               ),
-              if (_unreadNotices.isNotEmpty) ...[
+              
+              // Dynamic notices section - only show if loading or has notices
+              if (_noticesLoading) ...[
+                const SizedBox(height: 16),
+                _NoticeSkeleton(),
+              ] else if (_unreadNotices.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _UnreadNoticesHighlight(
                   notices: _unreadNotices,
                   onTap: (n) {
-                    // Navigate to notice detail or board
                     context.push('/notice-board');
                   },
                 ),
               ],
+
               const SizedBox(height: 16),
               _OperationsGrid(onTap: _onOperationTap),
               const SizedBox(height: 24),
@@ -496,6 +517,23 @@ class _OperationsGrid extends StatelessWidget {
   }
 }
 
+class _NoticeSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 100,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    );
+  }
+}
+
 class _UnreadNoticesHighlight extends StatelessWidget {
   final List<dynamic> notices;
   final ValueChanged<dynamic> onTap;
@@ -522,7 +560,7 @@ class _UnreadNoticesHighlight extends StatelessWidget {
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
-                    'অপঠতি নোটিশ',
+                    'অপঠিত নোটিশ',
                     style: TextStyle(
                       color: Colors.red,
                       fontWeight: FontWeight.bold,
