@@ -300,8 +300,8 @@ class FeeReportController extends Controller
                 ->where('teacher_deposits.teacher_id', $user->id)
                 ->select(
                     'teacher_deposits.*', 
-                    'cashier.name as cashier_name',
-                    'fee_categories.name as fee_category_name'
+                    'cashier.name as cashier_name', 
+                    'fee_categories.name as category_name'
                 );
 
             if ($request->filled('from_date')) {
@@ -316,15 +316,17 @@ class FeeReportController extends Controller
             if ($request->filled('month')) {
                 $query->where('teacher_deposits.month', $request->month);
             }
+            if ($request->filled('status')) {
+                $query->where('teacher_deposits.status', $request->status);
+            }
 
-            $deposits = $query->orderBy('teacher_deposits.deposit_date', 'desc')->get();
+            $deposits = $query->orderBy('teacher_deposits.id', 'desc')
+                ->paginate($request->per_page ?? 10);
 
-            return response()->json([
-                'deposits' => $deposits
-            ]);
+            return response()->json($deposits);
         } catch (\Exception $e) {
             Log::error('Teacher Deposit History Error: ' . $e->getMessage());
-            return response()->json(['error' => 'Internal Server Error'], 500);
+            return response()->json(['error' => 'Internal Server Error', 'message' => $e->getMessage()], 500);
         }
     }
     /**
