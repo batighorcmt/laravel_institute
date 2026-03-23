@@ -26,11 +26,34 @@ class TeacherDashboardPage extends ConsumerStatefulWidget {
 class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
   final Dio _dio = DioClient().dio;
   Map<String, dynamic>? _todayRecord;
+  List<dynamic> _unreadNotices = [];
+  bool _noticesLoading = false;
 
   @override
   void initState() {
     super.initState();
     _fetchTodayAttendance();
+    _fetchUnreadNotices();
+  }
+
+  Future<void> _fetchUnreadNotices() async {
+    try {
+      setState(() => _noticesLoading = true);
+      final resp = await _dio.get('teacher/notices', queryParameters: {'filter': 'unread', 'limit': 5});
+      final data = resp.data;
+      List list = [];
+      if (data is List) list = data;
+      if (data is Map && data['data'] is List) list = data['data'];
+
+      if (mounted) {
+        setState(() {
+          _unreadNotices = list.take(5).toList();
+          _noticesLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _noticesLoading = false);
+    }
   }
 
   Future<void> _fetchTodayAttendance() async {
@@ -90,13 +113,26 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _fetchTodayAttendance,
+        onRefresh: () async {
+          await _fetchTodayAttendance();
+          await _fetchUnreadNotices();
+        },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_unreadNotices.isNotEmpty) ...[
+                _UnreadNoticesHighlight(
+                  notices: _unreadNotices,
+                  onTap: (n) {
+                    // Navigate to notice detail or board
+                    context.push('/notice-board');
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
               _HeaderCard(
                 name: name,
                 designation: designation,
@@ -456,6 +492,109 @@ class _OperationsGrid extends StatelessWidget {
             onTap: () => onTap(item.key),
           ),
       ],
+    );
+  }
+}
+
+class _UnreadNoticesHighlight extends StatelessWidget {
+  final List<dynamic> notices;
+  final ValueChanged<dynamic> onTap;
+
+  const _UnreadNoticesHighlight({required this.notices, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: Colors.red.shade50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.red.shade200, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'অপঠতি নোটিশ',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${notices.length}টি নতুন',
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          ListView.separated(
+            padding: EdgeInsets.zero,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: notices.length,
+            separatorBuilder: (c, i) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final n = notices[index];
+              return ListTile(
+                dense: true,
+                visualDensity: VisualDensity.compact,
+                title: Text(
+                  n['title'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                subtitle: Text(
+                  n['body_plain'] ?? n['body'] ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11),
+                ),
+                trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.red),
+                onTap: () => onTap(n),
+              );
+            },
+          ),
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+            child: Material(
+              color: Colors.red.shade100.withOpacity(0.5),
+              child: InkWell(
+                onTap: () => context.push('/notice-board'),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: const Center(
+                    child: Text(
+                      'সব নোটিশ দেখুন',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -318,29 +318,26 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
     final max = (maxMark ?? 0) as num;
     if (max <= 0) return;
 
+    // If typing decimals, do not auto-advance as length varies
+    if (value.contains('.')) return;
+
     final current = double.tryParse(value);
     if (current == null || value.trim().isEmpty) return;
 
-    final maxDigits = _digitCount(max);
-    final digits = value.replaceAll('.', '').replaceAll('-', '').trim();
-
-    // ── Rule 1: digit count has reached/exceeded max's digit count → advance ──
-    if (digits.length >= maxDigits) {
+    // Rule 1: If current value matches or exceeds max mark, it's definitely done
+    if (current >= max) {
       next.requestFocus();
       return;
     }
 
-    // ── Rule 2: even the smallest possible completion exceeds max → advance ──
-    // The smallest value you can form by appending (remaining) more digits is
-    // current × 10^remaining  (e.g. "3" with 1 remaining → 30).
-    // If that minimum is already > max, no valid completion exists → advance now.
-    final remaining = maxDigits - digits.length;
-    double minCompletion = current;
-    for (int i = 0; i < remaining; i++) {
-      minCompletion *= 10;
-    }
-    if (minCompletion > max) {
-      next.requestFocus();
+    // Rule 2: If we are not using decimals, and adding even one more digit
+    // would exceed the max mark, then we can safely advance.
+    // e.g., if max is 100 and current is 9, next value would be 90 (which is <=100), so STAY.
+    // e.g., if max is 100 and current is 11, next value would be 110 (which is >100), so JUMP.
+    if (widget.decimalPosition == 0) {
+      if (current * 10 > max) {
+        next.requestFocus();
+      }
     }
   }
 

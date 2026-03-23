@@ -16,8 +16,15 @@ class NoticeController extends Controller
     {
         $schoolId = $request->attributes->get('current_school_id');
         $user = $request->user();
+        $filter = $request->get('filter');
 
         $query = Notice::query();
+
+        if ($filter === 'unread') {
+            $query->whereDoesntHave('reads', function($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
 
         // Security: If not super admin, strictly limit to schools where the user is a principal|teacher|parent
         if (!$user->isSuperAdmin()) {

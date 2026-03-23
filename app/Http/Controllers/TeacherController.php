@@ -18,25 +18,25 @@ class TeacherController extends Controller
     /**
      * Show teacher dashboard.
      */
-     public function dashboard(Request $request)
-     {
-         $user = Auth::user();
-         /** @var User $user */
+    public function dashboard(Request $request)
+    {
+        $user = Auth::user();
+        /** @var User $user */
 
-         $school = $user->primarySchool();
-         $currentYear = AcademicYear::forSchool($school->id ?? 0)->current()->first();
+        $school = $user->primarySchool();
+        $currentYear = AcademicYear::forSchool($school->id ?? 0)->current()->first();
 
-         // Assigned classes
-         $assignedClasses = collect();
-         if ($school) {
-             $assignedClasses = SchoolClass::where('school_id', $school->id)
-                 ->where('class_teacher_id', $user->id)
-                 ->with('school')
-                 ->get();
-         }
+        // Assigned classes
+        $assignedClasses = collect();
+        if ($school) {
+            $assignedClasses = SchoolClass::where('school_id', $school->id)
+                ->where('class_teacher_id', $user->id)
+                ->with('school')
+                ->get();
+        }
 
-         // Today's routine
-         $todayRoutine = collect();
+        // Today's routine
+        $todayRoutine = collect();
         if ($school) {
             $today = Carbon::now()->format('l'); // e.g., Monday
             $todayRoutine = RoutineEntry::where('school_id', $school->id)
@@ -47,18 +47,18 @@ class TeacherController extends Controller
                 ->get();
         }
 
-         // Pending tasks: lesson evaluations to submit
-         $pendingEvaluations = LessonEvaluation::where('teacher_id', $user->id)
-             ->where('status', 'pending')
-             ->count();
+        // Pending tasks: lesson evaluations to submit
+        $pendingEvaluations = LessonEvaluation::where('teacher_id', $user->id)
+            ->where('status', 'pending')
+            ->count();
 
-         return view('teacher.dashboard', compact(
-             'school',
-             'assignedClasses',
-             'todayRoutine',
-             'pendingEvaluations'
-         ));
-     }
+        return view('teacher.dashboard', compact(
+            'school',
+            'assignedClasses',
+            'todayRoutine',
+            'pendingEvaluations'
+        ));
+    }
 
     public function notices(\App\Models\School $school)
     {
