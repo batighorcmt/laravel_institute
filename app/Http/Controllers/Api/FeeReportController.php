@@ -187,17 +187,24 @@ class FeeReportController extends Controller
                 ->whereBetween('received_at', [$fromDate, $toDate])
                 ->sum('amount_paid');
 
-            // Total Deposited (or pending) by teacher in date range
-            $total_deposited = \DB::table('teacher_deposits')
+            // Total Actually Received by cashier
+            $total_received = \DB::table('teacher_deposits')
                 ->where('teacher_id', $user->id)
-                ->whereIn('status', ['pending', 'received'])
+                ->where('status', 'received')
+                ->whereBetween('deposit_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')])
+                ->sum('amount');
+            
+            // Total Pending (Requested and not yet received/rejected)
+            $total_pending = \DB::table('teacher_deposits')
+                ->where('teacher_id', $user->id)
+                ->where('status', 'pending')
                 ->whereBetween('deposit_date', [$fromDate->format('Y-m-d'), $toDate->format('Y-m-d')])
                 ->sum('amount');
 
-            $total_remaining = $total_collected - $total_deposited;
+            // Remaining Hand Cash = Total Collected - Total Received (Pending does NOT subtract yet)
+            $total_remaining = $total_collected - $total_received;
 
-            // Breakdown of CASH collections only (not yet deposited)
-            // We group by category and month
+            // Breakdown of CASH collections only
             $breakdown = \App\Models\PaymentItem::join('payments', 'payment_items.payment_id', '=', 'payments.id')
                 ->join('student_fees', 'payment_items.student_fee_id', '=', 'student_fees.id')
                 ->join('fee_structures', 'student_fees.fee_structure_id', '=', 'fee_structures.id')
@@ -216,20 +223,23 @@ class FeeReportController extends Controller
                 ->groupBy('fee_categories.id', 'fee_categories.name', 'student_fees.month')
                 ->get();
 
-            // Subtract what's already been deposited for each specific breakdown item
+            // Calculate remaining available to request per sector
             foreach ($breakdown as $item) {
-                $item->deposited_amount = (float) \DB::table('teacher_deposits')
+                // Already processed (pending OR received)
+                $processed = (float) \DB::table('teacher_deposits')
                     ->where('teacher_id', $user->id)
                     ->where('fee_category_id', $item->fee_category_id)
                     ->where('month', $item->month)
                     ->whereIn('status', ['pending', 'received'])
                     ->sum('amount');
-                $item->remaining_amount = max(0, (float)$item->collected_amount - $item->deposited_amount);
+                
+                $item->remaining_to_request = max(0, (float)$item->collected_amount - $processed);
             }
 
             return response()->json([
                 'total_collected' => round($total_collected, 2),
-                'total_deposited' => round($total_deposited, 2),
+                'total_received' => round($total_received, 2),
+                'total_pending' => round($total_pending, 2),
                 'total_remaining' => round($total_remaining, 2),
                 'breakdown' => $breakdown
             ]);
