@@ -11,11 +11,7 @@ import 'core/config/env.dart';
 import 'dart:developer' as developer;
 import 'core/services/notification_service.dart';
 
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  developer.log('Handling background message: ${message.messageId}');
-}
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +24,7 @@ Future<void> main() async {
     await DioClient().init();
 
     // 3. Set Background Handler
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
 
     // 4. Initialize Notification Service
     await NotificationService().init();

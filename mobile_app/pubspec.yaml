@@ -102,6 +102,7 @@ flutter:
     - assets/Backgrounds/
     - assets/images/Batighor_EIMS.png
     - assets/images/Splash.gif
+    - assets/images/batighor_eims_dashboard_navber_logo.png
 
 flutter_launcher_icons:
   android: true

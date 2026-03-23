@@ -27,6 +27,13 @@ class NotificationService {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      if (Platform.isAndroid) {
+        await _localNotifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.requestNotificationsPermission();
+      }
       developer.log('User granted notification permission');
     }
 
@@ -69,12 +76,14 @@ class NotificationService {
 
     // Android notification channel with sound support (place raw/notice_sound.mp3)
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'notice_channel', // New channel ID to ensure internal update
+      'notice_channel_v1', // Updated ID to force sound settings refresh
       'Notice Notifications',
       description: 'Notifications for new notices',
       importance: Importance.max,
       playSound: true,
       sound: RawResourceAndroidNotificationSound('notice_sound'),
+      enableVibration: true,
+      showBadge: true,
     );
 
     await _localNotifications
@@ -130,6 +139,7 @@ class NotificationService {
     });
   }
 
+  @pragma('vm:entry-point')
   static Future<void> _firebaseMessagingBackgroundHandler(
     RemoteMessage message,
   ) async {
@@ -144,7 +154,7 @@ class NotificationService {
     if (notification != null) {
       final soundName = message.data['sound'] ?? 'notice_sound';
       final androidDetails = AndroidNotificationDetails(
-        'notice_channel',
+        'notice_channel_v1',
         'Notice Notifications',
         channelDescription: 'Notifications for new notices',
         importance: Importance.max,
@@ -152,6 +162,7 @@ class NotificationService {
         icon: '@mipmap/ic_launcher',
         playSound: true,
         sound: RawResourceAndroidNotificationSound(soundName),
+        enableVibration: true,
         visibility: NotificationVisibility.public,
       );
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../state/auth_state.dart';
 import '../../state/parent_state.dart';
+import '../../routes/app_router.dart';
 
 /// Sidebar items for parent navigation.
 class _NavItem {
@@ -144,7 +145,7 @@ class ParentShellPage extends ConsumerWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(currentItem.label),
+          title: currentPath == '/parent/dashboard' ? const NavLogo() : Text(currentItem.label),
           elevation: 1,
           actions: [
             // Notification
@@ -339,10 +340,7 @@ class ParentShellPage extends ConsumerWidget {
               const Divider(height: 1),
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Batighor EIMS',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                ),
+                child: const NavLogo(),
               ),
             ],
           ),

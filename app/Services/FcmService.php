@@ -43,7 +43,7 @@ class FcmService
                 'android' => [
                     'notification' => [
                         'sound' => 'notice_sound',
-                        'channel_id' => 'notice_channel',
+                        'channel_id' => 'notice_channel_v1',
                     ],
                 ],
                 'apns' => [

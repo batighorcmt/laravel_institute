@@ -2,12 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../state/parent_state.dart';
+import '../../routes/app_router.dart';
 
-class ParentDashboardPage extends ConsumerWidget {
+class ParentDashboardPage extends ConsumerStatefulWidget {
   const ParentDashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ParentDashboardPage> createState() => _ParentDashboardPageState();
+}
+
+class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with RouteAware {
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // Auto refresh when returning from any page
+    ref.invalidate(parentChildrenProvider);
+    ref.invalidate(parentHomeworkProvider);
+    ref.invalidate(parentFeesProvider);
+    ref.invalidate(parentStudentProfileProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref; // Ensure ref is available in build
     final cs = Theme.of(context).colorScheme;
     final childrenAsync = ref.watch(parentChildrenProvider);
     final homeworkAsync = ref.watch(parentHomeworkProvider);

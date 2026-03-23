@@ -16,6 +16,7 @@ import '../../state/auth_state.dart';
 import '../../../domain/auth/user_profile.dart';
 import 'billing/teacher_billing_menu_page.dart';
 import 'dart:developer' as developer;
+import '../../routes/app_router.dart';
 
 class TeacherDashboardPage extends ConsumerStatefulWidget {
   const TeacherDashboardPage({super.key});
@@ -25,11 +26,28 @@ class TeacherDashboardPage extends ConsumerStatefulWidget {
       _TeacherDashboardPageState();
 }
 
-class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
+class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> with RouteAware {
   final Dio _dio = DioClient().dio;
   Map<String, dynamic>? _todayRecord;
   List<dynamic> _unreadNotices = [];
   bool _noticesLoading = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    _refreshData();
+  }
 
   @override
   void initState() {
@@ -112,7 +130,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Batighor EIMS'),
+        title: const NavLogo(),
         actions: [
           IconButton(
             tooltip: 'Notifications',

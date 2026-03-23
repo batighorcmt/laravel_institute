@@ -55,10 +55,28 @@ class GoRouterRefreshNotifier extends ChangeNotifier {
   }
 }
 
+// Global RouteObserver to detect when we return to a page (e.g. Dashboard)
+final routeObserver = RouteObserver<ModalRoute<void>>();
+
+// Shared Logo widget for Navbars
+class NavLogo extends StatelessWidget {
+  const NavLogo({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/images/batighor_eims_dashboard_navber_logo.png',
+      height: 38,
+      fit: BoxFit.contain,
+    );
+  }
+}
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     refreshListenable: GoRouterRefreshNotifier(ref),
+    observers: [routeObserver], // Add observer here
     initialLocation: '/splash',
     routes: [
       GoRoute(

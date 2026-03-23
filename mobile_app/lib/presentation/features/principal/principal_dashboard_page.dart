@@ -19,6 +19,7 @@ import '../../../widgets/rive_icon_registry.dart';
 import 'principal_attendance_details_page.dart';
 import 'principal_reports_page.dart';
 import 'notice_list_page.dart';
+import '../../routes/app_router.dart';
 // theme toggle removed for principal toolbar
 
 class PrincipalDashboardPage extends ConsumerStatefulWidget {
@@ -30,7 +31,7 @@ class PrincipalDashboardPage extends ConsumerStatefulWidget {
 }
 
 class _PrincipalDashboardPageState
-    extends ConsumerState<PrincipalDashboardPage> {
+    extends ConsumerState<PrincipalDashboardPage> with RouteAware {
   late final Dio _dio;
   String? _overridePhoto;
   String? _overrideDesignation;
@@ -38,6 +39,24 @@ class _PrincipalDashboardPageState
   Map<String, dynamic>? _summaryData;
   bool _summaryLoading = false;
   Map<String, dynamic>? _selfRecord;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // Refresh for principal
+    Future.wait([_fetchSummary(), _fetchSelfAttendance()]);
+  }
 
   @override
   void initState() {
@@ -141,7 +160,7 @@ class _PrincipalDashboardPageState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Batighor EIMS'),
+        title: const NavLogo(),
         actions: [
           IconButton(
             tooltip: 'Reload',
