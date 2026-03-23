@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use App\Models\Setting;
-use Mpdf\Mpdf;
 
 class MarkEntryController extends Controller
 {
@@ -191,11 +190,12 @@ class MarkEntryController extends Controller
         }
     }
 
-    protected function getBlankData(School $school, Exam $exam, ExamSubject $examSubject)
+    // Print blank mark entry form
+    public function printBlank(School $school, Exam $exam, ExamSubject $examSubject)
     {
         $examSubject->load(['subject', 'teacher']);
-        $exam->load('class');
 
+        // Get enrollments for students who have selected this subject
         $enrollments = StudentEnrollment::where('school_id', $school->id)
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $exam->class_id)
@@ -209,19 +209,15 @@ class MarkEntryController extends Controller
             ->orderBy('roll_no')
             ->get();
 
-        return compact('school', 'exam', 'examSubject', 'enrollments');
+        return view('principal.marks.print-blank', compact('school', 'exam', 'examSubject', 'enrollments'));
     }
 
-    public function printBlank(School $school, Exam $exam, ExamSubject $examSubject)
-    {
-        return view('principal.marks.print-blank', $this->getBlankData($school, $exam, $examSubject));
-    }
-
-    protected function getFilledData(School $school, Exam $exam, ExamSubject $examSubject)
+    // Print filled mark entry form
+    public function printFilled(School $school, Exam $exam, ExamSubject $examSubject)
     {
         $examSubject->load(['subject', 'teacher']);
-        $exam->load('class');
 
+        // Get students who have marks entered for this subject
         $studentIdsWithMarks = Mark::forExam($exam->id)
             ->where('exam_subject_id', $examSubject->id)
             ->pluck('student_id')
@@ -238,66 +234,23 @@ class MarkEntryController extends Controller
             ->get()
             ->keyBy('student_id');
 
-        return compact('school', 'exam', 'examSubject', 'students', 'marks');
+        return view('principal.marks.print-filled', compact('school', 'exam', 'examSubject', 'students', 'marks'));
     }
 
-    public function printFilled(School $school, Exam $exam, ExamSubject $examSubject)
-    {
-        return view('principal.marks.print-filled', $this->getFilledData($school, $exam, $examSubject));
-    }
-
+    /**
+     * Portable print method for mobile apps (Internal signatures)
+     */
     public function printPortable(Request $request, Exam $exam, ExamSubject $examSubject, $type)
     {
-        if (!URL::hasValidSignature($request, true, ['lang', 'print', 'pdf'])) {
-            abort(403, 'Invalid signature.');
-        }
-
         $school = School::findOrFail($exam->school_id);
-
-        /**
-         * Return PDF directly as requested by the user.
-         * The PDF will contain the English version first, followed by the Bengali version.
-         */
         
-        // Prepare HTML for English
-        request()->merge(['lang' => 'en']);
-        $htmlEn = ($type === 'print-blank') 
-            ? view('principal.marks.print-blank', $this->getBlankData($school, $exam, $examSubject))->render()
-            : view('principal.marks.print-filled', $this->getFilledData($school, $exam, $examSubject))->render();
-
-        // Prepare HTML for Bengali
-        request()->merge(['lang' => 'bn']);
-        $htmlBn = ($type === 'print-blank') 
-            ? view('principal.marks.print-blank', $this->getBlankData($school, $exam, $examSubject))->render()
-            : view('principal.marks.print-filled', $this->getFilledData($school, $exam, $examSubject))->render();
-
-        // Combine EN and BN with a page break
-        // We use a specific DIV that layouts.print can recognize or just a standard mpdf page break
-        $combinedHtml = $htmlEn . '<div style="page-break-before: always;"></div>' . $htmlBn;
-
-        // Initialize Mpdf
-        $mpdf = new Mpdf([
-            'mode' => 'utf-8',
-            'format' => 'A4',
-            'margin_left' => 10,
-            'margin_right' => 10,
-            'margin_top' => 10,
-            'margin_bottom' => 10,
-            'tempDir' => storage_path('app/temp'),
-        ]);
-
-        // Standard configuration for Bengali support
-        $mpdf->autoScriptToLang = true;
-        $mpdf->autoLangToFont = true;
-
-        $mpdf->SetTitle(($type === 'print-blank' ? 'Blank' : 'Filled') . ' Marksheet - ' . $examSubject->id);
-        $mpdf->WriteHTML($combinedHtml);
-
-        $filename = ($type === 'print-blank' ? 'blank' : 'filled') . '_marks_' . $examSubject->id . '.pdf';
-
-        return response($mpdf->Output($filename, 'S'))
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        if ($type === 'print-blank') {
+            return $this->printBlank($school, $exam, $examSubject);
+        } elseif ($type === 'print-filled') {
+            return $this->printFilled($school, $exam, $examSubject);
+        }
+        
+        abort(404);
     }
 
     public function calculateResults(School $school, Exam $exam)
