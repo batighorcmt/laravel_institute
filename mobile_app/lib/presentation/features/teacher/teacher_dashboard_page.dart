@@ -39,7 +39,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> {
   Future<void> _fetchUnreadNotices() async {
     try {
       setState(() => _noticesLoading = true);
-      final resp = await _dio.get('teacher/notices', queryParameters: {'filter': 'unread', 'limit': 5});
+      final resp = await _dio.get('notices', queryParameters: {'filter': 'unread', 'limit': 5});
       final data = resp.data;
       List list = [];
       if (data is List) list = data;

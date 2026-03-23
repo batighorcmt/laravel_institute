@@ -12,6 +12,7 @@ use App\Models\AcademicYear;
 use App\Models\Homework;
 use App\Models\LessonEvaluation;
 use Carbon\Carbon;
+use App\Models\Notice;
 
 class TeacherController extends Controller
 {
@@ -52,11 +53,45 @@ class TeacherController extends Controller
             ->where('status', 'pending')
             ->count();
 
+        // Fetch 5 latest unread notices
+        $schoolId = $school->id ?? 0;
+        $teacherId = $user->teacher?->id;
+
+        $unreadNotices = Notice::published()
+            ->active()
+            ->where(function ($q) use ($schoolId) {
+                $q->where('school_id', $schoolId)
+                    ->orWhereNull('school_id');
+            })
+            ->where(function ($q) use ($user, $teacherId) {
+                // Global "All" notices
+                $q->where('audience_type', 'all');
+
+                // Notices for "Teachers"
+                $q->orWhere(function ($qq) use ($teacherId) {
+                    $qq->where('audience_type', 'teachers')
+                        ->where(function ($qqq) use ($teacherId) {
+                            $qqq->doesntHave('targets')
+                                ->orWhereHas('targets', function ($t) use ($teacherId) {
+                                    $t->where('targetable_id', $teacherId)
+                                        ->where('targetable_type', \App\Models\Teacher::class);
+                                });
+                        });
+                });
+            })
+            ->whereDoesntHave('reads', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->latest('publish_at')
+            ->take(5)
+            ->get();
+
         return view('teacher.dashboard', compact(
             'school',
             'assignedClasses',
             'todayRoutine',
-            'pendingEvaluations'
+            'pendingEvaluations',
+            'unreadNotices'
         ));
     }
 

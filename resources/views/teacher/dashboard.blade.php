@@ -14,6 +14,41 @@
 
 <section class="content">
     <div class="container-fluid">
+        <!-- Unread Notices Highlight -->
+        @if(isset($unreadNotices) && $unreadNotices->count() > 0)
+        <div class="card card-danger card-outline mb-4">
+            <div class="card-header">
+                <h3 class="card-title text-danger">
+                    <i class="fas fa-bullhorn mr-2"></i>
+                    <strong>অপঠিত নোটিশ (Unread Notices)</strong>
+                </h3>
+                <div class="card-tools">
+                    <a href="{{ route('teacher.institute.notices', $school) }}" class="btn btn-tool btn-link text-danger">
+                        সবগুলো দেখুন (View All) <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    @foreach($unreadNotices as $notice)
+                    <div class="list-group-item p-3" style="background-color: #fff5f5;">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1 text-dark"><strong>{{ $notice->title }}</strong></h5>
+                            <small class="text-muted"><i class="far fa-clock mr-1"></i>{{ $notice->publish_at?->diffForHumans() }}</small>
+                        </div>
+                        <p class="mb-1 text-secondary">
+                            {!! Str::limit(strip_tags($notice->body), 150) !!}
+                        </p>
+                        <a href="{{ route('teacher.institute.notices', $school) }}" class="btn btn-xs btn-outline-danger mt-2">
+                            বিস্তারিত পড়ুন (Read More)
+                        </a>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
         <!-- Welcome Card -->
         <div class="card card-primary card-outline">
             <div class="card-header">
