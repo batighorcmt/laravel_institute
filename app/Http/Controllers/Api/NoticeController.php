@@ -197,6 +197,10 @@ class NoticeController extends Controller
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id');
 
+        if (!$schoolId && !$user->isSuperAdmin()) {
+            $schoolId = $user->primarySchool()?->id;
+        }
+
         if (! $user->isPrincipal($schoolId) && ! $user->isSuperAdmin()) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
@@ -251,6 +255,10 @@ class NoticeController extends Controller
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id');
 
+        if (!$schoolId && !$user->isSuperAdmin()) {
+            $schoolId = $user->primarySchool()?->id;
+        }
+
         if (! $user->isPrincipal($schoolId) && ! $user->isSuperAdmin()) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
@@ -268,6 +276,11 @@ class NoticeController extends Controller
     {
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id') ?? $user->primarySchool()?->id;
+
+        if (!$schoolId && !$user->isSuperAdmin()) {
+             // Try to get it from notice if all else fails
+             $schoolId = $notice->school_id;
+        }
 
         if (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
