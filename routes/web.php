@@ -818,5 +818,4 @@ Route::get('/verify/document/{code}', [\App\Http\Controllers\Documents\Verificat
 
 // Portable (Signed) Marks Print routes - specifically for mobile app access
 Route::get('/print/marks/{exam}/{examSubject}/{type}', [App\Http\Controllers\Principal\MarkEntryController::class , 'printPortable'])
-    ->name('print.marks.portable')
-    ->middleware('signed');
+    ->name('print.marks.portable');
