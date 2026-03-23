@@ -6,8 +6,13 @@ import 'voice_recorder.dart';
 
 class NoticeReplySection extends ConsumerStatefulWidget {
   final int noticeId;
+  final bool initialHasReplied;
 
-  const NoticeReplySection({super.key, required this.noticeId});
+  const NoticeReplySection({
+    super.key,
+    required this.noticeId,
+    this.initialHasReplied = false,
+  });
 
   @override
   ConsumerState<NoticeReplySection> createState() => _NoticeReplySectionState();
@@ -17,6 +22,12 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
   bool _isSent = false;
   bool _isSending = false;
   bool _showRecorder = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isSent = widget.initialHasReplied;
+  }
 
   Future<void> _handleVoiceCompleted(String filePath, int duration) async {
     debugPrint(

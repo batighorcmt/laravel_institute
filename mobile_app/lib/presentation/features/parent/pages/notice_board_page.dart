@@ -155,7 +155,10 @@ class NoticeBoardPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 40),
                       if (notice['reply_required'] == true || notice['reply_required'] == 1) ...[
-                        NoticeReplySection(noticeId: notice['id'] as int),
+                        NoticeReplySection(
+                          noticeId: notice['id'] as int,
+                          initialHasReplied: notice['has_replied'] ?? false,
+                        ),
                         const SizedBox(height: 24),
                       ],
                       SizedBox(

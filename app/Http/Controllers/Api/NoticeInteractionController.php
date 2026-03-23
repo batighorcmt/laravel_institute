@@ -40,6 +40,22 @@ class NoticeInteractionController extends Controller
         ]);
 
         $user = $request->user();
+
+        // Prevent duplicate replies
+        $existing = NoticeReply::where('notice_id', $notice->id)
+            ->where('parent_id', $user->id)
+            ->when($request->student_id, function($q) use ($request) {
+                return $q->where('student_id', $request->student_id);
+            }, function($q) {
+                return $q->whereNull('student_id');
+            })
+            ->exists();
+
+        if ($existing) {
+            return response()->json([
+                'message' => 'আপনি ইতিমধ্যে এই নোটিশে রিপ্লাই দিয়েছেন।'
+            ], 422);
+        }
         
         // Store voice file in public storage
         $path = $request->file('voice')->store('notices/replies', 'public');
