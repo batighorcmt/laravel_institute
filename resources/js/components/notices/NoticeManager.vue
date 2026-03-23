@@ -217,30 +217,30 @@
                </ul>
 
                <div v-if="activeTab === 'reads'" class="max-h-300 overflow-auto">
-                  <div v-for="read in statsData.reads" :key="read.id" class="p-2 border-bottom small d-flex justify-content-between">
-                    <span>{{ read.user?.name }}</span>
-                    <span class="text-muted">{{ read.created_at }}</span>
+                  <div v-for="(read, idx) in statsReads" :key="idx" class="p-2 border-bottom small d-flex justify-content-between">
+                    <span>{{ read.name }}</span>
+                    <span class="text-muted">{{ read.details }}</span>
                   </div>
-                  <div v-if="!statsData.read_count" class="text-center py-3 text-muted">কেউ এখনো পড়েনি।</div>
+                  <div v-if="!statsReads.length" class="text-center py-3 text-muted">কেউ এখনো পড়েনি।</div>
                </div>
 
                <div v-if="activeTab === 'replies'" class="max-h-400 overflow-auto">
-                  <div v-for="reply in statsData.replies" :key="reply.id" class="d-flex align-items-center p-3 border rounded mb-2 bg-light shadow-sm">
+                  <div v-for="(reply, idx) in statsReplies" :key="idx" class="d-flex align-items-center p-3 border rounded mb-2 bg-light shadow-sm">
                     <div class="mr-3">
-                        <img v-if="reply.student && reply.student.photo" :src="'/storage/' + reply.student.photo" class="rounded-circle border" width="45" height="45">
+                        <img v-if="reply.photo_url" :src="reply.photo_url" class="rounded-circle border" width="45" height="45">
                         <div v-else class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width:45px;height:45px">
-                           {{ reply.student ? (reply.student.name_bn ? reply.student.name_bn[0] : 'S') : 'U' }}
+                           {{ reply.name ? reply.name[0] : 'U' }}
                         </div>
                     </div>
                     <div class="flex-grow-1">
-                        <div class="font-weight-bold text-dark">{{ reply.student ? reply.student.name_bn : 'অজ্ঞাত শিক্ষার্থী' }}</div>
-                        <div class="x-small text-muted mb-2">শ্রেণি: {{ reply.student?.class_name }}, আইডি: {{ reply.student?.student_id }}</div>
-                        <audio controls style="height: 30px; width: 100%" class="shadow-sm">
-                          <source :src="'/storage/' + reply.voice_path" type="audio/webm">
+                        <div class="font-weight-bold text-dark">{{ reply.name }}</div>
+                        <div class="x-small text-muted mb-2">{{ reply.details }}</div>
+                        <audio v-if="reply.reply && reply.reply.url" controls style="height: 30px; width: 100%" class="shadow-sm">
+                          <source :src="reply.reply.url" type="audio/webm">
                         </audio>
                     </div>
                   </div>
-                  <div v-if="!statsData.reply_count" class="text-center py-3 text-muted">কোনো রিপ্লাই নেই।</div>
+                  <div v-if="!statsReplies.length" class="text-center py-3 text-muted">কোনো রিপ্লাই নেই।</div>
                </div>
             </div>
           </div>
@@ -354,6 +354,14 @@ export default {
     },
     selectedStudentTargets() {
       return this.form.targets.filter(t => t.type === 'Student');
+    },
+    statsReads() {
+      if (!this.statsData.all) return [];
+      return this.statsData.all.filter(r => r.status === 'read' || r.status === 'replied');
+    },
+    statsReplies() {
+      if (!this.statsData.all) return [];
+      return this.statsData.all.filter(r => r.status === 'replied');
     }
   },
   watch: {
