@@ -34,7 +34,11 @@ class PrincipalStudentController extends Controller
         }
 
         $query = $request->get('q');
-        $academicYearId = $request->get('academic_year_id');
+        // Support diverse academic year parameters from mobile app
+        $academicYearId = $request->get('academic_year_id') ?: $request->get('year_id') ?: $request->get('year') ?: $request->get('academic_year');
+        if (!$academicYearId) {
+            $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
+        }
         $classId = $request->get('class_id');
         $sectionId = $request->get('section_id');
         $rollNo = $request->get('roll_no');

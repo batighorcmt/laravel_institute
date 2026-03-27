@@ -20,7 +20,7 @@ class StudentDirectoryController extends Controller
         }
 
         // Determine academic year: explicit query param or current academic year
-        $yearId = (int)($request->query('academic_year_id', 0));
+        $yearId = (int)($request->query('academic_year_id', $request->query('year_id', $request->query('academic_year', 0))));
         if (!$yearId) {
             $yearId = (int)(\App\Models\AcademicYear::forSchool($schoolId)->current()->value('id') ?? 0);
         }
@@ -111,7 +111,7 @@ class StudentDirectoryController extends Controller
         }
 
         // Determine academic year: explicit query param or current academic year
-        $yearId = (int)($request->query('academic_year_id', 0));
+        $yearId = (int)($request->query('academic_year_id', $request->query('year_id', $request->query('academic_year', 0))));
         if (!$yearId) {
             $yearId = (int)(\App\Models\AcademicYear::forSchool($schoolId)->current()->value('id') ?? 0);
         }
@@ -153,7 +153,7 @@ class StudentDirectoryController extends Controller
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
-        $yearId = (int)($request->query('academic_year_id', 0));
+        $yearId = (int)($request->query('academic_year_id', $request->query('year_id', $request->query('academic_year', 0))));
         if (!$yearId) {
             $yearId = (int)(\App\Models\AcademicYear::forSchool($schoolId)->current()->value('id') ?? 0);
         }

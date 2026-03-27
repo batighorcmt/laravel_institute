@@ -51,7 +51,13 @@ class TeacherStudentAttendanceController extends Controller
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
 
         $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
         $sectionsQuery = Section::where('school_id', $schoolId)->where('status', 'active');
+        if($academicYearId) {
+            $sectionsQuery->whereHas('enrollments', function($q) use ($academicYearId) {
+                $q->where('academic_year_id', $academicYearId)->where('status','active');
+            });
+        }
         if (!$isPrincipal) {
             $teacher = Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->where('status', 'active')->first();
             if (!$teacher) return response()->json(['data' => []]);
@@ -84,7 +90,12 @@ class TeacherStudentAttendanceController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
         $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
+
         $rowsQuery = ExtraClass::where('school_id', $schoolId)->where('status', 'active');
+        if ($academicYearId) {
+            $rowsQuery->where('academic_year_id', $academicYearId);
+        }
         if (!$isPrincipal) {
             $rowsQuery->where('teacher_id', $user->id);
         }
@@ -108,7 +119,14 @@ class TeacherStudentAttendanceController extends Controller
         $user = $request->user();
         $schoolId = $this->resolveSchoolId($request, $user);
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
-        $teams = Team::forSchool($schoolId)->active()->orderBy('name')->get(['id','name','type']);
+        $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
+        $teamsQuery = Team::forSchool($schoolId)->active();
+        if ($academicYearId) {
+            $teamsQuery->whereHas('students.enrollments', function($q) use ($academicYearId) {
+                $q->where('academic_year_id', $academicYearId)->where('status','active');
+            });
+        }
+        $teams = $teamsQuery->orderBy('name')->get(['id','name','type']);
         return response()->json($teams);
     }
 
@@ -127,6 +145,7 @@ class TeacherStudentAttendanceController extends Controller
         }
 
         $date = $request->query('date', now()->toDateString());
+        $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
 
         $enrollments = StudentEnrollment::where([
                 'school_id' => $schoolId,
@@ -134,6 +153,7 @@ class TeacherStudentAttendanceController extends Controller
                 'section_id' => $section->id,
                 'status' => 'active',
             ])
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
             // only include enrollments whose student record is active
             ->whereHas('student', fn($q)=>$q->where('status','active'))
             ->with(['student' => fn($q)=>$q->where('status','active')])
