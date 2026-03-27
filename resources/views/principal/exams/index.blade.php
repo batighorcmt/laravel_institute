@@ -127,6 +127,7 @@
                                                 <a href="{{ route('principal.institute.marks.show', [$school, $exam]) }}"><i class="fas fa-pen"></i> Mark Entry</a>
                                                 <a href="{{ route('principal.institute.results.marksheet', $school) }}?exam_id={{ $exam->id }}"><i class="fas fa-file-alt"></i> Results</a>
                                                 
+                                                <a href="{{ route('principal.institute.exams.admit_v1', [$school, $exam]) }}" target="_blank"><i class="fas fa-id-card"></i> প্রবেশপত্র (Admit v1)</a>
                                                 <a href="{{ route('principal.institute.exams.admit_v2', [$school, $exam]) }}" target="_blank"><i class="fas fa-id-card"></i> প্রবেশপত্র (Admit v2)</a>
                                                 <a href="{{ route('principal.institute.exams.admit_v3', [$school, $exam]) }}" target="_blank"><i class="fas fa-id-card-alt"></i> সরল প্রবেশপত্র (Admit v3)</a>
                                                 <a href="{{ route('principal.institute.exams.attendance_sheet', [$school, $exam]) }}" target="_blank"><i class="fas fa-clipboard-list"></i> পরীক্ষার হাজিরা শীট</a>

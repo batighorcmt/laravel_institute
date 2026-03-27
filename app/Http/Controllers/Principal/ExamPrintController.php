@@ -101,6 +101,11 @@ class ExamPrintController extends Controller
         return compact('school', 'exam', 'className', 'schedule', 'students', 'assigned_by_student');
     }
 
+    public function admitV1(Request $request, School $school, Exam $exam)
+    {
+        return view('principal.exams.print.admit_v1', $this->prepareData($request, $school, $exam));
+    }
+
     public function admitV2(Request $request, School $school, Exam $exam)
     {
         return view('principal.exams.print.admit_v2', $this->prepareData($request, $school, $exam));

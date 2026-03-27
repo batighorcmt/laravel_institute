@@ -7,7 +7,9 @@
 <head>
 <meta charset="UTF-8">
 <title>প্রবেশপত্র - {{ $institute_name }}</title>
-<link rel="icon" href="{{ $institute_logo }}" type="image/x-icon">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32x32.png') }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicon-16x16.png') }}">
+<link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}">
 <style>
   @font-face{font-family:'Kalpurush';src:url('https://fonts.maateen.me/kalpurush/font.ttf') format('truetype');font-display:swap}
   body{margin:0;padding:0;font-family:'Kalpurush', Arial, Helvetica, sans-serif}

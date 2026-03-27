@@ -6,10 +6,12 @@
   $yearLabel = $yearLabel ?? '';
   
   // Function to convert English numbers to Bengali
-  function toBengaliNumber($number) {
-    $englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    $bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-    return str_replace($englishDigits, $bengaliDigits, (string)$number);
+  if (!function_exists('toBengaliNumber')) {
+    function toBengaliNumber($number) {
+      $englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+      $bengaliDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+      return str_replace($englishDigits, $bengaliDigits, (string)$number);
+    }
   }
   
   // Header titles
@@ -404,16 +406,16 @@
                   <td>{{ $stu->blood_group ?: '-' }}</td>
                   @break
                 @case('class')
-                  <td>{{ $en? $en->class?->name : '-' }}</td>
+                  <td>{{ $en && $en->class ? langField($en->class, 'name', $lang) : '-' }}</td>
                   @break
                 @case('section')
-                  <td>{{ $en? $en->section?->name : '-' }}</td>
+                  <td>{{ $en && $en->section ? langField($en->section, 'name', $lang) : '-' }}</td>
                   @break
                 @case('roll')
                   <td class="nowrap">{{ $en ? ($lang==='bn' ? toBengaliNumber($en->roll_no) : $en->roll_no) : '-' }}</td>
                   @break
                 @case('group')
-                  <td>{{ $en? $en->group?->name : '-' }}</td>
+                  <td>{{ $en && $en->group ? langField($en->group, 'name', $lang) : '-' }}</td>
                   @break
                 @case('guardian_name_bn')
                   @php

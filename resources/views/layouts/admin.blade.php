@@ -474,6 +474,22 @@
                                 </ul>
                             </li>
                             @endif
+
+                            {{-- Settings Group --}}
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.background_settings.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.background_settings.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-cog"></i>
+                                    <p>সেটিংস <i class="right fas fa-angle-left"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.background_settings.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.background_settings.index') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Documents Background</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
                         @endif
 
                     @elseif($u && ($u->isTeacher() || $u->isExamController($u->primarySchool()?->id)))

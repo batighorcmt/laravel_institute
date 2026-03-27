@@ -1,4 +1,5 @@
 @extends('layouts.print')
+@section('title', 'Admit Card V2 - ' . $school->name)
 
 @section('suppress_header')@endsection
 

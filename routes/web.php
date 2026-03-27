@@ -355,6 +355,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                                 Route::delete('/{exam}/subjects/{examSubject}', [App\Http\Controllers\Principal\ExamController::class , 'removeSubject'])->name('subjects.remove');
 
                                 // Print Templates
+                                Route::get('/{exam}/admit-v1', [App\Http\Controllers\Principal\ExamPrintController::class , 'admitV1'])->name('admit_v1');
                                 Route::get('/{exam}/admit-v2', [App\Http\Controllers\Principal\ExamPrintController::class , 'admitV2'])->name('admit_v2');
                                 Route::get('/{exam}/admit-v3', [App\Http\Controllers\Principal\ExamPrintController::class , 'admitV3'])->name('admit_v3');
                                 Route::get('/{exam}/attendance-sheet', [App\Http\Controllers\Principal\ExamPrintController::class , 'attendanceSheet'])->name('attendance_sheet');
@@ -477,6 +478,10 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                                 );
                             }
                             );
+
+                            // Background Settings
+                            Route::get('background-settings', [\App\Http\Controllers\Principal\BackgroundSettingsController::class , 'index'])->name('background_settings.index');
+                            Route::post('background-settings', [\App\Http\Controllers\Principal\BackgroundSettingsController::class , 'update'])->name('background_settings.update');
 
                             Route::resource('shifts', PrincipalShiftController::class)->except(['show']);
                             Route::resource('sections', PrincipalSectionController::class)->except(['show']);

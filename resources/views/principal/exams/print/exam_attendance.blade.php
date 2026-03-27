@@ -1,4 +1,5 @@
 @extends('layouts.print')
+@section('title', 'Attendance Sheet - ' . $school->name)
 
 @section('suppress_header')@endsection
 
@@ -53,6 +54,9 @@
       }
       return $obj->$field ?? $obj->$bn ?? null;
     }
+  }
+  if (!function_exists('capitalizeEachWord')){
+    function capitalizeEachWord($v){ return ucwords(strtolower($v)); }
   }
 @endphp
 
@@ -111,8 +115,7 @@
   <div class="page">
 @foreach ($students as $stu)
 @php
-foreach ($students as $stu):
-  $stu_name = langField($stu, 'full_name', $lang) ?: langField($stu, 'name', $lang) ?: ($stu->student_id ?? $stu->id ?? '');
+  $stu_name = capitalizeEachWord($stu->student_name_en ?: $stu->full_name);
   $enrollment = $stu->enrollments->first();
   $stu_roll = $enrollment ? $enrollment->roll_no : '';
   $stu_id_show = (string)($stu->student_id ?? $stu->id);
@@ -174,8 +177,8 @@ foreach ($students as $stu):
             <tr>
               <td>{{ t('Name of Student','শিক্ষার্থীর নাম') }}:</td>
               <td><strong>{{ $stu_name }}</strong></td>
-              <td>{{ t('ID','আইডি') }}:</td
-              ><td><strong class="no-bn">{{ $stu_id_show }}</strong></td>
+              <td>{{ t('ID','আইডি') }}:</td>
+              <td><strong class="no-bn">{{ $stu_id_show }}</strong></td>
               <td>{{ t('Roll Number','রোল নং') }}:</td>
               <td><strong class="num">{{ bnNum($stu_roll) }}</strong></td>
             </tr>

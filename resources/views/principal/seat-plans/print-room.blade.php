@@ -6,10 +6,12 @@
     $printSubtitle = $lang === 'bn' ? ($seatPlan->name_bn ?? $seatPlan->name) : ($seatPlan->name ?? $seatPlan->name_bn);
     
     // Bengali number conversion helper
-    function toBengaliNumber($number) {
-        $en = ['0','1','2','3','4','5','6','7','8','9'];
-        $bn = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
-        return str_replace($en, $bn, $number);
+    if (!function_exists('toBengaliNumber')) {
+        function toBengaliNumber($number) {
+            $en = ['0','1','2','3','4','5','6','7','8','9'];
+            $bn = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+            return str_replace($en, $bn, $number);
+        }
     }
 
     if (!function_exists('t')){
@@ -22,15 +24,28 @@
     if (!function_exists('langField')){
         function langField($obj, $field, $lang='bn'){
             if (!$obj) return '';
-            if (in_array($field, ['student_name', 'name'])){
-                if ($lang === 'bn'){
-                    return $obj->student_name_bn ?? $obj->bangla_name ?? $obj->student_name_en ?? $obj->name ?? '';
-                }
-                return $obj->student_name_en ?? $obj->name ?? $obj->student_name_bn ?? $obj->bangla_name ?? '';
+            
+            if ($lang === 'bn'){
+                // Check all common Bangla field patterns in order of likelihood
+                $v = data_get($obj, 'bangla_name') 
+                  ?? data_get($obj, 'name_bn') 
+                  ?? data_get($obj, 'student_name_bn') 
+                  ?? data_get($obj, 'subject_bangla_name') 
+                  ?? data_get($obj, 'full_name_bn')
+                  ?? data_get($obj, 'name_bangla')
+                  ?? data_get($obj, 'title_bn');
+                  
+                if ($v && trim((string)$v) !== '') return $v;
             }
-            $bnField = $field . '_bn';
-            if ($lang === 'bn') return $obj->$bnField ?? $obj->$field ?? '';
-            return $obj->$field ?? $obj->$bnField ?? '';
+
+            // English Fallback
+            $v = data_get($obj, $field) 
+              ?? data_get($obj, 'name') 
+              ?? data_get($obj, 'student_name_en') 
+              ?? data_get($obj, 'full_name') 
+              ?? data_get($obj, 'title');
+              
+            return $v ?? '';
         }
     }
 @endphp
@@ -96,10 +111,17 @@
         $sn = strtolower(trim($shiftName));
         if (strpos($sn,'even') !== false) { $shiftLabel = $lang === 'bn' ? 'সন্ধ্যা শিফট' : 'Evening Shift'; }
         elseif (strpos($sn,'morn') !== false) { $shiftLabel = $lang === 'bn' ? 'সকাল শিফট' : 'Morning Shift'; }
+        elseif (strpos($sn,'after') !== false) { $shiftLabel = $lang === 'bn' ? 'বিকাল শিফট' : 'Afternoon Shift'; }
+        elseif (strpos($sn,'day') !== false) { $shiftLabel = $lang === 'bn' ? 'দিবা শিফট' : 'Day Shift'; }
         else { $shiftLabel = ucwords($shiftName).' '.($lang === 'bn' ? 'শিফট' : 'Shift'); }
-        $shiftParts = preg_split('/\s+/', trim($shiftLabel), 2);
-        $shiftLine1 = $shiftParts[0] ?? $shiftLabel;
-        $shiftLine2 = $shiftParts[1] ?? '';
+        
+        $shiftLine1 = $shiftLabel;
+        $shiftLine2 = '';
+        if (strpos($shiftLabel, ' ') !== false) {
+            $shiftParts = explode(' ', $shiftLabel, 2);
+            $shiftLine1 = $shiftParts[0];
+            $shiftLine2 = $shiftParts[1];
+        }
     @endphp
     <div class="shift-overlay">
         <div class="line2">{{ $shiftLine1 }}</div>
@@ -110,36 +132,40 @@
 @section('content')
 
     @php
-        function detectGradeFromClass($className){
-            $c = trim((string)$className);
-            if ($c==='') return null;
-            $lc = strtolower($c);
-            
-            // English matches
-            if (strpos($lc,'six')!==false) return 6;
-            if (strpos($lc,'seven')!==false) return 7;
-            if (strpos($lc,'eight')!==false) return 8;
-            if (strpos($lc,'nine')!==false) return 9;
-            if (strpos($lc,'ten')!==false) return 10;
-            
-            // Bengali matches
-            if (strpos($c,'ষষ্ঠ')!==false) return 6;
-            if (strpos($c,'সপ্তম')!==false) return 7;
-            if (strpos($c,'অষ্টম')!==false) return 8;
-            if (strpos($c,'নবম')!==false) return 9;
-            if (strpos($c,'দশম')!==false) return 10;
-            
-            if (preg_match('/\b(6)\b/', $c)) return 6;
-            if (preg_match('/\b(7)\b/', $c)) return 7;
-            if (preg_match('/\b(8)\b/', $c)) return 8;
-            if (preg_match('/\b(9)\b/', $c)) return 9;
-            if (preg_match('/\b(10)\b/', $c)) return 10;
-            return null;
+        if (!function_exists('detectGradeFromClass')) {
+            function detectGradeFromClass($className){
+                $c = trim((string)$className);
+                if ($c==='') return null;
+                $lc = strtolower($c);
+                
+                // English matches
+                if (strpos($lc,'six')!==false) return 6;
+                if (strpos($lc,'seven')!==false) return 7;
+                if (strpos($lc,'eight')!==false) return 8;
+                if (strpos($lc,'nine')!==false) return 9;
+                if (strpos($lc,'ten')!==false) return 10;
+                
+                // Bengali matches
+                if (strpos($c,'ষষ্ঠ')!==false) return 6;
+                if (strpos($c,'সপ্তম')!==false) return 7;
+                if (strpos($c,'অষ্টম')!==false) return 8;
+                if (strpos($c,'নবম')!==false) return 9;
+                if (strpos($c,'দশম')!==false) return 10;
+                
+                if (preg_match('/\b(6)\b/', $c)) return 6;
+                if (preg_match('/\b(7)\b/', $c)) return 7;
+                if (preg_match('/\b(8)\b/', $c)) return 8;
+                if (preg_match('/\b(9)\b/', $c)) return 9;
+                if (preg_match('/\b(10)\b/', $c)) return 10;
+                return null;
+            }
         }
         
-        function badgeClassFor($className){ 
-            $g = detectGradeFromClass($className); 
-            return $g ? ('grade-'.(int)$g) : ''; 
+        if (!function_exists('badgeClassFor')) {
+            function badgeClassFor($className){ 
+                $g = detectGradeFromClass($className); 
+                return $g ? ('grade-'.(int)$g) : ''; 
+            }
         }
     @endphp
 
@@ -189,7 +215,15 @@
                                 @endphp
                                 <div class="roll">{{ $rollDisplay }}</div>
                                 <div class="name">{{ \Illuminate\Support\Str::limit(langField($leftAllocation->student, 'student_name', $lang), 30) }}</div>
-                                <div class="class">{{ langField($leftAllocation->student->currentEnrollment->class, 'name', $lang) }}</div>
+                                @php
+                                    $l_enroll = $leftAllocation->student->currentEnrollment ?? $leftAllocation->student->enrollment ?? $leftAllocation->student->enrollments->first();
+                                    $l_class = $l_enroll ? $l_enroll->class : null;
+                                    $l_group = $l_enroll ? $l_enroll->group : null;
+                                @endphp
+                                <div class="class">
+                                    {{ langField($l_class, 'name', $lang) }}
+                                    @if($l_group) ({{ langField($l_group, 'name', $lang) }}) @endif
+                                </div>
                             @else
                                 --
                             @endif
@@ -216,7 +250,15 @@
                                 @endphp
                                 <div class="roll">{{ $rollDisplay }}</div>
                                 <div class="name">{{ \Illuminate\Support\Str::limit(langField($rightAllocation->student, 'student_name', $lang), 30) }}</div>
-                                <div class="class">{{ langField($rightAllocation->student->currentEnrollment->class, 'name', $lang) }}</div>
+                                @php
+                                    $r_enroll = $rightAllocation->student->currentEnrollment ?? $rightAllocation->student->enrollment ?? $rightAllocation->student->enrollments->first();
+                                    $r_class = $r_enroll ? $r_enroll->class : null;
+                                    $r_group = $r_enroll ? $r_enroll->group : null;
+                                @endphp
+                                <div class="class">
+                                    {{ langField($r_class, 'name', $lang) }}
+                                    @if($r_group) ({{ langField($r_group, 'name', $lang) }}) @endif
+                                </div>
                             @else
                                 --
                             @endif

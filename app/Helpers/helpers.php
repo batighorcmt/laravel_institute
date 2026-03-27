@@ -2,17 +2,46 @@
 
 if (!function_exists('langField')) {
     /**
-     * Get field value based on language suffix.
-     * Example: student_name_bn or student_name_en
+     * Get field value based on language suffix or specialized fields.
      */
     function langField($model, $field, $lang = 'bn') {
         if (!$model) return '';
         
-        $langField = $field . '_' . ($lang === 'bn' ? 'bn' : 'en');
-        
-        // Fallback to original field name if language specific field doesn't exist
-        if (isset($model->$langField)) {
-            return $model->$langField;
+        if ($lang === 'bn') {
+            // Check common patterns for Bangla fields
+            $patterns = [
+                $field . '_bn',
+                'bangla_name',
+                'name_bn',
+                $field . '_bangla',
+                'student_name_bn',
+                'subject_bangla_name',
+                'title_bn',
+                'full_name_bn'
+            ];
+            
+            foreach ($patterns as $p) {
+                if (isset($model->$p) && trim((string)$model->$p) !== '') {
+                    return $model->$p;
+                }
+            }
+        } else {
+            // Priority for English fields
+            $patterns = [
+                $field . '_en',
+                'name_en',
+                $field,
+                'name',
+                'student_name_en',
+                'full_name',
+                'full_name_en'
+            ];
+            
+            foreach ($patterns as $p) {
+                if (isset($model->$p) && trim((string)$model->$p) !== '') {
+                    return $model->$p;
+                }
+            }
         }
         
         return $model->$field ?? '';
@@ -34,12 +63,27 @@ if (!function_exists('detectGradeFromClass')) {
      * Helper to detect grade/group from class name for seating colors.
      */
     function detectGradeFromClass($className) {
-        $className = strtolower($className);
-        if (str_contains($className, 'six')) return '6';
-        if (str_contains($className, 'seven')) return '7';
-        if (str_contains($className, 'eight')) return '8';
-        if (str_contains($className, 'nine')) return '9';
-        if (str_contains($className, 'ten')) return '10';
+        if (!$className) return '';
+        $className = (string)$className;
+        $lc = strtolower($className);
+        
+        // English
+        if (str_contains($lc, 'six') || str_contains($lc, ' 6')) return '6';
+        if (str_contains($lc, 'seven') || str_contains($lc, ' 7')) return '7';
+        if (str_contains($lc, 'eight') || str_contains($lc, ' 8')) return '8';
+        if (str_contains($lc, 'nine') || str_contains($lc, ' 9')) return '9';
+        if (str_contains($lc, 'ten') || str_contains($lc, ' 10')) return '10';
+
+        // Bangla
+        if (str_contains($className, 'ষষ্ঠ') || str_contains($className, '৬')) return '6';
+        if (str_contains($className, 'সপ্তম') || str_contains($className, '৭')) return '7';
+        if (str_contains($className, 'অষ্টম') || str_contains($className, '৮')) return '8';
+        if (str_contains($className, 'নবম') || str_contains($className, '৯')) return '9';
+        if (str_contains($className, 'দশম') || str_contains($className, '১০')) return '10';
+        
+        // Direct numeric match
+        if (preg_match('/\b(6|7|8|9|10)\b/', $className, $matches)) return $matches[1];
+        
         return '';
     }
 }
