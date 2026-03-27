@@ -46,7 +46,8 @@ class PrincipalReportController extends Controller
         // 2. Extra Class Attendance — use Eloquent whereHas (proven approach)
         $extraQuery = \App\Models\ExtraClassAttendance::whereHas(
             'extraClass', fn($q) => $q->where('school_id', $schoolId)
-        )->whereDate('date', $date);
+        )->whereHas('student', fn($q) => $q->where('status', 'active'))
+        ->whereDate('date', $date);
 
         $extraClassPresent = (clone $extraQuery)
             ->whereIn('status', ['present', 'late'])
@@ -522,11 +523,11 @@ class PrincipalReportController extends Controller
         $extraClasses = \DB::table('extra_classes')
             ->join('users', 'extra_classes.teacher_id', '=', 'users.id')
             ->leftJoin('teachers', 'users.id', '=', 'teachers.user_id')
-            ->leftJoin('extra_class_enrollments', function($join) {
+            ->join('extra_class_enrollments', function($join) {
                 $join->on('extra_classes.id', '=', 'extra_class_enrollments.extra_class_id')
                      ->where('extra_class_enrollments.status', 'active');
             })
-            ->leftJoin('students', function($join) {
+            ->join('students', function($join) {
                 $join->on('extra_class_enrollments.student_id', '=', 'students.id')
                      ->where('students.status', 'active');
             })
@@ -538,7 +539,7 @@ class PrincipalReportController extends Controller
                 'extra_classes.name as section_name',
                 'users.name as class_teacher_name',
                 'teachers.initials as class_teacher_initials',
-                \DB::raw('COUNT(DISTINCT extra_class_enrollments.student_id) as total'),
+                \DB::raw('COUNT(DISTINCT students.id) as total'),
                 \DB::raw("SUM(CASE WHEN students.gender='male' THEN 1 ELSE 0 END) as total_male"),
                 \DB::raw("SUM(CASE WHEN students.gender='female' THEN 1 ELSE 0 END) as total_female")
             )
@@ -547,6 +548,7 @@ class PrincipalReportController extends Controller
 
         $attendances = \DB::table('extra_class_attendances')
             ->join('students', 'extra_class_attendances.student_id', '=', 'students.id')
+            ->where('students.status', 'active')
             ->where('extra_class_attendances.date', $date)
             ->whereIn('extra_class_attendances.extra_class_id', $extraClasses->pluck('section_id'))
             ->select(
