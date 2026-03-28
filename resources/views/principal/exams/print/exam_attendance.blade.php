@@ -115,7 +115,9 @@
   <div class="page">
 @foreach ($students as $stu)
 @php
-  $stu_name = capitalizeEachWord($stu->student_name_en ?: $stu->full_name);
+  $stu_name = $lang === 'bn'
+    ? ($stu->student_name_bn ?: ($stu->student_name_en ?: ($stu->full_name ?? '')))
+    : capitalizeEachWord($stu->student_name_en ?: ($stu->full_name ?? ''));
   $enrollment = $stu->enrollments->first();
   $stu_roll = $enrollment ? $enrollment->roll_no : '';
   $stu_id_show = (string)($stu->student_id ?? $stu->id);
