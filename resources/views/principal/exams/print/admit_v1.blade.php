@@ -273,19 +273,29 @@
             $session = $exam->academicYear ? $exam->academicYear->title : date('Y');
             
             $assigned = [];
+            $optional_subjects = []; // subject_id => bool
             if (!empty($assigned_by_student[$student->id])) {
-                $assigned = array_keys($assigned_by_student[$student->id]);
+                foreach ($assigned_by_student[$student->id] as $subId => $info) {
+                    $assigned[] = $subId;
+                    $optional_subjects[$subId] = is_array($info) ? ($info['is_optional'] ?? false) : false;
+                }
             }
 
             $sched_for_student = [];
             if (!empty($assigned)) {
                 foreach ($schedule as $row) {
                     if (isset($row->subject_id) && in_array(intval($row->subject_id), $assigned, true)) {
-                        $sched_for_student[] = $row;
+                        $r = clone $row;
+                        $r->is_optional = $optional_subjects[intval($row->subject_id)] ?? false;
+                        $sched_for_student[] = $r;
                     }
                 }
             } else {
-                $sched_for_student = $schedule;
+                $sched_for_student = collect($schedule)->map(function($row) {
+                    $r = clone $row;
+                    $r->is_optional = false;
+                    return $r;
+                })->all();
             }
 
             // Commencement Date: Date of the first exam in list
@@ -384,7 +394,7 @@
                                 <tr>
                                     <td>{{ $sn++ }}</td>
                                     <td>{{ $subject->subject_code }}</td>
-                                    <td>{{ $subject->subject_name }}</td>
+                                    <td>{{ $subject->subject_name }}@if(!empty($subject->is_optional)) <span style="font-size:8pt;color:#555;font-style:italic;">(Optional)</span>@endif</td>
                                     <td>{{ $subject->exam_date ? date('d/m/Y', strtotime($subject->exam_date)) : '' }}</td>
                                     <td>{{ $subject->exam_time ? date('h:i A', strtotime($subject->exam_time)) : '' }}</td>
                                 </tr>

@@ -95,7 +95,10 @@ class ExamPrintController extends Controller
                     if(!isset($assigned_by_student[$studentId])) {
                         $assigned_by_student[$studentId] = [];
                     }
-                    $assigned_by_student[$studentId][$ss->subject_id] = true;
+                    $assigned_by_student[$studentId][$ss->subject_id] = [
+                        'assigned'    => true,
+                        'is_optional' => !empty($ss->is_optional),
+                    ];
                 }
             }
         }
