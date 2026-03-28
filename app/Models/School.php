@@ -65,6 +65,11 @@ class School extends Model
         return $this->hasMany(Student::class);
     }
 
+    public function publicExams(): HasMany
+    {
+        return $this->hasMany(PublicExam::class);
+    }
+
     public function admissionAcademicYear()
     {
         return $this->belongsTo(AcademicYear::class, 'admission_academic_year_id');

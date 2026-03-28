@@ -124,6 +124,24 @@
                                 @enderror
                             </div>
                         </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="public_exam_id">পাবলিক পরীক্ষা ফরমেট</label>
+                                <select name="public_exam_id" id="public_exam_id" class="form-control @error('public_exam_id') is-invalid @enderror">
+                                    <option value="">-- সাধারণ পরীক্ষা --</option>
+                                    @foreach($publicExams as $publicExam)
+                                        <option value="{{ $publicExam->id }}" {{ old('public_exam_id', $exam->public_exam_id) == $publicExam->id ? 'selected' : '' }}>
+                                            {{ $publicExam->short_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted">পাবলিক পরীক্ষার শর্ট নামের তালিকা</small>
+                                @error('public_exam_id')
+                                    <span class="invalid-feedback">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
                     </div>
 
                     <div class="row">

@@ -13,7 +13,7 @@ class ExamPrintController extends Controller
 {
     private function prepareData(Request $request, School $school, Exam $exam)
     {
-        $exam->load('class');
+        $exam->load('class', 'publicExam');
         $className = $exam->class->bangla_name ?? $exam->class->name ?? '';
 
         // Subjects schedule
@@ -40,6 +40,7 @@ class ExamPrintController extends Controller
 
         $query = Student::where('school_id', $school->id)
             ->where('status', 'active')
+            ->with(['publicExams'])
             ->whereHas('enrollments', function($q) use ($academicYearId, $classId) {
                 $q->where('academic_year_id', $academicYearId)
                   ->where('class_id', $classId)

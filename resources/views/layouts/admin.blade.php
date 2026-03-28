@@ -275,6 +275,8 @@
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item"><a href="{{ route('principal.institute.students.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>List</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.students.create', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.create') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Add Student</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.students.print-controls', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.print-controls') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Student Info Print</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.students.public-exam-info', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.public-exam-info') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Add Public Exam Info</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.students.bulk', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.bulk') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Bulk student add</p></a></li>
                                 </ul>
                             </li>
@@ -476,8 +478,8 @@
                             @endif
 
                             {{-- Settings Group --}}
-                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.background_settings.*') ? 'menu-open' : '' }}">
-                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.background_settings.*') ? 'active' : '' }}">
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.background_settings.*') || request()->routeIs('principal.institute.public_exams.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.background_settings.*') || request()->routeIs('principal.institute.public_exams.*') ? 'active' : '' }}">
                                     <i class="nav-icon fas fa-cog"></i>
                                     <p>সেটিংস <i class="right fas fa-angle-left"></i></p>
                                 </a>
@@ -486,6 +488,12 @@
                                         <a href="{{ route('principal.institute.background_settings.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.background_settings.index') ? 'active' : '' }}">
                                             <i class="far fa-circle nav-icon"></i>
                                             <p>Documents Background</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.public_exams.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.public_exams.*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Public Exams</p>
                                         </a>
                                     </li>
                                 </ul>

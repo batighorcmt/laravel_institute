@@ -666,12 +666,32 @@
                 <div class="modal-body p-4">
                     <div class="row">
                         <div class="col-md-6 form-group">
-                            <label>পরীক্ষার নাম * (যেমন: JSC, SSC)</label>
-                            <input type="text" name="exam_name" id="pe_exam_name" class="form-control" required>
+                            <label>পরীক্ষার নাম <span class="text-danger">*</span></label>
+                            <select name="exam_name" id="pe_exam_name" class="form-control" required>
+                                <option value="">-- নির্বাচন করুন --</option>
+                                @forelse($publicExams as $pe)
+                                <option value="{{ $pe->short_name }}">{{ $pe->short_name }} — {{ $pe->full_name }}</option>
+                                @empty
+                                <option disabled>কোনো পাবলিক পরীক্ষা সেট করা হয়নি</option>
+                                @endforelse
+                            </select>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>বোর্ড</label>
-                            <input type="text" name="board" id="pe_board" class="form-control">
+                            <select name="board" id="pe_board" class="form-control">
+                                <option value="">-- বোর্ড নির্বাচন করুন --</option>
+                                <option value="Dhaka">Dhaka</option>
+                                <option value="Rajshahi">Rajshahi</option>
+                                <option value="Chittagong">Chittagong</option>
+                                <option value="Sylhet">Sylhet</option>
+                                <option value="Comilla">Comilla</option>
+                                <option value="Barisal">Barisal</option>
+                                <option value="Jessore">Jessore</option>
+                                <option value="Dinajpur">Dinajpur</option>
+                                <option value="Mymensingh">Mymensingh</option>
+                                <option value="Madrasah">Madrasah</option>
+                                <option value="Technical">Technical</option>
+                            </select>
                         </div>
                         <div class="col-md-6 form-group">
                             <label>রোল নম্বর</label>
@@ -683,19 +703,24 @@
                         </div>
                         <div class="col-md-4 form-group">
                             <label>পাশের সন (Year)</label>
-                            <input type="text" name="exam_year" id="pe_exam_year" class="form-control">
+                            <input type="text" name="exam_year" id="pe_exam_year" class="form-control" placeholder="যেমন: 2025">
                         </div>
                         <div class="col-md-4 form-group">
                             <label>সেশন</label>
-                            <input type="text" name="session" id="pe_session" class="form-control">
+                            <input type="text" name="session" id="pe_session" class="form-control" placeholder="যেমন: 2023-24">
                         </div>
                         <div class="col-md-4 form-group">
                             <label>পরীক্ষার্থীর ধরন</label>
-                            <input type="text" name="candidate_type" id="pe_candidate_type" class="form-control" placeholder="Regular/Irregular">
+                            <select name="candidate_type" id="pe_candidate_type" class="form-control">
+                                <option value="">-- ধরন নির্বাচন করুন --</option>
+                                <option value="Regular">Regular (নিয়মিত)</option>
+                                <option value="Irregular">Irregular (অনিয়মিত)</option>
+                                <option value="Private">Private (ব্যক্তিগত)</option>
+                            </select>
                         </div>
                         <div class="col-md-12 form-group">
-                            <label>কেন্দ্রের নাম (Center)</label>
-                            <input type="text" name="center_name" id="pe_center_name" class="form-control">
+                            <label>কেন্দ্রের নাম (Centre)</label>
+                            <input type="text" name="center_name" id="pe_center_name" class="form-control" placeholder="পরীক্ষা কেন্দ্রের নাম">
                         </div>
                     </div>
                 </div>
@@ -805,19 +830,22 @@
         $('#pe_session').val('');
         $('#pe_candidate_type').val('');
         $('#pe_center_name').val('');
+        $('#publicExamModal').find('select').each(function(){ $(this).val(''); });
     }
 
     function editPublicExam(exam) {
         resetPublicExamForm();
-        $('#publicExamMethod').html('<?php echo method_field("PUT"); ?>');
+        $('#publicExamMethod').html('<input type="hidden" name="_method" value="PUT">');
         $('#publicExamForm').attr('action', `/principal/institute/{{$school->id}}/students/{{$student->id}}/public-exams/${exam.id}`);
+        // Set select dropdowns
         $('#pe_exam_name').val(exam.exam_name);
         $('#pe_board').val(exam.board);
+        $('#pe_candidate_type').val(exam.candidate_type);
+        // Set text inputs
         $('#pe_roll_no').val(exam.roll_no);
         $('#pe_reg_no').val(exam.reg_no);
         $('#pe_exam_year').val(exam.exam_year);
         $('#pe_session').val(exam.session);
-        $('#pe_candidate_type').val(exam.candidate_type);
         $('#pe_center_name').val(exam.center_name);
         $('#publicExamModal').modal('show');
     }

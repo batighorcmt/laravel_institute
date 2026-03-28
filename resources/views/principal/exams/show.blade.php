@@ -75,6 +75,10 @@
                                 <td>{{ $exam->exam_type ?? 'N/A' }}</td>
                             </tr>
                             <tr>
+                                <th>পাবলিক পরীক্ষা ফরমেট:</th>
+                                <td>{{ $exam->publicExam->short_name ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
                                 <th>শ্রেণি:</th>
                                 <td>{{ $exam->class->name ?? 'N/A' }}</td>
                             </tr>

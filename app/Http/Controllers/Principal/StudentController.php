@@ -397,9 +397,12 @@ class StudentController extends Controller
             });
         }
 
+        $publicExams = \App\Models\PublicExam::where('school_id', $school->id)->where('status', 'active')->get();
+
         return view('principal.institute.students.show',compact(
             'school','student','enrollments','memberships','allTeams','currentYear','activeEnrollment','currentSubjects','totalYears','timeline','years',
-            'attendanceStats','workingDays', 'attendances', 'holidays', 'weeklyHolidays', 'carbonDate', 'subjectStats'
+            'attendanceStats','workingDays', 'attendances', 'holidays', 'weeklyHolidays', 'carbonDate', 'subjectStats',
+            'publicExams'
         ));
     }
 
@@ -1284,5 +1287,120 @@ class StudentController extends Controller
                 ]);
             }
         });
+    }
+
+    /**
+     * Show the Add Public Exam Info page
+     */
+    public function publicExamInfoPage(School $school)
+    {
+        $this->authorizePrincipal($school);
+        $academicYears = AcademicYear::forSchool($school->id)->orderByDesc('start_date')->get();
+        $classes = SchoolClass::forSchool($school->id)->ordered()->get();
+        $publicExams = \App\Models\PublicExam::where('school_id', $school->id)->where('status', 'active')->get();
+
+        return view('principal.institute.students.public_exam_info', compact('school', 'academicYears', 'classes', 'publicExams'));
+    }
+
+    /**
+     * Load students with their public exam info for inline editing
+     */
+    public function publicExamInfoLoad(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+
+        $request->validate([
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'class_id'         => 'required|exists:classes,id',
+            'public_exam_name' => 'required|string',
+            'status'           => 'nullable|string',
+        ]);
+
+        $academicYearId = $request->academic_year_id;
+        $classId        = $request->class_id;
+        $publicExamName = $request->public_exam_name;
+        $status         = $request->status ?: 'active';
+
+        $students = Student::where('school_id', $school->id)
+            ->where('status', $status)
+            ->whereHas('enrollments', function($q) use ($academicYearId, $classId) {
+                $q->where('academic_year_id', $academicYearId)
+                  ->where('class_id', $classId)
+                  ->where('status', 'active');
+            })
+            ->with([
+                'enrollments' => function($q) use ($academicYearId, $classId) {
+                    $q->where('academic_year_id', $academicYearId)
+                      ->where('class_id', $classId)
+                      ->where('status', 'active');
+                },
+                'publicExams',
+            ])
+            ->get()
+            ->sortBy(function($student) {
+                $enrollment = $student->enrollments->first();
+                return $enrollment ? $enrollment->roll_no : 999999;
+            })
+            ->values();
+
+        $result = $students->map(function($student) use ($publicExamName) {
+            $enrollment = $student->enrollments->first();
+            $peData = $student->publicExams->where('exam_name', $publicExamName)->first();
+
+            return [
+                'id'             => $student->id,
+                'name'           => $student->student_name_en ?: $student->student_name_bn,
+                'name_bn'        => $student->student_name_bn,
+                'roll_no'        => $enrollment ? $enrollment->roll_no : '',
+                'student_id'     => $student->student_id,
+                'public_exam_id' => $peData ? $peData->id : null,
+                'exam_name'      => $peData ? $peData->exam_name : $publicExamName,
+                'board'          => $peData ? $peData->board : '',
+                'roll_no_pub'    => $peData ? $peData->roll_no : '',
+                'reg_no'         => $peData ? $peData->reg_no : '',
+                'exam_year'      => $peData ? $peData->exam_year : '',
+                'session'        => $peData ? $peData->session : '',
+                'candidate_type' => $peData ? $peData->candidate_type : '',
+                'center_name'    => $peData ? $peData->center_name : '',
+            ];
+        });
+
+        return response()->json(['students' => $result]);
+    }
+
+    /**
+     * Save/update a single student's public exam info (AJAX, no page reload)
+     */
+    public function publicExamInfoSave(School $school, Student $student, Request $request)
+    {
+        $this->authorizePrincipal($school);
+        abort_unless($student->school_id === $school->id, 403);
+
+        $validated = $request->validate([
+            'exam_name'      => 'required|string|max:255',
+            'board'          => 'nullable|string|max:255',
+            'roll_no'        => 'nullable|string|max:255',
+            'reg_no'         => 'nullable|string|max:255',
+            'exam_year'      => 'nullable|string|max:10',
+            'session'        => 'nullable|string|max:20',
+            'candidate_type' => 'nullable|string|max:255',
+            'center_name'    => 'nullable|string|max:255',
+        ]);
+
+        $publicExam = \App\Models\StudentPublicExam::where('student_id', $student->id)
+            ->where('school_id', $school->id)
+            ->where('exam_name', $validated['exam_name'])
+            ->first();
+
+        if ($publicExam) {
+            $publicExam->update($validated);
+        } else {
+            \App\Models\StudentPublicExam::create(array_merge($validated, [
+                'student_id' => $student->id,
+                'school_id'  => $school->id,
+            ]));
+        }
+
+        return response()->json(['success' => true, 'message' => 'তথ্য সফলভাবে সংরক্ষিত হয়েছে।']);
     }
 }

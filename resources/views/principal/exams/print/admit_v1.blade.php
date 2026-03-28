@@ -141,7 +141,7 @@
     }
     .student_photo {
         position: absolute;
-        top: 38mm; /* Adjusted due to body padding change */
+        top: 43mm; /* Moved down to prevent overlapping school name */
         right: 15mm;
         border: 1px solid #000;
         background: #fff;
@@ -205,6 +205,10 @@
     }
     .sub tbody tr:nth-child(even) td {
         background-color: rgba(255, 165, 0, 0.03);
+    }
+    .sub tbody tr.empty-row td {
+        border-color: transparent !important;
+        background-color: transparent !important;
     }
     .sub tr td:nth-child(1) { text-align: center; width: 12mm; }
     .sub tr td:nth-child(2) { text-align: center; width: 18mm; }
@@ -287,6 +291,30 @@
             // Commencement Date: Date of the first exam in list
             $firstExam = collect($sched_for_student)->whereNotNull('exam_date')->sortBy('exam_date')->first();
             $commence_date = ($firstExam && $firstExam->exam_date) ? date('d F, Y', strtotime($firstExam->exam_date)) : ($exam->start_date ? $exam->start_date->format('d F, Y') : 'N/A');
+
+            $publicExamData = null;
+            if ($exam->public_exam_id && $exam->publicExam) {
+                $publicExamData = $student->publicExams->where('exam_name', $exam->publicExam->short_name)->first();
+            }
+
+            $display_reg_no = $student->student_id ?: 'N/A';
+            $display_session = $session;
+            $display_candidate_type = 'Regular';
+            $display_centre = ' ';
+            
+            if ($exam->public_exam_id) {
+                if ($publicExamData) {
+                    $display_reg_no = $publicExamData->reg_no ?: '';
+                    $display_session = $publicExamData->session ?: '';
+                    $display_candidate_type = $publicExamData->candidate_type ?: '';
+                    $display_centre = $publicExamData->center_name ?: '';
+                } else {
+                    $display_reg_no = '';
+                    $display_session = '';
+                    $display_candidate_type = '';
+                    $display_centre = '';
+                }
+            }
         @endphp
         <div class="admit-card">
             <div class="admit-card-body">
@@ -323,19 +351,19 @@
                             <td style="width: 25mm;">Group</td><td style="width: 3mm;">:</td><th><b>{{ capitalizeEachWord($group) }}</b></th>
                         </tr>
                         <tr>
-                            <td>EIIN</td><td>:</td><th style="width: 35mm;"><b>{{ $school->code ?: 'N/A' }}</b></th>
-                            <td style="width: 35mm;">Candidate Type</td><td style="width: 3mm;">:</td><th><b>Regular</b></th>
+                            <td>EIIN</td><td>:</td><th style="width: 35mm;"><b>{{ $school->eiin ?: 'N/A' }}</b></th>
+                            <td style="width: 35mm;">Candidate Type</td><td style="width: 3mm;">:</td><th><b>{{ $display_candidate_type }}</b></th>
                         </tr>
                         <tr>
                             <td>Name of School</td><td>:</td><th colspan="6"><b>{{ capitalizeEachWord($school->name) }}</b></th>
                         </tr>
                         <tr>
-                            <td>Registration No.</td><td>:</td><th style="width: 45mm;"><b>{{ $student->student_id ?: 'N/A' }}</b></th>
-                            <td style="width: 25mm;">Session</td><td style="width: 3mm;">:</td><th><b>{{ $session }}</b></th>
+                            <td>Registration No.</td><td>:</td><th style="width: 45mm;"><b>{{ $display_reg_no }}</b></th>
+                            <td style="width: 25mm;">Session</td><td style="width: 3mm;">:</td><th><b>{{ $display_session }}</b></th>
                         </tr>
                         <tr>
                             <td>Roll No.</td><td>:</td><th style="height: 10mm; vertical-align: middle;"><span style="border: 2px solid #000; padding: 1mm 4mm; display: inline-block;"><b>{{ $roll }}</b></span></th>
-                            <td>Centre</td><td>:</td><th colspan="3"><b> </b></th>
+                            <td>Centre</td><td>:</td><th colspan="3"><b>{{ $display_centre }}</b></th>
                         </tr>
                     </table>
                 </div>
@@ -356,14 +384,14 @@
                                 <tr>
                                     <td>{{ $sn++ }}</td>
                                     <td>{{ $subject->subject_code }}</td>
-                                    <td>{{ capitalizeEachWord($subject->subject_name) }}</td>
+                                    <td>{{ $subject->subject_name }}</td>
                                     <td>{{ $subject->exam_date ? date('d/m/Y', strtotime($subject->exam_date)) : '' }}</td>
                                     <td>{{ $subject->exam_time ? date('h:i A', strtotime($subject->exam_time)) : '' }}</td>
                                 </tr>
                             @endforeach
                             @php $row_count = count($sched_for_student); @endphp
                             @for($i = $row_count; $i < 12; $i++)
-                                <tr>
+                                <tr class="empty-row">
                                     <td>&nbsp;</td>
                                     <td>&nbsp;</td>
                                     <td>&nbsp;</td>

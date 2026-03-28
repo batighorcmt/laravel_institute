@@ -483,6 +483,9 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::get('background-settings', [\App\Http\Controllers\Principal\BackgroundSettingsController::class , 'index'])->name('background_settings.index');
                             Route::post('background-settings', [\App\Http\Controllers\Principal\BackgroundSettingsController::class , 'update'])->name('background_settings.update');
 
+                            // Public Exams Settings
+                            Route::resource('public-exams', \App\Http\Controllers\Principal\PublicExamController::class)->names('public_exams')->except(['show']);
+
                             Route::resource('shifts', PrincipalShiftController::class)->except(['show']);
                             Route::resource('sections', PrincipalSectionController::class)->except(['show']);
                             Route::resource('groups', PrincipalGroupController::class)->except(['show']);
@@ -529,8 +532,11 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::get('students/bulk/report/{id}', [\App\Http\Controllers\Principal\StudentController::class , 'bulkReport'])->name('students.bulk.report');
 
                             // Print controls and preview
-                            Route::get('students/print-controls', [\App\Http\Controllers\Principal\StudentController::class , 'printControls'])->name('students.print-controls');
-                            Route::get('students/print-preview', [\App\Http\Controllers\Principal\StudentController::class , 'printPreview'])->name('students.print-preview');
+                            Route::get('students/print-controls', [\App\Http\Controllers\Principal\StudentController::class, 'printControls'])->name('students.print-controls');
+                            Route::get('students/print-preview', [\App\Http\Controllers\Principal\StudentController::class, 'printPreview'])->name('students.print-preview');
+                            Route::get('students/public-exam-info', [\App\Http\Controllers\Principal\StudentController::class, 'publicExamInfoPage'])->name('students.public-exam-info');
+                            Route::post('students/public-exam-info/load', [\App\Http\Controllers\Principal\StudentController::class, 'publicExamInfoLoad'])->name('students.public-exam-info.load');
+                            Route::post('students/{student}/public-exam-info/save', [\App\Http\Controllers\Principal\StudentController::class, 'publicExamInfoSave'])->name('students.public-exam-info.save');
 
                             Route::resource('students', \App\Http\Controllers\Principal\StudentController::class);
                             Route::patch('students/{student}/status', [\App\Http\Controllers\Principal\StudentController::class , 'toggleStatus'])->name('students.toggle-status');

@@ -14,6 +14,7 @@ class Exam extends Model
 
     protected $fillable = [
         'school_id',
+        'public_exam_id',
         'academic_year_id',
         'class_id',
         'name',
@@ -45,6 +46,11 @@ class Exam extends Model
     public function class(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function publicExam(): BelongsTo
+    {
+        return $this->belongsTo(PublicExam::class);
     }
 
     public function examSubjects(): HasMany

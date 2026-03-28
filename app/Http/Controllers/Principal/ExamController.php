@@ -30,8 +30,9 @@ class ExamController extends Controller
         $academicYears = AcademicYear::forSchool($school->id)->get();
         $classes = SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get();
         $teachers = Teacher::forSchool($school->id)->active()->with('user')->get();
+        $publicExams = \App\Models\PublicExam::where('school_id', $school->id)->where('status', 'active')->get();
 
-        return view('principal.exams.create', compact('school', 'academicYears', 'classes', 'teachers'));
+        return view('principal.exams.create', compact('school', 'academicYears', 'classes', 'teachers', 'publicExams'));
     }
 
     // Fetch subjects for a class (AJAX endpoint)
@@ -70,6 +71,7 @@ class ExamController extends Controller
             'class_id' => 'required|exists:classes,id',
             'name' => 'required|string|max:255',
             'name_bn' => 'nullable|string|max:255',
+            'public_exam_id' => 'nullable|exists:public_exams,id',
             'exam_type' => 'nullable|in:Half Yearly,Final,Monthly',
             'total_subjects_without_fourth' => 'nullable|integer|min:1',
             'start_date' => 'nullable|date',
@@ -127,6 +129,7 @@ class ExamController extends Controller
                 'school_id' => $validated['school_id'],
                 'academic_year_id' => $validated['academic_year_id'],
                 'class_id' => $validated['class_id'],
+                'public_exam_id' => $validated['public_exam_id'] ?? null,
                 'name' => $validated['name'],
                 'name_bn' => $validated['name_bn'] ?? null,
                 'exam_type' => $validated['exam_type'] ?? null,
@@ -224,8 +227,9 @@ class ExamController extends Controller
     {
         $academicYears = AcademicYear::forSchool($school->id)->get();
         $classes = SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get();
+        $publicExams = \App\Models\PublicExam::where('school_id', $school->id)->where('status', 'active')->get();
 
-        return view('principal.exams.edit', compact('school', 'exam', 'academicYears', 'classes'));
+        return view('principal.exams.edit', compact('school', 'exam', 'academicYears', 'classes', 'publicExams'));
     }
 
     // Bulk Update View
@@ -242,6 +246,7 @@ class ExamController extends Controller
         $validated = $request->validate([
             'academic_year_id' => 'required|exists:academic_years,id',
             'class_id' => 'required|exists:classes,id',
+            'public_exam_id' => 'nullable|exists:public_exams,id',
             'name' => 'required|string|max:255',
             'name_bn' => 'nullable|string|max:255',
             'exam_type' => 'nullable|in:Half Yearly,Final,Monthly',
