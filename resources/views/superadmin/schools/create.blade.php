@@ -27,11 +27,15 @@
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group col-md-6">
+      <div class="form-group col-md-4">
         <label>কোড *</label>
         <input type="text" name="code" class="form-control" value="{{ old('code') }}" required>
       </div>
-      <div class="form-group col-md-6">
+      <div class="form-group col-md-4">
+        <label>স্কুল কোড</label>
+        <input type="text" name="school_code" class="form-control" value="{{ old('school_code') }}">
+      </div>
+      <div class="form-group col-md-4">
         <label>স্ট্যাটাস *</label>
         <select name="status" class="form-control" required>
           <option value="active" {{ old('status')=='active'?'selected':'' }}>সক্রিয়</option>
@@ -40,11 +44,29 @@
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group col-md-6">
+      <div class="form-group col-md-4">
+        <label>ই.আই.আই.এন নম্বর (EIIN)</label>
+        <input type="text" name="eiin" class="form-control" value="{{ old('eiin') }}">
+      </div>
+      <div class="form-group col-md-4">
+        <label>এমপিও কোড (MPO Code)</label>
+        <input type="text" name="mpo_code" class="form-control" value="{{ old('mpo_code') }}">
+      </div>
+      <div class="form-group col-md-4">
+        <label>প্রতিষ্ঠার সাল</label>
+        <input type="text" name="founding_year" class="form-control" value="{{ old('founding_year') }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group col-md-4">
         <label>ফোন</label>
         <input type="text" name="phone" class="form-control" value="{{ old('phone') }}">
       </div>
-      <div class="form-group col-md-6">
+      <div class="form-group col-md-4">
+        <label>মোবাইল নম্বর</label>
+        <input type="text" name="mobile" class="form-control" value="{{ old('mobile') }}">
+      </div>
+      <div class="form-group col-md-4">
         <label>ইমেইল</label>
         <input type="email" name="email" class="form-control" value="{{ old('email') }}">
       </div>
@@ -59,13 +81,25 @@
         <input type="file" name="logo" class="form-control-file">
       </div>
     </div>
-    <div class="form-group">
-      <label>ঠিকানা (ইংরেজি)</label>
-      <textarea name="address" class="form-control" rows="2">{{ old('address') }}</textarea>
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label>সংক্ষিপ্ত ঠিকানা (ইংরেজি)</label>
+        <input type="text" name="short_address_en" class="form-control" value="{{ old('short_address_en') }}">
+      </div>
+      <div class="form-group col-md-6">
+        <label>সংক্ষিপ্ত ঠিকানা (বাংলা)</label>
+        <input type="text" name="short_address_bn" class="form-control" value="{{ old('short_address_bn') }}">
+      </div>
     </div>
-    <div class="form-group">
-      <label>ঠিকানা (বাংলা)</label>
-      <textarea name="address_bn" class="form-control" rows="2">{{ old('address_bn') }}</textarea>
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label>ঠিকানা (ইংরেজি)</label>
+        <textarea name="address" class="form-control" rows="2">{{ old('address') }}</textarea>
+      </div>
+      <div class="form-group col-md-6">
+        <label>ঠিকানা (বাংলা)</label>
+        <textarea name="address_bn" class="form-control" rows="2">{{ old('address_bn') }}</textarea>
+      </div>
     </div>
     <div class="form-group">
       <label>বর্ণনা</label>

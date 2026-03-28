@@ -54,6 +54,10 @@ class StudentSubjectController extends Controller
             ->where('is_optional', false)
             ->value('subject_id');
 
+        $backUrl = url()->previous();
+        if ($backUrl === url()->current()) {
+            $backUrl = route('principal.institute.students.show', [$school, $enrollment->student_id]);
+        }
         return view('principal.institute.students.subjects', [
             'school' => $school,
             'enrollment' => $enrollment->load(['student','class','section','group']),
@@ -63,6 +67,7 @@ class StudentSubjectController extends Controller
             'assigned' => $assigned,
             'currentOptionalId' => $currentOptionalId,
             'currentCompulsoryBothId' => $currentCompulsoryBothId,
+            'backUrl' => $backUrl,
         ]);
     }
 
@@ -130,7 +135,11 @@ class StudentSubjectController extends Controller
         // Save optional subject ID to student record for easy calculation
         $enrollment->student->update(['optional_subject_id' => $selectedOptional]);
 
-        return redirect()->route('principal.institute.students.show', [$school, $enrollment->student_id])
-            ->with('success','বিষয় সমূহ সংরক্ষিত হয়েছে');
+        $redirectUrl = $request->input('redirect_to');
+        if (empty($redirectUrl)) {
+            $redirectUrl = route('principal.institute.students.show', [$school, $enrollment->student_id]);
+        }
+
+        return redirect($redirectUrl)->with('success','বিষয় সমূহ সংরক্ষিত হয়েছে');
     }
 }

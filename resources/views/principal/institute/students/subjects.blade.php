@@ -3,7 +3,7 @@
 @section('content')
 <div class="d-flex justify-content-between mb-3">
   <h1 class="m-0">বিষয় নির্বাচন</h1>
-  <a href="{{ route('principal.institute.students.show',[$school,$enrollment->student_id]) }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> প্রোফাইলে ফিরে যান</a>
+  <a href="{{ $backUrl }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> ফিরে যান</a>
 </div>
 @if($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
 
@@ -24,6 +24,7 @@
 </div>
 
 <form method="post" action="{{ route('principal.institute.enrollments.subjects.update',[$school,$enrollment]) }}">@csrf
+  <input type="hidden" name="redirect_to" value="{{ old('redirect_to', $backUrl) }}">
   <div class="row">
     <div class="col-md-6">
       <h5>আবশ্যিক (স্থির) বিষয়</h5>

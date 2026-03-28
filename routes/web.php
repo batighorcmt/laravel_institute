@@ -540,6 +540,9 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::delete('students/{student}/teams/{team}', [\App\Http\Controllers\Principal\StudentController::class , 'detachTeam'])->name('students.teams.detach');
                             Route::get('students/{student}/lesson-evaluation-details', [\App\Http\Controllers\Principal\StudentController::class , 'lessonEvaluationDetails'])->name('students.lesson-evaluation-details');
                             Route::get('students/{student}/print-cv', [\App\Http\Controllers\Principal\StudentController::class , 'printCv'])->name('students.print-cv');
+                            Route::post('students/{student}/public-exams', [\App\Http\Controllers\Principal\StudentPublicExamController::class, 'store'])->name('students.public-exams.store');
+                            Route::put('students/{student}/public-exams/{publicExam}', [\App\Http\Controllers\Principal\StudentPublicExamController::class, 'update'])->name('students.public-exams.update');
+                            Route::delete('students/{student}/public-exams/{publicExam}', [\App\Http\Controllers\Principal\StudentPublicExamController::class, 'destroy'])->name('students.public-exams.destroy');
                             // Student subject assignment
                             Route::get('enrollments/{enrollment}/subjects', [\App\Http\Controllers\Principal\StudentSubjectController::class , 'edit'])->name('enrollments.subjects.edit');
                             Route::post('enrollments/{enrollment}/subjects', [\App\Http\Controllers\Principal\StudentSubjectController::class , 'update'])->name('enrollments.subjects.update');

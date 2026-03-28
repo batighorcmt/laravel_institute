@@ -290,6 +290,50 @@
                     @endif
                 </div>
             @endif
+
+            <!-- Public Exams Info -->
+            <div class="profile-info-card mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 font-weight-bold text-dark">
+                        <i class="fas fa-graduation-cap mr-2"></i> পাবলিক পরীক্ষার তথ্য
+                    </h6>
+                    <button class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#publicExamModal" onclick="resetPublicExamForm()">
+                        <i class="fas fa-plus"></i> যুক্ত করুন
+                    </button>
+                </div>
+                @if($student->publicExams && $student->publicExams->count() > 0)
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mt-2" style="font-size: 0.85rem;">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>পরীক্ষা</th>
+                                    <th>বোর্ড</th>
+                                    <th>সাল (রোল)</th>
+                                    <th>অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($student->publicExams as $exam)
+                                    <tr>
+                                        <td class="align-middle"><strong>{{ $exam->exam_name }}</strong></td>
+                                        <td class="align-middle">{{ $exam->board ?? '—' }}</td>
+                                        <td class="align-middle">{{ $exam->exam_year ?? '—' }} <br><span class="text-muted">({{ $exam->roll_no ?? '—' }})</span></td>
+                                        <td class="align-middle text-center">
+                                            <button class="btn btn-xs btn-outline-info py-0 px-1" onclick='editPublicExam(@json($exam))'><i class="fas fa-edit"></i></button>
+                                            <form action="{{ route('principal.institute.students.public-exams.destroy', [$school, $student, $exam]) }}" method="POST" class="d-inline" onsubmit="return confirm('আপনি কি নিশ্চিত?');">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1"><i class="fas fa-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> কোনো তথ্য যুক্ত করা হয়নি।</p>
+                @endif
+            </div>
         </div>
 
         <!-- Middle Column -->
@@ -608,6 +652,62 @@
     </div>
 </div>
 
+<!-- Public Exam Modal -->
+<div class="modal fade" id="publicExamModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content" style="border-radius: 12px; border: none;">
+            <div class="modal-header bg-primary text-white" style="border-radius: 12px 12px 0 0;">
+                <h5 class="modal-title"><i class="fas fa-graduation-cap mr-2"></i> পাবলিক পরীক্ষার তথ্য</h5>
+                <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <form id="publicExamForm" method="POST" action="{{ route('principal.institute.students.public-exams.store', [$school, $student]) }}">
+                @csrf
+                <div id="publicExamMethod"></div>
+                <div class="modal-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>পরীক্ষার নাম * (যেমন: JSC, SSC)</label>
+                            <input type="text" name="exam_name" id="pe_exam_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>বোর্ড</label>
+                            <input type="text" name="board" id="pe_board" class="form-control">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>রোল নম্বর</label>
+                            <input type="text" name="roll_no" id="pe_roll_no" class="form-control">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>রেজিস্ট্রেশন নম্বর</label>
+                            <input type="text" name="reg_no" id="pe_reg_no" class="form-control">
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>পাশের সন (Year)</label>
+                            <input type="text" name="exam_year" id="pe_exam_year" class="form-control">
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>সেশন</label>
+                            <input type="text" name="session" id="pe_session" class="form-control">
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label>পরীক্ষার্থীর ধরন</label>
+                            <input type="text" name="candidate_type" id="pe_candidate_type" class="form-control" placeholder="Regular/Irregular">
+                        </div>
+                        <div class="col-md-12 form-group">
+                            <label>কেন্দ্রের নাম (Center)</label>
+                            <input type="text" name="center_name" id="pe_center_name" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">বাতিল</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> সংরক্ষণ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Lesson Evaluation Modal -->
 <div class="modal fade" id="evaluationModal" tabindex="-1" role="dialog" aria-labelledby="evaluationModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
@@ -692,6 +792,34 @@
                 $('#evaluationBody').html('<tr><td colspan="3" class="text-center text-danger">তথ্য লোড করতে সমস্যা হয়েছে</td></tr>');
                 console.error('Error:', error);
             });
+    }
+
+    function resetPublicExamForm() {
+        $('#publicExamMethod').html('');
+        $('#publicExamForm').attr('action', '{{ route('principal.institute.students.public-exams.store', [$school, $student]) }}');
+        $('#pe_exam_name').val('');
+        $('#pe_board').val('');
+        $('#pe_roll_no').val('');
+        $('#pe_reg_no').val('');
+        $('#pe_exam_year').val('');
+        $('#pe_session').val('');
+        $('#pe_candidate_type').val('');
+        $('#pe_center_name').val('');
+    }
+
+    function editPublicExam(exam) {
+        resetPublicExamForm();
+        $('#publicExamMethod').html('<?php echo method_field("PUT"); ?>');
+        $('#publicExamForm').attr('action', `/principal/institute/{{$school->id}}/students/{{$student->id}}/public-exams/${exam.id}`);
+        $('#pe_exam_name').val(exam.exam_name);
+        $('#pe_board').val(exam.board);
+        $('#pe_roll_no').val(exam.roll_no);
+        $('#pe_reg_no').val(exam.reg_no);
+        $('#pe_exam_year').val(exam.exam_year);
+        $('#pe_session').val(exam.session);
+        $('#pe_candidate_type').val(exam.candidate_type);
+        $('#pe_center_name').val(exam.center_name);
+        $('#publicExamModal').modal('show');
     }
 </script>
 @endpush

@@ -147,6 +147,11 @@ class Student extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function publicExams()
+    {
+        return $this->hasMany(StudentPublicExam::class);
+    }
+
     /**
      * Generate unique student ID
      * New Format: <school_code>S<sequential_5digits>

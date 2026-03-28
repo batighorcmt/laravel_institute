@@ -21,7 +21,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class School extends Model
 {
     protected $fillable = [
-        'name', 'name_bn', 'code', 'address', 'address_bn', 'phone', 'email', 'website', 
+        'name', 'name_bn', 'code', 'eiin', 'mpo_code', 'address', 'address_bn', 
+        'short_address_bn', 'short_address_en', 'founding_year', 'school_code', 
+        'phone', 'mobile', 'email', 'website', 
         'description', 'logo', 'status', 'admissions_enabled',
         'admission_academic_year_id', 'fine_enabled'
     ];

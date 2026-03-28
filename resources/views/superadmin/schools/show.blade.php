@@ -36,13 +36,27 @@
                     </div>
                     <div class="row">
                         <div class="col-sm-6">
+                            <p class="mb-1"><strong>কোড:</strong> {{ $school->code ?: '—' }}</p>
+                            <p class="mb-1"><strong>স্কুল কোড:</strong> {{ $school->school_code ?: '—' }}</p>
+                            <p class="mb-1"><strong>ই.আই.আই.এন (EIIN):</strong> {{ $school->eiin ?: '—' }}</p>
+                            <p class="mb-1"><strong>এমপিও কোড:</strong> {{ $school->mpo_code ?: '—' }}</p>
+                            <p class="mb-1"><strong>প্রতিষ্ঠার সাল:</strong> {{ $school->founding_year ?: '—' }}</p>
+                        </div>
+                        <div class="col-sm-6">
                             <p class="mb-1"><strong>ফোন:</strong> {{ $school->phone ?: '—' }}</p>
+                            <p class="mb-1"><strong>মোবাইল নম্বর:</strong> {{ $school->mobile ?: '—' }}</p>
                             <p class="mb-1"><strong>ইমেইল:</strong> {{ $school->email ?: '—' }}</p>
                             <p class="mb-1"><strong>ওয়েবসাইট:</strong> {{ $school->website ? \Illuminate\Support\Str::limit($school->website,40) : '—' }}</p>
                         </div>
+                    </div>
+                    <div class="row mt-2">
                         <div class="col-sm-6">
                             <p class="mb-1"><strong>ঠিকানা:</strong> {{ $school->address ?: '—' }}</p>
+                            <p class="mb-1"><strong>সংক্ষিপ্ত ঠিকানা:</strong> {{ $school->short_address_en ?: '—' }}</p>
+                        </div>
+                        <div class="col-sm-6">
                             <p class="mb-1"><strong>ঠিকানা (বাংলা):</strong> {{ $school->address_bn ?: '—' }}</p>
+                            <p class="mb-1"><strong>সংক্ষিপ্ত ঠিকানা (বাংলা):</strong> {{ $school->short_address_bn ?: '—' }}</p>
                         </div>
                     </div>
                     @if($school->description)

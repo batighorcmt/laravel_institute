@@ -39,6 +39,7 @@ class ExamPrintController extends Controller
         $classId = $exam->class_id;
 
         $query = Student::where('school_id', $school->id)
+            ->where('status', 'active')
             ->whereHas('enrollments', function($q) use ($academicYearId, $classId) {
                 $q->where('academic_year_id', $academicYearId)
                   ->where('class_id', $classId)
