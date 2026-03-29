@@ -32,9 +32,11 @@
             border: 1px solid #999;
             padding: 6px;
             text-align: center;
+            font-family: 'kalpurush', sans-serif;
         }
         th {
             background-color: #f2f2f2;
+            font-weight: bold;
         }
         .text-left {
             text-align: left;
@@ -56,8 +58,8 @@
             text-align: left;
             font-weight: bold;
         }
-        .bn-num {
-            font-family: 'nikosh', sans-serif;
+        .bn {
+            font-family: 'kalpurush', sans-serif;
         }
     </style>
 </head>
@@ -67,14 +69,27 @@
         <div>{{ $school->address }}</div>
         <div class="report-title">বকেয়া আদায় রিপোর্ট</div>
         <div>
+            @php
+                $ms = [1=>'জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+                $bnDigits = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+                
+                $formatBnM = function($mStr) use ($ms, $bnDigits) {
+                    if(!$mStr) return '';
+                    try {
+                        $d = \Carbon\Carbon::parse($mStr);
+                        $bnM = $ms[$d->month] ?? '';
+                        $bnY = str_replace(range(0,9), $bnDigits, $d->year);
+                        return $bnM . ' ' . $bnY;
+                    } catch(\Exception $e) { return $mStr; }
+                };
+
+                $toBnNum = function($num) use ($bnDigits) {
+                    return str_replace(range(0,9), $bnDigits, $num);
+                };
+            @endphp
+
             @if(isset($filters['month']) && $filters['month'])
-                @php
-                    $d = \Carbon\Carbon::parse($filters['month']);
-                    $ms = [1=>'জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
-                    $bnM = $ms[$d->month] ?? '';
-                    $bnY = str_replace(range(0,9), ['০','১','২','৩','৪','৫','৬','৭','৮','৯'], $d->year);
-                @endphp
-                মাস: {{ $bnM }} {{ $bnY }} 
+                মাস: {{ $formatBnM($filters['month']) }} 
             @endif
             @if(isset($filters['class_id']) && $filters['class_id'])
                 @php $cls = \App\Models\SchoolClass::find($filters['class_id']); @endphp
@@ -121,27 +136,27 @@
                     $totalDue += $due;
                 @endphp
                 <tr>
-                    <td>{{ $index + 1 }}</td>
+                    <td>{{ $toBnNum($index + 1) }}</td>
                     <td class="text-left">{{ $fee['student_name'] }}</td>
-                    <td>{{ $fee['student_code'] }}</td>
-                    <td>{{ $fee['roll_no'] }}</td>
+                    <td>{{ $toBnNum($fee['student_code']) }}</td>
+                    <td>{{ $toBnNum($fee['roll_no']) }}</td>
                     <td>{{ $fee['class_name'] }} ({{ $fee['section_name'] }})</td>
                     <td>{{ $fee['category_name'] }}</td>
-                    <td>{{ $fee['month'] }}</td>
-                    <td class="text-right">{{ number_format($fee['amount'], 2) }}</td>
-                    <td class="text-right">{{ number_format($fee['fine_amount'], 2) }}</td>
-                    <td class="text-right">{{ number_format($fee['paid_amount'], 2) }}</td>
-                    <td class="text-right">{{ number_format($due, 2) }}</td>
+                    <td>{{ $formatBnM($fee['month']) }}</td>
+                    <td class="text-right">{{ $toBnNum(number_format($fee['amount'], 2)) }}</td>
+                    <td class="text-right">{{ $toBnNum(number_format($fee['fine_amount'], 2)) }}</td>
+                    <td class="text-right">{{ $toBnNum(number_format($fee['paid_amount'], 2)) }}</td>
+                    <td class="text-right">{{ $toBnNum(number_format($due, 2)) }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr style="font-weight: bold; background-color: #f9f9f9;">
                 <td colspan="7" class="text-right">মোট:</td>
-                <td class="text-right">{{ number_format($totalAmount, 2) }}</td>
-                <td class="text-right">{{ number_format($totalFine, 2) }}</td>
-                <td class="text-right">{{ number_format($totalPaid, 2) }}</td>
-                <td class="text-right">{{ number_format($totalDue, 2) }}</td>
+                <td class="text-right">{{ $toBnNum(number_format($totalAmount, 2)) }}</td>
+                <td class="text-right">{{ $toBnNum(number_format($totalFine, 2)) }}</td>
+                <td class="text-right">{{ $toBnNum(number_format($totalPaid, 2)) }}</td>
+                <td class="text-right">{{ $toBnNum(number_format($totalDue, 2)) }}</td>
             </tr>
         </tfoot>
     </table>
