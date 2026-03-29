@@ -955,19 +955,19 @@ class FeeReportController extends Controller
                 mkdir($tempDir, 0755, true);
             }
 
-            $mpdf = new Mpdf([
+            $mpdf = new \Mpdf\Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
                 'default_font' => 'kalpurush',
-                'fontDir' => array_merge($defaultConfig['fontDir'], [$fontDir]),
-                'fontdata' => array_merge($defaultFontConfig['fontdata'], [
+                'fontDir' => array_merge($defaultConfig['fontDir'], [storage_path('fonts')]),
+                'fontdata' => $defaultFontConfig['fontdata'] + [
                     'kalpurush' => [
                         'R' => 'kalpurush_normal_6661c53feba164b2226ce34f5d636de1.ttf',
                         'B' => 'kalpurush_normal_6661c53feba164b2226ce34f5d636de1.ttf',
                         'useOTL' => 0xFF,
                         'useKashida' => 75,
                     ],
-                ]),
+                ],
                 'autoScriptToLang' => true,
                 'autoLangToFont' => true,
                 'allow_charset_conversion' => true,

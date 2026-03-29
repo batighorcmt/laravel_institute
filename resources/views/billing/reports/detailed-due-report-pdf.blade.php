@@ -134,7 +134,7 @@
             'partial' => 'আংশিক',
             'unpaid' => 'অপরিশোধিত'
         ];
-    @@endphp
+    @endphp
 
     <table class="header-table">
         <tr>
@@ -213,12 +213,12 @@
             @endphp
             @foreach($fees as $index => $fee)
                 @php
-                    $due = ($fee['amount'] - ($fee['paid_amount'] - $fee['fine_amount'])) + ($fee['fine_amount'] - $fee['fine_waiver']);
+                    $due = max(0, ($fee['amount'] + ($fee['fine_amount'] ?? 0)) - ($fee['fine_waiver'] ?? 0) - ($fee['paid_amount'] ?? 0));
                     
                     $totalAmount += $fee['amount'];
-                    $totalFine += $fee['fine_amount'];
-                    $totalWaiver += $fee['fine_waiver'];
-                    $totalPaid += $fee['paid_amount'];
+                    $totalFine += ($fee['fine_amount'] ?? 0);
+                    $totalWaiver += ($fee['fine_waiver'] ?? 0);
+                    $totalPaid += ($fee['paid_amount'] ?? 0);
                     $totalDue += $due;
                 @endphp
                 <tr>
@@ -232,7 +232,7 @@
                     <td class="text-right">{{ $toBnNum(number_format($fee['amount'], 0)) }}</td>
                     <td class="text-right">{{ $toBnNum(number_format($fee['fine_amount'] ?? 0, 0)) }}</td>
                     <td class="text-right">{{ $toBnNum(number_format($fee['fine_waiver'] ?? 0, 0)) }}</td>
-                    <td class="text-right">{{ $toBnNum(number_format($fee['paid_amount'], 0)) }}</td>
+                    <td class="text-right">{{ $toBnNum(number_format($fee['paid_amount'] ?? 0, 0)) }}</td>
                     <td class="text-right">{{ $toBnNum(number_format($due, 0)) }}</td>
                     <td>
                         <div class="status-badge">
