@@ -26,7 +26,7 @@ class AppUpdateController extends Controller
         $data = $request->validate([
             'version_code' => 'required|integer|unique:app_updates,version_code',
             'version_name' => 'required|string|max:20',
-            'apk_file' => 'required|file|mimes:apk,bin,zip|max:51200', // max 50MB
+            'apk_file' => 'required|file|max:204800', // max 200MB
             'release_notes' => 'nullable|string',
             'is_mandatory' => 'boolean',
             'is_active' => 'boolean',
@@ -52,7 +52,7 @@ class AppUpdateController extends Controller
         $data = $request->validate([
             'version_code' => ['required', 'integer', Rule::unique('app_updates', 'version_code')->ignore($appUpdate->id)],
             'version_name' => 'required|string|max:20',
-            'apk_file' => 'nullable|file|mimes:apk,bin,zip|max:51200',
+            'apk_file' => 'nullable|file|max:204800',
             'release_notes' => 'nullable|string',
             'is_mandatory' => 'boolean',
             'is_active' => 'boolean',
