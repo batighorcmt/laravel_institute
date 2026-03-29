@@ -86,16 +86,14 @@
             color: #333;
             display: block;
         }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border: 1px solid #000;
-            border-radius: 12px;
+        .status-paid, .status-unpaid, .status-partial {
             font-size: 9px;
-            min-width: 60px;
+            font-weight: bold;
         }
-        
+        .status-paid { color: #28a745; }
+        .status-unpaid { color: #dc3545; }
+        .status-partial { color: #ffc107; }
+
         .footer {
             margin-top: 50px;
         }
@@ -145,7 +143,7 @@
             </td>
             <td class="school-info">
                 <div class="school-name">{{ $school->name_bn ?: $school->name }}</div>
-                <div class="school-address">{{ $school->address }}</div>
+                <div class="school-address">{{ $school->address_bn ?: $school->address }}</div>
             </td>
             <td class="logo-cell"></td>
         </tr>
@@ -156,7 +154,7 @@
     <div class="filters-line">
         @if(isset($filters['academic_year_id']))
             @php $year = \App\Models\AcademicYear::find($filters['academic_year_id']); @endphp
-            বছর: {{ $toBnNum($year->year ?? '') }} |
+            শিক্ষাবর্ষ: {{ $toBnNum($year->year ?? '') }} |
         @endif
         
         @if(isset($filters['class_id']))
@@ -210,6 +208,7 @@
                 $totalWaiver = 0;
                 $totalPaid = 0;
                 $totalDue = 0;
+                $serial = 1;
             @endphp
             @foreach($fees as $index => $fee)
                 @php
@@ -222,10 +221,10 @@
                     $totalDue += $due;
                 @endphp
                 <tr>
-                    <td>{{ $toBnNum($index + 1) }}</td>
+                    <td>{{ $toBnNum($serial++) }}</td>
                     <td class="text-left">
                         <span class="student-name">{{ $fee['student_name'] }}</span>
-                        <span class="student-id">{{ $fee['student_code'] }}</span>
+                        <span class="student-id" style="font-size: 8px;">({{ $fee['student_code'] }})</span>
                     </td>
                     <td>{{ $toBnNum($fee['roll_no']) }}</td>
                     <td>{{ $formatBnM($fee['month']) }}</td>
@@ -235,7 +234,7 @@
                     <td class="text-right">{{ $toBnNum(number_format($fee['paid_amount'] ?? 0, 0)) }}</td>
                     <td class="text-right">{{ $toBnNum(number_format($due, 0)) }}</td>
                     <td>
-                        <div class="status-badge">
+                        <div class="status-{{ $fee['status'] }}">
                             {{ $statusMap[$fee['status']] ?? 'অজানা' }}
                         </div>
                     </td>
