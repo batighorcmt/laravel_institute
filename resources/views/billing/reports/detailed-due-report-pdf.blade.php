@@ -102,9 +102,9 @@
         }
         .footer-sig td {
             border: none;
-            width: 50%;
+            width: 33.33%;
             padding-top: 40px;
-            font-size: 12px;
+            font-size: 11px;
         }
     </style>
 </head>
@@ -152,9 +152,12 @@
     <div class="report-title">বকেয়া আদায় রিপোর্ট</div>
 
     <div class="filters-line">
-        @if(isset($filters['academic_year_id']))
-            @php $year = \App\Models\AcademicYear::find($filters['academic_year_id']); @endphp
-            শিক্ষাবর্ষ: {{ $toBnNum($year->year ?? '') }} |
+        @php 
+            $yearId = $filters['academic_year_id'] ?? $filters['year_id'] ?? null;
+            $year = $yearId ? \App\Models\AcademicYear::find($yearId) : \App\Models\AcademicYear::where('is_current', 1)->first();
+        @endphp
+        @if($year)
+            শিক্ষাবর্ষ: {{ $toBnNum($year->name_bn ?: $year->name) }} |
         @endif
         
         @if(isset($filters['class_id']))
@@ -261,11 +264,15 @@
             <tr>
                 <td style="text-align: center;">
                     -----------------------<br>
-                    প্রস্তুতকারীর স্বাক্ষর
+                    আদায়কারী
                 </td>
                 <td style="text-align: center;">
                     -----------------------<br>
-                    প্রধান শিক্ষকের স্বাক্ষর
+                    যাচাইকারী
+                </td>
+                <td style="text-align: center;">
+                    -----------------------<br>
+                    অধ্যক্ষ/প্রধান শিক্ষক
                 </td>
             </tr>
         </table>
