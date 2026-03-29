@@ -37,6 +37,9 @@ class AppUpdateController extends Controller
             $data['apk_url'] = asset('storage/' . $path);
         }
 
+        $data['is_mandatory'] = $request->has('is_mandatory');
+        $data['is_active'] = $request->has('is_active');
+
         AppUpdate::create($data);
 
         return redirect()->route('superadmin.app-updates.index')->with('success', 'Update released successfully.');
@@ -66,6 +69,9 @@ class AppUpdateController extends Controller
             $path = $request->file('apk_file')->store('apk_updates', 'public');
             $data['apk_url'] = asset('storage/' . $path);
         }
+
+        $data['is_mandatory'] = $request->has('is_mandatory');
+        $data['is_active'] = $request->has('is_active');
 
         $appUpdate->update($data);
 

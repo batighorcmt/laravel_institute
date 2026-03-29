@@ -14,4 +14,10 @@ class AppUpdate extends Model
         'is_mandatory',
         'is_active',
     ];
+
+    protected $casts = [
+        'is_mandatory' => 'boolean',
+        'is_active' => 'boolean',
+        'version_code' => 'integer',
+    ];
 }
