@@ -155,27 +155,29 @@
         @php 
             $yearId = $filters['academic_year_id'] ?? $filters['year_id'] ?? null;
             $year = $yearId ? \App\Models\AcademicYear::find($yearId) : \App\Models\AcademicYear::where('is_current', 1)->first();
-        @endphp
-        @if($year)
-            শিক্ষাবর্ষ: {{ $toBnNum($year->name_bn ?: $year->name) }} |
-        @endif
-        
-        @if(isset($filters['class_id']))
-            @php $cls = \App\Models\SchoolClass::find($filters['class_id']); @endphp
-            শ্রেণি: {{ $cls->bangla_name ?: $cls->name ?: 'সকল' }} |
-        @endif
+            
+            $criteria = [];
+            if($year) $criteria[] = 'শিক্ষাবর্ষ: ' . $toBnNum($year->name_bn ?: $year->name);
+            
+            if(isset($filters['class_id']) && $filters['class_id']) {
+                $cls = \App\Models\SchoolClass::find($filters['class_id']);
+                if($cls) $criteria[] = 'শ্রেণি: ' . ($cls->bangla_name ?: $cls->name);
+            }
 
-        @if(isset($filters['section_id']))
-            @php $sec = \App\Models\Section::find($filters['section_id']); @endphp
-            শাখা: {{ $sec->bangla_name ?: $sec->name ?: 'সকল' }} |
-        @endif
+            if(isset($filters['section_id']) && $filters['section_id']) {
+                $sec = \App\Models\Section::find($filters['section_id']);
+                if($sec) $criteria[] = 'শাখা: ' . ($sec->bangla_name ?: $sec->name);
+            }
 
-        @if(isset($filters['fee_category_id']))
-            @php $cat = \App\Models\FeeCategory::find($filters['fee_category_id']); @endphp
-            ক্যাটাগরি: {{ $cat->name ?? 'সকল' }} |
-        @endif
+            if(isset($filters['fee_category_id']) && $filters['fee_category_id']) {
+                $cat = \App\Models\FeeCategory::find($filters['fee_category_id']);
+                if($cat) $criteria[] = 'ক্যাটাগরি: ' . ($cat->name);
+            }
 
-        @php
+            if(isset($filters['month']) && $filters['month']) {
+                $criteria[] = 'মাস: ' . $formatBnM($filters['month']);
+            }
+
             $stat = 'সবগুলো';
             if(isset($filters['status'])) {
                 if($filters['status'] == 'due') $stat = 'বকেয়া (সব)';
@@ -183,8 +185,10 @@
                 elseif($filters['status'] == 'partial') $stat = 'আংশিক';
                 elseif($filters['status'] == 'paid') $stat = 'পরিশোধিত';
             }
+            $criteria[] = 'অবস্থা: ' . $stat;
         @endphp
-        অবস্থা: {{ $stat }}
+        
+        {{ implode(' | ', $criteria) }}
     </div>
 
     <div class="divider"></div>
@@ -237,9 +241,9 @@
                     <td class="text-right">{{ $toBnNum(number_format($fee['paid_amount'] ?? 0, 0)) }}</td>
                     <td class="text-right">{{ $toBnNum(number_format($due, 0)) }}</td>
                     <td>
-                        <div class="status-{{ $fee['status'] }}">
+                        <span class="status-{{ $fee['status'] }}">
                             {{ $statusMap[$fee['status']] ?? 'অজানা' }}
-                        </div>
+                        </span>
                     </td>
                 </tr>
             @endforeach
