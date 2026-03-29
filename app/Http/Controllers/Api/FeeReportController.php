@@ -865,4 +865,122 @@ class FeeReportController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    public function detailedDuesPdf(Request $request)
+    {
+        try {
+            $schoolId = $request->attributes->get('current_school_id') ?? $request->user()?->primarySchool()?->id;
+            $school = \App\Models\School::find($schoolId);
+
+            // Fetch data (same logic as detailedDues but without map/collection wrapping yet)
+            $query = StudentFee::with(['student', 'feeStructure.category'])
+                ->where('school_id', $schoolId);
+
+            if ($request->academic_year_id) {
+                $query->whereHas('student.enrollments', function($q) use ($request) {
+                    $q->where('academic_year_id', $request->academic_year_id);
+                });
+            }
+            if ($request->class_id) {
+                $query->whereHas('student.enrollments', function($q) use ($request) {
+                    $q->where('class_id', $request->class_id);
+                });
+            }
+            if ($request->section_id) {
+                $query->whereHas('student.enrollments', function($q) use ($request) {
+                    $q->where('section_id', $request->section_id);
+                });
+            }
+            if ($request->fee_category_id) {
+                $query->whereHas('feeStructure', function($q) use ($request) {
+                    $q->where('fee_category_id', $request->fee_category_id);
+                });
+            }
+            if ($request->month) {
+                $query->where('month', $request->month);
+            }
+            if ($request->status && $request->status !== 'all') {
+                if ($request->status === 'due') {
+                    $query->where('status', '!=', 'paid');
+                } else {
+                    $query->where('status', $request->status);
+                }
+            }
+
+            $fees = $query->get()->map(function($f) use ($schoolId) {
+                $enrollment = $f->student->enrollments()
+                    ->where('school_id', $schoolId)
+                    ->latest('id')
+                    ->first();
+
+                return [
+                    'student_name' => $f->student->student_name_bn ?: $f->student->student_name_en,
+                    'student_code' => $f->student->student_id,
+                    'roll_no' => $enrollment->roll_no ?? null,
+                    'class_name' => $enrollment->class->bangla_name ?? $enrollment->class->name ?? null,
+                    'class_numeric' => $enrollment->class->numeric_value ?? 0,
+                    'section_name' => $enrollment->section->bangla_name ?? $enrollment->section->name ?? null,
+                    'category_name' => $f->getFormattedName(),
+                    'month' => $f->month,
+                    'amount' => $f->original_amount ?: $f->amount,
+                    'paid_amount' => $f->paid_amount + $f->fine_amount,
+                    'fine_amount' => $f->calculateOriginalFine(),
+                    'fine_waiver' => ( ($f->original_amount ?: $f->amount) - $f->amount) + ($f->fine_waiver ?? 0),
+                    'status' => $f->status,
+                ];
+            })->sort(function($a, $b) {
+                $cA = $a['class_numeric'] ?? 0;
+                $cB = $b['class_numeric'] ?? 0;
+                if ($cA !== $cB) return $cA <=> $cB;
+                if ($a['section_name'] !== $b['section_name']) return $a['section_name'] <=> $b['section_name'];
+                return (int)$a['roll_no'] <=> (int)$b['roll_no'];
+            });
+
+            $html = view('billing.reports.detailed-due-report-pdf', [
+                'fees' => $fees,
+                'school' => $school,
+                'filters' => $request->all()
+            ])->render();
+
+            // mPDF font configuration
+            $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+            $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+
+            $fontDir = storage_path('fonts');
+            $tempDir = storage_path('app/mpdf_temp');
+            if (!is_dir($tempDir)) {
+                mkdir($tempDir, 0755, true);
+            }
+
+            $mpdf = new \Mpdf\Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'default_font' => 'kalpurush',
+                'fontDir' => array_merge($defaultConfig['fontDir'], [$fontDir]),
+                'fontdata' => array_merge($defaultFontConfig['fontdata'], [
+                    'kalpurush' => [
+                        'R' => 'kalpurush_normal_6661c53feba164b2226ce34f5d636de1.ttf',
+                        'B' => 'kalpurush_normal_6661c53feba164b2226ce34f5d636de1.ttf',
+                        'useOTL' => 0xFF,
+                        'useKashida' => 75,
+                    ],
+                ]),
+                'autoScriptToLang' => true,
+                'autoLangToFont' => true,
+                'allow_charset_conversion' => true,
+                'margin_top' => 10,
+                'margin_right' => 10,
+                'margin_bottom' => 10,
+                'margin_left' => 10,
+                'tempDir' => $tempDir,
+            ]);
+
+            $mpdf->WriteHTML($html);
+            
+            return $mpdf->Output('Detailed_Due_Report.pdf', 'I');
+        } catch (\Exception $e) {
+            Log::error('PDF Generation Error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }

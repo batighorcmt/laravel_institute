@@ -186,6 +186,7 @@ Route::prefix('v1')->group(function () {
                     Route::get('/reports/collection-paid-students', [\App\Http\Controllers\Api\FeeReportController::class , 'collectionPaidStudents']);
                     Route::get('/reports/due-summary', [\App\Http\Controllers\Api\FeeReportController::class , 'dueReport']);
                     Route::get('/reports/detailed-dues', [\App\Http\Controllers\Api\FeeReportController::class , 'detailedDues']);
+                    Route::get('/reports/detailed-dues/pdf', [\App\Http\Controllers\Api\FeeReportController::class , 'detailedDuesPdf']);
                     Route::get('/reports/student-dues', [\App\Http\Controllers\Api\FeeReportController::class , 'studentDues']);
                     Route::get('/reports/teacher-collections', [\App\Http\Controllers\Api\FeeReportController::class, 'teacherCollections'])->middleware('role:teacher');
                     Route::get('/reports/teacher-cash-transfer', [\App\Http\Controllers\Api\FeeReportController::class, 'teacherCashTransfer'])->middleware('role:teacher');
