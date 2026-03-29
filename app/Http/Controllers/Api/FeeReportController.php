@@ -16,6 +16,9 @@ use App\Models\StudentEnrollment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Mpdf\Mpdf;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
 
 class FeeReportController extends Controller
 {
@@ -952,7 +955,7 @@ class FeeReportController extends Controller
                 mkdir($tempDir, 0755, true);
             }
 
-            $mpdf = new \Mpdf\Mpdf([
+            $mpdf = new Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
                 'default_font' => 'kalpurush',
@@ -977,7 +980,11 @@ class FeeReportController extends Controller
 
             $mpdf->WriteHTML($html);
             
-            return $mpdf->Output('Detailed_Due_Report.pdf', 'I');
+            $pdfContent = $mpdf->output('', 'S');
+            
+            return response($pdfContent)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'inline; filename="Detailed_Due_Report.pdf"');
         } catch (\Exception $e) {
             Log::error('PDF Generation Error: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);

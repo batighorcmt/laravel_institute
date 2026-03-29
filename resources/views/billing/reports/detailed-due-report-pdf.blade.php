@@ -68,10 +68,17 @@
         <div class="report-title">বকেয়া আদায় রিপোর্ট</div>
         <div>
             @if(isset($filters['month']) && $filters['month'])
-                মাস: {{ \Carbon\Carbon::parse($filters['month'])->format('F Y') }} 
+                @php
+                    $d = \Carbon\Carbon::parse($filters['month']);
+                    $ms = [1=>'জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+                    $bnM = $ms[$d->month] ?? '';
+                    $bnY = str_replace(range(0,9), ['০','১','২','৩','৪','৫','৬','৭','৮','৯'], $d->year);
+                @endphp
+                মাস: {{ $bnM }} {{ $bnY }} 
             @endif
             @if(isset($filters['class_id']) && $filters['class_id'])
-                | শ্রেণি: {{ \App\Models\SchoolClass::find($filters['class_id'])->bangla_name ?? '' }}
+                @php $cls = \App\Models\SchoolClass::find($filters['class_id']); @endphp
+                | শ্রেণি: {{ $cls->bangla_name ?? $cls->name ?? '' }}
             @endif
         </div>
     </div>
