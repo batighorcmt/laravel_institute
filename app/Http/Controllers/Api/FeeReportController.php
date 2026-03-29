@@ -841,7 +841,7 @@ class FeeReportController extends Controller
                     'class_numeric' => $enrollment->class->numeric_value ?? 0,
                     'section_bangla_name' => $enrollment->section->bangla_name ?? null,
                     'section_name' => $enrollment->section->name ?? null,
-                    'category_name' => $f->getFormattedName(),
+                    'category_name' => $f->feeStructure->category->name ?? 'N/A',
                     'month' => $f->month,
                     'amount' => $f->original_amount ?: $f->amount, // Show full amount before waiver
                     'paid_amount' => $f->paid_amount + $f->fine_amount, // Total of base paid + fine paid
@@ -923,7 +923,7 @@ class FeeReportController extends Controller
                     'class_name' => $enrollment->class->bangla_name ?? $enrollment->class->name ?? null,
                     'class_numeric' => $enrollment->class->numeric_value ?? 0,
                     'section_name' => $enrollment->section->bangla_name ?? $enrollment->section->name ?? null,
-                    'category_name' => $f->getFormattedName(),
+                    'category_name' => $f->feeStructure->category->name ?? 'N/A',
                     'month' => $f->month,
                     'amount' => $f->original_amount ?: $f->amount,
                     'paid_amount' => $f->paid_amount + $f->fine_amount,
