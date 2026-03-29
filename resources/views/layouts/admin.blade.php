@@ -214,6 +214,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="{{ route('superadmin.app-updates.index') }}" class="nav-link {{ request()->routeIs('superadmin.app-updates.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-mobile-alt"></i>
+                                <p>App Updates</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="#" class="nav-link">
                                 <i class="nav-icon fas fa-users"></i>
                                 <p>Users</p>

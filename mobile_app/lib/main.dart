@@ -10,8 +10,7 @@ import 'core/network/dio_client.dart';
 import 'core/config/env.dart';
 import 'dart:developer' as developer;
 import 'core/services/notification_service.dart';
-
-
+import 'presentation/widgets/update_checker.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,16 +22,14 @@ Future<void> main() async {
     // 2. Initialize Dio
     await DioClient().init();
 
-    // 3. Set Background Handler
-
-
-    // 4. Initialize Notification Service
+    // 3. Initialize Notification Service
     await NotificationService().init();
 
     developer.log('Firebase and Notifications initialized');
   } catch (e) {
     developer.log('Initialization Error: $e');
   }
+  
   // Handle notification which opened the app from terminated state
   try {
     final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
@@ -41,7 +38,6 @@ Future<void> main() async {
       final type = data['type'];
       final id = data['id'] ?? data['notice_id'] ?? data['noticeId'];
       if (type == 'notice' && id != null) {
-        // Navigate after runApp (use rootNavigatorKey.currentContext later in build)
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final ctx = rootNavigatorKey.currentContext;
           if (ctx != null) {
@@ -53,6 +49,7 @@ Future<void> main() async {
       }
     }
   } catch (_) {}
+
   developer.log(
     'App starting with API_BASE_URL=${Env.apiBaseUrl}',
     name: 'Main',
@@ -63,18 +60,16 @@ Future<void> main() async {
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
-    // Force light mode per request; dark mode optional.
-    // final mode = ref.watch(themeModeProvider);
-    return MaterialApp.router(
-      title: 'Batighor EIMS',
-      theme: AppTheme.light(),
-      // darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.light,
-      routerConfig: router,
+    return UpdateChecker(
+      child: MaterialApp.router(
+        title: 'Batighor EIMS',
+        theme: AppTheme.light(),
+        themeMode: ThemeMode.light,
+        routerConfig: router,
+      ),
     );
   }
 }

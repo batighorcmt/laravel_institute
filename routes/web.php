@@ -151,6 +151,9 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             // School Modules management
             Route::get('schools/{school}/modules', [SchoolController::class , 'getModules'])->name('schools.modules');
             Route::post('schools/{school}/modules', [SchoolController::class , 'updateModules'])->name('schools.update-modules');
+
+            // App Updates management
+            Route::resource('app-updates', \App\Http\Controllers\SuperAdmin\AppUpdateController::class);
         }
         );
 
