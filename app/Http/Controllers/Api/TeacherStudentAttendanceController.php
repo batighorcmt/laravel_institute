@@ -253,6 +253,8 @@ class TeacherStudentAttendanceController extends Controller
         }
         $items = collect($data['items']);
 
+        $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
+
         // Fetch active students for the section to validate completeness
         // ensure only active student records are considered
         $sectionStudentIds = StudentEnrollment::where([
@@ -260,7 +262,9 @@ class TeacherStudentAttendanceController extends Controller
                 'class_id' => $section->class_id,
                 'section_id' => $section->id,
                 'status' => 'active',
-            ])->whereHas('student', fn($q)=>$q->where('status','active'))
+            ])
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->whereHas('student', fn($q)=>$q->where('status','active'))
             ->pluck('student_id')->values();
 
         $submittedIds = $items->pluck('student_id')->values();
