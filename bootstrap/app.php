@@ -45,7 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 // Return uniform error message for general server errors (500)
                 return response()->json([
-                    'message' => 'ডাটা লোড করতে ব্যর্থ',
+                    'message' => 'সার্ভারে একটি ত্রুটি হয়েছে',
                     'error_debug' => config('app.debug') ? $e->getMessage() : null,
                 ], 500);
             }

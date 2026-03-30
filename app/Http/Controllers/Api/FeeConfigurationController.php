@@ -103,6 +103,9 @@ class FeeConfigurationController extends Controller
         }
 
         $validated['school_id'] = $schoolId;
+        $validated['fine_amount'] = $validated['fine_amount'] ?? 0;
+        $validated['fine_type'] = $validated['fine_type'] ?? 'fixed';
+
         $category = FeeCategory::create($validated);
         return response()->json(['message' => 'ক্যাটাগরি তৈরি হয়েছে', 'category' => $category]);
     }
@@ -166,6 +169,9 @@ class FeeConfigurationController extends Controller
         if (FeeCategory::where('school_id', $schoolId)->where('name', $validated['name'])->where('id', '!=', $category->id)->exists()) {
             return response()->json(['message' => 'এই নামে অন্য একটি ক্যাটাগরি ইতিমধ্যে বিদ্যমান'], 422);
         }
+
+        $validated['fine_amount'] = $validated['fine_amount'] ?? 0;
+        $validated['fine_type'] = $validated['fine_type'] ?? 'fixed';
 
         $category->update($validated);
 

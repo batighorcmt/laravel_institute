@@ -36,7 +36,7 @@ class EnsureSchoolIsActive
                 }
 
                 if ($school && $school->status !== 'active') {
-                    return $this->forceLogout($request, "ডাটা লোড করতে ব্যর্থ");
+                    return $this->forceLogout($request, "স্কুলের একাউন্ট সচল নয়।");
                 }
             } else {
                 // If no school in request, check if the user has AT LEAST ONE active school role in an active school
@@ -47,7 +47,7 @@ class EnsureSchoolIsActive
                     ->exists();
 
                 if (!$hasActiveSchool) {
-                    return $this->forceLogout($request, "ডাটা লোড করতে ব্যর্থ");
+                    return $this->forceLogout($request, "আপনার স্কুলে কোনো সক্রিয় রোল নেই।");
                 }
             }
         }
