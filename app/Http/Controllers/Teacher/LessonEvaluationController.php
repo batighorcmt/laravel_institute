@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicYear;
 use App\Models\Attendance;
 use App\Models\LessonEvaluation;
 use App\Models\LessonEvaluationRecord;
@@ -99,11 +100,13 @@ class LessonEvaluationController extends Controller
         $students = collect();
         if ($routineEntry) {
             // Only filter by student status and attendance
+            $academicYear = AcademicYear::forSchool($school->id)->current()->first();
             $query = StudentEnrollment::with('student')
                 ->where('school_id', $school->id)
                 ->where('class_id', $routineEntry->class_id)
                 ->where('section_id', $routineEntry->section_id)
                 ->where('status', 'active')
+                ->when($academicYear, fn($q) => $q->where('academic_year_id', $academicYear->id))
                 ->whereHas('student', function($q) {
                     $q->where('status', 'active');
                 })

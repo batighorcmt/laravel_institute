@@ -300,11 +300,13 @@ class LessonEvaluationController extends Controller
         // Build enrollment query (optionally filter by subject assignments when exists)
         // Only include enrollments whose student record is active
         // NEW: Filter out students marked as 'absent' in the attendance table for this date
+        $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
         $query = StudentEnrollment::with(['student' => fn($q)=>$q->where('status','active')])
             ->where('school_id', $schoolId)
             ->where('class_id', $entry->class_id)
             ->where('section_id', $entry->section_id)
             ->where('status', 'active')
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
             ->whereHas('student', fn($q)=>$q->where('status','active'))
             ->whereDoesntHave('student.attendances', function($q) use ($date, $entry) {
                 $q->where('date', $date->toDateString())
