@@ -11,33 +11,58 @@ class LessonEvaluationReportController extends Controller
 {
     public function index(School $school, Request $request)
     {
+        $lang = $request->get('lang', 'bn');
         $query = LessonEvaluation::with(['teacher', 'class', 'section', 'subject'])
             ->forSchool($school->id)
             ->orderByDesc('evaluation_date');
 
-        // Date filter (YYYY-MM-DD)
-        $filterDate = $request->get('date');
-        if ($filterDate) {
-            $query->whereDate('evaluation_date', $filterDate);
+        // Date Range filter
+        $fromDate = $request->get('from_date');
+        $toDate = $request->get('to_date');
+        if ($fromDate) {
+            $query->whereDate('evaluation_date', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('evaluation_date', '<=', $toDate);
         }
 
-        // Per-page control (default 10)
-        $perPage = (int) $request->get('per_page', 10);
-        if (!in_array($perPage, [10,25,50,100])) {
-            $perPage = 10;
+        // Additional filters
+        if ($request->filled('class_id')) {
+            $query->where('class_id', $request->get('class_id'));
+        }
+        if ($request->filled('section_id')) {
+            $query->where('section_id', $request->get('section_id'));
+        }
+        if ($request->filled('subject_id')) {
+            $query->where('subject_id', $request->get('subject_id'));
+        }
+        if ($request->filled('teacher_id')) {
+            $query->where('teacher_id', $request->get('teacher_id'));
+        }
+
+        // Per-page control
+        $perPage = (int) $request->get('per_page', 25);
+        if (!in_array($perPage, [10, 25, 50, 100, 200])) {
+            $perPage = 25;
         }
 
         $evaluations = $query->paginate($perPage)->withQueryString();
 
-        // Available dates for filter (distinct)
-        $dates = LessonEvaluation::forSchool($school->id)
-            ->orderByDesc('evaluation_date')
-            ->pluck('evaluation_date')
-            ->map(fn($d) => optional($d)->format('Y-m-d'))
-            ->unique()
-            ->values();
+        // Meta for filters
+        $classes = \App\Models\SchoolClass::forSchool($school->id)->ordered()->get();
+        $teachers = \App\Models\Teacher::forSchool($school->id)->active()->orderBy('first_name')->get();
+        $subjects = \App\Models\Subject::forSchool($school->id)->orderBy('name')->get();
 
-        return view('principal.lesson-evaluations.index', compact('school', 'evaluations', 'dates', 'filterDate', 'perPage'));
+        // Sections only if class is selected
+        $sections = collect();
+        if ($request->filled('class_id')) {
+            $sections = \App\Models\Section::forSchool($school->id)->where('class_id', $request->class_id)->ordered()->get();
+        }
+
+        return view('principal.lesson-evaluations.index', compact(
+            'school', 'evaluations', 'fromDate', 'toDate', 'perPage', 
+            'classes', 'sections', 'subjects', 'teachers', 'lang'
+        ));
     }
 
     public function show(School $school, LessonEvaluation $lessonEvaluation)
@@ -105,7 +130,9 @@ class LessonEvaluationReportController extends Controller
      */
     public function details(Request $request)
     {
-        $q = LessonEvaluation::with(['records' => function($q){ $q->whereHas('student', fn($s)=>$s->where('status','active'))->with(['student' => fn($s)=>$s->where('status','active')]); }])->orderByDesc('evaluation_date');
+        $q = LessonEvaluation::with(['records' => function ($q) {
+                $q->whereHas('student', fn($s) => $s->where('status', 'active'))->with(['student' => fn($s) => $s->where('status', 'active')]);
+            }])->orderByDesc('evaluation_date');
         if ($request->filled('class_id')) $q->where('class_id', $request->get('class_id'));
         if ($request->filled('section_id')) $q->where('section_id', $request->get('section_id'));
         if ($request->filled('subject_id')) $q->where('subject_id', $request->get('subject_id'));
@@ -134,5 +161,41 @@ class LessonEvaluationReportController extends Controller
         }
 
         return response()->json(['records' => $records]);
+    }
+
+    public function print(School $school, Request $request)
+    {
+        $lang = $request->get('lang', 'bn');
+        $query = LessonEvaluation::with(['teacher', 'class', 'section', 'subject'])
+            ->forSchool($school->id)
+            ->orderByDesc('evaluation_date');
+
+        // Date range filter
+        $fromDate = $request->get('from_date');
+        $toDate = $request->get('to_date');
+        if ($fromDate) {
+            $query->whereDate('evaluation_date', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $query->whereDate('evaluation_date', '<=', $toDate);
+        }
+
+        // Additional filters
+        if ($request->filled('class_id')) {
+            $query->where('class_id', $request->get('class_id'));
+        }
+        if ($request->filled('section_id')) {
+            $query->where('section_id', $request->get('section_id'));
+        }
+        if ($request->filled('subject_id')) {
+            $query->where('subject_id', $request->get('subject_id'));
+        }
+        if ($request->filled('teacher_id')) {
+            $query->where('teacher_id', $request->get('teacher_id'));
+        }
+
+        $evaluations = $query->get();
+
+        return view('principal.lesson-evaluations.print', compact('school', 'evaluations', 'fromDate', 'toDate', 'request', 'lang'));
     }
 }

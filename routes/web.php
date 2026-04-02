@@ -237,9 +237,9 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                         }
                         );
 
-                        // Lesson Evaluation Reports (Principal)
                         Route::prefix('lesson-evaluations')->name('lesson-evaluations.')->middleware('module:lesson_evaluation')->group(function () {
                             Route::get('/', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class , 'index'])->name('index');
+                            Route::get('/print', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class , 'print'])->name('print');
                             Route::get('/{lessonEvaluation}', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class , 'show'])->name('show');
                         }
                         );
