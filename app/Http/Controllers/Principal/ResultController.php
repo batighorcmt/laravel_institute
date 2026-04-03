@@ -957,7 +957,8 @@ class ResultController extends Controller
         $academicYears = AcademicYear::forSchool($school->id)->get();
         $classes = SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get();
         $exams = Exam::forSchool($school->id)->orderBy('created_at', 'desc')->get();
-        $sections = \App\Models\Section::forSchool($school->id)->where('class_id', $classId)->get();
+        $sections = Section::forSchool($school->id)->where('class_id', $classId)->get();
+
 
         $exam = Exam::with(['examSubjects.subject'])->find($examId);
         // Safety: If exam is linked to a class, always use THAT class_id
