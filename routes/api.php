@@ -126,6 +126,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('parent/lesson-evaluation-stats', [\App\Http\Controllers\Api\ParentController::class , 'lessonEvaluationStats'])->middleware('role:parent');
                 Route::get('parent/exams', [\App\Http\Controllers\Api\ParentController::class , 'exams'])->middleware('role:parent');
                 Route::get('parent/exams/{exam}/results', [\App\Http\Controllers\Api\ParentController::class , 'examResults'])->middleware('role:parent');
+                Route::get('parent/exams/{exam}/marksheet', [\App\Http\Controllers\Api\ParentController::class , 'examMarksheetPdf'])->middleware('role:parent');
                 Route::get('parent/teachers', [\App\Http\Controllers\Api\ParentController::class , 'teachers'])->middleware('role:parent');
                 Route::get('parent/feedback', [\App\Http\Controllers\Api\ParentController::class , 'feedbackIndex'])->middleware('role:parent');
                 Route::post('parent/feedback', [\App\Http\Controllers\Api\ParentController::class , 'feedbackStore'])->middleware('role:parent');

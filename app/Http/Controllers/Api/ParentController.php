@@ -503,6 +503,48 @@ class ParentController extends Controller
         ]);
     }
 
+    public function examMarksheetPdf(Request $request, $examId)
+    {
+        $studentId = $request->get('student_id');
+        $children  = $this->resolveChildren($request);
+        $student   = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        $exam = \App\Models\Exam::find($examId);
+        if (!$exam) {
+            return response()->json(['message' => 'পরীক্ষা পাওয়া যায়নি'], 404);
+        }
+
+        $schoolModel = \App\Models\School::find($student->school_id);
+        $classId     = $student->currentEnrollment?->class_id ?? $student->class_id;
+
+        $calc = $this->getCalculatedResults($schoolModel, $exam->id, $classId, null, $student->id);
+
+        if (!$calc || empty($calc['results']) || $calc['results']->isEmpty()) {
+            return response()->json(['message' => 'ফলাফল পাওয়া যায়নি।'], 404);
+        }
+
+        $result        = $calc['results']->first();
+        $finalSubjects = $calc['finalSubjects'];
+
+        // Reuse the same principal marksheet Blade view
+        $principalTeacher = null; // No session-based principal in API context
+        $html = view('principal.results.print-marksheet', compact(
+            'schoolModel', 'exam', 'student', 'result', 'finalSubjects', 'principalTeacher'
+        ))->render();
+
+        $dompdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
+            ->setPaper('A4', 'portrait')
+            ->setOption(['defaultFont' => 'sans-serif', 'isRemoteEnabled' => true]);
+
+        $filename = 'Marksheet-' . $student->student_id . '-' . $exam->id . '.pdf';
+
+        return $dompdf->download($filename);
+    }
+
     public function teachers(Request $request)
     {
         $children = $this->resolveChildren($request);
