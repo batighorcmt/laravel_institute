@@ -169,10 +169,14 @@
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        <a href="{{ route('principal.institute.results.marksheet.print', [$school, $exam, $res->student]) }}" target="_blank" class="btn btn-sm btn-info">
+                                        <a href="{{ route('principal.institute.results.marksheet.print', [$school, $exam, $res->student]) }}" target="_blank" class="btn btn-sm btn-info" title="প্রিন্ট প্রাক-প্রদর্শন">
                                             <i class="fas fa-print"></i> প্রিন্ট
                                         </a>
+                                        <a href="{{ route('principal.institute.results.marksheet.print', [$school, $exam, $res->student, 'download' => 1]) }}" class="btn btn-sm btn-success" title="পিডিএফ ডাউনলোড">
+                                            <i class="fas fa-download"></i> ডাউনলোড
+                                        </a>
                                     </td>
+
                                 </tr>
                             @endforeach
                         </tbody>

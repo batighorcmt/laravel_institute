@@ -7,7 +7,11 @@ use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\Homework;
 use App\Models\Attendance;
+use Mpdf\Mpdf;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
 use App\Models\Result;
+
 use App\Models\StudentLeave;
 use App\Models\RoutineEntry;
 use App\Models\ExtraClassAttendance;
@@ -581,14 +585,50 @@ class ParentController extends Controller
         </style>
         </head><body>' . $content . '</body></html>';
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
-            ->setPaper('A4', 'portrait')
-            ->setOptions(['defaultFont' => 'sans-serif', 'isRemoteEnabled' => true]);
+        // mPDF font configuration
+        $defaultConfig = (new ConfigVariables())->getDefaults();
+        $defaultFontConfig = (new FontVariables())->getDefaults();
+
+        $fontDir = storage_path('fonts');
+        $tempDir = storage_path('app/mpdf_temp');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'default_font' => 'kalpurush',
+            'fontDir' => array_merge($defaultConfig['fontDir'], [$fontDir]),
+            'fontdata' => array_merge($defaultFontConfig['fontdata'], [
+                'kalpurush' => [
+                    'R' => 'kalpurush_normal_6661c53feba164b2226ce34f5d636de1.ttf', // normal
+                    'B' => 'kalpurush_normal_6661c53feba164b2226ce34f5d636de1.ttf', // use same for bold simulation
+                    'useOTL' => 0xFF,
+                    'useKashida' => 75,
+                ],
+            ]),
+            'autoScriptToLang' => true,
+            'autoLangToFont' => true,
+            'allow_charset_conversion' => true,
+            'margin_top' => 10,
+            'margin_right' => 10,
+            'margin_bottom' => 10,
+            'margin_left' => 10,
+            'tempDir' => $tempDir,
+        ]);
+
+        $mpdf->WriteHTML($html);
+
+        $pdfContent = $mpdf->Output('', 'S'); // return as string
 
         $filename = 'Marksheet-' . ($student->student_id ?? $student->id) . '-' . $exam->id . '.pdf';
 
-        return $pdf->download($filename);
+        return response($pdfContent)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
+
 
 
     public function teachers(Request $request)

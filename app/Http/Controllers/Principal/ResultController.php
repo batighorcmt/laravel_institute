@@ -10,7 +10,11 @@ use App\Models\Student;
 use App\Models\SchoolClass;
 use App\Models\Section;
 use App\Models\Mark;
+use Mpdf\Mpdf;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
 use App\Models\AcademicYear;
+
 use App\Models\ClassSubject;
 use App\Models\StudentEnrollment;
 use App\Models\StudentSubject;
@@ -131,11 +135,8 @@ class ResultController extends Controller
     public function printMarksheet(School $school, Exam $exam, Student $student)
     {
         // Use helper to get calculated result for this student
-        // We need class_id. Exam usually has class_id, or we get it from student
         $classId = $exam->class_id;
         if (!$classId) {
-             // Fallback if exam doesn't have class_id? unique exams are usually per class.
-             // If not, we might need to find it.
              $enrollment = $student->enrollments()->where('academic_year_id', $exam->academic_year_id)->first();
              $classId = $enrollment ? $enrollment->class_id : null;
         }
@@ -145,8 +146,6 @@ class ResultController extends Controller
         $calcData = $this->getCalculatedResults($school, $exam->id, $classId, null, $student->id);
 
         if (!$calcData || $calcData['results']->isEmpty()) {
-             // If no result computed (e.g. absent or strictly no record), we might still want to print "Not Found" or empty
-             // But usually we want to show what we have.
              return back()->with('error', 'Result not calculated or found.');
         }
 
@@ -154,8 +153,45 @@ class ResultController extends Controller
         $finalSubjects = $calcData['finalSubjects'];
         $principalTeacher = $this->getPrincipalTeacher($school);
 
+        // If 'download' parameter is present, return PDF using mPDF
+        if (request()->has('download')) {
+            $html = view('principal.results.print-marksheet', compact('school', 'exam', 'student', 'result', 'finalSubjects', 'principalTeacher'))->render();
+
+            $defaultConfig = (new ConfigVariables())->getDefaults();
+            $defaultFontConfig = (new FontVariables())->getDefaults();
+            $fontDir = storage_path('fonts');
+            $tempDir = storage_path('app/mpdf_temp');
+            if (!is_dir($tempDir)) mkdir($tempDir, 0755, true);
+
+            $mpdf = new Mpdf([
+                'mode' => 'utf-8',
+                'format' => 'A4',
+                'default_font' => 'kalpurush',
+                'fontDir' => array_merge($defaultConfig['fontDir'], [$fontDir]),
+                'fontdata' => array_merge($defaultFontConfig['fontdata'], [
+                    'kalpurush' => [
+                        'R' => 'kalpurush_normal_6661c53feba164b2226ce34f5d636de1.ttf',
+                        'B' => 'kalpurush_normal_6661c53feba164b2226ce34f5d636de1.ttf',
+                        'useOTL' => 0xFF,
+                        'useKashida' => 75,
+                    ],
+                ]),
+                'autoScriptToLang' => true,
+                'autoLangToFont' => true,
+                'margin_top' => 10, 'margin_right' => 10, 'margin_bottom' => 10, 'margin_left' => 10,
+                'tempDir' => $tempDir,
+            ]);
+
+            $mpdf->WriteHTML($html);
+            $filename = 'Marksheet-' . $student->student_id . '.pdf';
+            return response($mpdf->Output('', 'S'))
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        }
+
         return view('principal.results.print-marksheet', compact('school', 'exam', 'student', 'result', 'finalSubjects', 'principalTeacher'));
     }
+
 
     // Merit List
     public function meritList(Request $request, School $school)
