@@ -58,6 +58,17 @@ if (!function_exists('toBengaliNumber')) {
     }
 }
 
+if (!function_exists('toBengaliMonth')) {
+    /**
+     * Convert English month name to Bengali.
+     */
+    function toBengaliMonth($string) {
+        $en_months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        $bn_months = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+        return str_replace($en_months, $bn_months, $string);
+    }
+}
+
 if (!function_exists('detectGradeFromClass')) {
     /**
      * Helper to detect grade/group from class name for seating colors.

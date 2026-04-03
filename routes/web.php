@@ -187,6 +187,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                         Route::prefix('students')->name('students.')->group(function () {
                             Route::get('/report-cards', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'index'])->name('report-cards.index');
                             Route::get('/{student}/report-card', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'show'])->name('report-cards.show');
+                            Route::get('/{student}/report-card/print', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'printRecord'])->name('report-cards.print');
                             Route::get('/{student}/report-card/data', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'data'])->name('report-cards.data');
                         });
                         // Notices management
