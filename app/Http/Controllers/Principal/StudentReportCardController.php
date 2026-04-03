@@ -205,18 +205,26 @@ class StudentReportCardController extends Controller
                 }
             })
             ->with('lessonEvaluation.subject');
-            
+        $classSubjectsOrder = \App\Models\ClassSubject::where('school_id', $schoolId)
+            ->where('class_id', $student->currentEnrollment?->class_id)
+            ->pluck('order_no', 'subject_id');
+
         $lessonRecords = $lessonRecordsQuery->get();
         $lessonSummary = $lessonRecords->groupBy('status')->map->count();
         $subjectWiseEvaluation = $lessonRecords->groupBy(function($record) {
-            return $record->lessonEvaluation->subject->name ?? 'Unknown';
-        })->map(function($group) {
+            return $record->lessonEvaluation->subject_id;
+        })->sortBy(function($group, $subjectId) use ($classSubjectsOrder) {
+            return $classSubjectsOrder->get($subjectId) ?? 999;
+        })->mapWithKeys(function($group) {
+            $subjectName = $group->first()->lessonEvaluation->subject->name ?? 'Unknown';
             return [
-                'completed' => $group->where('status', 'completed')->count(),
-                'partial' => $group->where('status', 'partial')->count(),
-                'not_done' => $group->where('status', 'not_done')->count(),
-                'absent' => $group->where('status', 'absent')->count(),
-                'total' => $group->count(),
+                $subjectName => [
+                    'completed' => $group->where('status', 'completed')->count(),
+                    'partial' => $group->where('status', 'partial')->count(),
+                    'not_done' => $group->where('status', 'not_done')->count(),
+                    'absent' => $group->where('status', 'absent')->count(),
+                    'total' => $group->count(),
+                ]
             ];
         });
 
