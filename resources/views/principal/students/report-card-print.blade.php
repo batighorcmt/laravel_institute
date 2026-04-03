@@ -182,7 +182,7 @@
             </div>
             <div style="flex: 1; text-align: center;">
                 <h1 style="margin: 0; font-size: 22pt; color: #111827; font-weight: bold;">{{ $school->name_bn ?? $school->name }}</h1>
-                <div style="font-size: 11pt; color: #374151;">{{ $school->address }}</div>
+                <div style="font-size: 11pt; color: #374151;">{{ $school->address_bn ?? $school->address }}</div>
                 <div style="font-size: 14pt; font-weight: bold; margin-top: 5px; color: #4f46e5; background: #eef2ff; display: inline-block; padding: 4px 15px; border-radius: 20px;">রিপোর্ট কার্ড</div>
             </div>
             <div style="flex: 0 0 80px;"></div>
