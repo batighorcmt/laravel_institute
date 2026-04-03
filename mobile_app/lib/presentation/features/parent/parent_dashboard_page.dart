@@ -207,8 +207,76 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
           ),
           const SizedBox(height: 20),
 
+          const SizedBox(height: 10),
+          // Latest Notices Section (Unread display showing total unread count)
+          Consumer(
+            builder: (context, ref, _) {
+              final noticesAsync = ref.watch(parentNoticesProvider);
+              return noticesAsync.when(
+                data: (notices) {
+                  final unreadNoticesList = notices
+                      .where((n) => n['is_unread'] == true)
+                      .toList();
+                  
+                  if (unreadNoticesList.isEmpty) return const SizedBox.shrink();
+                  
+                  final displayNotices = unreadNoticesList.take(2).toList();
+                  final totalUnread = unreadNoticesList.length;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _SectionTitle(title: 'সর্বশেষ নোটিশ ($totalUnreadটি অপঠিত)'),
+                          TextButton(
+                            onPressed: () => context.push('/notice-board'),
+                            child: const Text('সব দেখুন'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      ...displayNotices.map((n) => Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            elevation: 1,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            child: ListTile(
+                              visualDensity: VisualDensity.compact,
+                              onTap: () => NoticeDetailsModal.show(context, ref, n),
+                              leading: CircleAvatar(
+                                radius: 18,
+                                backgroundColor: cs.primary.withOpacity(0.1),
+                                child: Icon(Icons.campaign, color: cs.primary, size: 20),
+                              ),
+                              title: Text(
+                                n['title'] ?? 'N/A',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                '${n['date']} | ${n['author']}',
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios,
+                                  size: 12, color: Colors.grey),
+                            ),
+                          )),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              );
+            },
+          ),
+
           // Quick Navigation Row
           const _SectionTitle(title: 'দ্রুত অ্যাক্সেস'),
+
           const SizedBox(height: 10),
           SizedBox(
             height: 95,
@@ -356,66 +424,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
             },
           ),
 
-          // Latest Notices Section (Unread 2)
-          Consumer(
-            builder: (context, ref, _) {
-              final noticesAsync = ref.watch(parentNoticesProvider);
-              return noticesAsync.when(
-                data: (notices) {
-                  final unreadNotices = notices
-                      .where((n) => n['is_unread'] == true)
-                      .take(2)
-                      .toList();
 
-                  if (unreadNotices.isEmpty) return const SizedBox.shrink();
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const _SectionTitle(title: 'সর্বশেষ নোটিশ'),
-                          TextButton(
-                            onPressed: () => context.push('/notice-board'),
-                            child: const Text('সব দেখুন'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ...unreadNotices.map((n) => Card(
-                            margin: const EdgeInsets.only(bottom: 10),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            child: ListTile(
-                              onTap: () => NoticeDetailsModal.show(context, ref, n),
-                              leading: const CircleAvatar(
-                                backgroundColor: Colors.indigo,
-                                child: Icon(Icons.campaign, color: Colors.white),
-                              ),
-                              title: Text(
-                                n['title'] ?? 'N/A',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                '${n['date']} | ${n['author']}',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              trailing: const Icon(Icons.arrow_forward_ios,
-                                  size: 14, color: Colors.grey),
-                            ),
-                          )),
-                      const SizedBox(height: 20),
-                    ],
-                  );
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              );
-            },
-          ),
 
           // Attendance Status Section
           const _SectionTitle(title: 'আজকের হাজিরার অবস্থা'),

@@ -821,19 +821,36 @@ class ParentController extends Controller
         $schoolId = $children->first()->school_id;
         $classIds = $children->map(fn($s) => $s->class_id ?? $s->currentEnrollment?->class_id)->filter()->unique();
         $sectionIds = $children->map(fn($s) => $s->currentEnrollment?->section_id)->filter()->unique();
+        $studentIds = $children->pluck('id')->unique();
 
         $notices = \App\Models\Notice::published()
             ->where('school_id', $schoolId)
-            ->where(function ($q) use ($classIds, $sectionIds) {
-                $q->where('audience_type', 'all')
-                  ->orWhere('audience_type', 'parents')
-                  ->orWhere(function ($qq) use ($classIds) {
-                      $qq->where('audience_type', 'classes')->whereHas('targets', fn($t) => $t->whereIn('class_id', $classIds));
-                  })
-                  ->orWhere(function ($qq) use ($sectionIds) {
-                      $qq->where('audience_type', 'sections')->whereHas('targets', fn($t) => $t->whereIn('section_id', $sectionIds));
-                  });
+            ->where(function ($q) use ($classIds, $sectionIds, $studentIds) {
+                // 1. All or Students (no targets = everyone in that group)
+                $q->whereIn('audience_type', ['all', 'students', 'parents']);
+
+                // 2. Class Targets
+                $q->orWhere(function ($qq) use ($classIds) {
+                    $qq->whereHas('targets', function($t) use ($classIds) {
+                        $t->where('targetable_type', \App\Models\SchoolClass::class)->whereIn('targetable_id', $classIds);
+                    });
+                });
+
+                // 3. Section Targets
+                $q->orWhere(function ($qq) use ($sectionIds) {
+                    $qq->whereHas('targets', function($t) use ($sectionIds) {
+                        $t->where('targetable_type', \App\Models\Section::class)->whereIn('targetable_id', $sectionIds);
+                    });
+                });
+
+                // 4. Student specific targets
+                $q->orWhere(function ($qq) use ($studentIds) {
+                    $qq->whereHas('targets', function($t) use ($studentIds) {
+                        $t->where('targetable_type', \App\Models\Student::class)->whereIn('targetable_id', $studentIds);
+                    });
+                });
             })
+
             ->with(['author:id,name'])
             ->orderByDesc('publish_at')
             ->limit(10)
