@@ -11,6 +11,8 @@ class StudentProfileResource extends JsonResource
     public function toArray($request): array
     {
         $st = $this->resource;
+        $en = $st?->currentEnrollment;
+
         $photoPath = $st?->photo_url;
         $photoUrl = null;
         if ($photoPath) {
@@ -22,9 +24,8 @@ class StudentProfileResource extends JsonResource
             }
         }
 
-        $en = $st?->currentEnrollment;
-        
         // Compose present address from parts if available
+
         $presentParts = array_filter([
             $st?->present_village,
             $st?->present_post_office,
@@ -41,6 +42,7 @@ class StudentProfileResource extends JsonResource
             $st?->permanent_district,
         ]);
         $permanentAddress = $permanentParts ? implode(', ', $permanentParts) : ($st?->permanent_address ?? null);
+
 
         // Try to include BN variants when fields exist on the model
         $presentAddressBn = $st?->present_address_bn ?? null;
@@ -114,8 +116,6 @@ class StudentProfileResource extends JsonResource
                 'mother_phone' => null,
             ],
             // Raw DB columns for addressing
-            'present_address' => $presentAddress,
-            'present_address_bn' => $presentAddressBn,
             'village' => $st?->present_village,
             'gram' => $st?->present_village,
             'present_village' => $st?->present_village,
@@ -125,13 +125,12 @@ class StudentProfileResource extends JsonResource
             'present_district' => $st?->present_district,
             'thana' => $st?->present_upazilla,
             'zilla' => $st?->present_district,
-            'permanent_address' => $permanentAddress,
-            'permanent_address_bn' => $permanentAddressBn,
             'permanent_village' => $st?->permanent_village,
             'permanent_para_moholla' => $st?->permanent_para_moholla,
             'permanent_post_office' => $st?->permanent_post_office,
             'permanent_upazilla' => $st?->permanent_upazilla,
             'permanent_district' => $st?->permanent_district,
+
 
             // Admission & previous fields from students table
             'admission_date' => optional($st?->admission_date)->toDateString(),
@@ -205,6 +204,20 @@ class StudentProfileResource extends JsonResource
                     ->with(['subject'])
                     ->orderBy('period_number')
                     ->get()
+                    ->filter(function($routine) use ($en) {
+                        // Filter by assigned subjects if assignments exist
+                        $assignedIds = \App\Models\StudentSubject::where('student_enrollment_id', $en->id)
+                                        ->where('status', 'active')
+                                        ->pluck('subject_id')
+                                        ->toArray();
+                        
+                        if (!empty($assignedIds)) {
+                            return in_array($routine->subject_id, $assignedIds);
+                        }
+                        
+                        // Otherwise, show all (might need further filtering by group if routine has group_id)
+                        return true;
+                    })
                     ->map(function($routine) use ($st) {
                         $eval = \App\Models\LessonEvaluation::where('routine_entry_id', $routine->id)
                             ->whereDate('evaluation_date', now())
@@ -218,7 +231,8 @@ class StudentProfileResource extends JsonResource
                             'notes' => $eval?->notes,
                             'time' => optional($eval?->evaluation_time)->toIso8601String(),
                         ];
-                    }) : [],
+                    })->values() : [],
+
         ]);
     }
 }
