@@ -554,7 +554,8 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                   .split('T')
                   .first;
               final todayItems = items
-                  .where((e) => e['date'] == todayStr)
+                  .where((e) => e['homework_date'] == todayStr)
+
                   .toList();
 
               if (todayItems.isEmpty)
@@ -735,16 +736,16 @@ class _EvaluationStatusCard extends StatelessWidget {
     Color statusColor = Colors.grey;
     IconData statusIcon = Icons.hourglass_empty;
 
-    if (status == 'completed') {
-      statusText = 'সম্পন্ন';
+    if (status == 'completed' || status == 'read') {
+      statusText = 'পড়া হয়েছে';
       statusColor = Colors.green;
       statusIcon = Icons.check_circle;
     } else if (status == 'partial') {
-      statusText = 'আংশিক';
+      statusText = 'আংশিক হয়েছে';
       statusColor = Colors.orange;
       statusIcon = Icons.pending;
     } else if (status == 'not_done') {
-      statusText = 'করেনি';
+      statusText = 'পড়া হয়নি';
       statusColor = Colors.red;
       statusIcon = Icons.cancel;
     } else if (status == 'absent') {
@@ -752,6 +753,7 @@ class _EvaluationStatusCard extends StatelessWidget {
       statusColor = Colors.blueGrey;
       statusIcon = Icons.person_off;
     }
+
 
     String? formattedTime;
     if (time != null) {
