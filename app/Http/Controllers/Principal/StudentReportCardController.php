@@ -20,7 +20,7 @@ class StudentReportCardController extends Controller
         return view('principal.students.report-card-index', ['school' => $school]);
     }
 
-    public function show($school, Student $student)
+    public function show(Request $request, $school, Student $student)
     {
         $schoolId = is_object($school) ? $school->id : $school;
         $student->load(['currentEnrollment.class', 'currentEnrollment.section', 'currentEnrollment.group']);
@@ -36,10 +36,16 @@ class StudentReportCardController extends Controller
             ]);
         }
 
+        // Date Range Logic
+        $startDate = $request->start_date ? Carbon::parse($request->start_date)->startOfDay() : null;
+        $endDate = $request->end_date ? Carbon::parse($request->end_date)->endOfDay() : null;
+
         // 1. Attendance Summary
-        $attendanceData = Attendance::where('student_id', $student->id)
-            ->whereBetween('date', [$currentYear->start_date, $currentYear->end_date])
-            ->get();
+        $attendanceQuery = Attendance::where('student_id', $student->id);
+        if ($startDate && $endDate) {
+            $attendanceQuery->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()]);
+        }
+        $attendanceData = $attendanceQuery->get();
 
         $attendanceSummary = [
             'total_working_days' => $attendanceData->count(),
@@ -60,15 +66,18 @@ class StudentReportCardController extends Controller
         });
 
         // 2. Lesson Evaluation Summary
-        $lessonRecords = LessonEvaluationRecord::where('student_id', $student->id)
-            ->whereHas('lessonEvaluation', function($q) use ($currentYear) {
-                $q->whereBetween('evaluation_date', [
-                    $currentYear->start_date->toDateString(),
-                    $currentYear->end_date->toDateString()
-                ]);
+        $lessonRecordsQuery = LessonEvaluationRecord::where('student_id', $student->id)
+            ->whereHas('lessonEvaluation', function($q) use ($startDate, $endDate) {
+                if ($startDate && $endDate) {
+                    $q->whereBetween('evaluation_date', [
+                        $startDate->toDateString(),
+                        $endDate->toDateString()
+                    ]);
+                }
             })
-            ->with('lessonEvaluation.subject')
-            ->get();
+            ->with('lessonEvaluation.subject');
+            
+        $lessonRecords = $lessonRecordsQuery->get();
 
         $lessonSummary = $lessonRecords->groupBy('status')->map->count();
         $subjectWiseEvaluation = $lessonRecords->groupBy(function($record) {
@@ -95,6 +104,8 @@ class StudentReportCardController extends Controller
             'school' => $school,
             'student' => $student,
             'currentYear' => $currentYear,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
             'attendanceSummary' => $attendanceSummary,
             'monthlyAttendance' => $monthlyAttendance,
             'lessonSummary' => $lessonSummary,
