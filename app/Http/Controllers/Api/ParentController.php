@@ -48,8 +48,9 @@ class ParentController extends Controller
 
         if (!$userSchoolRole) return null;
 
-        return \App\Models\Teacher::where('user_id', $userSchoolRole->user_id)->first();
+        return Teacher::where('user_id', $userSchoolRole->user_id)->first();
     }
+
 
     public function children(Request $request)
     {
@@ -425,10 +426,11 @@ class ParentController extends Controller
                 return [
                     'id' => $e->id,
                     'name' => $e->name,
-                    'start_date' => $e->start_date ? \Illuminate\Support\Carbon::parse($e->start_date)->format('d M, Y') : null,
-                    'end_date' => $e->end_date ? \Illuminate\Support\Carbon::parse($e->end_date)->format('d M, Y') : null,
+                    'start_date' => $e->start_date ? Carbon::parse($e->start_date)->format('d M, Y') : null,
+                    'end_date' => $e->end_date ? Carbon::parse($e->end_date)->format('d M, Y') : null,
 
                     'status' => $e->status
+
                 ];
             });
 
@@ -720,16 +722,17 @@ class ParentController extends Controller
 
         $user = $request->user();
 
-        if (!\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
+        if (!Hash::check($request->current_password, $user->password)) {
             return response()->json(['message' => 'বর্তমান পাসওয়ার্ড সঠিক নয়'], 422);
         }
 
-        $user->password = \Illuminate\Support\Facades\Hash::make($request->new_password);
+        $user->password = Hash::make($request->new_password);
         $user->password_changed_at = now();
         $user->save();
 
         return response()->json(['message' => 'পাসওয়ার্ড সফলভাবে পরিবর্তিত হয়েছে']);
     }
+
 
     public function getFees(Request $request)
     {
@@ -747,7 +750,8 @@ class ParentController extends Controller
             ->whereIn('status', ['unpaid', 'partial'])
             ->orderBy('due_date', 'asc')
             ->get()
-            ->map(function ($fee) {
+            ->map(function (\App\Models\StudentFee $fee) {
+
                 $fine = (float)$fee->calculateFine();
                 $dueBase = (float)($fee->amount - $fee->paid_amount);
                 
@@ -834,7 +838,8 @@ class ParentController extends Controller
             ->orderByDesc('publish_at')
             ->limit(10)
             ->get()
-            ->map(function ($notice) use ($request) {
+            ->map(function (\App\Models\Notice $notice) use ($request) {
+
                 return [
                     'id' => $notice->id,
                     'title' => $notice->title,
