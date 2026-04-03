@@ -45,7 +45,7 @@ class MetaController extends Controller
             ->where('status', 'active')
             ->orderBy('name')
             ->get(['id','name','bangla_name']);
-            
+
         return response()->json($groups);
     }
 
@@ -94,6 +94,7 @@ class MetaController extends Controller
 
         $q = StudentEnrollment::select(
             'student_enrollments.student_id as record_id', 'student_enrollments.roll_no',
+            'students.photo as photo',
             'students.student_id as student_code',
             'students.student_name_bn','students.student_name_en','students.guardian_phone',
             'students.father_name_bn','students.father_name','students.mother_name_bn','students.mother_name',
@@ -128,6 +129,7 @@ class MetaController extends Controller
             return [
                 'record_id' => (int)$r->record_id,
                 'student_id' => $r->student_code,
+                'photo' => $r->photo,
                 'name' => $r->student_name_bn ?: $r->student_name_en,
                 'student_name_bn' => $r->student_name_bn,
                 'student_name_en' => $r->student_name_en,
@@ -159,6 +161,40 @@ class MetaController extends Controller
             ];
         });
 
+        // Compute photo URLs server-side for reliable display
+        $rows = $rows->map(function($item){
+            $photo = $item['photo'] ?? null;
+            $url = asset('images/default-avatar.svg');
+            if ($photo) {
+                // prefer storage path students/<photo>
+                if (file_exists(storage_path('app/public/students/' . $photo))) {
+                    $url = asset('storage/students/' . $photo);
+                } elseif (file_exists(public_path($photo))) {
+                    $url = asset($photo);
+                }
+            }
+            $item['photo_url'] = $url;
+            return $item;
+        });
+
         return response()->json($rows);
+    }
+
+    public function classes(School $school)
+    {
+        $this->authorizePrincipal($school);
+        $classes = $school->classes()->orderBy('numeric_value')->get(['id','name','bangla_name']);
+        return response()->json($classes->map(function($c){
+            return ['id'=>$c->id,'text'=>$c->bangla_name ?: $c->name];
+        }));
+    }
+
+    public function academicYears(School $school)
+    {
+        $this->authorizePrincipal($school);
+        $years = AcademicYear::where('school_id',$school->id)->orderBy('name','desc')->get(['id','name','name_bn']);
+        return response()->json($years->map(function($y){
+            return ['id'=>$y->id,'text'=>$y->name_bn ?: $y->name];
+        }));
     }
 }

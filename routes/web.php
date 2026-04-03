@@ -183,6 +183,12 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::delete('/entry', [PrincipalRoutineController::class , 'deleteEntry'])->name('entry.delete');
                         }
                         );
+                        // Student Report Cards (Vue page + data endpoint)
+                        Route::prefix('students')->name('students.')->group(function () {
+                            Route::get('/report-cards', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'index'])->name('report-cards.index');
+                            Route::get('/{student}/report-card', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'show'])->name('report-cards.show');
+                            Route::get('/{student}/report-card/data', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'data'])->name('report-cards.data');
+                        });
                         // Notices management
                         Route::get('/notices', [PrincipalController::class , 'notices'])->middleware('module:notices')->name('notices');
                         // Teachers management
@@ -557,6 +563,8 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::post('enrollments/{enrollment}/subjects', [\App\Http\Controllers\Principal\StudentSubjectController::class , 'update'])->name('enrollments.subjects.update');
                             // Meta endpoints for dynamic dropdowns
                             Route::get('meta/sections', [\App\Http\Controllers\Principal\MetaController::class , 'sections'])->name('meta.sections');
+                            Route::get('meta/classes', [\App\Http\Controllers\Principal\MetaController::class , 'classes'])->name('meta.classes');
+                            Route::get('meta/academic-years', [\App\Http\Controllers\Principal\MetaController::class , 'academicYears'])->name('meta.academic-years');
                             Route::get('meta/students', [\App\Http\Controllers\Principal\MetaController::class , 'students'])->name('meta.students');
                             Route::get('meta/groups', [\App\Http\Controllers\Principal\MetaController::class , 'groups'])->name('meta.groups');
                             Route::get('meta/next-roll', [\App\Http\Controllers\Principal\MetaController::class , 'nextRoll'])->name('meta.next-roll');
@@ -815,7 +823,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/billing/receipts/{id}/download', [\App\Http\Controllers\Billing\ReceiptController::class , 'downloadPdf'])->name('billing.receipts.download');
 
             // SSLCommerz Callbacks moved to top level
-        
+
             }
             );
 

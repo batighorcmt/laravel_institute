@@ -143,7 +143,29 @@
                     মোট তথ্য: {{ $evaluations->total() }}
                 </div>
                 <div>
-                    {{ $evaluations->links() }}
+                    <div class="d-none d-sm-block">
+                        {{ $evaluations->onEachSide(1)->links() }}
+                    </div>
+
+                    <div class="d-block d-sm-none">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm mb-0 justify-content-center">
+                                @if($evaluations->onFirstPage())
+                                    <li class="page-item disabled"><span class="page-link">&laquo; পূর্ববর্তী</span></li>
+                                @else
+                                    <li class="page-item"><a class="page-link" href="{{ $evaluations->previousPageUrl() }}" rel="prev">&laquo; পূর্ব</a></li>
+                                @endif
+
+                                <li class="page-item disabled"><span class="page-link">পৃষ্ঠা {{ $evaluations->currentPage() }} / {{ $evaluations->lastPage() }}</span></li>
+
+                                @if($evaluations->hasMorePages())
+                                    <li class="page-item"><a class="page-link" href="{{ $evaluations->nextPageUrl() }}" rel="next">পরবর্তী &raquo;</a></li>
+                                @else
+                                    <li class="page-item disabled"><span class="page-link">পরবর্তী &raquo;</span></li>
+                                @endif
+                            </ul>
+                        </nav>
+                    </div>
                 </div>
             </div>
         </div>
@@ -168,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const resp = await fetch(sectionsUrl + '?class_id=' + encodeURIComponent(classId));
             if (!resp.ok) throw new Error('Network error');
             const data = await resp.json();
-            
+
             resetSections();
             if (Array.isArray(data) && data.length) {
                 data.forEach(sec => {
