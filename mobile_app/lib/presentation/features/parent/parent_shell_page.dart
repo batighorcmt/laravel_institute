@@ -60,6 +60,11 @@ const _navItems = [
     path: '/parent/evaluations',
   ),
   _NavItem(
+    label: 'পরীক্ষার ফলাফল',
+    icon: Icons.military_tech_outlined,
+    path: '/parent/exams',
+  ),
+  _NavItem(
     label: 'ছুটির আবেদন',
     icon: Icons.card_travel_outlined,
     path: '/parent/leaves',

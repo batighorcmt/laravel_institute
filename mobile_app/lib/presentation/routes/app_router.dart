@@ -35,6 +35,8 @@ import '../features/principal/notice_create_page.dart';
 import '../features/principal/notice_stats_page.dart';
 import '../features/common/notifications_page.dart';
 import '../features/common/notice_detail_page.dart';
+import '../features/parent/pages/exam_results_page.dart';
+import '../features/parent/pages/exam_result_detail_page.dart';
 
 // Helper to refresh GoRouter when auth state changes.
 class GoRouterRefreshNotifier extends ChangeNotifier {
@@ -245,6 +247,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/parent/evaluations/stats',
             name: 'parent-evaluations-stats',
             builder: (context, state) => const LessonEvaluationStatsPage(),
+          ),
+          GoRoute(
+            path: '/parent/exams',
+            name: 'parent-exams',
+            builder: (context, state) => const ParentExamResultsPage(),
+          ),
+          GoRoute(
+            path: '/parent/exams/:examId/results',
+            name: 'parent-exam-results',
+            builder: (context, state) => ParentExamResultDetailPage(
+              examId: state.pathParameters['examId'] ?? '',
+            ),
           ),
           GoRoute(
             path: '/parent/leaves',

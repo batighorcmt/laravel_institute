@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\DB;
 
 class ParentController extends Controller
 {
+    use \App\Traits\ResultCalculationTrait;
     public function children(Request $request)
     {
         $students = $this->resolveChildren($request);
@@ -384,6 +385,121 @@ class ParentController extends Controller
             'year' => $year,
             'data' => $stats,
             'message' => 'বিষয়ভিত্তিক বাৎসরিক লেসন ইভ্যালুয়েশন পরিসংখ্যান',
+        ]);
+    }
+
+    public function exams(Request $request)
+    {
+        $studentId = $request->get('student_id');
+        $children = $this->resolveChildren($request);
+        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        $classId = $student->currentEnrollment?->class_id ?? $student->class_id;
+
+        $exams = \App\Models\Exam::where('school_id', $student->school_id)
+            ->where('class_id', $classId)
+            ->whereIn('status', ['published', 'completed'])
+            ->orderByDesc('start_date')
+            ->get()->map(function($e) {
+                return [
+                    'id' => $e->id,
+                    'name' => $e->name,
+                    'start_date' => $e->start_date?->format('d M, Y'),
+                    'end_date' => $e->end_date?->format('d M, Y'),
+                    'status' => $e->status
+                ];
+            });
+
+        return response()->json([
+            'data' => $exams,
+            'message' => 'পরীক্ষার তালিকা'
+        ]);
+    }
+
+    public function examResults(Request $request, $examId)
+    {
+        $studentId = $request->get('student_id');
+        $children = $this->resolveChildren($request);
+        $student = $studentId ? $children->firstWhere('id', $studentId) : $children->first();
+
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        $exam = \App\Models\Exam::find($examId);
+        if (!$exam) {
+            return response()->json(['message' => 'পরীক্ষা পাওয়া যায়নি'], 404);
+        }
+
+        $schoolModel = \App\Models\School::find($student->school_id);
+        $classId = $student->currentEnrollment?->class_id ?? $student->class_id;
+        
+        $calc = $this->getCalculatedResults($schoolModel, $exam->id, $classId, null, $student->id);
+
+        if (!$calc || empty($calc['results']) || $calc['results']->isEmpty()) {
+            return response()->json(['message' => 'এই পরীক্ষার কোনো ফলাফল পাওয়া যায়নি।'], 404);
+        }
+
+        $result = $calc['results']->first();
+        $finalSubjects = $calc['finalSubjects'] ?? collect();
+        $studentMarks = \App\Models\Mark::where('exam_id', $exam->id)
+                            ->where('student_id', $student->id)
+                            ->get()
+                            ->keyBy('subject_id');
+
+        $subjectsData = [];
+        foreach ($finalSubjects as $subjectId => $subject) {
+            $isMerged = !empty($subject['is_merged']);
+            
+            if ($isMerged) {
+                $subjectsData[] = [
+                    'id' => $subjectId,
+                    'name' => $subject['name'] ?? 'Unknown',
+                    'creative_marks' => '-',
+                    'mcq_marks' => '-',
+                    'practical_marks' => '-',
+                    'total_marks' => $subject['total'] ?? 0,
+                    'letter_grade' => $subject['grade'] ?? 'F',
+                    'grade_point' => $subject['gp'] ?? 0,
+                    'is_merged' => true,
+                    'is_failed' => ($subject['grade'] ?? 'F') === 'F',
+                ];
+            } else {
+                $mark = $studentMarks->get($subjectId);
+                $subjectsData[] = [
+                    'id' => $subjectId,
+                    'name' => $subject['name'] ?? ($mark->subject->name ?? 'Unknown'),
+                    'creative_marks' => $mark ? (float)$mark->creative_marks : 0,
+                    'mcq_marks' => $mark ? (float)$mark->mcq_marks : 0,
+                    'practical_marks' => $mark ? (float)$mark->practical_marks : 0,
+                    'total_marks' => $subject['total'] ?? ($mark ? (float)$mark->total_marks : 0),
+                    'letter_grade' => $subject['grade'] ?? ($mark ? $mark->letter_grade : 'F'),
+                    'grade_point' => $subject['gp'] ?? ($mark ? (float)$mark->grade_point : 0),
+                    'is_merged' => false,
+                    'is_failed' => ($subject['grade'] ?? ($mark ? $mark->letter_grade : 'F')) === 'F',
+                ];
+            }
+        }
+
+        return response()->json([
+            'exam' => [
+                'id' => $exam->id,
+                'name' => $exam->name,
+            ],
+            'summary' => [
+                'total_marks' => $result->total_marks,
+                'total_gpa' => $result->total_gpa,
+                'total_grade' => $result->total_grade,
+                'position' => $result->position ?? '-',
+                'status' => $result->status
+            ],
+            'subjects' => collect($subjectsData)->sortBy('id')->values()->all(),
+            'marksheet_url' => route('principal.institute.results.marksheet.print', [$schoolModel->id, $exam->id, $student->id]),
+            'message' => 'পরীক্ষার ফলাফল',
         ]);
     }
 
