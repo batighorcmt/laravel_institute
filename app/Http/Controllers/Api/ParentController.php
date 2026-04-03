@@ -446,60 +446,52 @@ class ParentController extends Controller
 
         $result = $calc['results']->first();
         $finalSubjects = $calc['finalSubjects'] ?? collect();
-        $studentMarks = \App\Models\Mark::where('exam_id', $exam->id)
-                            ->where('student_id', $student->id)
-                            ->get()
-                            ->keyBy('subject_id');
 
+        // Build subjects list from precomputed subject_results on the result object
         $subjectsData = [];
-        foreach ($finalSubjects as $subjectId => $subject) {
-            $isMerged = !empty($subject['is_merged']);
-            
-            if ($isMerged) {
-                $subjectsData[] = [
-                    'id' => $subjectId,
-                    'name' => $subject['name'] ?? 'Unknown',
-                    'creative_marks' => '-',
-                    'mcq_marks' => '-',
-                    'practical_marks' => '-',
-                    'total_marks' => $subject['total'] ?? 0,
-                    'letter_grade' => $subject['grade'] ?? 'F',
-                    'grade_point' => $subject['gp'] ?? 0,
-                    'is_merged' => true,
-                    'is_failed' => ($subject['grade'] ?? 'F') === 'F',
-                ];
-            } else {
-                $mark = $studentMarks->get($subjectId);
-                $subjectsData[] = [
-                    'id' => $subjectId,
-                    'name' => $subject['name'] ?? ($mark->subject->name ?? 'Unknown'),
-                    'creative_marks' => $mark ? (float)$mark->creative_marks : 0,
-                    'mcq_marks' => $mark ? (float)$mark->mcq_marks : 0,
-                    'practical_marks' => $mark ? (float)$mark->practical_marks : 0,
-                    'total_marks' => $subject['total'] ?? ($mark ? (float)$mark->total_marks : 0),
-                    'letter_grade' => $subject['grade'] ?? ($mark ? $mark->letter_grade : 'F'),
-                    'grade_point' => $subject['gp'] ?? ($mark ? (float)$mark->grade_point : 0),
-                    'is_merged' => false,
-                    'is_failed' => ($subject['grade'] ?? ($mark ? $mark->letter_grade : 'F')) === 'F',
-                ];
-            }
+        foreach ($result->subject_results as $key => $sr) {
+            $fSub = $finalSubjects->get($key);
+            // Skip display_only (individual parts of merged subjects)
+            if (!empty($sr['display_only'])) continue;
+
+            $subjectsData[] = [
+                'key'           => $key,
+                'name'          => $sr['name'] ?? ($fSub['name'] ?? '?'),
+                'creative_marks'=> $sr['creative'] ?? 0,
+                'mcq_marks'     => $sr['mcq'] ?? 0,
+                'practical_marks'=> $sr['practical'] ?? 0,
+                'total_marks'   => $sr['total'] ?? 0,
+                'full_marks'    => $sr['full_mark'] ?? ($fSub['total_full_mark'] ?? 0),
+                'letter_grade'  => $sr['grade'] ?? 'F',
+                'grade_point'   => $sr['gpa'] ?? 0,
+                'is_optional'   => $sr['is_optional'] ?? false,
+                'is_absent'     => $sr['is_absent'] ?? false,
+                'is_failed'     => ($sr['grade'] ?? 'F') === 'F',
+            ];
         }
+
+        // Use computed fields from the Trait, fall back to stored DB values if needed
+        $totalMarks = $result->computed_total_marks ?? $result->total_marks ?? 0;
+        $totalGpa   = $result->computed_gpa        ?? $result->gpa         ?? 0;
+        $totalGrade = $result->computed_letter      ?? $result->letter_grade ?? 'F';
+        $position   = $result->class_position       ?? $result->position    ?? '-';
+        $status     = $result->computed_status      ?? ($result->result_status ?? 'N/A');
 
         return response()->json([
             'exam' => [
-                'id' => $exam->id,
+                'id'   => $exam->id,
                 'name' => $exam->name,
             ],
             'summary' => [
-                'total_marks' => $result->total_marks,
-                'total_gpa' => $result->total_gpa,
-                'total_grade' => $result->total_grade,
-                'position' => $result->position ?? '-',
-                'status' => $result->status
+                'total_marks' => $totalMarks,
+                'total_gpa'   => $totalGpa,
+                'total_grade' => $totalGrade,
+                'position'    => $position,
+                'status'      => $status,
             ],
-            'subjects' => collect($subjectsData)->sortBy('id')->values()->all(),
+            'subjects'      => $subjectsData,
             'marksheet_url' => route('principal.institute.results.marksheet.print', [$schoolModel->id, $exam->id, $student->id]),
-            'message' => 'পরীক্ষার ফলাফল',
+            'message'       => 'পরীক্ষার ফলাফল',
         ]);
     }
 
