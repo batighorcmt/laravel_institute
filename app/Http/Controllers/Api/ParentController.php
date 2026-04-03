@@ -7,10 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\Homework;
 use App\Models\Attendance;
-use Mpdf\Mpdf;
-use Mpdf\Config\ConfigVariables;
-use Mpdf\Config\FontVariables;
 use App\Models\Result;
+
 
 use App\Models\StudentLeave;
 use App\Models\RoutineEntry;
@@ -585,49 +583,58 @@ class ParentController extends Controller
         </style>
         </head><body>' . $content . '</body></html>';
 
-        // mPDF font configuration
-        $defaultConfig = (new ConfigVariables())->getDefaults();
-        $defaultFontConfig = (new FontVariables())->getDefaults();
+        // Force lang=en for English font and labels as requested by user
+        $request->merge(['lang' => 'en']);
 
-        $fontDir = storage_path('fonts');
-        $tempDir = storage_path('app/mpdf_temp');
-        if (!is_dir($tempDir)) {
-            mkdir($tempDir, 0755, true);
-        }
+        $content = view('principal.results.partials._marksheet_content', [
+            'student'          => $student,
+            'result'           => $result,
+            'school'           => $school,
+            'exam'             => $exam,
+            'finalSubjects'    => $finalSubjects,
+            'principalTeacher' => $principalTeacher,
+        ])->render();
 
-        $mpdf = new Mpdf([
-            'mode' => 'utf-8',
-            'format' => 'A4',
-            'default_font' => 'kalpurush',
-            'fontDir' => array_merge($defaultConfig['fontDir'], [$fontDir]),
-            'fontdata' => array_merge($defaultFontConfig['fontdata'], [
-                'kalpurush' => [
-                    'R' => 'kalpurush_normal_6661c53feba164b2226ce34f5d636de1.ttf', // normal
-                    'B' => 'kalpurush_normal_6661c53feba164b2226ce34f5d636de1.ttf', // use same for bold simulation
-                    'useOTL' => 0xFF,
-                    'useKashida' => 75,
-                ],
-            ]),
-            'autoScriptToLang' => true,
-            'autoLangToFont' => true,
-            'allow_charset_conversion' => true,
-            'margin_top' => 10,
-            'margin_right' => 10,
-            'margin_bottom' => 10,
-            'margin_left' => 10,
-            'tempDir' => $tempDir,
-        ]);
+        // Standard English font CSS for DomPDF
+        $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">
+        <style>
+            body { font-family: "Helvetica", "Arial", sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 10mm; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #000; padding: 3px 5px; text-align: center; vertical-align: middle; font-size: 9pt; }
+            th { background-color: #f4f4f4; font-weight: bold; }
+            .text-left { text-align: left; padding-left: 5px; }
+            .sub-name { font-weight: bold; }
+            .result-status-green { color: #28a745; font-weight: bold; }
+            .result-status-red { color: #dc3545; font-weight: bold; }
+            .card-highlight { font-weight: bold; background-color: #ffff00; padding: 2px 10px; }
+            .header-section { margin-bottom: 5px; position: relative; min-height: 100px; width: 100%; }
+            .header-logo { position: absolute; left: 0; top: 0; max-height: 80px; }
+            .header-student-photo { position: absolute; right: 0; top: 0; max-height: 100px; border: 1px solid #000; }
+            .header-text { text-align: center; width: 100%; }
+            h1 { font-size: 16pt; margin: 0; color: #1a4d2e; }
+            h2 { font-size: 10pt; margin: 3px 0; font-weight: normal; }
+            .transcript-title { text-align:center; font-size:13pt; font-weight:bold; color:#800000; border:1px solid #000; padding:2px 15px; margin: 10px auto; width: fit-content; display: block; }
+            .info-grading-container { width: 100%; margin-top: 10px; }
+            .student-info { float: left; width: 65%; }
+            .grading-table { float: right; width: 30%; font-size: 8pt; }
+            .result-table { width: 100%; margin-top: 10px; clear: both; }
+            .summary-cards { margin: 10px 0; width: 100%; display: table; }
+            .card-item { display: table-cell; border: 1px dashed #444; padding: 5px; text-align: center; width: 33%; }
+            .footer-section { margin-top: 40px; }
+            .signature-box { float: left; width: 33%; text-align: center; }
+            .signature-line { border-top: 1px solid #000; margin-top: 5px; padding-top: 2px; font-weight: bold; font-size: 9pt; }
+        </style>
+        </head><body>' . $content . '</body></html>';
 
-        $mpdf->WriteHTML($html);
-
-        $pdfContent = $mpdf->Output('', 'S'); // return as string
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
+            ->setPaper('A4', 'portrait')
+            ->setOptions(['defaultFont' => 'sans-serif', 'isRemoteEnabled' => true]);
 
         $filename = 'Marksheet-' . ($student->student_id ?? $student->id) . '-' . $exam->id . '.pdf';
 
-        return response($pdfContent)
-            ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        return $pdf->download($filename);
     }
+
 
 
 
