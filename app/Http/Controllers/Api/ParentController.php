@@ -34,6 +34,21 @@ use Illuminate\Support\Facades\DB;
 class ParentController extends Controller
 {
     use \App\Traits\ResultCalculationTrait;
+
+    private function getPrincipalTeacher($school)
+    {
+        $role = \App\Models\Role::where('name', 'principal')->first();
+        if (!$role) return null;
+
+        $userSchoolRole = \App\Models\UserSchoolRole::where('school_id', $school->id)
+            ->where('role_id', $role->id)
+            ->first();
+
+        if (!$userSchoolRole) return null;
+
+        return \App\Models\Teacher::where('user_id', $userSchoolRole->user_id)->first();
+    }
+
     public function children(Request $request)
     {
         $students = $this->resolveChildren($request);
@@ -408,8 +423,9 @@ class ParentController extends Controller
                 return [
                     'id' => $e->id,
                     'name' => $e->name,
-                    'start_date' => $e->start_date?->format('d M, Y'),
-                    'end_date' => $e->end_date?->format('d M, Y'),
+                    'start_date' => $e->start_date ? \Illuminate\Support\Carbon::parse($e->start_date)->format('d M, Y') : null,
+                    'end_date' => $e->end_date ? \Illuminate\Support\Carbon::parse($e->end_date)->format('d M, Y') : null,
+
                     'status' => $e->status
                 ];
             });
@@ -498,7 +514,8 @@ class ParentController extends Controller
                 'status'      => $status,
             ],
             'subjects'      => $subjectsData,
-            'marksheet_url' => route('principal.institute.results.marksheet.print', [$schoolModel->id, $exam->id, $student->id]),
+            'marksheet_url' => route('api.parent.exams.marksheet', ['exam' => $exam->id, 'student_id' => $student->id]),
+
             'message'       => 'পরীক্ষার ফলাফল',
         ]);
     }
@@ -518,32 +535,61 @@ class ParentController extends Controller
             return response()->json(['message' => 'পরীক্ষা পাওয়া যায়নি'], 404);
         }
 
-        $schoolModel = \App\Models\School::find($student->school_id);
-        $classId     = $student->currentEnrollment?->class_id ?? $student->class_id;
+        $school  = \App\Models\School::find($student->school_id);
+        $classId = $student->currentEnrollment?->class_id ?? $student->class_id;
 
-        $calc = $this->getCalculatedResults($schoolModel, $exam->id, $classId, null, $student->id);
+        $calc = $this->getCalculatedResults($school, $exam->id, $classId, null, $student->id);
 
         if (!$calc || empty($calc['results']) || $calc['results']->isEmpty()) {
             return response()->json(['message' => 'ফলাফল পাওয়া যায়নি।'], 404);
         }
 
-        $result        = $calc['results']->first();
-        $finalSubjects = $calc['finalSubjects'];
+        $result           = $calc['results']->first();
+        $finalSubjects    = $calc['finalSubjects'];
+        $principalTeacher = $this->getPrincipalTeacher($school);
 
-        // Reuse the same principal marksheet Blade view
-        $principalTeacher = null; // No session-based principal in API context
-        $html = view('principal.results.print-marksheet', compact(
-            'schoolModel', 'exam', 'student', 'result', 'finalSubjects', 'principalTeacher'
-        ))->render();
+        // Render the partial directly (avoid @extends layout issues with dompdf)
+        $content = view('principal.results.partials._marksheet_content', [
+            'student'          => $student,
+            'result'           => $result,
+            'school'           => $school,
+            'exam'             => $exam,
+            'finalSubjects'    => $finalSubjects,
+            'principalTeacher' => $principalTeacher,
+        ])->render();
 
-        $dompdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
+        // Wrap in standalone HTML
+        $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">
+        <style>
+            body { font-family: sans-serif; font-size: 10pt; color: #000; margin: 10mm; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #000; padding: 3px 5px; text-align: center; vertical-align: middle; font-size: 9pt; }
+            th { background-color: #f4f4f4; font-weight: bold; }
+            .text-left { text-align: left; padding-left: 5px; }
+            .sub-name { font-weight: bold; }
+            .result-status-green { color: #28a745; font-weight: bold; }
+            .result-status-red { color: #dc3545; font-weight: bold; }
+            .card-highlight { font-weight: bold; background-color: #ffff00; padding: 2px 10px; }
+            .header-section { margin-bottom: 5px; min-height: 80px; }
+            .header-text { text-align: center; }
+            h1 { font-size: 16pt; margin: 0; }
+            h2 { font-size: 11pt; margin: 3px 0; font-weight: normal; }
+            .transcript-title { text-align:center; font-size:13pt; font-weight:bold; color:#800000; border:1px solid #000; display:inline-block; padding:2px 15px; }
+            .summary-cards { margin: 8px 0; }
+            .footer-section { margin-top: 20px; }
+            .signature-line { border-top: 1px solid #000; margin-top: 5px; padding-top: 2px; font-weight: bold; }
+        </style>
+        </head><body>' . $content . '</body></html>';
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
             ->setPaper('A4', 'portrait')
-            ->setOption(['defaultFont' => 'sans-serif', 'isRemoteEnabled' => true]);
+            ->setOptions(['defaultFont' => 'sans-serif', 'isRemoteEnabled' => true]);
 
-        $filename = 'Marksheet-' . $student->student_id . '-' . $exam->id . '.pdf';
+        $filename = 'Marksheet-' . ($student->student_id ?? $student->id) . '-' . $exam->id . '.pdf';
 
-        return $dompdf->download($filename);
+        return $pdf->download($filename);
     }
+
 
     public function teachers(Request $request)
     {
