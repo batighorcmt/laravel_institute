@@ -857,14 +857,17 @@ class ParentController extends Controller
             ->get()
             ->map(function (\App\Models\Notice $notice) use ($request) {
 
+                $isRead = $notice->reads()->where('user_id', $request->user()->id)->exists();
                 return [
                     'id' => $notice->id,
                     'title' => $notice->title,
                     'body' => $notice->body,
                     'author' => $notice->author->name ?? 'Admin',
                     'date' => $notice->publish_at->format('d M, Y'),
-                    'is_unread' => !$notice->reads()->where('user_id', $request->user()->id)->exists()
+                    'is_unread' => !$isRead,
+                    'is_read' => $isRead
                 ];
+
             });
 
         return response()->json(['data' => $notices]);

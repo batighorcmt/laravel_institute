@@ -229,7 +229,16 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _SectionTitle(title: 'সর্বশেষ নোটিশ ($totalUnreadটি অপঠিত)'),
+                          Row(
+                            children: [
+                              const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                              const SizedBox(width: 8),
+                              _SectionTitle(
+                                title: 'সর্বশেষ নোটিশ ($totalUnreadটি অপঠিত)',
+                                color: Colors.red[800],
+                              ),
+                            ],
+                          ),
                           TextButton(
                             onPressed: () => context.push('/notice-board'),
                             child: const Text('সব দেখুন'),
@@ -239,16 +248,21 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                       const SizedBox(height: 4),
                       ...displayNotices.map((n) => Card(
                             margin: const EdgeInsets.only(bottom: 8),
-                            elevation: 1,
+                            elevation: 2,
+                            shadowColor: Colors.red.withOpacity(0.2),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(color: Colors.red.withOpacity(0.3), width: 1)),
                             child: ListTile(
                               visualDensity: VisualDensity.compact,
-                              onTap: () => NoticeDetailsModal.show(context, ref, n),
+                              onTap: () => NoticeDetailsModal.show(context, ref, n, onRead: () {
+                                ref.invalidate(parentNoticesProvider);
+                              }),
+
                               leading: CircleAvatar(
                                 radius: 18,
-                                backgroundColor: cs.primary.withOpacity(0.1),
-                                child: Icon(Icons.campaign, color: cs.primary, size: 20),
+                                backgroundColor: Colors.red.withOpacity(0.12),
+                                child: const Icon(Icons.campaign, color: Colors.red, size: 20),
                               ),
                               title: Text(
                                 n['title'] ?? 'N/A',
@@ -260,13 +274,21 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                                 '${n['date']} | ${n['author']}',
                                 style: const TextStyle(fontSize: 11),
                               ),
-                              trailing: const Icon(Icons.arrow_forward_ios,
-                                  size: 12, color: Colors.grey),
+                              trailing: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.arrow_forward_ios,
+                                    size: 10, color: Colors.red),
+                              ),
                             ),
                           )),
                       const SizedBox(height: 16),
                     ],
                   );
+
                 },
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
@@ -855,15 +877,21 @@ class _EvaluationStatusCard extends StatelessWidget {
 
 class _SectionTitle extends StatelessWidget {
   final String title;
-  const _SectionTitle({required this.title});
+  final Color? color;
+  const _SectionTitle({required this.title, this.color});
   @override
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+      style: TextStyle(
+        fontSize: 17, 
+        fontWeight: FontWeight.bold,
+        color: color,
+      ),
     );
   }
 }
+
 
 class _QuickAccessChip extends StatelessWidget {
   final String label;
