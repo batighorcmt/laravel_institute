@@ -448,25 +448,33 @@ class ParentController extends Controller
         $finalSubjects = $calc['finalSubjects'] ?? collect();
 
         // Build subjects list from precomputed subject_results on the result object
+        // Preserve the order from subject_results (which mirrors the web marksheet order)
         $subjectsData = [];
         foreach ($result->subject_results as $key => $sr) {
             $fSub = $finalSubjects->get($key);
-            // Skip display_only (individual parts of merged subjects)
-            if (!empty($sr['display_only'])) continue;
+
+            $creativeFullMark  = $fSub['creative_full_mark']  ?? 0;
+            $mcqFullMark       = $fSub['mcq_full_mark']       ?? 0;
+            $practicalFullMark = $fSub['practical_full_mark'] ?? 0;
 
             $subjectsData[] = [
-                'key'           => $key,
-                'name'          => $sr['name'] ?? ($fSub['name'] ?? '?'),
-                'creative_marks'=> $sr['creative'] ?? 0,
-                'mcq_marks'     => $sr['mcq'] ?? 0,
-                'practical_marks'=> $sr['practical'] ?? 0,
-                'total_marks'   => $sr['total'] ?? 0,
-                'full_marks'    => $sr['full_mark'] ?? ($fSub['total_full_mark'] ?? 0),
-                'letter_grade'  => $sr['grade'] ?? 'F',
-                'grade_point'   => $sr['gpa'] ?? 0,
-                'is_optional'   => $sr['is_optional'] ?? false,
-                'is_absent'     => $sr['is_absent'] ?? false,
-                'is_failed'     => ($sr['grade'] ?? 'F') === 'F',
+                'key'                 => $key,
+                'name'                => $sr['name']     ?? ($fSub['name'] ?? '?'),
+                'type'                => !empty($sr['display_only'])      ? 'display_only'
+                                       : (($fSub['type'] ?? '') === 'combined' ? 'combined'    : 'single'),
+                'creative_marks'      => $sr['creative']  ?? 0,
+                'mcq_marks'           => $sr['mcq']       ?? 0,
+                'practical_marks'     => $sr['practical'] ?? 0,
+                'total_marks'         => $sr['total']     ?? 0,
+                'creative_full_mark'  => $creativeFullMark,
+                'mcq_full_mark'       => $mcqFullMark,
+                'practical_full_mark' => $practicalFullMark,
+                'full_marks'          => $sr['full_mark'] ?? ($fSub['total_full_mark'] ?? 0),
+                'letter_grade'        => $sr['grade']     ?? 'F',
+                'grade_point'         => $sr['gpa']       ?? 0,
+                'is_optional'         => $sr['is_optional'] ?? false,
+                'is_absent'           => $sr['is_absent']  ?? false,
+                'is_failed'           => ($sr['grade'] ?? 'F') === 'F',
             ];
         }
 
