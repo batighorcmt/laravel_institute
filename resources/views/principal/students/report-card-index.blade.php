@@ -30,6 +30,14 @@
                     <option value="">সকল শিক্ষার্থী</option>
                 </select>
             </div>
+            <div class="col-md-3 mb-2">
+                <label class="small">তারিখ হতে (ঐচ্ছিক)</label>
+                <input type="date" id="start_date" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-3 mb-2">
+                <label class="small">তারিখ পর্যন্ত (ঐচ্ছিক)</label>
+                <input type="date" id="end_date" class="form-control form-control-sm">
+            </div>
         </div>
 
         <div class="mb-3">
@@ -153,17 +161,26 @@
                     // determine whether to show section column
                     const showSection = !Boolean($section.val());
                     let html = '<div class="table-responsive"><table class="table table-sm table-striped"><thead><tr><th>#</th><th>ছবি</th><th>নাম</th>' + (showSection?'<th>শাখা</th>':'') + '<th>রোল নং</th><th></th></tr></thead><tbody>';
+                    const startDate = document.getElementById('start_date').value;
+                    const endDate = document.getElementById('end_date').value;
+                    let urlParams = '';
+                    if (startDate && endDate) {
+                        urlParams = '?start_date=' + encodeURIComponent(startDate) + '&end_date=' + encodeURIComponent(endDate);
+                    }
+
                     rows.forEach((r, i)=>{
                         const idx = i+1;
                         const photo = r.photo_url || '{{ asset('images/default-avatar.svg') }}';
                         const sectionHtml = showSection ? ('<td>' + (r.section_name_bn||r.section_name||'-') + '</td>') : '';
+                        const showUrl = showTemplate.replace('__STUDENT__', r.record_id) + urlParams;
+
                         html += '<tr>'+
                             '<td>' + idx + '</td>'+
                             '<td><img src="' + photo + '" style="width:40px;height:40px;object-fit:cover;border-radius:50%;"/></td>'+
                             '<td>' + (r.name||'') + '<br><small class="text-muted">' + (r.student_id||'') + '</small></td>'+
                             sectionHtml +
                             '<td>' + (r.roll_no || '-') + '</td>'+
-                            '<td><a class="btn btn-sm btn-primary" target="_blank" href="' + showTemplate.replace('__STUDENT__', r.record_id) + '">Open</a></td>'+
+                            '<td><a class="btn btn-sm btn-primary" target="_blank" href="' + showUrl + '">Open</a></td>'+
                             '</tr>';
                     });
                     html += '</tbody></table></div>';

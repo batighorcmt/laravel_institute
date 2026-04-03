@@ -11,27 +11,8 @@
                 <img src="{{ $student->photo_url }}" alt="{{ $student->full_name }}" id="student-avatar">
             </div>
             <div class="profile-info">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h1 class="student-name">{{ $student->student_name_bn }}</h1>
-                        <h3 class="student-name-en">{{ $student->student_name_en }}</h3>
-                    </div>
-                    <div class="date-filter-wrapper no-print">
-                        <form action="{{ url()->current() }}" method="GET" class="filter-form">
-                            <div class="filter-group">
-                                <label>হাজিরা ও লেসন রেকর্ড ফিল্টার:</label>
-                                <div class="input-row">
-                                    <input type="date" name="start_date" value="{{ $startDate ? $startDate->toDateString() : '' }}" class="filter-input">
-                                    <span class="to-text">থেকে</span>
-                                    <input type="date" name="end_date" value="{{ $endDate ? $endDate->toDateString() : '' }}" class="filter-input">
-                                    <button type="submit" class="btn-filter">
-                                        <i class="fas fa-filter"></i> ফিল্টার
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <h1 class="student-name">{{ $student->student_name_bn }}</h1>
+                <h3 class="student-name-en">{{ $student->student_name_en }}</h3>
                 <div class="badge-row">
                     <span class="info-badge">আইডি: {{ $student->student_id }}</span>
                     <span class="info-badge success">রোল: {{ $student->currentEnrollment->roll_no ?? 'N/A' }}</span>
@@ -629,70 +610,6 @@
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(79, 70, 229, 0.4);
         color: #fff;
-    }
-
-    /* Date Filter Styles */
-    .date-filter-wrapper {
-        background: #fdfdfd;
-        padding: 0.75rem 1rem;
-        border-radius: 12px;
-        border: 1px solid #edf2f7;
-    }
-
-    .filter-group label {
-        display: block;
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #718096;
-        margin-bottom: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .input-row {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .filter-input {
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 0.4rem 0.6rem;
-        font-size: 0.9rem;
-        color: #4a5568;
-        outline: none;
-        transition: border-color 0.2s;
-    }
-
-    .filter-input:focus {
-        border-color: var(--primary);
-    }
-
-    .to-text {
-        font-size: 0.85rem;
-        color: #a0aec0;
-        font-weight: 500;
-    }
-
-    .btn-filter {
-        background: var(--primary);
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        padding: 0.4rem 1rem;
-        font-weight: 600;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: transform 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
-    }
-
-    .btn-filter:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px var(--primary-soft);
     }
 
     .badge-success-soft { background: var(--success-soft); color: var(--success); }
