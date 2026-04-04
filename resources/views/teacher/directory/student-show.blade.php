@@ -7,12 +7,13 @@
   <div class="container-fluid">
     <div class="row mb-2">
       <div class="col-sm-6"><h1 class="m-0">শিক্ষার্থীর প্রোফাইল</h1></div>
-      <div class="col-sm-6">
-        <ol class="breadcrumb float-sm-right">
-          <li class="breadcrumb-item"><a href="{{ route('teacher.dashboard') }}">Dashboard</a></li>
-          <li class="breadcrumb-item"><a href="{{ route('teacher.institute.directory.students', $school) }}">Students</a></li>
-          <li class="breadcrumb-item active">Profile</li>
-        </ol>
+      <div class="col-sm-6 text-right">
+        <form action="{{ route('teacher.institute.directory.students.reset-password', [$school, $student]) }}" method="POST" onsubmit="return confirm('পাসওয়ার্ড রিসেট করতে চান? ডিফল্ট পাসওয়ার্ড হবে 123456')">
+          @csrf
+          <button type="submit" class="btn btn-warning btn-sm">
+            <i class="fas fa-key mr-1"></i> পাসওয়ার্ড পরিবর্তন
+          </button>
+        </form>
       </div>
     </div>
   </div>

@@ -640,6 +640,21 @@ class StudentController extends Controller
         return back()->with('success', $student->status === 'active' ? 'শিক্ষার্থী সক্রিয় করা হয়েছে' : 'শিক্ষার্থী নিষ্ক্রিয় করা হয়েছে');
     }
 
+    public function resetPassword(School $school, Student $student)
+    {
+        $this->authorizePrincipal($school);
+        abort_unless($student->school_id === $school->id, 404);
+
+        if ($student->user) {
+            $student->user->update([
+                'password' => Hash::make('123456')
+            ]);
+            return back()->with('success', 'পাসওয়ার্ড সফলভাবে রিসেট হয়েছে। নতুন পাসওয়ার্ড: 123456');
+        }
+
+        return back()->with('error', 'শিক্ষার্থীর সাথে কোনো ইউজার অ্যাকাউন্ট যুক্ত নেই।');
+    }
+
     /**
      * Show bulk import form (CSV)
      */

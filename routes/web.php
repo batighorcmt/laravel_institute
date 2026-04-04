@@ -25,6 +25,7 @@ use App\Http\Controllers\Principal\RoutineController as PrincipalRoutineControll
 use App\Http\Controllers\Principal\TeacherController as PrincipalTeacherController;
 use App\Http\Controllers\Principal\AdmissionController as PrincipalAdmissionController;
 use App\Http\Controllers\Principal\PaymentSettingsController as PrincipalPaymentSettingsController;
+use App\Http\Controllers\Principal\StudentController as PrincipalStudentController;
 
 // Public routes
 Route::get('/', function () {
@@ -534,28 +535,26 @@ Route::middleware(['auth', 'active_school'])->group(function () {
 
                             // Bulk student import routes should be defined before the resource route
                             // to avoid the 'bulk' segment being interpreted as a student ID.
-                            Route::get('students/bulk', [\App\Http\Controllers\Principal\StudentController::class , 'bulkForm'])->name('students.bulk');
-                            Route::post('students/bulk', [\App\Http\Controllers\Principal\StudentController::class , 'bulkImport'])->name('students.bulk.import');
-                            Route::get('students/bulk/template', [\App\Http\Controllers\Principal\StudentController::class , 'bulkTemplate'])->name('students.bulk.template');
-                            Route::post('students/bulk/queue', [\App\Http\Controllers\Principal\StudentController::class , 'bulkEnqueue'])->name('students.bulk.queue');
-                            Route::get('students/bulk/status/{id}', [\App\Http\Controllers\Principal\StudentController::class , 'bulkStatus'])->name('students.bulk.status');
-                            Route::get('students/bulk/report/{id}', [\App\Http\Controllers\Principal\StudentController::class , 'bulkReport'])->name('students.bulk.report');
-
-                            // Print controls and preview
-                            Route::get('students/print-controls', [\App\Http\Controllers\Principal\StudentController::class, 'printControls'])->name('students.print-controls');
-                            Route::get('students/print-preview', [\App\Http\Controllers\Principal\StudentController::class, 'printPreview'])->name('students.print-preview');
-                            Route::get('students/public-exam-info', [\App\Http\Controllers\Principal\StudentController::class, 'publicExamInfoPage'])->name('students.public-exam-info');
-                            Route::post('students/public-exam-info/load', [\App\Http\Controllers\Principal\StudentController::class, 'publicExamInfoLoad'])->name('students.public-exam-info.load');
-                            Route::post('students/{student}/public-exam-info/save', [\App\Http\Controllers\Principal\StudentController::class, 'publicExamInfoSave'])->name('students.public-exam-info.save');
-
-                            Route::resource('students', \App\Http\Controllers\Principal\StudentController::class);
-                            Route::patch('students/{student}/status', [\App\Http\Controllers\Principal\StudentController::class , 'toggleStatus'])->name('students.toggle-status');
-                            Route::post('students/{student}/enrollments', [\App\Http\Controllers\Principal\StudentController::class , 'addEnrollment'])->name('students.enrollments.add');
-                            Route::delete('students/{student}/enrollments/{enrollment}', [\App\Http\Controllers\Principal\StudentController::class , 'removeEnrollment'])->name('students.enrollments.remove');
-                            Route::post('students/{student}/teams', [\App\Http\Controllers\Principal\StudentController::class , 'attachTeam'])->name('students.teams.attach');
-                            Route::delete('students/{student}/teams/{team}', [\App\Http\Controllers\Principal\StudentController::class , 'detachTeam'])->name('students.teams.detach');
-                            Route::get('students/{student}/lesson-evaluation-details', [\App\Http\Controllers\Principal\StudentController::class , 'lessonEvaluationDetails'])->name('students.lesson-evaluation-details');
-                            Route::get('students/{student}/print-cv', [\App\Http\Controllers\Principal\StudentController::class , 'printCv'])->name('students.print-cv');
+                            Route::get('students/bulk', [PrincipalStudentController::class , 'bulkForm'])->name('students.bulk');
+                            Route::post('students/bulk', [PrincipalStudentController::class , 'bulkImport'])->name('students.bulk.import');
+                            Route::get('students/bulk/template', [PrincipalStudentController::class , 'bulkTemplate'])->name('students.bulk.template');
+                            Route::post('students/bulk/queue', [PrincipalStudentController::class , 'bulkEnqueue'])->name('students.bulk.queue');
+                            Route::get('students/bulk/status/{id}', [PrincipalStudentController::class , 'bulkStatus'])->name('students.bulk.status');
+                            Route::get('students/bulk/report/{id}', [PrincipalStudentController::class , 'bulkReport'])->name('students.bulk.report');
+                            Route::get('students/print-controls', [PrincipalStudentController::class, 'printControls'])->name('students.print-controls');
+                            Route::get('students/print-preview', [PrincipalStudentController::class, 'printPreview'])->name('students.print-preview');
+                            Route::get('students/public-exam-info', [PrincipalStudentController::class, 'publicExamInfoPage'])->name('students.public-exam-info');
+                            Route::post('students/public-exam-info/load', [PrincipalStudentController::class, 'publicExamInfoLoad'])->name('students.public-exam-info.load');
+                            Route::post('students/{student}/public-exam-info/save', [PrincipalStudentController::class, 'publicExamInfoSave'])->name('students.public-exam-info.save');
+                            Route::post('students/{student}/reset-password', [PrincipalStudentController::class, 'resetPassword'])->name('students.reset-password');
+                            Route::resource('students', PrincipalStudentController::class);
+                            Route::patch('students/{student}/status', [PrincipalStudentController::class , 'toggleStatus'])->name('students.toggle-status');
+                            Route::post('students/{student}/enrollments', [PrincipalStudentController::class , 'addEnrollment'])->name('students.enrollments.add');
+                            Route::delete('students/{student}/enrollments/{enrollment}', [PrincipalStudentController::class , 'removeEnrollment'])->name('students.enrollments.remove');
+                            Route::post('students/{student}/teams', [PrincipalStudentController::class , 'attachTeam'])->name('students.teams.attach');
+                            Route::delete('students/{student}/teams/{team}', [PrincipalStudentController::class , 'detachTeam'])->name('students.teams.detach');
+                            Route::get('students/{student}/lesson-evaluation-details', [PrincipalStudentController::class , 'lessonEvaluationDetails'])->name('students.lesson-evaluation-details');
+                            Route::get('students/{student}/print-cv', [PrincipalStudentController::class , 'printCv'])->name('students.print-cv');
                             Route::post('students/{student}/public-exams', [\App\Http\Controllers\Principal\StudentPublicExamController::class, 'store'])->name('students.public-exams.store');
                             Route::put('students/{student}/public-exams/{publicExam}', [\App\Http\Controllers\Principal\StudentPublicExamController::class, 'update'])->name('students.public-exams.update');
                             Route::delete('students/{student}/public-exams/{publicExam}', [\App\Http\Controllers\Principal\StudentPublicExamController::class, 'destroy'])->name('students.public-exams.destroy');
@@ -699,6 +698,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                         Route::prefix('directory')->name('directory.')->group(function () {
                             Route::get('/students', [App\Http\Controllers\Teacher\DirectoryController::class , 'students'])->name('students');
                             Route::get('/students/{student}', [App\Http\Controllers\Teacher\DirectoryController::class , 'studentShow'])->name('students.show');
+                            Route::post('/students/{student}/reset-password', [App\Http\Controllers\Teacher\DirectoryController::class , 'studentResetPassword'])->name('students.reset-password');
                             Route::get('/teachers', [App\Http\Controllers\Teacher\DirectoryController::class , 'teachers'])->name('teachers');
                         }
                         );

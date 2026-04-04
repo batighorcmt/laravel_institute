@@ -167,6 +167,12 @@
                 </p>
             </div>
             <div class="col-auto text-right">
+                <form action="{{ route('principal.institute.students.reset-password', [$school, $student]) }}" method="POST" class="d-inline" onsubmit="return confirm('পাসওয়ার্ড রিসেট করতে চান? ডিফল্ট পাসওয়ার্ড হবে 123456')">
+                    @csrf
+                    <button type="submit" class="btn btn-warning btn-sm mr-2">
+                        <i class="fas fa-key mr-1"></i> পাসওয়ার্ড পরিবর্তন
+                    </button>
+                </form>
                 <a href="{{ route('principal.institute.students.print-cv', [$school, $student]) }}" target="_blank" class="btn btn-light btn-sm mr-2">
                     <i class="fas fa-print mr-1"></i> প্রোফাইল প্রিন্ট
                 </a>
