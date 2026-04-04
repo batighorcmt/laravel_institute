@@ -235,5 +235,45 @@ class Student extends Model
     {
         return $this->morphMany(NoticeTarget::class, 'targetable');
     }
+
+    /**
+     * Ensure student has a user account for login.
+     * Links the user if found by student_id, or creates a new one.
+     */
+    public function ensureUserAccount(): User
+    {
+        if ($this->user_id && $this->user) {
+            return $this->user;
+        }
+
+        return \Illuminate\Support\Facades\DB::transaction(function () {
+            $user = User::where('username', $this->student_id)->first();
+
+            if (!$user) {
+                $user = User::create([
+                    'name' => $this->student_name_en ?: $this->student_name_bn ?: 'Student',
+                    'username' => $this->student_id,
+                    'email' => $this->student_id . '@institute.local',
+                    'password' => \Illuminate\Support\Facades\Hash::make('123456'),
+                ]);
+            }
+
+            $this->user_id = $user->id;
+            $this->save();
+
+            $parentRole = Role::where('name', Role::PARENT)->first();
+            if ($parentRole) {
+                UserSchoolRole::firstOrCreate([
+                    'user_id' => $user->id,
+                    'school_id' => $this->school_id,
+                    'role_id' => $parentRole->id,
+                ], [
+                    'status' => 'active',
+                ]);
+            }
+
+            return $user;
+        });
+    }
 }
 

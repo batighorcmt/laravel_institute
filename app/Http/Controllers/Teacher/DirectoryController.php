@@ -95,14 +95,17 @@ class DirectoryController extends Controller
         $this->authorizeTeacherForSchool($school);
         if ((int)$student->school_id !== (int)$school->id) abort(404);
 
-        if ($student->user) {
-            $student->user->update([
-                'password' => Hash::make('123456')
-            ]);
-            return back()->with('success', 'পাসওয়ার্ড সফলভাবে রিসেট হয়েছে। নতুন পাসওয়ার্ড: 123456');
+        if (!$student->student_id) {
+            return back()->with('error', 'শিক্ষার্থীর সাথে কোনো এসআইডি যুক্ত নেই।');
         }
 
-        return back()->with('error', 'শিক্ষার্থীর সাথে কোনো ইউজার অ্যাকাউন্ট যুক্ত নেই।');
+        // Use ensureUserAccount to create/link if missing.
+        $user = $student->ensureUserAccount();
+
+        $user->update([
+            'password' => Hash::make('123456')
+        ]);
+        return back()->with('success', 'পাসওয়ার্ড সফলভাবে রিসেট হয়েছে। নতুন পাসওয়ার্ড: 123456');
     }
 
     public function teachers(School $school, Request $request)
