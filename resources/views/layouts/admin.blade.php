@@ -505,6 +505,22 @@
                                     </li>
                                 </ul>
                             </li>
+                            @if(auth()->user()->hasModule('frontend_website'))
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.frontend.*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.frontend.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-globe"></i>
+                                    <p>Website <i class="right fas fa-angle-left"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.frontend.settings', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.settings') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Website Settings</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                            @endif
                         @endif
 
                     @elseif($u && ($u->isTeacher() || $u->isExamController($u->primarySchool()?->id)))

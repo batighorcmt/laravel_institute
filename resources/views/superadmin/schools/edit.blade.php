@@ -71,13 +71,17 @@
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group col-md-6">
+      <div class="form-group col-md-4">
         <label>ওয়েবসাইট</label>
         <input type="url" name="website" class="form-control" value="{{ old('website', $school->website) }}">
       </div>
-      <div class="form-group col-md-6">
+      <div class="form-group col-md-4">
         <label>লোগো পরিবর্তন (PNG/JPG)</label>
         <input type="file" name="logo" class="form-control-file">
+      </div>
+      <div class="form-group col-md-4">
+        <label>ডোমেইন (উদাঃ school.batighorbd.com) *</label>
+        <input type="text" name="domain" class="form-control" value="{{ old('domain', $school->domain) }}">
       </div>
     </div>
     <div class="form-row">

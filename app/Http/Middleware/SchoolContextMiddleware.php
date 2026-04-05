@@ -30,6 +30,7 @@ class SchoolContextMiddleware
                 if ($school) {
                     $request->attributes->set('current_school', $school);
                     $request->attributes->set('current_school_id', $currentSchoolId);
+                    config(['school.id' => $currentSchoolId]);
                 }
             }
             return $next($request);
@@ -48,6 +49,7 @@ class SchoolContextMiddleware
             Session::put('current_school_id', $school->id);
             $request->attributes->set('current_school', $school);
             $request->attributes->set('current_school_id', $school->id);
+            config(['school.id' => $school->id]);
         } else {
             // If user has multiple schools, check session for current selection
             $currentSchoolId = Session::get('current_school_id');
@@ -55,6 +57,7 @@ class SchoolContextMiddleware
                 $school = $userSchools->where('id', $currentSchoolId)->first();
                 $request->attributes->set('current_school', $school);
                 $request->attributes->set('current_school_id', $currentSchoolId);
+                config(['school.id' => $currentSchoolId]);
             } else {
                 // Redirect to school selection page
                 return redirect()->route('select.school');

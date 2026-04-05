@@ -44,8 +44,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
+use App\Traits\BelongsToSchool;
+
 class Student extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
         'school_id', 'user_id', 'class_id', 'optional_subject_id', 'admission_id', 'student_id', 'student_name_en','student_name_bn',
         'date_of_birth', 'gender', 'religion', 'father_name', 'mother_name','father_name_bn','mother_name_bn', 'guardian_phone',
@@ -65,10 +69,12 @@ class Student extends Model
     protected $appends = ['roll'];
 
     // Relationships
+    /* REMOVED: Managed by BelongsToSchool trait
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
+    */
 
     public function user(): BelongsTo
     {

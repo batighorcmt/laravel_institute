@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use App\Traits\BelongsToSchool;
+
 class Teacher extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
         'user_id',
         'school_id',
@@ -45,10 +49,12 @@ class Teacher extends Model
         return $this->belongsTo(User::class);
     }
 
+    /* Managed by BelongsToSchool trait
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
+    */
 
     public function teacherAttendances(): HasMany
     {

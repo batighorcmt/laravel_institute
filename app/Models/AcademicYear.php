@@ -5,8 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+use App\Traits\BelongsToSchool;
+
 class AcademicYear extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = ['school_id','name','name_bn','start_date','end_date','is_current'];
 
     protected $casts = [

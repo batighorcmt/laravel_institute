@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Ensure timezone is always set correctly for live server
         $middleware->append(\App\Http\Middleware\SetTimezone::class);
         $middleware->web(append: [
+            \App\Http\Middleware\IdentifySchool::class,
             \App\Http\Middleware\EnsurePdfDownload::class,
         ]);
 

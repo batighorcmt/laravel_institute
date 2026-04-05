@@ -28,6 +28,7 @@ class SchoolController extends Controller
                   ->orWhere('code','like',"%$search%")
                   ->orWhere('phone','like',"%$search%")
                   ->orWhere('email','like',"%$search%")
+                  ->orWhere('domain','like',"%$search%")
                 ;
             });
         }
@@ -67,6 +68,7 @@ class SchoolController extends Controller
             'mobile' => ['nullable','string','max:50'],
             'email' => ['nullable','email','max:255'],
             'website' => ['nullable','url','max:255'],
+            'domain' => ['nullable','string','max:255','unique:schools,domain'],
             'description' => ['nullable','string'],
             'status' => ['required', Rule::in(['active','inactive'])],
             'logo' => ['nullable','image','mimes:png,jpg,jpeg,webp','max:2048'],
@@ -198,6 +200,7 @@ class SchoolController extends Controller
             'mobile' => ['nullable','string','max:50'],
             'email' => ['nullable','email','max:255'],
             'website' => ['nullable','url','max:255'],
+            'domain' => ['nullable','string','max:255', Rule::unique('schools','domain')->ignore($school->id)],
             'description' => ['nullable','string'],
             'status' => ['required', Rule::in(['active','inactive'])],
             'logo' => ['nullable','image','mimes:png,jpg,jpeg,webp','max:2048'],

@@ -7,8 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+use App\Traits\BelongsToSchool;
+
 class SchoolClass extends Model
 {
+    use BelongsToSchool;
+
     protected $table = 'classes';
     
     protected $fillable = [
@@ -22,10 +26,12 @@ class SchoolClass extends Model
     ];
 
     // Relationships
+    /* Managed by BelongsToSchool trait
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
+    */
 
     public function classTeacher(): BelongsTo
     {

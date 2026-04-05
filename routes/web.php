@@ -28,9 +28,7 @@ use App\Http\Controllers\Principal\PaymentSettingsController as PrincipalPayment
 use App\Http\Controllers\Principal\StudentController as PrincipalStudentController;
 
 // Public routes
-Route::get('/', function () {
-    return redirect('/login');
-});
+Route::get('/', [App\Http\Controllers\FrontendWebController::class, 'index'])->name('frontend.index');
 
 // Public admission flow
 Route::prefix('admission/{schoolCode}')->group(function () {
@@ -621,6 +619,11 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::delete('/settings/templates/{template}', [\App\Http\Controllers\Principal\Documents\SettingsController::class , 'destroyTemplate'])->name('settings.templates.destroy');
                         }
                         );
+
+                        // Frontend Website Settings
+                        Route::prefix('frontend')->name('frontend.')->middleware('module:frontend_website')->group(function () {
+                            Route::get('/settings', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'index'])->name('settings');
+                        });
                     }
                     );
                 }

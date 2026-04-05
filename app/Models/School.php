@@ -23,7 +23,7 @@ class School extends Model
     protected $fillable = [
         'name', 'name_bn', 'code', 'eiin', 'mpo_code', 'address', 'address_bn', 
         'short_address_bn', 'short_address_en', 'founding_year', 'school_code', 
-        'phone', 'mobile', 'email', 'website', 
+        'phone', 'mobile', 'email', 'website', 'domain',
         'description', 'logo', 'status', 'admissions_enabled',
         'admission_academic_year_id', 'fine_enabled'
     ];
@@ -95,6 +95,14 @@ class School extends Model
         return $this->belongsToMany(Module::class, 'school_modules')
             ->withPivot('is_enabled')
             ->withTimestamps();
+    }
+
+    public function hasModule(string $slug): bool
+    {
+        return $this->modules()
+            ->where('slug', $slug)
+            ->where('school_modules.is_enabled', true)
+            ->exists();
     }
 
     // Scopes

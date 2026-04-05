@@ -78,6 +78,11 @@ class ModuleSeeder extends Seeder
                 'slug' => 'documents',
                 'description' => 'Generate certificates and testimonials.',
             ],
+            [
+                'name' => 'Frontend Website',
+                'slug' => 'frontend_website',
+                'description' => 'School public website frontend.',
+            ],
         ];
 
         foreach ($modules as $moduleData) {

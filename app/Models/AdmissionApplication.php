@@ -38,8 +38,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $admission_roll_no
  * @property \Carbon\CarbonInterface|null $exam_datetime
  */
+use App\Traits\BelongsToSchool;
+
 class AdmissionApplication extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
         'school_id','academic_year_id','app_id','applicant_name','phone','class_name','data','status',
         'name_en','name_bn','father_name_en','father_name_bn','mother_name_en','mother_name_bn',

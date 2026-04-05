@@ -5,14 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+use App\Traits\BelongsToSchool;
+
 class Section extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = ['school_id','class_id','name','bangla_name','class_teacher_id','class_teacher_name','status'];
 
+    /* Managed by BelongsToSchool trait
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
+    */
 
     public function schoolClass(): BelongsTo
     {
