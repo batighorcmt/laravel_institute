@@ -125,10 +125,17 @@
         </div>
         <div class="overflow-hidden relative w-full flex items-center">
           <div class="whitespace-nowrap animate-marquee flex gap-12 font-semibold">
-            <a href="#" class="text-indigo-100 hover:text-yellow-400 transition-colors inline-block hover:scale-105 transform"><i class="fas fa-bullseye text-pink-400 mr-2"></i> অনলাইন ভর্তি কার্যক্রম শুরু হয়েছে</a>
-            <a href="#" class="text-indigo-100 hover:text-yellow-400 transition-colors inline-block hover:scale-105 transform"><i class="fas fa-bullseye text-pink-400 mr-2"></i> আগামী মাসের ৫ তারিখ অভিভাবক মিটিং অনুষ্ঠিত হবে</a>
-            <a href="#" class="text-indigo-100 hover:text-yellow-400 transition-colors inline-block hover:scale-105 transform"><i class="fas fa-bullseye text-pink-400 mr-2"></i> ৬ষ্ঠ শ্রেণির ভর্তি ফরম বিতরণ চলছে</a>
-            <a href="#" class="text-indigo-100 hover:text-yellow-400 transition-colors inline-block hover:scale-105 transform"><i class="fas fa-bullseye text-pink-400 mr-2"></i> বার্ষিক ক্রীড়া প্রতিযোগিতা আগামী ২০ তারিখে</a>
+            <template v-if="settings.marquee_text">
+              <a href="#" class="text-indigo-100 hover:text-yellow-400 transition-colors inline-block hover:scale-105 transform">
+                <i class="fas fa-bullseye text-pink-400 mr-2"></i> {{ settings.marquee_text }}
+              </a>
+            </template>
+            <template v-else>
+              <a href="#" class="text-indigo-100 hover:text-yellow-400 transition-colors inline-block hover:scale-105 transform"><i class="fas fa-bullseye text-pink-400 mr-2"></i> অনলাইন ভর্তি কার্যক্রম শুরু হয়েছে</a>
+              <a href="#" class="text-indigo-100 hover:text-yellow-400 transition-colors inline-block hover:scale-105 transform"><i class="fas fa-bullseye text-pink-400 mr-2"></i> আগামী মাসের ৫ তারিখ অভিভাবক মিটিং অনুষ্ঠিত হবে</a>
+              <a href="#" class="text-indigo-100 hover:text-yellow-400 transition-colors inline-block hover:scale-105 transform"><i class="fas fa-bullseye text-pink-400 mr-2"></i> ৬ষ্ঠ শ্রেণির ভর্তি ফরম বিতরণ চলছে</a>
+              <a href="#" class="text-indigo-100 hover:text-yellow-400 transition-colors inline-block hover:scale-105 transform"><i class="fas fa-bullseye text-pink-400 mr-2"></i> বার্ষিক ক্রীড়া প্রতিযোগিতা আগামী ২০ তারিখে</a>
+            </template>
           </div>
         </div>
       </div>
@@ -145,7 +152,7 @@
         <!-- Animated Hero Image Slider Area -->
         <div class="lg:w-7/12 xl:w-2/3" data-aos="zoom-in-right" data-aos-duration="1000">
           <div class="bg-white rounded-[40px] overflow-hidden shadow-2xl relative h-[400px] sm:h-[480px] group ring-4 ring-white border-[6px] border-indigo-50/50">
-            <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="Campus Banner" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+            <img :src="settings.hero_image ? '/storage/' + settings.hero_image : 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'" alt="Campus Banner" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
             
             <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent mix-blend-multiply"></div>
             
@@ -155,10 +162,10 @@
                 <i class="fas fa-star text-yellow-300 mr-2 animate-spin-slow"></i> স্বাগতম জানাই
               </span>
               <h2 class="text-3xl md:text-5xl font-extrabold mb-3 leading-tight drop-shadow-2xl">
-                {{ schoolNameBn }}
+                {{ settings.hero_title || schoolNameBn }}
               </h2>
               <p class="text-gray-100 md:text-xl max-w-2xl font-medium drop-shadow-md border-l-4 border-indigo-400 pl-4 py-1">
-                 ঐতিহ্য, আধুনিকতা ও প্রযুক্তির এক অনন্য মেলবন্ধন। শ্রেষ্ঠত্বের পথে আমাদের এই পথচলা অনন্তকাল...
+                 {{ settings.hero_subtitle || 'ঐতিহ্য, আধুনিকতা ও প্রযুক্তির এক অনন্য মেলবন্ধন। শ্রেষ্ঠত্বের পথে আমাদের এই পথচলা অনন্তকাল...' }}
               </p>
             </div>
           </div>
@@ -245,7 +252,7 @@
         <div class="flex flex-col md:flex-row items-center gap-12">
           <div class="md:w-1/2 relative">
              <div class="absolute inset-0 bg-gradient-to-tr from-green-400 to-indigo-500 rounded-[40px] transform rotate-3 scale-105 opacity-20"></div>
-             <img src="https://images.unsplash.com/photo-1546410531-bea5aad13914?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="About School" class="relative rounded-[40px] shadow-2xl object-cover h-[400px] w-full border-4 border-white" />
+             <img :src="settings.about_image ? '/storage/' + settings.about_image : 'https://images.unsplash.com/photo-1546410531-bea5aad13914?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'" alt="About School" class="relative rounded-[40px] shadow-2xl object-cover h-[400px] w-full border-4 border-white" />
              <div class="absolute -bottom-6 -right-6 bg-white p-4 rounded-3xl shadow-xl flex items-center gap-4 animate-bounce-slow border border-gray-100">
                 <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-2xl">
                   <i class="fas fa-certificate"></i>
@@ -259,12 +266,85 @@
           <div class="md:w-1/2">
              <span class="text-indigo-600 font-bold uppercase tracking-widest text-sm mb-2 block">— প্রতিষ্ঠান পরিচিতি</span>
              <h2 class="text-4xl font-black text-gray-900 mb-6 leading-tight">জ্ঞানের আলোয় আলোকিত <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-indigo-600">সুন্দর ভবিষ্যৎ গড়ার প্রত্যয়</span></h2>
-             <p class="text-gray-600 leading-relaxed text-lg mb-8">
+             
+             <p v-if="settings.about_text" class="text-gray-600 leading-relaxed text-lg mb-8 whitespace-pre-line">{{ settings.about_text }}</p>
+             <p v-else class="text-gray-600 leading-relaxed text-lg mb-8">
                <strong>{{ schoolNameBn }}</strong> ঐতিহ্যবাহী ও মানসম্মত শিক্ষার এক অনন্য প্রতিষ্ঠান। {{ school.founding_year ? school.founding_year + ' সালে' : 'প্রতিষ্ঠার পর থেকে' }} এটি একটি আধুনিক প্রগতিশীল শিক্ষাপ্রতিষ্ঠান হিসেবে দীর্ঘকাল ধরে তার শ্রেষ্ঠত্ব প্রমাণ করে আসছে। আমাদের উদ্দেশ্য হলো একুশ শতকের চ্যালেঞ্জ মোকাবিলায় শিক্ষার্থীদের তথ্য প্রযুক্তি জ্ঞান, নৈতিকতা ও মানবিক মূল্যবোধে বলীয়ান করে গড়ে তোলা।
              </p>
              <a href="#mission" class="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white uppercase tracking-wider rounded-full shadow-lg shadow-indigo-500/30 overflow-hidden transform transition hover:scale-105 bg-gradient-to-r from-indigo-600 to-purple-600">
                 মিশন ও ভিশন জানুন <i class="fas fa-arrow-right ml-2"></i>
              </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Administration/Principal Section -->
+    <section v-if="settings.principal_message" id="administration" class="bg-[#fefcf5] py-24 border-y border-gray-100 overflow-hidden relative" data-aos="fade-up">
+       <!-- Decorator -->
+      <div class="absolute -left-10 top-0 w-40 h-40 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="flex flex-col md:flex-row items-center gap-16 lg:gap-24">
+          <div class="md:w-5/12 relative">
+             <div class="absolute inset-0 bg-blue-500 rounded-3xl transform rotate-3 scale-105 opacity-10"></div>
+             <div class="relative overflow-hidden rounded-3xl shadow-2xl border-[10px] border-white ring-1 ring-gray-100 aspect-[4/5] max-w-sm mx-auto">
+                <img v-if="settings.principal_image" :src="'/storage/' + settings.principal_image" alt="Principal" class="w-full h-full object-cover transition-transform duration-700 hover:scale-110" />
+                <div v-else class="w-full h-full bg-blue-100 text-blue-400 flex items-center justify-center text-8xl">
+                   <i class="fas fa-user-tie"></i>
+                </div>
+                <div class="absolute bottom-0 left-0 w-full bg-blue-600 p-4 text-white text-center">
+                   <h4 class="font-black text-lg">{{ settings.principal_name || 'অধ্যক্ষ মহোদয়' }}</h4>
+                   <p class="text-xs uppercase font-bold tracking-widest text-blue-200">অধ্যক্ষ, {{ school.name }}</p>
+                </div>
+             </div>
+          </div>
+          
+          <div class="md:w-7/12">
+             <div class="inline-flex items-center gap-3 px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm font-black mb-6 border border-blue-100">
+               <span class="relative flex h-2 w-2">
+                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                 <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+               </span>
+               অধ্যক্ষের বাণী
+             </div>
+             
+             <h2 class="text-4xl md:text-5xl font-black text-gray-900 mb-8 leading-tight">ভবিষ্যৎ প্রজন্ম গড়ার <br><span class="text-blue-600">এক অনন্য মিশন</span></h2>
+             
+             <div class="relative">
+                <i class="fas fa-quote-left text-5xl text-blue-100 absolute -top-6 -left-6"></i>
+                <p class="text-gray-600 leading-relaxed text-xl mb-8 relative z-10 whitespace-pre-line italic">
+                  {{ settings.principal_message }}
+                </p>
+             </div>
+             
+             <div class="flex items-center gap-4 mt-10">
+                <div class="w-16 h-1 bg-blue-600 rounded-full"></div>
+                <span class="font-bold text-gray-800 text-lg">{{ settings.principal_name }}</span>
+             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Committee Section -->
+    <section v-if="settings.committee_text" id="committee" class="py-24 bg-white relative overflow-hidden" data-aos="fade-up">
+      <div class="absolute -right-20 bottom-0 w-96 h-96 bg-indigo-50 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
+      
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+        <div class="inline-flex items-center px-4 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-sm font-black mb-6 border border-indigo-100 tracking-widest uppercase">
+          পরিচালনা পর্ষদ
+        </div>
+        <h2 class="text-4xl md:text-5xl font-black text-gray-900 mb-12">স্কুল ম্যানেজিং কমিটি</h2>
+        
+        <div class="max-w-4xl mx-auto">
+          <div class="bg-gradient-to-br from-white to-indigo-50 p-10 md:p-16 rounded-[40px] shadow-2xl border border-white text-left relative group">
+            <div class="absolute top-0 right-0 p-8 text-indigo-100 text-8xl opacity-30 group-hover:opacity-50 transition-opacity">
+               <i class="fas fa-users-cog"></i>
+            </div>
+            <div class="prose prose-indigo prose-xl max-w-none text-gray-700 whitespace-pre-line leading-relaxed font-medium relative z-10">
+              {{ settings.committee_text }}
+            </div>
           </div>
         </div>
       </div>
@@ -397,7 +477,7 @@
                   </div>
                   <div>
                      <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">ঠিকানা</p>
-                     <p class="text-gray-300 font-medium">{{ school.address_bn || school.address || 'ঠিকানা সেট করা হয়নি' }}</p>
+                     <p class="text-gray-300 font-medium">{{ settings.contact_address || school.address_bn || school.address || 'ঠিকানা সেট করা হয়নি' }}</p>
                   </div>
                </div>
                
@@ -408,7 +488,7 @@
                       </div>
                       <div>
                          <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">ফোন</p>
-                         <p class="text-gray-300 font-medium">{{ school.phone || 'N/A' }}</p>
+                         <p class="text-gray-300 font-medium">{{ settings.contact_phone || school.phone || 'N/A' }}</p>
                       </div>
                    </div>
                    
@@ -418,7 +498,7 @@
                       </div>
                       <div>
                          <p class="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">ইমেইল</p>
-                         <p class="text-gray-300 font-medium text-sm break-all">{{ school.email || 'N/A' }}</p>
+                         <p class="text-gray-300 font-medium text-sm break-all">{{ settings.contact_email || school.email || 'N/A' }}</p>
                       </div>
                    </div>
                </div>
@@ -438,13 +518,13 @@
           <div>
             <h5 class="text-xl font-bold text-white mb-6 uppercase tracking-wider relative inline-block after:content-[''] after:absolute after:-bottom-3 after:left-0 after:w-12 after:h-1 after:bg-purple-500 after:rounded">সোশ্যাল মিডিয়া</h5>
             <div class="flex gap-4 mb-10 mt-4">
-              <a href="#" class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-[#1877F2] hover:border-transparent hover:-translate-y-2 transition-all duration-300 text-xl shadow-lg">
+              <a v-if="settings.facebook_url" :href="settings.facebook_url" target="_blank" class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-[#1877F2] hover:border-transparent hover:-translate-y-2 transition-all duration-300 text-xl shadow-lg">
                 <i class="fab fa-facebook-f"></i>
               </a>
-              <a href="#" class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-[#FF0000] hover:border-transparent hover:-translate-y-2 transition-all duration-300 text-xl shadow-lg">
+              <a v-if="settings.youtube_url" :href="settings.youtube_url" target="_blank" class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-[#FF0000] hover:border-transparent hover:-translate-y-2 transition-all duration-300 text-xl shadow-lg">
                 <i class="fab fa-youtube"></i>
               </a>
-              <a href="#" class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-gradient-to-tr hover:from-orange-500 hover:via-pink-500 hover:to-purple-500 hover:border-transparent hover:-translate-y-2 transition-all duration-300 text-xl shadow-lg">
+              <a href="#" v-if="!settings.facebook_url && !settings.youtube_url" class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-gradient-to-tr hover:from-orange-500 hover:via-pink-500 hover:to-purple-500 hover:border-transparent hover:-translate-y-2 transition-all duration-300 text-xl shadow-lg">
                 <i class="fab fa-instagram"></i>
               </a>
             </div>
@@ -476,6 +556,11 @@ export default {
     school: {
       type: Object,
       required: true
+    },
+    settings: {
+      type: Object,
+      required: false,
+      default: () => ({})
     }
   },
   data() {

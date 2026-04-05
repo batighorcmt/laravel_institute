@@ -36,9 +36,13 @@ class FrontendWebController extends Controller
             return redirect('/login');
         }
 
+        // Fetch frontend settings
+        $settings = \App\Models\SchoolFrontendSetting::where('school_id', $school->id)->first();
+
         // Render the Vue application view
         return view('frontend.index', [
-            'school' => $school
+            'school' => $school,
+            'settings' => $settings
         ]);
     }
 }
