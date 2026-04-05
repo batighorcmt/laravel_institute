@@ -15,7 +15,7 @@ class IdentifySchool
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $domain = $request->getHost();
+        $domain = preg_replace('/^www\./', '', $request->getHost());
         $superAdminDomain = 'institute.batighorbd.com';
 
         // If it's the Super Admin domain, allow access to Super Admin dash.

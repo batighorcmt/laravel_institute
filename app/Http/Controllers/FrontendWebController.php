@@ -9,7 +9,7 @@ class FrontendWebController extends Controller
 {
     public function index(Request $request)
     {
-        $domain = $request->getHost();
+        $domain = preg_replace('/^www\./', '', $request->getHost());
         $superAdminDomain = 'institute.batighorbd.com';
 
         // Superadmin domain doesn't have a frontend, redirect to login
