@@ -1,0 +1,8 @@
+# Security Policy for Batighor Institute
+Contact: mailto:info@batighorbd.com
+Expires: 2027-01-01T00:00:00.000Z
+Languages: en, bn
+# Canonical: https://batighorbd.com/.well-known/security.txt
+Acknowledgement: https://batighorbd.com/security/hall-of-fame
+Policy: https://batighorbd.com/security-policy
+ Hiring: https://batighorbd.com/jobs
