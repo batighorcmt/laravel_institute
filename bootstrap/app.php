@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
-        
+
         $middleware->statefulApi();
         // Ensure timezone is always set correctly for live server
         $middleware->append(\App\Http\Middleware\SetTimezone::class);
@@ -30,6 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Route middleware aliases
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            // Backward-compatible alias seen in older deployments/routes.
+            // Prevents "Target class [auth.role] does not exist" when route cache or old code references it.
+            'auth.role' => \App\Http\Middleware\RoleMiddleware::class,
             'strict_role' => \App\Http\Middleware\StrictRoleMiddleware::class,
             'active_school' => \App\Http\Middleware\EnsureSchoolIsActive::class,
             'module' => \App\Http\Middleware\CheckModuleAccess::class,
@@ -39,7 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
             if ($request->is('api/*')) {
                 // Ignore standard HTTP exceptions (Validation, Authentication, etc.) to maintain default Laravel behavior
-                if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface || 
+                if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface ||
                     $e instanceof \Illuminate\Validation\ValidationException ||
                     $e instanceof \Illuminate\Auth\Access\AuthorizationException ||
                     $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {

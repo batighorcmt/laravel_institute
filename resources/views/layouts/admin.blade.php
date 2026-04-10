@@ -166,9 +166,11 @@
                         <i class="far fa-user"></i> {{ auth()->user()->name ?? 'User' }}
                     </a>
                     <div class="dropdown-menu dropdown-menu-right">
-                        <a href="{{ route('profile.show') }}" class="dropdown-item">
-                            <i class="fas fa-id-card mr-2"></i> Profile
-                        </a>
+                        @if(\Illuminate\Support\Facades\Route::has('profile.show'))
+                            <a href="{{ route('profile.show') }}" class="dropdown-item">
+                                <i class="fas fa-id-card mr-2"></i> Profile
+                            </a>
+                        @endif
                         <div class="dropdown-divider"></div>
                         <form method="POST" action="{{ route('logout') }}" class="px-3 py-2">
                             @csrf
