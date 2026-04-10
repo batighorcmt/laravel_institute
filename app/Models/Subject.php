@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Subject extends Model
 {
@@ -25,6 +27,25 @@ class Subject extends Model
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    /**
+     * Class mappings (via class_subjects pivot table).
+     * Used by PrincipalStudentController and SchoolMetaController for filtering subjects by class.
+     */
+    public function classMappings(): HasMany
+    {
+        return $this->hasMany(ClassSubject::class, 'subject_id');
+    }
+
+    /**
+     * Classes that this subject is mapped to.
+     */
+    public function classes(): BelongsToMany
+    {
+        return $this->belongsToMany(SchoolClass::class, 'class_subjects', 'subject_id', 'class_id')
+                    ->withPivot(['order_no', 'status', 'is_optional', 'offered_mode'])
+                    ->withTimestamps();
     }
 
     // Scopes
