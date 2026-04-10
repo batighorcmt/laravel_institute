@@ -625,6 +625,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::get('/settings', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'index'])->name('settings');
                             Route::get('/settings/data', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'getData'])->name('settings.data');
                             Route::post('/settings/data', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'updateData'])->name('settings.update');
+                            Route::post('/settings/upload', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'uploadImage'])->name('settings.upload');
                         });
                     }
                     );
