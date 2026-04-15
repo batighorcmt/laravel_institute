@@ -542,6 +542,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::get('students/print-controls', [PrincipalStudentController::class, 'printControls'])->name('students.print-controls');
                             Route::get('students/print-preview', [PrincipalStudentController::class, 'printPreview'])->name('students.print-preview');
                             Route::get('students/public-exam-info', [PrincipalStudentController::class, 'publicExamInfoPage'])->name('students.public-exam-info');
+                            Route::get('students/public-exam-info/print', [PrincipalStudentController::class, 'publicExamInfoPrint'])->name('students.public-exam-info.print');
                             Route::post('students/public-exam-info/load', [PrincipalStudentController::class, 'publicExamInfoLoad'])->name('students.public-exam-info.load');
                             Route::post('students/{student}/public-exam-info/save', [PrincipalStudentController::class, 'publicExamInfoSave'])->name('students.public-exam-info.save');
                             Route::post('students/{student}/reset-password', [PrincipalStudentController::class, 'resetPassword'])->name('students.reset-password');

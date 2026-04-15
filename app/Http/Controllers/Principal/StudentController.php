@@ -1421,4 +1421,52 @@ class StudentController extends Controller
 
         return response()->json(['success' => true, 'message' => 'তথ্য সফলভাবে সংরক্ষিত হয়েছে।']);
     }
+    /**
+     * Print Public Exam Info
+     */
+    public function publicExamInfoPrint(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+
+        $request->validate([
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'class_id'         => 'required|exists:classes,id',
+            'public_exam_name' => 'required|string',
+            'status'           => 'nullable|string',
+        ]);
+
+        $academicYearId = $request->academic_year_id;
+        $classId        = $request->class_id;
+        $publicExamName = $request->public_exam_name;
+        $status         = $request->status ?: 'active';
+
+        $students = Student::where('school_id', $school->id)
+            ->where('status', $status)
+            ->whereHas('enrollments', function($q) use ($academicYearId, $classId) {
+                $q->where('academic_year_id', $academicYearId)
+                  ->where('class_id', $classId)
+                  ->where('status', 'active');
+            })
+            ->with([
+                'enrollments' => function($q) use ($academicYearId, $classId) {
+                    $q->where('academic_year_id', $academicYearId)
+                      ->where('class_id', $classId)
+                      ->where('status', 'active');
+                },
+                'publicExams' => function($q) use ($publicExamName) {
+                    $q->where('exam_name', $publicExamName);
+                },
+            ])
+            ->get()
+            ->sortBy(function($student) {
+                $enrollment = $student->enrollments->first();
+                return $enrollment ? $enrollment->roll_no : 999999;
+            })
+            ->values();
+
+        $academicYear = AcademicYear::find($academicYearId);
+        $class = SchoolClass::find($classId);
+
+        return view('principal.institute.students.public_exam_info_print', compact('school', 'students', 'publicExamName', 'academicYear', 'class'));
+    }
 }
