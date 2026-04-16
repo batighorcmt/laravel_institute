@@ -187,6 +187,7 @@
             <tr>
                 <th style="width:28px;">SL</th>
                 <th>Photo</th>
+                <th>Student ID</th>
                 <th class="text-left" style="min-width:110px;">Student Name</th>
                 <th class="text-left" style="min-width:100px;">Father's Name</th>
                 <th class="text-left" style="min-width:100px;">Mother's Name</th>
@@ -211,6 +212,7 @@
                     <td class="photo-cell">
                         <img src="{{ $student->photo_url }}" alt="photo">
                     </td>
+                    <td>{{ $student->student_id }}</td>
                     <td class="text-left">{{ $student->student_name_en ?: $student->student_name_bn }}</td>
                     <td class="text-left">{{ $student->father_name ?: '-' }}</td>
                     <td class="text-left">{{ $student->mother_name ?: '-' }}</td>
