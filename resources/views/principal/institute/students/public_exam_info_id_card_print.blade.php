@@ -10,12 +10,12 @@
             'orientation' => 'portrait',
             'card_width' => 54, 'card_height' => 86,
             'photo_width' => 22, 'photo_height' => 26,
-            'margin_top' => 5, 'margin_bottom' => 5, 'margin_left' => 5, 'margin_right' => 5,
+            'margin_top' => 5, 'margin_bottom' => 3, 'margin_left' => 5, 'margin_right' => 5,
             'content_padding_top' => 32,
-            'name_font_size' => 11, 'name_color' => '#000000',
-            'details_font_size' => 9, 'details_color' => '#333333',
-            'row_spacing' => 2,
-            'show_principal_signature' => false,
+            'name_font_size' => 12, 'name_color' => '#d32f2f', // Red matching the image
+            'details_font_size' => 10, 'details_color' => '#000000',
+            'row_spacing' => 1.5,
+            'show_principal_signature' => true,
             'background_image' => null
         ];
     }
@@ -35,14 +35,14 @@
     .id-card-container {
         display: flex;
         flex-wrap: wrap;
-        gap: 3mm;
+        gap: 4mm;
         justify-content: flex-start;
     }
     
     .id-card {
         width: {{ $s->card_width }}mm;
         height: {{ $s->card_height }}mm;
-        border: 0.5px solid #ccc;
+        border: 0.2px solid #ddd;
         position: relative;
         overflow: hidden;
         background-color: #fff;
@@ -53,13 +53,12 @@
         @endif
         box-sizing: border-box;
         page-break-inside: avoid;
-        font-family: 'Segoe UI', Arial, sans-serif;
+        font-family: 'Arial', sans-serif;
         color: #000;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
     
-    /* Content wrapper to skip the background header */
     .card-content {
         padding-top: {{ $s->content_padding_top }}mm;
         padding-left: {{ $s->margin_left }}mm;
@@ -75,26 +74,32 @@
     .photo-box {
         margin-bottom: {{ $s->row_spacing * 2 }}mm;
         flex-shrink: 0;
+        padding: 2.5px;
+        /* Gradient border simulation */
+        background: linear-gradient(45deg, #fbc02d, #f57c00, #d32f2f);
+        line-height: 0;
+        display: inline-block;
     }
     
     .photo {
         width: {{ $s->photo_width }}mm;
         height: {{ $s->photo_height }}mm;
-        border: 1px solid #444;
         object-fit: cover;
-        background: #eee;
+        background: #fff;
+        display: block;
     }
     
     .details {
         width: 100%;
-        text-align: center;
+        text-align: left;
     }
     .details .name { 
         font-size: {{ $s->name_font_size }}px; 
-        font-weight: 800; 
+        font-weight: 900; 
         margin-bottom: {{ $s->row_spacing }}mm; 
         text-transform: uppercase;
         color: {{ $s->name_color }};
+        text-align: center;
     }
     
     .id-table {
@@ -102,36 +107,62 @@
         border-collapse: collapse;
         font-size: {{ $s->details_font_size }}px;
         color: {{ $s->details_color }};
+        margin-left: 2mm;
     }
     .id-table td {
-        padding: {{ $s->row_spacing / 2 }}mm 0;
-        vertical-align: top;
+        padding: {{ $s->row_spacing / 2 }}px 0;
+        vertical-align: middle;
     }
-    .id-table .label { font-weight: 700; width: 40%; text-align: right; padding-right: 8px; }
-    .id-table .val { text-align: left; }
+    .id-table .label { font-weight: 500; width: 65px; }
+    .id-table .val { font-weight: 500; }
     
-    @if($s->show_principal_signature)
-    .footer-sign {
+    .id-footer-row {
         position: absolute;
-        bottom: 5mm;
-        left: 0;
-        right: 0;
+        bottom: 8mm; /* Adjust based on background */
+        left: {{ $s->margin_left }}mm;
+        right: {{ $s->margin_right }}mm;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+    
+    .id-no-wrap {
+        font-size: {{ $s->details_font_size + 1 }}px;
+        font-weight: 900;
+    }
+    .id-no-wrap .id-label { color: #000; }
+    .id-no-wrap .id-val { color: #d32f2f; margin-left: 5px; }
+
+    .signature-wrap {
+        text-align: center;
+        width: 25mm;
+    }
+    .sign-img {
+        max-height: 8mm;
+        max-width: 100%;
+    }
+
+    /* Black Headmaster Badge at very bottom right */
+    .headmaster-badge {
+        position: absolute;
+        bottom: 0px;
+        right: 0px;
+        background: #000;
+        color: #fff;
+        padding: 2px 10px;
+        font-size: 9px;
+        font-weight: bold;
+        clip-path: polygon(15% 0%, 100% 0%, 100% 100%, 0% 100%);
+        min-width: 25mm;
         text-align: center;
     }
-    .footer-sign span {
-        font-size: 8px;
-        font-weight: 700;
-        text-transform: uppercase;
-        border-top: 0.5px solid #333;
-        padding-top: 2px;
-    }
-    @endif
 </style>
 
 <div class="id-card-container">
     @foreach($students as $student)
     @php
-        $pe = $student->publicExams->first();
+        // Filter student's public exam records for the selected exam name
+        $pe = $student->publicExams->where('exam_name', $publicExamName)->first();
     @endphp
     <div class="id-card">
         <div class="card-content">
@@ -144,30 +175,42 @@
                 
                 <table class="id-table">
                     <tr>
-                        <td class="label">ID:</td>
-                        <td class="val">{{ $student->student_id }}</td>
+                        <td class="label">Class:</td>
+                        <td class="val">{{ $publicExamName }} - {{ $pe->exam_year ?? '-' }}</td>
                     </tr>
                     <tr>
                         <td class="label">Roll:</td>
                         <td class="val">{{ $pe->roll_no ?? '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Reg:</td>
+                        <td class="label">Reg. No:</td>
                         <td class="val">{{ $pe->reg_no ?? '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Class:</td>
-                        <td class="val">{{ $publicExamName }} - {{ $pe->exam_year ?? '-' }}</td>
+                        <td class="label">Center:</td>
+                        <td class="val">{{ $pe->center_name ?? '-' }}</td>
                     </tr>
                 </table>
             </div>
         </div>
         
-        @if($s->show_principal_signature)
-        <div class="footer-sign">
-            <span>Signature of Principal</span>
+        <div class="id-footer-row">
+            <div class="id-no-wrap">
+                <span class="id-label">ID No.</span>
+                <span class="id-label">:</span>
+                <span class="id-val">{{ $student->student_id }}</span>
+            </div>
+            
+            @if($s->show_principal_signature)
+            <div class="signature-wrap">
+                {{-- If you have a principal signature image URL, you can put it here --}}
+                {{-- <img src="{{ $school->signature_url }}" class="sign-img"> --}}
+                <div style="font-size: 8px; font-weight: bold; color: #444;">Principal</div>
+            </div>
+            @endif
         </div>
-        @endif
+
+        <div class="headmaster-badge">Headmaster</div>
     </div>
     @endforeach
 </div>
