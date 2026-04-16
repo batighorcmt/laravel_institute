@@ -12,7 +12,7 @@
             'photo_width' => 22, 'photo_height' => 26,
             'margin_top' => 5, 'margin_bottom' => 3, 'margin_left' => 5, 'margin_right' => 5,
             'content_padding_top' => 32,
-            'name_font_size' => 12, 'name_color' => '#d32f2f', // Red matching the image
+            'name_font_size' => 12, 'name_color' => '#d32f2f',
             'details_font_size' => 10, 'details_color' => '#000000',
             'row_spacing' => 1.5,
             'show_principal_signature' => true,
@@ -42,7 +42,7 @@
     .id-card {
         width: {{ $s->card_width }}mm;
         height: {{ $s->card_height }}mm;
-        border: 0.2px solid #ddd;
+        border: 0.1px solid #eee;
         position: relative;
         overflow: hidden;
         background-color: #fff;
@@ -74,8 +74,7 @@
     .photo-box {
         margin-bottom: {{ $s->row_spacing * 2 }}mm;
         flex-shrink: 0;
-        padding: 2.5px;
-        /* Gradient border simulation */
+        padding: 2px;
         background: linear-gradient(45deg, #fbc02d, #f57c00, #d32f2f);
         line-height: 0;
         display: inline-block;
@@ -107,18 +106,18 @@
         border-collapse: collapse;
         font-size: {{ $s->details_font_size }}px;
         color: {{ $s->details_color }};
-        margin-left: 2mm;
+        margin-left: 1mm;
     }
     .id-table td {
         padding: {{ $s->row_spacing / 2 }}px 0;
         vertical-align: middle;
     }
-    .id-table .label { font-weight: 500; width: 65px; }
+    .id-table .label { font-weight: 500; width: 62px; }
     .id-table .val { font-weight: 500; }
     
     .id-footer-row {
         position: absolute;
-        bottom: 8mm; /* Adjust based on background */
+        bottom: 8mm;
         left: {{ $s->margin_left }}mm;
         right: {{ $s->margin_right }}mm;
         display: flex;
@@ -127,8 +126,8 @@
     }
     
     .id-no-wrap {
-        font-size: {{ $s->details_font_size + 1 }}px;
         font-weight: 900;
+        font-size: {{ $s->details_font_size + 1 }}px;
     }
     .id-no-wrap .id-label { color: #000; }
     .id-no-wrap .id-val { color: #d32f2f; margin-left: 5px; }
@@ -137,31 +136,11 @@
         text-align: center;
         width: 25mm;
     }
-    .sign-img {
-        max-height: 8mm;
-        max-width: 100%;
-    }
-
-    /* Black Headmaster Badge at very bottom right */
-    .headmaster-badge {
-        position: absolute;
-        bottom: 0px;
-        right: 0px;
-        background: #000;
-        color: #fff;
-        padding: 2px 10px;
-        font-size: 9px;
-        font-weight: bold;
-        clip-path: polygon(15% 0%, 100% 0%, 100% 100%, 0% 100%);
-        min-width: 25mm;
-        text-align: center;
-    }
 </style>
 
 <div class="id-card-container">
     @foreach($students as $student)
     @php
-        // Filter student's public exam records for the selected exam name
         $pe = $student->publicExams->where('exam_name', $publicExamName)->first();
     @endphp
     <div class="id-card">
@@ -203,14 +182,10 @@
             
             @if($s->show_principal_signature)
             <div class="signature-wrap">
-                {{-- If you have a principal signature image URL, you can put it here --}}
-                {{-- <img src="{{ $school->signature_url }}" class="sign-img"> --}}
                 <div style="font-size: 8px; font-weight: bold; color: #444;">Principal</div>
             </div>
             @endif
         </div>
-
-        <div class="headmaster-badge">Headmaster</div>
     </div>
     @endforeach
 </div>

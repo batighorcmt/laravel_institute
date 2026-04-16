@@ -356,7 +356,7 @@
                                             <div class="name-preview font-weight-bold text-center" :style="{fontSize: idCardSettings.name_font_size+'px', color: idCardSettings.name_color, marginBottom: idCardSettings.row_spacing+'mm', fontWeight: '900'}">MD. STUDENT NAME</div>
                                             
                                             <div class="px-3">
-                                                <table style="width:100%; font-size: 10px; font-family: sans-serif; font-weight: 500;">
+                                                <table style="width:100%; font-family: sans-serif; font-weight: 500;" :style="{fontSize: idCardSettings.details_font_size+'px', color: idCardSettings.details_color}">
                                                     <tr v-for="row in [['Class','SSC-2026'],['Roll','130572'],['Reg. No','2313840315'],['Center','Gangni-476']]" :style="{height: (idCardSettings.row_spacing * 3) + 'px'}">
                                                         <td style="width: 50px;">@{{ row[0] }}:</td>
                                                         <td>@{{ row[1] }}</td>
@@ -367,17 +367,14 @@
 
                                         {{-- Bottom Left ID Row --}}
                                         <div style="position: absolute; bottom: 8mm; left: 5mm; display: flex; align-items: center; font-family: sans-serif;">
-                                            <span style="font-weight: 900; font-size: 11px;">ID No. : </span>
-                                            <span style="font-weight: 900; font-size: 11px; color: #d32f2f; margin-left: 4px;">4090438</span>
+                                            <span style="font-weight: 900;" :style="{fontSize: (idCardSettings.details_font_size + 1)+'px'}">ID No. : </span>
+                                            <span style="font-weight: 900; color: #d32f2f; margin-left: 4px;" :style="{fontSize: (idCardSettings.details_font_size + 1)+'px'}">4090438</span>
                                         </div>
 
                                         {{-- Signature Simulation --}}
                                         <div v-if="idCardSettings.show_principal_signature" style="position:absolute; bottom:8mm; right:5mm; text-align:center;">
-                                            <div style="font-size: 7px; font-weight: 900; color: #444;">Principal</div>
+                                            <div style="font-size: 8px; font-weight: 900; color: #444;">Principal</div>
                                         </div>
-
-                                        {{-- Headmaster Badge --}}
-                                        <div style="position: absolute; bottom: 0; right: 0; background: #000; color: #fff; padding: 2px 10px; font-size: 8px; font-weight: bold; clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%); min-width: 20mm; text-align: center;">Headmaster</div>
                                     </div>
                                 </div>
                                 <div style="position:absolute; top:10px; right:10px;" class="badge badge-info shadow-sm">Live Preview</div>
