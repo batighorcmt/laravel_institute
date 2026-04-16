@@ -156,11 +156,7 @@
                         <td class="val">{{ $pe->reg_no ?? '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="label">Session:</td>
-                        <td class="val">{{ $pe->session ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Exam:</td>
+                        <td class="label">Class:</td>
                         <td class="val">{{ $publicExamName }} - {{ $pe->exam_year ?? '-' }}</td>
                     </tr>
                 </table>
