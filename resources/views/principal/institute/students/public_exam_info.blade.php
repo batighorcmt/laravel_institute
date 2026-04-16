@@ -274,51 +274,107 @@
     </div>
 
     {{-- ৪. ID Card Magic Modal --}}
-    <div class="modal fade" id="idCardModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade" id="idCardModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="fas fa-id-card mr-2"></i> আইডি কার্ড জেনারেটর</h5>
+                <div class="modal-header bg-primary text-white py-2">
+                    <h5 class="modal-title font-weight-bold" style="font-size:16px;"><i class="fas fa-id-card mr-2"></i> আইডি কার্ড জেনারেটর ও কাস্টমাইজেশন</h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-4 border-right">
-                            <h6 class="font-weight-bold text-primary mb-3">১. ডিজাইন সেটিংস</h6>
-                            <div class="form-group">
-                                <label class="small font-weight-bold">ওরিয়েন্টেশন</label>
+                <div class="modal-body p-0">
+                    <div class="row no-gutters">
+                        {{-- Settings Pane --}}
+                        <div class="col-md-3 border-right bg-light" style="max-height: 80vh; overflow-y: auto; padding: 15px;">
+                            <h6 class="font-weight-bold text-primary border-bottom pb-2 mb-3"><i class="fas fa-cog mr-1"></i> ডিজাইন সেটিংস</h6>
+                            
+                            <div class="form-group mb-2">
+                                <label class="small font-weight-bold mb-1">ওরিয়েন্টেশন</label>
                                 <select v-model="idCardSettings.orientation" class="form-control form-control-sm">
                                     <option value="portrait">Portrait (লম্বালম্বি)</option>
                                     <option value="landscape">Landscape (আড়াআড়ি)</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label class="small font-weight-bold">ব্যাকগ্রাউন্ড ছবি (ঐচ্ছিক)</label>
+
+                            <div class="form-group mb-2">
+                                <label class="small font-weight-bold mb-1">ব্যাকগ্রাউন্ড ছবি (ঐচ্ছিক)</label>
                                 <div class="custom-file">
                                     <input type="file" class="custom-file-input" id="bgUpload" @change="handleBgUpload" accept="image/*">
-                                    <label class="custom-file-label custom-file-label-sm" for="bgUpload">@{{ idCardSettings.bgName || 'Choose file' }}</label>
-                                </div>
-                                <div v-if="idCardSettings.bgData" class="mt-2 text-center">
-                                    <img :src="idCardSettings.bgData" class="img-thumbnail" style="max-height: 100px;">
-                                    <button @click="idCardSettings.bgData = ''; idCardSettings.bgName = ''" class="btn btn-xs btn-danger d-block mx-auto mt-1">Remove</button>
+                                    <label class="custom-file-label custom-file-label-sm" for="bgUpload" style="font-size:11px; overflow:hidden;">@{{ idCardSettings.bgName || 'বাছাই করুন' }}</label>
                                 </div>
                             </div>
-                            <hr>
-                            <button @click="idCardListVisible = true" class="btn btn-block btn-warning font-weight-bold">
+
+                            <h6 class="small font-weight-bold text-muted mt-3 mb-2">কার্ড সাইজ ও মার্জিন (mm)</h6>
+                            <div class="row no-gutters">
+                                <div class="col-6 pr-1"><div class="form-group mb-2"><label class="x-small d-block mb-0">Width</label><input type="number" v-model.number="idCardSettings.card_width" class="form-control form-control-sm"></div></div>
+                                <div class="col-6 pl-1"><div class="form-group mb-2"><label class="x-small d-block mb-0">Height</label><input type="number" v-model.number="idCardSettings.card_height" class="form-control form-control-sm"></div></div>
+                                <div class="col-12"><div class="form-group mb-2"><label class="x-small d-block mb-0 text-primary font-weight-bold">Content Offset (Top)</label><input type="number" step="0.5" v-model.number="idCardSettings.content_padding_top" class="form-control form-control-sm" title="উপরের ডিজাইন স্কিপ করার জন্য"></div></div>
+                                <div class="col-6 pr-1"><div class="form-group mb-2"><label class="x-small d-block mb-0">Margin L</label><input type="number" v-model.number="idCardSettings.margin_left" class="form-control form-control-sm"></div></div>
+                                <div class="col-6 pl-1"><div class="form-group mb-2"><label class="x-small d-block mb-0">Margin R</label><input type="number" v-model.number="idCardSettings.margin_right" class="form-control form-control-sm"></div></div>
+                            </div>
+
+                            <h6 class="small font-weight-bold text-muted mt-2 mb-2">ফন্ট ও স্টাইল</h6>
+                            <div class="row no-gutters">
+                                <div class="col-6 pr-1"><div class="form-group mb-2"><label class="x-small d-block mb-0">Name Size</label><input type="number" v-model.number="idCardSettings.name_font_size" class="form-control form-control-sm"></div></div>
+                                <div class="col-6 pl-1"><div class="form-group mb-2"><label class="x-small d-block mb-0">Name Color</label><input type="color" v-model="idCardSettings.name_color" class="form-control form-control-sm p-0 border-0 h-auto"></div></div>
+                                <div class="col-6 pr-1"><div class="form-group mb-2"><label class="x-small d-block mb-0">Detail Size</label><input type="number" v-model.number="idCardSettings.details_font_size" class="form-control form-control-sm"></div></div>
+                                <div class="col-6 pl-1"><div class="form-group mb-2"><label class="x-small d-block mb-0">Detail Color</label><input type="color" v-model="idCardSettings.details_color" class="form-control form-control-sm p-0 border-0 h-auto"></div></div>
+                                <div class="col-6 pr-1"><div class="form-group mb-2"><label class="x-small d-block mb-0">Row Gap</label><input type="number" step="0.1" v-model.number="idCardSettings.row_spacing" class="form-control form-control-sm"></div></div>
+                            </div>
+
+                            <div class="custom-control custom-checkbox mt-2">
+                                <input type="checkbox" class="custom-control-input" id="signToggle" v-model="idCardSettings.show_principal_signature">
+                                <label class="custom-control-label small font-weight-bold" for="signToggle">Principal Signature</label>
+                            </div>
+
+                            <hr class="my-3">
+                            <button @click="saveIdCardSettings" class="btn btn-primary btn-sm btn-block" :disabled="settingsSaving">
+                                <i :class="settingsSaving ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i> সেটিংস সেভ করুন
+                            </button>
+                            <button @click="idCardListVisible = true" class="btn btn-warning btn-sm btn-block mt-2 font-weight-bold">
                                 <i class="fas fa-sync-alt mr-1"></i> জেনারেট / তালিকা দেখুন
                             </button>
                         </div>
-                        <div class="col-md-8">
-                            <h6 class="font-weight-bold text-primary mb-3">২. শিক্ষার্থী নির্বাচন করুন</h6>
-                            <div v-if="!idCardListVisible" class="text-center py-5 text-muted">
-                                <i class="fas fa-users fa-3x mb-3 opacity-50"></i>
-                                <p>বাম পাশের সেটিং সেট করে জেনারেট বাটনে ক্লিক করুন।</p>
+
+                        {{-- Preview & List Pane --}}
+                        <div class="col-md-9 bg-dark d-flex flex-column" style="height: 80vh;">
+                            {{-- Preview Area --}}
+                            <div v-if="!idCardListVisible" class="flex-grow-1 d-flex align-items-center justify-content-center p-4">
+                                <div class="preview-wrap" style="transform: scale(1.2);">
+                                    <div class="id-card-preview" :style="idCardPreviewStyle">
+                                        <div class="photo-box-preview" :style="{marginBottom: (idCardSettings.row_spacing * 2) + 'mm'}">
+                                            <div style="background:#eee; border:1px solid #444;" :style="{width: idCardSettings.photo_width+'mm', height: idCardSettings.photo_height+'mm'}"></div>
+                                        </div>
+                                        <div class="details-preview text-center w-100">
+                                            <div class="name-preview font-weight-bold" :style="{fontSize: idCardSettings.name_font_size+'px', color: idCardSettings.name_color, marginBottom: idCardSettings.row_spacing+'mm'}">MD. STUDENT NAME</div>
+                                            <div class="details-rows" :style="{fontSize: idCardSettings.details_font_size+'px', color: idCardSettings.details_color}">
+                                                <div :style="{marginBottom: idCardSettings.row_spacing+'mm'}">ID: JSS260001</div>
+                                                <div :style="{marginBottom: idCardSettings.row_spacing+'mm'}">Roll: 123456</div>
+                                                <div :style="{marginBottom: idCardSettings.row_spacing+'mm'}">Reg: 213123123</div>
+                                                <div :style="{marginBottom: idCardSettings.row_spacing+'mm'}">Exam: @{{ filters.public_exam_name }} - 2026</div>
+                                            </div>
+                                        </div>
+                                        <div v-if="idCardSettings.show_principal_signature" style="position:absolute; bottom:5mm; width:100%; text-align:center; font-size:8px; border-top:0.5px solid #333; padding-top:2px; text-transform:uppercase;">Principal Signature</div>
+                                    </div>
+                                </div>
+                                <div style="position:absolute; top:10px; right:10px;" class="badge badge-info shadow-sm">Live Preview</div>
                             </div>
-                            <div v-else>
-                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                                    <table class="table table-sm table-bordered table-striped">
+
+                            {{-- Student List Area --}}
+                            <div v-else class="flex-grow-1 bg-white p-3 d-flex flex-column" style="overflow:hidden;">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="font-weight-bold text-primary mb-0"><i class="fas fa-check-square mr-1"></i> শিক্ষার্থী নির্বাচন করুন</h6>
+                                    <div>
+                                        <span class="mr-3 font-weight-bold">নির্বাচিত: <span class="text-primary">@{{ selectedIdCards.length }}</span> জন</span>
+                                        <button @click="idCardListVisible = false" class="btn btn-secondary btn-xs"><i class="fas fa-edit"></i> ডিজাইন পরিবর্তন</button>
+                                        <button @click="printIdCards" class="btn btn-success btn-sm ml-2" :disabled="selectedIdCards.length === 0">
+                                            <i class="fas fa-print mr-1"></i> প্রিন্ট ভিউ
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="table-responsive flex-grow-1">
+                                    <table class="table table-sm table-bordered table-striped" style="font-size:13px;">
                                         <thead class="bg-light sticky-top">
                                             <tr>
                                                 <th class="text-center" style="width: 40px;">
@@ -326,27 +382,23 @@
                                                 </th>
                                                 <th>নাম ও আইডি</th>
                                                 <th class="text-center">রোল</th>
+                                                <th>পরীক্ষা</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr v-for="s in students" :key="'idm-'+s.id">
-                                                <td class="text-center">
+                                                <td class="text-center align-middle">
                                                     <input type="checkbox" :value="s.id" v-model="selectedIdCards">
                                                 </td>
                                                 <td>
                                                     <strong>@{{ s.name }}</strong>
                                                     <small class="d-block text-muted">@{{ s.student_id }}</small>
                                                 </td>
-                                                <td class="text-center">@{{ s.roll_no }}</td>
+                                                <td class="text-center align-middle">@{{ s.roll_no }}</td>
+                                                <td class="align-middle text-muted">@{{ filters.public_exam_name }}</td>
                                             </tr>
                                         </tbody>
                                     </table>
-                                </div>
-                                <div class="mt-3 text-right">
-                                    <span class="mr-3 font-weight-bold">নির্বাচিত: @{{ selectedIdCards.length }} জন</span>
-                                    <button @click="printIdCards" class="btn btn-success" :disabled="selectedIdCards.length === 0">
-                                        <i class="fas fa-print mr-1"></i> প্রিন্ট করুন
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -391,11 +443,27 @@ new Vue({
         // ID Card related
         idCardSettings: {
             orientation: 'portrait',
-            bgData: '',
-            bgName: ''
+            background_image: '',
+            bgName: '',
+            card_width: 54,
+            card_height: 86,
+            photo_width: 21,
+            photo_height: 25,
+            margin_top: 5,
+            margin_bottom: 5,
+            margin_left: 5,
+            margin_right: 5,
+            content_padding_top: 32,
+            name_font_size: 11,
+            name_color: '#000000',
+            details_font_size: 9,
+            details_color: '#333333',
+            row_spacing: 1.5,
+            show_principal_signature: false
         },
         idCardListVisible: false,
         selectedIdCards: [],
+        settingsSaving: false,
     },
     computed: {
         allSelected() {
@@ -404,6 +472,29 @@ new Vue({
         allIdSelected() {
             return this.students.length > 0 && this.selectedIdCards.length === this.students.length;
         },
+        idCardPreviewStyle() {
+            let s = this.idCardSettings;
+            return {
+                width: s.card_width + 'mm',
+                height: s.card_height + 'mm',
+                paddingTop: s.content_padding_top + 'mm',
+                paddingLeft: s.margin_left + 'mm',
+                paddingRight: s.margin_right + 'mm',
+                paddingBottom: s.margin_bottom + 'mm',
+                backgroundImage: s.background_image ? `url(${s.background_image})` : 'none',
+                backgroundSize: '100% 100%',
+                backgroundRepeat: 'no-repeat',
+                position: 'relative',
+                border: '1px solid #000',
+                backgroundColor: '#fff',
+                margin: '0 auto',
+                boxSizing: 'border-box',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center'
+            };
+        }
     },
     methods: {
         showToast(message, type) {
@@ -465,10 +556,43 @@ new Vue({
         },
 
         // ID Card Modal
-        openIdCardModal() {
-            this.selectedIdCards = [...this.selectedIds]; // Default to currently selected in main table
+        async openIdCardModal() {
+            this.selectedIdCards = [...this.selectedIds]; 
             this.idCardListVisible = false;
+            await this.loadIdCardSettings();
             $('#idCardModal').modal('show');
+        },
+
+        async loadIdCardSettings() {
+            try {
+                const res = await fetch('{{ route("principal.institute.students.public-exam-info.id-card-settings.load", $school) }}');
+                const data = await res.json();
+                if (data.settings) {
+                    // Update settings but keep defaults for mission fields
+                    Object.assign(this.idCardSettings, data.settings);
+                }
+            } catch (e) {
+                console.error('Failed to load settings', e);
+            }
+        },
+
+        async saveIdCardSettings() {
+            this.settingsSaving = true;
+            try {
+                const res = await fetch('{{ route("principal.institute.students.public-exam-info.id-card-settings.save", $school) }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken },
+                    body: JSON.stringify(this.idCardSettings)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.showToast('সেটিংস সফলভাবে সংরক্ষিত হয়েছে।', 'success');
+                }
+            } catch (e) {
+                this.showToast('সেটিংস সেভ করতে ব্যর্থ।', 'danger');
+            } finally {
+                this.settingsSaving = false;
+            }
         },
 
         handleBgUpload(e) {
@@ -477,7 +601,7 @@ new Vue({
             this.idCardSettings.bgName = file.name;
             const reader = new FileReader();
             reader.onload = (f) => {
-                this.idCardSettings.bgData = f.target.result;
+                this.idCardSettings.background_image = f.target.result;
             };
             reader.readAsDataURL(file);
         },
@@ -489,7 +613,6 @@ new Vue({
         printIdCards() {
             if (this.selectedIdCards.length === 0) return;
             
-            // We'll use a hidden form to POST the data including background (might be large)
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = '{{ route("principal.institute.students.public-exam-info.id-card-print", $school) }}';
@@ -504,14 +627,7 @@ new Vue({
             };
 
             addField('_token', this.csrfToken);
-            addField('orientation', this.idCardSettings.orientation);
             addField('student_ids', JSON.stringify(this.selectedIdCards));
-            
-            // If background is too large for POST (usually 2MB+), might be better to use session/storage
-            // But for now let's try direct POST.
-            addField('background_data', this.idCardSettings.bgData);
-            
-            // Add current filter labels for header
             addField('exam_name', this.filters.public_exam_name);
 
             document.body.appendChild(form);
@@ -635,5 +751,11 @@ new Vue({
 .toast-fade-enter, .toast-fade-leave-to { opacity: 0; transform: translateX(30px); }
 /* Highlight selected row */
 .table-active td { background: #fff8e7 !important; }
+
+.x-small { font-size: 10px; }
+.id-card-preview {
+    box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+}
 </style>
 @endpush

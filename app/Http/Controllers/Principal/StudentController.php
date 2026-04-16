@@ -31,6 +31,7 @@ use App\Models\Role;
 use App\Models\UserSchoolRole;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use App\Models\IdCardSetting;
 
 class StudentController extends Controller
 {
@@ -1527,9 +1528,10 @@ class StudentController extends Controller
         $this->authorizePrincipal($school);
 
         $studentIds = json_decode($request->input('student_ids'), true) ?: [];
-        $orientation = $request->input('orientation', 'portrait');
-        $backgroundData = $request->input('background_data');
         $publicExamName = $request->input('exam_name');
+        
+        // Load saved settings if any
+        $settings = IdCardSetting::where('school_id', $school->id)->first();
 
         if (empty($studentIds)) {
             return "No students selected.";
@@ -1545,7 +1547,28 @@ class StudentController extends Controller
             ->get();
 
         return view('principal.institute.students.public_exam_info_id_card_print', compact(
-            'school', 'students', 'orientation', 'backgroundData', 'publicExamName'
+            'school', 'students', 'settings', 'publicExamName'
         ));
+    }
+
+    public function publicExamInfoIdCardSettingsLoad(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+        $settings = IdCardSetting::where('school_id', $school->id)->first();
+        return response()->json(['settings' => $settings]);
+    }
+
+    public function publicExamInfoIdCardSettingsSave(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+        $data = $request->all();
+        $data['school_id'] = $school->id;
+        
+        $settings = IdCardSetting::updateOrCreate(
+            ['school_id' => $school->id],
+            $data
+        );
+        
+        return response()->json(['success' => true, 'settings' => $settings]);
     }
 }
