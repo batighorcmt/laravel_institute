@@ -180,6 +180,9 @@
                 <button @click="printTableView" class="btn btn-outline-info btn-sm mr-1" :disabled="students.length === 0" title="সকল শিক্ষার্থী একটি টেবিলে">
                     <i class="fas fa-table mr-1"></i> Table Print
                 </button>
+                <button @click="openIdCardModal" class="btn btn-primary btn-sm mr-1" :disabled="students.length === 0" title="আইডি কার্ড তৈরি করুন">
+                    <i class="fas fa-id-card mr-1"></i> আইডি কার্ড
+                </button>
                 <button @click="saveAll" class="btn btn-success btn-sm" :disabled="bulkSaving">
                     <i :class="bulkSaving ? 'fas fa-spinner fa-spin' : 'fas fa-save'" class="mr-1"></i>
                     @{{ bulkSaving ? 'সেভ হচ্ছে...' : 'সব সেভ করুন' }}
@@ -270,6 +273,89 @@
         <i class="fas fa-info-circle mr-1"></i> কোনো শিক্ষার্থী পাওয়া যায়নি।
     </div>
 
+    {{-- ৪. ID Card Magic Modal --}}
+    <div class="modal fade" id="idCardModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-id-card mr-2"></i> আইডি কার্ড জেনারেটর</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4 border-right">
+                            <h6 class="font-weight-bold text-primary mb-3">১. ডিজাইন সেটিংস</h6>
+                            <div class="form-group">
+                                <label class="small font-weight-bold">ওরিয়েন্টেশন</label>
+                                <select v-model="idCardSettings.orientation" class="form-control form-control-sm">
+                                    <option value="portrait">Portrait (লম্বালম্বি)</option>
+                                    <option value="landscape">Landscape (আড়াআড়ি)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="small font-weight-bold">ব্যাকগ্রাউন্ড ছবি (ঐচ্ছিক)</label>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="bgUpload" @change="handleBgUpload" accept="image/*">
+                                    <label class="custom-file-label custom-file-label-sm" for="bgUpload">@{{ idCardSettings.bgName || 'Choose file' }}</label>
+                                </div>
+                                <div v-if="idCardSettings.bgData" class="mt-2 text-center">
+                                    <img :src="idCardSettings.bgData" class="img-thumbnail" style="max-height: 100px;">
+                                    <button @click="idCardSettings.bgData = ''; idCardSettings.bgName = ''" class="btn btn-xs btn-danger d-block mx-auto mt-1">Remove</button>
+                                </div>
+                            </div>
+                            <hr>
+                            <button @click="idCardListVisible = true" class="btn btn-block btn-warning font-weight-bold">
+                                <i class="fas fa-sync-alt mr-1"></i> জেনারেট / তালিকা দেখুন
+                            </button>
+                        </div>
+                        <div class="col-md-8">
+                            <h6 class="font-weight-bold text-primary mb-3">২. শিক্ষার্থী নির্বাচন করুন</h6>
+                            <div v-if="!idCardListVisible" class="text-center py-5 text-muted">
+                                <i class="fas fa-users fa-3x mb-3 opacity-50"></i>
+                                <p>বাম পাশের সেটিং সেট করে জেনারেট বাটনে ক্লিক করুন।</p>
+                            </div>
+                            <div v-else>
+                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered table-striped">
+                                        <thead class="bg-light sticky-top">
+                                            <tr>
+                                                <th class="text-center" style="width: 40px;">
+                                                    <input type="checkbox" @change="toggleSelectAllId" :checked="allIdSelected">
+                                                </th>
+                                                <th>নাম ও আইডি</th>
+                                                <th class="text-center">রোল</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="s in students" :key="'idm-'+s.id">
+                                                <td class="text-center">
+                                                    <input type="checkbox" :value="s.id" v-model="selectedIdCards">
+                                                </td>
+                                                <td>
+                                                    <strong>@{{ s.name }}</strong>
+                                                    <small class="d-block text-muted">@{{ s.student_id }}</small>
+                                                </td>
+                                                <td class="text-center">@{{ s.roll_no }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-3 text-right">
+                                    <span class="mr-3 font-weight-bold">নির্বাচিত: @{{ selectedIdCards.length }} জন</span>
+                                    <button @click="printIdCards" class="btn btn-success" :disabled="selectedIdCards.length === 0">
+                                        <i class="fas fa-print mr-1"></i> প্রিন্ট করুন
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 </section>
 @endsection
@@ -301,10 +387,22 @@ new Vue({
         toast: { show: false, message: '', type: 'success' },
         csrfToken: document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         schoolId: {{ $school->id }},
+        
+        // ID Card related
+        idCardSettings: {
+            orientation: 'portrait',
+            bgData: '',
+            bgName: ''
+        },
+        idCardListVisible: false,
+        selectedIdCards: [],
     },
     computed: {
         allSelected() {
             return this.students.length > 0 && this.selectedIds.length === this.students.length;
+        },
+        allIdSelected() {
+            return this.students.length > 0 && this.selectedIdCards.length === this.students.length;
         },
     },
     methods: {
@@ -364,6 +462,61 @@ new Vue({
             const query = new URLSearchParams(this.filters).toString();
             const url = `{{ route("principal.institute.students.public-exam-info.print-table", $school) }}?${query}`;
             window.open(url, '_blank');
+        },
+
+        // ID Card Modal
+        openIdCardModal() {
+            this.selectedIdCards = [...this.selectedIds]; // Default to currently selected in main table
+            this.idCardListVisible = false;
+            $('#idCardModal').modal('show');
+        },
+
+        handleBgUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            this.idCardSettings.bgName = file.name;
+            const reader = new FileReader();
+            reader.onload = (f) => {
+                this.idCardSettings.bgData = f.target.result;
+            };
+            reader.readAsDataURL(file);
+        },
+
+        toggleSelectAllId(e) {
+            this.selectedIdCards = e.target.checked ? this.students.map(s => s.id) : [];
+        },
+
+        printIdCards() {
+            if (this.selectedIdCards.length === 0) return;
+            
+            // We'll use a hidden form to POST the data including background (might be large)
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("principal.institute.students.public-exam-info.id-card-print", $school) }}';
+            form.target = '_blank';
+
+            const addField = (name, value) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                form.appendChild(input);
+            };
+
+            addField('_token', this.csrfToken);
+            addField('orientation', this.idCardSettings.orientation);
+            addField('student_ids', JSON.stringify(this.selectedIdCards));
+            
+            // If background is too large for POST (usually 2MB+), might be better to use session/storage
+            // But for now let's try direct POST.
+            addField('background_data', this.idCardSettings.bgData);
+            
+            // Add current filter labels for header
+            addField('exam_name', this.filters.public_exam_name);
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
         },
 
         async loadStudents() {

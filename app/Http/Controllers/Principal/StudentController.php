@@ -1518,4 +1518,34 @@ class StudentController extends Controller
 
         return view('principal.institute.students.public_exam_info_print_table', compact('school', 'students', 'publicExamName', 'academicYear', 'class'));
     }
+
+    /**
+     * Print Public Exam Info — ID Card Format
+     */
+    public function publicExamInfoIdCardPrint(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+
+        $studentIds = json_decode($request->input('student_ids'), true) ?: [];
+        $orientation = $request->input('orientation', 'portrait');
+        $backgroundData = $request->input('background_data');
+        $publicExamName = $request->input('exam_name');
+
+        if (empty($studentIds)) {
+            return "No students selected.";
+        }
+
+        $students = Student::whereIn('id', $studentIds)
+            ->where('school_id', $school->id)
+            ->with(['publicExams' => function($q) use ($publicExamName) {
+                if ($publicExamName) $q->where('exam_name', $publicExamName);
+            }, 'enrollments' => function($q) {
+                $q->where('status', 'active')->latest();
+            }])
+            ->get();
+
+        return view('principal.institute.students.public_exam_info_id_card_print', compact(
+            'school', 'students', 'orientation', 'backgroundData', 'publicExamName'
+        ));
+    }
 }
