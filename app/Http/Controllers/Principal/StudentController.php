@@ -1509,8 +1509,9 @@ class StudentController extends Controller
             ])
             ->get()
             ->sortBy(function($student) {
-                $enrollment = $student->enrollments->first();
-                return $enrollment ? $enrollment->roll_no : 999999;
+                // Sort by Public Exam Roll Number
+                $pe = $student->publicExams->first(); 
+                return $pe ? $pe->roll_no : '9999999999';
             })
             ->values();
 
