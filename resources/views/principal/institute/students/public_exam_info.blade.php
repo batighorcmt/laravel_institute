@@ -174,8 +174,11 @@
                 <span v-if="selectedIds.length > 0" class="badge badge-warning ml-1">@{{ selectedIds.length }} নির্বাচিত</span>
             </h3>
             <div class="card-tools">
-                <button @click="printView" class="btn btn-info btn-sm mr-1" :disabled="students.length === 0">
+                <button @click="printView" class="btn btn-info btn-sm mr-1" :disabled="students.length === 0" title="প্রতি শিক্ষার্থী আলাদা পৃষ্ঠায়">
                     <i class="fas fa-print mr-1"></i> প্রিন্ট
+                </button>
+                <button @click="printTableView" class="btn btn-outline-info btn-sm mr-1" :disabled="students.length === 0" title="সকল শিক্ষার্থী একটি টেবিলে">
+                    <i class="fas fa-table mr-1"></i> Table Print
                 </button>
                 <button @click="saveAll" class="btn btn-success btn-sm" :disabled="bulkSaving">
                     <i :class="bulkSaving ? 'fas fa-spinner fa-spin' : 'fas fa-save'" class="mr-1"></i>
@@ -341,7 +344,7 @@ new Vue({
             if (this.bulk.center_name)    student.center_name    = this.bulk.center_name;
         },
 
-        // Print view
+        // Print view (individual per student)
         printView() {
             if (!this.filters.academic_year_id || !this.filters.class_id || !this.filters.public_exam_name) {
                 this.showToast('অনুগ্রহ করে শিক্ষাবর্ষ, শ্রেণি ও পাবলিক পরীক্ষার নাম নির্বাচন করুন।', 'warning');
@@ -349,6 +352,17 @@ new Vue({
             }
             const query = new URLSearchParams(this.filters).toString();
             const url = `{{ route("principal.institute.students.public-exam-info.print", $school) }}?${query}`;
+            window.open(url, '_blank');
+        },
+
+        // Print table view (all students in one table)
+        printTableView() {
+            if (!this.filters.academic_year_id || !this.filters.class_id || !this.filters.public_exam_name) {
+                this.showToast('অনুগ্রহ করে শিক্ষাবর্ষ, শ্রেণি ও পাবলিক পরীক্ষার নাম নির্বাচন করুন।', 'warning');
+                return;
+            }
+            const query = new URLSearchParams(this.filters).toString();
+            const url = `{{ route("principal.institute.students.public-exam-info.print-table", $school) }}?${query}`;
             window.open(url, '_blank');
         },
 
