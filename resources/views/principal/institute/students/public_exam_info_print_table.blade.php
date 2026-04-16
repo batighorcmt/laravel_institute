@@ -22,6 +22,13 @@
             margin: 8mm 8mm 12mm 8mm;
         }
 
+        /* Override layout's header border so it can be shown below the title instead */
+        .print-header {
+            border-bottom: none !important;
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
         /* ── Custom Header (Bangla + English) ── */
         .table-print-header {
             text-align: center;
@@ -165,7 +172,7 @@
     </style>
 
     {{-- Header --}}
-    <div class="table-print-header" style="border-bottom: none; padding-bottom: 0; margin-top: 10px;">
+    <div class="table-print-header" style="margin-top: 10px;">
         <div class="exam-title">{{ $publicExamName }} Examination Information</div>
     </div>
 
