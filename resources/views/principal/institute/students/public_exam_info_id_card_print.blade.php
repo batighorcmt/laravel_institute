@@ -2,6 +2,8 @@
 
 @section('title', 'ID Cards — ' . ($publicExamName ?? 'Exam'))
 
+@section('suppress_watermark')@endsection
+
 @section('content')
 @php
     $s = $settings;

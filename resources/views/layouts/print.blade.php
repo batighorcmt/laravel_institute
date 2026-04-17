@@ -123,7 +123,7 @@
         </div>
     @endunless
             
-    @if($logoUrl)
+    @if($logoUrl && !View::hasSection('suppress_watermark'))
         <div class="logo-overlay"><img src="{{ $logoUrl }}" alt="logo watermark"></div>
     @endif
     <div class="print-wrapper">
