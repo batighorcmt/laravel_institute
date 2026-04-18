@@ -323,9 +323,23 @@
                                 <div class="col-6 pr-1"><div class="form-group mb-2"><label class="x-small d-block mb-0">Row Gap</label><input type="number" step="0.1" v-model.number="idCardSettings.row_spacing" class="form-control form-control-sm"></div></div>
                             </div>
 
+                            <h6 class="small font-weight-bold text-muted mt-3 mb-2">প্রদর্শিত ফিল্ডসমূহ</h6>
+                            <div class="row no-gutters mb-2">
+                                <div class="col-6 mb-1 text-truncate" v-for="field in availableFields" :key="field.key" :title="field.label">
+                                    <div class="custom-control custom-checkbox custom-control-inline">
+                                        <input type="checkbox" class="custom-control-input" :id="'chk_'+field.key" :value="field.key" v-model="idCardSettings.fields">
+                                        <label class="custom-control-label" :for="'chk_'+field.key" style="font-size: 11px; cursor:pointer;">@{{ field.label }}</label>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="custom-control custom-checkbox mt-2">
                                 <input type="checkbox" class="custom-control-input" id="signToggle" v-model="idCardSettings.show_principal_signature">
                                 <label class="custom-control-label small font-weight-bold" for="signToggle">Principal Signature</label>
+                            </div>
+                            <div class="custom-control custom-checkbox mt-2">
+                                <input type="checkbox" class="custom-control-input" id="showHeaderToggle" v-model="idCardSettings.show_school_header">
+                                <label class="custom-control-label small font-weight-bold" for="showHeaderToggle">স্কুলের নাম (হেডার)</label>
                             </div>
 
                             <hr class="my-3">
@@ -343,6 +357,12 @@
                             <div v-if="!idCardListVisible" class="flex-grow-1 d-flex align-items-center justify-content-center p-4">
                                 <div class="preview-wrap" style="transform: scale(1.2);">
                                     <div class="id-card-preview" :style="idCardPreviewStyle">
+                                        {{-- School Header Simulation --}}
+                                        <div v-if="idCardSettings.show_school_header" style="width:100%; text-align:center; padding: 5px; margin-bottom: 5px; border-bottom: 1px solid #ddd; background: rgba(255,255,255,0.7);">
+                                            <div style="font-weight:900; font-size:12px; color:#222;">{{ $school->name ?? 'YOUR SCHOOL NAME' }}</div>
+                                            <div style="font-size:8px; font-weight:500;">{{ $school->address ?? 'School Address Goes Here' }}</div>
+                                        </div>
+
                                         {{-- Gradient Photo Border Simulation --}}
                                         <div class="photo-box-preview" :style="{
                                             marginBottom: (idCardSettings.row_spacing * 2) + 'mm',
@@ -357,9 +377,9 @@
                                             
                                             <div class="px-3">
                                                 <table style="width:100%; font-family: sans-serif; font-weight: 500;" :style="{fontSize: idCardSettings.details_font_size+'px', color: idCardSettings.details_color}">
-                                                    <tr v-for="row in [['Class','SSC-2026'],['Roll','130572'],['Reg. No','2313840315'],['Center','Gangni-476']]" :style="{height: (idCardSettings.row_spacing * 3) + 'px'}">
-                                                        <td style="width: 50px;">@{{ row[0] }}:</td>
-                                                        <td>@{{ row[1] }}</td>
+                                                    <tr v-for="field in idCardSettings.fields" :key="field" :style="{height: (idCardSettings.row_spacing * 3) + 'px'}">
+                                                        <td style="white-space:nowrap; padding-right:5px; width:45%;">@{{ getFieldLabel(field) }}:</td>
+                                                        <td>@{{ getFieldMockValue(field) }}</td>
                                                     </tr>
                                                 </table>
                                             </div>
@@ -460,6 +480,18 @@ new Vue({
         schoolId: {{ $school->id }},
         
         // ID Card related
+        availableFields: [
+            { key: 'class', label: 'Class/Exam' },
+            { key: 'roll', label: 'Roll No.' },
+            { key: 'reg_no', label: 'Reg. No.' },
+            { key: 'session', label: 'Session' },
+            { key: 'center', label: 'Center' },
+            { key: 'dob', label: 'Date of Birth' },
+            { key: 'blood_group', label: 'Blood Group' },
+            { key: 'father_name', label: 'Father\'s Name' },
+            { key: 'mother_name', label: 'Mother\'s Name' },
+            { key: 'mobile', label: 'Mobile No.' }
+        ],
         idCardSettings: {
             orientation: 'portrait',
             background_image: '',
@@ -478,7 +510,9 @@ new Vue({
             details_font_size: 10,
             details_color: '#000000',
             row_spacing: 1.2,
-            show_principal_signature: true
+            show_principal_signature: true,
+            fields: ['class', 'roll', 'reg_no', 'center'],
+            show_school_header: false
         },
         idCardListVisible: false,
         selectedIdCards: [],
@@ -527,6 +561,27 @@ new Vue({
 
         toggleSelectAll(e) {
             this.selectedIds = e.target.checked ? this.students.map(s => s.id) : [];
+        },
+
+        getFieldLabel(key) {
+            const field = this.availableFields.find(f => f.key === key);
+            return field ? field.label : key;
+        },
+        
+        getFieldMockValue(key) {
+            const mocks = {
+                'class': 'SSC-2026',
+                'roll': '130572',
+                'reg_no': '2313840315',
+                'session': '2024-2025',
+                'center': 'Gangni-476',
+                'dob': '12/05/2010',
+                'blood_group': 'B+',
+                'father_name': 'MD. ABDUL KARIM',
+                'mother_name': 'SAHIDA BEGUM',
+                'mobile': '01711000000'
+            };
+            return mocks[key] || '-';
         },
 
         // Apply bulk common values to ALL students
@@ -587,7 +642,12 @@ new Vue({
                 const res = await fetch('{{ route("principal.institute.students.public-exam-info.id-card-settings.load", $school) }}');
                 const data = await res.json();
                 if (data.settings) {
-                    // Update settings but keep defaults for mission fields
+                    if (!data.settings.fields) {
+                        data.settings.fields = ['class', 'roll', 'reg_no', 'center'];
+                    } else if (typeof data.settings.fields === 'string') {
+                        try { data.settings.fields = JSON.parse(data.settings.fields); } catch(e){}
+                    }
+                    // Update settings but keep defaults for missing fields
                     Object.assign(this.idCardSettings, data.settings);
                 }
             } catch (e) {
@@ -648,6 +708,7 @@ new Vue({
             addField('_token', this.csrfToken);
             addField('student_ids', JSON.stringify(this.selectedIdCards));
             addField('exam_name', this.filters.public_exam_name);
+            addField('settings', JSON.stringify(this.idCardSettings));
 
             document.body.appendChild(form);
             form.submit();

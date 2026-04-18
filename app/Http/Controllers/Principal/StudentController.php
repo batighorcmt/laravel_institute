@@ -1531,8 +1531,15 @@ class StudentController extends Controller
         $studentIds = json_decode($request->input('student_ids'), true) ?: [];
         $publicExamName = $request->input('exam_name');
         
-        // Load saved settings if any
-        $settings = IdCardSetting::where('school_id', $school->id)->first();
+        $settingsJson = $request->input('settings');
+        if ($settingsJson) {
+            $settings = json_decode($settingsJson);
+        } else {
+            // Load saved settings if any
+            $settings = IdCardSetting::where('school_id', $school->id)->where(function($q) use ($publicExamName) {
+                $q->where('public_exam_name', $publicExamName ?? 'public')->orWhereNotNull('public_exam_name');
+            })->first();
+        }
 
         if (empty($studentIds)) {
             return "No students selected.";
@@ -1555,7 +1562,9 @@ class StudentController extends Controller
     public function publicExamInfoIdCardSettingsLoad(School $school, Request $request)
     {
         $this->authorizePrincipal($school);
-        $settings = IdCardSetting::where('school_id', $school->id)->first();
+        $settings = IdCardSetting::where('school_id', $school->id)->where(function($q) use ($request) {
+            $q->where('public_exam_name', $request->public_exam_name ?? 'public')->orWhereNotNull('public_exam_name');
+        })->first();
         return response()->json(['settings' => $settings]);
     }
 
@@ -1566,10 +1575,108 @@ class StudentController extends Controller
         $data['school_id'] = $school->id;
         
         $settings = IdCardSetting::updateOrCreate(
-            ['school_id' => $school->id],
+            ['school_id' => $school->id, 'public_exam_name' => $request->public_exam_name ?? 'public'],
             $data
         );
         
         return response()->json(['success' => true, 'settings' => $settings]);
+    }
+
+    public function idCardsIndex(School $school)
+    {
+        $this->authorizePrincipal($school);
+        $academicYears = \App\Models\AcademicYear::forSchool($school->id)->orderByDesc('start_date')->get();
+        $classes = \App\Models\SchoolClass::forSchool($school->id)->ordered()->with('sections')->get()->values();
+        return view('principal.institute.students.id_card_index', compact('school', 'academicYears', 'classes'));
+    }
+
+    public function idCardsLoad(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+        
+        $query = Student::where('school_id', $school->id);
+        
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+        
+        if ($request->class_id) {
+            $classId = $request->class_id;
+            $academicYearId = $request->academic_year_id;
+            $sectionId = $request->section_id;
+            $query->whereHas('enrollments', function($q) use ($classId, $academicYearId, $sectionId) {
+                $q->where('class_id', $classId)->where('status', 'active');
+                if($academicYearId) $q->where('academic_year_id', $academicYearId);
+                if($sectionId) $q->where('section_id', $sectionId);
+            });
+        }
+    
+        $students = $query->with(['enrollments' => function($q) {
+            $q->where('status', 'active')->latest()->with('class', 'section', 'group', 'academicYear');
+        }])->get()
+        ->sortBy(function($student) {
+            $en = $student->enrollments->first();
+            return [
+                optional($en->section)->name ?? '',
+                (int)($en->roll_no ?? 999999)
+            ];
+        })->values();
+    
+        return response()->json(['students' => $students]);
+    }
+
+    public function idCardsSettingsLoad(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+        $settings = IdCardSetting::where('school_id', $school->id)->whereNull('public_exam_name')->first();
+        return response()->json(['settings' => $settings]);
+    }
+
+    public function idCardsSettingsSave(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+        $data = $request->all();
+        $data['school_id'] = $school->id;
+        $data['public_exam_name'] = null;
+        
+        $settings = IdCardSetting::updateOrCreate(
+            ['school_id' => $school->id, 'public_exam_name' => null],
+            $data
+        );
+        
+        return response()->json(['success' => true, 'settings' => $settings]);
+    }
+
+    public function idCardsPrint(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+        
+        $settingsJson = $request->input('settings');
+        if ($settingsJson) {
+            $settings = json_decode($settingsJson);
+        } else {
+            $settings = IdCardSetting::where('school_id', $school->id)->whereNull('public_exam_name')->first();
+        }
+        
+        $studentIds = $request->input('student_ids', []);
+        if (is_string($studentIds)) {
+            $studentIds = json_decode($studentIds, true) ?: [];
+        }
+        
+        $students = Student::whereIn('id', $studentIds)
+            ->where('school_id', $school->id)
+            ->with(['enrollments' => function($q) {
+                $q->where('status', 'active')->latest()->with('class', 'section', 'group', 'academicYear');
+            }])
+            ->get()
+            ->sortBy(function($student) {
+                $en = $student->enrollments->first();
+                return [
+                    optional($en->section)->name ?? '',
+                    (int)($en->roll_no ?? 999999)
+                ];
+            })->values();
+    
+        return view('principal.institute.students.id_card_print', compact('school', 'students', 'settings'));
     }
 }

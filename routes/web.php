@@ -547,6 +547,14 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::match(['GET', 'POST'], 'students/public-exam-info/id-card-print', [PrincipalStudentController::class, 'publicExamInfoIdCardPrint'])->name('students.public-exam-info.id-card-print');
                             Route::get('students/public-exam-info/id-card-settings', [PrincipalStudentController::class, 'publicExamInfoIdCardSettingsLoad'])->name('students.public-exam-info.id-card-settings.load');
                             Route::post('students/public-exam-info/id-card-settings', [PrincipalStudentController::class, 'publicExamInfoIdCardSettingsSave'])->name('students.public-exam-info.id-card-settings.save');
+                            
+                            // Regular Student ID Cards
+                            Route::get('students/id-cards', [PrincipalStudentController::class, 'idCardsIndex'])->name('students.id-cards.index');
+                            Route::post('students/id-cards/load', [PrincipalStudentController::class, 'idCardsLoad'])->name('students.id-cards.load');
+                            Route::get('students/id-cards/settings', [PrincipalStudentController::class, 'idCardsSettingsLoad'])->name('students.id-cards.settings.load');
+                            Route::post('students/id-cards/settings', [PrincipalStudentController::class, 'idCardsSettingsSave'])->name('students.id-cards.settings.save');
+                            Route::match(['GET', 'POST'], 'students/id-cards/print', [PrincipalStudentController::class, 'idCardsPrint'])->name('students.id-cards.print');
+                            
                             Route::post('students/public-exam-info/load', [PrincipalStudentController::class, 'publicExamInfoLoad'])->name('students.public-exam-info.load');
                             Route::post('students/{student}/public-exam-info/save', [PrincipalStudentController::class, 'publicExamInfoSave'])->name('students.public-exam-info.save');
                             Route::post('students/{student}/reset-password', [PrincipalStudentController::class, 'resetPassword'])->name('students.reset-password');

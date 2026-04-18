@@ -287,6 +287,7 @@
                                     <li class="nav-item"><a href="{{ route('principal.institute.students.public-exam-info', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.public-exam-info') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Add Public Exam Info</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.students.bulk', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.bulk') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Bulk student add</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.students.report-cards.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.report-cards.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Report Card</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.students.id-cards.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.students.id-cards.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>ID Card</p></a></li>
                                 </ul>
                             </li>
 

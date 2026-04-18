@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Principal;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\School;
+use Illuminate\Http\Request;
 
 class FrontendSettingsController extends Controller
 {
@@ -16,18 +16,25 @@ class FrontendSettingsController extends Controller
     public function getData(School $school)
     {
         $settings = \App\Models\SchoolFrontendSetting::firstOrCreate([
-            'school_id' => $school->id
+            'school_id' => $school->id,
         ]);
-        
+
+        // Ensure hero_images is always an array
+        if (is_string($settings->hero_images)) {
+            $settings->hero_images = json_decode($settings->hero_images, true) ?: [];
+        } elseif (is_null($settings->hero_images)) {
+            $settings->hero_images = [];
+        }
+
         return response()->json([
-            'settings' => $settings
+            'settings' => $settings,
         ]);
     }
 
     public function updateData(Request $request, School $school)
     {
         $settings = \App\Models\SchoolFrontendSetting::firstOrCreate([
-            'school_id' => $school->id
+            'school_id' => $school->id,
         ]);
 
         $data = $request->validate([
@@ -46,35 +53,78 @@ class FrontendSettingsController extends Controller
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
             'meta_keywords' => 'nullable|string|max:255',
+            'hero_images_json' => 'nullable|string', // Current list of images
         ]);
 
-        // Handle Images
+        // Handle Single Images
         if ($request->hasFile('hero_image')) {
             if ($settings->hero_image) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($settings->hero_image);
             }
-            $data['hero_image'] = $request->file('hero_image')->store('frontend/' . $school->id, 'public');
+            $data['hero_image'] = $request->file('hero_image')->store('frontend/'.$school->id, 'public');
         }
 
         if ($request->hasFile('about_image')) {
             if ($settings->about_image) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($settings->about_image);
             }
-            $data['about_image'] = $request->file('about_image')->store('frontend/' . $school->id, 'public');
+            $data['about_image'] = $request->file('about_image')->store('frontend/'.$school->id, 'public');
         }
 
         if ($request->hasFile('principal_image')) {
             if ($settings->principal_image) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($settings->principal_image);
             }
-            $data['principal_image'] = $request->file('principal_image')->store('frontend/' . $school->id, 'public');
+            $data['principal_image'] = $request->file('principal_image')->store('frontend/'.$school->id, 'public');
         }
+
+        // Handle Multiple Hero Slider Items
+        $currentItems = [];
+        if ($request->filled('hero_images_json')) {
+            $currentItems = json_decode($request->hero_images_json, true) ?: [];
+        }
+
+        if ($request->hasFile('hero_slider_files')) {
+            $metas = $request->input('hero_slider_meta', []);
+            foreach ($request->file('hero_slider_files') as $idx => $file) {
+                $path = $file->store('frontend/'.$school->id.'/slider', 'public');
+                $meta = isset($metas[$idx]) ? json_decode($metas[$idx], true) : ['title' => '', 'subtitle' => '', 'active' => true];
+                $currentItems[] = array_merge($meta, ['image' => $path]);
+            }
+        }
+        $data['hero_images'] = json_encode($currentItems);
+        unset($data['hero_images_json']);
+        unset($data['hero_slider_meta']);
 
         $settings->update($data);
 
+        $fresh = $settings->fresh();
+        if (is_string($fresh->hero_images)) {
+            $fresh->hero_images = json_decode($fresh->hero_images, true) ?: [];
+        }
+
         return response()->json([
             'message' => 'Website settings updated successfully!',
-            'settings' => $settings->fresh()
+            'settings' => $fresh,
         ]);
+    }
+
+    public function uploadImage(Request $request, School $school)
+    {
+        $request->validate([
+            'upload' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120',
+        ]);
+
+        if ($request->hasFile('upload')) {
+            $path = $request->file('upload')->store('attachments/'.$school->id, 'public');
+            $url = \Illuminate\Support\Facades\Storage::url($path);
+
+            return response()->json([
+                'url' => $url,
+                'location' => $url,
+            ]);
+        }
+
+        return response()->json(['error' => 'Upload failed'], 400);
     }
 }

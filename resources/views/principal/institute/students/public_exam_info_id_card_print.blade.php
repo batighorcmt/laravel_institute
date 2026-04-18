@@ -18,9 +18,27 @@
             'details_font_size' => 10, 'details_color' => '#000000',
             'row_spacing' => 1.5,
             'show_principal_signature' => true,
-            'background_image' => null
+            'background_image' => null,
+            'fields' => ['class', 'roll', 'reg_no', 'center'],
+            'show_school_header' => false
         ];
+    } else {
+        $s->fields = is_string($s->fields) ? json_decode($s->fields, true) : ($s->fields ?: ['class', 'roll', 'reg_no', 'center']);
+        $s->show_school_header = $s->show_school_header ?? false;
     }
+    
+    $fieldLabels = [
+        'class' => 'Class/Exam',
+        'roll' => 'Roll No.',
+        'reg_no' => 'Reg. No.',
+        'session' => 'Session',
+        'center' => 'Center',
+        'dob' => 'Date of Birth',
+        'blood_group' => 'Blood Group',
+        'father_name' => "Father's Name",
+        'mother_name' => "Mother's Name",
+        'mobile' => 'Mobile No.',
+    ];
 @endphp
 <style>
     @page {
@@ -114,8 +132,8 @@
         padding: {{ $s->row_spacing / 2 }}px 0;
         vertical-align: middle;
     }
-    .id-table .label { font-weight: 500; width: 62px; }
-    .id-table .val { font-weight: 500; }
+    .id-table .label { font-weight: 500; white-space: nowrap; padding-right: 5px; width: 45%; }
+    .id-table .val { font-weight: 500; word-break: break-all; }
     
     .id-footer-row {
         position: absolute;
@@ -144,9 +162,27 @@
     @foreach($students as $student)
     @php
         $pe = $student->publicExams->where('exam_name', $publicExamName)->first();
+        $fieldValues = [
+            'class' => $publicExamName . ' - ' . ($pe->exam_year ?? '-'),
+            'roll' => $pe->roll_no ?? '-',
+            'reg_no' => $pe->reg_no ?? '-',
+            'session' => $pe->session ?? '-',
+            'center' => $pe->center_name ?? '-',
+            'dob' => $student->date_of_birth ? $student->date_of_birth->format('d/m/Y') : '-',
+            'blood_group' => $student->blood_group ?? '-',
+            'father_name' => strtoupper($student->father_name_en ?: $student->father_name ?: '-'),
+            'mother_name' => strtoupper($student->mother_name_en ?: $student->mother_name ?: '-'),
+            'mobile' => $student->guardian_phone ?? '-'
+        ];
     @endphp
     <div class="id-card">
         <div class="card-content">
+            @if($s->show_school_header)
+            <div style="width:100%; text-align:center; padding-bottom: 2mm; margin-bottom: 2mm; border-bottom: 1px solid #ddd; z-index: 2;">
+                <div style="font-weight:900; font-size:12px; color:#222; text-transform:uppercase;">{{ $school->name ?? 'SCHOOL NAME' }}</div>
+                <div style="font-size:8px; font-weight:500; color:#333;">{{ $school->address ?? '' }}</div>
+            </div>
+            @endif
             <div class="photo-box">
                 <img src="{{ $student->photo_url }}" class="photo" alt="photo">
             </div>
@@ -155,22 +191,14 @@
                 <div class="name">{{ $student->student_name_en ?: $student->student_name_bn ?: 'STUDENT NAME' }}</div>
                 
                 <table class="id-table">
+                    @foreach($s->fields as $field)
+                    @if(isset($fieldLabels[$field]))
                     <tr>
-                        <td class="label">Class:</td>
-                        <td class="val">{{ $publicExamName }} - {{ $pe->exam_year ?? '-' }}</td>
+                        <td class="label">{{ $fieldLabels[$field] }}:</td>
+                        <td class="val">{{ $fieldValues[$field] ?? '-' }}</td>
                     </tr>
-                    <tr>
-                        <td class="label">Roll:</td>
-                        <td class="val">{{ $pe->roll_no ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Reg. No:</td>
-                        <td class="val">{{ $pe->reg_no ?? '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Center:</td>
-                        <td class="val">{{ $pe->center_name ?? '-' }}</td>
-                    </tr>
+                    @endif
+                    @endforeach
                 </table>
             </div>
         </div>

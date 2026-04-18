@@ -1,290 +1,175 @@
 <template>
-  <div class="card card-outline card-primary shadow-sm border-0 rounded-lg">
-    <div class="card-header bg-white border-bottom-0 pb-0 pt-4 flex justify-between items-center">
-      <h3 class="card-title text-xl font-semibold text-gray-800 flex items-center">
-        <i v-if="currentView !== 'list'" class="fas fa-arrow-left text-indigo-500 mr-3 cursor-pointer hover:text-indigo-700 transition" @click="currentView = 'list'"></i>
-        <i v-else class="fas fa-desktop text-indigo-500 mr-2"></i> 
-        {{ viewTitle }}
-      </h3>
-      <div v-if="currentView !== 'list'">
-         <button @click="currentView = 'list'" class="btn btn-sm btn-outline-secondary rounded-full px-3">
-           <i class="fas fa-times mr-1"></i> বাতিল
-         </button>
+  <div class="frontend-settings-wrapper min-h-[600px]">
+    
+    <!-- Top Header -->
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">উন্নত ফ্রন্টএন্ড সেটিংস</h2>
+        <p class="text-slate-500 text-sm mt-1">স্লাইডার, নোটিশ এবং প্রতিষ্ঠানের তথ্য এখান থেকে নিয়ন্ত্রণ করুন।</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <a :href="'/admission/' + schoolCode" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 transition shadow-sm font-medium text-sm">
+          <i class="fas fa-external-link-alt text-indigo-500"></i>
+          লাইভ ওয়েবসাইট
+        </a>
       </div>
     </div>
-    
-    <div class="card-body pt-3">
+
+    <div class="flex flex-col lg:flex-row gap-8 items-start">
       
-      <!-- List View -->
-      <div v-if="currentView === 'list'">
-        <div class="alert alert-info bg-indigo-50 text-indigo-800 border-indigo-200 shadow-sm mb-5">
-          <i class="fas fa-info-circle mr-2"></i> আপনার ওয়েবসাইটের বিভিন্ন পৃষ্ঠা নির্বাচন করুন এবং নিচের কার্ডগুলো থেকে কন্টেন্ট আপডেট করুন।
+      <!-- Sidebar -->
+      <aside class="w-full lg:w-80 shrink-0 lg:sticky lg:top-4">
+        <div class="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
+          <nav class="p-4 space-y-2">
+            <button v-for="section in sections" :key="section.id" @click="activeSection = section.id"
+              class="w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group text-left"
+              :class="activeSection === section.id ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 hover:bg-slate-50'">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
+                :class="activeSection === section.id ? 'bg-white/20' : 'bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600'">
+                <i :class="section.icon"></i>
+              </div>
+              <span class="block font-bold">{{ section.name }}</span>
+            </button>
+          </nav>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-grow w-full pb-20">
+        
+        <div v-show="activeSection === 'banner'" class="space-y-6">
+          <div class="section-card">
+            <div class="section-header">
+              <i class="fas fa-images text-indigo-500"></i>
+              <h3 class="font-bold text-slate-800 ml-3 text-lg">হোম স্লাইডার ম্যানেজমেন্ট</h3>
+            </div>
+            
+            <div class="section-body p-8 space-y-8">
+               <div class="bg-indigo-50/50 p-6 rounded-[32px] border border-indigo-100/50 text-center relative group cursor-pointer hover:bg-indigo-100 transition-colors">
+                  <input type="file" multiple @change="addNewSlides" class="absolute inset-0 opacity-0 cursor-pointer">
+                  <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
+                    <i class="fas fa-cloud-upload-alt text-2xl text-indigo-600"></i>
+                  </div>
+                  <h4 class="font-bold text-slate-700">নতুন স্লাইডার ছবি যোগ করুন</h4>
+                  <p class="text-xs text-slate-500 mt-1">একাধিক ছবি একসাথে আপলোড করা যাবে</p>
+               </div>
+
+               <!-- Slider Items List -->
+               <div class="space-y-6 mt-8">
+                  <h5 class="text-sm font-black text-slate-400 uppercase tracking-widest">বর্তমানে আছে ({{ sliderItems.length }})</h5>
+                  
+                  <div v-for="(item, idx) in sliderItems" :key="idx" class="bg-white border rounded-[40px] p-6 shadow-sm hover:shadow-md transition-all relative overflow-hidden group border-slate-100">
+                     <div class="flex flex-col md:flex-row gap-8">
+                        <div class="w-full md:w-64 shrink-0">
+                           <div class="aspect-video rounded-[30px] overflow-hidden shadow-inner bg-slate-100 group">
+                              <img :src="item.isNew ? item.preview : '/storage/' + item.image" class="w-full h-full object-cover">
+                           </div>
+                           <div class="mt-4 flex items-center justify-between px-2">
+                              <label class="flex items-center gap-2 cursor-pointer">
+                                 <div class="relative inline-block w-10 h-6">
+                                    <input type="checkbox" v-model="item.active" class="sr-only peer">
+                                    <div class="w-full h-full bg-slate-200 rounded-full peer-checked:bg-green-500 transition-colors"></div>
+                                    <div class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4 shadow"></div>
+                                 </div>
+                                 <span class="text-xs font-bold" :class="item.active ? 'text-green-600' : 'text-slate-400'">{{ item.active ? 'সক্রিয়' : 'বন্ধ' }}</span>
+                              </label>
+                              <button @click="removeSliderItem(idx)" class="text-rose-500 hover:text-rose-700 transition-colors text-sm font-bold flex items-center gap-1">
+                                 <i class="fas fa-trash-alt"></i> ডিলিট
+                              </button>
+                           </div>
+                        </div>
+                        
+                        <div class="flex-grow space-y-4">
+                           <div class="space-y-1">
+                              <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2">স্লাইডার টাইটেল</label>
+                              <input type="text" v-model="item.title" class="input-field-sm font-bold" placeholder="ছবির ওপরের লাল বড় লেখাটি">
+                           </div>
+                           <div class="space-y-1">
+                              <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-2">স্লাইডার সাব-টাইটেল</label>
+                              <input type="text" v-model="item.subtitle" class="input-field-sm" placeholder="টাইটেলের নিচের ছোট লেখাটি">
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <div v-if="sliderItems.length === 0" class="p-20 text-center border-2 border-dashed border-slate-100 rounded-[40px]">
+                  <i class="fas fa-folder-open text-5xl text-slate-100 mb-4 block"></i>
+                  <p class="text-slate-400 font-bold">কোনো স্লাইডার পাওয়া যায়নি। ছবি যোগ করুন।</p>
+               </div>
+            </div>
+
+            <div class="section-footer">
+               <button @click="saveSlider" class="save-btn" :disabled="saving === 'banner'">
+                  <span v-if="saving === 'banner'"><i class="fas fa-spinner fa-spin mr-2"></i> সংরক্ষন হচ্ছে...</span>
+                  <span v-else><i class="fas fa-check-circle mr-2"></i> স্লাইডার আপডেট করুন</span>
+               </button>
+            </div>
+          </div>
+
+          <div class="section-card">
+             <div class="section-header">
+                <i class="fas fa-bullhorn text-indigo-500"></i>
+                <h3 class="font-bold text-slate-800 ml-3">হেডলাইন সেটিংস</h3>
+             </div>
+             <div class="section-body p-8">
+                <label class="input-label">স্ক্রলিং হেডলাইন (Marquee)</label>
+                <input type="text" v-model="form.marquee_text" class="input-field" placeholder="সব নোটিশ একসাথে স্ক্রল করবে...">
+             </div>
+             <div class="section-footer">
+               <button @click="savePartial('contact')" class="save-btn" :disabled="saving === 'banner'">সেভ করুন</button>
+             </div>
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
-          <!-- Homepage Settings -->
-          <div @click="openView('homepage')" class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:shadow-xl hover:border-indigo-200 transition-all duration-300 cursor-pointer group relative overflow-hidden">
-             <div class="absolute -right-6 -top-6 w-24 h-24 bg-indigo-50 rounded-full group-hover:scale-150 transition-transform duration-500 z-0"></div>
-             <div class="relative z-10 flex flex-col h-full">
-               <div class="bg-indigo-100 text-indigo-600 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                 <i class="fas fa-home text-2xl"></i>
-               </div>
-               <h4 class="font-bold text-gray-800 mb-2 text-lg">হোমপেজ</h4>
-               <p class="text-sm text-gray-500 mb-4 flex-grow">ব্যানার, স্বাগত টেক্সট, নোটিশ বোর্ড সেটিংস এবং অন্যান্য প্রয়োজনীয় তথ্য।</p>
-               <span class="text-indigo-600 text-sm font-bold flex items-center group-hover:translate-x-1 transition-transform">পরিবর্তন করুন <i class="fas fa-arrow-right ml-2"></i></span>
-             </div>
-          </div>
+        <!-- Other sections (About, Principal, etc.) -->
+        <div v-show="activeSection !== 'banner'">
+           <div class="section-card" v-for="section in sections.filter(s => s.id !== 'banner' && s.id === activeSection)" :key="section.id">
+              <div class="section-header">
+                <i :class="section.icon + ' text-indigo-500'"></i>
+                <h3 class="font-bold text-slate-800 ml-3">{{ section.name }}</h3>
+              </div>
+              <div class="section-body p-8 space-y-6">
+                 <div v-if="activeSection === 'about'" class="space-y-6">
+                    <textarea id="about_editor_tinymce" v-model="form.about_text" class="tinymce"></textarea>
+                    <div class="p-4 border border-slate-100 rounded-[30px] flex items-center gap-6 bg-slate-50/50">
+                       <img v-if="settings.about_image" :src="'/storage/' + settings.about_image" class="w-32 h-32 rounded-3xl object-cover shadow-sm">
+                       <input type="file" @change="handleFileUpload('about_image', $event)" class="file-input flex-grow">
+                    </div>
+                 </div>
 
-          <!-- History / About Settings -->
-          <div @click="openView('about')" class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:shadow-xl hover:border-green-200 transition-all duration-300 cursor-pointer group relative overflow-hidden">
-             <div class="absolute -right-6 -top-6 w-24 h-24 bg-green-50 rounded-full group-hover:scale-150 transition-transform duration-500 z-0"></div>
-             <div class="relative z-10 flex flex-col h-full">
-               <div class="bg-green-100 text-green-600 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-green-600 group-hover:text-white transition-colors">
-                 <i class="fas fa-history text-2xl"></i>
-               </div>
-               <h4 class="font-bold text-gray-800 mb-2 text-lg">সংক্ষিপ্ত ইতিহাস</h4>
-               <p class="text-sm text-gray-500 mb-4 flex-grow">প্রতিষ্ঠানের ইতিহাস, মিশন ও ভিশন সম্পর্কে বিস্তারিত তথ্য।</p>
-               <span class="text-green-600 text-sm font-bold flex items-center group-hover:translate-x-1 transition-transform">পরিবর্তন করুন <i class="fas fa-arrow-right ml-2"></i></span>
-             </div>
-          </div>
+                 <div v-if="activeSection === 'principal'" class="space-y-6">
+                    <input type="text" v-model="form.principal_name" class="input-field font-bold" placeholder="অধ্যক্ষের নাম">
+                    <textarea id="principal_editor_tinymce" v-model="form.principal_message" class="tinymce"></textarea>
+                    <div class="p-4 border border-slate-100 rounded-[30px] flex items-center gap-6 bg-slate-50/50">
+                       <img v-if="settings.principal_image" :src="'/storage/' + settings.principal_image" class="w-32 h-40 rounded-3xl object-cover shadow-sm">
+                       <input type="file" @change="handleFileUpload('principal_image', $event)" class="file-input flex-grow">
+                    </div>
+                 </div>
 
-          <!-- Administration Settings -->
-          <div @click="openView('administration')" class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:shadow-xl hover:border-purple-200 transition-all duration-300 cursor-pointer group relative overflow-hidden">
-             <div class="absolute -right-6 -top-6 w-24 h-24 bg-purple-50 rounded-full group-hover:scale-150 transition-transform duration-500 z-0"></div>
-             <div class="relative z-10 flex flex-col h-full">
-               <div class="bg-purple-100 text-purple-600 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                 <i class="fas fa-user-tie text-2xl"></i>
-               </div>
-               <h4 class="font-bold text-gray-800 mb-2 text-lg">অধ্যক্ষের বাণী</h4>
-               <p class="text-sm text-gray-500 mb-4 flex-grow">প্রতিষ্ঠানের অধ্যক্ষ বা প্রধান শিক্ষকের তথ্য ও অনুপ্রেরণামূলক বাণী।</p>
-               <span class="text-purple-600 text-sm font-bold flex items-center group-hover:translate-x-1 transition-transform">পরিবর্তন করুন <i class="fas fa-arrow-right ml-2"></i></span>
-             </div>
-          </div>
+                 <div v-if="activeSection === 'committee'">
+                    <textarea id="committee_editor_tinymce" v-model="form.committee_text" class="tinymce"></textarea>
+                 </div>
 
-          <!-- Committee Settings -->
-          <div @click="openView('committee')" class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 cursor-pointer group relative overflow-hidden">
-             <div class="absolute -right-6 -top-6 w-24 h-24 bg-blue-50 rounded-full group-hover:scale-150 transition-transform duration-500 z-0"></div>
-             <div class="relative z-10 flex flex-col h-full">
-               <div class="bg-blue-100 text-blue-600 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                 <i class="fas fa-users-cog text-2xl"></i>
-               </div>
-               <h4 class="font-bold text-gray-800 mb-2 text-lg">ম্যানেজিং কমিটি</h4>
-               <p class="text-sm text-gray-500 mb-4 flex-grow">ম্যানেজিং কমিটি বা পরিচালনা পর্ষদের সদস্যবৃন্দের তালিকা ও তথ্য।</p>
-               <span class="text-blue-600 text-sm font-bold flex items-center group-hover:translate-x-1 transition-transform">পরিবর্তন করুন <i class="fas fa-arrow-right ml-2"></i></span>
-             </div>
-          </div>
+                 <div v-if="activeSection === 'contact'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2"><label class="input-label">ঠিকানা</label><textarea v-model="form.contact_address" class="input-field"></textarea></div>
+                    <div><label class="input-label">ইমেইল</label><input type="email" v-model="form.contact_email" class="input-field"></div>
+                    <div><label class="input-label">ফোন</label><input type="text" v-model="form.contact_phone" class="input-field"></div>
+                 </div>
 
-          <!-- Contact Settings -->
-          <div @click="openView('contact')" class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:shadow-xl hover:border-orange-200 transition-all duration-300 cursor-pointer group relative overflow-hidden">
-             <div class="absolute -right-6 -top-6 w-24 h-24 bg-orange-50 rounded-full group-hover:scale-150 transition-transform duration-500 z-0"></div>
-             <div class="relative z-10 flex flex-col h-full">
-               <div class="bg-orange-100 text-orange-600 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-orange-600 group-hover:text-white transition-colors">
-                 <i class="fas fa-address-book text-2xl"></i>
-               </div>
-               <h4 class="font-bold text-gray-800 mb-2 text-lg">যোগাযোগ সেকশন</h4>
-               <p class="text-sm text-gray-500 mb-4 flex-grow">প্রতিষ্ঠানের ঠিকানা, ইমেইল, ফোন নম্বর ও সোশ্যাল মিডিয়া প্রোফাইল।</p>
-               <span class="text-orange-600 text-sm font-bold flex items-center group-hover:translate-x-1 transition-transform">পরিবর্তন করুন <i class="fas fa-arrow-right ml-2"></i></span>
-             </div>
-          </div>
-
-          <!-- SEO Settings -->
-          <div @click="openView('seo')" class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:shadow-xl hover:border-gray-200 transition-all duration-300 cursor-pointer group relative overflow-hidden">
-             <div class="absolute -right-6 -top-6 w-24 h-24 bg-gray-50 rounded-full group-hover:scale-150 transition-transform duration-500 z-0"></div>
-             <div class="relative z-10 flex flex-col h-full">
-               <div class="bg-gray-100 text-gray-600 w-14 h-14 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-gray-800 group-hover:text-white transition-colors">
-                 <i class="fas fa-search text-2xl"></i>
-               </div>
-               <h4 class="font-bold text-gray-800 mb-2 text-lg">সার্চ ইঞ্জিন (SEO)</h4>
-               <p class="text-sm text-gray-500 mb-4 flex-grow">গুগল সার্চ ও অন্যান্য সার্চ ইঞ্জিনে প্রতিষ্ঠানের র‍্যাঙ্কিং বৃদ্ধির সেটিংস।</p>
-               <span class="text-gray-600 text-sm font-bold flex items-center group-hover:translate-x-1 transition-transform">পরিবর্তন করুন <i class="fas fa-arrow-right ml-2"></i></span>
-             </div>
-          </div>
-          
+                 <div v-if="activeSection === 'seo'" class="space-y-6">
+                    <div><label class="input-label">মেটা টাইটেল</label><input type="text" v-model="form.meta_title" class="input-field"></div>
+                    <div><label class="input-label">মেটা ডেসক্রিপশন</label><textarea v-model="form.meta_description" class="input-field"></textarea></div>
+                    <div><label class="input-label">কী-ওয়ার্ডস</label><input type="text" v-model="form.meta_keywords" class="input-field"></div>
+                 </div>
+              </div>
+              <div class="section-footer">
+                 <button @click="savePartial(activeSection)" class="save-btn" :disabled="saving === activeSection">সেভ করুন</button>
+              </div>
+           </div>
         </div>
-      </div>
 
-      <!-- Loading State -->
-      <div v-else-if="loading" class="text-center py-12">
-        <div class="inline-block w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        <p class="text-gray-500 mt-4 font-medium">তথ্য লোড হচ্ছে...</p>
-      </div>
-
-      <!-- Forms Wrapper -->
-      <div v-else class="bg-white rounded-xl">
-        <form @submit.prevent="saveSettings">
-          
-          <!-- Homepage View -->
-          <div v-if="currentView === 'homepage'" class="space-y-6 animate-fade-in-up">
-            <div class="bg-indigo-50/50 p-5 rounded-xl border border-indigo-100">
-               <h5 class="font-bold text-indigo-800 mb-4 flex items-center"><i class="fas fa-image mr-2 text-indigo-500"></i> হিরো সেকশন (প্রধান ব্যানার)</h5>
-               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">প্রধান শিরোনাম (Title)</label>
-                    <input type="text" class="form-control rounded-lg" v-model="form.hero_title" placeholder="উদা: আমাদের বিদ্যালয়ে স্বাগতম">
-                  </div>
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">উপ-শিরোনাম (Subtitle)</label>
-                    <input type="text" class="form-control rounded-lg" v-model="form.hero_subtitle" placeholder="উদা: শ্রেষ্ঠত্বের পথে আমাদের এই পথচলা...">
-                  </div>
-                  <div class="form-group md:col-span-2">
-                    <label class="font-medium text-gray-700">ব্যানার ইমেজ (High Quality Image)</label>
-                    <div class="flex items-start gap-4">
-                        <div v-if="settings.hero_image" class="w-32 h-20 rounded-lg overflow-hidden border shadow-sm shrink-0">
-                           <img :src="'/storage/' + settings.hero_image" class="w-full h-full object-cover">
-                        </div>
-                        <input type="file" ref="hero_image" class="form-control hover:cursor-pointer p-2 rounded-lg" @change="handleFileUpload('hero_image', $event)">
-                    </div>
-                  </div>
-               </div>
-            </div>
-
-            <div class="bg-purple-50/50 p-5 rounded-xl border border-purple-100">
-               <h5 class="font-bold text-purple-800 mb-4 flex items-center"><i class="fas fa-bullhorn mr-2 text-purple-500"></i> হেডলাইন স্ক্রলার (Marquee)</h5>
-               <div class="form-group mb-0">
-                 <label class="font-medium text-gray-700">ব্যানারের নিচে চলমান লেখা (জরুরী নোটিশ/হাইলাইট)</label>
-                 <input type="text" class="form-control rounded-lg" v-model="form.marquee_text" placeholder="উদা: অনলাইন ভর্তি কার্যক্রম শুরু হয়েছে...">
-               </div>
-            </div>
-          </div>
-
-          <!-- History / About View -->
-          <div v-if="currentView === 'about'" class="space-y-6 animate-fade-in-up">
-            <div class="bg-green-50/50 p-5 rounded-xl border border-green-100">
-               <h5 class="font-bold text-green-800 mb-4 flex items-center"><i class="fas fa-history mr-2 text-green-500"></i> প্রতিষ্ঠানের সংক্ষিপ্ত ইতিহাস</h5>
-               <div class="grid grid-cols-1 gap-5">
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">ইতিহাস ও পরিচিতি (About content)</label>
-                    <textarea class="form-control rounded-lg" rows="10" v-model="form.about_text" placeholder="প্রতিষ্ঠানের ইতিহাস ও পরিচিতি লিখুন..."></textarea>
-                  </div>
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">পরিচিতি অংশের ছবি</label>
-                    <div class="flex items-start gap-4">
-                        <div v-if="settings.about_image" class="w-32 h-20 rounded-lg overflow-hidden border shadow-sm shrink-0">
-                           <img :src="'/storage/' + settings.about_image" class="w-full h-full object-cover">
-                        </div>
-                        <input type="file" ref="about_image" class="form-control hover:cursor-pointer p-2 rounded-lg" @change="handleFileUpload('about_image', $event)">
-                    </div>
-                  </div>
-               </div>
-            </div>
-          </div>
-
-          <!-- Administration View -->
-          <div v-if="currentView === 'administration'" class="space-y-6 animate-fade-in-up">
-            <div class="bg-purple-50/50 p-5 rounded-xl border border-purple-100">
-               <h5 class="font-bold text-purple-800 mb-4 flex items-center"><i class="fas fa-user-tie mr-2 text-purple-500"></i> অধ্যক্ষের তথ্য ও বাণী</h5>
-               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div class="form-group md:col-span-2">
-                    <label class="font-medium text-gray-700">অধ্যক্ষের নাম</label>
-                    <input type="text" class="form-control rounded-lg" v-model="form.principal_name" placeholder="অধ্যক্ষের নাম">
-                  </div>
-                  <div class="form-group md:col-span-2">
-                    <label class="font-medium text-gray-700">অধ্যক্ষের বাণী</label>
-                    <textarea class="form-control rounded-lg" rows="8" v-model="form.principal_message" placeholder="কিছু অনুপ্রেরণামূলক কথা..."></textarea>
-                  </div>
-                  <div class="form-group md:col-span-2">
-                    <label class="font-medium text-gray-700">অধ্যক্ষের ছবি</label>
-                    <div class="flex items-start gap-4">
-                        <div v-if="settings.principal_image" class="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-sm shrink-0">
-                           <img :src="'/storage/' + settings.principal_image" class="w-full h-full object-cover">
-                        </div>
-                        <input type="file" ref="principal_image" class="form-control hover:cursor-pointer p-2 rounded-lg mt-4" @change="handleFileUpload('principal_image', $event)">
-                    </div>
-                  </div>
-               </div>
-            </div>
-          </div>
-
-          <!-- Committee View -->
-          <div v-if="currentView === 'committee'" class="space-y-6 animate-fade-in-up">
-            <div class="bg-blue-50/50 p-5 rounded-xl border border-blue-100">
-               <h5 class="font-bold text-blue-800 mb-4 flex items-center"><i class="fas fa-users-cog mr-2 text-blue-500"></i> ম্যানেজিং কমিটি বা পরিচালনা পর্ষদ</h5>
-               <div class="grid grid-cols-1 gap-5">
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">কমিটি সদস্যদের তালিকা বা ভূমিকা</label>
-                    <textarea class="form-control rounded-lg" rows="10" v-model="form.committee_text" placeholder="কমিটির সদস্যদের নাম ও পদবি লিখুন..."></textarea>
-                  </div>
-               </div>
-            </div>
-          </div>
-
-          <!-- Contact View -->
-          <div v-if="currentView === 'contact'" class="space-y-6 animate-fade-in-up">
-            <div class="bg-orange-50/50 p-5 rounded-xl border border-orange-100">
-               <h5 class="font-bold text-orange-800 mb-4 flex items-center"><i class="fas fa-address-book mr-2 text-orange-500"></i> যোগাযোগের তথ্যাদি</h5>
-               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div class="form-group md:col-span-2">
-                    <label class="font-medium text-gray-700">পূর্ণাঙ্গ ঠিকানা</label>
-                    <input type="text" class="form-control rounded-lg" v-model="form.contact_address" placeholder="উদা: ৭৯৯/১, পশ্চিম নাখালপাড়া, তেজগাঁও, ঢাকা-১২১৫">
-                  </div>
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">অফিসিয়াল ইমেইল</label>
-                    <input type="email" class="form-control rounded-lg" v-model="form.contact_email" placeholder="example@school.com">
-                  </div>
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">অফিসিয়াল ফোন নম্বর</label>
-                    <input type="text" class="form-control rounded-lg" v-model="form.contact_phone" placeholder="উদা: +880 123 456 7890">
-                  </div>
-               </div>
-            </div>
-
-            <div class="bg-indigo-50/50 p-5 rounded-xl border border-indigo-100">
-               <h5 class="font-bold text-indigo-800 mb-4 flex items-center"><i class="fab fa-facebook mr-2 text-indigo-500"></i> সোশাল মিডিয়া লিংকস</h5>
-               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">ফেইসবুক পেজ লিংক</label>
-                    <input type="text" class="form-control rounded-lg" v-model="form.facebook_url" placeholder="https://facebook.com/yourschool">
-                  </div>
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">ইউটিউব চ্যানেল লিংক</label>
-                    <input type="text" class="form-control rounded-lg" v-model="form.youtube_url" placeholder="https://youtube.com/...">
-                  </div>
-               </div>
-            </div>
-          </div>
-
-          <!-- SEO View -->
-          <div v-if="currentView === 'seo'" class="space-y-6 animate-fade-in-up">
-            <div class="bg-gray-50/50 p-5 rounded-xl border border-gray-200">
-               <h5 class="font-bold text-gray-800 mb-4 flex items-center"><i class="fas fa-search mr-2 text-indigo-500"></i> সার্চ ইঞ্জিন অপ্টিমাইজেশন (SEO)</h5>
-               <div class="grid grid-cols-1 gap-5">
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">এসইও টাইটেল (Meta Title)</label>
-                    <input type="text" class="form-control rounded-lg" v-model="form.meta_title" placeholder="গুগল সার্চে যা দেখাবে (৬০ অক্ষরের মধ্যে)">
-                  </div>
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">এসইও বর্ণনা (Meta Description)</label>
-                    <textarea class="form-control rounded-lg" rows="4" v-model="form.meta_description" placeholder="প্রতিষ্ঠানের সংক্ষিপ্ত বর্ণনা (১৬০ অক্ষরের মধ্যে)"></textarea>
-                  </div>
-                  <div class="form-group">
-                    <label class="font-medium text-gray-700">কীওয়ার্ডস (Keywords)</label>
-                    <input type="text" class="form-control rounded-lg" v-model="form.meta_keywords" placeholder="উদা: school, dhaka school, education (কমা দিয়ে লিখুন)">
-                  </div>
-               </div>
-               <div class="mt-4 p-3 bg-white border rounded-lg">
-                  <p class="text-xs font-bold text-gray-700 mb-2">গুগল সার্চে যেমন দেখাবে (Preview):</p>
-                  <h6 class="text-[#1a0dab] text-lg mb-0 truncate cursor-default">{{ form.meta_title || 'প্রতিষ্ঠানের নাম' }}</h6>
-                  <p class="text-[#006621] text-sm mb-1 truncate cursor-default">https://{{ schoolDomain || 'yourschool.com' }}</p>
-                  <p class="text-[#545454] text-sm break-words">{{ form.meta_description || 'প্রতিষ্ঠানের একটি সুন্দর বর্ণনা এখানে দেখাবে যা ভিজিটরদের আকৃষ্ট করবে।' }}</p>
-               </div>
-            </div>
-          </div>
-
-          <!-- Form Actions -->
-          <div class="mt-8 pt-5 border-t border-gray-100 flex items-center justify-between">
-            <button type="button" @click="currentView = 'list'" class="btn btn-outline-secondary rounded-full px-6 font-bold transition hover:bg-gray-100">
-               বাতিল করুন
-            </button>
-            <button type="submit" class="btn btn-primary bg-indigo-600 hover:bg-indigo-700 border-0 rounded-full px-8 py-2.5 shadow-lg shadow-indigo-200 font-bold tracking-wide transition transform active:scale-95" :disabled="saving">
-              <span v-if="saving"><i class="fas fa-spinner fa-spin mr-2"></i> সংরক্ষণ করা হচ্ছে...</span>
-              <span v-else><i class="fas fa-save mr-2"></i> পরিবর্তন সংরক্ষণ করুন</span>
-            </button>
-          </div>
-          
-        </form>
-      </div>
-
+      </main>
     </div>
   </div>
 </template>
@@ -292,161 +177,140 @@
 <script>
 export default {
   name: 'FrontendSettings',
-  props: {
-    schoolId: {
-      type: Number,
-      required: true
-    },
-    schoolCode: {
-      type: String,
-      required: true
-    },
-    schoolDomain: {
-      type: String,
-      required: false,
-      default: ''
-    }
-  },
+  props: { schoolId: Number, schoolCode: String },
   data() {
     return {
-      loading: false,
-      saving: false,
-      currentView: 'list', // 'list', 'homepage', 'about', 'administration', 'committee', 'contact', 'seo'
+      activeSection: 'banner',
+      loading: false, saving: null,
+      sections: [
+        { id: 'banner', name: 'ব্যানার ও স্লাইডার', icon: 'fas fa-images' },
+        { id: 'about', name: 'ইতিহাস ও পরিচিতি', icon: 'fas fa-history' },
+        { id: 'principal', name: 'অধ্যক্ষের বাণী', icon: 'fas fa-user-tie' },
+        { id: 'committee', name: 'ম্যানেজিং কমিটি', icon: 'fas fa-users-cog' },
+        { id: 'contact', name: 'যোগাযোগ তথ্য', icon: 'fas fa-address-book' },
+        { id: 'seo', name: 'SEO সেটিংস', icon: 'fas fa-search' }
+      ],
       settings: {},
-      form: {
-        hero_title: '',
-        hero_subtitle: '',
-        about_text: '',
-        principal_name: '',
-        principal_message: '',
-        facebook_url: '',
-        youtube_url: '',
-        marquee_text: '',
-        contact_address: '',
-        contact_email: '',
-        contact_phone: '',
-        committee_text: '',
-        meta_title: '',
-        meta_description: '',
-        meta_keywords: '',
-      },
-      files: {
-        hero_image: null,
-        about_image: null,
-        principal_image: null,
-      }
+      form: { marquee_text: '', about_text: '', principal_name: '', principal_message: '', committee_text: '', contact_address: '', contact_email: '', contact_phone: '', meta_title: '', meta_description: '', meta_keywords: '' },
+      sliderItems: [],
+      files: { about_image: null, principal_image: null }
     };
   },
-  computed: {
-    viewTitle() {
-      if (this.currentView === 'list') return 'ওয়েবসাইট কনফিগারেশন';
-      if (this.currentView === 'homepage') return 'হোমপেজ এডিটর';
-      if (this.currentView === 'about') return 'ইতিহাস ও পরিচিতি';
-      if (this.currentView === 'administration') return 'অধ্যক্ষের বাণী';
-      if (this.currentView === 'committee') return 'ম্যানেজিং কমিটি';
-      if (this.currentView === 'contact') return 'যোগাযোগ ও সোশ্যাল';
-      if (this.currentView === 'seo') return 'সার্চ ইঞ্জিন অপ্টিমাইজেশন';
-      return '';
-    }
-  },
-  mounted() {
-    // Optionally pre-fetch data or fetch when opening view
+  async mounted() {
+    await this.fetchData();
+    await this.loadTinyMCE();
+    this.initAllTinyMCE();
   },
   methods: {
-    openView(viewName) {
-      this.currentView = viewName;
-      // Fetch fresh data when entering a view
-      this.fetchData();
+    async loadTinyMCE() {
+      if (window.tinymce) return;
+      return new Promise(r => {
+        const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js';
+        s.async = true; s.onload = r; document.head.appendChild(s);
+      });
     },
-    handleFileUpload(key, event) {
-      if (event.target.files.length > 0) {
-        this.files[key] = event.target.files[0];
-      }
+    initAllTinyMCE() {
+      if (!window.tinymce) return;
+      const self = this;
+      const config = {
+        menubar: false, branding: false, height: 400,
+        plugins: 'image link lists table charmap code emoticons hr',
+        toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | link image table | code emoticons',
+        images_upload_handler: (blobInfo) => new Promise((resolve) => {
+           const xhr = new XMLHttpRequest(); xhr.open('POST', `/principal/institute/${this.schoolId}/frontend/settings/upload`);
+           xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').content);
+           xhr.onload = () => { resolve(JSON.parse(xhr.responseText).location); };
+           const fd = new FormData(); fd.append('upload', blobInfo.blob()); xhr.send(fd);
+        })
+      };
+      tinymce.init({...config, selector: '#about_editor_tinymce', setup: (e) => { e.on('init', () => e.setContent(self.form.about_text || '')); e.on('change keyup blur', () => self.form.about_text = e.getContent()); }});
+      tinymce.init({...config, selector: '#principal_editor_tinymce', setup: (e) => { e.on('init', () => e.setContent(self.form.principal_message || '')); e.on('change keyup blur', () => self.form.principal_message = e.getContent()); }});
+      tinymce.init({...config, selector: '#committee_editor_tinymce', setup: (e) => { e.on('init', () => e.setContent(self.form.committee_text || '')); e.on('change keyup blur', () => self.form.committee_text = e.getContent()); }});
     },
     async fetchData() {
       this.loading = true;
       try {
-        const response = await axios.get(`/principal/institute/${this.schoolId}/frontend/settings/data`);
-        this.settings = response.data.settings;
-        this.form = {
-          hero_title: this.settings.hero_title || '',
-          hero_subtitle: this.settings.hero_subtitle || '',
-          about_text: this.settings.about_text || '',
-          principal_name: this.settings.principal_name || '',
-          principal_message: this.settings.principal_message || '',
-          facebook_url: this.settings.facebook_url || '',
-          youtube_url: this.settings.youtube_url || '',
-          marquee_text: this.settings.marquee_text || '',
-          contact_address: this.settings.contact_address || '',
-          contact_email: this.settings.contact_email || '',
-          contact_phone: this.settings.contact_phone || '',
-          committee_text: this.settings.committee_text || '',
-          meta_title: this.settings.meta_title || '',
-          meta_description: this.settings.meta_description || '',
-          meta_keywords: this.settings.meta_keywords || '',
-        };
-      } catch (error) {
-        toastr.error('Failed to load settings');
-      } finally {
-        this.loading = false;
-      }
-    },
-    async saveSettings() {
-      this.saving = true;
-      try {
-        let formData = new FormData();
-        Object.keys(this.form).forEach(key => {
-          if (this.form[key]) {
-            formData.append(key, this.form[key]);
-          } else {
-            formData.append(key, '');
-          }
-        });
-        
-        Object.keys(this.files).forEach(key => {
-          if (this.files[key]) {
-            formData.append(key, this.files[key]);
-          }
-        });
-
-        const response = await axios.post(`/principal/institute/${this.schoolId}/frontend/settings/data`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-
-        this.settings = response.data.settings;
-        toastr.success('সফলভাবে আপডেট করা হয়েছে!');
-        
-        // Return to list after saving
-        setTimeout(() => {
-            this.currentView = 'list';
-        }, 1000);
-
-      } catch (error) {
-        toastr.error('আপডেট করতে সমস্যা হচ্ছে');
-        if (error.response && error.response.data.errors) {
-          console.error(error.response.data.errors);
+        const res = await axios.get(`/principal/institute/${this.schoolId}/frontend/settings/data`);
+        this.settings = res.data.settings;
+        Object.keys(this.form).forEach(k => this.form[k] = this.settings[k] || '');
+        this.sliderItems = Array.isArray(this.settings.hero_images) ? this.settings.hero_images : (JSON.parse(this.settings.hero_images || "[]"));
+        this.sliderItems = this.sliderItems.map(item => typeof item === 'string' ? { image: item, title: '', subtitle: '', active: true } : item);
+        if (window.tinymce) { 
+           tinymce.get('about_editor_tinymce')?.setContent(this.form.about_text || '');
+           tinymce.get('principal_editor_tinymce')?.setContent(this.form.principal_message || '');
+           tinymce.get('committee_editor_tinymce')?.setContent(this.form.committee_text || '');
         }
-      } finally {
-        this.saving = false;
-      }
+      } catch (e) { toastr.error('Load error'); } finally { this.loading = false; }
+    },
+    addNewSlides(e) {
+       const files = Array.from(e.target.files);
+       files.forEach(file => {
+          this.sliderItems.push({
+             image: null, title: this.form.hero_title || '', subtitle: this.form.hero_subtitle || '', active: true,
+             file: file, preview: URL.createObjectURL(file), isNew: true
+          });
+       });
+       toastr.success(files.length + ' টি নতুন ছবি স্লাইডারে যোগ করা হয়েছে।');
+    },
+    removeSliderItem(idx) { this.sliderItems.splice(idx, 1); },
+    handleFileUpload(k, e) { if (e.target.files.length > 0) this.files[k] = e.target.files[0]; },
+
+    async saveSlider() {
+       this.saving = 'banner';
+       try {
+          let fd = new FormData();
+          fd.append('marquee_text', this.form.marquee_text);
+          // Separate existing from new
+          const existing = this.sliderItems.filter(i => !i.isNew).map(i => ({ image: i.image, title: i.title, subtitle: i.subtitle, active: i.active }));
+          const news = this.sliderItems.filter(i => i.isNew);
+          
+          fd.append('hero_images_json', JSON.stringify(existing));
+          news.forEach((item, idx) => {
+             fd.append(`hero_slider_files[${idx}]`, item.file);
+             fd.append(`hero_slider_meta[${idx}]`, JSON.stringify({ title: item.title, subtitle: item.subtitle, active: item.active }));
+          });
+
+          const res = await axios.post(`/principal/institute/${this.schoolId}/frontend/settings/data`, fd);
+          this.settings = res.data.settings;
+          await this.fetchData(); // Reload to clear new flags
+          toastr.success('স্লাইডার আপডেট হয়েছে');
+       } catch (e) { toastr.error('Error saving'); } finally { this.saving = null; }
+    },
+
+    async savePartial(id) {
+      if (id === 'banner') return this.saveSlider();
+      this.saving = id;
+      try {
+        let fd = new FormData();
+        const map = {
+          about: ['about_text', 'about_image'],
+          principal: ['principal_name', 'principal_message', 'principal_image'],
+          committee: ['committee_text'],
+          contact: ['contact_address', 'contact_email', 'contact_phone'],
+          seo: ['meta_title', 'meta_description', 'meta_keywords']
+        };
+        map[id].forEach(f => {
+           if (f.includes('_image') && this.files[f]) fd.append(f, this.files[f]);
+           else if (!f.includes('_image')) fd.append(f, this.form[f] || '');
+        });
+        const res = await axios.post(`/principal/institute/${this.schoolId}/frontend/settings/data`, fd);
+        this.settings = res.data.settings;
+        toastr.success('সেভ হয়েছে');
+      } catch (e) { toastr.error('Save error'); } finally { this.saving = null; }
     }
   }
-}
+};
 </script>
 
 <style scoped>
-.animate-fade-in-up {
-  animation: fadeInUp 0.4s ease-out;
-}
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+.section-card { background: white; border-radius: 2.5rem; border: 1px solid #f1f5f9; box-shadow: 0 20px 40px -15px rgba(0,0,0,0.05); overflow: hidden; }
+.section-header { padding: 1.5rem 2.5rem; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; background: #f8fafc; }
+.input-label { display: block; font-size: 0.8rem; font-weight: 800; color: #475569; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.input-field { width: 100%; padding: 1rem 1.5rem; border-radius: 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; outline: none; transition: 0.3s; }
+.input-field-sm { width: 100%; padding: 0.75rem 1.25rem; border-radius: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; outline: none; font-size: 0.9rem; transition: 0.3s; }
+.input-field:focus, .input-field-sm:focus { background: white; border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+.section-footer { padding: 1.5rem 2.5rem; border-top: 1px solid #f1f5f9; background: #f8fafc; display: flex; justify-content: flex-end; }
+.save-btn { padding: 1rem 3rem; background: #4f46e5; color: white; border-radius: 1.5rem; font-weight: 800; transition: 0.3s; box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4); }
+.save-btn:hover { background: #4338ca; transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(79, 70, 229, 0.5); }
+.file-input { @apply text-xs bg-white border border-slate-100 rounded-xl p-2; }
 </style>
-
