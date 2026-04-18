@@ -342,7 +342,7 @@
                             { key: 'father_name', label_en: 'Father', label_bn: 'পিতার নাম' },
                             { key: 'mother_name', label_en: 'Mother', label_bn: 'মাতার নাম' },
                             { key: 'mobile', label_en: 'Mobile No.', label_bn: 'মোবাইল নং' },
-                            { key: 'student_id', label_en: 'Student ID', label_bn: 'আইডি নং' }
+                            { key: 'student_id', label_en: 'ID No.', label_bn: 'আইডি নং' }
                         ],
                         idCardSettings: {
                             orientation: 'portrait',

@@ -27,7 +27,8 @@
         }
         .id-card {
             border: 0.1mm solid #000; /* কাটার দাগ */
-            margin: 2mm;
+            margin: 5mm 2mm; /* Increased vertical margin */
+            border-radius: 3mm; /* কোণা রাউন্ড করার জন্য (Die-cut look) */
             position: relative;
             overflow: hidden;
             background-repeat: no-repeat;
@@ -46,10 +47,13 @@
             height: 100%;
         }
         .student-photo {
-            border: 0.1mm solid #ddd;
+            border: 0.4mm solid #888; /* প্রিমিয়াম ডার্ক গ্রে বর্ডার */
+            padding: 0.5mm; /* ফ্রেম এফেক্ট */
+            background-color: #fff;
             margin-bottom: 2mm;
             object-fit: cover;
             display: block;
+            border-radius: 1.5mm; /* ছবির কোণাও সামান্য রাউন্ড করা হলো */
         }
         .student-name {
             font-weight: bold;
@@ -76,7 +80,7 @@
             body { background: none; margin: 0; }
             .print-container { padding: 0; }
             .no-print { display: none; }
-            .id-card { margin: 2mm; } /* Keep some margin for spacing between cards on page */
+            .id-card { margin: 5mm 2mm; } /* Keep spacing between cards on page */
         }
     </style>
 </head>
@@ -100,7 +104,7 @@
             'father_name' => $lang === 'en' ? 'Father' : 'পিতার নাম',
             'mother_name' => $lang === 'en' ? 'Mother' : 'মাতার নাম',
             'mobile' => $lang === 'en' ? 'Mobile' : 'মোবাইল',
-            'student_id' => $lang === 'en' ? 'Student ID' : 'আইডি নং',
+            'student_id' => $lang === 'en' ? 'ID No.' : 'আইডি নং',
         ];
 
         // Helper for Bengali Numbers
