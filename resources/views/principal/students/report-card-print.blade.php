@@ -7,6 +7,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        @font-face {
+            font-family: 'BengaliNumbers';
+            src: url('/fonts/kalpurush/kalpurush.woff2') format('woff2');
+            unicode-range: U+09E6-09EF;
+        }
         :root {
             --primary: #4f46e5;
             --success: #10b981;
@@ -17,7 +22,7 @@
 
         * { box-sizing: border-box; }
         body {
-            font-family: 'Inter', 'Hind Siliguri', sans-serif;
+            font-family: 'BengaliNumbers', 'Inter', 'Hind Siliguri', sans-serif;
             background: #fff;
             color: #1f2937;
             line-height: 1.5;

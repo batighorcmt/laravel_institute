@@ -28,6 +28,17 @@
     font-display: swap;
 }
 
+/* Fix for Bengali number visibility in Hind Siliguri */
+@font-face {
+    font-family: 'BengaliNumbers';
+    src: local('Kalpurush'),
+         url('/fonts/kalpurush/kalpurush.woff2') format('woff2');
+    unicode-range: U+09E6-09EF; /* Bengali digits ০-৯ */
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
 body {
     font-family: 'Kalpurush', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
@@ -79,7 +90,7 @@ body {
 
 /* CSS variables for fonts */
 :root {
-    --font-ui: 'Hind Siliguri', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    --font-ui: 'BengaliNumbers', 'Hind Siliguri', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
     --font-content: 'Kalpurush', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 }
 

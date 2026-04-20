@@ -7,8 +7,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        @font-face {
+            font-family: 'BengaliNumbers';
+            src: url('/fonts/kalpurush/kalpurush.woff2') format('woff2');
+            unicode-range: U+09E6-09EF; /* Bengali digits ০-৯ */
+        }
         body {
-            font-family: 'Hind Siliguri', sans-serif;
+            font-family: 'BengaliNumbers', 'Hind Siliguri', sans-serif;
             font-size: 16px;
             color: #000;
             line-height: 1.6;

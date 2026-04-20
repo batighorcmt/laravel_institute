@@ -42,8 +42,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  body{ font-family:'Hind Siliguri', system-ui, Segoe UI, Roboto, Arial, sans-serif !important; }
-  .num{ font-family: 'Kalpurush', 'Noto Sans Bengali', serif; }
+  @font-face {
+    font-family: 'BengaliNumbers';
+    src: url('/fonts/kalpurush/kalpurush.woff2') format('woff2');
+    unicode-range: U+09E6-09EF;
+  }
+  body{ font-family: 'BengaliNumbers', 'Hind Siliguri', system-ui, Segoe UI, Roboto, Arial, sans-serif !important; }
+  .num{ font-family: 'BengaliNumbers', 'Kalpurush', 'Noto Sans Bengali', serif; }
   .no-bn{ font-family: inherit; }
   :root { --primary:#0ea5e9; --primary-dark:#0284c7; --ink:#0f172a; --muted:#64748b; --border:#e2e8f0; --bg:#ffffff; }
     *{box-sizing:border-box}

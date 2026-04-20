@@ -26,8 +26,13 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Hind Siliguri', sans-serif; }
-  .bangla-number { font-family: 'Noto Sans Bengali', sans-serif !important; }
+  @font-face {
+    font-family: 'BengaliNumbers';
+    src: url('/fonts/kalpurush/kalpurush.woff2') format('woff2');
+    unicode-range: U+09E6-09EF;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'BengaliNumbers', 'Hind Siliguri', sans-serif; }
+  .bangla-number { font-family: 'BengaliNumbers', 'Noto Sans Bengali', sans-serif !important; }
   body { background-color: #f5f5f5; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
   .certificate-container { width: 794px; height: 1123px; background-color: #fff; border: 15px double #1e5799; box-shadow: 0 5px 15px rgba(0,0,0,0.1); position: relative; margin-bottom: 20px; overflow: hidden; display: flex; flex-direction: column; }
   .certificate-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; height: 400px; opacity: 0.08; z-index: 0; pointer-events: none; user-select: none; }
