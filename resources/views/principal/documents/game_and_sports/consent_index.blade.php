@@ -134,6 +134,7 @@ $(document).ready(function() {
     const $classSelect = $('#class_id');
     const $sectionSelect = $('#section_id');
     const $studentSelect = $('#student_id');
+    const $gameSelect = $('#game_name');
     const $yearSelect = $('#academic_year_id');
     const $loader = $('#studentLoader');
 
@@ -148,13 +149,16 @@ $(document).ready(function() {
         }
 
         // Fetch Sections
-        $.get(`/principal/institute/${schoolId}/meta/sections?class_id=${classId}`, function(data) {
+        const sectionUrl = "{{ route('principal.institute.meta.sections', $school) }}";
+        $.get(`${sectionUrl}?class_id=${classId}`, function(data) {
             let options = '<option value="">-- সকল শাখা --</option>';
             data.forEach(function(section) {
                 options += `<option value="${section.id}">${section.name}</option>`;
             });
             $sectionSelect.html(options).trigger('change');
-            loadStudents(); // Load students for this class (all sections)
+            // No need to manually call loadStudents() here as trigger('change') above will fire the handler at line 162
+        }).fail(function() {
+            toastr.error('শাখা তালিকা লোড করতে ব্যর্থ হয়েছে।');
         });
     });
 
@@ -172,7 +176,8 @@ $(document).ready(function() {
         $loader.show();
         $studentSelect.prop('disabled', true);
 
-        let url = `/principal/institute/${schoolId}/meta/students?class_id=${classId}&year_id=${yearId}`;
+        const studentUrl = "{{ route('principal.institute.meta.students', $school) }}";
+        let url = `${studentUrl}?class_id=${classId}&year_id=${yearId}`;
         if (sectionId) url += `&section_id=${sectionId}`;
 
         $.get(url, function(data) {
@@ -191,7 +196,8 @@ $(document).ready(function() {
     // Ensure form validation
     $('#consentForm').on('submit', function(e) {
         if (!$studentSelect.val() || !$gameSelect.val()) {
-            // Optional additional frontend validation
+            toastr.warning('দয়া করে শিক্ষার্থী এবং খেলার নাম নির্বাচন করুন।');
+            e.preventDefault();
         }
     });
 });
