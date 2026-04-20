@@ -435,7 +435,7 @@
                                     <li class="nav-item">
                                         <a href="{{ route('principal.institute.game-and-sports.consent.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.game-and-sports.consent.*') ? 'active' : '' }}">
                                             <i class="far fa-circle nav-icon"></i>
-                                            <p>অভিভাবকের সম্মতি</p>
+                                            <p>অনুমতিপত্র</p>
                                         </a>
                                     </li>
                                 </ul>
