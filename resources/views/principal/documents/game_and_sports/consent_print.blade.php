@@ -2,64 +2,73 @@
 <html lang="bn">
 <head>
     <meta charset="utf-8">
-    <title>অভিভাবকের সম্মতিপত্র - {{ $student->student_name_bn }}</title>
+    <title>অভিভাবকের অনুমতিপত্র - {{ $student->student_name_bn }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Hind Siliguri', sans-serif;
-            font-size: 18px;
-            color: #222;
-            line-height: 1.8;
+            font-size: 16px;
+            color: #000;
+            line-height: 1.6;
             margin: 0;
             padding: 0;
             background: #fff;
         }
         .page {
             width: 210mm;
-            height: 297mm;
-            padding: 25mm 20mm;
+            min-height: 297mm;
+            padding: 20mm 20mm;
             margin: 0 auto;
             position: relative;
             box-sizing: border-box;
         }
         .header {
             text-align: center;
-            margin-bottom: 50px;
+            margin-bottom: 30px;
         }
         .title {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 700;
             text-decoration: underline;
-            margin-bottom: 40px;
             display: inline-block;
+        }
+        .date-line {
+            text-align: right;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .form-row {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: baseline;
+        }
+        .dotted-line {
+            flex-grow: 1;
+            border-bottom: 1px dotted #333;
+            margin-left: 5px;
+            padding-left: 5px;
+            font-weight: 600;
         }
         .content-body {
             text-align: justify;
-            margin-top: 50px;
-            text-indent: 50px;
+            margin: 30px 0;
+            line-height: 1.8;
+            font-size: 17px;
         }
-        .footer {
-            margin-top: 150px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            padding: 0 40px;
+        .signature-section {
+            margin-top: 60px;
         }
-        .signature-box {
-            text-align: center;
-            width: 250px;
+        .sig-row {
+            margin-bottom: 10px;
         }
-        .signature-line {
-            border-top: 1px dashed #444;
-            margin-bottom: 5px;
-        }
-        .data-value {
-            font-weight: 600;
-            border-bottom: 1px dotted #ccc;
-            padding: 0 5px;
-            color: #000;
+        .footer-note {
+            margin-top: 40px;
+            font-size: 14px;
+            line-height: 1.5;
+            text-align: justify;
+            font-style: italic;
         }
         
         @media print {
@@ -73,7 +82,6 @@
             .no-print { display: none; }
         }
 
-        /* Styling for the print button container */
         .print-btn-strip {
             background: #343a40;
             padding: 10px 0;
@@ -93,11 +101,8 @@
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-        .btn-print:hover { background: #218838; }
         
-        /* Adjust page for top strip */
         @media screen {
             body { background: #e0e0e0; padding-top: 60px; }
             .page { background: #fff; box-shadow: 0 0 15px rgba(0,0,0,0.1); margin-bottom: 30px; }
@@ -106,47 +111,93 @@
 </head>
 <body>
 
+@php
+    function bn_num($number) {
+        $en = array('0','1','2','3','4','5','6','7','8','9');
+        $bn = array('০','১','২','৩','৪','৫','৬','৭','৮','৯');
+        return str_replace($en, $bn, $number);
+    }
+
+    $relationEn = strtolower($student->guardian_relation);
+    $relations = [
+        'father' => 'পিতা',
+        'mother' => 'মাতা',
+        'brother' => 'ভাই',
+        'sister' => 'বোন',
+        'uncle' => 'চাচা/মামু',
+        'aunt' => 'ফুফু/খালা',
+        'grandfather' => 'দাদা/নানা',
+        'grandmother' => 'দাদি/নানি',
+        'legal guardian' => 'আইনানুগ অভিভাবক',
+        'other' => 'অন্যান্য'
+    ];
+    $relation = $relations[$relationEn] ?? $student->guardian_relation;
+@endphp
+
 <div class="print-btn-strip no-print">
-    <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print Consent Letter</button>
+    <button class="btn-print" onclick="window.print()">প্রিন্ট করুন</button>
 </div>
 
 <div class="page">
     <div class="header">
-        <div class="title">অভিভাবকের সম্মতিপত্র</div>
+        <div class="title">অভিভাবকের অনুমতিপত্র</div>
     </div>
 
-    <div class="content-body">
-        এই মর্মে সম্মতি প্রদান করছি যে, আমি 
-        <span class="data-value">{{ $student->father_name_bn ?: $student->guardian_name_bn ?: '..........................................' }}</span> 
-        (অভিভাবকের নাম), 
-        গ্রামঃ <span class="data-value">{{ $student->present_village ?: '........................' }}</span>, 
-        ডাকঘরঃ <span class="data-value">{{ $student->present_post_office ?: '........................' }}</span>, 
-        উপজেলাঃ <span class="data-value">{{ $student->present_upazilla ?: 'গাংনী' }}</span>, 
-        জেলাঃ <span class="data-value">{{ $student->present_district ?: 'মেহেরপুর' }}</span>। 
-        আমার কন্যা/পুত্র 
-        <span class="data-value">{{ $student->student_name_bn ?: $student->student_name_en }}</span>-কে 
-        <span class="data-value">{{ $school->name_bn ?: $school->name }}</span>-এর 
-        <span class="data-value">{{ $game_name }}</span> খেলায় অংশগ্রহন করিবে। 
-        প্রতিযোগিতার প্রয়োজনে সে জেলা, উপ-অঞ্চল, অঞ্চল ও জাতীয় পর্যায়ে অংশ গ্রহণ করিতে পারিবে। 
-        আমি অভিভাবক হিসেবে সম্মতি জ্ঞাপন করিলাম।
-    </div>
-    
-    <div style="margin-top: 40px; text-indent: 50px;">
-        আমি তার সার্বিক মঙ্গল কামনা করি।
+    <div class="date-line">
+        তারিখঃ <span style="border-bottom: 1px dotted #000; padding: 0 20px;">{{ bn_num(date('d/m/Y')) }}</span>
     </div>
 
-    <div class="footer">
-        <div class="signature-box">
-            <div class="signature-line"></div>
-            প্রতিস্বাক্ষর
+    <div class="form-row">
+        <span>এই মর্মে অনুমতি প্রদান করা যাচ্ছে যে, আমার পোষ্য</span>
+        <div class="dotted-line">{{ $student->student_name_bn ?: $student->student_name_en }}</div>
+    </div>
+
+    <div class="form-row">
+        <span>পিতার নামঃ</span>
+        <div class="dotted-line">{{ $student->father_name_bn ?: $student->father_name }}</div>
+    </div>
+
+    <div class="form-row">
+        <span>মাতার নামঃ</span>
+        <div class="dotted-line">{{ $student->mother_name_bn ?: $student->mother_name }}</div>
+    </div>
+
+    <div class="form-row" style="gap: 15px;">
+        <span style="white-space: nowrap;">স্টুডেন্ট আইডিঃ</span>
+        <div class="dotted-line" style="flex-grow: 1;">{{ $student->student_id }}</div>
+        <span style="white-space: nowrap;">জন্ম তারিখঃ</span>
+        <div class="dotted-line" style="flex-grow: 1;">{{ $student->date_of_birth ? bn_num($student->date_of_birth->format('d/m/Y')) : '........' }}</div>
+    </div>
+
+    <div class="form-row" style="gap: 15px;">
+        <span style="white-space: nowrap;">শ্রেণিঃ</span>
+        <div class="dotted-line" style="flex-grow: 1;">{{ $enrollment?->class?->bangla_name ?: ($enrollment?->class?->name ?? '........') }}</div>
+        <span style="white-space: nowrap;">শাখাঃ</span>
+        <div class="dotted-line" style="flex-grow: 1;">{{ $enrollment?->section?->bangla_name ?: ($enrollment?->section?->name ?? '........') }}</div>
+        <span style="white-space: nowrap;">রোল নংঃ</span>
+        <div class="dotted-line" style="flex-grow: 1;">{{ $enrollment ? bn_num($enrollment->roll_no) : '........' }}</div>
+    </div>
+
+    <div class="content-body" style="text-indent: 0;">
+        <span style="font-weight: bold;">{{ $school->name_bn ?: $school->name }}</span>-এ <span style="font-weight: bold;">{{ $game_name }}</span> খেলায় অংশগ্রহণ এবং প্রতিযোগিতার প্রয়োজনে সে জেলা, উপ-অঞ্চল, অঞ্চল ও জাতীয় পর্যায়ে অংশ গ্রহণ করিতে পারিবে আমি অভিভাবক হিসেবে সম্মতি জ্ঞাপন ও অনুমতি প্রদান করছি।
+    </div>
+
+    <div class="signature-section">
+        <div class="sig-row">
+            অভিভাবকের স্বাক্ষরঃ .......................................
         </div>
-        <div class="signature-box">
-            <div class="signature-line"></div>
-            অভিভাবকের স্বাক্ষর ও তারিখ
+        <div class="sig-row">
+            অভিভাবকের নামঃ <span style="border-bottom: 1px dotted #000; min-width: 200px; display: inline-block; padding: 0 10px;">{{ $student->father_name_bn ?: $student->guardian_name_bn ?: '........................' }}</span> (বাবা/মা না থাকলে আইনানুগ অভিভাবক)
+        </div>
+        <div class="sig-row">
+            <span>শিক্ষার্থীর সাথে সম্পর্কঃ</span>
+            <span style="border-bottom: 1px dotted #000; min-width: 150px; display: inline-block; padding: 0 10px;">{{ $relation ?: '................' }}</span>
+            <span style="margin-left: 20px;">মোবাইল নংঃ</span>
+            <span style="border-bottom: 1px dotted #000; min-width: 200px; display: inline-block; padding: 0 10px;">{{ bn_num($student->guardian_phone) }}</span>
         </div>
     </div>
+
 </div>
 
-<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </body>
 </html>

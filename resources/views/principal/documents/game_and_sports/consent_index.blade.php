@@ -123,83 +123,121 @@
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    // Initialize Select2
-    $('.select2bs4').select2({
-        theme: 'bootstrap4',
-        width: '100%'
-    });
-
-    const schoolId = "{{ $school->id }}";
-    const $classSelect = $('#class_id');
-    const $sectionSelect = $('#section_id');
-    const $studentSelect = $('#student_id');
-    const $gameSelect = $('#game_name');
-    const $yearSelect = $('#academic_year_id');
-    const $loader = $('#studentLoader');
-
-    // Load Sections when Class changes
-    $classSelect.on('change', function() {
-        const classId = $(this).val();
-        $studentSelect.empty().append('<option value="">-- প্রথমে শ্রেণি নির্বাচন করুন --</option>').prop('disabled', true).trigger('change');
-        
-        if (!classId) {
-            $sectionSelect.empty().append('<option value="">-- সকল শাখা --</option>').trigger('change');
+window.addEventListener('DOMContentLoaded', function() {
+    // Vite bundles jQuery and loads as deferred module. Wait for it if needed.
+    const startScript = function() {
+        if (typeof $ === 'undefined') {
+            setTimeout(startScript, 50);
             return;
         }
 
-        // Fetch Sections
-        const sectionUrl = "{{ route('principal.institute.meta.sections', $school) }}";
-        $.get(`${sectionUrl}?class_id=${classId}`, function(data) {
-            let options = '<option value="">-- সকল শাখা --</option>';
-            data.forEach(function(section) {
-                options += `<option value="${section.id}">${section.name}</option>`;
+        $(document).ready(function() {
+            // Initialize Select2
+            $('.select2bs4').select2({
+                theme: 'bootstrap4',
+                width: '100%'
             });
-            $sectionSelect.html(options).trigger('change');
-            // No need to manually call loadStudents() here as trigger('change') above will fire the handler at line 162
-        }).fail(function() {
-            toastr.error('শাখা তালিকা লোড করতে ব্যর্থ হয়েছে।');
-        });
-    });
 
-    // Load Students when Section or Year changes
-    $sectionSelect.on('change', loadStudents);
-    $yearSelect.on('change', loadStudents);
+            const schoolId = "{{ $school->id }}";
+            const $classSelect = $('#class_id');
+            const $sectionSelect = $('#section_id');
+            const $studentSelect = $('#student_id');
+            const $gameSelect = $('#game_name');
+            const $yearSelect = $('#academic_year_id');
+            const $loader = $('#studentLoader');
 
-    function loadStudents() {
-        const classId = $classSelect.val();
-        const sectionId = $sectionSelect.val();
-        const yearId = $yearSelect.val();
+            function loadStudents() {
+                const classId = $classSelect.val();
+                const sectionId = $sectionSelect.val();
+                const yearId = $yearSelect.val();
 
-        if (!classId || !yearId) return;
+                if (!classId || !yearId) {
+                    $studentSelect.prop('disabled', true).trigger('change');
+                    return;
+                }
 
-        $loader.show();
-        $studentSelect.prop('disabled', true);
+                $loader.show();
+                $studentSelect.prop('disabled', true).trigger('change');
 
-        const studentUrl = "{{ route('principal.institute.meta.students', $school) }}";
-        let url = `${studentUrl}?class_id=${classId}&year_id=${yearId}`;
-        if (sectionId) url += `&section_id=${sectionId}`;
+                const studentUrl = "{{ route('principal.institute.meta.students', [$school]) }}";
+                console.log('Fetching students from:', studentUrl, { classId, sectionId, yearId });
 
-        $.get(url, function(data) {
-            let options = '<option value="">-- শিক্ষার্থী নির্বাচন করুন --</option>';
-            data.forEach(function(student) {
-                options += `<option value="${student.record_id}">${student.roll_no} - ${student.name}</option>`;
+                $.get(studentUrl, {
+                    class_id: classId,
+                    section_id: sectionId,
+                    year_id: yearId
+                }, function(data) {
+                    let options = '<option value="">-- শিক্ষার্থী নির্বাচন করুন --</option>';
+                    data.forEach(function(student) {
+                        options += `<option value="${student.record_id}">${student.roll_no} - ${student.name}</option>`;
+                    });
+                    $studentSelect.html(options).prop('disabled', false).trigger('change');
+                    $loader.hide();
+                }).fail(function(xhr) {
+                    $loader.hide();
+                    console.error('Students fetch failed:', xhr);
+                    toastr.error('শিক্ষার্থী তালিকা লোড করতে ব্যর্থ হয়েছে।');
+                });
+            }
+
+            // Load Sections when Class changes
+            $classSelect.on('change', function() {
+                const classId = $(this).val();
+                
+                // Reset dependent selects
+                $sectionSelect.html('<option value="">-- লোড হচ্ছে... --</option>').trigger('change');
+                $studentSelect.html('<option value="">-- প্রথমে শ্রেণি নির্বাচন করুন --</option>').prop('disabled', true).trigger('change');
+                
+                if (!classId) {
+                    $sectionSelect.html('<option value="">-- সকল শাখা --</option>').trigger('change');
+                    return;
+                }
+
+                // Fetch Sections
+                const sectionUrl = "{{ route('principal.institute.meta.sections', [$school]) }}";
+                $.get(sectionUrl, { class_id: classId }, function(data) {
+                    let options = '<option value="">-- সকল শাখা --</option>';
+                    data.forEach(function(section) {
+                        options += `<option value="${section.id}">${section.name}</option>`;
+                    });
+                    $sectionSelect.html(options).trigger('change');
+                    // If no sections, trigger manual student load because sectionId will be empty
+                    if (data.length === 0) {
+                        loadStudents();
+                    }
+                }).fail(function(xhr) {
+                    console.error('Sections fetch failed:', xhr);
+                    $sectionSelect.html('<option value="">-- সকল শাখা --</option>').trigger('change');
+                    toastr.error('শাখা তালিকা লোড করতে ব্যর্থ হয়েছে।');
+                });
             });
-            $studentSelect.html(options).prop('disabled', false).trigger('change');
-            $loader.hide();
-        }).fail(function() {
-            $loader.hide();
-            toastr.error('শিক্ষার্থী তালিকা লোড করতে ব্যর্থ হয়েছে।');
-        });
-    }
 
-    // Ensure form validation
-    $('#consentForm').on('submit', function(e) {
-        if (!$studentSelect.val() || !$gameSelect.val()) {
-            toastr.warning('দয়া করে শিক্ষার্থী এবং খেলার নাম নির্বাচন করুন।');
-            e.preventDefault();
-        }
-    });
+            // Load Students when Section or Year changes
+            $sectionSelect.on('change', loadStudents);
+            $yearSelect.on('change', loadStudents);
+
+            // Initial load if Class is already selected
+            if ($classSelect.val()) {
+                $classSelect.trigger('change');
+            }
+
+            // Ensure form validation
+            $('#consentForm').on('submit', function(e) {
+                if (!$studentSelect.val()) {
+                    toastr.warning('দয়া করে শিক্ষার্থী নির্বাচন করুন।');
+                    e.preventDefault();
+                    return false;
+                }
+                if (!$gameSelect.val()) {
+                    toastr.warning('দয়া করে খেলার নাম নির্বাচন করুন।');
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+    };
+
+    startScript();
 });
 </script>
 @endpush
