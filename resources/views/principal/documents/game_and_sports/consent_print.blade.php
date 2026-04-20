@@ -199,7 +199,7 @@
         </div>
 
         <div class="form-row" style="gap: 15px;">
-            <span style="white-space: nowrap;">স্টুডেন্ট আইডিঃ</span>
+            <span style="white-space: nowrap;">শিক্ষার্থী আইডিঃ</span>
             <div class="dotted-line" style="flex-grow: 1;">{{ $student->student_id }}</div>
             <span style="white-space: nowrap;">জন্ম তারিখঃ</span>
             <div class="dotted-line" style="flex-grow: 1;">
@@ -223,9 +223,8 @@
 
         <div class="content-body" style="text-indent: 0;">
             <span style="font-weight: bold;">{{ $school->name_bn ?: $school->name }}</span>-এ <span
-                style="font-weight: bold;">{{ $game_name }}</span> খেলায় অংশগ্রহণ এবং প্রতিযোগিতার প্রয়োজনে সে জেলা,
-            উপ-অঞ্চল, অঞ্চল ও জাতীয় পর্যায়ে অংশ গ্রহণ করিতে পারিবে আমি অভিভাবক হিসেবে সম্মতি জ্ঞাপন ও অনুমতি প্রদান
-            করছি।
+                style="font-weight: bold;">{{ $game_name }}</span> খেলায় অংশগ্রহণ এবং প্রতিযোগিতার প্রয়োজনে সে উপজেলা,
+            জেলা, বিভাগীয় ও জাতীয় পর্যায়ে অংশ গ্রহণ করতে পারবে। আমি অভিভাবক হিসেবে সম্মতি জ্ঞাপন ও অনুমতি প্রদান করছি।
         </div>
 
         <div class="signature-section">
@@ -238,7 +237,7 @@
                 (বাবা/মা না থাকলে আইনানুগ অভিভাবক)
             </div>
             <div class="sig-row">
-                <span>শিক্ষার্থীর সাথে সম্পর্কঃ</span>
+                <span>সম্পর্কঃ</span>
                 <span
                     style="border-bottom: 1px dotted #000; min-width: 150px; display: inline-block; padding: 0 10px;">{{ $relation ?: '................' }}</span>
                 <span style="margin-left: 20px;">মোবাইল নংঃ</span>
