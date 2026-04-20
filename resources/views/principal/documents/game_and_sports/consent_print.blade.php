@@ -90,6 +90,11 @@
             font-style: italic;
         }
 
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
         @media print {
             body {
                 margin: 0;
@@ -98,13 +103,19 @@
             .page {
                 margin: 0;
                 border: none;
-                width: 100%;
-                height: 100%;
+                width: 210mm;
+                height: 296mm;
+                padding: 20mm;
+                overflow: hidden;
             }
 
             .no-print {
                 display: none;
             }
+        }
+
+        .sig-row:last-child {
+            margin-bottom: 0;
         }
 
         .print-btn-strip {
@@ -234,7 +245,6 @@
             <div class="sig-row">
                 অভিভাবকের নামঃ <span
                     style="border-bottom: 1px dotted #000; min-width: 200px; display: inline-block; padding: 0 10px;">{{ $student->guardian_name_bn ?: $student->father_name_bn ?: '........................' }}</span>
-                (বাবা/মা না থাকলে আইনানুগ অভিভাবক)
             </div>
             <div class="sig-row">
                 <span>সম্পর্কঃ</span>
@@ -245,9 +255,7 @@
                     style="border-bottom: 1px dotted #000; min-width: 200px; display: inline-block; padding: 0 10px;">{{ bn_num($student->guardian_phone) }}</span>
             </div>
         </div>
-
     </div>
-
 </body>
 
 </html>
