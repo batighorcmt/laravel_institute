@@ -424,6 +424,22 @@
                                     <li class="nav-item"><a href="{{ route('principal.institute.documents.settings.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.documents.settings.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Settings</p></a></li>
                                 </ul>
                             </li>
+
+                            {{-- Game and Sports --}}
+                            <li class="nav-item has-treeview {{ request()->is('principal/institute/*/game-and-sports*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->is('principal/institute/*/game-and-sports*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-running"></i>
+                                    <p>গেম এন্ড স্পোর্টস <i class="right fas fa-angle-left"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.game-and-sports.consent.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.game-and-sports.consent.*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>অভিভাবকের সম্মতি</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
                             @endif
 
                             @if(auth()->user()->hasModule('notices'))

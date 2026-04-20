@@ -633,6 +633,14 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                         }
                         );
 
+                        // Game and Sports
+                        Route::prefix('game-and-sports')->name('game-and-sports.')->group(function () {
+                            Route::prefix('consent')->name('consent.')->group(function () {
+                                Route::get('/', [App\Http\Controllers\Principal\GameAndSportsController::class, 'index'])->name('index');
+                                Route::get('/print', [App\Http\Controllers\Principal\GameAndSportsController::class, 'print'])->name('print');
+                            });
+                        });
+
                         // Frontend Website Settings
                         Route::prefix('frontend')->name('frontend.')->middleware('module:frontend_website')->group(function () {
                             Route::get('/settings', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'index'])->name('settings');
