@@ -3,56 +3,70 @@
         <div class="col-md-7">
             <div class="card card-primary card-outline">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title">প্রত্যয়নপত্র তৈরি (Enhanced)</h3>
+                    <h3 class="card-title">{{ isEdit ? 'প্রত্যয়নপত্র সংশোধন' : 'প্রত্যয়নপত্র তৈরি' }}</h3>
                     <div class="card-tools">
                         <a :href="'/principal/institute/' + schoolId + '/documents/prottayon/history'" class="btn btn-sm btn-outline-secondary mr-2">
                             <i class="fas fa-list"></i> ইতিহাস (History)
                         </a>
-                        <button v-if="selectedStudent" type="button" class="btn btn-sm btn-outline-primary" @click="showEditModal = true">
+                        <button v-if="selectedStudent && !isEdit" type="button" class="btn btn-sm btn-outline-primary" @click="showEditModal = true">
                             <i class="fas fa-user-edit"></i> শিক্ষার্থীর তথ্য এডিট
                         </button>
                     </div>
                 </div>
                 <div class="card-body">
-                    <form @submit.prevent="generateDocument">
-                        <div class="form-row">
+                    <!-- Student Info Summary in Edit Mode -->
+                    <div v-if="isEdit && selectedStudent" class="alert alert-light border mb-4">
+                        <div class="row">
+                            <div class="col-md-6 border-right">
+                                <strong>শিক্ষার্থী:</strong> {{ selectedStudent.student_name_bn || selectedStudent.name }}<br>
+                                <strong>শ্রেণি:</strong> {{ selectedStudent.class_name_bn || selectedStudent.class_name }}
+                            </div>
+                            <div class="col-md-6 pl-md-4">
+                                <strong>রোল:</strong> {{ toBengaliNumber(selectedStudent.roll_no) }}<br>
+                                <strong>ধরন:</strong> {{ form.attestation_type === 'study' ? 'অধ্যয়নরত' : 'চারিত্রিক' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <form @submit.prevent="submitForm">
+                        <div v-if="!isEdit" class="form-row">
                             <div class="form-group col-md-6">
                                 <label>শ্রেণি</label>
-                                <select v-model="form.class_id" class="form-control" @change="fetchStudents" required>
+                                <select v-model="form.class_id" class="form-control select2" data-model="class_id" @change="fetchStudents" required>
                                     <option value="">-- নির্বাচন করুন --</option>
                                     <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name || 'Class ' + c.numeric_value }}</option>
                                 </select>
                             </div>
                             <div class="form-group col-md-6">
                                 <label>শাখা (ঐচ্ছিক)</label>
-                                <select v-model="form.section_id" class="form-control" @change="fetchStudents">
+                                <select v-model="form.section_id" class="form-control select2" data-model="section_id" @change="fetchStudents">
                                     <option value="">-- সকল শাখা --</option>
                                     <option v-for="s in sections" :key="s.id" :value="s.id">{{ s.name }}</option>
                                 </select>
                             </div>
                         </div>
 
-                        <div class="form-group">
+                        <div v-if="!isEdit" class="form-group">
                             <label>শিক্ষার্থী</label>
-                            <select v-model="form.student_id" class="form-control" @change="onStudentChange" required>
+                            <select v-model="form.student_id" class="form-control select2" data-model="student_id" @change="onStudentChange" required>
                                 <option value="">-- নির্বাচন করুন --</option>
                                 <option v-for="s in students" :key="s.student_id" :value="s.student_id">
-                                    {{ s.name }} (রোল: {{ s.roll_no || '-' }}, আইডি: {{ s.student_id }})
+                                    ({{ toBengaliNumber(s.roll_no) || '-' }} - {{ s.name }})
                                 </option>
                             </select>
                         </div>
 
                         <div class="form-row">
-                            <div class="form-group col-md-6">
+                            <div v-if="!isEdit" class="form-group col-md-6">
                                 <label>প্রত্যয়নের ধরন</label>
-                                <select v-model="form.attestation_type" class="form-control" required>
+                                <select v-model="form.attestation_type" class="form-control select2" data-model="attestation_type" required>
                                     <option value="study">অধ্যয়নরত</option>
                                     <option value="character">চরিত্রগত</option>
                                 </select>
                             </div>
-                            <div class="form-group col-md-6">
+                            <div :class="isEdit ? 'col-md-12' : 'col-md-6'" class="form-group">
                                 <label>প্রিন্ট লেআউট</label>
-                                <select v-model="form.layout" class="form-control" required>
+                                <select v-model="form.layout" class="form-control select2" data-model="layout" required>
                                     <option value="standard">Standard (হেডার সহ)</option>
                                     <option value="pad">Pad/Letterhead (হেডার ছাড়া)</option>
                                 </select>
@@ -61,7 +75,7 @@
 
                         <div class="form-group">
                             <label>টেম্পলেট নির্বাচন করুন</label>
-                            <select v-model="selectedTemplateId" class="form-control" @change="onTemplateChange">
+                            <select v-model="selectedTemplateId" class="form-control select2" data-model="template_id" @change="onTemplateChange">
                                 <option value="">-- সরাসরি লিখুন / কাস্টম --</option>
                                 <option v-for="t in templates" :key="t.id" :value="t.id">{{ t.name }}</option>
                             </select>
@@ -92,7 +106,8 @@
 
                         <div class="mt-4">
                             <button type="submit" class="btn btn-success btn-lg btn-block" :disabled="loading || !form.student_id">
-                                <i class="fas fa-print"></i> জেনারেট ও প্রিন্ট করুন
+                                <i class="fas" :class="isEdit ? 'fa-save' : 'fa-print'"></i> 
+                                {{ isEdit ? 'তথ্য আপডেট করুন' : 'জেনারেট ও প্রিন্ট করুন' }}
                             </button>
                         </div>
                     </form>
@@ -106,15 +121,15 @@
             <div class="alert alert-info mt-3 small">
                 <h5><i class="icon fas fa-info"></i> নির্দেশিকা</h5>
                 <ul>
-                    <li>শিক্ষার্থীর কোনো তথ্যে ভুল থাকলে উপরে <b>'শিক্ষার্থীর তথ্য এডিট'</b> বাটনে ক্লিক করে ঠিক করে নিন।</li>
-                    <li>প্রিভিউতে সব ঠিক থাকলে জেনারেট করুন।</li>
+                    <li v-if="!isEdit">শিক্ষার্থীর কোনো তথ্যে ভুল থাকলে উপরে <b>'শিক্ষার্থীর তথ্য এডিট'</b> বাটনে ক্লিক করে ঠিক করে নিন।</li>
+                    <li>প্রিভিউতে সব ঠিক থাকলে তথ্য সেভ বা জেনারেট করুন।</li>
                     <li>যদি জেনারেট করা ডকুমেস্টে সরাসরি কিছু পরিবর্তন করতে চান তবে <b>'ইডিটিং মুড'</b> ব্যবহার করুন।</li>
                 </ul>
             </div>
         </div>
 
-        <!-- Student Edit Modal -->
-        <div v-if="showEditModal" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5)">
+        <!-- Student Edit Modal (Only for Generation Mode) -->
+        <div v-if="showEditModal && !isEdit" class="modal fade show" style="display: block; background: rgba(0,0,0,0.5)">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -172,23 +187,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import axios from 'axios';
 import KeywordSelector from './KeywordSelector.vue';
-
-const toBengaliNumber = (num) => {
-    if (!num && num !== 0) return '';
-    const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-    return num.toString().replace(/\d/g, d => bn[d]);
-};
 
 const props = defineProps({
     schoolId: { type: Number, required: true },
     schoolNameBn: { type: String, default: '' },
     schoolNameEn: { type: String, default: '' },
-    initialClasses: { type: Array, default: () => [] }
+    initialClasses: { type: Array, default: () => [] },
+    initialDocument: { type: Object, default: null } // New prop for editing
 });
 
+const isEdit = computed(() => !!props.initialDocument);
 const classes = ref(props.initialClasses);
 const sections = ref([]);
 const students = ref([]);
@@ -211,8 +222,94 @@ const form = ref({
     content: ''
 });
 
+const toBengaliNumber = (num) => {
+    if (!num && num !== 0) return '';
+    const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return num.toString().replace(/\d/g, d => bn[d]);
+};
+
+const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+};
+
+const initSelect2 = () => {
+    if (!window.$ || !$.fn.select2) return;
+    
+    $('.select2').each(function() {
+        const $el = $(this);
+        if ($el.data('select2')) {
+            $el.select2('destroy');
+        }
+        
+        $el.select2({
+            width: '100%',
+            theme: 'bootstrap4',
+            placeholder: '-- নির্বাচন করুন --',
+            allowClear: true
+        });
+
+        // Sync Select2 value to Vue on change
+        $el.off('change.select2-sync').on('change.select2-sync', function() {
+            const val = $(this).val();
+            const model = $el.attr('data-model');
+            
+            if (model === 'class_id') {
+                form.value.class_id = val;
+                fetchStudents();
+            } else if (model === 'section_id') {
+                form.value.section_id = val;
+                fetchStudents();
+            } else if (model === 'student_id') {
+                form.value.student_id = val;
+                onStudentChange();
+            } else if (model === 'attestation_type') {
+                form.value.attestation_type = val;
+            } else if (model === 'layout') {
+                form.value.layout = val;
+            } else if (model === 'template_id') {
+                selectedTemplateId.value = val;
+                onTemplateChange();
+            }
+        });
+    });
+};
+
+// Refresh Select2 when options change
+watch([classes, sections, students, templates], () => {
+    nextTick(() => {
+        initSelect2();
+    });
+}, { deep: true });
+
+// Sync Vue value to Select2 if changed programmatically
+watch(() => form.value.class_id, (newVal) => {
+    const $el = $('[data-model="class_id"]');
+    if ($el.val() !== newVal) $el.val(newVal).trigger('change.select2');
+});
+watch(() => form.value.section_id, (newVal) => {
+    const $el = $('[data-model="section_id"]');
+    if ($el.val() !== newVal) $el.val(newVal).trigger('change.select2');
+});
+watch(() => form.value.student_id, (newVal) => {
+    const $el = $('[data-model="student_id"]');
+    if ($el.val() !== newVal) $el.val(newVal).trigger('change.select2');
+});
+watch(() => selectedTemplateId.value, (newVal) => {
+    const $el = $('[data-model="template_id"]');
+    if ($el.val() !== newVal) $el.val(newVal).trigger('change.select2');
+});
+
 const fetchStudents = async () => {
-    if (!form.value.class_id) return;
+    if (!form.value.class_id) {
+        sections.value = [];
+        students.value = [];
+        return;
+    }
     try {
         const secRes = await axios.get(`/principal/institute/${props.schoolId}/meta/sections?class_id=${form.value.class_id}`);
         sections.value = secRes.data;
@@ -223,6 +320,11 @@ const fetchStudents = async () => {
         if (form.value.section_id) url += `&section_id=${form.value.section_id}`;
         const stuRes = await axios.get(url);
         students.value = stuRes.data;
+        
+        // If in edit mode, ensure the initial student is found in the list to trigger onStudentChange
+        if (isEdit.value && form.value.student_id) {
+            nextTick(() => onStudentChange());
+        }
     } catch (e) {}
 };
 
@@ -230,6 +332,13 @@ const fetchTemplates = async () => {
     try {
         const res = await axios.get(`/principal/institute/${props.schoolId}/documents/settings/templates`);
         templates.value = res.data.filter(t => t.type === 'prottayon' && t.is_active);
+        
+        // After templates loaded, if editing, we might need to set the selected template
+        if (isEdit.value && form.value.template_id) {
+            selectedTemplateId.value = form.value.template_id;
+            const t = templates.value.find(x => x.id == selectedTemplateId.value);
+            if (t) selectedTemplate.value = t;
+        }
     } catch (e) {}
 };
 
@@ -255,13 +364,14 @@ const onTemplateChange = () => {
         form.value.template_id = '';
         form.value.content = '';
     }
+    // Automatically switch to Preview mode when template changes to see results
+    editMode.value = false;
 };
 
 const insertKeywordToEditor = (keyword) => {
     if (!editMode.value) {
         editMode.value = true;
     }
-    const text = form.value.content;
     form.value.content += ' ' + keyword;
 };
 
@@ -272,7 +382,6 @@ const parsedContent = computed(() => {
     let content = form.value.content;
     const s = selectedStudent.value;
     
-    // Map all likely tokens
     const tokens = {
         '[student_name_bn]': s.student_name_bn || s.name || '',
         '[student_name_en]': s.student_name_en || '',
@@ -282,11 +391,9 @@ const parsedContent = computed(() => {
         '[mother_name_en]': s.mother_name || '',
         '[student_id]': s.student_id || '',
         '[roll_no]': s.roll_no || '',
-        '[date_of_birth]': s.date_of_birth
-            ? new Date(s.date_of_birth).toLocaleDateString('en-GB')
-            : '',
-        '[date_of_birth_bn]': s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString('bn-BD') : '',
-        '[date_of_birth_en]': s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString('en-GB') : '',
+        '[date_of_birth]': formatDate(s.date_of_birth),
+        '[date_of_birth_bn]': formatDate(s.date_of_birth),
+        '[date_of_birth_en]': formatDate(s.date_of_birth),
         '[gender]': s.gender == 'male' ? 'ছাত্র' : 'ছাত্রী',
         '[blood_group]': s.blood_group || '',
         '[guardian_phone]': s.guardian_phone || '',
@@ -321,20 +428,17 @@ const parsedContent = computed(() => {
         '[session_bn]': s.academic_year_bn || s.academic_year || '',
         '[session_en]': s.academic_year || '',
         '[session]': selectedTemplate.value?.language === 'en' ? (s.academic_year || '') : (s.academic_year_bn || s.academic_year || ''),
-        '[date]': new Date().toLocaleDateString(selectedTemplate.value?.language === 'en' ? 'en-GB' : 'bn-BD'),
+        '[date]': formatDate(new Date()),
         '[school_name]': selectedTemplate.value?.language === 'en' ? props.schoolNameEn : props.schoolNameBn,
         '[school_name_bn]': props.schoolNameBn,
         '[school_name_en]': props.schoolNameEn,
-        // Language specific Numbers
         '[roll_no_bn]': toBengaliNumber(s.roll_no),
         '[roll_no_en]': s.roll_no,
-        // Aliases
         '[student_name]': selectedTemplate.value?.language === 'en' ? (s.student_name_en || s.name) : (s.student_name_bn || s.name),
         '[father_name]': selectedTemplate.value?.language === 'en' ? (s.father_name || '') : (s.father_name_bn || ''),
         '[mother_name]': selectedTemplate.value?.language === 'en' ? (s.mother_name || '') : (s.mother_name_bn || ''),
     };
 
-    // Helper for language-based number conversion
     const isEn = selectedTemplate.value?.language === 'en';
     if (isEn) {
         tokens['[roll_no]'] = s.roll_no || '';
@@ -358,29 +462,63 @@ const formattedPreview = computed(() => {
     return parsedContent.value.replace(/\n/g, '<br>');
 });
 
-const generateDocument = async () => {
+const submitForm = async () => {
     loading.value = true;
     try {
         const payload = {
             ...form.value,
             content: editMode.value ? form.value.content : parsedContent.value,
             is_final: true,
-            updated_student_data: selectedStudent.value // Send modified student info
+            updated_student_data: selectedStudent.value
         };
 
-        const res = await axios.post(`/principal/institute/${props.schoolId}/documents/prottayon/generate`, payload);
-        if (res.data.redirect) {
-            window.location.href = res.data.redirect + '?layout=' + form.value.layout;
+        let res;
+        if (isEdit.value) {
+            // Update mode
+            res = await axios.put(`/principal/institute/${props.schoolId}/documents/prottayon/${props.initialDocument.id}`, payload);
+            toastr.success('প্রত্যয়নপত্র সফলভাবে আপডেট করা হয়েছে');
+            if (res.data.redirect) {
+                window.location.href = res.data.redirect + '?layout=' + form.value.layout;
+            }
+        } else {
+            // Generate mode
+            res = await axios.post(`/principal/institute/${props.schoolId}/documents/prottayon/generate`, payload);
+            if (res.data.redirect) {
+                window.location.href = res.data.redirect + '?layout=' + form.value.layout;
+            }
         }
     } catch (error) {
         console.error(error);
-        toastr.error('প্রত্যয়নপত্র জেনারেট করতে সমস্যা হয়েছে');
+        toastr.error('প্রত্যয়নপত্র প্রসেস করতে সমস্যা হয়েছে');
     } finally {
         loading.value = false;
     }
 };
 
-onMounted(fetchTemplates);
+onMounted(() => {
+    if (isEdit.value) {
+        const doc = props.initialDocument;
+        form.value = {
+            class_id: doc.data?.class_id || '',
+            section_id: doc.data?.section_id || '',
+            student_id: doc.student_id || '',
+            attestation_type: doc.data?.attestation_type || 'study',
+            layout: doc.data?.layout || 'standard',
+            template_id: doc.data?.template_id || '',
+            content: doc.data?.custom_content || doc.data?.content || ''
+        };
+        // In Edit mode, we don't start in editMode (textarea) but in Preview mode
+        editMode.value = true; // Use existing custom content
+        
+        fetchStudents();
+    }
+    
+    fetchTemplates();
+    
+    nextTick(() => {
+        initSelect2();
+    });
+});
 </script>
 
 <style scoped>
@@ -391,4 +529,17 @@ onMounted(fetchTemplates);
     border: 1px solid #ddd;
 }
 .cursor-pointer { cursor: pointer; }
+
+:deep(.select2-container--bootstrap4 .select2-selection) {
+    border: 1px solid #ced4da !important;
+    border-radius: 8px !important;
+    min-height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+:deep(.select2-container--bootstrap4.select2-container--focus .select2-selection) {
+    border-color: #80bdff !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
 </style>
