@@ -273,31 +273,31 @@ class SmsController extends Controller
             return back()->with('error','কোনো প্রাপক পাওয়া যায়নি।')->withInput();
         }
 
-    $sentBy = \Illuminate\Support\Facades\Auth::id();
-        $success = 0; $failed = 0;
+        $payloads = [];
         foreach ($recipients as $to => $meta) {
-            $result = SmsSender::send($school->id, $to, $message);
-            $ok = $result['success'];
-            SmsLog::create([
-                'school_id' => $school->id,
-                'sent_by_user_id' => $sentBy,
-                'recipient_type' => $meta['recipient_type'] ?? null,
-                'recipient_category' => $meta['recipient_category'] ?? null,
-                'recipient_id' => $meta['recipient_id'] ?? null,
-                'recipient_name' => $meta['recipient_name'] ?? null,
-                'recipient_role' => $meta['recipient_role'] ?? null,
-                'roll_number' => $meta['roll_number'] ?? null,
-                'class_name' => $meta['class_name'] ?? null,
-                'section_name' => $meta['section_name'] ?? null,
-                'recipient_number' => $to,
+            $payloads[] = [
+                'mobile' => $to,
                 'message' => $message,
-                'status' => $ok ? 'sent' : 'failed',
-                'response' => $result['message'] . (isset($result['response']) ? ' | ' . substr($result['response'], 0, 200) : ''),
-            ]);
-            if ($ok) $success++; else $failed++;
+                'meta' => $meta
+            ];
         }
 
-        return back()->with('success','মোট '.$recipients->count().' টি নম্বরে পাঠানোর চেষ্টা করা হয়েছে। সফল: '.$success.', বিফল: '.$failed.'।');
+        if (empty($payloads)) {
+            return back()->with('error','কোনো বৈধ নম্বর পাওয়া যায়নি।')->withInput();
+        }
+
+        // Chunk and dispatch jobs
+        $chunkSize = (int) env('SMS_CHUNK_SIZE', 50);
+        $batchDelaySec = (int) env('SMS_BATCH_DELAY_SEC', 5); // spacing to avoid DB/API spikes
+        $chunks = array_chunk($payloads, max(1, $chunkSize));
+        $userId = auth()->id();
+
+        foreach ($chunks as $idx => $chunk) {
+            \App\Jobs\SendSmsChunkJob::dispatch($school->id, $userId, $chunk)
+                ->delay(now()->addSeconds($idx * $batchDelaySec));
+        }
+
+        return back()->with('success', 'মোট '.$recipients->count().' টি নম্বরে পাঠানোর জন্য '.count($chunks).'টি ব্যাচে (প্রতি ব্যাচ ~'.$chunkSize.' বার্তা) কিউ করা হয়েছে। কিছুক্ষণ পর লগ চেক করুন।');
     }
 
     public function logs(Request $request, School $school)

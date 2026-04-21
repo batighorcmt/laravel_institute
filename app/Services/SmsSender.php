@@ -7,12 +7,23 @@ use Illuminate\Support\Facades\Http;
 
 class SmsSender
 {
+    protected static $settingsCache = [];
+
     public static function send(int $schoolId, string $to, string $message): array
     {
-        $apiUrl = Setting::forSchool($schoolId)->where('key','sms_api_url')->value('value');
-        $apiKey = Setting::forSchool($schoolId)->where('key','sms_api_key')->value('value');
-        $senderId = Setting::forSchool($schoolId)->where('key','sms_sender_id')->value('value');
-        $masking = Setting::forSchool($schoolId)->where('key','sms_masking')->value('value');
+        if (!isset(static::$settingsCache[$schoolId])) {
+            static::$settingsCache[$schoolId] = [
+                'apiUrl' => Setting::forSchool($schoolId)->where('key','sms_api_url')->value('value'),
+                'apiKey' => Setting::forSchool($schoolId)->where('key','sms_api_key')->value('value'),
+                'senderId' => Setting::forSchool($schoolId)->where('key','sms_sender_id')->value('value'),
+                'masking' => Setting::forSchool($schoolId)->where('key','sms_masking')->value('value'),
+            ];
+        }
+
+        $apiUrl = static::$settingsCache[$schoolId]['apiUrl'];
+        $apiKey = static::$settingsCache[$schoolId]['apiKey'];
+        $senderId = static::$settingsCache[$schoolId]['senderId'];
+        $masking = static::$settingsCache[$schoolId]['masking'];
 
         // If no API configured, simulate success to allow UI testing
         if (!$apiUrl || !$apiKey) {
