@@ -37,6 +37,7 @@
         "puppeteer": "^24.39.0",
         "select2": "^4.0.13",
         "select2-bootstrap4-theme": "^1.0.0",
-        "vue": "^3.5.29"
+        "vue": "^3.5.29",
+        "vuedraggable": "^4.1.0"
     }
 }

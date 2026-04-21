@@ -283,7 +283,7 @@ const parsedContent = computed(() => {
         '[student_id]': s.student_id || '',
         '[roll_no]': s.roll_no || '',
         '[date_of_birth]': s.date_of_birth
-            ? new Date(s.date_of_birth).toLocaleDateString(selectedTemplate.value?.language === 'en' ? 'en-GB' : 'bn-BD')
+            ? new Date(s.date_of_birth).toLocaleDateString('en-GB')
             : '',
         '[date_of_birth_bn]': s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString('bn-BD') : '',
         '[date_of_birth_en]': s.date_of_birth ? new Date(s.date_of_birth).toLocaleDateString('en-GB') : '',

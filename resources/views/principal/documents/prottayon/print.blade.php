@@ -63,6 +63,16 @@
   $memoFormatted = $isEn ? $rawMemo : bn_digits($rawMemo);
   $dateFormatted = format_date_localized($document->issued_at, $isEn ? $months_en : $months_bn, $isEn);
   $schoolName    = $isEn ? $school->name : ($school->name_bn ?: $school->name);
+  // Margins Logic: Use custom margins ONLY for 'pad' layout.
+  // Standard layout uses fixed margins.
+  if ($layout === 'pad' && isset($setting->margins)) {
+      $margins = $setting->margins;
+      $unit = 'in';
+  } else {
+      // Standard layout defaults (Fixed - roughly 15mm/20mm)
+      $margins = ['top' => 0.6, 'right' => 0.6, 'bottom' => 0.8, 'left' => 0.6];
+      $unit = 'in';
+  }
 ?>
 <!DOCTYPE html>
 <html lang="{{ $isEn ? 'en' : 'bn' }}">
@@ -90,7 +100,7 @@
     background: white;
     box-shadow: 0 0 20px rgba(0,0,0,0.1);
     position: relative;
-    padding: 15mm 15mm 20mm 15mm;
+    padding: {{ $margins['top'] }}{{ $unit }} {{ $margins['right'] }}{{ $unit }} {{ $margins['bottom'] }}{{ $unit }} {{ $margins['left'] }}{{ $unit }};
     display: flex;
     flex-direction: column;
   }
@@ -102,20 +112,7 @@
   }
   .content-wrapper { position: relative; z-index: 2; flex-grow: 1; }
 
-  /* PAD LAYOUT */
-  .pad-header {
-    display: flex; align-items: center;
-    border-bottom: 2px double #008000;
-    padding-bottom: 15px; margin-bottom: 10px; color: #008000;
-  }
-  .pad-logo { width: 100px; height: 100px; margin-right: 15px; }
-  .pad-logo img { width: 100%; height: auto; }
-  .pad-school-info { flex: 1; text-align: center; }
-  .pad-office-title { font-size: 20px; margin-bottom: 5px; font-weight: bold; }
-  .pad-school-name { font-size: 36px; font-weight: bold; line-height: 1; margin-bottom: 10px; }
-  .pad-address { font-size: 16px; color: #333; }
-  .pad-established { font-size: 16px; margin-top: 5px; font-weight: bold; }
-  .pad-contacts { text-align: right; font-size: 13px; min-width: 200px; line-height: 1.4; color: #008000; }
+  /* PAD LAYOUT - No header styles needed here if we remove it */
 
   .pad-details-row {
     display: flex; justify-content: space-between;
@@ -219,32 +216,7 @@
     <div class="content-wrapper">
 
       @if($layout === 'pad')
-        {{-- PAD LAYOUT --}}
-        <div class="pad-header">
-            <div class="pad-logo">
-                <img src="{{ $logoUrl }}" alt="Logo">
-            </div>
-            <div class="pad-school-info">
-                <div class="pad-office-title">{{ $lbl['office'] }}</div>
-                <div class="pad-school-name">{{ $schoolName }}</div>
-                <div class="pad-address">{{ $school->address }}</div>
-                @if($school->established_year)
-                <div class="pad-established">{{ $lbl['established'] }}-{{ $isEn ? $school->established_year : bn_digits($school->established_year) }}</div>
-                @endif
-            </div>
-            <div class="pad-contacts">
-                @if($school->phone)
-                    {{ $isEn ? 'Mobile' : 'মোবাইল' }}: {{ $school->phone }}<br>
-                @endif
-                @if($school->mpo_code)
-                    {{ $isEn ? 'MPO Code' : 'এমপিও কোড' }}: {{ $isEn ? $school->mpo_code : bn_digits($school->mpo_code) }}<br>
-                @endif
-                @if($school->school_code)
-                    {{ $isEn ? 'School Code' : 'স্কুল কোড' }}: {{ $isEn ? $school->school_code : bn_digits($school->school_code) }}
-                @endif
-            </div>
-        </div>
-
+        {{-- PAD LAYOUT (No Header) --}}
         <div class="pad-details-row">
             <div>{{ $lbl['memo'] }}: {{ $memoFormatted }}</div>
             <div>{{ $lbl['date'] }}: {{ $dateFormatted }}</div>
@@ -257,8 +229,11 @@
         </div>
 
         <div class="pad-signature-area">
-            <div class="pad-signature-box">
-                <div class="pad-signature-name">{{ $lbl['headmaster'] }}</div>
+            <div id="classTeacherSig" style="text-align:center; width: 150px; display:none;">
+                <div style="border-top: 1px solid #000; padding-top: 5px;">{{ $lbl['class_teacher'] }}</div>
+            </div>
+            <div style="margin-left:auto; text-align:center; width: 150px;">
+                <div style="border-top: 1px solid #000; padding-top: 5px;">{{ $lbl['headmaster'] }}</div>
             </div>
         </div>
 
@@ -268,8 +243,8 @@
             <img src="{{ $logoUrl }}" style="height:80px;" alt="Logo">
             <div class="standard-school-info">
                 <h1 style="font-size: 28px;">{{ $schoolName }}</h1>
-                <p>{{ $school->address }}</p>
-                <p>{{ $isEn ? 'Mobile' : 'মোবাইল' }}: {{ $school->phone }}
+                <p>{{ $isEn ? $school->address : ($school->address_bn ?: $school->address) }}</p>
+                <p>{{ $isEn ? 'Mobile' : 'মোবাইল' }}: {{ $isEn ? $school->phone : bn_digits($school->phone) }}
                    @if($school->email) | {{ $isEn ? 'Email' : 'ইমেইল' }}: {{ $school->email }} @endif
                 </p>
             </div>
@@ -333,13 +308,6 @@
       @endif
 
     </div>
-
-    @if($layout === 'pad')
-    <div class="pad-footer">
-        <div>{{ $isEn ? 'Email' : 'E-mail' }}: {{ $school->email }}</div>
-        @if($school->website)<div>{{ $isEn ? 'Website' : 'ওয়েবসাইট' }}: {{ $school->website }}</div>@endif
-    </div>
-    @endif
   </div>
 
 <script>
@@ -347,18 +315,24 @@ function toggleClassTeacher(show) {
     var el = document.getElementById('classTeacherSig');
     if (el) {
         el.style.display = show ? 'block' : 'none';
-        // Adjust headmaster position when class teacher shown
-        el.parentElement.style.justifyContent = show ? 'space-between' : 'flex-end';
+        var parent = el.parentElement;
+        var signatureBoxes = parent.children;
+        var headmasterBox = signatureBoxes[signatureBoxes.length - 1]; // Last box is headmaster
+
         if (show) {
-            el.parentElement.querySelector('[style*="margin-left:auto"]')?.style.setProperty('margin-left', '0');
+            parent.style.justifyContent = 'space-between';
+            if (headmasterBox) headmasterBox.style.marginLeft = '0';
         } else {
-            el.parentElement.querySelector('div:last-child')?.style.setProperty('margin-left', 'auto');
+            parent.style.justifyContent = 'flex-end';
+            if (headmasterBox) headmasterBox.style.marginLeft = 'auto';
         }
     }
 }
 // Default: class teacher hidden
 document.addEventListener('DOMContentLoaded', function() {
-    toggleClassTeacher(false);
+    // Sync checkbox with initial state if needed
+    var chk = document.getElementById('showClassTeacher');
+    if (chk) toggleClassTeacher(chk.checked);
 });
 </script>
 </body>

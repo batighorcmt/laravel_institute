@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DocumentSetting extends Model
 {
     protected $fillable = [
-        'school_id', 'page', 'background_path', 'colors', 'memo_format', 'custom_text', 'custom_text_en'
+        'school_id', 'page', 'background_path', 'colors', 'memo_format', 'custom_text', 'custom_text_en', 'margins'
     ];
 
     protected $casts = [
@@ -16,6 +16,7 @@ class DocumentSetting extends Model
         'memo_format' => 'array',
         'custom_text' => 'array',
         'custom_text_en' => 'array',
+        'margins' => 'array',
     ];
 
     public function school(): BelongsTo

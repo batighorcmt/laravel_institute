@@ -1,90 +1,166 @@
 <template>
     <div class="row mt-4">
         <div class="col-md-12">
-            <h4 class="mb-3">প্রিন্ট সেটিংস (ব্যাকগ্রাউন্ড, কালার ও মেমো ফরম্যাট)</h4>
+            <h3 class="premium-title mb-4">
+                <i class="fas fa-sliders-h mr-2"></i>প্রিন্ট কনফিগারেশন ও সেটিংস
+            </h3>
         </div>
-        <div v-for="pageKey in pages" :key="pageKey" class="col-md-4">
-            <div class="card card-secondary card-outline mb-3">
-                <div class="card-header">
-                    <strong class="card-title">{{ pageKey.toUpperCase() }} Print Setup</strong>
+        
+        <div v-for="pageKey in pages" :key="pageKey" class="col-lg-6 col-xl-4">
+            <div class="card premium-card mb-4">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0 text-capitalize">
+                        <i class="fas fa-file-alt mr-2 text-primary"></i>{{ pageKey }} Setup
+                    </h5>
+                    <span class="badge badge-pill badge-light border">{{ pageKey.toUpperCase() }}</span>
                 </div>
+                
                 <form @submit.prevent="saveSettings(pageKey)">
-                    <div class="card-body">
-                        <!-- Background -->
-                        <div class="form-group">
-                            <label>Background Image</label>
-                            <div v-if="getSetting(pageKey).background_path" class="mb-2">
-                                <img :src="'/storage/' + getSetting(pageKey).background_path" class="img-thumbnail" style="max-height: 80px">
-                            </div>
-                            <input type="file" @change="onFileChange($event, pageKey)" class="form-control-file" accept="image/*">
-                        </div>
-
-                        <!-- Colors -->
-                        <div class="form-row">
-                            <div class="form-group col">
-                                <label class="small">Title Color</label>
-                                <input type="color" v-model="getSetting(pageKey).colors.title" class="form-control form-control-sm">
-                            </div>
-                            <div class="form-group col">
-                                <label class="small">Body Color</label>
-                                <input type="color" v-model="getSetting(pageKey).colors.body" class="form-control form-control-sm">
-                            </div>
-                        </div>
-
-                        <!-- Memo Format (Keywords) -->
-                        <div class="form-group">
-                            <label class="small">Memo Number Format (Drag/Check to reorder)</label>
-                            <div class="border p-2 bg-light rounded" style="min-height: 100px;">
-                                <div v-for="(keyword, index) in availableKeywords[pageKey]" :key="keyword" class="custom-control custom-checkbox mb-1">
-                                    <input type="checkbox" :id="'chk-' + pageKey + '-' + keyword" 
-                                           v-model="getSetting(pageKey).memo_format" :value="keyword" class="custom-control-input">
-                                    <label class="custom-control-label" :for="'chk-' + pageKey + '-' + keyword">
-                                        {{ formatKeyword(keyword) }}
-                                    </label>
+                    <div class="card-body p-4">
+                        <!-- Background Image -->
+                        <div class="setting-section mb-4">
+                            <label class="section-label">Background / Watermark</label>
+                            <div class="background-preview-container d-flex align-items-center p-3 mb-2 rounded border">
+                                <div class="preview-box mr-3">
+                                    <div v-if="getSetting(pageKey).background_path" class="img-wrapper">
+                                        <img :src="'/storage/' + getSetting(pageKey).background_path" class="img-fluid rounded">
+                                    </div>
+                                    <div v-else class="empty-preview d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-image text-muted opacity-50"></i>
+                                    </div>
+                                </div>
+                                <div class="upload-controls flex-grow-1">
+                                    <div class="custom-file custom-file-sm">
+                                        <input type="file" @change="onFileChange($event, pageKey)" class="custom-file-input" :id="'bg-' + pageKey" accept="image/*">
+                                        <label class="custom-file-label text-truncate" :for="'bg-' + pageKey">Choose image...</label>
+                                    </div>
+                                    <small class="text-muted xsmall mt-1 d-block">Recommended: PNG with low opacity</small>
                                 </div>
                             </div>
-                            <small class="text-muted">চেক করা কিওয়ার্ডগুলো দিয়ে মেমো নম্বর তৈরি হবে।</small>
                         </div>
-                        
-                        <!-- Custom Text with Keywords -->
-                        <div class="form-group">
-                            <label class="small d-flex justify-content-between">
-                                Custom Text 
-                                <span class="text-info cursor-pointer" @click="showKeywords = !showKeywords">
-                                    <i class="fas fa-keyboard"></i> কি-ওয়ার্ড
-                                </span>
+
+                        <!-- Brand Colors -->
+                        <div class="setting-section mb-4">
+                            <label class="section-label">Aesthetic Colors</label>
+                            <div class="row no-gutters">
+                                <div class="col-6 pr-2">
+                                    <div class="color-item p-2 border rounded d-flex align-items-center">
+                                        <input type="color" v-model="getSetting(pageKey).colors.title" class="color-picker-input mr-2">
+                                        <div class="color-info">
+                                            <span class="d-block xsmall font-weight-bold">Title Color</span>
+                                            <code class="xsmall text-uppercase">{{ getSetting(pageKey).colors.title }}</code>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 pl-2">
+                                    <div class="color-item p-2 border rounded d-flex align-items-center">
+                                        <input type="color" v-model="getSetting(pageKey).colors.body" class="color-picker-input mr-2">
+                                        <div class="color-info">
+                                            <span class="d-block xsmall font-weight-bold">Body Text</span>
+                                            <code class="xsmall text-uppercase">{{ getSetting(pageKey).colors.body }}</code>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Memo Number Format (Draggable) -->
+                        <div class="setting-section mb-4">
+                            <label class="section-label d-flex justify-content-between align-items-center">
+                                Memo Number Format
+                                <span class="badge badge-info xsmall">Drag to Reorder</span>
                             </label>
-                            <div v-if="showKeywords" class="mb-2 p-1 border rounded bg-white">
-                                <button v-for="kw in ['[year]', '[class]', '[section]', '[type]', '[serial]']" 
-                                        :key="kw" type="button" 
-                                        class="btn btn-xs btn-outline-info mr-1 mb-1"
-                                        @click="showKeywords = false"> <!-- just info, not inserting actually -->
-                                    {{ kw }}
+                            
+                            <!-- Draggable Active Area -->
+                            <div class="memo-drag-area p-2 border rounded bg-light mb-2 min-h-50">
+                                <draggable 
+                                    v-model="getSetting(pageKey).memo_format" 
+                                    item-key="index"
+                                    class="d-flex flex-wrap"
+                                    animation="200"
+                                    ghost-class="ghost-chip"
+                                >
+                                    <template #item="{element, index}">
+                                        <div class="memo-chip mr-2 mb-1">
+                                            <i class="fas fa-grip-vertical mr-1 opacity-50"></i>
+                                            {{ formatKeyword(element) }}
+                                            <button type="button" class="btn-remove-chip" @click="removeChip(pageKey, index)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </draggable>
+                                <div v-if="getSetting(pageKey).memo_format.length === 0" class="text-muted text-center py-2 xsmall italic">
+                                    Select components from below to build memo
+                                </div>
+                            </div>
+
+                            <!-- Available Pool -->
+                            <div class="available-chips d-flex flex-wrap p-1">
+                                <button v-for="kw in getAvailableKw(pageKey)" 
+                                        :key="kw" 
+                                        type="button"
+                                        class="btn-available-chip mr-1 mb-1"
+                                        @click="addChip(pageKey, kw)"
+                                        :disabled="getSetting(pageKey).memo_format.includes(kw)">
+                                    <i class="fas fa-plus mr-1"></i> {{ formatKeyword(kw) }}
                                 </button>
                             </div>
+                        </div>
+                        
+                        <!-- Custom Text Aliases -->
+                        <div class="setting-section mb-4">
+                            <label class="section-label d-flex justify-content-between">
+                                Custom Text Tokens
+                                <span class="btn-token-info" @click="showKeywords = !showKeywords">
+                                    <i class="fas fa-info-circle mr-1"></i>কি-ওয়ার্ড গাইড
+                                </span>
+                            </label>
+                            <div v-show="showKeywords" class="mb-2 p-2 border rounded bg-white shadow-sm token-guide">
+                                <code v-for="kw in ['[year]', '[class]', '[section]', '[type]', '[serial]']" 
+                                      :key="kw" class="mr-2 mb-1 d-inline-block">{{ kw }}</code>
+                            </div>
                             <div class="row">
-                                <div class="col-md-6">
-                                    <label class="small text-muted">বাংলা কাস্টম টেক্সট</label>
-                                    <textarea :id="'custom_text_' + pageKey" 
-                                              v-model="getSetting(pageKey).custom_text_raw" 
-                                              class="form-control form-control-sm" 
-                                              rows="2" 
-                                              placeholder="Tex1, Text2 or keywords"></textarea>
+                                <div class="col-12 mb-2">
+                                    <div class="token-input-wrapper">
+                                        <span class="lang-tag">BN</span>
+                                        <input type="text" v-model="getSetting(pageKey).custom_text_raw" 
+                                               class="form-control form-control-sm modern-input" 
+                                               placeholder="Comma separated: TEXT1, TEXT2...">
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="small text-muted">English Custom Text</label>
-                                    <textarea :id="'custom_text_en_' + pageKey" 
-                                              v-model="getSetting(pageKey).custom_text_en_raw" 
-                                              class="form-control form-control-sm" 
-                                              rows="2" 
-                                              placeholder="Tex1, Text2 or keywords"></textarea>
+                                <div class="col-12">
+                                    <div class="token-input-wrapper">
+                                        <span class="lang-tag">EN</span>
+                                        <input type="text" v-model="getSetting(pageKey).custom_text_en_raw" 
+                                               class="form-control form-control-sm modern-input" 
+                                               placeholder="Comma separated: TEXT1, TEXT2...">
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Precision Margins -->
+                        <div class="setting-section border-top pt-3">
+                            <label class="section-label text-danger">
+                                <i class="fas fa-border-style mr-1"></i>Page Margins (Inch)
+                            </label>
+                            <div class="row no-gutters">
+                                <div v-for="side in ['top', 'right', 'bottom', 'left']" :key="side" class="col-3 px-1 text-center">
+                                    <label class="xsmall text-muted text-uppercase mb-0">{{ side }}</label>
+                                    <input type="number" step="0.1" v-model="getSetting(pageKey).margins[side]" 
+                                           class="form-control form-control-sm border-0 bg-light text-center font-weight-bold" 
+                                           style="border-radius: 4px;">
+                                </div>
+                            </div>
+                            <p class="text-muted xsmall mt-2 mb-0 italic">Applied ONLY to 'Pad/No Header' layout for pre-printed paper.</p>
+                        </div>
                     </div>
-                    <div class="card-footer text-right">
-                        <button type="submit" class="btn btn-sm btn-primary" :disabled="loading[pageKey]">
-                            <i class="fas" :class="loading[pageKey] ? 'fa-spinner fa-spin' : 'fa-save'"></i> Save Settings
+                    
+                    <div class="card-footer bg-white border-top-0 px-4 pb-4">
+                        <button type="submit" class="btn btn-primary btn-block premium-save-btn" :disabled="loading[pageKey]">
+                            <i class="fas mr-2" :class="loading[pageKey] ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                            Save Config for {{ pageKey.toUpperCase() }}
                         </button>
                     </div>
                 </form>
@@ -95,6 +171,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import draggable from 'vuedraggable';
 import axios from 'axios';
 
 const props = defineProps({
@@ -113,6 +190,10 @@ props.pages.forEach(p => {
     availableKeywords.value[p] = ['institution_code', 'custom_text', 'academic_year', 'serial_no', 'class', 'type'];
 });
 
+const getAvailableKw = (page) => {
+    return availableKeywords.value[page] || [];
+};
+
 const getSetting = (page) => {
     if (!settings.value[page]) {
         const initial = props.initialSettings[page] || {};
@@ -121,7 +202,8 @@ const getSetting = (page) => {
             memo_format: initial.memo_format || ['institution_code', 'serial_no'],
             custom_text_raw: Array.isArray(initial.custom_text) ? initial.custom_text.join(',') : (initial.custom_text || ''),
             custom_text_en_raw: Array.isArray(initial.custom_text_en) ? initial.custom_text_en.join(',') : (initial.custom_text_en || ''),
-            background_path: initial.background_path || null
+            background_path: initial.background_path || null,
+            margins: initial.margins || { top: 1.5, right: 0.6, bottom: 0.8, left: 0.6 }
         };
     }
     return settings.value[page];
@@ -131,23 +213,19 @@ const formatKeyword = (kw) => {
     return kw.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
-const onFileChange = (e, page) => {
-    files.value[page] = e.target.files[0];
+const addChip = (page, kw) => {
+    const s = getSetting(page);
+    if (!s.memo_format.includes(kw)) {
+        s.memo_format.push(kw);
+    }
 };
 
-const insertKeyword = (page, kw) => {
-    const el = document.getElementById('custom_text_' + page);
-    if (!el) return;
-    
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const text = settings.value[page].custom_text_raw;
-    settings.value[page].custom_text_raw = text.substring(0, start) + kw + text.substring(end);
-    
-    setTimeout(() => {
-        el.focus();
-        el.setSelectionRange(start + kw.length, start + kw.length);
-    }, 0);
+const removeChip = (page, index) => {
+    getSetting(page).memo_format.splice(index, 1);
+};
+
+const onFileChange = (e, page) => {
+    files.value[page] = e.target.files[0];
 };
 
 const saveSettings = async (page) => {
@@ -166,6 +244,12 @@ const saveSettings = async (page) => {
         s.memo_format.forEach(m => formData.append('memo_format[]', m));
         formData.append('custom_text', s.custom_text_raw);
         formData.append('custom_text_en', s.custom_text_en_raw);
+
+        // Append margins
+        formData.append('margins[top]', s.margins.top);
+        formData.append('margins[right]', s.margins.right);
+        formData.append('margins[bottom]', s.margins.bottom);
+        formData.append('margins[left]', s.margins.left);
 
         await axios.post(`/principal/institute/${props.schoolId}/documents/settings`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
@@ -189,6 +273,45 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.cursor-pointer { cursor: pointer; }
-.btn-xs { padding: 1px 5px; font-size: 10px; }
+.premium-title { font-weight: 800; color: #2d3436; font-size: 1.7rem; letter-spacing: -0.5px; }
+.premium-card { border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: transform 0.3s; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); }
+.premium-card:hover { transform: translateY(-5px); }
+.card-header { background: transparent; border-bottom: 1px solid rgba(0,0,0,0.05); padding: 1.5rem; }
+.section-label { font-size: 0.85rem; font-weight: 700; color: #636e72; text-transform: uppercase; margin-bottom: 0.75rem; display: block; letter-spacing: 0.5px; }
+
+/* Colors */
+.color-picker-input { -webkit-appearance: none; border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; padding: 0; background: none; }
+.color-picker-input::-webkit-color-swatch { border: none; border-radius: 6px; }
+
+/* Memo Drag Area */
+.memo-drag-area { min-height: 60px; display: flex; align-items: center; border-style: dashed !important; border-width: 2px !important; }
+.memo-chip { background: #fff; border: 1px solid #dfe6e9; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: #2d3436; display: flex; align-items: center; cursor: move; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+.ghost-chip { opacity: 0.4; background: #e0e0e0; }
+.btn-remove-chip { border: none; background: transparent; color: #ff7675; margin-left: 6px; padding: 0; cursor: pointer; font-size: 0.7rem; }
+.btn-available-chip { border: 1px solid #74b9ff; background: #f0f7ff; color: #0984e3; padding: 3px 12px; border-radius: 15px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-available-chip:hover:not(:disabled) { background: #0984e3; color: #fff; }
+.btn-available-chip:disabled { border-color: #dfe6e9; color: #b2bec3; background: #f5f6fa; cursor: not-allowed; }
+
+/* Inputs */
+.modern-input { border-radius: 8px; border: 1px solid #dfe6e9; padding: 10px 12px; height: auto; transition: border-color 0.2s; min-height: 40px; }
+select.modern-input { padding-top: 0; padding-bottom: 0; height: 40px; }
+.modern-input:focus { border-color: #0984e3; box-shadow: none; outline: none; }
+.token-input-wrapper { position: relative; }
+.lang-tag { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 10px; font-weight: 900; color: #b2bec3; pointer-events: none; }
+
+/* Token Guide */
+.btn-token-info { font-size: 0.75rem; color: #0984e3; cursor: pointer; font-weight: 600; }
+.token-guide code { background: #f5f6fa; padding: 2px 6px; border-radius: 4px; color: #d63031; }
+
+/* Preview */
+.background-preview-container { background: #fcfcfc; }
+.preview-box { width: 50px; height: 50px; overflow: hidden; background: #fff; border: 1px solid #eee; border-radius: 8px; }
+.empty-preview { height: 100%; font-size: 1.2rem; }
+
+/* Save btn */
+.premium-save-btn { border-radius: 12px; padding: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 15px rgba(9, 132, 227, 0.2); }
+
+.italic { font-style: italic; }
+.xsmall { font-size: 0.7rem; }
+.opacity-50 { opacity: 0.5; }
 </style>

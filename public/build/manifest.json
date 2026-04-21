@@ -32,7 +32,11 @@
     "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-v4compatibility.woff2"
   },
   "resources/css/app.css": {
+<<<<<<< Updated upstream
     "file": "assets/app-Ny4Ypsm2.css",
+=======
+    "file": "assets/app-DE5P1psG.css",
+>>>>>>> Stashed changes
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -41,12 +45,20 @@
     ]
   },
   "resources/js/app.js": {
+<<<<<<< Updated upstream
     "file": "assets/app-nagewpJf.js",
+=======
+    "file": "assets/app-DisuREo-.js",
+>>>>>>> Stashed changes
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "css": [
+<<<<<<< Updated upstream
       "assets/app-CQAa8ynW.css"
+=======
+      "assets/app-Cx5uSv3K.css"
+>>>>>>> Stashed changes
     ]
   }
 }

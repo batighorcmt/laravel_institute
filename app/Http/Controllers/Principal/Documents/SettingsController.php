@@ -32,6 +32,7 @@ class SettingsController extends Controller
             'memo_format' => 'nullable|array|min:1',
             'custom_text' => 'nullable|string',
             'custom_text_en' => 'nullable|string',
+            'margins' => 'nullable|array',
         ]);
 
         $path = null;
@@ -46,6 +47,7 @@ class SettingsController extends Controller
         if ($path) { $setting->background_path = $path; }
         if (isset($validated['colors'])) { $setting->colors = $validated['colors']; }
         if (isset($validated['memo_format'])) { $setting->memo_format = $validated['memo_format']; }
+        if (isset($validated['margins'])) { $setting->margins = $validated['margins']; }
         if (isset($validated['custom_text'])) { $setting->custom_text = array_filter(array_map('trim', explode(',', $validated['custom_text']))); }
         if (isset($validated['custom_text_en'])) { $setting->custom_text_en = array_filter(array_map('trim', explode(',', $validated['custom_text_en']))); }
         $setting->save();

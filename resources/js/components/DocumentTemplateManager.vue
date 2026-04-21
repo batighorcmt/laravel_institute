@@ -1,64 +1,73 @@
 <template>
-    <div class="row">
+    <div class="row mt-4">
+        <div class="col-md-12 mb-4">
+            <h3 class="premium-title">
+                <i class="fas fa-file-signature mr-2"></i>ডকুমেন্ট টেম্পলেট ম্যানেজমেন্ট
+            </h3>
+        </div>
+
         <div class="col-md-8">
-            <div class="card card-primary card-outline">
-                <div class="card-header d-flex justify-content-between">
-                    <h3 class="card-title">প্রত্যয়ন টেম্পলেট সেটআপ</h3>
-                    <div class="card-tools">
-                        <button class="btn btn-success btn-sm" @click="resetForm" v-if="editingTemplate">
-                            <i class="fas fa-plus"></i> নতুন টেম্পলেট
-                        </button>
-                    </div>
+            <div class="card premium-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas" :class="editingTemplate ? 'fa-edit text-warning' : 'fa-plus-circle text-success'"></i>
+                        {{ editingTemplate ? 'টেম্পলেট এডিট করুন' : 'নতুন টেম্পলেট তৈরি' }}
+                    </h5>
+                    <button class="btn btn-outline-primary btn-sm rounded-pill px-3" @click="resetForm" v-if="editingTemplate">
+                         নতুন তৈরি করুন
+                    </button>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
                     <form @submit.prevent="saveTemplate">
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">প্রত্যয়ন এর ধরন</label>
-                            <div class="col-sm-9">
-                                <select v-model="form.type" class="form-control" required>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label class="section-label">প্রত্যয়ন এর ধরন</label>
+                                <select v-model="form.type" class="form-control modern-input" required>
                                     <option value="prottayon">প্রত্যয়নপত্র (Prottayon)</option>
                                     <option value="certificate">সার্টিফিকেট (Certificate)</option>
                                     <option value="testimonial">প্রশংসাপত্র (Testimonial)</option>
                                 </select>
                             </div>
-                        </div>
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">ভাষা (Language)</label>
-                            <div class="col-sm-9">
-                                <select v-model="form.language" class="form-control" required>
+                            <div class="col-md-6 form-group">
+                                <label class="section-label">ভাষা (Language)</label>
+                                <select v-model="form.language" class="form-control modern-input" required>
                                     <option value="bn">বাংলা (Bengali)</option>
                                     <option value="en">ইংরেজি (English)</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">টেম্পলেট এর নাম</label>
-                            <div class="col-sm-9">
-                                <input type="text" v-model="form.name" class="form-control" placeholder="যেমন: সাধারণ প্রত্যয়নপত্র" required>
-                            </div>
+
+                        <div class="form-group mb-4">
+                            <label class="section-label">টেম্পলেট এর নাম</label>
+                            <input type="text" v-model="form.name" class="form-control modern-input" placeholder="যেমন: সাধারণ প্রত্যয়নপত্র" required>
                         </div>
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">টেম্পলেট বডি</label>
-                            <div class="col-sm-9">
-                                <textarea id="template_body" v-model="form.content" class="form-control" rows="10" placeholder="এখানে টেম্পলেট লিখুন এবং ডানদিকের কিওয়ার্ড ব্যবহার করুন..." required></textarea>
-                            </div>
+
+                        <div class="form-group mb-4">
+                            <label class="section-label d-flex justify-content-between">
+                                টেম্পলেট বডি
+                                <span class="badge badge-light border xsmall">কি-ওয়ার্ড ব্যবহার করুন</span>
+                            </label>
+                            <textarea id="template_body" v-model="form.content" 
+                                      class="form-control modern-input" rows="12" 
+                                      placeholder="এখানে টেম্পলেট লিখুন..." required></textarea>
                         </div>
-                        <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">স্ট্যাটাস</label>
-                            <div class="col-sm-9">
-                                <div class="custom-control custom-switch mt-2">
-                                    <input type="checkbox" v-model="form.is_active" class="custom-control-input" id="statusSwitch">
-                                    <label class="custom-control-label" for="statusSwitch">{{ form.is_active ? 'সক্রিয়' : 'নিষ্ক্রিয়' }}</label>
-                                </div>
+
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="custom-control custom-switch premium-switch">
+                                <input type="checkbox" v-model="form.is_active" class="custom-control-input" id="statusSwitch">
+                                <label class="custom-control-label font-weight-bold" for="statusSwitch">
+                                    {{ form.is_active ? 'সক্রিয় (Active)' : 'নিষ্ক্রিয় (Inactive)' }}
+                                </label>
                             </div>
-                        </div>
-                        <div class="form-group row">
-                            <div class="offset-sm-3 col-sm-9">
-                                <button type="submit" class="btn btn-primary" :disabled="loading">
-                                    <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+                            
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-light rounded-pill px-4 mr-2" @click="resetForm" v-if="editingTemplate">
+                                    বাতিল
+                                </button>
+                                <button type="submit" class="btn btn-primary rounded-pill px-5 premium-shadow" :disabled="loading">
+                                    <i class="fas mr-2" :class="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
                                     {{ editingTemplate ? 'আপডেট করুন' : 'সংরক্ষণ করুন' }}
                                 </button>
-                                <button type="button" class="btn btn-default ml-2" @click="resetForm" v-if="editingTemplate">বাতিল</button>
                             </div>
                         </div>
                     </form>
@@ -66,53 +75,42 @@
             </div>
         </div>
 
-        <div class="col-md-4">
-            <KeywordSelector :type="form.type" @select="insertKeyword" />
+        <div class="col-md-4 mt-4 mt-md-0">
+            <KeywordSelector :type="form.type" @select="insertKeyword" class="mb-4" />
 
-            <div class="card card-outline card-secondary mt-3">
-                <div class="card-header">
-                    <h3 class="card-title">সংরক্ষিত টেম্পলেটসমূহ</h3>
+            <div class="card premium-card border-0 shadow-sm overflow-hidden">
+                <div class="card-header bg-light-blue py-3">
+                    <h5 class="mb-0 text-primary small font-weight-bold text-uppercase">সংরক্ষিত টেম্পলেটসমূহ</h5>
                 </div>
                 <div class="card-body p-0">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>নাম</th>
-                                <th>ধরণ</th>
-                                <th>ভাষা</th>
-                                <th style="width: 80px">অ্যাকশন</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="template in templates" :key="template.id">
-                                <td>
-                                    {{ template.name }}
-                                    <span v-if="!template.is_active" class="badge badge-danger">নিষ্ক্রিয়</span>
-                                </td>
-                                <td>
-                                    <span class="badge badge-info">{{ template.type }}</span>
-                                </td>
-                                <td>
-                                    <span class="badge" :class="template.language === 'bn' ? 'badge-warning' : 'badge-primary'">
+                    <div class="list-group list-group-flush">
+                        <div v-for="template in templates" :key="template.id" 
+                             class="list-group-item list-group-item-action d-flex flex-column p-3 border-bottom border-light">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0 font-weight-bold text-dark">{{ template.name }}</h6>
+                                <span class="status-dot" :class="template.is_active ? 'bg-success' : 'bg-danger'"></span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="badge-group">
+                                    <span class="badge badge-soft-info mr-1">{{ template.type }}</span>
+                                    <span class="badge" :class="template.language === 'bn' ? 'badge-soft-warning' : 'badge-soft-primary'">
                                         {{ template.language === 'bn' ? 'বাংলা' : 'English' }}
                                     </span>
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-primary" @click="editTemplate(template)" title="এডিট">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-danger" @click="deleteTemplate(template.id)" title="ডিলিট">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr v-if="templates.length === 0">
-                                <td colspan="3" class="text-center">কোন টেম্পলেট নেই</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                </div>
+                                <div class="action-buttons">
+                                    <button class="btn btn-icon btn-sm" @click="editTemplate(template)" title="এডিট">
+                                        <i class="fas fa-edit text-primary"></i>
+                                    </button>
+                                    <button class="btn btn-icon btn-sm" @click="deleteTemplate(template.id)" title="ডিলিট">
+                                        <i class="fas fa-trash-alt text-danger"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="templates.length === 0" class="p-4 text-center text-muted italic">
+                            কোন টেম্পলেট পাওয়া যায়নি
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -221,3 +219,33 @@ const insertKeyword = (keyword) => {
 
 onMounted(fetchTemplates);
 </script>
+
+<style scoped>
+.premium-title { font-weight: 800; color: #2d3436; font-size: 1.7rem; letter-spacing: -0.5px; }
+.premium-card { border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: all 0.3s; background: #fff; }
+.card-header { background: transparent; border-bottom: 1px solid rgba(0,0,0,0.05); padding: 1.25rem 1.5rem; }
+.section-label { font-size: 0.8rem; font-weight: 700; color: #636e72; text-transform: uppercase; margin-bottom: 0.6rem; display: block; letter-spacing: 0.5px; }
+
+.modern-input { border-radius: 12px; border: 1px solid #dfe6e9; padding: 10px 15px; transition: all 0.2s; background: #fcfcfc; height: auto; min-height: 45px; }
+select.modern-input { padding-top: 0; padding-bottom: 0; height: 45px; }
+.modern-input:focus { border-color: #0984e3; background: #fff; box-shadow: 0 0 0 4px rgba(9, 132, 227, 0.1); outline: none; }
+
+.premium-switch .custom-control-label::before { height: 1.5rem; width: 2.75rem; border-radius: 1rem; }
+.premium-switch .custom-control-label::after { width: calc(1.5rem - 4px); height: calc(1.5rem - 4px); border-radius: 50%; }
+.premium-switch .custom-control-input:checked ~ .custom-control-label::after { transform: translateX(1.25rem); }
+
+.premium-shadow { box-shadow: 0 4px 15px rgba(9, 132, 227, 0.2); }
+.bg-light-blue { background: #f0f7ff; }
+
+/* Badges */
+.badge-soft-primary { background: #e0eeff; color: #0984e3; }
+.badge-soft-warning { background: #fff8e1; color: #f39c12; }
+.badge-soft-info { background: #e0f7fa; color: #00bcd4; }
+
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.btn-icon { background: #f8f9fa; border-radius: 8px; margin-left: 5px; }
+.btn-icon:hover { background: #e9ecef; }
+
+.xsmall { font-size: 0.65rem; }
+.italic { font-style: italic; }
+</style>
