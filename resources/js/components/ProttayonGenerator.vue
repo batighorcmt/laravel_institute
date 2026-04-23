@@ -523,7 +523,7 @@ onMounted(() => {
     border: 1px solid #ddd;
 }
 .cursor-pointer { cursor: pointer; }
-
+ 
 :deep(.select2-container--bootstrap4 .select2-selection) {
     border: 1px solid #ced4da !important;
     border-radius: 8px !important;
@@ -531,9 +531,15 @@ onMounted(() => {
     display: flex !important;
     align-items: center !important;
 }
-
+ 
 :deep(.select2-container--bootstrap4.select2-container--focus .select2-selection) {
     border-color: #80bdff !important;
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+
+/* Limit dropdown height to show ~10 items */
+:deep(.select2-results__options) {
+    max-height: 350px !important;
+    overflow-y: auto;
 }
 </style>
