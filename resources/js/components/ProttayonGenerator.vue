@@ -22,8 +22,7 @@
                                 <strong>শ্রেণি:</strong> {{ selectedStudent.class_name_bn || selectedStudent.class_name }}
                             </div>
                             <div class="col-md-6 pl-md-4">
-                                <strong>রোল:</strong> {{ toBengaliNumber(selectedStudent.roll_no) }}<br>
-                                <strong>ধরন:</strong> {{ form.attestation_type === 'study' ? 'অধ্যয়নরত' : 'চারিত্রিক' }}
+                                <strong>রোল:</strong> {{ selectedStudent.roll_no }}
                             </div>
                         </div>
                     </div>
@@ -46,24 +45,17 @@
                             </div>
                         </div>
 
-                        <div v-if="!isEdit" class="form-group">
-                            <label>শিক্ষার্থী</label>
-                            <select v-model="form.student_id" class="form-control select2" data-model="student_id" @change="onStudentChange" required>
-                                <option value="">-- নির্বাচন করুন --</option>
-                                <option v-for="s in students" :key="s.student_id" :value="s.student_id">
-                                    ({{ toBengaliNumber(s.roll_no) || '-' }} - {{ s.name }})
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="form-row">
-                            <div v-if="!isEdit" class="form-group col-md-6">
-                                <label>প্রত্যয়নের ধরন</label>
-                                <select v-model="form.attestation_type" class="form-control select2" data-model="attestation_type" required>
-                                    <option value="study">অধ্যয়নরত</option>
-                                    <option value="character">চরিত্রগত</option>
+                        <div v-if="!isEdit" class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>শিক্ষার্থী</label>
+                                <select v-model="form.student_id" class="form-control select2" data-model="student_id" @change="onStudentChange" required>
+                                    <option value="">-- নির্বাচন করুন --</option>
+                                    <option v-for="s in students" :key="s.student_id" :value="s.student_id">
+                                        {{ s.roll_no || '-' }} - {{ s.student_name_bn || s.name }}
+                                    </option>
                                 </select>
                             </div>
+
                             <div :class="isEdit ? 'col-md-12' : 'col-md-6'" class="form-group">
                                 <label>প্রিন্ট লেআউট</label>
                                 <select v-model="form.layout" class="form-control select2" data-model="layout" required>
@@ -72,6 +64,8 @@
                                 </select>
                             </div>
                         </div>
+
+
 
                         <div class="form-group">
                             <label>টেম্পলেট নির্বাচন করুন</label>
@@ -391,8 +385,8 @@ const parsedContent = computed(() => {
         '[mother_name_en]': s.mother_name || '',
         '[student_id]': s.student_id || '',
         '[roll_no]': s.roll_no || '',
-        '[date_of_birth]': formatDate(s.date_of_birth),
-        '[date_of_birth_bn]': formatDate(s.date_of_birth),
+        '[date_of_birth]': selectedTemplate.value?.language === 'en' ? formatDate(s.date_of_birth) : toBengaliNumber(formatDate(s.date_of_birth)),
+        '[date_of_birth_bn]': toBengaliNumber(formatDate(s.date_of_birth)),
         '[date_of_birth_en]': formatDate(s.date_of_birth),
         '[gender]': s.gender == 'male' ? 'ছাত্র' : 'ছাত্রী',
         '[blood_group]': s.blood_group || '',
