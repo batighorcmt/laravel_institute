@@ -29,6 +29,10 @@ class SchoolFrontendSetting extends Model
         'hero_images',
     ];
 
+    protected $casts = [
+        'hero_images' => 'array',
+    ];
+
     public function school()
     {
         return $this->belongsTo(School::class);

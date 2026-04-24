@@ -248,7 +248,15 @@ export default {
        let images = [];
        if (typeof this.settings.hero_images === 'string') {
           try { images = JSON.parse(this.settings.hero_images); } catch(e) { images = []; }
-       } else { images = this.settings.hero_images || []; }
+       } else { 
+          images = this.settings.hero_images || [];
+       }
+       
+       // Fallback to singular hero_image if slider is empty
+       if (images.length === 0 && this.settings.hero_image) {
+          images = [{ image: this.settings.hero_image, active: true }];
+       }
+       
        return images.filter(i => i && (i.active === true || i.active === undefined)).map(i => typeof i === 'string' ? { image: i, active: true } : i);
     },
     currentSlide() {

@@ -19,10 +19,8 @@ class FrontendSettingsController extends Controller
             'school_id' => $school->id,
         ]);
 
-        // Ensure hero_images is always an array
-        if (is_string($settings->hero_images)) {
-            $settings->hero_images = json_decode($settings->hero_images, true) ?: [];
-        } elseif (is_null($settings->hero_images)) {
+        // Ensure hero_images is always an array (handled by model cast now, but keeping safe fallback)
+        if (is_null($settings->hero_images)) {
             $settings->hero_images = [];
         }
 
@@ -92,15 +90,15 @@ class FrontendSettingsController extends Controller
                 $currentItems[] = array_merge($meta, ['image' => $path]);
             }
         }
-        $data['hero_images'] = json_encode($currentItems);
+        $data['hero_images'] = $currentItems;
         unset($data['hero_images_json']);
         unset($data['hero_slider_meta']);
 
         $settings->update($data);
 
         $fresh = $settings->fresh();
-        if (is_string($fresh->hero_images)) {
-            $fresh->hero_images = json_decode($fresh->hero_images, true) ?: [];
+        if (is_null($fresh->hero_images)) {
+            $fresh->hero_images = [];
         }
 
         return response()->json([
