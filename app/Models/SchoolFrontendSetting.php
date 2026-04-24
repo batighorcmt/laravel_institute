@@ -26,6 +26,7 @@ class SchoolFrontendSetting extends Model
         'meta_title',
         'meta_description',
         'meta_keywords',
+        'hero_images',
     ];
 
     public function school()
