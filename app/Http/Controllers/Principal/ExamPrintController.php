@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\School;
 use App\Models\Exam;
 use App\Models\Student;
+use App\Models\Role;
+use App\Models\UserSchoolRole;
+use App\Models\Teacher;
 use Illuminate\Support\Facades\DB;
 
 class ExamPrintController extends Controller
@@ -103,7 +106,24 @@ class ExamPrintController extends Controller
             }
         }
 
-        return compact('school', 'exam', 'className', 'schedule', 'students', 'assigned_by_student');
+        $principalTeacher = $this->getPrincipalTeacher($school);
+
+        return compact('school', 'exam', 'className', 'schedule', 'students', 'assigned_by_student', 'principalTeacher');
+    }
+
+    private function getPrincipalTeacher(School $school)
+    {
+        $principalRole = Role::where('name', Role::PRINCIPAL)->first();
+        if (!$principalRole) return null;
+
+        $principalPivot = UserSchoolRole::where('school_id', $school->id)
+            ->where('role_id', $principalRole->id)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$principalPivot) return null;
+
+        return Teacher::where('user_id', $principalPivot->user_id)->first();
     }
 
     public function admitV1(Request $request, School $school, Exam $exam)

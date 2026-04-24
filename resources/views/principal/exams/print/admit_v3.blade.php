@@ -96,7 +96,8 @@
     .signature-area{margin-top:12px;text-align:center}
     .signature-area table{width:90%;margin:0 auto;border:none;table-layout:fixed}
     .signature-area td{border:none;padding-top:0;vertical-align:bottom}
-    .sig-space{height:12mm}
+    .sig-space{height:12mm;display:flex;align-items:flex-end;justify-content:center}
+    .sig-space img{max-height:100%;max-width:100%;object-fit:contain}
     .sig-line{width:55%;margin:0 auto 3mm;border-top:1px solid #333}
     .sig-label{font-weight:600}
     .sig-gap{width:20%}
@@ -234,7 +235,11 @@
             </td>
             <td class="sig-gap"></td>
             <td>
-              <div class="sig-space"></div>
+              <div class="sig-space">
+                @if($principalTeacher && $principalTeacher->signature)
+                  <img src="{{ asset('storage/' . $principalTeacher->signature) }}" alt="Signature">
+                @endif
+              </div>
               <div class="sig-line"></div>
               <div class="sig-label">{{ t('Principal / Head Teacher','অধ্যক্ষ / প্রধান শিক্ষক') }}</div>
             </td>

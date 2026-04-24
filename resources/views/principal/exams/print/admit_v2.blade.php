@@ -87,8 +87,8 @@
   .hdr{position:relative;z-index:1}
   .sigs{display:flex;flex-direction:row;gap:16px;align-items:flex-end;justify-content:space-between}
   .sig{width:48%;display:flex;flex-direction:column;align-items:center}
-  .sig-space{width:100%;height:0.3in;display:flex;align-items:flex-end;justify-content:center}
-  .sig-space.hm img{max-height:0.28in;max-width:100%;object-fit:contain;opacity:.9}
+  .sig-space{width:100%;height:0.5in;display:flex;align-items:flex-end;justify-content:center}
+  .sig-space.hm img{max-height:0.48in;max-width:100%;object-fit:contain;opacity:.9}
   .bn{font-family:'Noto Sans Bengali','Hind Siliguri',system-ui,Segoe UI,Roboto,Arial,sans-serif}
     @media print{
       @page{size:A4 portrait;margin:10mm}
@@ -216,7 +216,11 @@
                 <div class="sign">{{ t('Class Teacher','শ্রেণি শিক্ষক') }}</div>
               </div>
               <div class="sig sig-hm">
-                <div class="sig-space hm"></div>
+                <div class="sig-space hm">
+                  @if($principalTeacher && $principalTeacher->signature)
+                    <img src="{{ asset('storage/' . $principalTeacher->signature) }}" alt="Signature">
+                  @endif
+                </div>
                 <div class="sign">{{ t('Principal / Head Teacher','অধ্যক্ষ / প্রধান শিক্ষক') }}</div>
               </div>
             </div>
