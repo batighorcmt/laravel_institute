@@ -68,22 +68,19 @@
       <div class="flex flex-col lg:flex-row gap-6 auto-rows-fr h-auto lg:h-[480px]">
         
         <!-- Slider Section (Left) -->
-        <div class="lg:w-8/12 h-[400px] lg:h-full relative rounded-[40px] overflow-hidden shadow-2xl ring-8 ring-white group border border-slate-100">
-           <transition name="fade">
-              <div :key="activeSlide" class="absolute inset-0">
-                 <img :src="currentSlide.image ? (currentSlide.image.startsWith('http') ? currentSlide.image : '/storage/' + currentSlide.image) : 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200'" class="w-full h-full object-cover">
-              </div>
-           </transition>
+        <div class="lg:w-8/12 h-[400px] lg:h-full relative rounded-[40px] overflow-hidden shadow-2xl ring-8 ring-white group border border-slate-100 bg-slate-200">
+           <!-- Slider Image -->
+           <div class="absolute inset-0">
+              <img :src="currentSlide.image ? (currentSlide.image.startsWith('http') ? currentSlide.image : '/storage/' + currentSlide.image.replace(/^\/?storage\//, '')) : 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200'" class="w-full h-full object-cover">
+           </div>
            
            <!-- Overlay Content -->
            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-10 md:p-14">
-              <transition name="slide-up">
-                 <div :key="activeSlide">
-                    <span class="bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[0.3em] px-4 py-1.5 rounded-full mb-4 inline-block shadow-lg">Welcome</span>
-                    <h2 class="text-4xl md:text-6xl font-black text-white mb-3 drop-shadow-2xl leading-tight">{{ currentSlide.title || settings.hero_title || schoolNameBn }}</h2>
-                    <p class="text-slate-200 text-base md:text-xl font-medium max-w-2xl border-l-4 border-indigo-500 pl-4 py-1">{{ currentSlide.subtitle || settings.hero_subtitle || 'শ্রেষ্ঠত্বের পথে একটি গৌরবময় যাত্রা।' }}</p>
-                 </div>
-              </transition>
+              <div>
+                 <span class="bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[0.3em] px-4 py-1.5 rounded-full mb-4 inline-block shadow-lg">Welcome</span>
+                 <h2 class="text-4xl md:text-6xl font-black text-white mb-3 drop-shadow-2xl leading-tight">{{ currentSlide.title || settings.hero_title || schoolNameBn }}</h2>
+                 <p class="text-slate-200 text-base md:text-xl font-medium max-w-2xl border-l-4 border-indigo-500 pl-4 py-1">{{ currentSlide.subtitle || settings.hero_subtitle || 'শ্রেষ্ঠত্বের পথে একটি গৌরবময় যাত্রা।' }}</p>
+              </div>
            </div>
 
            <!-- Slider Arrows -->
