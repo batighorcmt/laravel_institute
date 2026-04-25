@@ -90,7 +90,15 @@
     </div>
 
     <form method="get" class="row g-2 align-items-end mb-3 no-print">
-        <div class="col-md-3">
+        <div class="col-md-2">
+            <label class="form-label">শিক্ষাবর্ষ</label>
+            <select name="academic_year_id" class="form-control" onchange="this.form.submit()">
+                @foreach($academicYears as $ay)
+                    <option value="{{ $ay->id }}" {{ $selectedYearId == $ay->id ? 'selected' : '' }}>{{ $ay->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-2">
             <label class="form-label">মাস নির্বাচন করুন</label>
             <input type="month" name="month" class="form-control" value="{{ $month }}">
         </div>
@@ -112,8 +120,8 @@
                 @endforeach
             </select>
         </div>
-        <div class="col-md-3">
-            <button type="submit" class="btn btn-primary">দেখান</button>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">দেখান</button>
         </div>
     </form>
 

@@ -19,11 +19,6 @@ class FrontendSettingsController extends Controller
             'school_id' => $school->id,
         ]);
 
-        // Ensure hero_images is always an array (handled by model cast now, but keeping safe fallback)
-        if (is_null($settings->hero_images)) {
-            $settings->hero_images = [];
-        }
-
         return response()->json([
             'settings' => $settings,
         ]);
@@ -92,18 +87,12 @@ class FrontendSettingsController extends Controller
         }
         $data['hero_images'] = $currentItems;
         unset($data['hero_images_json']);
-        unset($data['hero_slider_meta']);
 
         $settings->update($data);
 
-        $fresh = $settings->fresh();
-        if (is_null($fresh->hero_images)) {
-            $fresh->hero_images = [];
-        }
-
         return response()->json([
             'message' => 'Website settings updated successfully!',
-            'settings' => $fresh,
+            'settings' => $settings->fresh(),
         ]);
     }
 

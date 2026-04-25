@@ -31,14 +31,21 @@ class AttendanceController extends Controller
         $month = $request->query('month', now()->format('Y-m'));
         $classId = $request->query('class_id'); // may be null
         $sectionId = $request->query('section_id'); // may be null
-    $print = $request->boolean('print', false);
-    $requiresSelection = empty($classId) || empty($sectionId);
+        $print = $request->boolean('print', false);
+        $requiresSelection = empty($classId) || empty($sectionId);
+
+        $selectedYearId = $request->query('academic_year_id');
+        $academicYears = AcademicYear::forSchool($school->id)->orderBy('name', 'desc')->get();
+
+        $currentYear = AcademicYear::forSchool($school->id)->current()->first();
+        if (empty($selectedYearId)) {
+            $selectedYearId = $currentYear?->id;
+        }
+        $yearVal = $selectedYearId;
 
         // Parse month into numeric parts
         [$yearNum,$monthNum] = explode('-', $month) + [date('Y'), date('m')];
         $yearNum = (int)$yearNum; $monthNum = (int)$monthNum;
-        $currentYear = AcademicYear::forSchool($school->id)->current()->first();
-        $yearVal = $currentYear?->id;
 
         // মাসের প্রথম ও শেষ দিন
         $startDate = $month.'-01';
@@ -72,6 +79,8 @@ class AttendanceController extends Controller
                 'month'=>$month,
                 'classes'=>$classes,
                 'sections'=>$sections,
+                'academicYears' => $academicYears,
+                'selectedYearId' => $selectedYearId,
                 'students'=>collect(),
                 'dates'=>[],
                 'attendanceMatrix'=>[],
@@ -93,6 +102,7 @@ class AttendanceController extends Controller
             ->leftJoin('sections','sections.id','=','student_enrollments.section_id')
             ->where('student_enrollments.school_id',$school->id)
             ->where('student_enrollments.status','active')
+            ->where('students.status', 'active')
             ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id',$yearVal))
             ->when($classId, fn($q)=>$q->where('student_enrollments.class_id',$classId))
             ->when($sectionId, fn($q)=>$q->where('student_enrollments.section_id',$sectionId));
@@ -132,6 +142,8 @@ class AttendanceController extends Controller
             'month'=>$month,
             'classes'=>$classes,
             'sections'=>$sections,
+            'academicYears' => $academicYears,
+            'selectedYearId' => $selectedYearId,
             'students'=>$students,
             'dates'=>$dates,
             'attendanceMatrix'=>$attendanceMatrix,

@@ -11,6 +11,7 @@ class SchoolFrontendSetting extends Model
         'hero_title',
         'hero_subtitle',
         'hero_image',
+        'hero_images',
         'about_text',
         'about_image',
         'principal_name',
@@ -26,7 +27,6 @@ class SchoolFrontendSetting extends Model
         'meta_title',
         'meta_description',
         'meta_keywords',
-        'hero_images',
     ];
 
     protected $casts = [

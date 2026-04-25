@@ -243,21 +243,44 @@ export default {
     schoolNameBn() { return this.school.name_bn || this.school.name || "বিদ্যালয়"; },
     activeSlides() {
        let images = [];
-       if (typeof this.settings.hero_images === 'string') {
-          try { images = JSON.parse(this.settings.hero_images); } catch(e) { images = []; }
-       } else { 
-          images = this.settings.hero_images || [];
+       const settingsImages = this.settings.hero_images;
+       
+       if (Array.isArray(settingsImages)) {
+          images = settingsImages;
+       } else if (typeof settingsImages === 'string' && settingsImages.trim()) {
+          try { 
+             images = JSON.parse(settingsImages); 
+          } catch(e) { 
+             images = []; 
+          }
        }
        
        // Fallback to singular hero_image if slider is empty
-       if (images.length === 0 && this.settings.hero_image) {
+       if ((!Array.isArray(images) || images.length === 0) && this.settings.hero_image) {
           images = [{ image: this.settings.hero_image, active: true }];
        }
+
+       if (!Array.isArray(images)) images = [];
        
-       return images.filter(i => i && (i.active === true || i.active === undefined)).map(i => typeof i === 'string' ? { image: i, active: true } : i);
+       // Map to standard object format and filter active
+       return images
+         .filter(i => i && (i.active === true || i.active === undefined))
+         .map(i => {
+            if (typeof i === 'string') return { image: i, active: true, title: '', subtitle: '' };
+            return {
+               image: i.image || null,
+               title: i.title || '',
+               subtitle: i.subtitle || '',
+               active: i.active !== false
+            };
+         });
     },
     currentSlide() {
-       return this.activeSlides[this.activeSlide] || { image: null, title: '', subtitle: '' };
+       const slides = this.activeSlides;
+       if (slides.length > 0) {
+          return slides[this.activeSlide % slides.length];
+       }
+       return { image: null, title: '', subtitle: '' };
     }
   },
   mounted() {
@@ -266,9 +289,21 @@ export default {
   },
   beforeUnmount() { clearInterval(this.slideInterval); },
   methods: {
-    startSlider() { if (this.activeSlides.length > 1) this.slideInterval = setInterval(() => this.nextSlide(), 6000); },
-    nextSlide() { this.activeSlide = (this.activeSlide + 1) % this.activeSlides.length; },
-    prevSlide() { this.activeSlide = (this.activeSlide - 1 + this.activeSlides.length) % this.activeSlides.length; }
+    startSlider() { 
+       if (this.activeSlides.length > 1) {
+          this.slideInterval = setInterval(() => this.nextSlide(), 6000); 
+       }
+    },
+    nextSlide() { 
+       if (this.activeSlides.length > 0) {
+          this.activeSlide = (this.activeSlide + 1) % this.activeSlides.length; 
+       }
+    },
+    prevSlide() { 
+       if (this.activeSlides.length > 0) {
+          this.activeSlide = (this.activeSlide - 1 + this.activeSlides.length) % this.activeSlides.length; 
+       }
+    }
   }
 }
 </script>
