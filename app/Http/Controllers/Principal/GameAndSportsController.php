@@ -19,7 +19,10 @@ class GameAndSportsController extends Controller
         $sports = [
             'ক্রিকেট', 'ফুটবল', 'হকি', 'ভলিবল', 'অ্যাথলেটিকস', 'হ্যান্ডবল', 'কাবাডি', 
             'ব্যাডমিন্টন', 'সাঁতার', 'টেবিল টেনিস', 'দাবা', 'কারাত', 'জুডো', 
-            'তায়কোয়ান্দো', 'বাস্কেটবল', 'খো খো'
+            'তায়কোয়ান্দো', 'বাস্কেটবল', 'খো খো',
+            'ক্যারাম',
+            'লং জাম্প',
+            'হাই জাম্প', 'মার্শাল আর্ট'
         ];
 
         return view('principal.documents.game_and_sports.consent_index', compact('school', 'academicYears', 'classes', 'sports'));
