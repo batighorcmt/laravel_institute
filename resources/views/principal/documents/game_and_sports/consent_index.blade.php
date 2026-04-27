@@ -71,9 +71,8 @@
                                         <div class="form-group mb-4">
                                             <label class="font-weight-bold text-muted small uppercase mb-1">খেলার ইভেন্ট
                                                 <span class="text-danger">*</span></label>
-                                            <select name="game_name" id="game_name" class="form-control select2bs4"
-                                                required>
-                                                <option value="">-- নির্বাচন করুন --</option>
+                                            <select name="game_name[]" id="game_name" class="form-control select2bs4"
+                                                multiple="multiple" data-placeholder="-- নির্বাচন করুন --" required>
                                                 @foreach($sports as $sport)
                                                     <option value="{{ $sport }}">{{ $sport }}</option>
                                                 @endforeach
@@ -125,6 +124,12 @@
         .select2-container--bootstrap4 .select2-selection--single {
             height: calc(2.25rem + 10px) !important;
             padding-top: 8px !important;
+            border-radius: 8px !important;
+        }
+
+        .select2-container--bootstrap4 .select2-selection--multiple {
+            min-height: calc(2.25rem + 10px) !important;
+            padding-top: 5px !important;
             border-radius: 8px !important;
         }
 
@@ -254,7 +259,8 @@
                             e.preventDefault();
                             return false;
                         }
-                        if (!$gameSelect.val()) {
+                        const selectedGames = $gameSelect.val();
+                        if (!selectedGames || (Array.isArray(selectedGames) && selectedGames.length === 0)) {
                             toastr.warning('দয়া করে খেলার নাম নির্বাচন করুন।');
                             e.preventDefault();
                             return false;

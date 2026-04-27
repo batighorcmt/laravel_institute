@@ -29,7 +29,8 @@ class GameAndSportsController extends Controller
     {
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
-            'game_name' => 'required|string',
+            'game_name' => 'required|array',
+            'game_name.*' => 'string',
             'academic_year_id' => 'required',
         ]);
 
@@ -39,11 +40,13 @@ class GameAndSportsController extends Controller
 
         $enrollment = $student->enrollments->first();
         
+        $gameNames = implode(', ', $validated['game_name']);
+        
         return view('principal.documents.game_and_sports.consent_print', [
             'school' => $school,
             'student' => $student,
             'enrollment' => $enrollment,
-            'game_name' => $validated['game_name']
+            'game_name' => $gameNames
         ]);
     }
 }
