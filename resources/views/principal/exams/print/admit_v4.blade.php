@@ -198,6 +198,9 @@
         background: rgba(255, 255, 255, 0.7);
         line-height: 1.1;
     }
+    .subject-table tr:nth-child(even) td {
+        background: rgba(220, 235, 255, 0.8); /* Light blue colorful shading */
+    }
     .text-center { text-align: center; }
 
     .footer-section {

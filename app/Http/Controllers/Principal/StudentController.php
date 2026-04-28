@@ -1422,6 +1422,11 @@ class StudentController extends Controller
             ]));
         }
 
+        // Sync registration number to student profile if it's currently empty
+        if (!empty($validated['reg_no']) && empty($student->board_registration_no)) {
+            $student->update(['board_registration_no' => $validated['reg_no']]);
+        }
+
         return response()->json(['success' => true, 'message' => 'তথ্য সফলভাবে সংরক্ষিত হয়েছে।']);
     }
     /**
