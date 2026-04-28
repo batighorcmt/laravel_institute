@@ -269,6 +269,12 @@
                         <div class="info-label"><i class="fas fa-calendar-check mr-1"></i> ভর্তির তারিখ</div>
                         <div class="info-value small">{{ $student->admission_date ? \Carbon\Carbon::parse($student->admission_date)->format('d/m/Y') : '—' }}</div>
                     </div>
+                    @if($student->board_registration_no)
+                    <div class="col-12 mt-2">
+                        <div class="info-label"><i class="fas fa-id-badge mr-1"></i> বোর্ড রেজিস্ট্রেশন নং</div>
+                        <div class="info-value">{{ $student->board_registration_no }}</div>
+                    </div>
+                    @endif
                 </div>
             </div>
 
@@ -692,7 +698,7 @@
                                 <option value="Sylhet">Sylhet</option>
                                 <option value="Comilla">Comilla</option>
                                 <option value="Barisal">Barisal</option>
-                                <option value="Jessore">Jessore</option>
+                                <option value="Jashore">Jashore</option>
                                 <option value="Dinajpur">Dinajpur</option>
                                 <option value="Mymensingh">Mymensingh</option>
                                 <option value="Madrasah">Madrasah</option>

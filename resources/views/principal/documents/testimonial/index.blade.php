@@ -27,7 +27,7 @@
             <option value="Dhaka">Dhaka</option>
             <option value="Rajshahi">Rajshahi</option>
             <option value="Comilla">Comilla</option>
-            <option value="Jessore">Jessore</option>
+            <option value="Jashore">Jashore</option>
             <option value="Chittagong">Chittagong</option>
             <option value="Barisal">Barisal</option>
             <option value="Sylhet">Sylhet</option>

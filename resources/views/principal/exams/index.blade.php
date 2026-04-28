@@ -130,6 +130,7 @@
                                                 <a href="{{ route('principal.institute.exams.admit_v1', [$school, $exam]) }}" target="_blank"><i class="fas fa-id-card"></i> প্রবেশপত্র (Admit v1)</a>
                                                 <a href="{{ route('principal.institute.exams.admit_v2', [$school, $exam]) }}" target="_blank"><i class="fas fa-id-card"></i> প্রবেশপত্র (Admit v2)</a>
                                                 <a href="{{ route('principal.institute.exams.admit_v3', [$school, $exam]) }}" target="_blank"><i class="fas fa-id-card-alt"></i> সরল প্রবেশপত্র (Admit v3)</a>
+                                                <a href="{{ route('principal.institute.exams.admit_v4', [$school, $exam]) }}" target="_blank"><i class="fas fa-id-card-alt"></i> আধুনিক প্রবেশপত্র (Admit v4)</a>
                                                 <a href="{{ route('principal.institute.exams.attendance_sheet', [$school, $exam]) }}" target="_blank"><i class="fas fa-clipboard-list"></i> পরীক্ষার হাজিরা শীট</a>
 
                                                 <div style="border-top: 1px solid #ddd; margin: 5px 0;"></div>

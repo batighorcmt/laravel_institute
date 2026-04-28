@@ -178,6 +178,12 @@
                         <th>শিক্ষার্থী আইডি (ID)</th>
                         <td><strong>{{ $student->student_id }}</strong></td>
                     </tr>
+                    @if($student->board_registration_no)
+                    <tr>
+                        <th>বোর্ড রেজিস্ট্রেশন নং</th>
+                        <td><strong>{{ $student->board_registration_no }}</strong></td>
+                    </tr>
+                    @endif
                     @if($activeEnrollment)
                     <tr>
                         <th>শ্রেণি ও শাখা (Class/Sec)</th>

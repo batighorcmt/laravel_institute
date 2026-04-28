@@ -56,6 +56,19 @@
                     <button onclick="printLandscape()" type="button" class="btn btn-sm btn-outline-dark">
                         <i class="fas fa-print"></i> Print (Landscape)
                     </button>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-id-card"></i> Admit Cards
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v1', [$school, $exam]) }}" target="_blank">Admit Card V1</a>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v2', [$school, $exam]) }}" target="_blank">Admit Card V2</a>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v3', [$school, $exam]) }}" target="_blank">Admit Card V3 (Simple)</a>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v4', [$school, $exam]) }}" target="_blank">Admit Card V4 (Modern)</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.attendance_sheet', [$school, $exam]) }}" target="_blank">Attendance Sheet</a>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="card-body">

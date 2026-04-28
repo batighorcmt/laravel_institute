@@ -28,7 +28,7 @@
             <option value="Dhaka" {{ ($document->data['board'] ?? '') === 'Dhaka' ? 'selected' : '' }}>Dhaka</option>
             <option value="Rajshahi" {{ ($document->data['board'] ?? '') === 'Rajshahi' ? 'selected' : '' }}>Rajshahi</option>
             <option value="Comilla" {{ ($document->data['board'] ?? '') === 'Comilla' ? 'selected' : '' }}>Comilla</option>
-            <option value="Jessore" {{ ($document->data['board'] ?? '') === 'Jessore' ? 'selected' : '' }}>Jessore</option>
+            <option value="Jashore" {{ ($document->data['board'] ?? '') === 'Jashore' || ($document->data['board'] ?? '') === 'Jessore' ? 'selected' : '' }}>Jashore</option>
             <option value="Chittagong" {{ ($document->data['board'] ?? '') === 'Chittagong' ? 'selected' : '' }}>Chittagong</option>
             <option value="Barisal" {{ ($document->data['board'] ?? '') === 'Barisal' ? 'selected' : '' }}>Barisal</option>
             <option value="Sylhet" {{ ($document->data['board'] ?? '') === 'Sylhet' ? 'selected' : '' }}>Sylhet</option>

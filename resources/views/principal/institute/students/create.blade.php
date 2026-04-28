@@ -118,6 +118,14 @@
             </div>
           </div>
         </div>
+        <div class="row mt-2">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><i class="fas fa-id-badge mr-1"></i>বোর্ড রেজিস্ট্রেশন নং</label>
+              <input type="text" name="board_registration_no" class="form-control" value="{{ old('board_registration_no') }}" placeholder="বোর্ড রেজিস্ট্রেশন নম্বর লিখুন (ঐচ্ছিক)">
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="mb-4">

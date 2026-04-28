@@ -51,7 +51,7 @@ class Student extends Model
     use BelongsToSchool;
 
     protected $fillable = [
-        'school_id', 'user_id', 'class_id', 'optional_subject_id', 'admission_id', 'student_id', 'student_name_en','student_name_bn',
+        'school_id', 'user_id', 'class_id', 'optional_subject_id', 'admission_id', 'student_id', 'board_registration_no', 'student_name_en','student_name_bn',
         'date_of_birth', 'gender', 'religion', 'father_name', 'mother_name','father_name_bn','mother_name_bn', 'guardian_phone',
         'guardian_relation','guardian_name_en','guardian_name_bn',
         'present_village','present_village_en','present_para_moholla','present_post_office','present_post_office_en','present_upazilla','present_upazilla_en','present_district','present_district_en',

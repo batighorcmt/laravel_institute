@@ -147,6 +147,7 @@ class StudentController extends Controller
         $data = $request->validate([
             'student_name_en'=>['nullable','string','max:150'],
             'student_name_bn'=>['nullable','string','max:150'],
+            'board_registration_no'=>['nullable','string','max:50'],
             'date_of_birth'=>['required','date'],
             'gender'=>['required','in:male,female'],
             'father_name'=>['required','string','max:120'],
@@ -463,6 +464,7 @@ class StudentController extends Controller
         $data = $request->validate([
             'student_name_en'=>['required','string','max:150'],
             'student_name_bn'=>['nullable','string','max:150'],
+            'board_registration_no'=>['nullable','string','max:50'],
             'date_of_birth'=>['nullable','date'],
             'gender'=>['required','in:male,female'],
             'father_name'=>['required','string','max:120'],
@@ -1376,7 +1378,7 @@ class StudentController extends Controller
                 'exam_name'      => $peData ? $peData->exam_name : $publicExamName,
                 'board'          => $peData ? $peData->board : '',
                 'roll_no_pub'    => $peData ? $peData->roll_no : '',
-                'reg_no'         => $peData ? $peData->reg_no : '',
+                'reg_no'         => $peData ? ($peData->reg_no ?: $student->board_registration_no) : ($student->board_registration_no ?: ''),
                 'exam_year'      => $peData ? $peData->exam_year : '',
                 'session'        => $peData ? $peData->session : '',
                 'candidate_type' => $peData ? $peData->candidate_type : '',

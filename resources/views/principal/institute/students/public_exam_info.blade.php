@@ -105,7 +105,7 @@
                             <option value="Sylhet">Sylhet</option>
                             <option value="Comilla">Comilla</option>
                             <option value="Barisal">Barisal</option>
-                            <option value="Jessore">Jessore</option>
+                            <option value="Jashore">Jashore</option>
                             <option value="Dinajpur">Dinajpur</option>
                             <option value="Mymensingh">Mymensingh</option>
                             <option value="Madrasah">Madrasah</option>
@@ -233,7 +233,7 @@
                                     <option value="Sylhet">Sylhet</option>
                                     <option value="Comilla">Comilla</option>
                                     <option value="Barisal">Barisal</option>
-                                    <option value="Jessore">Jessore</option>
+                                    <option value="Jashore">Jashore</option>
                                     <option value="Dinajpur">Dinajpur</option>
                                     <option value="Mymensingh">Mymensingh</option>
                                     <option value="Madrasah">Madrasah</option>

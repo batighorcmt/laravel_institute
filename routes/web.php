@@ -367,6 +367,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                                 Route::get('/{exam}/admit-v1', [App\Http\Controllers\Principal\ExamPrintController::class , 'admitV1'])->name('admit_v1');
                                 Route::get('/{exam}/admit-v2', [App\Http\Controllers\Principal\ExamPrintController::class , 'admitV2'])->name('admit_v2');
                                 Route::get('/{exam}/admit-v3', [App\Http\Controllers\Principal\ExamPrintController::class , 'admitV3'])->name('admit_v3');
+                                Route::get('/{exam}/admit-v4', [App\Http\Controllers\Principal\ExamPrintController::class , 'admitV4'])->name('admit_v4');
                                 Route::get('/{exam}/attendance-sheet', [App\Http\Controllers\Principal\ExamPrintController::class , 'attendanceSheet'])->name('attendance_sheet');
                             }
                             );

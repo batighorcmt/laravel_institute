@@ -141,6 +141,11 @@ class ExamPrintController extends Controller
         return view('principal.exams.print.admit_v3', $this->prepareData($request, $school, $exam));
     }
 
+    public function admitV4(Request $request, School $school, Exam $exam)
+    {
+        return view('principal.exams.print.admit_v4', $this->prepareData($request, $school, $exam));
+    }
+
     public function attendanceSheet(Request $request, School $school, Exam $exam)
     {
         return view('principal.exams.print.exam_attendance', $this->prepareData($request, $school, $exam));
