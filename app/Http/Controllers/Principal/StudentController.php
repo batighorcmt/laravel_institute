@@ -1372,6 +1372,7 @@ class StudentController extends Controller
                 'id'             => $student->id,
                 'name'           => $student->student_name_en ?: $student->student_name_bn,
                 'name_bn'        => $student->student_name_bn,
+                'father_name'    => $student->father_name,
                 'roll_no'        => $enrollment ? $enrollment->roll_no : '',
                 'student_id'     => $student->student_id,
                 'public_exam_id' => $peData ? $peData->id : null,

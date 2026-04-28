@@ -201,7 +201,7 @@
                                 <input type="checkbox" @change="toggleSelectAll" :checked="allSelected" title="সব নির্বাচন করুন">
                             </th>
                             <th class="text-center" style="width:34px;">#</th>
-                            <th style="min-width:130px;">নাম / ID</th>
+                            <th style="min-width:150px;">নাম / পিতার নাম</th>
                             <th class="text-center" style="width:55px;">রোল</th>
                             <th style="min-width:105px;">Board</th>
                             <th style="min-width:95px;">Roll No.</th>
@@ -220,8 +220,8 @@
                             </td>
                             <td class="text-center align-middle">@{{ idx + 1 }}</td>
                             <td class="align-middle">
-                                <strong>@{{ student.name }}</strong>
-                                <small class="d-block text-muted">@{{ student.student_id }}</small>
+                                <div class="font-weight-bold">@{{ student.name }}</div>
+                                <div class="small text-muted text-uppercase">@{{ student.father_name }}</div>
                             </td>
                             <td class="text-center align-middle">@{{ student.roll_no }}</td>
                             <td>
