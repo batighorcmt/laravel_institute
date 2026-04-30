@@ -25,10 +25,14 @@
         .container-fluid { padding: 0 !important; width: 100% !important; }
         .card { margin: 0 !important; border: 0 !important; box-shadow: none !important; display: block !important; visibility: visible !important; }
         .card-body { padding: 0 !important; display: block !important; visibility: visible !important; }
+        .report-content, .attendance-table-container { display: block !important; visibility: visible !important; min-height: 100px !important; }
         .table-responsive { overflow: visible !important; display: block !important; }
         /* Fit table to page width */
-        .attendance-table { width: 100% !important; table-layout: auto; font-size: 0.65rem; border-collapse: collapse !important; display: table !important; }
-        .attendance-table th, .attendance-table td { padding: 2px 2px !important; border: 1px solid #000 !important; }
+        .attendance-table { width: 100% !important; table-layout: auto; font-size: 0.65rem; border-collapse: collapse !important; display: table !important; background: #fff !important; }
+        .attendance-table thead, .attendance-table tbody, .attendance-table tr, .attendance-table th, .attendance-table td { display: table-row-group !important; }
+        .attendance-table thead { display: table-header-group !important; }
+        .attendance-table tr { display: table-row !important; }
+        .attendance-table th, .attendance-table td { display: table-cell !important; padding: 2px 2px !important; border: 1px solid #000 !important; color: #000 !important; }
         /* Narrow left columns in print */
         .attendance-table th:first-child, .attendance-table td:first-child { min-width: 35px !important; width: 35px !important; }
         .attendance-table th:nth-child(2), .attendance-table td:nth-child(2) { min-width: 120px !important; width: 120px !important; white-space: normal !important; word-break: break-word !important; }
@@ -125,22 +129,14 @@
         </div>
     </form>
 
-    <div class="card" style="display: block !important;">
+    <div class="report-content" style="display: block !important; visibility: visible !important;">
         @if(!($requiresSelection ?? false))
-        <div class="card-body p-0" style="display: block !important;">
-            <div class="table-responsive">
-                @php
-                    $dateList = collect($dates ?? [])->values()->all();
-                    $holidayList = collect($holidayDates ?? [])->values()->all();
-                    $weeklyHolidayNumsList = collect($weeklyHolidayNums ?? [])->values()->all();
-                    // Re-initialize defensively in table scope (harmless if already set)
-                    if(!isset($studentsCollection)) { $studentsCollection = collect($students ?? []); }
-                    $dateCount = count($dateList);
-                @endphp
-                @if($studentsCollection->isNotEmpty())
-                    <div class="p-2 no-print">মোট শিক্ষার্থী: {{ $toBn($studentsCollection->count()) }} জন</div>
-                @endif
-                <table class="table table-bordered table-striped attendance-table mb-0" style="width: 100%;">
+            @if($studentsCollection->isNotEmpty())
+                <div class="p-2 mb-2" style="font-weight: bold;">মোট শিক্ষার্থী: {{ $toBn($studentsCollection->count()) }} জন</div>
+            @endif
+            <div class="attendance-table-container" style="display: block !important; visibility: visible !important; width: 100%;">
+                <table class="table table-bordered table-striped attendance-table mb-0" style="width: 100% !important; border-collapse: collapse !important;">
+
                     <thead>
                         <tr>
                             <th rowspan="2" style="min-width:70px;">রোল</th>
@@ -268,7 +264,7 @@
         @endif
     </div>
     <div class="print-only mt-3 text-right" style="font-size: 12px;">
-        প্রিন্ট তারিখ: {{ $toBn(now()->format('d-m-Y | H:i A')) }}
+        প্রিন্ট তারিখ: {{ $toBn(now()->format('d-m-Y | h:i A')) }}
     </div>
 </div>
 @endsection

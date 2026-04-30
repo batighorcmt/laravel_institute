@@ -1,5 +1,10 @@
 <div class="print-header d-none d-print-block">
-    <div style="text-align:center; border-bottom:1px solid #000; padding:6px 0; font-size:12px;">
+    <div style="text-align:center; border-bottom:1px solid #000; padding:10px 0; font-size:12px; position: relative;">
+        @if(!empty($school->logo))
+            <div style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%);">
+                <img src="{{ asset('storage/' . $school->logo) }}" style="height: 65px; width: auto; object-fit: contain;">
+            </div>
+        @endif
         <div style="font-weight:800; font-size:20px; line-height:1.1;">{{ $school->name_bn ?? $school->name ?? config('app.name') }}</div>
         @php
             $address = $school->address_bn ?? $school->address;
