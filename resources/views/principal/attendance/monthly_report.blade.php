@@ -25,14 +25,14 @@
         .container-fluid { padding: 0 !important; width: 100% !important; }
         .card { margin: 0 !important; border: 0 !important; box-shadow: none !important; display: block !important; visibility: visible !important; }
         .card-body { padding: 0 !important; display: block !important; visibility: visible !important; }
-        .report-content, .attendance-table-container { display: block !important; visibility: visible !important; min-height: 100px !important; }
+        .report-content, .attendance-table-container { display: block !important; visibility: visible !important; }
         .table-responsive { overflow: visible !important; display: block !important; }
         /* Fit table to page width */
-        .attendance-table { width: 100% !important; table-layout: auto; font-size: 0.65rem; border-collapse: collapse !important; display: table !important; background: #fff !important; }
-        .attendance-table thead, .attendance-table tbody, .attendance-table tr, .attendance-table th, .attendance-table td { display: table-row-group !important; }
+        .attendance-table { width: 100% !important; table-layout: auto; font-size: 0.6rem; border-collapse: collapse !important; display: table !important; background: #fff !important; color: #000 !important; }
         .attendance-table thead { display: table-header-group !important; }
-        .attendance-table tr { display: table-row !important; }
-        .attendance-table th, .attendance-table td { display: table-cell !important; padding: 2px 2px !important; border: 1px solid #000 !important; color: #000 !important; }
+        .attendance-table tbody { display: table-row-group !important; }
+        .attendance-table tr { display: table-row !important; page-break-inside: avoid !important; }
+        .attendance-table th, .attendance-table td { display: table-cell !important; padding: 2px 2px !important; border: 1px solid #000 !important; color: #000 !important; vertical-align: middle !important; }
         /* Narrow left columns in print */
         .attendance-table th:first-child, .attendance-table td:first-child { min-width: 35px !important; width: 35px !important; }
         .attendance-table th:nth-child(2), .attendance-table td:nth-child(2) { min-width: 120px !important; width: 120px !important; white-space: normal !important; word-break: break-word !important; }
