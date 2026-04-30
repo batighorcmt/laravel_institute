@@ -21,23 +21,21 @@
         /* Hide global layout chrome in print */
         .main-footer, .main-header, .main-sidebar, nav.main-header, aside.main-sidebar { display: none !important; }
         .content-wrapper { margin-left: 0 !important; }
-        .container-fluid { padding: 0 !important; margin-top:110px !important; }
+        .container-fluid { padding: 0 !important; margin-top:140px !important; }
         .card { margin: 0 !important; border: 0 !important; box-shadow: none !important; }
         .card-body { padding: 0 !important; }
         .table-responsive { overflow: visible !important; }
         /* Fit table to page width */
-        .attendance-table { width: 100% !important; table-layout: fixed; font-size: 0.65rem; }
-        .attendance-table th, .attendance-table td { padding: 2px 2px !important; }
+        .attendance-table { width: 100% !important; table-layout: auto; font-size: 0.65rem; border-collapse: collapse !important; }
+        .attendance-table th, .attendance-table td { padding: 2px 2px !important; border: 1px solid #000 !important; }
         /* Narrow left columns in print */
-    .attendance-table th:first-child, .attendance-table td:first-child { min-width: 42px !important; width: 42px !important; }
-    .attendance-table th:nth-child(2), .attendance-table td:nth-child(2) { min-width: 140px !important; width: 140px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .attendance-table th:first-child, .attendance-table td:first-child { min-width: 35px !important; width: 35px !important; }
+        .attendance-table th:nth-child(2), .attendance-table td:nth-child(2) { min-width: 120px !important; width: 120px !important; white-space: normal !important; word-break: break-word !important; }
         /* Keep cells compact */
-        .attendance-table th, .attendance-table td { white-space: nowrap; overflow: hidden; text-overflow: clip; }
-        /* Reserve space for fixed footer */
-        body { margin-bottom: 70px !important; }
-        .print-footer { position: fixed; bottom: 0; left: 0; right: 0; }
-        .print-header { position: fixed; top: 0; left: 0; right: 0; z-index:999; background:#fff; }
-        /* Increased margin-top to clear new taller header */
+        .attendance-table th, .attendance-table td { overflow: visible !important; }
+        .print-header { position: fixed; top: 0; left: 0; right: 0; z-index:999; background:#fff; border-bottom: 2px solid #000; }
+        .text-right { text-align: right !important; }
+        .mt-3 { margin-top: 1rem !important; }
     }
 </style>
 @endpush
@@ -69,8 +67,10 @@
 @endphp
 <div class="print-only">
     @php
-        $className = optional(collect($classes)->firstWhere('id', request('class_id')))->name ?? null;
-        $sectionName = optional(collect($sections)->firstWhere('id', request('section_id')))->name ?? null;
+        $selectedClass = collect($classes)->firstWhere('id', request('class_id'));
+        $className = $selectedClass->bangla_name ?? $selectedClass->name ?? null;
+        $selectedSection = collect($sections)->firstWhere('id', request('section_id'));
+        $sectionName = $selectedSection->bangla_name ?? $selectedSection->name ?? null;
         $year = null; $monthName = null;
         if(!empty($month)) { $ts = strtotime($month.'-01'); $year = $toBn(date('Y', $ts)); $monthName = $bnMonths[(int)date('n', $ts)] ?? date('F', $ts); }
     @endphp
@@ -107,7 +107,7 @@
                 <select name="class_id" id="class_id" class="form-control" required onchange="handleClassChange(this)">
                     <option value="" disabled {{ request('class_id') ? '' : 'selected' }}>শ্রেণি নির্বাচন করুন</option>
                 @foreach($classes as $class)
-                    <option value="{{ $class->id }}" {{ request('class_id') == $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
+                    <option value="{{ $class->id }}" {{ request('class_id') == $class->id ? 'selected' : '' }}>{{ $class->bangla_name ?? $class->name }}</option>
                 @endforeach
             </select>
         </div>
@@ -116,7 +116,7 @@
                 <select name="section_id" id="section_id" class="form-control" {{ request('class_id') ? '' : 'disabled' }} required>
                     <option value="" disabled {{ request('section_id') ? '' : 'selected' }}>{{ request('class_id') ? 'শাখা নির্বাচন করুন' : 'আগে শ্রেণি নির্বাচন করুন' }}</option>
                 @foreach($sections as $section)
-                    <option value="{{ $section->id }}" {{ request('section_id') == $section->id ? 'selected' : '' }}>{{ $section->name }}</option>
+                    <option value="{{ $section->id }}" {{ request('section_id') == $section->id ? 'selected' : '' }}>{{ $section->bangla_name ?? $section->name }}</option>
                 @endforeach
             </select>
         </div>
@@ -263,6 +263,9 @@
             </div>
         </div>
         @endif
+    </div>
+    <div class="print-only mt-3 text-right" style="font-size: 12px;">
+        প্রিন্ট তারিখ: {{ $toBn(now()->format('d-m-Y | H:i A')) }}
     </div>
 </div>
 @endsection
