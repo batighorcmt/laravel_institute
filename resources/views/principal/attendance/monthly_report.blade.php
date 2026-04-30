@@ -16,24 +16,25 @@
     .print-only { display: none; }
     @media print {
         @page { size: landscape; margin: 0.5cm; }
+        html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
         .no-print { display: none !important; }
         .print-only { display: block !important; }
         /* Hide global layout chrome in print */
-        .main-footer, .main-header, .main-sidebar, nav.main-header, aside.main-sidebar { display: none !important; }
-        .content-wrapper { margin-left: 0 !important; }
-        .container-fluid { padding: 0 !important; margin-top:140px !important; }
-        .card { margin: 0 !important; border: 0 !important; box-shadow: none !important; }
-        .card-body { padding: 0 !important; }
-        .table-responsive { overflow: visible !important; }
+        .main-footer, .main-header, .main-sidebar, nav.main-header, aside.main-sidebar, .breadcrumb { display: none !important; }
+        .content-wrapper { margin-left: 0 !important; padding: 0 !important; background: #fff !important; }
+        .container-fluid { padding: 0 !important; width: 100% !important; }
+        .card { margin: 0 !important; border: 0 !important; box-shadow: none !important; display: block !important; visibility: visible !important; }
+        .card-body { padding: 0 !important; display: block !important; visibility: visible !important; }
+        .table-responsive { overflow: visible !important; display: block !important; }
         /* Fit table to page width */
-        .attendance-table { width: 100% !important; table-layout: auto; font-size: 0.65rem; border-collapse: collapse !important; }
+        .attendance-table { width: 100% !important; table-layout: auto; font-size: 0.65rem; border-collapse: collapse !important; display: table !important; }
         .attendance-table th, .attendance-table td { padding: 2px 2px !important; border: 1px solid #000 !important; }
         /* Narrow left columns in print */
         .attendance-table th:first-child, .attendance-table td:first-child { min-width: 35px !important; width: 35px !important; }
         .attendance-table th:nth-child(2), .attendance-table td:nth-child(2) { min-width: 120px !important; width: 120px !important; white-space: normal !important; word-break: break-word !important; }
         /* Keep cells compact */
         .attendance-table th, .attendance-table td { overflow: visible !important; }
-        .print-header { position: fixed; top: 0; left: 0; right: 0; z-index:999; background:#fff; border-bottom: 2px solid #000; }
+        .print-header { position: static !important; background:#fff !important; border-bottom: 2px solid #000 !important; margin-bottom: 20px !important; display: block !important; }
         .text-right { text-align: right !important; }
         .mt-3 { margin-top: 1rem !important; }
     }
@@ -65,26 +66,25 @@
         return $toBn(date('d-m-Y', $ts));
     };
 @endphp
-<div class="print-only">
-    @php
-        $selectedClass = collect($classes)->firstWhere('id', request('class_id'));
-        $className = $selectedClass->bangla_name ?? $selectedClass->name ?? null;
-        $selectedSection = collect($sections)->firstWhere('id', request('section_id'));
-        $sectionName = $selectedSection->bangla_name ?? $selectedSection->name ?? null;
-        $year = null; $monthName = null;
-        if(!empty($month)) { $ts = strtotime($month.'-01'); $year = $toBn(date('Y', $ts)); $monthName = $bnMonths[(int)date('n', $ts)] ?? date('F', $ts); }
-    @endphp
-    @include('partials.print.header', [
-        'reportTitle' => 'মাসিক হাজিরা রিপোর্ট',
-        'reportType' => 'Attendance',
-        'year' => $year,
-        'monthName' => $monthName,
-        'className' => $className,
-        'sectionName' => $sectionName,
-    ])
-    {{-- Header should appear only when printing --}}
-</div>
 <div class="container-fluid">
+    <div class="print-only">
+        @php
+            $selectedClass = collect($classes)->firstWhere('id', request('class_id'));
+            $className = $selectedClass->bangla_name ?? $selectedClass->name ?? null;
+            $selectedSection = collect($sections)->firstWhere('id', request('section_id'));
+            $sectionName = $selectedSection->bangla_name ?? $selectedSection->name ?? null;
+            $year = null; $monthName = null;
+            if(!empty($month)) { $ts = strtotime($month.'-01'); $year = $toBn(date('Y', $ts)); $monthName = $bnMonths[(int)date('n', $ts)] ?? date('F', $ts); }
+        @endphp
+        @include('partials.print.header', [
+            'reportTitle' => 'মাসিক হাজিরা রিপোর্ট',
+            'reportType' => 'Attendance',
+            'year' => $year,
+            'monthName' => $monthName,
+            'className' => $className,
+            'sectionName' => $sectionName,
+        ])
+    </div>
     <div class="d-flex justify-content-end align-items-center mb-3 no-print">
         <button type="button" class="btn btn-success" onclick="window.print()"><i class="fas fa-print"></i> প্রিন্ট</button>
     </div>
@@ -125,9 +125,9 @@
         </div>
     </form>
 
-    <div class="card">
-        @if(empty($requiresSelection) || !$requiresSelection)
-        <div class="card-body p-0">
+    <div class="card" style="display: block !important;">
+        @if(!($requiresSelection ?? false))
+        <div class="card-body p-0" style="display: block !important;">
             <div class="table-responsive">
                 @php
                     $dateList = collect($dates ?? [])->values()->all();
@@ -137,7 +137,10 @@
                     if(!isset($studentsCollection)) { $studentsCollection = collect($students ?? []); }
                     $dateCount = count($dateList);
                 @endphp
-                <table class="table table-bordered table-striped attendance-table mb-0">
+                @if($studentsCollection->isNotEmpty())
+                    <div class="p-2 no-print">মোট শিক্ষার্থী: {{ $toBn($studentsCollection->count()) }} জন</div>
+                @endif
+                <table class="table table-bordered table-striped attendance-table mb-0" style="width: 100%;">
                     <thead>
                         <tr>
                             <th rowspan="2" style="min-width:70px;">রোল</th>
