@@ -137,7 +137,7 @@ class AttendanceController extends Controller
         $dates = [];
         for($d=1;$d<=$daysInMonth;$d++){ $dates[] = sprintf('%04d-%02d-%02d',$yearNum,$monthNum,$d); }
 
-        return view('principal.attendance.monthly_report', [
+        $viewData = [
             'school'=>$school,
             'month'=>$month,
             'classes'=>$classes,
@@ -151,7 +151,13 @@ class AttendanceController extends Controller
             'weeklyHolidayNums'=>$weeklyHolidayNums,
             'print'=>$print,
             'requiresSelection'=>false,
-        ]);
+        ];
+
+        if ($print) {
+            return view('principal.attendance.monthly_report_print', $viewData);
+        }
+
+        return view('principal.attendance.monthly_report', $viewData);
     }
     /**
      * Attendance dashboard overview for a school (date filter, aggregates, charts, absent list)

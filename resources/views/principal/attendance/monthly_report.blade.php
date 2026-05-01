@@ -90,7 +90,7 @@
         ])
     </div>
     <div class="d-flex justify-content-end align-items-center mb-3 no-print">
-        <button type="button" class="btn btn-success" onclick="window.print()"><i class="fas fa-print"></i> প্রিন্ট</button>
+        <button type="button" class="btn btn-success" onclick="openPrintWindow(event)"><i class="fas fa-print"></i> প্রিন্ট</button>
     </div>
 
     <form method="get" class="row g-2 align-items-end mb-3 no-print">
@@ -280,6 +280,23 @@
             form.submit();
         }catch(e){
             // no-op
+        }
+    }
+
+    function openPrintWindow(e){
+        try{
+            e && e.preventDefault();
+            var url = new URL(window.location.href);
+            url.searchParams.set('print','1');
+            // open in a new window so print-specific layout is not affected by admin chrome
+            window.open(url.toString(), '_blank', 'noopener');
+        }catch(err){
+            // fallback to same-window print
+            if(window.location.search.indexOf('print=') === -1){
+                window.location.search = (window.location.search ? window.location.search + '&' : '?') + 'print=1';
+            } else {
+                window.print();
+            }
         }
     }
 </script>
