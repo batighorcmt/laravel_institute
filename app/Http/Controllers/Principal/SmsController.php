@@ -308,8 +308,20 @@ class SmsController extends Controller
         if ($v = $request->get('type')) { $q->where('recipient_type',$v); }
         if ($v = $request->get('date_from')) { $q->where('created_at','>=',$v.' 00:00:00'); }
         if ($v = $request->get('date_to')) { $q->where('created_at','<=',$v.' 23:59:59'); }
+        $totalLogsCount = $q->count();
+        $totalParts = $q->clone()->reorder()->selectRaw("
+            SUM(
+                IF(LENGTH(message) != CHAR_LENGTH(message),
+                    IF(CHAR_LENGTH(message) <= 70, 1, CEIL(CHAR_LENGTH(message) / 67)),
+                    IF(CHAR_LENGTH(message) <= 160, 1, CEIL(CHAR_LENGTH(message) / 153))
+                )
+            ) as total_parts
+        ")->value('total_parts') ?: 0;
+
+        $successCount = $q->clone()->whereIn('status', ['success', 'sent'])->count();
+
         $logs = $q->paginate(50)->withQueryString();
-        return view('principal.sms.logs', compact('school','logs'));
+        return view('principal.sms.logs', compact('school','logs', 'totalParts', 'totalLogsCount', 'successCount'));
     }
 
     public function view(School $school, SmsLog $log)

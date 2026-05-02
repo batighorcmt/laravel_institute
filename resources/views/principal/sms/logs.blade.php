@@ -44,6 +44,43 @@
   </div>
 </div>
 
+<div class="row mb-3">
+  <div class="col-md-4">
+    <div class="card text-white bg-primary">
+      <div class="card-body py-3 d-flex align-items-center justify-content-between">
+        <div>
+          <h6 class="mb-0">মোট পাঠানো মেসেজ (লগ)</h6>
+          <h3 class="mb-0 font-weight-bold">{{ number_format($totalLogsCount) }}</h3>
+        </div>
+        <i class="fas fa-history fa-2x opacity-50"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-info">
+      <div class="card-body py-3 d-flex align-items-center justify-content-between">
+        <div>
+          <h6 class="mb-0">মোট এসএমএস ইউনিট (পার্ট)</h6>
+          <h3 class="mb-0 font-weight-bold">{{ number_format($totalParts) }}</h3>
+        </div>
+        <i class="fas fa-sms fa-2x opacity-50"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card text-white bg-success">
+      <div class="card-body py-3 d-flex align-items-center justify-content-between">
+        <!-- <div>
+          <h6 class="mb-0">সফল মেসেজ (ফিল্টার অনুযায়ী)</h6>
+          <h3 class="mb-0 font-weight-bold">{{ number_format($successCount) }}</h3>
+          <small>সফলভাবে পাঠানো হয়েছে</small>
+        </div> --> 
+        <i class="fas fa-check-circle fa-2x opacity-50"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <strong>লগসমূহ ({{ $logs->total() }})</strong>
@@ -54,6 +91,7 @@
       <table class="table table-striped table-hover table-sm mb-0">
         <thead class="thead-light">
           <tr>
+            <th>ক্র.নং</th>
             <th>সময়</th>
             <th>স্ট্যাটাস</th>
             <th>ধরন</th>
@@ -65,12 +103,14 @@
             <th>নম্বর</th>
             <th>প্রেরক</th>
             <th>বার্তা</th>
+            <th>পার্ট</th>
             <th>একশন</th>
           </tr>
         </thead>
         <tbody>
-          @forelse($logs as $log)
+          @foreach($logs as $log)
             <tr>
+              <td>{{ ($logs->currentPage() - 1) * $logs->perPage() + $loop->iteration }}</td>
               <td>{{ $log->created_at }}</td>
               <td>{!! in_array($log->status, ['success', 'sent']) ? '<span class="badge badge-success">সফল</span>' : '<span class="badge badge-danger">বিফল</span>' !!}</td>
               <td>{{ $log->recipient_type }}</td>
@@ -82,17 +122,19 @@
               <td>{{ $log->recipient_number }}</td>
               <td>{{ $log->sender?->name ?? ($log->sent_by_user_id ? 'User#'.$log->sent_by_user_id : '') }}</td>
               <td style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ $log->message }}">{{ $log->message }}</td>
+              <td class="text-center"><span class="badge badge-light border">{{ $log->getPartsCount() }}</span></td>
               <td><a href="{{ route('principal.institute.sms.logs.view',[$school,$log]) }}" target="_blank" class="btn btn-xs btn-outline-primary"><i class="fas fa-eye"></i> View</a></td>
             </tr>
-          @empty
-            <tr><td colspan="12" class="text-center text-muted">কোনো তথ্য নেই</td></tr>
-          @endforelse
+          @endforeach
+          @if($logs->isEmpty())
+            <tr><td colspan="14" class="text-center text-muted">কোনো তথ্য নেই</td></tr>
+          @endif
         </tbody>
       </table>
     </div>
   </div>
   <div class="card-footer">
-    {{ $logs->links() }}
+    {{ $logs->onEachSide(0)->links() }}
   </div>
 </div>
 @endsection
