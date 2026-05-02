@@ -178,6 +178,11 @@ class LessonEvaluationReportController extends Controller
                 }
             }
 
+            $subjectOrders = \DB::table('class_subjects')
+                ->where('class_id', $classId)
+                ->pluck('order_no', 'subject_id')
+                ->toArray();
+
             foreach ($groupedRoutine as $key => $entries) {
                 $first = $entries->first();
                 $subject = $first->subject;
@@ -224,6 +229,7 @@ class LessonEvaluationReportController extends Controller
                 $tName = ($lang == 'bn' && $teacher->full_name_bn) ? $teacher->full_name_bn : ($teacher->full_name ?? ($teacher->user->name ?? 'N/A'));
 
                 $reportData->push([
+                    'subject_id' => $subject->id,
                     'subject' => $sName,
                     'teacher' => $tName,
                     'total_classes' => $totalClasses,
@@ -233,8 +239,12 @@ class LessonEvaluationReportController extends Controller
                     'partial_students' => $partialS,
                     'not_done_students' => $notDoneS,
                     'absent_students' => $absentS,
+                    'order_no' => $subjectOrders[$subject->id] ?? 999
                 ]);
             }
+
+            // Sort by order_no
+            $reportData = $reportData->sortBy('order_no')->values();
         }
 
         return [
