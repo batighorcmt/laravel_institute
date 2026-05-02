@@ -65,6 +65,187 @@ class LessonEvaluationReportController extends Controller
         ));
     }
 
+    public function entryReport(School $school, Request $request)
+    {
+        $classes = \App\Models\SchoolClass::forSchool($school->id)->active()->ordered()->get();
+        $classId = $request->get('class_id');
+        $sectionId = $request->get('section_id');
+        
+        $sections = collect();
+        if ($classId) {
+            $sections = \App\Models\Section::forSchool($school->id)->where('class_id', $classId)->ordered()->get();
+        }
+
+        $reportResults = $this->getEntryReportData($school, $request);
+        $reportData = $reportResults['reportData'];
+        $fromDate = $reportResults['fromDate'];
+        $toDate = $reportResults['toDate'];
+
+        return view('principal.lesson-evaluations.entry_report', compact('school', 'classes', 'sections', 'classId', 'sectionId', 'reportData', 'fromDate', 'toDate'));
+    }
+
+    public function entryReportPrint(School $school, Request $request)
+    {
+        $lang = $request->get('lang', 'bn');
+        $classId = $request->get('class_id');
+        $sectionId = $request->get('section_id');
+        
+        $class = \App\Models\SchoolClass::find($classId);
+        $section = \App\Models\Section::find($sectionId);
+
+        $reportResults = $this->getEntryReportData($school, $request);
+        $reportData = $reportResults['reportData'];
+        $fromDate = $reportResults['fromDate'];
+        $toDate = $reportResults['toDate'];
+
+        // Prepare subtitle info for print layout
+        $dtBn = function($d) {
+            $digits = ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯'];
+            return strtr(\Carbon\Carbon::parse($d)->format('d-m-Y'), $digits);
+        };
+
+        if ($lang == 'bn') {
+            $printTitle = 'লেসন ইভ্যালুয়েশন এন্ট্রি রিপোর্ট';
+            $cName = $class->bangla_name ?: $class->name;
+            $sName = $section->bangla_name ?: $section->name;
+            $fDate = $dtBn($fromDate);
+            $tDate = $dtBn($toDate);
+            $printSubtitle = "শ্রেণি: {$cName} | শাখা: {$sName} | তারিখ: {$fDate} - {$tDate}";
+        } else {
+            $printTitle = 'Lesson Evaluation Entry Report';
+            $printSubtitle = "Class: {$class->name} | Section: {$section->name} | Date: " . \Carbon\Carbon::parse($fromDate)->format('d-m-Y') . " - " . \Carbon\Carbon::parse($toDate)->format('d-m-Y');
+        }
+
+        return view('principal.lesson-evaluations.entry_report_print', compact('school', 'reportData', 'fromDate', 'toDate', 'class', 'section', 'lang', 'printTitle', 'printSubtitle'));
+    }
+
+    private function getEntryReportData(School $school, Request $request)
+    {
+        $lang = $request->get('lang', 'bn');
+        $classId = $request->get('class_id');
+        $sectionId = $request->get('section_id');
+        
+        $fromDate = $request->get('from_date', \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $toDate = $request->get('to_date', \Carbon\Carbon::now()->format('Y-m-d'));
+        
+        $startDate = \Carbon\Carbon::parse($fromDate);
+        $endDate = \Carbon\Carbon::parse($toDate);
+        
+        $reportData = collect();
+
+        if ($classId && $sectionId) {
+            $routineEntries = \App\Models\RoutineEntry::forSchool($school->id)
+                ->forClassSection($classId, $sectionId)
+                ->with(['subject', 'teacher.user'])
+                ->get();
+
+            $groupedRoutine = $routineEntries->groupBy(function ($item) {
+                return $item->subject_id . '_' . $item->teacher_id;
+            });
+
+            // Get weekly holidays
+            $weeklyHolidays = \App\Models\WeeklyHoliday::forSchool($school->id)->active()->pluck('day_name')->map(fn($d)=>strtolower($d))->toArray();
+            
+            // Pre-calculate occurrences of each day in range excluding specific holidays
+            $dayCountsInRange = [
+                'saturday' => 0, 'sunday' => 0, 'monday' => 0, 'tuesday' => 0, 
+                'wednesday' => 0, 'thursday' => 0, 'friday' => 0
+            ];
+            
+            $current = $startDate->copy();
+            while ($current <= $endDate) {
+                $dayName = strtolower($current->format('l'));
+                // Only count if not a weekly holiday
+                if (!in_array($dayName, $weeklyHolidays)) {
+                    $dayCountsInRange[$dayName]++;
+                }
+                $current->addDay();
+            }
+
+            // Subtract specific holidays
+            $holidays = \App\Models\Holiday::forSchool($school->id)->active()
+                ->whereBetween('date', [$startDate, $endDate])
+                ->get(['date']);
+                
+            foreach ($holidays as $h) {
+                $dayName = strtolower($h->date->format('l'));
+                // If it was counted, subtract it
+                if (isset($dayCountsInRange[$dayName]) && $dayCountsInRange[$dayName] > 0) {
+                    // Only subtract if it's not already a weekly holiday (already excluded)
+                    if (!in_array($dayName, $weeklyHolidays)) {
+                        $dayCountsInRange[$dayName]--;
+                    }
+                }
+            }
+
+            foreach ($groupedRoutine as $key => $entries) {
+                $first = $entries->first();
+                $subject = $first->subject;
+                $teacher = $first->teacher;
+                
+                if (!$subject || !$teacher) continue;
+
+                // Days this subject/teacher pair has classes
+                $classDays = $entries->pluck('day_of_week')->unique()->map(fn($d) => strtolower($d))->toArray();
+                
+                // Calculate total classes for this pair
+                $totalClasses = 0;
+                foreach($classDays as $cd) {
+                    if (isset($dayCountsInRange[$cd])) {
+                        $totalClasses += $dayCountsInRange[$cd];
+                    }
+                }
+
+                // Count entries and stats
+                $evaluations = \App\Models\LessonEvaluation::forSchool($school->id)
+                    ->where('class_id', $classId)
+                    ->where('section_id', $sectionId)
+                    ->where('subject_id', $subject->id)
+                    ->where('teacher_id', $teacher->id)
+                    ->whereBetween('evaluation_date', [$startDate, $endDate])
+                    ->get();
+
+                $entriesCount = $evaluations->count();
+                
+                $completedS = 0;
+                $partialS = 0;
+                $notDoneS = 0;
+                $absentS = 0;
+
+                foreach($evaluations as $ev) {
+                    $stats = $ev->getCompletionStats();
+                    $completedS += $stats['completed'];
+                    $partialS += $stats['partial'];
+                    $notDoneS += $stats['not_done'];
+                    $absentS += $stats['absent'];
+                }
+
+                $sName = ($lang == 'bn' && $subject->bangla_name) ? $subject->bangla_name : $subject->name;
+                $tName = ($lang == 'bn' && $teacher->full_name_bn) ? $teacher->full_name_bn : ($teacher->full_name ?? ($teacher->user->name ?? 'N/A'));
+
+                $reportData->push([
+                    'subject' => $sName,
+                    'teacher' => $tName,
+                    'total_classes' => $totalClasses,
+                    'entered' => $entriesCount,
+                    'missing' => max(0, $totalClasses - $entriesCount),
+                    'completed_students' => $completedS,
+                    'partial_students' => $partialS,
+                    'not_done_students' => $notDoneS,
+                    'absent_students' => $absentS,
+                ]);
+            }
+        }
+
+        return [
+            'reportData' => $reportData,
+            'fromDate' => $fromDate,
+            'toDate' => $toDate,
+            'startDate' => $startDate,
+            'endDate' => $endDate
+        ];
+    }
+
     public function show(School $school, LessonEvaluation $lessonEvaluation)
     {
         // Load only records that belong to active students
