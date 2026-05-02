@@ -372,6 +372,7 @@
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item"><a href="{{ route('principal.institute.lesson-evaluations.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.lesson-evaluations.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Reports</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.lesson-evaluations.entry-report', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.lesson-evaluations.entry-report') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>এন্ট্রি রিপোর্ট</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.lesson-evaluations.teacher-report', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.lesson-evaluations.teacher-report') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>শিক্ষক ভিত্তিক রিপোর্ট</p></a></li>
                                 </ul>
                             </li>
                             @endif

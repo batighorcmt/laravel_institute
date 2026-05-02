@@ -247,6 +247,8 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                             Route::get('/', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class , 'index'])->name('index');
                             Route::get('/entry-report', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class , 'entryReport'])->name('entry-report');
                             Route::get('/entry-report-print', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class , 'entryReportPrint'])->name('entry-report-print');
+                            Route::get('/teacher-report', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class , 'teacherReport'])->name('teacher-report');
+                            Route::get('/teacher-report-print', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class , 'teacherReportPrint'])->name('teacher-report-print');
                             Route::get('/print', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class , 'print'])->name('print');
                             Route::get('/{lessonEvaluation}', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class , 'show'])->name('show');
                         }

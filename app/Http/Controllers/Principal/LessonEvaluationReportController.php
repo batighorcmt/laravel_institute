@@ -389,4 +389,135 @@ class LessonEvaluationReportController extends Controller
 
         return view('principal.lesson-evaluations.print', compact('school', 'evaluations', 'fromDate', 'toDate', 'request', 'lang'));
     }
+
+    public function teacherReport(School $school, Request $request)
+    {
+        $teachers = \App\Models\Teacher::forSchool($school->id)->active()->orderBy('first_name')->get();
+        $teacherId = $request->get('teacher_id');
+        
+        $reportResults = $this->getTeacherReportData($school, $request);
+        $reportData = $reportResults['reportData'];
+        $fromDate = $reportResults['fromDate'];
+        $toDate = $reportResults['toDate'];
+
+        return view('principal.lesson-evaluations.teacher_report', compact('school', 'teachers', 'teacherId', 'reportData', 'fromDate', 'toDate'));
+    }
+
+    public function teacherReportPrint(School $school, Request $request)
+    {
+        $lang = $request->get('lang', 'bn');
+        $teacherId = $request->get('teacher_id');
+        $teacher = \App\Models\Teacher::find($teacherId);
+
+        $reportResults = $this->getTeacherReportData($school, $request);
+        $reportData = $reportResults['reportData'];
+        $fromDate = $reportResults['fromDate'];
+        $toDate = $reportResults['toDate'];
+
+        $dtBn = function($d) {
+            $digits = ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯'];
+            return strtr(\Carbon\Carbon::parse($d)->format('d-m-Y'), $digits);
+        };
+
+        if ($lang == 'bn') {
+            $printTitle = 'লেসন ইভ্যালুয়েশন শিক্ষক ভিত্তিক রিপোর্ট';
+            $tName = $teacher->full_name_bn ?: $teacher->full_name;
+            $fDate = $dtBn($fromDate);
+            $tDate = $dtBn($toDate);
+            $printSubtitle = "শিক্ষকের নাম: {$tName} | তারিখ: {$fDate} - {$tDate}";
+        } else {
+            $printTitle = 'Lesson Evaluation Teacher Report';
+            $printSubtitle = "Teacher: {$teacher->full_name} | Date: " . \Carbon\Carbon::parse($fromDate)->format('d-m-Y') . " - " . \Carbon\Carbon::parse($toDate)->format('d-m-Y');
+        }
+
+        return view('principal.lesson-evaluations.teacher_report_print', compact('school', 'reportData', 'fromDate', 'toDate', 'teacher', 'lang', 'printTitle', 'printSubtitle'));
+    }
+
+    private function getTeacherReportData(School $school, Request $request)
+    {
+        $lang = $request->get('lang', 'bn');
+        $teacherId = $request->get('teacher_id');
+        
+        $fromDate = $request->get('from_date', \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d'));
+        $toDate = $request->get('to_date', \Carbon\Carbon::now()->format('Y-m-d'));
+        
+        $startDate = \Carbon\Carbon::parse($fromDate);
+        $endDate = \Carbon\Carbon::parse($toDate);
+        
+        $reportData = collect();
+
+        if ($teacherId) {
+            $routineEntries = \App\Models\RoutineEntry::forSchool($school->id)
+                ->where('teacher_id', $teacherId)
+                ->with(['subject', 'class', 'section'])
+                ->get();
+
+            $groupedRoutine = $routineEntries->groupBy(function ($item) {
+                return $item->class_id . '_' . $item->section_id . '_' . $item->subject_id;
+            });
+
+            $weeklyHolidays = \App\Models\WeeklyHoliday::forSchool($school->id)->active()->pluck('day_name')->map(fn($d)=>strtolower($d))->toArray();
+            $dayCountsInRange = ['saturday' => 0, 'sunday' => 0, 'monday' => 0, 'tuesday' => 0, 'wednesday' => 0, 'thursday' => 0, 'friday' => 0];
+            $current = $startDate->copy();
+            while ($current <= $endDate) {
+                $dayName = strtolower($current->format('l'));
+                if (!in_array($dayName, $weeklyHolidays)) $dayCountsInRange[$dayName]++;
+                $current->addDay();
+            }
+            $holidays = \App\Models\Holiday::forSchool($school->id)->active()->whereBetween('date', [$startDate, $endDate])->get(['date']);
+            foreach ($holidays as $h) {
+                $dayName = strtolower($h->date->format('l'));
+                if (isset($dayCountsInRange[$dayName]) && $dayCountsInRange[$dayName] > 0 && !in_array($dayName, $weeklyHolidays)) $dayCountsInRange[$dayName]--;
+            }
+
+            foreach ($groupedRoutine as $key => $entries) {
+                $first = $entries->first();
+                $subject = $first->subject;
+                $class = $first->class;
+                $section = $first->section;
+                
+                if (!$subject || !$class || !$section) continue;
+
+                $classDays = $entries->pluck('day_of_week')->unique()->map(fn($d) => strtolower($d))->toArray();
+                $totalClasses = 0;
+                foreach($classDays as $cd) if (isset($dayCountsInRange[$cd])) $totalClasses += $dayCountsInRange[$cd];
+
+                $evaluations = \App\Models\LessonEvaluation::forSchool($school->id)
+                    ->where('class_id', $class->id)
+                    ->where('section_id', $section->id)
+                    ->where('subject_id', $subject->id)
+                    ->where('teacher_id', $teacherId)
+                    ->whereBetween('evaluation_date', [$startDate, $endDate])
+                    ->get();
+
+                $entriesCount = $evaluations->count();
+                $completedS = 0; $partialS = 0; $notDoneS = 0; $absentS = 0;
+                foreach($evaluations as $ev) {
+                    $stats = $ev->getCompletionStats();
+                    $completedS += $stats['completed']; $partialS += $stats['partial']; $notDoneS += $stats['not_done']; $absentS += $stats['absent'];
+                }
+
+                $sName = ($lang == 'bn' && $subject->bangla_name) ? $subject->bangla_name : $subject->name;
+                $cName = ($lang == 'bn' && $class->bangla_name) ? $class->bangla_name : $class->name;
+                $secName = ($lang == 'bn' && $section->bangla_name) ? $section->bangla_name : $section->name;
+
+                $reportData->push([
+                    'class_name' => $cName,
+                    'section_name' => $secName,
+                    'subject' => $sName,
+                    'total_classes' => $totalClasses,
+                    'entered' => $entriesCount,
+                    'missing' => max(0, $totalClasses - $entriesCount),
+                    'completed_students' => $completedS,
+                    'partial_students' => $partialS,
+                    'not_done_students' => $notDoneS,
+                    'absent_students' => $absentS,
+                ]);
+            }
+        }
+
+        return [
+            'reportData' => $reportData, 'fromDate' => $fromDate, 'toDate' => $toDate, 'startDate' => $startDate, 'endDate' => $endDate
+        ];
+    }
 }
