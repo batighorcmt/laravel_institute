@@ -227,6 +227,9 @@ class LessonEvaluationReportController extends Controller
 
                 $sName = ($lang == 'bn' && $subject->bangla_name) ? $subject->bangla_name : $subject->name;
                 $tName = ($lang == 'bn' && $teacher->full_name_bn) ? $teacher->full_name_bn : ($teacher->full_name ?? ($teacher->user->name ?? 'N/A'));
+                if ($teacher->initials) {
+                    $tName .= " [{$teacher->initials}]";
+                }
 
                 $reportData->push([
                     'subject_id' => $subject->id,
@@ -422,12 +425,19 @@ class LessonEvaluationReportController extends Controller
         if ($lang == 'bn') {
             $printTitle = 'লেসন ইভ্যালুয়েশন শিক্ষক ভিত্তিক রিপোর্ট';
             $tName = $teacher->full_name_bn ?: $teacher->full_name;
+            if ($teacher->initials) {
+                $tName .= " [{$teacher->initials}]";
+            }
             $fDate = $dtBn($fromDate);
             $tDate = $dtBn($toDate);
             $printSubtitle = "শিক্ষকের নাম: {$tName} | তারিখ: {$fDate} - {$tDate}";
         } else {
             $printTitle = 'Lesson Evaluation Teacher Report';
-            $printSubtitle = "Teacher: {$teacher->full_name} | Date: " . \Carbon\Carbon::parse($fromDate)->format('d-m-Y') . " - " . \Carbon\Carbon::parse($toDate)->format('d-m-Y');
+            $tName = $teacher->full_name;
+            if ($teacher->initials) {
+                $tName .= " [{$teacher->initials}]";
+            }
+            $printSubtitle = "Teacher: {$tName} | Date: " . \Carbon\Carbon::parse($fromDate)->format('d-m-Y') . " - " . \Carbon\Carbon::parse($toDate)->format('d-m-Y');
         }
 
         return view('principal.lesson-evaluations.teacher_report_print', compact('school', 'reportData', 'fromDate', 'toDate', 'teacher', 'lang', 'printTitle', 'printSubtitle'));

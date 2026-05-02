@@ -35,7 +35,11 @@
         }
         if($request->filled('teacher_id')) {
             $t = \App\Models\Teacher::find($request->teacher_id);
-            if($t) $filters[] = ($lang === 'bn' ? 'শিক্ষক: ' : 'Teacher: ') . ($lang === 'bn' ? ($t->full_name_bn ?: $t->full_name) : $t->full_name);
+            if($t) {
+                $name = ($lang === 'bn' ? ($t->full_name_bn ?: $t->full_name) : $t->full_name);
+                if ($t->initials) $name .= " [{$t->initials}]";
+                $filters[] = ($lang === 'bn' ? 'শিক্ষক: ' : 'Teacher: ') . $name;
+            }
         }
     @endphp
 
@@ -134,7 +138,10 @@
                         </td> 
                     @endif
                     @if($showTeacher) 
-                        <td>{{ $lang === 'bn' ? ($ev->teacher->full_name_bn ?: $ev->teacher->full_name) : $ev->teacher->full_name }}</td> 
+                        <td>
+                            {{ $lang === 'bn' ? ($ev->teacher->full_name_bn ?: $ev->teacher->full_name) : $ev->teacher->full_name }}
+                            @if($ev->teacher->initials) [{{ $ev->teacher->initials }}] @endif
+                        </td> 
                     @endif
                     @if($showClass) 
                         <td>{{ $lang === 'bn' ? ($ev->class->bangla_name ?: $ev->class->name) : $ev->class->name }}</td> 

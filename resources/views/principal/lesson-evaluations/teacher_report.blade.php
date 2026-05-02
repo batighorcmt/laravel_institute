@@ -33,7 +33,7 @@
                             <option value="">নির্বাচন করুন</option>
                             @foreach($teachers as $teacher)
                                 <option value="{{ $teacher->id }}" {{ $teacherId == $teacher->id ? 'selected' : '' }}>
-                                    {{ $teacher->full_name }} [{{ $teacher->designation }}]
+                                    {{ $teacher->full_name }} {{ $teacher->initials ? '['.$teacher->initials.']' : '' }}
                                 </option>
                             @endforeach
                         </select>
