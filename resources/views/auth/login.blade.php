@@ -4,154 +4,406 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="{{ asset('images/batighor-favicon.png') }}">
-    <title>Batighor EIMS | Login</title>
-    @vite(['resources/css/app.css','resources/js/app.js'])
+    <title>Batighor EIMS | Sign In</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=Hind+Siliguri:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
     <style>
-        body, .form-control, .btn { font-family: 'Kalpurush', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Liberation Sans', sans-serif; }
-        body { min-height:100vh; overflow-x:hidden; }
-        .bg-animated {
-            position:fixed; inset:0; z-index:-1;
-            background:linear-gradient(120deg,#0d6efd,#6610f2,#6f42c1,#20c997,#0dcaf0);
-            background-size:400% 400%; animation:gradientMove 18s ease infinite;
+        :root {
+            --primary: #4f46e5;
+            --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --input-bg: rgba(255, 255, 255, 0.9);
         }
-        .bg-mark {
-            position:fixed; inset:0; z-index:-1; display:flex; align-items:center; justify-content:center; opacity:.08;
-            background-repeat:no-repeat; background-position:center; background-size:min(520px, 60vw) auto;
-            background-image:url('{{ asset('images/logo.svg') }}');
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', 'Hind Siliguri', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #0f172a;
+            overflow: hidden;
         }
-        @keyframes gradientMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-        .glass-card { background:rgba(255,255,255,.75); backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%); border:1px solid rgba(255,255,255,.4); }
-        .brand-mark { font-weight:700; letter-spacing:.5px; display:inline-flex; align-items:center; }
-        .brand-mark i { margin-right:.4rem; }
-        .floating-group { position:relative; margin-bottom:1.35rem; }
-    .floating-group input { width:100%; height:54px; padding:26px 16px 8px; border-radius:10px; border:1px solid #ced4da; background:#fff; transition:.25s; }
-    /* Ensure password field has space for eye toggle */
-    #password { padding-right:44px; }
-        .floating-group input:focus { box-shadow:0 0 0 0.25rem rgba(13,110,253,.25); border-color:#0d6efd; }
-        .floating-group label { position:absolute; top:14px; left:16px; font-size:.95rem; color:#6c757d; transition:.25s; pointer-events:none; }
-        .floating-group input:not(:placeholder-shown) + label,
-        .floating-group input:focus + label { top:6px; font-size:.7rem; letter-spacing:.5px; color:#0d6efd; }
-        .toggle-pass { position:absolute; top:50%; right:14px; transform:translateY(-50%); background:transparent; border:none; color:#6c757d; }
-        .toggle-pass:focus { outline:none; color:#0d6efd; }
-        .login-wrapper { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 18px; }
-        .brand-wrap { display:flex; flex-direction:column; align-items:center; }
-        .brand-logo { width:200px; height:200px; object-fit:contain; filter:drop-shadow(0 8px 18px rgba(13,110,253,.35)); }
-        .brand-title { font-weight:800; font-size:1.25rem; letter-spacing:.5px; }
-        .caps-indicator { display:none; font-size:.72rem; color:#dc3545; margin-left:4px; }
-        .action-row { display:flex; justify-content:space-between; align-items:center; margin:-6px 0 14px; }
-        .btn-gradient { background:linear-gradient(135deg,#0d6efd,#6610f2); border:none; color:#fff; font-weight:600; letter-spacing:.5px; box-shadow:0 12px 24px -10px rgba(13,110,253,.55); }
-        .btn-gradient:hover { filter:brightness(1.08); }
-        .meta-links a { font-size:.75rem; text-decoration:none; color:#495057; }
-        .meta-links a:hover { color:#0d6efd; }
-    /* .demo-pill removed per request */
-        .fade-in { animation:fadeIn .9s ease; }
-        @keyframes fadeIn { from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
-        .error-list { font-size:.75rem; margin-top:-4px; }
-        .dark-toggle { position:absolute; top:14px; right:14px; background:rgba(255,255,255,.55); border:none; padding:8px 12px; border-radius:8px; font-size:.8rem; font-weight:600; display:flex; align-items:center; gap:6px; }
-        .dark-toggle i { font-size:.9rem; }
-        body.dark-mode .glass-card { background:rgba(25,25,28,.78); color:#e9ecef; border-color:rgba(255,255,255,.1); }
-        body.dark-mode .floating-group input { background:#1f1f23; color:#e9ecef; border-color:#343a40; }
-        body.dark-mode .floating-group label { color:#adb5bd; }
-        body.dark-mode .floating-group input:not(:placeholder-shown)+label, body.dark-mode .floating-group input:focus+label{ color:#66b2ff; }
-        body.dark-mode .btn-gradient { background:linear-gradient(135deg,#6610f2,#0d6efd); }
-        body.dark-mode .demo-pill { border-color:#6610f2; }
-        body.dark-mode .demo-pill:hover { background:#6610f2; }
-        body.dark-mode .meta-links a { color:#adb5bd; }
-        body.dark-mode .meta-links a:hover { color:#66b2ff; }
+
+        /* Animated Mesh Background */
+        .mesh-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #0f172a;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 0% 100%, hsla(339,49%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 100%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 100%, hsla(253,16%,7%,1) 0, transparent 50%);
+            filter: blur(80px);
+            opacity: 0.8;
+            animation: pulse 10s ease infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(1.1); opacity: 0.9; }
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 460px;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px) saturate(200%);
+            -webkit-backdrop-filter: blur(25px) saturate(200%);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 50px 45px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .brand-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .brand-logo {
+            width: 90px;
+            height: 90px;
+            margin-bottom: 16px;
+            filter: drop-shadow(0 10px 15px rgba(79, 70, 229, 0.3));
+        }
+
+        .brand-name {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-tagline {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+            padding: 0 4px; /* Slight side margin for the group */
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 4px;
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--input-bg);
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 14px;
+            color: var(--text-main);
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s;
+            outline: none;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+            height: 52px; /* Fixed height for consistency */
+        }
+
+        .input-control:focus {
+            background: #fff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .password-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-control.has-toggle {
+            padding-right: 46px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            height: 100%;
+            width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 5;
+            transition: color 0.2s;
+        }
+
+        .toggle-password:hover {
+            color: var(--primary);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            margin-top: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+            box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.5);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .extras {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .forgot-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .forgot-link:hover { text-decoration: underline; }
+
+        .error-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #b91c1c;
+            padding: 14px 18px;
+            border-radius: 16px;
+            font-size: 13px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .caps-warning {
+            font-size: 11px;
+            color: #ef4444;
+            margin-top: 6px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
-<div class="bg-animated"></div>
-<div class="bg-mark"></div>
-<div class="login-wrapper">
-    <div class="glass-card shadow-lg rounded-4 p-4 p-md-5 fade-in" style="width:100%; max-width:600px; position:relative;">
-        <button id="themeToggleLogin" class="dark-toggle"><i class="fas fa-adjust"></i><span>Mode</span></button>
-        <div class="text-center mb-4 brand-wrap">
-            <img src="{{ asset('images/batighor_eims.png') }}" alt="Batighor" class="brand-logo mb-2">
-            <div class="brand-title">Batighor Educational Institute Management System</div>
-        </div>
+    <div id="app">
+        <div class="mesh-bg"></div>
+        
+        <div class="login-wrapper">
+            <div class="glass-card">
+                <div class="brand-section">
+                    <img src="{{ asset('images/batighor_eims.png') }}" alt="Batighor" class="brand-logo">
+                    <h1 class="brand-name">Batighor EIMS</h1>
+                    <p class="brand-tagline">Educational Institute Management System</p>
+                </div>
 
-        @if ($errors->any())
-            <div class="mb-3">
-                <div class="alert alert-danger py-2 px-3 mb-0" style="font-size:.8rem;">
-                    <ul class="mb-0 error-list list-unstyled">
+                @if ($errors->any())
+                <div class="error-box">
+                    <i class="fas fa-exclamation-circle mt-1"></i>
+                    <div>
                         @foreach ($errors->all() as $error)
-                            <li><i class="fas fa-exclamation-circle"></i> {{ $error }}</li>
+                            <div>{{ $error }}</div>
                         @endforeach
-                    </ul>
+                    </div>
                 </div>
-            </div>
-        @endif
-
-        <form action="{{ route('login') }}" method="post" novalidate id="loginForm">
-            @csrf
-            <div class="floating-group">
-                <input type="email" id="email" name="email" value="{{ old('email') }}" placeholder=" " required autocomplete="username" class="@error('email') is-invalid @enderror">
-                <label for="email">Email / Username</label>
-                @error('email')<small class="text-danger" style="position:absolute; bottom:-16px; left:4px;">{{ $message }}</small>@enderror
-            </div>
-            <div class="floating-group">
-                <input type="password" id="password" name="password" placeholder=" " required autocomplete="current-password" class="@error('password') is-invalid @enderror">
-                <label for="password">Password <span id="capsIndicator" class="caps-indicator">(Caps Lock)</span></label>
-                <button type="button" class="toggle-pass" id="togglePassword" aria-label="Show Password"><i class="fas fa-eye"></i></button>
-                @error('password')<small class="text-danger" style="position:absolute; bottom:-16px; left:4px;">{{ $message }}</small>@enderror
-            </div>
-            <div class="action-row" style="justify-content:space-between;">
-                <div class="form-check" style="margin:0;">
-                    <input class="form-check-input" type="checkbox" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
-                    <label class="form-check-label" for="remember" style="font-size:.75rem;">Remember Me</label>
-                </div>
-                @if (Route::has('password.request'))
-                    <div class="meta-links"><a href="{{ route('password.request') }}">Password Reset</a></div>
                 @endif
+
+                <form action="{{ route('login') }}" method="POST" @submit="handleSubmit">
+                    @csrf
+                    
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email / Username</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            class="input-control" 
+                            placeholder="mail@example.com"
+                            required
+                            v-model="form.email"
+                            autocomplete="username"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="password-wrapper">
+                            <input 
+                                :type="showPassword ? 'text' : 'password'" 
+                                id="password" 
+                                name="password" 
+                                class="input-control has-toggle" 
+                                placeholder="••••••••"
+                                required
+                                v-model="form.password"
+                                @keyup="checkCapsLock"
+                                autocomplete="current-password"
+                            >
+                            <button type="button" @click="showPassword = !showPassword" class="toggle-password">
+                                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                            </button>
+                        </div>
+                        <div v-if="capsLockActive" class="caps-warning">
+                            <i class="fas fa-triangle-exclamation"></i> CAPS LOCK ACTIVE
+                        </div>
+                    </div>
+
+                    <div class="extras">
+                        <label class="remember-me">
+                            <input type="checkbox" name="remember" v-model="form.remember">
+                            <span>Remember Me</span>
+                        </label>
+                        @if (Route::has('password.request'))
+                            <a href="{{ route('password.request') }}" class="forgot-link">Forgot?</a>
+                        @endif
+                    </div>
+
+                    <button type="submit" class="btn-submit" :disabled="loading">
+                        <span v-if="loading" class="spinner"></span>
+                        <span v-else>Sign In</span>
+                    </button>
+                </form>
             </div>
             
-            <button type="submit" class="btn btn-gradient btn-block py-3 rounded-3" id="submitBtn" style="font-size:.95rem;">
-                <span class="spinner-border spinner-border-sm d-none" id="submitSpinner" role="status" aria-hidden="true"></span>
-                <span class="btn-text">Login</span>
-            </button>
-        </form>
-        <div class="mt-4 text-center meta-links" style="font-size:.7rem;">
-            <span>© {{ date('Y') }} Batighor Software Systems Limited</span>
+            <div class="footer-text">
+                © {{ date('Y') }} BATIGHOR SOFTWARE SYSTEMS LTD.
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-    const pass = document.getElementById('password');
-    const toggle = document.getElementById('togglePassword');
-    const caps = document.getElementById('capsIndicator');
-    const form = document.getElementById('loginForm');
-    const btn = document.getElementById('submitBtn');
-    const spin = document.getElementById('submitSpinner');
-    const themeBtn = document.getElementById('themeToggleLogin');
-    // Demo autofill removed per request
+    <script>
+        const { createApp, ref } = Vue;
 
-    function applyTheme(mode){
-        if(mode==='dark'){ document.body.classList.add('dark-mode'); } else { document.body.classList.remove('dark-mode'); }
-    }
-    const saved = localStorage.getItem('loginTheme'); if(saved) applyTheme(saved);
-    if(themeBtn){ themeBtn.addEventListener('click',()=>{ const next = localStorage.getItem('loginTheme')==='dark' ? 'light':'dark'; localStorage.setItem('loginTheme', next); applyTheme(next); }); }
+        createApp({
+            setup() {
+                const loading = ref(false);
+                const showPassword = ref(false);
+                const capsLockActive = ref(false);
+                const form = ref({
+                    email: '{{ old("email") }}',
+                    password: '',
+                    remember: {{ old("remember") ? 'true' : 'false' }}
+                });
 
-    if (toggle && pass) {
-        toggle.addEventListener('click', function(){
-            const type = pass.getAttribute('type') === 'password' ? 'text' : 'password';
-            pass.setAttribute('type', type);
-            this.querySelector('i').classList.toggle('fa-eye');
-            this.querySelector('i').classList.toggle('fa-eye-slash');
-        });
-    }
-    if (pass && caps) {
-        const syncCaps = e => { caps.style.display = e.getModifierState && e.getModifierState('CapsLock') ? 'inline' : 'none'; };
-        pass.addEventListener('keydown', syncCaps); pass.addEventListener('keyup', syncCaps);
-    }
-    if (form && btn && spin) {
-        form.addEventListener('submit', function(){ btn.setAttribute('disabled','disabled'); spin.classList.remove('d-none'); });
-    }
-    @if (session('status')) if (window.toastr) toastr.success(@json(session('status'))); @endif
-    @if (session('error')) if (window.toastr) toastr.error(@json(session('error'))); @endif
-});
-</script>
+                const checkCapsLock = (e) => {
+                    capsLockActive.value = e.getModifierState && e.getModifierState('CapsLock');
+                };
+
+                const handleSubmit = () => {
+                    loading.value = true;
+                };
+
+                return {
+                    loading,
+                    showPassword,
+                    capsLockActive,
+                    form,
+                    checkCapsLock,
+                    handleSubmit
+                };
+            }
+        }).mount('#app');
+    </script>
 </body>
 </html>
