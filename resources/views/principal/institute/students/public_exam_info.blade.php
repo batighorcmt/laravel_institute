@@ -642,10 +642,8 @@ new Vue({
                 const res = await fetch('{{ route("principal.institute.students.public-exam-info.id-card-settings.load", $school) }}');
                 const data = await res.json();
                 if (data.settings) {
-                    if (!data.settings.fields) {
+                    if (!Array.isArray(data.settings.fields)) {
                         data.settings.fields = ['class', 'roll', 'reg_no', 'center'];
-                    } else if (typeof data.settings.fields === 'string') {
-                        try { data.settings.fields = JSON.parse(data.settings.fields); } catch(e){}
                     }
                     // Update settings but keep defaults for missing fields
                     Object.assign(this.idCardSettings, data.settings);

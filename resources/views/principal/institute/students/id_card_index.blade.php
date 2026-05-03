@@ -490,6 +490,10 @@
                                 if (typeof data.settings.fields === 'string') {
                                     try { data.settings.fields = JSON.parse(data.settings.fields); } catch(e) {}
                                 }
+                                // Ensure fields is an array even if database has null or invalid data
+                                if (!Array.isArray(data.settings.fields)) {
+                                    data.settings.fields = [];
+                                }
                                 Object.assign(self.idCardSettings, data.settings);
                             }
                         });
