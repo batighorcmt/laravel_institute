@@ -15,16 +15,15 @@
     <form method="post" action="{{ route('principal.institute.students.update',[$school,$student]) }}" enctype="multipart/form-data" id="studentEditForm">@csrf @method('PUT')
       
       <!-- Enrollment Edit Section -->
-      @if(isset($activeEnrollment))
       <div class="mb-4">
-        <h5 class="mb-2"><i class="fas fa-graduation-cap mr-2"></i>বর্তমান ভর্তি তথ্য সম্পাদনা</h5>
+        <h5 class="mb-2"><i class="fas fa-graduation-cap mr-2"></i>{{ isset($activeEnrollment) ? 'বর্তমান ভর্তি তথ্য সম্পাদনা' : 'ভর্তি তথ্য যুক্ত করুন' }}</h5>
         <div class="row">
           <div class="col-md-3">
             <div class="form-group">
               <label><i class="fas fa-calendar-alt mr-1"></i>শিক্ষাবর্ষ</label>
               <select name="enroll_academic_year_id" class="form-control">
                 @foreach($years as $y)
-                  <option value="{{ $y->id }}" {{ ($activeEnrollment->academic_year_id == $y->id) ? 'selected' : '' }}>{{ $y->name }}</option>
+                  <option value="{{ $y->id }}" {{ (isset($activeEnrollment) && $activeEnrollment->academic_year_id == $y->id) || (!isset($activeEnrollment) && isset($currentYear) && $currentYear->id == $y->id) ? 'selected' : '' }}>{{ $y->name }}</option>
                 @endforeach
               </select>
             </div>
@@ -35,7 +34,7 @@
               <select name="enroll_class_id" id="enroll_class_id" class="form-control" required>
                 <option value="">-- নির্বাচন --</option>
                 @foreach(\App\Models\SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get() as $c)
-                  <option value="{{ $c->id }}" data-uses-groups="{{ $c->usesGroups() ? '1' : '0' }}" {{ $activeEnrollment->class_id == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
+                  <option value="{{ $c->id }}" data-uses-groups="{{ $c->usesGroups() ? '1' : '0' }}" {{ (isset($activeEnrollment) && $activeEnrollment->class_id == $c->id) ? 'selected' : '' }}>{{ $c->name }}</option>
                 @endforeach
               </select>
             </div>
@@ -51,7 +50,7 @@
               </select>
             </div>
           </div>
-          <div class="col-md-2" id="enroll_group_container" style="{{ isset($activeEnrollment) && $activeEnrollment->group_id ? '' : 'display:none;' }}">
+          <div class="col-md-2" id="enroll_group_container" style="{{ (isset($activeEnrollment) && $activeEnrollment->group_id) ? '' : 'display:none;' }}">
             <div class="form-group">
               <label><i class="fas fa-users mr-1"></i>গ্রুপ</label>
               <select name="enroll_group_id" id="enroll_group_id" class="form-control">
@@ -65,12 +64,11 @@
           <div class="col-md-2">
             <div class="form-group">
               <label><i class="fas fa-hashtag mr-1"></i>রোল *</label>
-              <input type="number" name="enroll_roll_no" class="form-control" value="{{ $activeEnrollment->roll_no }}" min="1" required>
+              <input type="number" name="enroll_roll_no" class="form-control" value="{{ $activeEnrollment->roll_no ?? '' }}" min="1" required>
             </div>
           </div>
         </div>
       </div>
-      @endif
 
       <div class="mb-4">
         <h5 class="mb-2"><i class="fas fa-user mr-2"></i>ব্যক্তিগত তথ্য</h5>

@@ -186,6 +186,17 @@
         </div>
     </div>
 
+    @if(!$activeEnrollment)
+    <div class="alert alert-warning d-flex align-items-center justify-content-between">
+        <div>
+            <i class="fas fa-exclamation-triangle mr-2"></i> এই শিক্ষার্থীর বর্তমান শিক্ষাবর্ষের ({{ $currentYear->name ?? '' }}) কোনো সক্রিয় এনরোলমেন্ট (ভর্তি তথ্য) নেই।
+        </div>
+        <a href="{{ route('principal.institute.students.edit',[$school,$student]) }}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus mr-1"></i> এনরোলমেন্ট যুক্ত করুন
+        </a>
+    </div>
+    @endif
+
     <div class="row">
         <!-- Left Column -->
         <div class="col-lg-4">
