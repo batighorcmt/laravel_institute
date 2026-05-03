@@ -44,7 +44,7 @@ class ProttayonController extends Controller
             'updated_student_data' => 'nullable|array'
         ]);
 
-        $student = Student::forSchool($school->id)->where('student_id', $validated['student_id'])->firstOrFail();
+        $student = Student::forSchool($school->id)->findOrFail($validated['student_id']);
 
         // Optional: Update student record if data was edited in Vue
         if (!empty($validated['updated_student_data'])) {
@@ -103,6 +103,9 @@ class ProttayonController extends Controller
         $lang = $template ? $template->language : 'bn';
 
         $enrollment = $student->enrollments->where('status', 'active')->first() ?? $student->enrollments->first();
+        $class = $enrollment ? $enrollment->class : null;
+        $section = $enrollment ? $enrollment->section : null;
+        $academicYear = $enrollment ? $enrollment->academicYear : null;
 
         $tokens = [
             '[student_name_bn]' => $student->student_name_bn ?: $student->name,
@@ -111,15 +114,15 @@ class ProttayonController extends Controller
             '[father_name_en]' => $student->father_name ?: '',
             '[mother_name_bn]' => $student->mother_name_bn ?: '',
             '[mother_name_en]' => $student->mother_name ?: '',
-            '[class_name_bn]' => $enrollment->class->bangla_name ?: ($enrollment->class->name ?? ''),
-            '[class_name_en]' => $enrollment->class->name ?? '',
-            '[section_name_bn]' => $enrollment->section->bangla_name ?: ($enrollment->section->name ?? ''),
-            '[section_name_en]' => $enrollment->section->name ?? '',
+            '[class_name_bn]' => $class ? ($class->bangla_name ?: $class->name) : '',
+            '[class_name_en]' => $class ? $class->name : '',
+            '[section_name_bn]' => $section ? ($section->bangla_name ?: $section->name) : '',
+            '[section_name_en]' => $section ? $section->name : '',
             '[roll_no_bn]' => $enrollment ? toBengaliNumber($enrollment->roll_no) : '',
             '[roll_no_en]' => $enrollment ? $enrollment->roll_no : '',
             '[student_id]' => $student->student_id,
-            '[session_bn]' => $enrollment->academicYear->name_bn ?: ($enrollment->academicYear->name ?? ''),
-            '[session_en]' => $enrollment->academicYear->name ?? '',
+            '[session_bn]' => $academicYear ? ($academicYear->name_bn ?: $academicYear->name) : '',
+            '[session_en]' => $academicYear ? $academicYear->name : '',
             '[date_of_birth]' => $student->date_of_birth ? ($lang === 'en' ? $student->date_of_birth->format('d/m/Y') : toBengaliNumber($student->date_of_birth->format('d/m/Y'))) : '',
             '[date_of_birth_bn]' => $student->date_of_birth ? toBengaliNumber($student->date_of_birth->format('d/m/Y')) : '',
             '[date_of_birth_en]' => $student->date_of_birth ? $student->date_of_birth->format('d/m/Y') : '',
@@ -149,23 +152,23 @@ class ProttayonController extends Controller
 
         // Language specific defaults
         if ($lang === 'en') {
-            $tokens['[session]'] = $enrollment->academicYear->name ?? '';
+            $tokens['[session]'] = $academicYear ? $academicYear->name : '';
             $tokens['[school_name]'] = $school->name;
             $tokens['[student_name]'] = $student->student_name_en ?: $student->student_name_bn;
             $tokens['[father_name]'] = $student->father_name ?: $student->father_name_bn;
             $tokens['[mother_name]'] = $student->mother_name ?: $student->mother_name_bn;
-            $tokens['[roll_no]'] = $enrollment->roll_no ?? '';
-            $tokens['[class_name]'] = $enrollment->class->name ?? '';
-            $tokens['[section_name]'] = $enrollment->section->name ?? '';
+            $tokens['[roll_no]'] = $enrollment ? $enrollment->roll_no : '';
+            $tokens['[class_name]'] = $class ? $class->name : '';
+            $tokens['[section_name]'] = $section ? $section->name : '';
         } else {
-            $tokens['[session]'] = $enrollment->academicYear->name_bn ?: ($enrollment->academicYear->name ?? '');
+            $tokens['[session]'] = $academicYear ? ($academicYear->name_bn ?: $academicYear->name) : '';
             $tokens['[school_name]'] = $school->name_bn ?: $school->name;
             $tokens['[student_name]'] = $student->student_name_bn ?: $student->student_name_en;
             $tokens['[father_name]'] = $student->father_name_bn ?: $student->father_name;
             $tokens['[mother_name]'] = $student->mother_name_bn ?: $student->mother_name;
             $tokens['[roll_no]'] = $enrollment ? toBengaliNumber($enrollment->roll_no) : '';
-            $tokens['[class_name]'] = $enrollment->class->bangla_name ?: ($enrollment->class->name ?? '');
-            $tokens['[section_name]'] = $enrollment->section->bangla_name ?: ($enrollment->section->name ?? '');
+            $tokens['[class_name]'] = $class ? ($class->bangla_name ?: $class->name) : '';
+            $tokens['[section_name]'] = $section ? ($section->bangla_name ?: $section->name) : '';
         }
 
         return str_replace(array_keys($tokens), array_values($tokens), $content);

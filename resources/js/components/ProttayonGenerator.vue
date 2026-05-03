@@ -50,7 +50,7 @@
                                 <label>শিক্ষার্থী</label>
                                 <select v-model="form.student_id" class="form-control select2" data-model="student_id" @change="onStudentChange" required>
                                     <option value="">-- নির্বাচন করুন --</option>
-                                    <option v-for="s in students" :key="s.student_id" :value="s.student_id">
+                                    <option v-for="s in students" :key="s.record_id" :value="s.record_id">
                                         {{ s.roll_no || '-' }} - {{ s.student_name_bn || s.name }}
                                     </option>
                                 </select>
@@ -337,7 +337,8 @@ const fetchTemplates = async () => {
 };
 
 const onStudentChange = () => {
-    const s = students.value.find(s => s.student_id == form.value.student_id);
+    // Search by record_id (database ID)
+    const s = students.value.find(s => s.record_id == form.value.student_id);
     selectedStudent.value = s ? { ...s } : null;
     tempStudent.value = s ? { ...s } : null;
 };
