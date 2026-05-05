@@ -17,7 +17,7 @@ class ExamPrintController extends Controller
     private function prepareData(Request $request, School $school, Exam $exam)
     {
         $exam->load('class', 'publicExam');
-        $className = $exam->class->bangla_name ?? $exam->class->name ?? '';
+        $className = $exam->class?->bangla_name ?? $exam->class?->name ?? '';
 
         // Subjects schedule
         $schedule = DB::table('exam_subjects')

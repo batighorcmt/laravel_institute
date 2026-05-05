@@ -2,21 +2,6 @@
 
 @section('title', 'পরীক্ষার বিস্তারিত')
 
-@section('content_header')
-    <div class="row mb-2">
-        <div class="col-sm-6">
-            <h1 class="m-0">{{ $exam->name }}</h1>
-        </div>
-        <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-                <li class="breadcrumb-item"><a href="{{ route('principal.dashboard') }}">ড্যাশবোর্ড</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('principal.institute.exams.index', $school) }}">পরীক্ষা তালিকা</a></li>
-                <li class="breadcrumb-item active">বিস্তারিত</li>
-            </ol>
-        </div>
-    </div>
-@endsection
-
 @section('content')
 @push('styles')
 <style>
@@ -25,120 +10,131 @@
 .select2-container--bootstrap4 .select2-results__option { white-space: nowrap; }
 </style>
 @endpush
-
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">{{ $exam->name }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{{ route('principal.dashboard') }}">ড্যাশবোর্ড</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('principal.institute.exams.index', $school) }}">পরীক্ষা তালিকা</a></li>
+                    <li class="breadcrumb-item active">বিস্তারিত</li>
+                </ol>
+            </div>
         </div>
-    @endif
-    {{-- Warning/error shown as toast instead of inline alert --}}
+    </div>
+</div>
 
-    <!-- Exam Information Card -->
-    <div class="card shadow-none border-0-print">
-        <div class="card-header d-print-none">
-            <h3 class="card-title">পরীক্ষার তথ্য</h3>
-            <div class="card-tools">
-                <a href="{{ route('principal.institute.exams.index', $school) }}" class="btn btn-sm btn-secondary">
-                    <i class="fas fa-arrow-left"></i> পরীক্ষা তালিকা
-                </a>
-                <a href="{{ route('principal.institute.exams.create', $school) }}" class="btn btn-sm btn-primary">
-                    <i class="fas fa-plus"></i> নতুন পরীক্ষা
-                </a>
-                <button onclick="window.print()" type="button" class="btn btn-sm btn-outline-dark">
-                    <i class="fas fa-print"></i> Print
+<section class="content">
+    <div class="container-fluid">
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
                 </button>
-                <button onclick="printLandscape()" type="button" class="btn btn-sm btn-outline-dark">
-                    <i class="fas fa-print"></i> Print (Landscape)
-                </button>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fas fa-id-card"></i> Admit Cards
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-right">
-                        <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v1', [$school, $exam]) }}" target="_blank">Admit Card V1</a>
-                        <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v2', [$school, $exam]) }}" target="_blank">Admit Card V2</a>
-                        <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v3', [$school, $exam]) }}" target="_blank">Admit Card V3 (Simple)</a>
-                        <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v4', [$school, $exam]) }}" target="_blank">Admit Card V4 (Modern)</a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="{{ route('principal.institute.exams.attendance_sheet', [$school, $exam]) }}" target="_blank">Attendance Sheet</a>
+            </div>
+        @endif
+        {{-- Warning/error shown as toast instead of inline alert --}}
+
+        <!-- Exam Information Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">পরীক্ষার তথ্য</h3>
+                <div class="card-tools">
+                    <a href="{{ route('principal.institute.exams.index', $school) }}" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-arrow-left"></i> পরীক্ষা তালিকা
+                    </a>
+                    <a href="{{ route('principal.institute.exams.create', $school) }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> নতুন পরীক্ষা
+                    </a>
+                    <a href="{{ route('principal.institute.exams.print', [$school, $exam]) }}" target="_blank" class="btn btn-sm btn-outline-dark">
+                        <i class="fas fa-print"></i> Print
+                    </a>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-id-card"></i> Admit Cards
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v1', [$school, $exam]) }}" target="_blank">Admit Card V1</a>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v2', [$school, $exam]) }}" target="_blank">Admit Card V2</a>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v3', [$school, $exam]) }}" target="_blank">Admit Card V3 (Simple)</a>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v4', [$school, $exam]) }}" target="_blank">Admit Card V4 (Modern)</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.attendance_sheet', [$school, $exam]) }}" target="_blank">Attendance Sheet</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">পরীক্ষার নাম:</th>
+                                <td>{{ $exam->name }}</td>
+                            </tr>
+                            <tr>
+                                <th>পরীক্ষার নাম (বাংলা):</th>
+                                <td>{{ $exam->name_bn ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>পরীক্ষার ধরন:</th>
+                                <td>{{ $exam->exam_type ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>পাবলিক পরীক্ষা ফরমেট:</th>
+                                <td>{{ $exam->publicExam->short_name ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>শ্রেণি:</th>
+                                <td>{{ $exam->class->name ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>শিক্ষাবর্ষ:</th>
+                                <td>{{ $exam->academicYear->name ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>মোট বিষয় (৪র্থ বাদে):</th>
+                                <td>{{ $exam->total_subjects_without_fourth ?? 'N/A' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">শুরুর তারিখ:</th>
+                                <td>{{ $exam->start_date ? $exam->start_date->format('d/m/Y') : 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>শেষের তারিখ:</th>
+                                <td>{{ $exam->end_date ? $exam->end_date->format('d/m/Y') : 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>অবস্থা:</th>
+                                <td>
+                                    @if($exam->status == 'active')
+                                        <span class="badge badge-success">সক্রিয়</span>
+                                    @elseif($exam->status == 'completed')
+                                        <span class="badge badge-info">সম্পন্ন</span>
+                                    @elseif($exam->status == 'cancelled')
+                                        <span class="badge badge-danger">বাতিল</span>
+                                    @else
+                                        <span class="badge badge-secondary">খসড়া</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>বিবরণ:</th>
+                                <td>{{ $exam->description ?? 'N/A' }}</td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="card-body p-0-print">
-            <div class="d-none d-print-block text-center mb-4">
-                <h3>{{ $school->name }}</h3>
-                <h4>{{ $exam->name }} - পরীক্ষার তথ্য</h4>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm">
-                        <tr>
-                            <th width="40%">পরীক্ষার নাম:</th>
-                            <td>{{ $exam->name }}</td>
-                        </tr>
-                        <tr>
-                            <th>পরীক্ষার নাম (বাংলা):</th>
-                            <td>{{ $exam->name_bn ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>পরীক্ষার ধরন:</th>
-                            <td>{{ $exam->exam_type ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>পাবলিক পরীক্ষা ফরমেট:</th>
-                            <td>{{ $exam->publicExam->short_name ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>শ্রেণি:</th>
-                            <td>{{ $exam->class->name ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>শিক্ষাবর্ষ:</th>
-                            <td>{{ $exam->academicYear->name ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>মোট বিষয় (৪র্থ বাদে):</th>
-                            <td>{{ $exam->total_subjects_without_fourth ?? 'N/A' }}</td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="col-md-6">
-                    <table class="table table-borderless table-sm">
-                        <tr>
-                            <th width="40%">শুরুর তারিখ:</th>
-                            <td>{{ $exam->start_date ? $exam->start_date->format('d/m/Y') : 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>শেষের তারিখ:</th>
-                            <td>{{ $exam->end_date ? $exam->end_date->format('d/m/Y') : 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>অবস্থা:</th>
-                            <td>
-                                @if($exam->status == 'active')
-                                    <span class="badge badge-success">সক্রিয়</span>
-                                @elseif($exam->status == 'completed')
-                                    <span class="badge badge-info">সম্পন্ন</span>
-                                @elseif($exam->status == 'cancelled')
-                                    <span class="badge badge-danger">বাতিল</span>
-                                @else
-                                    <span class="badge badge-secondary">খসড়া</span>
-                                @endif
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>বিবরণ:</th>
-                            <td>{{ $exam->description ?? 'N/A' }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
 
         <!-- Exam Subjects Card -->
         <div class="card">
@@ -555,36 +551,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 @endpush
 
-<style>
-@media print {
-    html, body { background:#fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .content-wrapper { margin-left: 0 !important; min-height: auto !important; padding: 0 !important; border:none !important; }
-    .main-sidebar, .main-header, .main-footer, .d-print-none, .sidebar, .navbar, .content-header { display:none !important; }
-    .card { border: none !important; box-shadow: none !important; margin-bottom: 20px !important; }
-    .card-header { display: none !important; }
-    .card-body { padding: 0 !important; }
-    .table th, .table td { font-size:12px; padding:8px 6px; line-height:1.2; }
-    .table th { background:transparent !important; color:#000 !important; text-align:center; vertical-align:middle; }
-    .table tr { background:transparent !important; }
-    .table td, .table th { border:1px solid #444 !important; }
-    .signature-cell { min-width: 95px; height: 28px; }
-    .container-fluid { padding: 0 !important; }
-}
-</style>
 
-@push('scripts')
-<script>
-    function printLandscape() {
-        var st = document.createElement('style');
-        st.id = 'landscapeStyle';
-        st.media = 'print';
-        st.appendChild(document.createTextNode('@page { size: landscape; }'));
-        document.head.appendChild(st);
-        window.print();
-        setTimeout(function(){ var s=document.getElementById('landscapeStyle'); if (s) s.remove(); }, 1000);
-    }
-</script>
-@endpush
 
     @push('scripts')
     <script>

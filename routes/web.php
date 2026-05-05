@@ -356,6 +356,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                                 Route::get('/fetch-subjects', [App\Http\Controllers\Principal\ExamController::class , 'fetchSubjects'])->name('fetch-subjects');
                                 Route::post('/', [App\Http\Controllers\Principal\ExamController::class , 'store'])->name('store');
                                 Route::get('/{exam}', [App\Http\Controllers\Principal\ExamController::class , 'show'])->name('show');
+                                Route::get('/{exam}/print', [App\Http\Controllers\Principal\ExamController::class , 'printView'])->name('print');
                                 Route::get('/{exam}/edit', [App\Http\Controllers\Principal\ExamController::class , 'edit'])->name('edit');
                                 Route::put('/{exam}', [App\Http\Controllers\Principal\ExamController::class , 'update'])->name('update');
                                 Route::get('/{exam}/bulk-update', [App\Http\Controllers\Principal\ExamController::class , 'bulkUpdateView'])->name('bulk-update');

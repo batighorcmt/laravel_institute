@@ -223,6 +223,13 @@ class ExamController extends Controller
         return view('principal.exams.show', compact('school', 'exam', 'subjects', 'teachers'));
     }
 
+    public function printView(School $school, Exam $exam)
+    {
+        $exam->load(['academicYear', 'class', 'examSubjects.subject', 'examSubjects.teacher', 'publicExam']);
+
+        return view('principal.exams.print', compact('school', 'exam'));
+    }
+
     public function edit(School $school, Exam $exam)
     {
         $academicYears = AcademicYear::forSchool($school->id)->get();

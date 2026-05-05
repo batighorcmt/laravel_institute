@@ -12,7 +12,7 @@
 
   $exam_name_en = $exam->name ?: 'Exam';
   $exam_name_bn = $exam->name_bn ?: ($exam->name ?: 'পরীক্ষা');
-  $className = $lang==='bn' ? ($exam->class->bangla_name ?: $exam->class->name) : ($exam->class->name ?: $exam->class->bangla_name ?: '');
+  $className = $lang==='bn' ? ($exam->class?->bangla_name ?: $exam->class?->name) : ($exam->class?->name ?: $exam->class?->bangla_name ?: '');
 
   function fmt_date($d){ return $d ? date('d/m/Y', strtotime($d)) : '-'; }
   function fmt_time($t){ return $t ? date('h:i A', strtotime($t)) : '-'; }
@@ -131,8 +131,8 @@
   $section_name = '';
   $group = '';
   if ($enrollment) {
-    $section_name = $lang==='bn' ? ($enrollment->section->bangla_name ?: $enrollment->section->name ?: '') : ($enrollment->section->name ?: $enrollment->section->bangla_name ?: '');
-    $group = $lang==='bn' ? ($enrollment->group->bangla_name ?: $enrollment->group->name ?: '') : ($enrollment->group->name ?: $enrollment->group->bangla_name ?: '');
+    $section_name = $lang==='bn' ? ($enrollment->section?->bangla_name ?: $enrollment->section?->name ?: '') : ($enrollment->section?->name ?: $enrollment->section?->bangla_name ?: '');
+    $group = $lang==='bn' ? ($enrollment->group?->bangla_name ?: $enrollment->group?->name ?: '') : ($enrollment->group?->name ?: $enrollment->group?->bangla_name ?: '');
   }
 
     $photoUrl = $stu->photo_url;
