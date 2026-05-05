@@ -5,13 +5,14 @@
 
 @php
   $lang = request('lang','bn');
-  $institute_name = $school->name ?? 'Jorepukuria Secondary School';
-  $institute_address = $school->address ?? 'Gangni, Meherpur';
+  $institute_name = $school->name ?: ($lang === 'bn' ? 'প্রতিষ্ঠান' : 'Institute');
+  $institute_address = $school->address ?: '';
   $institute_phone = $school->phone ?? '';
   $institute_logo = $school->logo ? asset('storage/'.$school->logo) : '';
 
-  $exam_name = $exam->name ?? 'পরীক্ষা';
-  $className = $lang==='bn' ? ($exam->class->bangla_name ?? $exam->class->name) : ($exam->class->name ?? $exam->class->bangla_name ?? '');
+  $exam_name_en = $exam->name ?: 'Exam';
+  $exam_name_bn = $exam->name_bn ?: ($exam->name ?: 'পরীক্ষা');
+  $className = $lang==='bn' ? ($exam->class->bangla_name ?: $exam->class->name) : ($exam->class->name ?: $exam->class->bangla_name ?: '');
 
   function fmt_date($d){ return $d ? date('d/m/Y', strtotime($d)) : '-'; }
   function fmt_time($t){ return $t ? date('h:i A', strtotime($t)) : '-'; }
@@ -19,7 +20,11 @@
     function bn_num($v){ $en=['0','1','2','3','4','5','6','7','8','9']; $bn=['০','১','২','৩','৪','৫','৬','৭','৮','৯']; return str_replace($en,$bn,(string)$v); }
   }
   if (!function_exists('t')){
-    function t($en, $bn){ return request('lang','bn') === 'bn' ? ($bn ?? $en) : ($en ?? $bn); }
+    function t($en, $bn){
+      $lang = request('lang','bn');
+      if ($lang === 'bn') return $bn ?: $en;
+      return $en ?: $bn;
+    }
   }
   if (!function_exists('bnNum')){
     function bnNum($v){ return request('lang','bn') === 'bn' ? bn_num($v) : $v; }
@@ -105,19 +110,19 @@
     if (!function_exists('langField')){
       function langField($obj, $field, $lang='bn'){
         if (in_array($field, ['full_name','name'])){
-          if ($lang === 'bn'){
-            return $obj->student_name_bn ?? $obj->student_name_en ?? $obj->full_name ?? null;
-          }
-          return $obj->student_name_en ?? $obj->student_name_bn ?? $obj->full_name ?? null;
+          $bn = $obj->student_name_bn ?: '';
+          $en = $obj->student_name_en ?: '';
+          if ($lang === 'bn') return $bn ?: $en;
+          return $en ?: $bn;
         }
-        $bn = $field . '_bn';
+        $bnField = $field . '_bn';
         if ($lang === 'bn') {
-          return $obj->$bn ?? $obj->$field ?? null;
+          return $obj->$bnField ?: $obj->$field ?: '';
         }
-        return $obj->$field ?? $obj->$bn ?? null;
+        return $obj->$field ?: $obj->$bnField ?: '';
       }
     }
-    $full_name = langField($stu, 'full_name', $lang) ?: langField($stu, 'name', $lang) ?: ($stu->student_id ?? $stu->id ?? '');
+    $full_name = langField($stu, 'full_name', $lang) ?: ($stu->full_name ?: ($stu->student_id ?? $stu->id ?? ''));
     $father = langField($stu, 'father_name', $lang) ?: ($stu->father_name ?? $stu->father_name_bn ?? '');
     $mother = langField($stu, 'mother_name', $lang) ?: ($stu->mother_name ?? $stu->mother_name_bn ?? '');
 
@@ -126,8 +131,8 @@
   $section_name = '';
   $group = '';
   if ($enrollment) {
-    $section_name = $lang==='bn' ? ($enrollment->section->bangla_name ?? $enrollment->section->name ?? '') : ($enrollment->section->name ?? $enrollment->section->bangla_name ?? '');
-    $group = $lang==='bn' ? ($enrollment->group->bangla_name ?? $enrollment->group->name ?? '') : ($enrollment->group->name ?? $enrollment->group->bangla_name ?? '');
+    $section_name = $lang==='bn' ? ($enrollment->section->bangla_name ?: $enrollment->section->name ?: '') : ($enrollment->section->name ?: $enrollment->section->bangla_name ?: '');
+    $group = $lang==='bn' ? ($enrollment->group->bangla_name ?: $enrollment->group->name ?: '') : ($enrollment->group->name ?: $enrollment->group->bangla_name ?: '');
   }
 
     $photoUrl = $stu->photo_url;
@@ -158,7 +163,7 @@
         <div class="brand">
           <h1 class="school-name">{{ t($school->name ?? $institute_name, $school->name_bn ?? $institute_name) }}</h1>
           <div class="school-meta">{{ t($school->address ?? $institute_address, $school->address_bn ?? $institute_address) }}</div>
-          <div class="exam-pill">{{ t($exam->name ?? $exam_name, $exam->name_bn ?? $exam_name) }} – {{ t('Admit Card','প্রবেশপত্র') }}</div>
+          <div class="exam-pill">{{ t($exam_name_en, $exam_name_bn) }} – {{ t('Admit Card','প্রবেশপত্র') }}</div>
         </div>
         <div class="photo">
           <?php if ($photoUrl): ?><img src="{{ $photoUrl }}" alt="Photo" onerror="this.parentNode.textContent='শিক্ষার্থীর ছবি';this.remove();"><?php else: ?>শিক্ষার্থীর ছবি<?php endif; ?>

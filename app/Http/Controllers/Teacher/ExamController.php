@@ -100,6 +100,7 @@ class ExamController extends Controller
                 $students = \App\Models\Student::join('student_enrollments', 'students.id', '=', 'student_enrollments.student_id')
                     ->where('student_enrollments.class_id', $request->class_id)
                     ->where('student_enrollments.status', 'active')
+                    ->where('students.status', 'active')
                     ->select('students.*', 'student_enrollments.roll_no')
                     ->orderBy('student_enrollments.roll_no', 'asc')
                     ->get();
@@ -188,6 +189,9 @@ class ExamController extends Controller
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $classId)
             ->where('status', 'active')
+            ->whereHas('student', function($query) {
+                $query->where('status', 'active');
+            })
             ->whereHas('subjects', function($query) use ($subject) {
                 $query->where('subject_id', $subject->id);
             })

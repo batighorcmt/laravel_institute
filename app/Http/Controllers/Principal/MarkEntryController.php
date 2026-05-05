@@ -38,6 +38,9 @@ class MarkEntryController extends Controller
                 ->where('academic_year_id', $exam->academic_year_id)
                 ->where('class_id', $exam->class_id)
                 ->where('status', 'active')
+                ->whereHas('student', function($query) {
+                    $query->where('status', 'active');
+                })
                 ->whereHas('subjects', function($query) use ($sub) {
                     $query->where('subject_id', $sub->subject_id);
                 })
@@ -66,6 +69,9 @@ class MarkEntryController extends Controller
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $exam->class_id)
             ->where('status', 'active')
+            ->whereHas('student', function($query) {
+                $query->where('status', 'active');
+            })
             ->whereHas('subjects', function($query) use ($examSubject) {
                 $query->where('subject_id', $examSubject->subject_id);
             })
@@ -200,6 +206,9 @@ class MarkEntryController extends Controller
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $exam->class_id)
             ->where('status', 'active')
+            ->whereHas('student', function($query) {
+                $query->where('status', 'active');
+            })
             ->whereHas('subjects', function($query) use ($examSubject) {
                 $query->where('subject_id', $examSubject->subject_id);
             })
