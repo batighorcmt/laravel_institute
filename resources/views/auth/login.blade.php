@@ -315,11 +315,11 @@
                     <div class="form-group">
                         <label for="email" class="form-label">Email / Username</label>
                         <input 
-                            type="email" 
+                            type="text" 
                             id="email" 
                             name="email" 
                             class="input-control" 
-                            placeholder="mail@example.com"
+                            placeholder="Email or Username"
                             required
                             v-model="form.email"
                             autocomplete="username"
