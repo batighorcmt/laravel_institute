@@ -11,7 +11,7 @@ trait BelongsToSchool
     {
         static::addGlobalScope('school', function (Builder $builder) {
             if (config('school.id')) {
-                $builder->where('school_id', config('school.id'));
+                $builder->where($builder->getModel()->getTable() . '.school_id', config('school.id'));
             }
         });
 

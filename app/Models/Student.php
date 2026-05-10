@@ -94,17 +94,17 @@ class Student extends Model
     // Scopes
     public function scopeActive($query)
     {
-        return $query->where('status', 'active');
+        return $query->where($this->getTable() . '.status', 'active');
     }
 
     public function scopeForSchool($query, $schoolId)
     {
-        return $query->where('school_id', $schoolId);
+        return $query->where($this->getTable() . '.school_id', $schoolId);
     }
 
     public function scopeForClass($query, $classId)
     {
-        return $query->where('class_id', $classId);
+        return $query->where($this->getTable() . '.class_id', $classId);
     }
 
     // Accessors

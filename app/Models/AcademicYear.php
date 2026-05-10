@@ -21,6 +21,6 @@ class AcademicYear extends Model
 
     public function school(): BelongsTo { return $this->belongsTo(School::class); }
 
-    public function scopeForSchool($q,$schoolId){ return $q->where('school_id',$schoolId); }
+    public function scopeForSchool($q,$schoolId){ return $q->where($this->getTable() . '.school_id',$schoolId); }
     public function scopeCurrent($q){ return $q->where('is_current',true); }
 }
