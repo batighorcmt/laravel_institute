@@ -199,7 +199,8 @@ class MarkEntryController extends Controller
     // Print blank mark entry form
     public function printBlank(School $school, Exam $exam, ExamSubject $examSubject)
     {
-        $examSubject->load(['subject', 'teacher']);
+        $examSubject->load(['subject', 'teacher.teacher']);
+        $exam->load('class');
 
         // Get enrollments for students who have selected this subject
         $enrollments = StudentEnrollment::where('school_id', $school->id)
@@ -224,7 +225,8 @@ class MarkEntryController extends Controller
     // Print filled mark entry form
     public function printFilled(School $school, Exam $exam, ExamSubject $examSubject)
     {
-        $examSubject->load(['subject', 'teacher']);
+        $examSubject->load(['subject', 'teacher.teacher']);
+        $exam->load('class');
 
         // Get students who have marks entered for this subject
         $studentIdsWithMarks = Mark::forExam($exam->id)

@@ -5,7 +5,7 @@
 
   $printTitle = $lang==='bn' ? 'বিষয়ভিত্তিক মার্কশিট ফরম (খালি)' : 'Subject-wise Marksheet Form (Blank)';
   $examInfo = $lang==='bn' ?
-    'পরীক্ষা: ' . ($exam->name_bn ?: $exam->name) . ' | শ্রেণি: ' . $exam->class->name :
+    'পরীক্ষা: ' . ($exam->name_bn ?: $exam->name) . ' | শ্রেণি: ' . ($exam->class->bangla_name ?: $exam->class->name) :
     'Exam: ' . $exam->name . ' | Class: ' . $exam->class->name;
 @endphp
 
@@ -21,14 +21,24 @@
 <div class="subject-info" style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9;">
   <div style="display: flex; justify-content: space-between; align-items: center;">
     <div>
-      <strong>{{ $lang==='bn' ? 'বিষয়:' : 'Subject:' }}</strong> {{ $examSubject->subject->name }}
+      <strong>{{ $lang==='bn' ? 'বিষয়:' : 'Subject:' }}</strong> {{ $lang==='bn' ? ($examSubject->subject->bangla_name ?: $examSubject->subject->name) : $examSubject->subject->name }}
       @if($examSubject->subject->code)
         <strong>({{ $examSubject->subject->code }})</strong>
       @endif
     </div>
     <div>
       <strong>{{ $lang==='bn' ? 'শিক্ষক:' : 'Teacher:' }}</strong>
-      {{ $examSubject->teacher ? ($examSubject->teacher->name ?? '') : ($lang==='bn' ? 'অনির্ধারিত' : 'Not Assigned') }}
+      @if($examSubject->teacher)
+        @php
+          $tName = $examSubject->teacher->name;
+          if($lang==='bn' && $examSubject->teacher->teacher && trim($examSubject->teacher->teacher->full_name_bn)) {
+            $tName = $examSubject->teacher->teacher->full_name_bn;
+          }
+        @endphp
+        {{ $tName }}
+      @else
+        {{ $lang==='bn' ? 'অনির্ধারিত' : 'Not Assigned' }}
+      @endif
     </div>
   </div>
 </div>
