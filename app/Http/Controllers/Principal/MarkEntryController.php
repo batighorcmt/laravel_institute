@@ -233,9 +233,17 @@ class MarkEntryController extends Controller
             ->unique();
 
         $students = Student::forSchool($school->id)
-            ->whereIn('id', $studentIdsWithMarks)
-            ->where('status', 'active')
-            ->orderBy('student_id')
+            ->join('student_enrollments', 'students.id', '=', 'student_enrollments.student_id')
+            ->where('student_enrollments.academic_year_id', $exam->academic_year_id)
+            ->where('student_enrollments.class_id', $exam->class_id)
+            ->whereIn('students.id', $studentIdsWithMarks)
+            ->where('students.status', 'active')
+            ->orderBy('student_enrollments.roll_no')
+            ->select('students.*')
+            ->with(['enrollments' => function($query) use ($exam) {
+                $query->where('academic_year_id', $exam->academic_year_id)
+                      ->where('class_id', $exam->class_id);
+            }])
             ->get();
 
         $marks = Mark::forExam($exam->id)
