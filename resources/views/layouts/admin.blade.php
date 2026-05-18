@@ -440,6 +440,12 @@
                                             <p>অনুমতিপত্র</p>
                                         </a>
                                     </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.game-and-sports.interschool.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.game-and-sports.interschool.*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>আন্তঃস্কুল প্রতিযোগিতা</p>
+                                        </a>
+                                    </li>
                                 </ul>
                             </li>
                             @endif

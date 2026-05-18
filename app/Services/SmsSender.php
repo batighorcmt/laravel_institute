@@ -11,12 +11,12 @@ class SmsSender
 
     public static function send(int $schoolId, string $to, string $message): array
     {
-        if (!isset(static::$settingsCache[$schoolId])) {
+        if (! isset(static::$settingsCache[$schoolId])) {
             static::$settingsCache[$schoolId] = [
-                'apiUrl' => Setting::forSchool($schoolId)->where('key','sms_api_url')->value('value'),
-                'apiKey' => Setting::forSchool($schoolId)->where('key','sms_api_key')->value('value'),
-                'senderId' => Setting::forSchool($schoolId)->where('key','sms_sender_id')->value('value'),
-                'masking' => Setting::forSchool($schoolId)->where('key','sms_masking')->value('value'),
+                'apiUrl' => Setting::forSchool($schoolId)->where('key', 'sms_api_url')->value('value'),
+                'apiKey' => Setting::forSchool($schoolId)->where('key', 'sms_api_key')->value('value'),
+                'senderId' => Setting::forSchool($schoolId)->where('key', 'sms_sender_id')->value('value'),
+                'masking' => Setting::forSchool($schoolId)->where('key', 'sms_masking')->value('value'),
             ];
         }
 
@@ -26,7 +26,7 @@ class SmsSender
         $masking = static::$settingsCache[$schoolId]['masking'];
 
         // If no API configured, simulate success to allow UI testing
-        if (!$apiUrl || !$apiKey) {
+        if (! $apiUrl || ! $apiKey) {
             return ['success' => true, 'message' => 'SMS API not configured (test mode)', 'response' => null];
         }
 
@@ -39,18 +39,24 @@ class SmsSender
             $retryAttempts = (int) (env('SMS_HTTP_RETRY_ATTEMPTS', 1));
             $retrySleepMillis = (int) (env('SMS_HTTP_RETRY_SLEEP_MS', 200));
 
+            $payload = [
+                'api_key' => $apiKey,
+                'number' => $to,
+                'message' => $message,
+            ];
+            if ($senderId) {
+                $payload['senderid'] = $senderId;
+            }
+            if ($masking) {
+                $payload['masking'] = $masking;
+            }
+
             // Generic POST; adapt to provider requirements
             $resp = Http::retry($retryAttempts, $retrySleepMillis)
                 ->withOptions(['connect_timeout' => $connectTimeout])
                 ->timeout($timeout)
                 ->asForm()
-                ->post($apiUrl, [
-                    'api_key' => $apiKey,
-                    'senderid' => $senderId,
-                    'masking' => $masking,
-                    'number' => $to,
-                    'message' => $message,
-                ]);
+                ->post($apiUrl, $payload);
 
             $responseBody = $resp->body();
             $statusCode = $resp->status();
@@ -59,7 +65,7 @@ class SmsSender
             \Log::info('SMS API Response', [
                 'status' => $statusCode,
                 'body' => $responseBody,
-                'to' => $to
+                'to' => $to,
             ]);
 
             // Basic success determination from HTTP status
@@ -71,21 +77,21 @@ class SmsSender
             // but include a success_message). Fall back to `error_message` or response body heuristics.
             $json = @json_decode($responseBody, true);
             if (is_array($json)) {
-                if (!empty($json['success_message'])) {
+                if (! empty($json['success_message'])) {
                     $ok = true;
-                    $message = 'Provider success: ' . (string)$json['success_message'];
-                } elseif (!empty($json['error_message'])) {
+                    $message = 'Provider success: '.(string) $json['success_message'];
+                } elseif (! empty($json['error_message'])) {
                     $ok = false;
-                    $message = 'Provider error: ' . (string)$json['error_message'];
+                    $message = 'Provider error: '.(string) $json['error_message'];
                 } elseif (isset($json['response_code']) && is_numeric($json['response_code'])) {
-                    $code = (int)$json['response_code'];
+                    $code = (int) $json['response_code'];
                     if ($code === 0) {
                         $ok = true;
                         $message = 'Provider response_code: 0';
                     } else {
                         // Ambiguous numeric code without explicit success_message -> treat as failure
                         $ok = false;
-                        $message = 'Provider response_code: ' . (string)$code;
+                        $message = 'Provider response_code: '.(string) $code;
                     }
                 }
             } else {
@@ -93,17 +99,18 @@ class SmsSender
                 $lower = strtolower($responseBody);
                 if (stripos($lower, 'unsuccess') !== false || stripos($lower, 'not enough balance') !== false) {
                     $ok = false;
-                    $message = 'Provider reported failure: ' . substr($responseBody, 0, 200);
+                    $message = 'Provider reported failure: '.substr($responseBody, 0, 200);
                 } elseif (stripos($lower, 'sms submitted') !== false || stripos($lower, 'submitted successfully') !== false) {
                     $ok = true;
-                    $message = 'Provider reported success: ' . substr($responseBody, 0, 200);
+                    $message = 'Provider reported success: '.substr($responseBody, 0, 200);
                 }
             }
 
             return ['success' => $ok, 'message' => $message, 'response' => $responseBody];
         } catch (\Throwable $e) {
             \Log::error('SMS Send Exception', ['error' => $e->getMessage(), 'to' => $to]);
-            return ['success' => false, 'message' => 'Exception: ' . $e->getMessage(), 'response' => null];
+
+            return ['success' => false, 'message' => 'Exception: '.$e->getMessage(), 'response' => null];
         }
     }
 }

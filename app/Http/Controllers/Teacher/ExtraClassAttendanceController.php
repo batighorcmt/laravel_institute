@@ -3,14 +3,15 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
-use App\Models\School;
 use App\Models\ExtraClass;
-use App\Models\ExtraClassEnrollment;
 use App\Models\ExtraClassAttendance;
+use App\Models\ExtraClassEnrollment;
+use App\Models\School;
+use App\Services\AttendanceSmsService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class ExtraClassAttendanceController extends Controller
 {
@@ -20,11 +21,11 @@ class ExtraClassAttendanceController extends Controller
         $extraClasses = ExtraClass::where('school_id', $school->id)
             ->where('status', 'active')
             ->where('teacher_id', $userId)
-            ->with(['schoolClass','section','subject'])
+            ->with(['schoolClass', 'section', 'subject'])
             ->orderBy('name')
             ->get();
 
-        return view('teacher.attendance.extra-classes.index', compact('school','extraClasses'));
+        return view('teacher.attendance.extra-classes.index', compact('school', 'extraClasses'));
     }
 
     public function take(School $school, Request $request)
@@ -38,21 +39,21 @@ class ExtraClassAttendanceController extends Controller
         }
         $date = $dateObj->toDateString();
 
-        if (!$extraClassId) {
+        if (! $extraClassId) {
             return redirect()->route('teacher.institute.attendance.extra-classes.index', $school)
                 ->with('error', 'এক্সট্রা ক্লাস নির্বাচন করুন');
         }
 
-        $extraClass = ExtraClass::with(['schoolClass','section','subject','teacher'])
+        $extraClass = ExtraClass::with(['schoolClass', 'section', 'subject', 'teacher'])
             ->where('school_id', $school->id)
             ->where('teacher_id', $userId)
             ->findOrFail($extraClassId);
 
         // Load enrolled students mapped for table
         $students = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
-            ->where('status','active')
-            ->whereHas('student', fn($q) => $q->where('status','active'))
-            ->with(['student' => fn($q)=>$q->where('status','active')->with('currentEnrollment'), 'assignedSection'])
+            ->where('status', 'active')
+            ->whereHas('student', fn ($q) => $q->where('status', 'active'))
+            ->with(['student' => fn ($q) => $q->where('status', 'active')->with('currentEnrollment'), 'assignedSection'])
             ->get()
             ->map(function ($enrollment) {
                 return (object) [
@@ -68,7 +69,7 @@ class ExtraClassAttendanceController extends Controller
         $studentIds = $students->pluck('id')->all();
         $attendanceRecords = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
             ->where('date', $date)
-            ->when(!empty($studentIds), fn($q)=>$q->whereIn('student_id', $studentIds))
+            ->when(! empty($studentIds), fn ($q) => $q->whereIn('student_id', $studentIds))
             ->get()
             ->keyBy('student_id');
 
@@ -76,13 +77,13 @@ class ExtraClassAttendanceController extends Controller
         $flatRecords = $attendanceRecords->values();
         $stats = [
             'total' => $flatRecords->count(),
-            'present' => $flatRecords->where('status','present')->count(),
-            'absent' => $flatRecords->where('status','absent')->count(),
-            'late' => $flatRecords->where('status','late')->count(),
-            'excused' => $flatRecords->where('status','excused')->count(),
+            'present' => $flatRecords->where('status', 'present')->count(),
+            'absent' => $flatRecords->where('status', 'absent')->count(),
+            'late' => $flatRecords->where('status', 'late')->count(),
+            'excused' => $flatRecords->where('status', 'excused')->count(),
         ];
 
-        return view('teacher.attendance.extra-classes.take', compact('school','extraClass','students','date','attendanceRecords','isToday','stats'));
+        return view('teacher.attendance.extra-classes.take', compact('school', 'extraClass', 'students', 'date', 'attendanceRecords', 'isToday', 'stats'));
     }
 
     public function store(Request $request, School $school)
@@ -103,21 +104,32 @@ class ExtraClassAttendanceController extends Controller
 
         // Enforce: teacher can only submit for TODAY
         $isToday = Carbon::parse($validated['date'])->isSameDay(Carbon::today());
-        if (!$isToday) {
+        if (! $isToday) {
             return back()->with('error', 'You can only record attendance for today.');
         }
 
         // Validate submitted student IDs belong to active enrollments
         $enrolledIds = ExtraClassEnrollment::where('extra_class_id', $validated['extra_class_id'])
-            ->where('status','active')
-            ->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->where('status', 'active')
+            ->whereHas('student', fn ($q) => $q->where('status', 'active'))
             ->pluck('student_id')
-            ->map(fn($v)=>(int)$v)
+            ->map(fn ($v) => (int) $v)
             ->toArray();
-        $submittedIds = collect($validated['attendance'])->pluck('student_id')->map(fn($v)=>(int)$v)->unique()->toArray();
+        $submittedIds = collect($validated['attendance'])->pluck('student_id')->map(fn ($v) => (int) $v)->unique()->toArray();
         $missing = array_diff($submittedIds, $enrolledIds);
-        if (!empty($missing)) {
+        if (! empty($missing)) {
             return back()->with('error', 'কিছু শিক্ষার্থী সক্রিয়ভাবে এনরোল করা নেই বা নিষ্ক্রীয় অবস্থায় আছে।')->withInput();
+        }
+
+        $previousStatuses = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
+            ->where('date', $validated['date'])
+            ->pluck('status', 'student_id')
+            ->toArray();
+        $isExistingRecord = $previousStatuses !== [];
+
+        $attendancePayload = [];
+        foreach ($validated['attendance'] as $att) {
+            $attendancePayload[$att['student_id']] = ['status' => $att['status']];
         }
 
         DB::beginTransaction();
@@ -138,15 +150,27 @@ class ExtraClassAttendanceController extends Controller
 
             DB::commit();
 
+            (new AttendanceSmsService)->enqueueAttendanceSms(
+                $school,
+                $attendancePayload,
+                $extraClass->class_id,
+                $extraClass->section_id,
+                $validated['date'],
+                $isExistingRecord,
+                $previousStatuses,
+                $userId,
+                'extra_class'
+            );
+
             // Send Push Notifications
             try {
-                $pushService = new \App\Services\PushNotificationService();
+                $pushService = new \App\Services\PushNotificationService;
                 foreach ($validated['attendance'] as $att) {
                     $pushService->sendAttendanceNotification($att['student_id'], $att['status'], $validated['date'], 'extra_class');
                 }
             } catch (\Exception $e) {
                 // Log but don't fail redirect
-                \Illuminate\Support\Facades\Log::error('Teacher ExtraClass Push Error: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Teacher ExtraClass Push Error: '.$e->getMessage());
             }
 
             return redirect()->route('teacher.institute.attendance.extra-classes.take', [
@@ -156,6 +180,7 @@ class ExtraClassAttendanceController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back();
         }
     }

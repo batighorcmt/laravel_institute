@@ -3,29 +3,34 @@
 namespace App\Jobs;
 
 use App\Models\SmsLog;
+use App\Services\SmsDispatch;
 use App\Services\SmsSender;
 use Illuminate\Support\Facades\Log;
 
 class SendSmsChunkJob implements \Illuminate\Contracts\Queue\ShouldQueue
 {
-    use \Illuminate\Foundation\Bus\Dispatchable, \Illuminate\Queue\InteractsWithQueue, \Illuminate\Bus\Queueable, \Illuminate\Queue\SerializesModels;
+    use \Illuminate\Bus\Queueable, \Illuminate\Foundation\Bus\Dispatchable, \Illuminate\Queue\InteractsWithQueue, \Illuminate\Queue\SerializesModels;
 
     public $tries = 3;
+
     public $backoff = [30, 90, 180];
 
     /** @var int */
     protected $schoolId;
+
     /** @var int */
     protected $sentByUserId;
+
     /** @var array */
     protected $chunk;
+
     /** @var int */
     protected $attemptNumber;
 
     /**
-     * @param int $schoolId
-     * @param int $sentByUserId
-     * @param array $chunk array<int,array{mobile:string,message:string,meta:array}>
+     * @param  int  $schoolId
+     * @param  int  $sentByUserId
+     * @param  array  $chunk  array<int,array{mobile:string,message:string,meta:array}>
      */
     public function __construct($schoolId, $sentByUserId, array $chunk, $attemptNumber = 1)
     {
@@ -37,7 +42,7 @@ class SendSmsChunkJob implements \Illuminate\Contracts\Queue\ShouldQueue
 
     public function handle(): void
     {
-        $perMessageUsleep = (int) (\env('SMS_PER_MESSAGE_USLEEP', 1000000)); // default 1s
+        $perMessageUsleep = (int) config('sms.per_message_usleep', 1_000_000);
         $failedItems = [];
         foreach ($this->chunk as $item) {
             $mobile = $item['mobile'];
@@ -46,15 +51,15 @@ class SendSmsChunkJob implements \Illuminate\Contracts\Queue\ShouldQueue
 
             try {
                 $result = SmsSender::send($this->schoolId, $mobile, $message);
-                $ok = (bool)($result['success'] ?? false);
+                $ok = (bool) ($result['success'] ?? false);
                 $respMsg = $result['message'] ?? '';
                 $respBody = $result['response'] ?? null;
 
                 // Simple local backoff for 429 from provider (compatible with PHP < 8)
-                if (!$ok && strpos((string)$respMsg, 'HTTP 429') === 0) {
+                if (! $ok && strpos((string) $respMsg, 'HTTP 429') === 0) {
                     usleep(500000); // 0.5s pause
                     $result = SmsSender::send($this->schoolId, $mobile, $message);
-                    $ok = (bool)($result['success'] ?? false);
+                    $ok = (bool) ($result['success'] ?? false);
                     $respMsg = $result['message'] ?? $respMsg;
                     $respBody = $result['response'] ?? $respBody;
                 }
@@ -73,16 +78,18 @@ class SendSmsChunkJob implements \Illuminate\Contracts\Queue\ShouldQueue
                     'recipient_number' => $mobile,
                     'message' => $message,
                     'status' => $ok ? 'sent' : 'failed',
-                    'response' => ($respMsg ?: '') . (isset($respBody) ? ' | ' . substr((string)$respBody, 0, 200) : ''),
+                    'response' => ($respMsg ?: '').(isset($respBody) ? ' | '.substr((string) $respBody, 0, 200) : ''),
                     'message_type' => $meta['message_type'] ?? 'result_notification',
                 ]);
 
-                if (!$ok) {
+                if (! $ok) {
                     $failedItems[] = $item;
                 }
 
                 // Pacing to avoid provider flood
-                if ($perMessageUsleep > 0) { usleep($perMessageUsleep); }
+                if ($perMessageUsleep > 0) {
+                    usleep($perMessageUsleep);
+                }
             } catch (\Throwable $e) {
                 Log::error('SMS Send Exception', ['error' => $e->getMessage(), 'mobile' => $mobile]);
                 SmsLog::query()->create([
@@ -99,7 +106,7 @@ class SendSmsChunkJob implements \Illuminate\Contracts\Queue\ShouldQueue
                     'recipient_number' => $mobile,
                     'message' => $message,
                     'status' => 'failed',
-                    'response' => 'Exception: ' . $e->getMessage(),
+                    'response' => 'Exception: '.$e->getMessage(),
                     'message_type' => $meta['message_type'] ?? 'result_notification',
                 ]);
                 $failedItems[] = $item;
@@ -107,16 +114,21 @@ class SendSmsChunkJob implements \Illuminate\Contracts\Queue\ShouldQueue
         }
 
         // If any failed, re-dispatch just the failed ones with delay, up to max attempts
-        $maxAttempts = (int) (\env('SMS_MAX_RETRY_ATTEMPTS', 3));
-        $retryDelay = (int) (\env('SMS_RETRY_FAILED_DELAY_SEC', 300));
-        if (!empty($failedItems) && $this->attemptNumber < $maxAttempts) {
+        $maxAttempts = (int) config('sms.max_retry_attempts', 3);
+        $retryDelay = (int) config('sms.retry_failed_delay_sec', 300);
+        if (! empty($failedItems) && $this->attemptNumber < $maxAttempts) {
             Log::info('Re-dispatching failed SMS chunk', [
                 'failed_count' => count($failedItems),
                 'attempt' => $this->attemptNumber + 1,
                 'school_id' => $this->schoolId,
             ]);
-            \App\Jobs\SendSmsChunkJob::dispatch($this->schoolId, $this->sentByUserId, $failedItems, $this->attemptNumber + 1)
-                ->delay(now()->addSeconds(max(0, $retryDelay)));
+            SmsDispatch::dispatchChunk(
+                $this->schoolId,
+                $this->sentByUserId ?: null,
+                $failedItems,
+                $this->attemptNumber + 1,
+                max(0, $retryDelay)
+            );
         }
     }
 }

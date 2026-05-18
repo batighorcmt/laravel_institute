@@ -4,17 +4,15 @@ namespace App\Http\Controllers\Principal;
 
 use App\Http\Controllers\Controller;
 use App\Models\AcademicYear;
-use App\Models\School;
 use App\Models\ExtraClass;
 use App\Models\ExtraClassAttendance;
 use App\Models\ExtraClassEnrollment;
-use App\Models\Setting;
-use App\Models\SmsTemplate;
-use App\Models\Student;
-use App\Services\SmsService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Models\School;
+use App\Services\AttendanceSmsService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class ExtraClassAttendanceController extends Controller
 {
@@ -34,7 +32,7 @@ class ExtraClassAttendanceController extends Controller
         $extraClassId = $request->query('extra_class_id');
         $date = $request->query('date', now()->toDateString());
 
-        if (!$extraClassId) {
+        if (! $extraClassId) {
             return redirect()->route('principal.institute.extra-classes.attendance.index', $school)
                 ->with('error', 'Please select an extra class');
         }
@@ -42,16 +40,18 @@ class ExtraClassAttendanceController extends Controller
         $extraClass = ExtraClass::with(['schoolClass', 'section', 'subject', 'teacher'])
             ->findOrFail($extraClassId);
 
-        if ($extraClass->school_id !== $school->id) abort(404);
+        if ($extraClass->school_id !== $school->id) {
+            abort(404);
+        }
 
         // Get enrolled students (only active student records)
         $students = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
             ->where('status', 'active')
-            ->whereHas('student', fn($q)=>$q->where('status','active'))
-            ->with(['student' => fn($q)=>$q->where('status','active')->with('currentEnrollment.section'), 'assignedSection'])
+            ->whereHas('student', fn ($q) => $q->where('status', 'active'))
+            ->with(['student' => fn ($q) => $q->where('status', 'active')->with('currentEnrollment.section'), 'assignedSection'])
             ->get()
             ->map(function ($enrollment) {
-                return (object)[
+                return (object) [
                     'id' => $enrollment->student->id,
                     'name' => $enrollment->student->student_name_bn ?? $enrollment->student->student_name_en,
                     'roll_no' => $enrollment->student->currentEnrollment->roll_no ?? 'N/A',
@@ -64,7 +64,7 @@ class ExtraClassAttendanceController extends Controller
         $studentIds = $students->pluck('id')->all();
         $attendanceRecords = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
             ->where('date', $date)
-            ->when(!empty($studentIds), fn($q)=>$q->whereIn('student_id', $studentIds))
+            ->when(! empty($studentIds), fn ($q) => $q->whereIn('student_id', $studentIds))
             ->get()
             ->keyBy('student_id');
 
@@ -89,29 +89,40 @@ class ExtraClassAttendanceController extends Controller
         ]);
 
         $extraClass = ExtraClass::findOrFail($validated['extra_class_id']);
-        if ($extraClass->school_id !== $school->id) abort(404);
+        if ($extraClass->school_id !== $school->id) {
+            abort(404);
+        }
 
         // Ensure submitted student IDs belong to active enrollments for this extra class
         $enrolledIds = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
             ->where('status', 'active')
-            ->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->whereHas('student', fn ($q) => $q->where('status', 'active'))
             ->pluck('student_id')
             ->all();
 
         foreach ($validated['attendance'] as $att) {
-            if (!in_array($att['student_id'], $enrolledIds)) {
+            if (! in_array($att['student_id'], $enrolledIds)) {
                 return back()->with('error', 'Invalid student selected for attendance.');
             }
         }
 
+        $previousStatuses = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
+            ->where('date', $validated['date'])
+            ->pluck('status', 'student_id')
+            ->toArray();
+        $isExistingRecord = $previousStatuses !== [];
+
+        $attendancePayload = [];
+        foreach ($validated['attendance'] as $att) {
+            $attendancePayload[$att['student_id']] = ['status' => $att['status']];
+        }
+
         DB::beginTransaction();
         try {
-            // Delete existing attendance for this extra class and date
             ExtraClassAttendance::where('extra_class_id', $extraClass->id)
                 ->where('date', $validated['date'])
                 ->delete();
 
-            // Insert new attendance records
             foreach ($validated['attendance'] as $att) {
                 ExtraClassAttendance::create([
                     'extra_class_id' => $extraClass->id,
@@ -122,25 +133,37 @@ class ExtraClassAttendanceController extends Controller
                 ]);
             }
 
-            // Send SMS notifications
-            $smsCount = $this->sendExtraAttendanceSms($school, $validated['attendance'], $extraClass, $validated['date']);
+            DB::commit();
 
-            // Send Push Notifications
-            $pushService = new \App\Services\PushNotificationService();
+            $smsReport = (new AttendanceSmsService)->enqueueAttendanceSms(
+                $school,
+                $attendancePayload,
+                $extraClass->class_id,
+                $extraClass->section_id,
+                $validated['date'],
+                $isExistingRecord,
+                $previousStatuses,
+                Auth::id(),
+                'extra_class'
+            );
+
+            $pushService = new \App\Services\PushNotificationService;
             foreach ($validated['attendance'] as $att) {
-                // For simplicity in extra class, we send push to all (or you could track previous statuses if desired)
-                $pushService->sendAttendanceNotification($att['student_id'], $att['status'], $validated['date'], 'extra_class');
+                $oldStatus = $previousStatuses[$att['student_id']] ?? null;
+                if ($oldStatus === null || $oldStatus !== $att['status']) {
+                    $pushService->sendAttendanceNotification($att['student_id'], $att['status'], $validated['date'], 'extra_class');
+                }
             }
 
-            DB::commit();
             return redirect()->route('principal.institute.extra-classes.attendance.take', [
                 'school' => $school,
                 'extra_class_id' => $extraClass->id,
-                'date' => $validated['date']
-            ])->with('success', 'Attendance recorded successfully! ' . $smsCount . ' SMS and Push notifications sent.');
+                'date' => $validated['date'],
+            ])->with('success', 'Attendance recorded successfully! '.$smsReport['sent'].' SMS and Push notifications sent.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Failed to save attendance: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to save attendance: '.$e->getMessage());
         }
     }
 
@@ -150,7 +173,7 @@ class ExtraClassAttendanceController extends Controller
         $date = $request->query('date', now()->toDateString());
         $print = $request->query('print', 0);
 
-        if (!$extraClassId) {
+        if (! $extraClassId) {
             return redirect()->route('principal.institute.extra-classes.attendance.index', $school)
                 ->with('error', 'Please select an extra class');
         }
@@ -158,12 +181,14 @@ class ExtraClassAttendanceController extends Controller
         $extraClass = ExtraClass::with(['schoolClass', 'section', 'subject', 'teacher', 'academicYear'])
             ->findOrFail($extraClassId);
 
-        if ($extraClass->school_id !== $school->id) abort(404);
+        if ($extraClass->school_id !== $school->id) {
+            abort(404);
+        }
 
         // Get attendance records only for active students
         $attendances = ExtraClassAttendance::where('extra_class_id', $extraClass->id)
             ->where('date', $date)
-            ->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->whereHas('student', fn ($q) => $q->where('status', 'active'))
             ->with(['student' => function ($q) {
                 $q->where('status', 'active')->with(['currentEnrollment.section']);
             }])
@@ -197,7 +222,7 @@ class ExtraClassAttendanceController extends Controller
         $month = $request->query('month', now()->format('Y-m'));
         $print = $request->query('print', 0);
 
-        if (!$extraClassId) {
+        if (! $extraClassId) {
             return redirect()->route('principal.institute.extra-classes.attendance.index', $school)
                 ->with('error', 'Please select an extra class');
         }
@@ -205,7 +230,9 @@ class ExtraClassAttendanceController extends Controller
         $extraClass = ExtraClass::with(['schoolClass', 'section', 'subject', 'teacher', 'academicYear'])
             ->findOrFail($extraClassId);
 
-        if ($extraClass->school_id !== $school->id) abort(404);
+        if ($extraClass->school_id !== $school->id) {
+            abort(404);
+        }
 
         [$yearNum, $monthNum] = explode('-', $month);
         $startDate = sprintf('%04d-%02d-01', $yearNum, $monthNum);
@@ -215,11 +242,11 @@ class ExtraClassAttendanceController extends Controller
         // Get enrolled students (only active student records)
         $students = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)
             ->where('status', 'active')
-            ->whereHas('student', fn($q)=>$q->where('status','active'))
-            ->with(['student' => fn($q)=>$q->where('status','active')->with('currentEnrollment.section'), 'assignedSection'])
+            ->whereHas('student', fn ($q) => $q->where('status', 'active'))
+            ->with(['student' => fn ($q) => $q->where('status', 'active')->with('currentEnrollment.section'), 'assignedSection'])
             ->get()
             ->map(function ($enrollment) {
-                return (object)[
+                return (object) [
                     'id' => $enrollment->student->id,
                     'name' => $enrollment->student->student_name_bn ?? $enrollment->student->student_name_en,
                     'roll_no' => $enrollment->student->currentEnrollment->roll_no ?? 'N/A',
@@ -264,51 +291,6 @@ class ExtraClassAttendanceController extends Controller
         ));
     }
 
-    private function sendExtraAttendanceSms(School $school, array $attendanceData, $extraClass, $date)
-    {
-        $settings = Setting::forSchool($school->id)->where(function($q){
-            $q->where('key','like','sms_%');
-        })->pluck('value','key');
-
-        $sentCount = 0;
-        foreach ($attendanceData as $att) {
-            $newStatus = $att['status'];
-            $key = 'sms_extra_class_attendance_' . $newStatus;
-            $send = ($settings[$key] ?? '0') === '1';
-
-            if ($send) {
-                $template = SmsTemplate::where(function($q) use ($school) {
-                    $q->where('school_id', $school->id)->orWhereNull('school_id');
-                })->whereIn('type', ['general', 'extra_class'])->where('title', $newStatus)->orderByRaw("FIELD(type, 'extra_class', 'general')")->first();
-                if ($template) {
-                    $student = Student::find($att['student_id']);
-                    if ($student && $student->guardian_phone) {
-                        $enrollment = ExtraClassEnrollment::where('extra_class_id', $extraClass->id)->where('student_id', $att['student_id'])->first();
-                        $assignedSection = $enrollment ? $enrollment->assignedSection : null;
-                        $roll_no = $enrollment && $enrollment->student->currentEnrollment ? $enrollment->student->currentEnrollment->roll_no : null;
-                        $class_name = $extraClass->schoolClass ? $extraClass->schoolClass->name : null;
-                        $section_name = $assignedSection ? $assignedSection->name : null;
-                        $message = $this->replacePlaceholders($template->content, $student, $newStatus, $date);
-                        $recipientNumber = $student->guardian_phone;
-                        $extra = [
-                            'recipient_id' => $student->id,
-                            'recipient_name' => $student->student_name_en,
-                            'recipient_type' => 'student',
-                            'recipient_category' => 'guardian',
-                            'roll_number' => $roll_no,
-                            'class_name' => $class_name,
-                            'section_name' => $section_name,
-                        ];
-                        $smsService = new SmsService($school);
-                        $result = $smsService->sendSms($recipientNumber, $message, 'extra_attendance', $extra);
-                        if ($result) $sentCount++;
-                    }
-                }
-            }
-        }
-        return $sentCount;
-    }
-
     public function dashboard(School $school, Request $request)
     {
         $date = $request->query('date', now()->toDateString());
@@ -322,7 +304,7 @@ class ExtraClassAttendanceController extends Controller
             ->where('extra_classes.school_id', $school->id)
             ->where('extra_class_enrollments.status', 'active')
             ->where('extra_classes.status', 'active')
-            ->whereHas('student', fn($q)=>$q->where('status','active'))
+            ->whereHas('student', fn ($q) => $q->where('status', 'active'))
             ->distinct('extra_class_enrollments.student_id')
             ->count('extra_class_enrollments.student_id');
 
@@ -353,12 +335,12 @@ class ExtraClassAttendanceController extends Controller
 
         // Extra Class breakdown
         $extraClassTotals = ExtraClassEnrollment::select(
-                'extra_classes.id as extra_class_id',
-                'extra_classes.name as extra_class_name',
-                DB::raw('COUNT(DISTINCT extra_class_enrollments.student_id) as total'),
-                DB::raw("SUM(CASE WHEN students.gender='male' THEN 1 ELSE 0 END) as total_male"),
-                DB::raw("SUM(CASE WHEN students.gender='female' THEN 1 ELSE 0 END) as total_female")
-            )
+            'extra_classes.id as extra_class_id',
+            'extra_classes.name as extra_class_name',
+            DB::raw('COUNT(DISTINCT extra_class_enrollments.student_id) as total'),
+            DB::raw("SUM(CASE WHEN students.gender='male' THEN 1 ELSE 0 END) as total_male"),
+            DB::raw("SUM(CASE WHEN students.gender='female' THEN 1 ELSE 0 END) as total_female")
+        )
             ->join('extra_classes', 'extra_class_enrollments.extra_class_id', '=', 'extra_classes.id')
             ->join('students', 'students.id', '=', 'extra_class_enrollments.student_id')
             ->where('extra_classes.school_id', $school->id)
@@ -369,14 +351,14 @@ class ExtraClassAttendanceController extends Controller
             ->get();
 
         $attendanceGender = ExtraClassAttendance::select(
-                'extra_class_id',
-                DB::raw("SUM(CASE WHEN students.gender='male' AND extra_class_attendances.status IN ('present','late') THEN 1 ELSE 0 END) as present_male"),
-                DB::raw("SUM(CASE WHEN students.gender='female' AND extra_class_attendances.status IN ('present','late') THEN 1 ELSE 0 END) as present_female"),
-                DB::raw("SUM(CASE WHEN students.gender='male' AND extra_class_attendances.status='absent' THEN 1 ELSE 0 END) as absent_male"),
-                DB::raw("SUM(CASE WHEN students.gender='female' AND extra_class_attendances.status='absent' THEN 1 ELSE 0 END) as absent_female"),
-                DB::raw("COUNT(DISTINCT CASE WHEN extra_class_attendances.status IN ('present','late') THEN extra_class_attendances.student_id END) as present_total"),
-                DB::raw("COUNT(DISTINCT CASE WHEN extra_class_attendances.status='absent' THEN extra_class_attendances.student_id END) as absent_total")
-            )
+            'extra_class_id',
+            DB::raw("SUM(CASE WHEN students.gender='male' AND extra_class_attendances.status IN ('present','late') THEN 1 ELSE 0 END) as present_male"),
+            DB::raw("SUM(CASE WHEN students.gender='female' AND extra_class_attendances.status IN ('present','late') THEN 1 ELSE 0 END) as present_female"),
+            DB::raw("SUM(CASE WHEN students.gender='male' AND extra_class_attendances.status='absent' THEN 1 ELSE 0 END) as absent_male"),
+            DB::raw("SUM(CASE WHEN students.gender='female' AND extra_class_attendances.status='absent' THEN 1 ELSE 0 END) as absent_female"),
+            DB::raw("COUNT(DISTINCT CASE WHEN extra_class_attendances.status IN ('present','late') THEN extra_class_attendances.student_id END) as present_total"),
+            DB::raw("COUNT(DISTINCT CASE WHEN extra_class_attendances.status='absent' THEN extra_class_attendances.student_id END) as absent_total")
+        )
             ->join('students', 'students.id', '=', 'extra_class_attendances.student_id')
             ->where('extra_class_attendances.date', $date)
             ->where('students.status', 'active')
@@ -388,22 +370,22 @@ class ExtraClassAttendanceController extends Controller
             ->where('date', $date)
             ->distinct()->pluck('extra_class_id')->all();
 
-        $extraClassWise = $extraClassTotals->map(function($row) use ($attendanceGender, $attendanceExists) {
+        $extraClassWise = $extraClassTotals->map(function ($row) use ($attendanceGender, $attendanceExists) {
             $genderAtt = $attendanceGender->get($row->extra_class_id);
-            $present_male = $genderAtt ? (int)$genderAtt->present_male : 0;
-            $present_female = $genderAtt ? (int)$genderAtt->present_female : 0;
-            $absent_male = $genderAtt ? (int)$genderAtt->absent_male : 0;
-            $absent_female = $genderAtt ? (int)$genderAtt->absent_female : 0;
-            $present_total = $genderAtt ? (int)$genderAtt->present_total : 0;
-            $absent_total = $genderAtt ? (int)$genderAtt->absent_total : 0;
+            $present_male = $genderAtt ? (int) $genderAtt->present_male : 0;
+            $present_female = $genderAtt ? (int) $genderAtt->present_female : 0;
+            $absent_male = $genderAtt ? (int) $genderAtt->absent_male : 0;
+            $absent_female = $genderAtt ? (int) $genderAtt->absent_female : 0;
+            $present_total = $genderAtt ? (int) $genderAtt->present_total : 0;
+            $absent_total = $genderAtt ? (int) $genderAtt->absent_total : 0;
             $att_taken = in_array($row->extra_class_id, $attendanceExists);
 
-            return (object)[
+            return (object) [
                 'extra_class_id' => $row->extra_class_id,
                 'extra_class_name' => $row->extra_class_name,
-                'total' => (int)$row->total,
-                'total_male' => (int)$row->total_male,
-                'total_female' => (int)$row->total_female,
+                'total' => (int) $row->total,
+                'total_male' => (int) $row->total_male,
+                'total_female' => (int) $row->total_female,
                 'present_male' => $present_male,
                 'present_female' => $present_female,
                 'absent_male' => $absent_male,
@@ -411,7 +393,7 @@ class ExtraClassAttendanceController extends Controller
                 'present_total' => $present_total,
                 'absent_total' => $absent_total,
                 'att_taken' => $att_taken,
-                'percentage' => ($row->total > 0 && $att_taken) ? round(($present_total / $row->total) * 100, 1) : null
+                'percentage' => ($row->total > 0 && $att_taken) ? round(($present_total / $row->total) * 100, 1) : null,
             ];
         });
 
@@ -429,12 +411,12 @@ class ExtraClassAttendanceController extends Controller
             ->pluck('cnt', 'gender');
 
         $absentees = ExtraClassAttendance::select(
-                'extra_class_attendances.student_id',
-                'students.student_name_bn',
-                'students.student_name_en',
-                'students.gender',
-                'extra_classes.name as class_name'
-            )
+            'extra_class_attendances.student_id',
+            'students.student_name_bn',
+            'students.student_name_en',
+            'students.gender',
+            'extra_classes.name as class_name'
+        )
             ->join('students', 'students.id', '=', 'extra_class_attendances.student_id')
             ->join('extra_classes', 'extra_classes.id', '=', 'extra_class_attendances.extra_class_id')
             ->where('students.school_id', $school->id)
@@ -444,13 +426,13 @@ class ExtraClassAttendanceController extends Controller
             ->orderBy('extra_classes.name')
             ->get();
 
-        $absentees = $absentees->map(function($s) use ($date) {
+        $absentees = $absentees->map(function ($s) use ($date) {
             $lastPresent = ExtraClassAttendance::where('student_id', $s->student_id)
                 ->whereIn('status', ['present', 'late'])
                 ->where('date', '<', $date)
                 ->orderByDesc('date')
                 ->value('date');
-            
+
             if ($lastPresent) {
                 $streak = (new \DateTime($date))->diff(new \DateTime($lastPresent))->days;
                 $s->streak_days = max(1, $streak);
@@ -463,7 +445,7 @@ class ExtraClassAttendanceController extends Controller
                 ->where('remarks', '!=', '')
                 ->orderByDesc('date')
                 ->value('remarks');
-                
+
             return $s;
         });
 
@@ -476,14 +458,5 @@ class ExtraClassAttendanceController extends Controller
             'school', 'date', 'totalStudents', 'presentToday', 'absentToday', 'attendancePercent',
             'extraClassWise', 'barLabels', 'barData', 'genderLabels', 'genderData', 'absentees', 'grandTotal', 'grandPresent', 'grandPercent'
         ));
-    }
-
-    private function replacePlaceholders($content, $student, $status, $date)
-    {
-        return str_replace(
-            ['{student_name}', '{status}', '{date}'],
-            [$student->student_name_en, $status, $date],
-            $content
-        );
     }
 }

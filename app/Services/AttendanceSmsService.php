@@ -2,38 +2,37 @@
 
 namespace App\Services;
 
+use App\Models\Attendance;
+use App\Models\SchoolClass;
+use App\Models\Section;
 use App\Models\Setting;
+use App\Models\SmsLog;
 use App\Models\SmsTemplate;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
-use App\Models\SchoolClass;
-use App\Models\Section;
-use App\Models\SmsLog;
-use App\Jobs\SendSmsChunkJob;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Attendance;
 
 class AttendanceSmsService
 {
     /**
      * Enqueue attendance SMS payloads in background chunks. Returns report with counts and skipped list.
      *
-     * @param \App\Models\School $school
-     * @param array $attendanceData
-     * @param int $classId
-     * @param int $sectionId
-     * @param string $date
-     * @param bool $isExistingRecord
-     * @param array $previousStatuses
-     * @param int|null $sentByUserId
+     * @param  \App\Models\School  $school
+     * @param  int  $classId
+     * @param  int  $sectionId
+     * @param  string  $date
+     * @param  bool  $isExistingRecord
+     * @param  int|null  $sentByUserId
      * @return array{sent:int, skipped:array}
      */
     /**
-     * @param string $messageContext 'class' or 'extra_class'
+     * @param  string  $messageContext  'class' or 'extra_class'
      */
     public function enqueueAttendanceSms($school, array $attendanceData, $classId, $sectionId, $date, $isExistingRecord, array $previousStatuses = [], $sentByUserId = null, string $messageContext = 'class')
     {
-        $settings = Setting::forSchool($school->id)->where(function($q){ $q->where('key','like','sms_%'); })->pluck('value','key');
+        $settings = Setting::forSchool($school->id)->where(function ($q) {
+            $q->where('key', 'like', 'sms_%');
+        })->pluck('value', 'key');
         $genericTemplate = SmsTemplate::forSchool($school->id)->where('type', 'class')->latest()->first();
 
         $payloads = [];
@@ -41,7 +40,9 @@ class AttendanceSmsService
 
         foreach ($attendanceData as $studentId => $data) {
             $newStatus = $data['status'] ?? null;
-            if (empty($newStatus)) continue;
+            if (empty($newStatus)) {
+                continue;
+            }
 
             // Determine previous status. Prefer provided map (captured before DB updates).
             $oldStatus = $previousStatuses[$studentId] ?? null;
@@ -55,11 +56,13 @@ class AttendanceSmsService
             }
 
             // If the status didn't change, skip.
-            if ($oldStatus === $newStatus) continue;
+            if ($oldStatus === $newStatus) {
+                continue;
+            }
 
             // Settings key differs for class vs extra_class
             $settingPrefix = $messageContext === 'extra_class' ? 'sms_extra_class_attendance_' : 'sms_class_attendance_';
-            $settingKey = $settingPrefix . $newStatus;
+            $settingKey = $settingPrefix.$newStatus;
             $send = ($settings[$settingKey] ?? '0') === '1';
 
             // For updates (we have an old status and it changed), always send regardless of setting.
@@ -67,16 +70,19 @@ class AttendanceSmsService
             if ($oldStatus !== null && $oldStatus !== $newStatus) {
                 $shouldSend = true;
             }
-            if (!$shouldSend) { continue; }
+            if (! $shouldSend) {
+                continue;
+            }
 
             $student = Student::find($studentId);
-            if (!$student) {
-                $skipped[] = ['student_id'=>$studentId,'reason'=>'student_not_found'];
+            if (! $student) {
+                $skipped[] = ['student_id' => $studentId, 'reason' => 'student_not_found'];
+
                 continue;
             }
 
             $rawPhone = $student->guardian_phone ?? '';
-            $recipientNumber = preg_replace('/[^0-9]/', '', (string)$rawPhone);
+            $recipientNumber = preg_replace('/[^0-9]/', '', (string) $rawPhone);
             if (empty($recipientNumber)) {
                 // persist skipped log
                 SmsLog::create([
@@ -92,7 +98,8 @@ class AttendanceSmsService
                     'response' => 'no guardian_phone',
                     'message_type' => 'attendance',
                 ]);
-                $skipped[] = ['student_id'=>$studentId,'reason'=>'no_guardian_phone'];
+                $skipped[] = ['student_id' => $studentId, 'reason' => 'no_guardian_phone'];
+
                 continue;
             }
             if (strlen($recipientNumber) < 10) {
@@ -109,7 +116,8 @@ class AttendanceSmsService
                     'response' => 'invalid phone number',
                     'message_type' => 'attendance',
                 ]);
-                $skipped[] = ['student_id'=>$studentId,'reason'=>'invalid_phone'];
+                $skipped[] = ['student_id' => $studentId, 'reason' => 'invalid_phone'];
+
                 continue;
             }
 
@@ -118,13 +126,15 @@ class AttendanceSmsService
 
             // Choose template per-status or fallback. Prefer context-specific templates (extra_class/class)
             $templateTypes = ['general', $messageContext];
-            $template = SmsTemplate::where(function($q) use ($school) {
+            $template = SmsTemplate::where(function ($q) use ($school) {
                 $q->where('school_id', $school->id)->orWhereNull('school_id');
-            })->whereIn('type',$templateTypes)->where('title', $newStatus)
+            })->whereIn('type', $templateTypes)->where('title', $newStatus)
                 ->orderByRaw("FIELD(type, '{$messageContext}', 'general')")->first();
-            if (!$template) { $template = $genericTemplate; }
+            if (! $template) {
+                $template = $genericTemplate;
+            }
 
-            if ($template && !empty($template->content)) {
+            if ($template && ! empty($template->content)) {
                 $message = str_replace(
                     ['{student_name}', '{status}', '{date}'],
                     [$student->student_name_en, $newStatus, $date],
@@ -160,25 +170,7 @@ class AttendanceSmsService
             $payloads[] = ['mobile' => $recipientNumber, 'message' => $message, 'meta' => $meta];
         }
 
-        // Chunk and dispatch jobs. If `SMS_SEND_IMMEDIATELY` is truthy, dispatch synchronously
-        $chunkSize = (int) env('SMS_CHUNK_SIZE', 20);
-        $chunks = array_chunk($payloads, max(1, $chunkSize));
-        $sendImmediately = (bool) env('SMS_SEND_IMMEDIATELY', false);
-        foreach ($chunks as $chunk) {
-                if ($sendImmediately) {
-                // Dispatch synchronously so sending happens inline (useful when queue workers aren't running)
-                if (method_exists(SendSmsChunkJob::class, 'dispatchSync')) {
-                    SendSmsChunkJob::dispatchSync($school->id, $sentByUserId, $chunk);
-                } else {
-                    // Fallback: instantiate and run handle() directly
-                    $job = new SendSmsChunkJob($school->id, $sentByUserId, $chunk);
-                    $job->handle();
-                }
-            } else {
-                // Attach context meta to chunk? the SendSmsChunkJob currently accepts raw payloads; context is embedded in message body/template.
-                SendSmsChunkJob::dispatch($school->id, $sentByUserId, $chunk);
-            }
-        }
+        SmsDispatch::dispatchChunks($school->id, $sentByUserId, $payloads);
 
         return ['sent' => count($payloads), 'skipped' => $skipped];
     }
