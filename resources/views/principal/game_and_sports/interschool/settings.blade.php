@@ -30,3 +30,12 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<link href="https://fonts.maateen.me/nikosh/font.css" rel="stylesheet">
+<style>
+    body, .content-wrapper, .content, .container-fluid, h1, h2, h3, h4, h5, h6, p, span, a, div, label, input, select, button, table {
+        font-family: 'Nikosh', sans-serif !important;
+    }
+</style>
+@endpush

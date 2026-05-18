@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>পরিশিষ্ট-খ</title>
+    <link href="https://fonts.maateen.me/nikosh/font.css" rel="stylesheet">
     <style>
-        body { font-family: 'Kalpurush', Arial, sans-serif; line-height: 1.6; }
+        body { font-family: 'Nikosh', sans-serif; line-height: 1.6; }
         .text-center { text-align: center; }
         .container { max-width: 800px; margin: 0 auto; padding: 20px; }
         .content { margin-top: 30px; font-size: 16px; }

@@ -4,20 +4,10 @@
 <head>
     <meta charset="utf-8">
     <title>অভিভাবকের অনুমতিপত্র - {{ $student->student_name_bn }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.maateen.me/nikosh/font.css" rel="stylesheet">
     <style>
-        @font-face {
-            font-family: 'BengaliNumbers';
-            src: url('/fonts/kalpurush/kalpurush.woff2') format('woff2');
-            unicode-range: U+09E6-09EF;
-            /* Bengali digits ০-৯ */
-        }
-
         body {
-            font-family: 'BengaliNumbers', 'Hind Siliguri', sans-serif;
+            font-family: 'Nikosh', sans-serif;
             font-size: 16px;
             color: #000;
             line-height: 1.6;

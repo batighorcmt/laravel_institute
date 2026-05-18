@@ -19,6 +19,11 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             SuperAdminSeeder::class,
             ModuleSeeder::class,
+            // Bangladesh geocode seeders
+            DivisionSeeder::class,
+            DistrictSeeder::class,
+            ThanaSeeder::class,
+            UnionSeeder::class,
         ]);
     }
 }

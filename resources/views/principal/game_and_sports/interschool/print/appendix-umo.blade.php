@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>পরিশিষ্ট-ঙ</title>
+    <link href="https://fonts.maateen.me/nikosh/font.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Tiro+Bangla&display=swap');
-        body { font-family: 'Tiro Bangla', 'Kalpurush', serif; font-size: 15px; margin: 0; padding: 20px 40px; line-height: 1.5; }
+        body { font-family: 'Nikosh', sans-serif; font-size: 15px; margin: 0; padding: 20px 40px; line-height: 1.5; }
         .text-center { text-align: center; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid black; padding: 6px; text-align: center; font-size: 14px; }

@@ -16,12 +16,15 @@
       <div class="card-body">
         <div class="row">
           <div class="col-md-4 mb-3" v-for="season in seasons" :key="season.id">
-            <div class="info-box bg-light" style="cursor: pointer" @click="selectSeason(season)">
+            <div class="info-box bg-light position-relative" style="cursor: pointer" @click="selectSeason(season)">
               <span class="info-box-icon bg-primary"><i class="fas fa-trophy"></i></span>
               <div class="info-box-content">
                 <span class="info-box-text text-lg font-weight-bold">{{ season.name }}</span>
                 <span class="info-box-number text-sm font-weight-normal text-muted">বিস্তারিত দেখতে ক্লিক করুন</span>
               </div>
+              <button class="btn btn-xs btn-outline-secondary position-absolute" style="top: 8px; right: 8px;" @click.stop="showEditSeasonModal(season)" title="সম্পাদনা">
+                <i class="fas fa-edit"></i>
+              </button>
             </div>
           </div>
           <div v-if="seasons.length === 0" class="col-12 text-center text-muted py-4">
@@ -41,6 +44,17 @@
           ইভেন্ট সমূহ - {{ selectedSeason?.name }}
         </h3>
         <div class="card-tools">
+          <a
+            v-if="hasSingleEvents"
+            :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ka?season_id=' + selectedSeason.id"
+            class="btn btn-success btn-sm mr-2"
+            target="_blank"
+          >
+            <i class="fas fa-print"></i> পরিশিষ্ট-ক (একক ইভেন্ট)
+          </a>
+          <button class="btn btn-default btn-sm mr-2" @click="showEditSeasonModal(selectedSeason)" title="সিজন সম্পাদনা">
+            <i class="fas fa-edit"></i> সিজন সম্পাদনা
+          </button>
           <button class="btn btn-primary btn-sm" @click="showAddSeasonEventModal">
             <i class="fas fa-plus"></i> নতুন ইভেন্ট যুক্ত করুন
           </button>
@@ -53,6 +67,7 @@
               <th>ইভেন্টের নাম</th>
               <th>সাব-ইভেন্ট</th>
               <th>খেলার ধরণ</th>
+              <th>খেলোয়াড় সংখ্যা</th>
               <th>অ্যাকশন</th>
             </tr>
           </thead>
@@ -61,6 +76,9 @@
               <td>{{ se.event?.name }}</td>
               <td>{{ se.sub_event?.name || '-' }}</td>
               <td>{{ se.event?.type === 'single' ? 'একক' : 'দলীয়' }}</td>
+              <td class="text-center">
+                <span class="badge badge-info">{{ se.players_count ?? 0 }}</span>
+              </td>
               <td>
                 <button class="btn btn-info btn-sm mr-1" @click="selectSeasonEvent(se)">
                   <i class="fas fa-users"></i> খেলোয়াড় পরিচালনা
@@ -71,7 +89,12 @@
                     <i class="fas fa-print"></i> পরিশিষ্ট
                   </button>
                   <div class="dropdown-menu dropdown-menu-right">
-                    <a class="dropdown-item" :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ka?season_event_id=' + se.id" target="_blank">পরিশিষ্ট-ক (খেলোয়াড়দের তালিকা)</a>
+                    <a
+                      v-if="se.event?.type === 'team'"
+                      class="dropdown-item"
+                      :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ka?season_event_id=' + se.id"
+                      target="_blank"
+                    >পরিশিষ্ট-ক (খেলোয়াড়দের তালিকা)</a>
                     <a class="dropdown-item" :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/umo?season_event_id=' + se.id" target="_blank">পরিশিষ্ট-ঙ (টিম এন্ট্রি ফর্ম)</a>
                   </div>
                 </div>
@@ -82,7 +105,7 @@
               </td>
             </tr>
             <tr v-if="seasonEvents.length === 0">
-              <td colspan="4" class="text-center text-muted">কোন ইভেন্ট পাওয়া যায়নি</td>
+              <td colspan="5" class="text-center text-muted">কোন ইভেন্ট পাওয়া যায়নি</td>
             </tr>
           </tbody>
         </table>
@@ -139,6 +162,12 @@
                 <span v-else class="badge badge-secondary">না</span>
               </td>
               <td>
+                <a
+                  v-if="selectedSeasonEvent?.event?.type === 'single'"
+                  :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ka?season_id=' + selectedSeason.id + '&student_id=' + player.student_id"
+                  class="btn btn-xs btn-outline-success mb-1 d-block"
+                  target="_blank"
+                >পরিশিষ্ট-ক</a>
                 <a :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/kha?season_event_id=' + selectedSeasonEvent.id + '&player_id=' + player.id" class="btn btn-xs btn-outline-primary mb-1 d-block" target="_blank">পরিশিষ্ট-খ</a>
                 <a :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ga?season_event_id=' + selectedSeasonEvent.id + '&player_id=' + player.id" class="btn btn-xs btn-outline-primary mb-1 d-block" target="_blank">পরিশিষ্ট-গ</a>
                 <a :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/gha?season_event_id=' + selectedSeasonEvent.id + '&player_id=' + player.id" class="btn btn-xs btn-outline-primary d-block" target="_blank">পরিশিষ্ট-ঘ</a>
@@ -159,12 +188,12 @@
 
     <!-- Modals -->
 
-    <!-- Add Season Modal -->
+    <!-- Add/Edit Season Modal -->
     <div class="modal fade" id="addSeasonModal" tabindex="-1" role="dialog" aria-hidden="true">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">নতুন সিজন যুক্ত করুন</h5>
+            <h5 class="modal-title">{{ editingSeasonId ? 'সিজন সম্পাদনা' : 'নতুন সিজন যুক্ত করুন' }}</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
@@ -351,6 +380,7 @@ export default {
       
       seasons: [],
       selectedSeason: null,
+      editingSeasonId: null,
       newSeason: { name: '', age_date: '' },
       
       eventSettings: [],
@@ -383,6 +413,11 @@ export default {
       }
     };
   },
+  computed: {
+    hasSingleEvents() {
+      return this.seasonEvents.some(se => se.event?.type === 'single');
+    }
+  },
   watch: {
     studentList(newList) {
       this.$nextTick(() => {
@@ -412,18 +447,40 @@ export default {
         .catch(err => toastr.error('সিজন লোড করতে সমস্যা হয়েছে।'));
     },
     showAddSeasonModal() {
+      this.editingSeasonId = null;
       this.newSeason.name = '';
       this.newSeason.age_date = '';
+      $('#addSeasonModal').modal('show');
+    },
+    showEditSeasonModal(season) {
+      this.editingSeasonId = season.id;
+      this.newSeason.name = season.name;
+      this.newSeason.age_date = season.age_date ? season.age_date.substring(0, 10) : '';
       $('#addSeasonModal').modal('show');
     },
     saveSeason() {
       if (!this.newSeason.name) return toastr.warning('নাম দিন');
       this.loading = true;
-      axios.post(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/seasons`, this.newSeason)
+      const request = this.editingSeasonId
+        ? axios.put(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/seasons/${this.editingSeasonId}`, this.newSeason)
+        : axios.post(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/seasons`, this.newSeason);
+
+      request
         .then(res => {
-          this.seasons.unshift(res.data);
+          if (this.editingSeasonId) {
+            const index = this.seasons.findIndex(s => s.id === this.editingSeasonId);
+            if (index !== -1) {
+              this.seasons.splice(index, 1, res.data);
+            }
+            if (this.selectedSeason?.id === this.editingSeasonId) {
+              this.selectedSeason = res.data;
+            }
+            toastr.success('সিজন আপডেট হয়েছে');
+          } else {
+            this.seasons.unshift(res.data);
+            toastr.success('সিজন যুক্ত হয়েছে');
+          }
           $('#addSeasonModal').modal('hide');
-          toastr.success('সিজন যুক্ত হয়েছে');
         })
         .catch(err => toastr.error('সমস্যা হয়েছে'))
         .finally(() => this.loading = false);

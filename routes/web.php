@@ -648,12 +648,15 @@ Route::middleware(['auth', 'active_school'])->group(function () {
 
                     Route::get('/api/seasons', [\App\Http\Controllers\Principal\InterschoolController::class, 'getSeasons']);
                     Route::post('/api/seasons', [\App\Http\Controllers\Principal\InterschoolController::class, 'storeSeason']);
+                    Route::put('/api/seasons/{season}', [\App\Http\Controllers\Principal\InterschoolController::class, 'updateSeason']);
 
                     Route::get('/api/events-settings', [\App\Http\Controllers\Principal\InterschoolController::class, 'getEventsSettings']);
                     Route::post('/api/events-settings', [\App\Http\Controllers\Principal\InterschoolController::class, 'storeEventSetting']);
+                    Route::put('/api/events-settings/{id}', [\App\Http\Controllers\Principal\InterschoolController::class, 'updateEventSetting']);
                     Route::delete('/api/events-settings/{id}', [\App\Http\Controllers\Principal\InterschoolController::class, 'deleteEventSetting']);
 
                     Route::post('/api/sub-events-settings', [\App\Http\Controllers\Principal\InterschoolController::class, 'storeSubEventSetting']);
+                    Route::put('/api/sub-events-settings/{id}', [\App\Http\Controllers\Principal\InterschoolController::class, 'updateSubEventSetting']);
                     Route::delete('/api/sub-events-settings/{id}', [\App\Http\Controllers\Principal\InterschoolController::class, 'deleteSubEventSetting']);
 
                     Route::get('/api/seasons/{season}/events', [\App\Http\Controllers\Principal\InterschoolController::class, 'getSeasonEvents']);

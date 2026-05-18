@@ -31,6 +31,7 @@
                   <ul class="mb-0 pl-3">
                     <li v-for="sub in event.sub_events" :key="sub.id">
                       {{ sub.name }}
+                      <a href="#" class="text-primary ml-2" @click.prevent="showEditSubEventModal(sub)" title="সম্পাদনা"><i class="fas fa-edit"></i></a>
                       <a href="#" class="text-danger ml-2" @click.prevent="deleteSubEvent(sub.id)" title="Delete"><i class="fas fa-times"></i></a>
                     </li>
                   </ul>
@@ -39,6 +40,9 @@
                   </button>
                 </td>
                 <td>
+                  <button class="btn btn-xs btn-outline-primary mr-1" @click="showEditEventModal(event)" title="সম্পাদনা">
+                    <i class="fas fa-edit"></i>
+                  </button>
                   <button class="btn btn-danger btn-sm" @click="deleteEvent(event.id)">
                     <i class="fas fa-trash"></i> ডিলিট
                   </button>
@@ -53,12 +57,12 @@
       </div>
     </div>
 
-    <!-- Add Event Modal -->
+    <!-- Add/Edit Event Modal -->
     <div class="modal fade" id="addEventModal" tabindex="-1" role="dialog" aria-hidden="true">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">নতুন ইভেন্ট যুক্ত করুন</h5>
+            <h5 class="modal-title">{{ editingEventId ? 'ইভেন্ট সম্পাদনা' : 'নতুন ইভেন্ট যুক্ত করুন' }}</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
@@ -70,7 +74,7 @@
             </div>
             <div class="form-group">
               <label>খেলার ধরণ</label>
-              <select class="form-control" v-model="newEvent.type">
+              <select class="form-control" v-model="newEvent.type" :disabled="!!editingEventId">
                 <option value="single">একক খেলা</option>
                 <option value="team">দলীয় খেলা</option>
               </select>
@@ -86,12 +90,12 @@
       </div>
     </div>
 
-    <!-- Add Sub Event Modal -->
+    <!-- Add/Edit Sub Event Modal -->
     <div class="modal fade" id="addSubEventModal" tabindex="-1" role="dialog" aria-hidden="true">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">সাব-ইভেন্ট যুক্ত করুন</h5>
+            <h5 class="modal-title">{{ editingSubEventId ? 'সাব-ইভেন্ট সম্পাদনা' : 'সাব-ইভেন্ট যুক্ত করুন' }}</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
@@ -127,6 +131,8 @@ export default {
   data() {
     return {
       events: [],
+      editingEventId: null,
+      editingSubEventId: null,
       newEvent: {
         name: '',
         type: 'single'
@@ -153,8 +159,15 @@ export default {
         });
     },
     showAddEventModal() {
+      this.editingEventId = null;
       this.newEvent.name = '';
       this.newEvent.type = 'single';
+      $('#addEventModal').modal('show');
+    },
+    showEditEventModal(event) {
+      this.editingEventId = event.id;
+      this.newEvent.name = event.name;
+      this.newEvent.type = event.type;
       $('#addEventModal').modal('show');
     },
     saveEvent() {
@@ -163,11 +176,27 @@ export default {
         return;
       }
       this.loading = true;
-      axios.post(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/events-settings`, this.newEvent)
+      const payload = this.editingEventId
+        ? { name: this.newEvent.name }
+        : this.newEvent;
+
+      const request = this.editingEventId
+        ? axios.put(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/events-settings/${this.editingEventId}`, payload)
+        : axios.post(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/events-settings`, payload);
+
+      request
         .then(response => {
-          this.events.push(response.data);
+          if (this.editingEventId) {
+            const index = this.events.findIndex(e => e.id === this.editingEventId);
+            if (index !== -1) {
+              this.events.splice(index, 1, response.data);
+            }
+            toastr.success('ইভেন্ট আপডেট হয়েছে');
+          } else {
+            this.events.push(response.data);
+            toastr.success('ইভেন্ট যুক্ত হয়েছে');
+          }
           $('#addEventModal').modal('hide');
-          toastr.success('ইভেন্ট যুক্ত হয়েছে');
         })
         .catch(error => {
           console.error(error);
@@ -188,8 +217,15 @@ export default {
       }
     },
     showAddSubEventModal(eventId) {
+      this.editingSubEventId = null;
       this.newSubEvent.interschool_event_id = eventId;
       this.newSubEvent.name = '';
+      $('#addSubEventModal').modal('show');
+    },
+    showEditSubEventModal(subEvent) {
+      this.editingSubEventId = subEvent.id;
+      this.newSubEvent.interschool_event_id = subEvent.interschool_event_id;
+      this.newSubEvent.name = subEvent.name;
       $('#addSubEventModal').modal('show');
     },
     saveSubEvent() {
@@ -198,15 +234,32 @@ export default {
         return;
       }
       this.loading = true;
-      axios.post(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/sub-events-settings`, this.newSubEvent)
+
+      const request = this.editingSubEventId
+        ? axios.put(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/sub-events-settings/${this.editingSubEventId}`, { name: this.newSubEvent.name })
+        : axios.post(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/sub-events-settings`, this.newSubEvent);
+
+      request
         .then(response => {
-          const event = this.events.find(e => e.id === this.newSubEvent.interschool_event_id);
-          if (event) {
-            if (!event.sub_events) event.sub_events = [];
-            event.sub_events.push(response.data);
+          if (this.editingSubEventId) {
+            this.events.forEach(event => {
+              if (event.sub_events) {
+                const subIndex = event.sub_events.findIndex(s => s.id === this.editingSubEventId);
+                if (subIndex !== -1) {
+                  event.sub_events.splice(subIndex, 1, response.data);
+                }
+              }
+            });
+            toastr.success('সাব-ইভেন্ট আপডেট হয়েছে');
+          } else {
+            const event = this.events.find(e => e.id === this.newSubEvent.interschool_event_id);
+            if (event) {
+              if (!event.sub_events) event.sub_events = [];
+              event.sub_events.push(response.data);
+            }
+            toastr.success('সাব-ইভেন্ট যুক্ত হয়েছে');
           }
           $('#addSubEventModal').modal('hide');
-          toastr.success('সাব-ইভেন্ট যুক্ত হয়েছে');
         })
         .catch(error => {
           console.error(error);

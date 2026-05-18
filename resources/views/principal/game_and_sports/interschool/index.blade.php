@@ -33,7 +33,11 @@
 
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap4-theme@1.0.0/dist/select2-bootstrap4.min.css">
+<link href="https://fonts.maateen.me/nikosh/font.css" rel="stylesheet">
 <style>
+    body, .content-wrapper, .content, .container-fluid, h1, h2, h3, h4, h5, h6, p, span, a, div, label, input, select, button, table {
+        font-family: 'Nikosh', sans-serif !important;
+    }
     .select2-container--bootstrap4 .select2-selection--single {
         height: calc(2.25rem + 2px) !important;
         padding-top: 5px !important;
