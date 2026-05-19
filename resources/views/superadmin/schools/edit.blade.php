@@ -104,6 +104,53 @@
         <textarea name="address_bn" class="form-control" rows="2">{{ old('address_bn', $school->address_bn) }}</textarea>
       </div>
     </div>
+    
+    <div class="form-row">
+      <div class="form-group col-md-3">
+        <label>বিভাগ</label>
+        <select name="division_id" id="division_id" class="form-control select2">
+          <option value="">বিভাগ নির্বাচন করুন</option>
+          @foreach($divisions as $div)
+            <option value="{{ $div->id }}" {{ old('division_id', $school->division_id) == $div->id ? 'selected' : '' }}>
+              {{ $div->bn_name }} ({{ $div->name }})
+            </option>
+          @endforeach
+        </select>
+      </div>
+      <div class="form-group col-md-3">
+        <label>জেলা</label>
+        <select name="district_id" id="district_id" class="form-control select2">
+          <option value="">জেলা নির্বাচন করুন</option>
+          @foreach($districts as $dist)
+            <option value="{{ $dist->id }}" {{ old('district_id', $school->district_id) == $dist->id ? 'selected' : '' }}>
+              {{ $dist->bn_name }} ({{ $dist->name }})
+            </option>
+          @endforeach
+        </select>
+      </div>
+      <div class="form-group col-md-3">
+        <label>উপজেলা</label>
+        <select name="thana_id" id="thana_id" class="form-control select2">
+          <option value="">উপজেলা নির্বাচন করুন</option>
+          @foreach($thanas as $thana)
+            <option value="{{ $thana->id }}" {{ old('thana_id', $school->thana_id) == $thana->id ? 'selected' : '' }}>
+              {{ $thana->bn_name }} ({{ $thana->name }})
+            </option>
+          @endforeach
+        </select>
+      </div>
+      <div class="form-group col-md-3">
+        <label>ইউনিয়ন</label>
+        <select name="union_id" id="union_id" class="form-control select2">
+          <option value="">ইউনিয়ন নির্বাচন করুন</option>
+          @foreach($unions as $union)
+            <option value="{{ $union->id }}" {{ old('union_id', $school->union_id) == $union->id ? 'selected' : '' }}>
+              {{ $union->bn_name }} ({{ $union->name }})
+            </option>
+          @endforeach
+        </select>
+      </div>
+    </div>
     <div class="form-group">
       <label>বর্ণনা</label>
       <textarea name="description" class="form-control" rows="3">{{ old('description', $school->description) }}</textarea>
@@ -143,7 +190,88 @@
     </div>
     <button class="btn btn-warning"><i class="fas fa-save mr-1"></i> আপডেট</button>
   </div>
+  </div>
  </div>
-</div>
 </form>
+
+@push('scripts')
+<script>
+window.addEventListener('DOMContentLoaded', function() {
+    console.log('Location Script DOMContentLoaded initialized!');
+    
+    // When Division changes
+    $('#division_id').on('change', function() {
+        var divisionId = $(this).val();
+        console.log('Division changed event triggered! Value:', divisionId);
+        
+        // Reset district, thana, union options
+        $('#district_id').html('<option value="">জেলা নির্বাচন করুন</option>').trigger('change');
+        $('#thana_id').html('<option value="">উপজেলা নির্বাচন করুন</option>').trigger('change');
+        $('#union_id').html('<option value="">ইউনিয়ন নির্বাচন করুন</option>').trigger('change');
+
+        if (divisionId) {
+            $.ajax({
+                url: "/superadmin/location/districts",
+                type: "GET",
+                data: { division_id: divisionId },
+                success: function(data) {
+                    $.each(data, function(key, district) {
+                        $('#district_id').append('<option value="' + district.id + '">' + district.bn_name + ' (' + district.name + ')</option>');
+                    });
+                    // Trigger standard change event so Select2 updates and cascades
+                    $('#district_id').trigger('change');
+                }
+            });
+        }
+    });
+
+    // When District changes
+    $('#district_id').on('change', function() {
+        var districtId = $(this).val();
+        
+        // Reset thana, union options
+        $('#thana_id').html('<option value="">উপজেলা নির্বাচন করুন</option>').trigger('change');
+        $('#union_id').html('<option value="">ইউনিয়ন নির্বাচন করুন</option>').trigger('change');
+
+        if (districtId) {
+            $.ajax({
+                url: "/superadmin/location/thanas",
+                type: "GET",
+                data: { district_id: districtId },
+                success: function(data) {
+                    $.each(data, function(key, thana) {
+                        $('#thana_id').append('<option value="' + thana.id + '">' + thana.bn_name + ' (' + thana.name + ')</option>');
+                    });
+                    // Trigger standard change event so Select2 updates and cascades
+                    $('#thana_id').trigger('change');
+                }
+            });
+        }
+    });
+
+    // When Thana changes
+    $('#thana_id').on('change', function() {
+        var thanaId = $(this).val();
+        
+        // Reset union options
+        $('#union_id').html('<option value="">ইউনিয়ন নির্বাচন করুন</option>').trigger('change');
+
+        if (thanaId) {
+            $.ajax({
+                url: "/superadmin/location/unions",
+                type: "GET",
+                data: { thana_id: thanaId },
+                success: function(data) {
+                    $.each(data, function(key, union) {
+                        $('#union_id').append('<option value="' + union.id + '">' + union.bn_name + ' (' + union.name + ')</option>');
+                    });
+                    // Trigger standard change event so Select2 updates and cascades
+                    $('#union_id').trigger('change');
+                }
+            });
+        }
+    });
+});
+</script>
+@endpush
 @endsection

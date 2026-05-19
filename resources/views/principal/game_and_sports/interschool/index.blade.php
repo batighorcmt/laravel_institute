@@ -2,32 +2,24 @@
 
 @section('title', 'আন্তঃস্কুল প্রতিযোগিতা')
 
-@section('content')
-<div class="content-wrapper">
-    <div class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1 class="m-0">আন্তঃস্কুল প্রতিযোগিতা</h1>
-                </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="{{ route('principal.dashboard') }}">Home</a></li>
-                        <li class="breadcrumb-item active">আন্তঃস্কুল প্রতিযোগিতা</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
+@section('content_header')
+<div class="row mb-2">
+    <div class="col-sm-6">
+        <h1 class="m-0">আন্তঃস্কুল প্রতিযোগিতা</h1>
     </div>
+    <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="{{ route('principal.dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item active">আন্তঃস্কুল প্রতিযোগিতা</li>
+        </ol>
+    </div>
+</div>
+@endsection
 
-    <div class="content">
-        <div class="container-fluid">
-            <!-- Vue Component will mount here -->
-            <div id="app">
-                <interschool-competition :school-id="{{ $school->id }}"></interschool-competition>
-            </div>
-        </div>
-    </div>
+@section('content')
+<!-- Vue Component will mount here -->
+<div id="app">
+    <interschool-competition :school-id="{{ $school->id }}"></interschool-competition>
 </div>
 @endsection
 

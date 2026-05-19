@@ -42,8 +42,8 @@
                     </div>
                     <div class="header-row" style="font-size: 15px;">
                         <div>বিদ্যালয়ের নাম: {{ $school->name_bn ?? $school->name_en }}</div>
-                        <div>উপজেলা: {{ $school->upazila ?? '................' }}</div>
-                        <div>জেলা: {{ $school->district ?? '................' }}</div>
+                        <div>উপজেলা: {{ $school->thana?->bn_name ?? ($school->thana?->name ?? ($school->upazila ?? '................')) }}</div>
+                        <div>জেলা: {{ $school->district?->bn_name ?? ($school->district?->name ?? ($school->district ?? '................')) }}</div>
                         <div>EIIN: {{ en2bn($school->eiin ?? '................') }}</div>
                     </div>
                 </div>
@@ -117,8 +117,8 @@
                 </div>
                 <div class="header-row" style="font-size: 15px;">
                     <div>বিদ্যালয়ের নাম: {{ $school->name_bn ?? $school->name_en }}</div>
-                    <div>উপজেলা: {{ $school->upazila ?? '................' }}</div>
-                    <div>জেলা: {{ $school->district ?? '................' }}</div>
+                    <div>উপজেলা: {{ $school->thana?->bn_name ?? ($school->thana?->name ?? ($school->upazila ?? '................')) }}</div>
+                    <div>জেলা: {{ $school->district?->bn_name ?? ($school->district?->name ?? ($school->district ?? '................')) }}</div>
                     <div>EIIN: {{ en2bn($school->eiin ?? '................') }}</div>
                 </div>
             </div>

@@ -14,45 +14,47 @@
     <div class="card-body">
       <div class="row">
         <div class="col-md-12">
-          <table class="table table-bordered table-striped">
-            <thead>
-              <tr>
-                <th>ইভেন্টের নাম</th>
-                <th>ধরণ (একক/দলীয়)</th>
-                <th>সাব-ইভেন্ট সমূহ</th>
-                <th width="200">অ্যাকশন</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="event in events" :key="event.id">
-                <td>{{ event.name }}</td>
-                <td>{{ event.type === 'single' ? 'একক' : 'দলীয়' }}</td>
-                <td>
-                  <ul class="mb-0 pl-3">
-                    <li v-for="sub in event.sub_events" :key="sub.id">
-                      {{ sub.name }}
-                      <a href="#" class="text-primary ml-2" @click.prevent="showEditSubEventModal(sub)" title="সম্পাদনা"><i class="fas fa-edit"></i></a>
-                      <a href="#" class="text-danger ml-2" @click.prevent="deleteSubEvent(sub.id)" title="Delete"><i class="fas fa-times"></i></a>
-                    </li>
-                  </ul>
-                  <button class="btn btn-xs btn-outline-success mt-2" @click="showAddSubEventModal(event.id)">
-                    <i class="fas fa-plus"></i> সাব-ইভেন্ট যুক্ত করুন
-                  </button>
-                </td>
-                <td>
-                  <button class="btn btn-xs btn-outline-primary mr-1" @click="showEditEventModal(event)" title="সম্পাদনা">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button class="btn btn-danger btn-sm" @click="deleteEvent(event.id)">
-                    <i class="fas fa-trash"></i> ডিলিট
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="events.length === 0">
-                <td colspan="4" class="text-center text-muted">কোন ইভেন্ট পাওয়া যায়নি</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th>ইভেন্টের নাম</th>
+                  <th>ধরণ (একক/দলীয়)</th>
+                  <th>সাব-ইভেন্ট সমূহ</th>
+                  <th width="200">অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="event in events" :key="event.id">
+                  <td>{{ event.name }}</td>
+                  <td>{{ event.type === 'single' ? 'একক' : 'দলীয়' }}</td>
+                  <td>
+                    <ul class="mb-0 pl-3">
+                      <li v-for="sub in event.sub_events" :key="sub.id">
+                        {{ sub.name }}
+                        <a href="#" class="text-primary ml-2" @click.prevent="showEditSubEventModal(sub)" title="সম্পাদনা"><i class="fas fa-edit"></i></a>
+                        <a href="#" class="text-danger ml-2" @click.prevent="deleteSubEvent(sub.id)" title="Delete"><i class="fas fa-times"></i></a>
+                      </li>
+                    </ul>
+                    <button class="btn btn-xs btn-outline-success mt-2" @click="showAddSubEventModal(event.id)">
+                      <i class="fas fa-plus"></i> সাব-ইভেন্ট যুক্ত করুন
+                    </button>
+                  </td>
+                  <td>
+                    <button class="btn btn-xs btn-outline-primary mr-1" @click="showEditEventModal(event)" title="সম্পাদনা">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-sm" @click="deleteEvent(event.id)">
+                      <i class="fas fa-trash"></i> ডিলিট
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="events.length === 0">
+                  <td colspan="4" class="text-center text-muted">কোন ইভেন্ট পাওয়া যায়নি</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

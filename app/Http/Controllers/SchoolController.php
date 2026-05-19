@@ -44,7 +44,24 @@ class SchoolController extends Controller
      */
     public function create()
     {
-        return view('superadmin.schools.create');
+        $divisions = \App\Models\Division::orderBy('bn_name')->get();
+        
+        $districts = [];
+        if (old('division_id')) {
+            $districts = \App\Models\District::where('division_id', old('division_id'))->orderBy('bn_name')->get();
+        }
+        
+        $thanas = [];
+        if (old('district_id')) {
+            $thanas = \App\Models\Thana::where('district_id', old('district_id'))->orderBy('bn_name')->get();
+        }
+        
+        $unions = [];
+        if (old('thana_id')) {
+            $unions = \App\Models\Union::where('thana_id', old('thana_id'))->orderBy('bn_name')->get();
+        }
+
+        return view('superadmin.schools.create', compact('divisions', 'districts', 'thanas', 'unions'));
     }
 
     /**
@@ -72,6 +89,13 @@ class SchoolController extends Controller
             'description' => ['nullable','string'],
             'status' => ['required', Rule::in(['active','inactive'])],
             'logo' => ['nullable','image','mimes:png,jpg,jpeg,webp','max:2048'],
+            
+            // Location block
+            'division_id' => ['nullable', 'exists:divisions,id'],
+            'district_id' => ['nullable', 'exists:districts,id'],
+            'thana_id' => ['nullable', 'exists:thanas,id'],
+            'union_id' => ['nullable', 'exists:unions,id'],
+
             // Principal block
             'principal_name_en' => ['required','string','max:255'],
             'principal_name_bn' => ['required','string','max:255'],
@@ -174,7 +198,25 @@ class SchoolController extends Controller
                 ->where('user_id', $principal->user_id)
                 ->first();
         }
-        return view('superadmin.schools.edit', compact('school','principal','principalTeacher'));
+        
+        $divisions = \App\Models\Division::orderBy('bn_name')->get();
+        
+        $districts = [];
+        if ($school->division_id) {
+            $districts = \App\Models\District::where('division_id', $school->division_id)->orderBy('bn_name')->get();
+        }
+        
+        $thanas = [];
+        if ($school->district_id) {
+            $thanas = \App\Models\Thana::where('district_id', $school->district_id)->orderBy('bn_name')->get();
+        }
+        
+        $unions = [];
+        if ($school->thana_id) {
+            $unions = \App\Models\Union::where('thana_id', $school->thana_id)->orderBy('bn_name')->get();
+        }
+
+        return view('superadmin.schools.edit', compact('school','principal','principalTeacher', 'divisions', 'districts', 'thanas', 'unions'));
     }
 
     /**
@@ -204,6 +246,13 @@ class SchoolController extends Controller
             'description' => ['nullable','string'],
             'status' => ['required', Rule::in(['active','inactive'])],
             'logo' => ['nullable','image','mimes:png,jpg,jpeg,webp','max:2048'],
+            
+            // Location block
+            'division_id' => ['nullable', 'exists:divisions,id'],
+            'district_id' => ['nullable', 'exists:districts,id'],
+            'thana_id' => ['nullable', 'exists:thanas,id'],
+            'union_id' => ['nullable', 'exists:unions,id'],
+
             // Principal block (optional on edit but if provided, validate)
             'principal_name_en' => ['nullable','string','max:255'],
             'principal_name_bn' => ['nullable','string','max:255'],

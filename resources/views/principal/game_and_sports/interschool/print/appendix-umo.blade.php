@@ -40,7 +40,7 @@
             অবৈতনিক সম্পাদক<br>
             {{ $seasonEvent->event->name }} {{ $seasonEvent->subEvent ? '(' . $seasonEvent->subEvent->name . ')' : '' }} প্রতিযোগিতা<br>
             বাংলাদেশ জাতীয় স্কুল, মাদ্রাসা ও কারিগরি শিক্ষা ক্রীড়া সমিতি<br>
-            উপজেলাঃ {{ $school->upazila ?? '................' }}, জেলাঃ {{ $school->district ?? '................' }}।
+            উপজেলাঃ {{ $school->thana?->bn_name ?? ($school->thana?->name ?? ($school->upazila ?? '................')) }}, জেলাঃ {{ $school->district?->bn_name ?? ($school->district?->name ?? ($school->district ?? '................')) }}।
         </p>
 
         <p>জনাব,<br>
@@ -48,7 +48,7 @@
 
         <p>
             বিদ্যালয়ের নামঃ {{ $school->name_bn ?? $school->name_en }}<br>
-            উপজেলাঃ {{ $school->upazila ?? '................' }}, জেলাঃ {{ $school->district ?? '................' }}।
+            উপজেলাঃ {{ $school->thana?->bn_name ?? ($school->thana?->name ?? ($school->upazila ?? '................')) }}, জেলাঃ {{ $school->district?->bn_name ?? ($school->district?->name ?? ($school->district ?? '................')) }}।
         </p>
     </div>
 
@@ -79,7 +79,7 @@
         <div class="text-center">
             <p style="margin-bottom: 5px;">প্রধান শিক্ষক</p>
             <p style="margin: 0;">{{ $school->name_bn ?? $school->name_en }}</p>
-            <p style="margin: 0;">উপজেলাঃ {{ $school->upazila ?? '................' }}, জেলাঃ {{ $school->district ?? '................' }}</p>
+            <p style="margin: 0;">উপজেলাঃ {{ $school->thana?->bn_name ?? ($school->thana?->name ?? ($school->upazila ?? '................')) }}, জেলাঃ {{ $school->district?->bn_name ?? ($school->district?->name ?? ($school->district ?? '................')) }}</p>
         </div>
     </div>
 </body>

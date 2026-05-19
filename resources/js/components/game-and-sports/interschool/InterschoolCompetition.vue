@@ -61,54 +61,56 @@
         </div>
       </div>
       <div class="card-body">
-        <table class="table table-bordered table-striped table-hover">
-          <thead>
-            <tr>
-              <th>ইভেন্টের নাম</th>
-              <th>সাব-ইভেন্ট</th>
-              <th>খেলার ধরণ</th>
-              <th>খেলোয়াড় সংখ্যা</th>
-              <th>অ্যাকশন</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="se in seasonEvents" :key="se.id">
-              <td>{{ se.event?.name }}</td>
-              <td>{{ se.sub_event?.name || '-' }}</td>
-              <td>{{ se.event?.type === 'single' ? 'একক' : 'দলীয়' }}</td>
-              <td class="text-center">
-                <span class="badge badge-info">{{ se.players_count ?? 0 }}</span>
-              </td>
-              <td>
-                <button class="btn btn-info btn-sm mr-1" @click="selectSeasonEvent(se)">
-                  <i class="fas fa-users"></i> খেলোয়াড় পরিচালনা
-                </button>
-                
-                <div class="btn-group">
-                  <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="fas fa-print"></i> পরিশিষ্ট
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped table-hover">
+            <thead>
+              <tr>
+                <th>ইভেন্টের নাম</th>
+                <th>সাব-ইভেন্ট</th>
+                <th>খেলার ধরণ</th>
+                <th>খেলোয়াড় সংখ্যা</th>
+                <th>অ্যাকশন</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="se in seasonEvents" :key="se.id">
+                <td>{{ se.event?.name }}</td>
+                <td>{{ se.sub_event?.name || '-' }}</td>
+                <td>{{ se.event?.type === 'single' ? 'একক' : 'দলীয়' }}</td>
+                <td class="text-center">
+                  <span class="badge badge-info">{{ se.players_count ?? 0 }}</span>
+                </td>
+                <td>
+                  <button class="btn btn-info btn-sm mr-1" @click="selectSeasonEvent(se)">
+                    <i class="fas fa-users"></i> খেলোয়াড় পরিচালনা
                   </button>
-                  <div class="dropdown-menu dropdown-menu-right">
-                    <a
-                      v-if="se.event?.type === 'team'"
-                      class="dropdown-item"
-                      :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ka?season_event_id=' + se.id"
-                      target="_blank"
-                    >পরিশিষ্ট-ক (খেলোয়াড়দের তালিকা)</a>
-                    <a class="dropdown-item" :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/umo?season_event_id=' + se.id" target="_blank">পরিশিষ্ট-ঙ (টিম এন্ট্রি ফর্ম)</a>
+                  
+                  <div class="btn-group">
+                    <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      <i class="fas fa-print"></i> পরিশিষ্ট
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right">
+                      <a
+                        v-if="se.event?.type === 'team'"
+                        class="dropdown-item"
+                        :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ka?season_event_id=' + se.id"
+                        target="_blank"
+                      >পরিশিষ্ট-ক (খেলোয়াড়দের তালিকা)</a>
+                      <a class="dropdown-item" :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/umo?season_event_id=' + se.id" target="_blank">পরিশিষ্ট-ঙ (টিম এন্ট্রি ফর্ম)</a>
+                    </div>
                   </div>
-                </div>
 
-                <button class="btn btn-danger btn-sm ml-1" @click="deleteSeasonEvent(se.id)">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-            <tr v-if="seasonEvents.length === 0">
-              <td colspan="5" class="text-center text-muted">কোন ইভেন্ট পাওয়া যায়নি</td>
-            </tr>
-          </tbody>
-        </table>
+                  <button class="btn btn-danger btn-sm ml-1" @click="deleteSeasonEvent(se.id)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="seasonEvents.length === 0">
+                <td colspan="5" class="text-center text-muted">কোন ইভেন্ট পাওয়া যায়নি</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -130,59 +132,61 @@
         </div>
       </div>
       <div class="card-body">
-        <table class="table table-bordered table-striped">
-          <thead>
-            <tr>
-              <th>নাম ও আইডি</th>
-              <th>শ্রেণি ও রোল</th>
-              <th>গ্রুপ</th>
-              <th>উচ্চতা/ওজন</th>
-              <th>অধিনায়ক?</th>
-              <th>প্রিন্ট</th>
-              <th>অ্যাকশন</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="player in players" :key="player.id">
-              <td>
-                {{ player.student?.student_name_bn || player.student?.student_name_en }}<br>
-                <small class="text-muted">{{ player.student?.student_id }}</small>
-              </td>
-              <td>
-                {{ player.student?.current_enrollment?.class?.name || '-' }}<br>
-                <small class="text-muted">রোল: {{ player.student?.current_enrollment?.roll_no || '-' }}</small>
-              </td>
-              <td>{{ player.group_name || '-' }}</td>
-              <td>
-                <span v-if="player.height">উ: {{ player.height }}</span><br v-if="player.height">
-                <span v-if="player.weight">ও: {{ player.weight }}</span>
-              </td>
-              <td>
-                <span v-if="player.is_captain" class="badge badge-success">হ্যাঁ</span>
-                <span v-else class="badge badge-secondary">না</span>
-              </td>
-              <td>
-                <a
-                  v-if="selectedSeasonEvent?.event?.type === 'single'"
-                  :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ka?season_id=' + selectedSeason.id + '&student_id=' + player.student_id"
-                  class="btn btn-xs btn-outline-success mb-1 d-block"
-                  target="_blank"
-                >পরিশিষ্ট-ক</a>
-                <a :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/kha?season_event_id=' + selectedSeasonEvent.id + '&player_id=' + player.id" class="btn btn-xs btn-outline-primary mb-1 d-block" target="_blank">পরিশিষ্ট-খ</a>
-                <a :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ga?season_event_id=' + selectedSeasonEvent.id + '&player_id=' + player.id" class="btn btn-xs btn-outline-primary mb-1 d-block" target="_blank">পরিশিষ্ট-গ</a>
-                <a :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/gha?season_event_id=' + selectedSeasonEvent.id + '&player_id=' + player.id" class="btn btn-xs btn-outline-primary d-block" target="_blank">পরিশিষ্ট-ঘ</a>
-              </td>
-              <td>
-                <button class="btn btn-danger btn-sm" @click="deletePlayer(player.id)">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-            <tr v-if="players.length === 0">
-              <td colspan="7" class="text-center text-muted">কোন খেলোয়াড় পাওয়া যায়নি</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped">
+            <thead>
+              <tr>
+                <th>নাম ও আইডি</th>
+                <th>শ্রেণি ও রোল</th>
+                <th>গ্রুপ</th>
+                <th>উচ্চতা/ওজন</th>
+                <th>অধিনায়ক?</th>
+                <th>প্রিন্ট</th>
+                <th>অ্যাকশন</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="player in players" :key="player.id">
+                <td>
+                  {{ player.student?.student_name_bn || player.student?.student_name_en }}<br>
+                  <small class="text-muted">{{ player.student?.student_id }}</small>
+                </td>
+                <td>
+                  {{ player.student?.current_enrollment?.class?.name || '-' }}<br>
+                  <small class="text-muted">রোল: {{ player.student?.current_enrollment?.roll_no || '-' }}</small>
+                </td>
+                <td>{{ player.group_name || '-' }}</td>
+                <td>
+                  <span v-if="player.height">উ: {{ player.height }}</span><br v-if="player.height">
+                  <span v-if="player.weight">ও: {{ player.weight }}</span>
+                </td>
+                <td>
+                  <span v-if="player.is_captain" class="badge badge-success">হ্যাঁ</span>
+                  <span v-else class="badge badge-secondary">না</span>
+                </td>
+                <td>
+                  <a
+                    v-if="selectedSeasonEvent?.event?.type === 'single'"
+                    :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ka?season_id=' + selectedSeason.id + '&student_id=' + player.student_id"
+                    class="btn btn-xs btn-outline-success mb-1 d-block"
+                    target="_blank"
+                  >পরিশিষ্ট-ক</a>
+                  <a :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/kha?season_event_id=' + selectedSeasonEvent.id + '&player_id=' + player.id" class="btn btn-xs btn-outline-primary mb-1 d-block" target="_blank">পরিশিষ্ট-খ</a>
+                  <a :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ga?season_event_id=' + selectedSeasonEvent.id + '&player_id=' + player.id" class="btn btn-xs btn-outline-primary mb-1 d-block" target="_blank">পরিশিষ্ট-গ</a>
+                  <a :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/gha?season_event_id=' + selectedSeasonEvent.id + '&player_id=' + player.id" class="btn btn-xs btn-outline-primary d-block" target="_blank">পরিশিষ্ট-ঘ</a>
+                </td>
+                <td>
+                  <button class="btn btn-danger btn-sm" @click="deletePlayer(player.id)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="players.length === 0">
+                <td colspan="7" class="text-center text-muted">কোন খেলোয়াড় পাওয়া যায়নি</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 

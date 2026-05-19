@@ -25,7 +25,8 @@ class School extends Model
         'short_address_bn', 'short_address_en', 'founding_year', 'school_code', 
         'phone', 'mobile', 'email', 'website', 'domain',
         'description', 'logo', 'status', 'admissions_enabled',
-        'admission_academic_year_id', 'fine_enabled'
+        'admission_academic_year_id', 'fine_enabled',
+        'division_id', 'district_id', 'thana_id', 'union_id',
     ];
 
     protected $casts = [
@@ -103,6 +104,27 @@ class School extends Model
             ->where('slug', $slug)
             ->where('school_modules.is_enabled', true)
             ->exists();
+    }
+
+    // Location relationships
+    public function division()
+    {
+        return $this->belongsTo(\App\Models\Division::class, 'division_id');
+    }
+
+    public function district()
+    {
+        return $this->belongsTo(\App\Models\District::class, 'district_id');
+    }
+
+    public function thana()
+    {
+        return $this->belongsTo(\App\Models\Thana::class, 'thana_id');
+    }
+
+    public function union()
+    {
+        return $this->belongsTo(\App\Models\Union::class, 'union_id');
     }
 
     // Scopes
