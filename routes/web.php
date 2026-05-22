@@ -378,6 +378,9 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             }
             );
 
+            // Printable statistics report
+            Route::get('/results/statistics', [App\Http\Controllers\Principal\ResultController::class, 'statistics'])->name('institute.results.statistics');
+
             // Mark Entry Routes
             Route::prefix('marks')->name('marks.')->middleware('module:exams')->group(function () {
                 Route::get('/', [App\Http\Controllers\Principal\MarkEntryController::class, 'index'])->name('index');
@@ -386,7 +389,6 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::post('/{exam}/subjects/{examSubject}/save', [App\Http\Controllers\Principal\MarkEntryController::class, 'saveMark'])->name('save');
                 Route::get('/{exam}/subjects/{examSubject}/print-blank', [App\Http\Controllers\Principal\MarkEntryController::class, 'printBlank'])->name('print-blank');
                 Route::get('/{exam}/subjects/{examSubject}/print-filled', [App\Http\Controllers\Principal\MarkEntryController::class, 'printFilled'])->name('print-filled');
-                Route::post('/{exam}/calculate-results', [App\Http\Controllers\Principal\MarkEntryController::class, 'calculateResults'])->name('calculate-results');
             }
             );
 
@@ -672,6 +674,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
 
                     Route::get('/api/season-events/{seasonEvent}/players', [\App\Http\Controllers\Principal\InterschoolController::class, 'getPlayers']);
                     Route::post('/api/season-events/{seasonEvent}/players', [\App\Http\Controllers\Principal\InterschoolController::class, 'storePlayer']);
+                    Route::patch('/api/season-events/{seasonEvent}/players/reorder', [\App\Http\Controllers\Principal\InterschoolController::class, 'reorderPlayers']);
                     Route::put('/api/season-events/{seasonEvent}/players/{player}', [\App\Http\Controllers\Principal\InterschoolController::class, 'updatePlayer']);
                     Route::delete('/api/season-events/{seasonEvent}/players/{player}', [\App\Http\Controllers\Principal\InterschoolController::class, 'deletePlayer']);
                     Route::get('/api/search-students', [\App\Http\Controllers\Principal\InterschoolController::class, 'searchStudents']);

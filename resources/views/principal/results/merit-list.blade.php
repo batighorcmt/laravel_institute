@@ -97,35 +97,43 @@
                             </thead>
                             <tbody>
                                 @foreach($results as $result)
+                                    @php
+                                        $meritPos = $loop->iteration;
+                                        $totalMarks = $result->computed_total_marks ?? $result->total_marks ?? 0;
+                                        $gpa = $result->computed_gpa ?? $result->gpa ?? 0;
+                                        $letterGrade = $result->computed_letter ?? $result->letter_grade ?? 'F';
+                                        $isPass = $letterGrade !== 'F' && ($result->fail_count ?? 0) === 0;
+                                        $sectionName = optional(optional($result->student)->currentEnrollment)->section?->name;
+                                    @endphp
                                     <tr>
                                         <td class="text-center">
-                                            @if($result->merit_position_class <= 3)
-                                                <strong class="text-{{ $result->merit_position_class == 1 ? 'warning' : ($result->merit_position_class == 2 ? 'info' : 'success') }}">
-                                                    <i class="fas fa-trophy"></i> {{ $result->merit_position_class }}
+                                            @if($meritPos <= 3)
+                                                <strong class="text-{{ $meritPos == 1 ? 'warning' : ($meritPos == 2 ? 'info' : 'success') }}">
+                                                    <i class="fas fa-trophy"></i> {{ $meritPos }}
                                                 </strong>
                                             @else
-                                                {{ $result->merit_position_class }}
+                                                {{ $meritPos }}
                                             @endif
                                         </td>
-                                        <td>{{ $result->student->student_id }}</td>
+                                        <td>{{ $result->student->student_id ?? '—' }}</td>
                                         <td>
-                                            <strong>{{ $result->student->student_name_en }}</strong>
-                                            @if($result->student->student_name_bn)
+                                            <strong>{{ $result->student->student_name_en ?? '—' }}</strong>
+                                            @if($result->student->student_name_bn ?? null)
                                                 <br><small class="text-muted">{{ $result->student->student_name_bn }}</small>
                                             @endif
                                         </td>
-                                        <td>{{ $result->class->name }} @if($result->section) - {{ $result->section->section_name }} @endif</td>
-                                        <td class="text-center"><strong>{{ number_format($result->total_marks, \App\Models\Setting::getDecimalPosition($school->id)) }}</strong></td>
+                                        <td>{{ $class->name ?? '' }} @if($sectionName) - {{ $sectionName }} @endif</td>
+                                        <td class="text-center"><strong>{{ number_format($totalMarks, \App\Models\Setting::getDecimalPosition($school->id)) }}</strong></td>
                                         <td class="text-center">
-                                            <strong class="text-primary">{{ number_format($result->gpa, 2) }}</strong>
+                                            <strong class="text-primary">{{ number_format($gpa, 2) }}</strong>
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge badge-{{ $result->letter_grade == 'A+' ? 'success' : ($result->letter_grade == 'F' ? 'danger' : 'info') }}">
-                                                {{ $result->letter_grade }}
+                                            <span class="badge badge-{{ $letterGrade == 'A+' ? 'success' : ($letterGrade == 'F' ? 'danger' : 'info') }}">
+                                                {{ $letterGrade }}
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            @if($result->result_status == 'passed')
+                                            @if($isPass)
                                                 <span class="badge badge-success">উত্তীর্ণ</span>
                                             @else
                                                 <span class="badge badge-danger">অনুত্তীর্ণ</span>

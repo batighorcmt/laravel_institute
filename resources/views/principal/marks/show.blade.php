@@ -27,12 +27,9 @@
             <div class="card-header">
                 <h3 class="card-title">{{ $exam->name }} - {{ $exam->class->name }}</h3>
                 <div class="card-tools">
-                    <form action="{{ route('principal.institute.marks.calculate-results', [$school, $exam]) }}" method="POST" class="d-inline" onsubmit="return confirm('ফলাফল হিসাব করা হবে। আপনি কি নিশ্চিত?')">
-                        @csrf
-                        <button type="submit" class="btn btn-sm btn-success">
-                            <i class="fas fa-calculator"></i> ফলাফল হিসাব করুন
-                        </button>
-                    </form>
+                    <span class="badge badge-info">
+                        <i class="fas fa-info-circle"></i> নম্বর এন্ট্রি করলেই ফলাফল স্বয়ংক্রিয়ভাবে হিসাব হবে
+                    </span>
                 </div>
             </div>
             <div class="card-body">

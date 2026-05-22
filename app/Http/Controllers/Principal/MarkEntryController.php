@@ -7,12 +7,11 @@ use App\Models\Exam;
 use App\Models\ExamSubject;
 use App\Models\Mark;
 use App\Models\School;
+use App\Models\Setting;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
+use App\Services\ExamResultSyncService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\URL;
-use App\Models\Setting;
 
 class MarkEntryController extends Controller
 {
@@ -38,10 +37,10 @@ class MarkEntryController extends Controller
                 ->where('academic_year_id', $exam->academic_year_id)
                 ->where('class_id', $exam->class_id)
                 ->where('status', 'active')
-                ->whereHas('student', function($query) {
+                ->whereHas('student', function ($query) {
                     $query->where('status', 'active');
                 })
-                ->whereHas('subjects', function($query) use ($sub) {
+                ->whereHas('subjects', function ($query) use ($sub) {
                     $query->where('subject_id', $sub->subject_id);
                 })
                 ->count();
@@ -53,7 +52,7 @@ class MarkEntryController extends Controller
 
             $subjectStats[$sub->id] = [
                 'total' => $totalStudents,
-                'entered' => $enteredMarks
+                'entered' => $enteredMarks,
             ];
         }
 
@@ -69,13 +68,13 @@ class MarkEntryController extends Controller
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $exam->class_id)
             ->where('status', 'active')
-            ->whereHas('student', function($query) {
+            ->whereHas('student', function ($query) {
                 $query->where('status', 'active');
             })
-            ->whereHas('subjects', function($query) use ($examSubject) {
+            ->whereHas('subjects', function ($query) use ($examSubject) {
                 $query->where('subject_id', $examSubject->subject_id);
             })
-            ->with(['student', 'subjects' => function($query) use ($examSubject) {
+            ->with(['student', 'subjects' => function ($query) use ($examSubject) {
                 $query->where('subject_id', $examSubject->subject_id);
             }])
             ->orderBy('roll_no')
@@ -94,9 +93,9 @@ class MarkEntryController extends Controller
     {
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
-            'creative_marks' => 'nullable|numeric|min:0|max:' . $examSubject->creative_full_mark,
-            'mcq_marks' => 'nullable|numeric|min:0|max:' . $examSubject->mcq_full_mark,
-            'practical_marks' => 'nullable|numeric|min:0|max:' . $examSubject->practical_full_mark,
+            'creative_marks' => 'nullable|numeric|min:0|max:'.$examSubject->creative_full_mark,
+            'mcq_marks' => 'nullable|numeric|min:0|max:'.$examSubject->mcq_full_mark,
+            'practical_marks' => 'nullable|numeric|min:0|max:'.$examSubject->practical_full_mark,
             'is_absent' => 'nullable|boolean',
         ]);
 
@@ -104,7 +103,7 @@ class MarkEntryController extends Controller
 
         // Calculate total marks
         $totalMarks = 0;
-        if (!$isAbsent) {
+        if (! $isAbsent) {
             $totalMarks = ($validated['creative_marks'] ?? 0) +
                           ($validated['mcq_marks'] ?? 0) +
                           ($validated['practical_marks'] ?? 0);
@@ -134,6 +133,8 @@ class MarkEntryController extends Controller
                 'entered_at' => now(),
             ]
         );
+
+        app(ExamResultSyncService::class)->syncAfterMarkSaved($school, $exam);
 
         return response()->json([
             'success' => true,
@@ -168,7 +169,7 @@ class MarkEntryController extends Controller
             $isPassed = $totalMarks >= $examSubject->total_pass_mark;
         }
 
-        if (!$isPassed) {
+        if (! $isPassed) {
             return [
                 'letter_grade' => 'F',
                 'grade_point' => 0.00,
@@ -207,13 +208,13 @@ class MarkEntryController extends Controller
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $exam->class_id)
             ->where('status', 'active')
-            ->whereHas('student', function($query) {
+            ->whereHas('student', function ($query) {
                 $query->where('status', 'active');
             })
-            ->whereHas('subjects', function($query) use ($examSubject) {
+            ->whereHas('subjects', function ($query) use ($examSubject) {
                 $query->where('subject_id', $examSubject->subject_id);
             })
-            ->with(['student', 'subjects' => function($query) use ($examSubject) {
+            ->with(['student', 'subjects' => function ($query) use ($examSubject) {
                 $query->where('subject_id', $examSubject->subject_id);
             }])
             ->orderBy('roll_no')
@@ -242,9 +243,9 @@ class MarkEntryController extends Controller
             ->where('students.status', 'active')
             ->orderBy('student_enrollments.roll_no')
             ->select('students.*')
-            ->with(['enrollments' => function($query) use ($exam) {
+            ->with(['enrollments' => function ($query) use ($exam) {
                 $query->where('academic_year_id', $exam->academic_year_id)
-                      ->where('class_id', $exam->class_id);
+                    ->where('class_id', $exam->class_id);
             }])
             ->get();
 
@@ -262,95 +263,13 @@ class MarkEntryController extends Controller
     public function printPortable(Request $request, Exam $exam, ExamSubject $examSubject, $type)
     {
         $school = School::findOrFail($exam->school_id);
-        
+
         if ($type === 'print-blank') {
             return $this->printBlank($school, $exam, $examSubject);
         } elseif ($type === 'print-filled') {
             return $this->printFilled($school, $exam, $examSubject);
         }
-        
+
         abort(404);
-    }
-
-    public function calculateResults(School $school, Exam $exam)
-    {
-        DB::beginTransaction();
-        try {
-            $students = Student::forSchool($school->id)
-                ->where('class_id', $exam->class_id)
-                ->where('status', 'active')
-                ->get();
-
-            foreach ($students as $student) {
-                $this->calculateStudentResult($exam, $student);
-            }
-            DB::commit();
-            return redirect()
-                ->route('principal.institute.results.marksheet', ['school' => $school, 'exam_id' => $exam->id])
-                ->with('success', 'ফলাফল সফলভাবে হিসাব করা হয়েছে');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'ফলাফল হিসাবে সমস্যা হয়েছে: ' . $e->getMessage());
-        }
-    }
-
-    private function calculateStudentResult($exam, $student)
-    {
-        $marks = Mark::forExam($exam->id)->forStudent($student->id)->get();
-        $totalMarks = 0;
-        $totalPossibleMarks = 0;
-        $failedCount = 0;
-        $absentCount = 0;
-        $gradePoints = [];
-
-        foreach ($marks as $mark) {
-            if ($mark->is_absent) {
-                $absentCount++;
-                continue;
-            }
-            if ($mark->pass_status === 'fail') {
-                $failedCount++;
-            }
-            $totalMarks += $mark->total_marks ?? 0;
-            $totalPossibleMarks += $mark->examSubject->total_full_mark;
-            if ($mark->pass_status === 'pass') {
-                $gradePoints[] = $mark->grade_point;
-            }
-        }
-
-        $gpa = null;
-        $letterGrade = null;
-        $resultStatus = 'incomplete';
-
-        if ($absentCount > 0 || $failedCount > 0) {
-            $resultStatus = 'fail'; $letterGrade = 'F'; $gpa = 0.00;
-        } elseif (count($gradePoints) > 0) {
-            $gpa = round(array_sum($gradePoints) / count($gradePoints), 2);
-            $resultStatus = 'pass';
-            if ($gpa >= 5.00) $letterGrade = 'A+';
-            elseif ($gpa >= 4.00) $letterGrade = 'A';
-            elseif ($gpa >= 3.50) $letterGrade = 'A-';
-            elseif ($gpa >= 3.00) $letterGrade = 'B';
-            elseif ($gpa >= 2.00) $letterGrade = 'C';
-            else $letterGrade = 'D';
-        }
-
-        $percentage = $totalPossibleMarks > 0 ? ($totalMarks / $totalPossibleMarks) * 100 : 0;
-
-        \App\Models\Result::updateOrCreate(
-            ['exam_id' => $exam->id, 'student_id' => $student->id],
-            [
-                'class_id' => $exam->class_id,
-                'section_id' => $student->section_id ?? null,
-                'total_marks' => $totalMarks,
-                'total_possible_marks' => $totalPossibleMarks,
-                'percentage' => round($percentage, 2),
-                'gpa' => $gpa,
-                'letter_grade' => $letterGrade,
-                'result_status' => $resultStatus,
-                'failed_subjects_count' => $failedCount,
-                'absent_subjects_count' => $absentCount,
-            ]
-        );
     }
 }

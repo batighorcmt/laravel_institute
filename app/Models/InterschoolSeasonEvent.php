@@ -25,6 +25,8 @@ class InterschoolSeasonEvent extends Model
 
     public function players()
     {
-        return $this->hasMany(InterschoolPlayer::class, 'interschool_season_event_id');
+        return $this->hasMany(InterschoolPlayer::class, 'interschool_season_event_id')
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 }

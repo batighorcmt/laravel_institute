@@ -207,6 +207,8 @@ class InterschoolController extends Controller
     {
         return InterschoolPlayer::where('interschool_season_event_id', $seasonEvent)
             ->with(['student.currentEnrollment.class', 'student.currentEnrollment.section'])
+            ->orderBy('sort_order')
+            ->orderBy('id')
             ->get();
     }
 
@@ -221,6 +223,8 @@ class InterschoolController extends Controller
             'attendance_days' => 'nullable|string',
         ]);
 
+        $nextSortOrder = (int) InterschoolPlayer::where('interschool_season_event_id', $seasonEvent)->max('sort_order') + 1;
+
         $player = InterschoolPlayer::create([
             'interschool_season_event_id' => $seasonEvent,
             'student_id' => $request->student_id,
@@ -229,6 +233,7 @@ class InterschoolController extends Controller
             'weight' => $request->weight,
             'is_captain' => $request->is_captain ?? false,
             'attendance_days' => $request->attendance_days,
+            'sort_order' => $nextSortOrder,
         ]);
 
         return response()->json($player->load(['student.currentEnrollment.class', 'student.currentEnrollment.section']));
@@ -236,17 +241,103 @@ class InterschoolController extends Controller
 
     public function updatePlayer(Request $request, $school, $seasonEvent, $player)
     {
-        $playerModel = InterschoolPlayer::findOrFail($player);
-        $playerModel->update($request->only(['group_name', 'height', 'weight', 'is_captain', 'attendance_days']));
+        $validated = $request->validate([
+            'group_name' => 'nullable|string|max:255',
+            'height' => 'nullable|string|max:255',
+            'weight' => 'nullable|string|max:255',
+            'is_captain' => 'boolean',
+            'attendance_days' => 'nullable|string',
+            'sort_order' => 'nullable|integer|min:1',
+        ]);
 
-        return response()->json($playerModel->load(['student.currentEnrollment.class', 'student.currentEnrollment.section']));
+        $playerModel = $this->findSeasonEventPlayer((int) $seasonEvent, (int) $player);
+
+        $sortOrder = $validated['sort_order'] ?? null;
+        unset($validated['sort_order']);
+
+        $playerModel->update($validated);
+
+        if ($sortOrder !== null) {
+            $this->repositionPlayer($playerModel, $sortOrder);
+        }
+
+        return response()->json(
+            $playerModel->fresh()->load(['student.currentEnrollment.class', 'student.currentEnrollment.section'])
+        );
+    }
+
+    public function reorderPlayers(Request $request, $school, $seasonEvent)
+    {
+        $data = $request->validate([
+            'order' => ['required', 'array'],
+            'order.*' => ['integer'],
+        ]);
+
+        $eventId = (int) $seasonEvent;
+        $validIds = InterschoolPlayer::where('interschool_season_event_id', $eventId)
+            ->pluck('id')
+            ->all();
+
+        $orderedIds = array_map('intval', $data['order']);
+
+        if (count($orderedIds) !== count($validIds) || array_diff($orderedIds, $validIds) !== []) {
+            return response()->json(['message' => 'অবৈধ ক্রম'], 422);
+        }
+
+        $position = 1;
+        foreach ($orderedIds as $id) {
+            InterschoolPlayer::where('interschool_season_event_id', $eventId)
+                ->where('id', $id)
+                ->update(['sort_order' => $position++]);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     public function deletePlayer($school, $seasonEvent, $player)
     {
-        InterschoolPlayer::findOrFail($player)->delete();
+        $playerModel = $this->findSeasonEventPlayer((int) $seasonEvent, (int) $player);
+        $eventId = $playerModel->interschool_season_event_id;
+        $playerModel->delete();
+
+        $this->normalizeSortOrder($eventId);
 
         return response()->json(['success' => true]);
+    }
+
+    private function findSeasonEventPlayer(int $seasonEventId, int $playerId): InterschoolPlayer
+    {
+        return InterschoolPlayer::where('interschool_season_event_id', $seasonEventId)
+            ->findOrFail($playerId);
+    }
+
+    private function repositionPlayer(InterschoolPlayer $player, int $newPosition): void
+    {
+        $players = InterschoolPlayer::where('interschool_season_event_id', $player->interschool_season_event_id)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $newPosition = max(1, min($newPosition, $players->count()));
+
+        $ordered = $players->filter(fn (InterschoolPlayer $p) => $p->id !== $player->id)->values();
+        $ordered->splice($newPosition - 1, 0, [$player->fresh()]);
+
+        foreach ($ordered as $index => $orderedPlayer) {
+            $orderedPlayer->update(['sort_order' => $index + 1]);
+        }
+    }
+
+    private function normalizeSortOrder(int $seasonEventId): void
+    {
+        $players = InterschoolPlayer::where('interschool_season_event_id', $seasonEventId)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($players as $index => $player) {
+            $player->update(['sort_order' => $index + 1]);
+        }
     }
 
     public function getClasses($school)

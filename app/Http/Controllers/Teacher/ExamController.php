@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Teacher;
 use App\Http\Controllers\Controller;
 use App\Models\Exam;
 use App\Models\ExamRoomInvigilation;
-use App\Models\ExamRoomAttendance;
 use App\Models\School;
 use App\Models\SeatPlan;
 use App\Models\SeatPlanAllocation;
+use App\Services\ExamResultSyncService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,8 +29,8 @@ class ExamController extends Controller
      */
     public function todaysDuty(Request $request, $school)
     {
-        $today    = now()->toDateString();
-        $user     = Auth::user();
+        $today = now()->toDateString();
+        $user = Auth::user();
 
         // Invigilations assigned to this teacher for today
         $duties = ExamRoomInvigilation::with(['exam', 'room'])
@@ -38,7 +38,7 @@ class ExamController extends Controller
             ->where('user_id', $user->id)
             ->whereHas('exam', function ($q) use ($today) {
                 $q->whereDate('start_date', '<=', $today)
-                  ->whereDate('end_date', '>=', $today);
+                    ->whereDate('end_date', '>=', $today);
             })
             ->get();
 
@@ -145,7 +145,7 @@ class ExamController extends Controller
         $user = Auth::user();
         $exam = Exam::find($request->exam_id);
 
-        if (!$exam) {
+        if (! $exam) {
             return response()->json([]);
         }
 
@@ -178,9 +178,9 @@ class ExamController extends Controller
             ->where('subject_id', $subject->id)
             ->first();
 
-        if (!$exam || !$subject || !$examSubject) {
+        if (! $exam || ! $subject || ! $examSubject) {
             return response()->view('teacher.exams.partials.marks-form-error', [
-                'message' => 'পরীক্ষা বা বিষয় খুঁজে পাওয়া যায়নি।'
+                'message' => 'পরীক্ষা বা বিষয় খুঁজে পাওয়া যায়নি।',
             ]);
         }
 
@@ -189,10 +189,10 @@ class ExamController extends Controller
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $classId)
             ->where('status', 'active')
-            ->whereHas('student', function($query) {
+            ->whereHas('student', function ($query) {
                 $query->where('status', 'active');
             })
-            ->whereHas('subjects', function($query) use ($subject) {
+            ->whereHas('subjects', function ($query) use ($subject) {
                 $query->where('subject_id', $subject->id);
             })
             ->with(['student', 'section'])
@@ -201,11 +201,11 @@ class ExamController extends Controller
 
         // Determine if marks can be entered (Check status and deadline)
         $now = now();
-        $canEnter = $exam->status === 'active' && 
-                    (!$examSubject->mark_entry_deadline || $now->lt($examSubject->mark_entry_deadline));
-        
+        $canEnter = $exam->status === 'active' &&
+                    (! $examSubject->mark_entry_deadline || $now->lt($examSubject->mark_entry_deadline));
+
         $isCompleted = $exam->status === 'completed';
-        $isOverdue = $exam->status === 'active' && 
+        $isOverdue = $exam->status === 'active' &&
                      ($examSubject->mark_entry_deadline && $now->gt($examSubject->mark_entry_deadline));
 
         // Get existing marks for this subject and exam
@@ -248,9 +248,9 @@ class ExamController extends Controller
 
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
-            'creative_marks' => 'nullable|numeric|min:0|max:' . $examSubject->creative_full_mark,
-            'mcq_marks' => 'nullable|numeric|min:0|max:' . $examSubject->mcq_full_mark,
-            'practical_marks' => 'nullable|numeric|min:0|max:' . $examSubject->practical_full_mark,
+            'creative_marks' => 'nullable|numeric|min:0|max:'.$examSubject->creative_full_mark,
+            'mcq_marks' => 'nullable|numeric|min:0|max:'.$examSubject->mcq_full_mark,
+            'practical_marks' => 'nullable|numeric|min:0|max:'.$examSubject->practical_full_mark,
             'is_absent' => 'nullable|boolean',
         ]);
 
@@ -258,7 +258,7 @@ class ExamController extends Controller
 
         // Calculate total marks
         $totalMarks = 0;
-        if (!$isAbsent) {
+        if (! $isAbsent) {
             $totalMarks = ($validated['creative_marks'] ?? 0) +
                           ($validated['mcq_marks'] ?? 0) +
                           ($validated['practical_marks'] ?? 0);
@@ -268,7 +268,7 @@ class ExamController extends Controller
         $gradeInfo = $this->calculateGrade($totalMarks, $examSubject, $validated, $isAbsent);
 
         // Save or update mark
-        $mark = \App\Models\Mark::updateOrCreate(
+        \App\Models\Mark::updateOrCreate(
             [
                 'exam_id' => $exam->id,
                 'exam_subject_id' => $examSubject->id,
@@ -290,11 +290,14 @@ class ExamController extends Controller
             ]
         );
 
+        $schoolModel = School::findOrFail($exam->school_id);
+        app(ExamResultSyncService::class)->syncAfterMarkSaved($schoolModel, $exam);
+
         return response()->json([
             'success' => true,
             'message' => 'নম্বর সংরক্ষিত হয়েছে',
             'total_marks' => $isAbsent ? '0.00' : number_format($totalMarks, 2),
-            'letter_grade' => $gradeInfo['letter_grade']
+            'letter_grade' => $gradeInfo['letter_grade'],
         ]);
     }
 
@@ -303,7 +306,7 @@ class ExamController extends Controller
      */
     public function storeMarks(Request $request, $school)
     {
-        // This method can be kept for bulk submission if needed, 
+        // This method can be kept for bulk submission if needed,
         // but the new system primarily uses saveMark for individual entry.
         // For now, let's keep it minimal or redirect to a success message
         return redirect()->back()->with('success', 'নম্বর সফলভাবে সংরক্ষিত হয়েছে।');
@@ -334,7 +337,7 @@ class ExamController extends Controller
             $isPassed = $totalMarks >= $examSubject->total_pass_mark;
         }
 
-        if (!$isPassed) {
+        if (! $isPassed) {
             return [
                 'letter_grade' => 'F',
                 'grade_point' => 0.00,
@@ -373,7 +376,7 @@ class ExamController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
-        $plan_id = (int)$request->get('plan_id');
+        $plan_id = (int) $request->get('plan_id');
         $find = trim($request->get('find', ''));
         $results = [];
 
@@ -383,15 +386,15 @@ class ExamController extends Controller
 
             if (is_numeric($find)) {
                 $query->whereHas('student', function ($q) use ($find) {
-                    $q->where('student_id', 'like', $find . '%')
-                      ->orWhereHas('currentEnrollment', function($qc) use ($find) {
-                          $qc->where('roll_no', 'like', $find . '%');
-                      });
+                    $q->where('student_id', 'like', $find.'%')
+                        ->orWhereHas('currentEnrollment', function ($qc) use ($find) {
+                            $qc->where('roll_no', 'like', $find.'%');
+                        });
                 });
             } else {
                 $query->whereHas('student', function ($q) use ($find) {
-                    $q->where('student_name_en', 'like', '%' . $find . '%')
-                      ->orWhere('student_name_bn', 'like', '%' . $find . '%');
+                    $q->where('student_name_en', 'like', '%'.$find.'%')
+                        ->orWhere('student_name_bn', 'like', '%'.$find.'%');
                 });
             }
 
@@ -442,7 +445,7 @@ class ExamController extends Controller
         $this->authorizeExamController($school->id);
 
         $date = $request->get('date', date('Y-m-d'));
-        $plan_id = (int)$request->get('plan_id');
+        $plan_id = (int) $request->get('plan_id');
 
         $plans = SeatPlan::where('school_id', $school->id)->active()->orderBy('id', 'desc')->get();
         if ($plan_id === 0 && $plans->isNotEmpty()) {
@@ -461,7 +464,7 @@ class ExamController extends Controller
                 ->toArray();
 
             // Cast all values to plain 'Y-m-d' strings (MySQL DATE columns can return Carbon or string)
-            $dateOptions = array_values(array_unique(array_map(fn($d) => is_string($d) ? substr($d, 0, 10) : date('Y-m-d', strtotime($d)), $rawDates)));
+            $dateOptions = array_values(array_unique(array_map(fn ($d) => is_string($d) ? substr($d, 0, 10) : date('Y-m-d', strtotime($d)), $rawDates)));
 
             // Fallback: if no attendance recorded yet, show exam subject dates so UI is not blank
             if (empty($dateOptions)) {
@@ -473,16 +476,16 @@ class ExamController extends Controller
                     ->orderBy('exam_subjects.exam_date', 'asc')
                     ->pluck('exam_subjects.exam_date')
                     ->toArray();
-                $dateOptions = array_values(array_unique(array_map(fn($d) => is_string($d) ? substr($d, 0, 10) : date('Y-m-d', strtotime($d)), $rawDates2)));
+                $dateOptions = array_values(array_unique(array_map(fn ($d) => is_string($d) ? substr($d, 0, 10) : date('Y-m-d', strtotime($d)), $rawDates2)));
             }
         }
 
         // Normalize the request date to 'Y-m-d'
-        $date = substr((string)$date, 0, 10);
+        $date = substr((string) $date, 0, 10);
 
         if (empty($dateOptions)) {
             $date = '1970-01-01';
-        } elseif (!in_array($date, $dateOptions, true)) {
+        } elseif (! in_array($date, $dateOptions, true)) {
             $date = $dateOptions[0];
         }
 
@@ -497,20 +500,20 @@ class ExamController extends Controller
         $rows = [];
         if ($plan_id > 0 && $date !== '1970-01-01') {
             $rows = DB::table('exam_room_attendances as a')
-                ->join('seat_plan_rooms as r', function($join) {
+                ->join('seat_plan_rooms as r', function ($join) {
                     $join->on('r.id', '=', 'a.room_id')
-                         ->on('r.seat_plan_id', '=', 'a.plan_id');
+                        ->on('r.seat_plan_id', '=', 'a.plan_id');
                 })
-                ->leftJoin('exam_room_invigilations as i', function($join) use ($date, $plan_id) {
+                ->leftJoin('exam_room_invigilations as i', function ($join) use ($date, $plan_id) {
                     $join->on('i.seat_plan_room_id', '=', 'a.room_id')
-                         ->where('i.duty_date', '=', $date)
-                         ->where('i.seat_plan_id', '=', $plan_id);
+                        ->where('i.duty_date', '=', $date)
+                        ->where('i.seat_plan_id', '=', $plan_id);
                 })
                 ->leftJoin('users as u', 'u.id', '=', 'i.teacher_id')
                 ->leftJoin('students as s', 's.id', '=', 'a.student_id')
-                ->leftJoin('student_enrollments as se', function($join) {
+                ->leftJoin('student_enrollments as se', function ($join) {
                     $join->on('se.student_id', '=', 's.id')
-                         ->where('se.status', '=', 'active');
+                        ->where('se.status', '=', 'active');
                 })
                 ->leftJoin('classes as c', 'c.id', '=', 'se.class_id')
                 ->where('a.duty_date', $date)
@@ -521,7 +524,7 @@ class ExamController extends Controller
                     'u.username as marker_username',
                     'u.name as marker_name',
                     DB::raw("SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END) AS present_cnt"),
-                    DB::raw("SUM(CASE WHEN a.status='absent' THEN 1 ELSE 0 END) AS absent_cnt")
+                    DB::raw("SUM(CASE WHEN a.status='absent' THEN 1 ELSE 0 END) AS absent_cnt"),
                 ])
                 ->groupBy('r.room_no', 'class_name', 'marker_username', 'marker_name')
                 ->orderBy('r.room_no')
@@ -540,7 +543,7 @@ class ExamController extends Controller
         $school = School::findOrFail($school);
         $this->authorizeExamController($school->id);
 
-        $plan_id = (int)$request->get('plan_id');
+        $plan_id = (int) $request->get('plan_id');
 
         $plans = SeatPlan::where('school_id', $school->id)->active()->orderBy('id', 'desc')->get();
         if ($plan_id === 0 && $plans->isNotEmpty()) {
@@ -569,21 +572,21 @@ class ExamController extends Controller
 
             $summaryData = DB::table('exam_room_attendances')
                 ->where('plan_id', $plan_id)
-                ->select('duty_date', 
+                ->select('duty_date',
                     DB::raw("SUM(CASE WHEN status='present' THEN 1 ELSE 0 END) AS p"),
                     DB::raw("SUM(CASE WHEN status='absent' THEN 1 ELSE 0 END) AS a"))
                 ->groupBy('duty_date')
                 ->get();
 
             foreach ($summaryData as $s) {
-                $summary[$s->duty_date] = ['p' => (int)$s->p, 'a' => (int)$s->a];
+                $summary[$s->duty_date] = ['p' => (int) $s->p, 'a' => (int) $s->a];
             }
 
             $matrixData = DB::table('exam_room_attendances as a')
                 ->leftJoin('students as s', 's.id', '=', 'a.student_id')
-                ->leftJoin('student_enrollments as se', function($join) {
+                ->leftJoin('student_enrollments as se', function ($join) {
                     $join->on('se.student_id', '=', 's.id')
-                         ->where('se.status', '=', 'active');
+                        ->where('se.status', '=', 'active');
                 })
                 ->leftJoin('classes as c', 'c.id', '=', 'se.class_id')
                 ->where('a.plan_id', $plan_id)
@@ -592,18 +595,22 @@ class ExamController extends Controller
                     'a.room_id',
                     'c.name as class_name',
                     DB::raw("SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END) AS p"),
-                    DB::raw("SUM(CASE WHEN a.status='absent' THEN 1 ELSE 0 END) AS a")
+                    DB::raw("SUM(CASE WHEN a.status='absent' THEN 1 ELSE 0 END) AS a"),
                 ])
                 ->groupBy('a.duty_date', 'a.room_id', 'class_name')
                 ->get();
 
             foreach ($matrixData as $m) {
                 $d = $m->duty_date;
-                $rid = (int)$m->room_id;
+                $rid = (int) $m->room_id;
                 $cls = $m->class_name ?: '-';
-                if (!isset($matrix[$d])) $matrix[$d] = [];
-                if (!isset($matrix[$d][$cls])) $matrix[$d][$cls] = [];
-                $matrix[$d][$cls][$rid] = ['p' => (int)$m->p, 'a' => (int)$m->a];
+                if (! isset($matrix[$d])) {
+                    $matrix[$d] = [];
+                }
+                if (! isset($matrix[$d][$cls])) {
+                    $matrix[$d][$cls] = [];
+                }
+                $matrix[$d][$cls][$rid] = ['p' => (int) $m->p, 'a' => (int) $m->a];
             }
         }
 
@@ -615,7 +622,7 @@ class ExamController extends Controller
     private function authorizeExamController($schoolId): void
     {
         $user = Auth::user();
-        if (!$user->isPrincipal((int)$schoolId) && !$user->isExamController((int)$schoolId) && !$user->isSuperAdmin()) {
+        if (! $user->isPrincipal((int) $schoolId) && ! $user->isExamController((int) $schoolId) && ! $user->isSuperAdmin()) {
             abort(403, 'এই পাতায় প্রবেশের অধিকার নেই। শুধুমাত্র প্রিন্সিপাল বা পরীক্ষা নিয়ন্ত্রকগণ এটি ব্যবহার করতে পারবেন।');
         }
     }

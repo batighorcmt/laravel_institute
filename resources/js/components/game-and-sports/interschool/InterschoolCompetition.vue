@@ -61,6 +61,87 @@
         </div>
       </div>
       <div class="card-body">
+        <!-- Season summary dashboard -->
+        <div v-if="seasonEvents.length > 0" class="mb-4">
+          <h5 class="mb-3 text-muted">
+            <i class="fas fa-chart-pie mr-1"></i> সিজন সারাংশ — {{ selectedSeason?.name }}
+          </h5>
+          <div class="row">
+            <div class="col-lg-3 col-md-6 col-6 mb-3">
+              <div class="small-box bg-info">
+                <div class="inner">
+                  <h3>{{ seasonStats.totalEvents }}</h3>
+                  <p>মোট ইভেন্ট</p>
+                </div>
+                <div class="icon"><i class="fas fa-flag-checkered"></i></div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-6 mb-3">
+              <div class="small-box bg-success">
+                <div class="inner">
+                  <h3>{{ seasonStats.totalPlayers }}</h3>
+                  <p>মোট খেলোয়াড়</p>
+                </div>
+                <div class="icon"><i class="fas fa-running"></i></div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-6 mb-3">
+              <div class="small-box bg-primary">
+                <div class="inner">
+                  <h3>{{ seasonStats.teamEvents }}</h3>
+                  <p>দলীয় ইভেন্ট</p>
+                </div>
+                <div class="icon"><i class="fas fa-users"></i></div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-6 mb-3">
+              <div class="small-box bg-warning">
+                <div class="inner text-dark">
+                  <h3>{{ seasonStats.singleEvents }}</h3>
+                  <p>একক ইভেন্ট</p>
+                </div>
+                <div class="icon"><i class="fas fa-user"></i></div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-6 mb-3">
+              <div class="small-box bg-teal">
+                <div class="inner">
+                  <h3>{{ seasonStats.eventsWithPlayers }}</h3>
+                  <p>খেলোয়াড়যুক্ত ইভেন্ট</p>
+                </div>
+                <div class="icon"><i class="fas fa-check-circle"></i></div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-6 mb-3">
+              <div class="small-box bg-secondary">
+                <div class="inner">
+                  <h3>{{ seasonStats.emptyEvents }}</h3>
+                  <p>খেলোয়াড়বিহীন ইভেন্ট</p>
+                </div>
+                <div class="icon"><i class="fas fa-exclamation-circle"></i></div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-6 mb-3">
+              <div class="small-box bg-indigo">
+                <div class="inner">
+                  <h3>{{ seasonStats.avgPlayersPerEvent }}</h3>
+                  <p>গড় খেলোয়াড় / ইভেন্ট</p>
+                </div>
+                <div class="icon"><i class="fas fa-calculator"></i></div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-6 mb-3">
+              <div class="small-box bg-danger">
+                <div class="inner">
+                  <h3>{{ seasonStats.maxPlayersInEvent }}</h3>
+                  <p>সর্বোচ্চ খেলোয়াড় (এক ইভেন্টে)</p>
+                </div>
+                <div class="icon"><i class="fas fa-trophy"></i></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="table-responsive">
           <table class="table table-bordered table-striped table-hover">
             <thead>
@@ -111,6 +192,7 @@
             </tbody>
           </table>
         </div>
+
       </div>
     </div>
 
@@ -132,24 +214,53 @@
         </div>
       </div>
       <div class="card-body">
+        <p v-if="selectedSeasonEvent?.event?.type === 'team' && players.length > 1" class="text-muted small mb-2">
+          <i class="fas fa-info-circle"></i> দলীয় খেলায় খেলোয়াড়ের ক্রমিক পরিবর্তন করতে সারি টেনে আনুন অথবা সম্পাদনা বাটনে ক্রমিক নম্বর দিন।
+        </p>
         <div class="table-responsive">
-          <table class="table table-bordered table-striped">
+          <table class="table table-bordered table-striped" id="interschool-players-table">
             <thead>
               <tr>
-                <th>নাম ও আইডি</th>
+                <th v-if="selectedSeasonEvent?.event?.type === 'team'" style="width:40px"></th>
+                <th style="width:70px">ক্রমিক</th>
+                <th>নাম ও অভিভাবক</th>
                 <th>শ্রেণি ও রোল</th>
                 <th>গ্রুপ</th>
                 <th>উচ্চতা/ওজন</th>
+                <th>উপস্থিতি</th>
                 <th>অধিনায়ক?</th>
                 <th>প্রিন্ট</th>
                 <th>অ্যাকশন</th>
               </tr>
             </thead>
-            <tbody>
-              <tr v-for="player in players" :key="player.id">
+            <tbody ref="playersTableBody">
+              <tr
+                v-for="(player, index) in players"
+                :key="player.id"
+                :data-id="player.id"
+                :draggable="selectedSeasonEvent?.event?.type === 'team'"
+                @dragstart="onPlayerDragStart"
+                @dragend="onPlayerDragEnd"
+                @dragover.prevent="onPlayerDragOver"
+              >
+                <td v-if="selectedSeasonEvent?.event?.type === 'team'" class="drag-handle text-center" style="cursor:move">
+                  <i class="fas fa-grip-vertical text-muted"></i>
+                </td>
+                <td class="text-center">
+                  <span class="badge badge-light">{{ player.sort_order || (index + 1) }}</span>
+                  <div v-if="selectedSeasonEvent?.event?.type === 'team'" class="btn-group-vertical btn-group-sm mt-1 d-flex">
+                    <button type="button" class="btn btn-default btn-xs py-0" :disabled="index === 0" @click="movePlayerUp(index)" title="উপরে">
+                      <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <button type="button" class="btn btn-default btn-xs py-0" :disabled="index === players.length - 1" @click="movePlayerDown(index)" title="নিচে">
+                      <i class="fas fa-chevron-down"></i>
+                    </button>
+                  </div>
+                </td>
                 <td>
-                  {{ player.student?.student_name_bn || player.student?.student_name_en }}<br>
-                  <small class="text-muted">{{ player.student?.student_id }}</small>
+                  <strong>{{ studentDisplayName(player.student) }}</strong><br>
+                  <small>পিতা: {{ studentFatherName(player.student) }}</small><br>
+                  <small>মাতা: {{ studentMotherName(player.student) }}</small>
                 </td>
                 <td>
                   {{ player.student?.current_enrollment?.class?.name || '-' }}<br>
@@ -159,7 +270,9 @@
                 <td>
                   <span v-if="player.height">উ: {{ player.height }}</span><br v-if="player.height">
                   <span v-if="player.weight">ও: {{ player.weight }}</span>
+                  <span v-if="!player.height && !player.weight" class="text-muted">-</span>
                 </td>
+                <td>{{ player.attendance_days || '-' }}</td>
                 <td>
                   <span v-if="player.is_captain" class="badge badge-success">হ্যাঁ</span>
                   <span v-else class="badge badge-secondary">না</span>
@@ -175,18 +288,26 @@
                   <a :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/ga?season_event_id=' + selectedSeasonEvent.id + '&player_id=' + player.id" class="btn btn-xs btn-outline-primary mb-1 d-block" target="_blank">পরিশিষ্ট-গ</a>
                   <a :href="'/principal/institute/' + schoolId + '/game-and-sports/interschool/appendix/gha?season_event_id=' + selectedSeasonEvent.id + '&player_id=' + player.id" class="btn btn-xs btn-outline-primary d-block" target="_blank">পরিশিষ্ট-ঘ</a>
                 </td>
-                <td>
+                <td class="text-nowrap">
+                  <button class="btn btn-primary btn-sm mr-1" @click="showEditPlayerModal(player)" title="সম্পাদনা">
+                    <i class="fas fa-edit"></i>
+                  </button>
                   <button class="btn btn-danger btn-sm" @click="deletePlayer(player.id)">
                     <i class="fas fa-trash"></i>
                   </button>
                 </td>
               </tr>
               <tr v-if="players.length === 0">
-                <td colspan="7" class="text-center text-muted">কোন খেলোয়াড় পাওয়া যায়নি</td>
+                <td :colspan="selectedSeasonEvent?.event?.type === 'team' ? 10 : 9" class="text-center text-muted">কোন খেলোয়াড় পাওয়া যায়নি</td>
               </tr>
             </tbody>
           </table>
         </div>
+      </div>
+      <div v-if="selectedSeasonEvent?.event?.type === 'team' && players.length > 1" class="card-footer text-right">
+        <button class="btn btn-primary btn-sm" @click="savePlayerOrder" :disabled="loading">
+          <i class="fas fa-save"></i> ক্রম সংরক্ষণ
+        </button>
       </div>
     </div>
 
@@ -361,7 +482,73 @@
       </div>
     </div>
 
-    <!-- (Removed Appendix Ka Modal) -->
+    <!-- Edit Player Modal -->
+    <div class="modal fade" id="editPlayerModal" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">খেলোয়াড়ের তথ্য সম্পাদনা</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-light py-2" v-if="editingPlayer.student">
+              <strong>{{ studentDisplayName(editingPlayer.student) }}</strong><br>
+              <small>পিতা: {{ studentFatherName(editingPlayer.student) }} | মাতা: {{ studentMotherName(editingPlayer.student) }}</small>
+            </div>
+            <div class="row">
+              <div class="col-md-6" v-if="selectedSeasonEvent?.event?.type === 'team'">
+                <div class="form-group">
+                  <label>ক্রমিক নম্বর</label>
+                  <input type="number" class="form-control" v-model.number="editingPlayer.sort_order" min="1" :max="players.length">
+                  <small class="text-muted">যেমন: ৩ থেকে ৭ এ পরিবর্তন করতে ৭ লিখুন</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label>গ্রুপের নাম</label>
+                  <input type="text" class="form-control" v-model="editingPlayer.group_name" placeholder="যেমন: বড় বালক">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label>উচ্চতা</label>
+                  <input type="text" class="form-control" v-model="editingPlayer.height" placeholder="যেমন: ৫ ফুট ৬ ইঞ্চি">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label>ওজন</label>
+                  <input type="text" class="form-control" v-model="editingPlayer.weight" placeholder="যেমন: ৫০ কেজি">
+                </div>
+              </div>
+              <div class="col-md-6" v-if="selectedSeasonEvent?.event?.type === 'team'">
+                <div class="form-group">
+                  <label>অধিনায়ক?</label>
+                  <select class="form-control" v-model="editingPlayer.is_captain">
+                    <option :value="false">না</option>
+                    <option :value="true">হ্যাঁ</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label>উপস্থিতির দিন</label>
+                  <input type="text" class="form-control" v-model="editingPlayer.attendance_days" placeholder="যেমন: ১২৮">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">বাতিল</button>
+            <button type="button" class="btn btn-primary" @click="updatePlayer" :disabled="loading">
+              <span v-if="loading" class="spinner-border spinner-border-sm"></span> আপডেট করুন
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 </template>
@@ -414,12 +601,47 @@ export default {
         weight: '',
         is_captain: false,
         attendance_days: ''
-      }
+      },
+      editingPlayer: {
+        id: null,
+        sort_order: 1,
+        group_name: '',
+        height: '',
+        weight: '',
+        is_captain: false,
+        attendance_days: '',
+        student: null
+      },
+      draggingPlayerEl: null
     };
   },
   computed: {
     hasSingleEvents() {
       return this.seasonEvents.some(se => se.event?.type === 'single');
+    },
+    seasonStats() {
+      const events = this.seasonEvents || [];
+      const totalEvents = events.length;
+      const totalPlayers = events.reduce((sum, se) => sum + (se.players_count || 0), 0);
+      const teamEvents = events.filter(se => se.event?.type === 'team').length;
+      const singleEvents = events.filter(se => se.event?.type === 'single').length;
+      const eventsWithPlayers = events.filter(se => (se.players_count || 0) > 0).length;
+      const emptyEvents = totalEvents - eventsWithPlayers;
+      const maxPlayersInEvent = events.reduce((max, se) => Math.max(max, se.players_count || 0), 0);
+      const avgPlayersPerEvent = totalEvents > 0
+        ? (totalPlayers / totalEvents).toFixed(1)
+        : '0';
+
+      return {
+        totalEvents,
+        totalPlayers,
+        teamEvents,
+        singleEvents,
+        eventsWithPlayers,
+        emptyEvents,
+        maxPlayersInEvent,
+        avgPlayersPerEvent
+      };
     }
   },
   watch: {
@@ -440,6 +662,18 @@ export default {
     this.fetchClasses();
   },
   methods: {
+    studentDisplayName(student) {
+      if (!student) return '-';
+      return student.student_name_bn || student.student_name_en || '-';
+    },
+    studentFatherName(student) {
+      if (!student) return '-';
+      return student.father_name_bn || student.father_name || '-';
+    },
+    studentMotherName(student) {
+      if (!student) return '-';
+      return student.mother_name_bn || student.mother_name || '-';
+    },
     fetchClasses() {
       axios.get(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/classes`)
         .then(res => this.classes = res.data);
@@ -549,7 +783,9 @@ export default {
     // --- Players ---
     fetchPlayers() {
       axios.get(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/season-events/${this.selectedSeasonEvent.id}/players`)
-        .then(res => this.players = res.data);
+        .then(res => {
+          this.players = res.data;
+        });
     },
     showAddPlayerModal() {
       this.searchParams = { class_id: '', section_id: '' };
@@ -616,12 +852,123 @@ export default {
         axios.delete(`/principal/institute/${this.schoolId}/game-and-sports/interschool/api/season-events/${this.selectedSeasonEvent.id}/players/${id}`)
           .then(() => {
             this.players = this.players.filter(p => p.id !== id);
+            this.players.forEach((p, i) => { p.sort_order = i + 1; });
             toastr.success('ডিলিট হয়েছে');
           });
       }
     },
-    // --- Prints ---
-    // (Modal methods removed)
+    showEditPlayerModal(player) {
+      this.editingPlayer = {
+        id: player.id,
+        sort_order: player.sort_order || 1,
+        group_name: player.group_name || '',
+        height: player.height || '',
+        weight: player.weight || '',
+        is_captain: !!player.is_captain,
+        attendance_days: player.attendance_days || '',
+        student: player.student
+      };
+      $('#editPlayerModal').modal('show');
+    },
+    updatePlayer() {
+      if (!this.editingPlayer.id) return;
+      this.loading = true;
+      const payload = {
+        group_name: this.editingPlayer.group_name,
+        height: this.editingPlayer.height,
+        weight: this.editingPlayer.weight,
+        is_captain: this.editingPlayer.is_captain,
+        attendance_days: this.editingPlayer.attendance_days
+      };
+      if (this.selectedSeasonEvent?.event?.type === 'team') {
+        payload.sort_order = this.editingPlayer.sort_order;
+      }
+      axios.put(
+        `/principal/institute/${this.schoolId}/game-and-sports/interschool/api/season-events/${this.selectedSeasonEvent.id}/players/${this.editingPlayer.id}`,
+        payload
+      )
+        .then(res => {
+          this.fetchPlayers();
+          $('#editPlayerModal').modal('hide');
+          toastr.success('খেলোয়াড়ের তথ্য আপডেট হয়েছে');
+        })
+        .catch(err => {
+          const msg = err.response?.data?.message || 'সমস্যা হয়েছে';
+          toastr.error(msg);
+        })
+        .finally(() => this.loading = false);
+    },
+    movePlayerUp(index) {
+      if (index <= 0) return;
+      const updated = [...this.players];
+      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+      this.players = updated;
+      this.persistPlayerOrder();
+    },
+    movePlayerDown(index) {
+      if (index >= this.players.length - 1) return;
+      const updated = [...this.players];
+      [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+      this.players = updated;
+      this.persistPlayerOrder();
+    },
+    savePlayerOrder() {
+      this.persistPlayerOrder(true);
+    },
+    persistPlayerOrder(showToast = false) {
+      const order = this.players.map(p => p.id);
+      axios.patch(
+        `/principal/institute/${this.schoolId}/game-and-sports/interschool/api/season-events/${this.selectedSeasonEvent.id}/players/reorder`,
+        { order }
+      )
+        .then(() => {
+          this.players.forEach((p, i) => { p.sort_order = i + 1; });
+          if (showToast) toastr.success('ক্রম সংরক্ষণ হয়েছে');
+        })
+        .catch(() => {
+          toastr.error('ক্রম সংরক্ষণ ব্যর্থ');
+          this.fetchPlayers();
+        });
+    },
+    onPlayerDragStart(e) {
+      this.draggingPlayerEl = e.currentTarget;
+      e.currentTarget.classList.add('table-active');
+    },
+    onPlayerDragEnd(e) {
+      e.currentTarget.classList.remove('table-active');
+      this.draggingPlayerEl = null;
+      this.syncPlayersFromDom();
+    },
+    onPlayerDragOver(e) {
+      e.preventDefault();
+      const tbody = this.$refs.playersTableBody;
+      if (!tbody || !this.draggingPlayerEl) return;
+      const after = this.getDragAfterElement(tbody, e.clientY);
+      if (after == null) {
+        tbody.appendChild(this.draggingPlayerEl);
+      } else {
+        tbody.insertBefore(this.draggingPlayerEl, after);
+      }
+    },
+    getDragAfterElement(container, y) {
+      const els = [...container.querySelectorAll('tr[data-id]:not(.table-active)')];
+      return els.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          return { offset, element: child };
+        }
+        return closest;
+      }, { offset: Number.NEGATIVE_INFINITY }).element;
+    },
+    syncPlayersFromDom() {
+      const tbody = this.$refs.playersTableBody;
+      if (!tbody) return;
+      const orderedIds = [...tbody.querySelectorAll('tr[data-id]')].map(r => parseInt(r.dataset.id, 10));
+      const playerMap = Object.fromEntries(this.players.map(p => [p.id, p]));
+      this.players = orderedIds.map(id => playerMap[id]).filter(Boolean);
+      this.persistPlayerOrder();
+    }
   }
 };
 </script>
