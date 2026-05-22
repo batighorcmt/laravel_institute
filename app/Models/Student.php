@@ -201,28 +201,28 @@ class Student extends Model
     public function getPhotoUrlAttribute(): string
     {
         if (empty($this->photo)) {
-            return asset('images/default-avatar.svg');
+            return '/images/default-avatar.svg';
         }
 
         // 1) Check in students folder (primary location for enrolled students)
         $studentsPath = 'students/' . $this->photo;
         if (Storage::disk('public')->exists($studentsPath)) {
-            return asset('storage/' . $studentsPath);
+            return '/storage/' . $studentsPath;
         }
 
         // 2) If stored directly in public path (rare)
         if (file_exists(public_path($this->photo))) {
-            return asset($this->photo);
+            return '/' . ltrim($this->photo, '/');
         }
 
         // 3) If stored in storage/app/public (accessible via /storage/... when storage:link exists)
         if (file_exists(storage_path('app/public/' . $this->photo))) {
-            return asset('storage/' . ltrim($this->photo, '/'));
+            return '/storage/' . ltrim($this->photo, '/');
         }
 
         // 4) If stored in storage/app (not public) but present, try to serve via storage URL (may require storage:link)
         if (file_exists(storage_path('app/' . $this->photo))) {
-            return asset('storage/' . ltrim($this->photo, '/'));
+            return '/storage/' . ltrim($this->photo, '/');
         }
 
         // 5) As a last resort, if the default filesystem can generate a URL
@@ -234,7 +234,7 @@ class Student extends Model
             // ignore
         }
 
-        return asset('images/default-avatar.svg');
+        return '/images/default-avatar.svg';
     }
 
     public function noticeTargets()

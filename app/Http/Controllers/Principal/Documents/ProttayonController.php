@@ -24,11 +24,61 @@ class ProttayonController extends Controller
 
     public function history(Request $request, School $school)
     {
-        $records = DocumentRecord::where('school_id',$school->id)
-            ->where('type','prottayon')
-            ->latest('issued_at')
-            ->paginate(25);
-        return view('principal.documents.prottayon.history', compact('school','records'));
+        $query = DocumentRecord::with([
+            'student.enrollments.class',
+            'student.enrollments.section'
+        ])
+        ->where('school_id', $school->id)
+        ->where('type', 'prottayon');
+
+        // Search filter (memo_no, student name, student_id)
+        if ($request->filled('q')) {
+            $q = trim($request->query('q'));
+            $query->where(function ($sub) use ($q) {
+                $sub->where('memo_no', 'like', "%{$q}%")
+                    ->orWhereHas('student', function ($sq) use ($q) {
+                        $sq->where('student_name_bn', 'like', "%{$q}%")
+                            ->orWhere('student_name_en', 'like', "%{$q}%")
+                            ->orWhere('student_id', 'like', "%{$q}%");
+                    });
+            });
+        }
+
+        // Class filter (data->class_id)
+        if ($request->filled('class_id')) {
+            $query->where('data->class_id', (int)$request->query('class_id'));
+        }
+
+        // Section filter (data->section_id)
+        if ($request->filled('section_id')) {
+            $query->where('data->section_id', (int)$request->query('section_id'));
+        }
+
+        // Date range filter
+        if ($request->filled('start_date')) {
+            $query->whereDate('issued_at', '>=', $request->query('start_date'));
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('issued_at', '<=', $request->query('end_date'));
+        }
+
+        $records = $query->latest('issued_at')->paginate(25)->withQueryString();
+
+        // Fetch options for the filters
+        $classes = \App\Models\SchoolClass::where('school_id', $school->id)->orderBy('numeric_value')->get();
+        
+        $sections = collect();
+        if ($request->filled('class_id')) {
+            $sections = \App\Models\Section::where('school_id', $school->id)
+                ->where('class_id', (int)$request->query('class_id'))
+                ->orderBy('name')
+                ->get();
+        }
+
+        // Helper map to translate class_id to Class name efficiently in the view
+        $allClasses = $classes->keyBy('id');
+
+        return view('principal.documents.prottayon.history', compact('school', 'records', 'classes', 'sections', 'allClasses'));
     }
 
     public function generate(Request $request, School $school)

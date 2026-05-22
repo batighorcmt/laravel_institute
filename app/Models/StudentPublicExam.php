@@ -18,6 +18,7 @@ class StudentPublicExam extends Model
         'session',
         'candidate_type',
         'center_name',
+        'result',
     ];
 
     public function student(): BelongsTo

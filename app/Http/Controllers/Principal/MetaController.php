@@ -86,6 +86,7 @@ class MetaController extends Controller
         $this->authorizePrincipal($school);
         $classId = $request->query('class_id');
         $sectionId = $request->query('section_id');
+        $studentId = $request->query('student_id');
         $qText = trim((string)$request->query('q', ''));
 
         $currentYear = AcademicYear::forSchool($school->id)->current()->first();
@@ -113,6 +114,7 @@ class MetaController extends Controller
         ->where('student_enrollments.academic_year_id',$yearId)
         ->when($classId, fn($qq)=>$qq->where('student_enrollments.class_id',(int)$classId))
         ->when($sectionId, fn($qq)=>$qq->where('student_enrollments.section_id',(int)$sectionId))
+        ->when($studentId, fn($qq)=>$qq->where('student_enrollments.student_id',(int)$studentId))
         ->when($qText !== '', function($qq) use ($qText){
             $qq->where(function($sub) use ($qText){
                 $sub->where('students.student_name_en','like','%'.$qText.'%')
@@ -164,13 +166,24 @@ class MetaController extends Controller
         // Compute photo URLs server-side for reliable display
         $rows = $rows->map(function($item){
             $photo = $item['photo'] ?? null;
-            $url = asset('images/default-avatar.svg');
+            $url = '/images/default-avatar.svg';
             if ($photo) {
-                // prefer storage path students/<photo>
-                if (file_exists(storage_path('app/public/students/' . $photo))) {
-                    $url = asset('storage/students/' . $photo);
-                } elseif (file_exists(public_path($photo))) {
-                    $url = asset($photo);
+                $photoPath = ltrim($photo, '/\\');
+                if (str_starts_with($photoPath, 'students/')) {
+                    if (file_exists(storage_path('app/public/' . $photoPath))) {
+                        $url = '/storage/' . $photoPath;
+                    }
+                } else {
+                    if (file_exists(storage_path('app/public/students/' . $photoPath))) {
+                        $url = '/storage/students/' . $photoPath;
+                    }
+                }
+                
+                // Fallback for public path
+                if ($url === '/images/default-avatar.svg') {
+                    if (file_exists(public_path($photoPath))) {
+                        $url = '/' . ltrim($photoPath, '/\\');
+                    }
                 }
             }
             $item['photo_url'] = $url;

@@ -7,6 +7,7 @@ use App\Models\DocumentRecord;
 use App\Models\DocumentSetting;
 use App\Models\School;
 use App\Models\Student;
+use App\Models\StudentPublicExam;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
@@ -17,7 +18,147 @@ class TestimonialController extends Controller
     public function index(Request $request, School $school)
     {
         $academicYears = \App\Models\AcademicYear::forSchool($school->id)->orderBy('start_date', 'desc')->get();
-        return view('principal.documents.testimonial.index', compact('school', 'academicYears'));
+        $classes = \App\Models\SchoolClass::where('school_id', $school->id)->orderBy('numeric_value')->get();
+        $publicExams = \App\Models\PublicExam::where('school_id', $school->id)->where('status', 'active')->get();
+
+        return view('principal.documents.testimonial.index', compact('school', 'academicYears', 'classes', 'publicExams'));
+    }
+
+    /**
+     * AJAX: Load students with their public exam data for the testimonial generation table
+     */
+    public function loadStudents(Request $request, School $school)
+    {
+        $request->validate([
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'class_id'         => 'required|exists:classes,id',
+            'public_exam_name' => 'required|string',
+        ]);
+
+        $academicYearId = $request->academic_year_id;
+        $classId        = $request->class_id;
+        $publicExamName = $request->public_exam_name;
+        $studentId      = $request->student_id;
+
+        $query = Student::where('school_id', $school->id)
+            ->whereHas('enrollments', function($q) use ($academicYearId, $classId) {
+                $q->where('academic_year_id', $academicYearId)
+                  ->where('class_id', $classId)
+                  ->where('status', 'active');
+            })
+            ->with([
+                'enrollments' => function($q) use ($academicYearId, $classId) {
+                    $q->where('academic_year_id', $academicYearId)
+                      ->where('class_id', $classId)
+                      ->where('status', 'active');
+                },
+                'publicExams',
+            ]);
+
+        // Filter by specific student if provided
+        if ($studentId) {
+            $query->where('id', (int)$studentId);
+        }
+
+        $students = $query->get()
+            ->sortBy(function($student) {
+                $enrollment = $student->enrollments->first();
+                return $enrollment ? $enrollment->roll_no : 999999;
+            })
+            ->values();
+
+        $academicYear = \App\Models\AcademicYear::find($academicYearId);
+
+        $result = $students->map(function($student) use ($publicExamName, $academicYear) {
+            $enrollment = $student->enrollments->first();
+            $peData = $student->publicExams->where('exam_name', $publicExamName)->first();
+
+            // Check if testimonial already exists for this student
+            $existingDoc = DocumentRecord::where('school_id', $student->school_id)
+                ->where('student_id', $student->id)
+                ->where('type', 'testimonial')
+                ->latest('issued_at')
+                ->first();
+
+            return [
+                'id'              => $student->id,
+                'name'            => $student->student_name_bn ?: $student->student_name_en,
+                'name_en'         => $student->student_name_en,
+                'father_name'     => $student->father_name,
+                'roll_no'         => $enrollment ? $enrollment->roll_no : '',
+                'student_id'      => $student->student_id,
+                'exam_name'       => $publicExamName,
+                'board'           => $peData ? $peData->board : '',
+                'roll_no_pub'     => $peData ? $peData->roll_no : '',
+                'reg_no'          => $peData ? ($peData->reg_no ?: $student->board_registration_no) : ($student->board_registration_no ?: ''),
+                'exam_year'       => $peData ? $peData->exam_year : '',
+                'session'         => $peData ? $peData->session : '',
+                'center_name'     => $peData ? $peData->center_name : '',
+                'result'          => $peData ? $peData->result : '',
+                'has_public_exam' => $peData ? true : false,
+                'has_testimonial' => $existingDoc ? true : false,
+                'testimonial_id'  => $existingDoc ? $existingDoc->id : null,
+            ];
+        });
+
+        return response()->json(['students' => $result]);
+    }
+
+    /**
+     * Quick generate testimonial from public exam data (AJAX)
+     */
+    public function quickGenerate(Request $request, School $school)
+    {
+        $validated = $request->validate([
+            'student_id'       => 'required|integer',
+            'academic_year_id' => 'required|integer',
+            'exam_name'        => 'required|string',
+        ]);
+
+        $student = Student::forSchool($school->id)->findOrFail($validated['student_id']);
+        $academicYear = \App\Models\AcademicYear::find($validated['academic_year_id']);
+        $academicYearName = $academicYear ? $academicYear->name : (string)$validated['academic_year_id'];
+
+        // Get public exam data for this student
+        $peData = StudentPublicExam::where('student_id', $student->id)
+            ->where('exam_name', $validated['exam_name'])
+            ->first();
+
+        $board    = $peData->board ?? '';
+        $session  = $peData->session ?? '';
+        $roll     = $peData->roll_no ?? '';
+        $regNo    = $peData->reg_no ?? $student->board_registration_no ?? '';
+        $examYear = $peData->exam_year ?? '';
+        $center   = $peData->center_name ?? '';
+
+        // Memo generation
+        $memoNo = DocumentMemoService::generate($school, 'testimonial', null, $academicYearName, null, $student, 'en');
+
+        $record = DocumentRecord::create([
+            'school_id'  => $school->id,
+            'student_id' => $student->id,
+            'type'       => 'testimonial',
+            'memo_no'    => $memoNo,
+            'issued_at'  => Carbon::now(),
+            'code'       => Str::uuid()->toString(),
+            'data'       => [
+                'exam_name'    => $validated['exam_name'],
+                'academic_year' => $validated['academic_year_id'],
+                'board'        => $board,
+                'session'      => $session,
+                'passing_year' => $examYear,
+                'result'       => $peData->result ?? null,
+                'roll'         => $roll,
+                'registration' => $regNo,
+                'center'       => $center,
+            ],
+        ]);
+
+        return response()->json([
+            'success'  => true,
+            'record_id' => $record->id,
+            'print_url' => route('principal.institute.documents.testimonial.print', [$school, $record->id]),
+        ]);
     }
 
     public function history(Request $request, School $school)
@@ -33,7 +174,7 @@ class TestimonialController extends Controller
     {
         $validated = $request->validate([
             'student_id' => 'required|integer',
-            'exam_name' => 'required|string', // SSC/HSC
+            'exam_name' => 'required|string',
             'academic_year' => 'required|integer',
             'board' => 'required|string',
             'session' => 'required|string',
@@ -48,7 +189,6 @@ class TestimonialController extends Controller
         $academicYear = \App\Models\AcademicYear::find($validated['academic_year']);
         $academicYearName = $academicYear ? $academicYear->name : (string)$validated['academic_year'];
 
-        // Memo: schoolCode/testimonial/academicYearName/serialInYear
         $memoNo = DocumentMemoService::generate($school, 'testimonial', null, $academicYearName, null, $student, 'en');
 
         $record = DocumentRecord::create([

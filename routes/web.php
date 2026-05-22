@@ -625,6 +625,8 @@ Route::middleware(['auth', 'active_school'])->group(function () {
 
                 // Testimonial (SSC/HSC)
                 Route::get('/testimonial', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'index'])->name('testimonial.index');
+                Route::get('/testimonial/load-students', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'loadStudents'])->name('testimonial.load-students');
+                Route::post('/testimonial/quick-generate', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'quickGenerate'])->name('testimonial.quick-generate');
                 Route::post('/testimonial/generate', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'generate'])->name('testimonial.generate');
                 Route::get('/testimonial/print/{document}', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'print'])->name('testimonial.print');
                 Route::get('/testimonial/history', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'history'])->name('testimonial.history');

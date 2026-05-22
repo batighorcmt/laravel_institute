@@ -1384,6 +1384,7 @@ class StudentController extends Controller
                 'session'        => $peData ? $peData->session : '',
                 'candidate_type' => $peData ? $peData->candidate_type : '',
                 'center_name'    => $peData ? $peData->center_name : '',
+                'result'         => $peData ? $peData->result : '',
             ];
         });
 
@@ -1407,6 +1408,7 @@ class StudentController extends Controller
             'session'        => 'nullable|string|max:20',
             'candidate_type' => 'nullable|string|max:255',
             'center_name'    => 'nullable|string|max:255',
+            'result'         => 'nullable|string|max:255',
         ]);
 
         $publicExam = \App\Models\StudentPublicExam::where('student_id', $student->id)

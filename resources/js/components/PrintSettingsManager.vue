@@ -22,7 +22,12 @@
                             <label class="section-label">Background / Watermark</label>
                             <div class="background-preview-container d-flex align-items-center p-3 mb-2 rounded border">
                                 <div class="preview-box mr-3">
-                                    <div v-if="getSetting(pageKey).background_path" class="img-wrapper">
+                                    <!-- Show temporary preview if available -->
+                                    <div v-if="previewUrls[pageKey]" class="img-wrapper">
+                                        <img :src="previewUrls[pageKey]" class="img-fluid rounded">
+                                    </div>
+                                    <!-- Else show saved background -->
+                                    <div v-else-if="getSetting(pageKey).background_path" class="img-wrapper">
                                         <img :src="'/storage/' + getSetting(pageKey).background_path" class="img-fluid rounded">
                                     </div>
                                     <div v-else class="empty-preview d-flex align-items-center justify-content-center">
@@ -184,6 +189,7 @@ const settings = ref({});
 const files = ref({});
 const loading = ref({});
 const showKeywords = ref(false);
+const previewUrls = ref({});
 
 const availableKeywords = ref({});
 props.pages.forEach(p => {
@@ -225,7 +231,14 @@ const removeChip = (page, index) => {
 };
 
 const onFileChange = (e, page) => {
-    files.value[page] = e.target.files[0];
+    const file = e.target.files[0];
+    files.value[page] = file;
+    // Generate temporary URL for preview
+    if (file) {
+        previewUrls.value[page] = URL.createObjectURL(file);
+    } else {
+        previewUrls.value[page] = null;
+    }
 };
 
 const saveSettings = async (page) => {
@@ -251,9 +264,18 @@ const saveSettings = async (page) => {
         formData.append('margins[bottom]', s.margins.bottom);
         formData.append('margins[left]', s.margins.left);
 
-        await axios.post(`/principal/institute/${props.schoolId}/documents/settings`, formData, {
+        const response = await axios.post(`/principal/institute/${props.schoolId}/documents/settings`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
+
+        // Update local setting with returned background path if uploaded
+        if (response.data && response.data.setting && response.data.setting.background_path) {
+            getSetting(page).background_path = response.data.setting.background_path;
+            // Clear temporary preview
+            previewUrls.value[page] = null;
+            // Reset file input
+            files.value[page] = null;
+        }
         
         toastr.success(page.toUpperCase() + ' settings saved successfully');
     } catch (error) {

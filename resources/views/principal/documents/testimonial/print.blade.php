@@ -31,8 +31,15 @@ body {
 .certificate-container {
     width: 29.7cm; /* A4 landscape width */
     height: 21cm; /* A4 landscape height */
+    @if($setting && $setting->background_path)
+    background-image: url('{{ \Illuminate\Support\Facades\Storage::disk('public')->url($setting->background_path) }}');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    @else
     background:
         linear-gradient(rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.98));
+    @endif
     position: relative;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     overflow: hidden;
@@ -535,13 +542,13 @@ body {
                 <!-- Certification and Student Name -->
                 <div class="student-certification">
                     <div class="certify-text">This is to certify that</div>
-                    <div class="student-name-highlight">{{ $student->student_name_en ?: $student->student_name_bn }}</div>
+                    <div class="student-name-highlight">{{ ucwords(strtolower(trim($student->student_name_en ?: $student->student_name_bn))) }}</div>
                 </div>
 
                 <!-- Student Information -->
                 <div class="paragraph">
                     <span class="info-label">@if($student->gender == 'male') Son of @else Daughter of @endif</span> <span class="info-value">{{ $student->father_name }}</span>
-                    <span class="info-label">and</span> <span class="info-value">{{ $student->mother_name }}</span>, <span class="info-label">Village</span> <span class="info-value">{{ $student->present_village }}</span>, <span class="info-label">Post Office</span> <span class="info-value">{{ $student->present_post_office }}</span>, <span class="info-label">Upazila</span> <span class="info-value">{{ $student->present_upazilla }}</span>, <span class="info-label">District</span> <span class="info-value">{{ $student->present_district }}</span>, <span class="info-label">passed the @if($document->data['exam_name'] == 'SSC') Secondary School Certificate (S.S.C) @elseif($document->data['exam_name'] == 'HSC') Higher Secondary Certificate (H.S.C) @else {{ $document->data['exam_name'] }} @endif Examination in</span><span class="info-value">{{ $document->data['passing_year'] }}</span><span class="info-label">from this school under the</span><span class="info-label"> Board of Intermediate and Secondary Education, {{ $document->data['board'] }},</span> <span class="info-label">bearing Roll <span class="info-value">{{ $document->data['center'] ?? '-' }} </span> <span class="info-label"> No</span> <span class="info-value">{{ $document->data['roll'] ?? '-' }} </span>, <span class="info-label">Registration No</span> <span class="info-value">{{ $document->data['registration'] ?? '-' }}</span>, <span class="info-label">Session</span> <span class="info-value">{{ $document->data['session'] ?? '-' }}</span> <span class="info-label">and obtained GPA</span> <span class="info-value">{{ $document->data['result'] ?? '-' }}</span> <span class="info-label">out of scale 5.00 in</span> <span class="info-value">-</span><span class="info-label">  Group. @if($student->gender == 'male') His @else Her @endif Date of birth is</span> <span class="info-value">{{ $student->date_of_birth ? $student->date_of_birth->format('d/m/Y') : '-' }}</span>.
+                    <span class="info-label">and</span> <span class="info-value">{{ $student->mother_name }}</span>, <span class="info-label">Village</span> <span class="info-value">{{ ucwords(strtolower(trim($student->present_village_en ?: $student->present_village))) }}</span>, <span class="info-label">Post Office</span> <span class="info-value">{{ ucwords(strtolower(trim($student->present_post_office_en ?: $student->present_post_office))) }}</span>, <span class="info-label">Upazila</span> <span class="info-value">{{ ucwords(strtolower(trim($student->present_upazilla_en ?: $student->present_upazilla))) }}</span>, <span class="info-label">District</span> <span class="info-value">{{ ucwords(strtolower(trim($student->present_district_en ?: $student->present_district))) }}</span>, <span class="info-label">passed the @if($document->data['exam_name'] == 'SSC') Secondary School Certificate (S.S.C) @elseif($document->data['exam_name'] == 'HSC') Higher Secondary Certificate (H.S.C) @else {{ $document->data['exam_name'] }} @endif Examination in</span><span class="info-value">{{ $document->data['passing_year'] }}</span><span class="info-label">from this school under the</span><span class="info-label"> Board of Intermediate and Secondary Education, {{ $document->data['board'] }},</span> <span class="info-label">bearing Roll <span class="info-value">{{ $document->data['center'] ?? '-' }} </span> <span class="info-label"> No</span> <span class="info-value">{{ $document->data['roll'] ?? '-' }} </span>, <span class="info-label">Registration No</span> <span class="info-value">{{ $document->data['registration'] ?? '-' }}</span>, <span class="info-label">Session</span> <span class="info-value">{{ $document->data['session'] ?? '-' }}</span> <span class="info-label">and obtained GPA</span> <span class="info-value">{{ $document->data['result'] ?? '-' }}</span> <span class="info-label">out of scale 5.00 in</span> <span class="info-value">-</span><span class="info-label">  Group. @if($student->gender == 'male') His @else Her @endif Date of birth is</span> <span class="info-value">{{ $student->date_of_birth ? $student->date_of_birth->format('d/m/Y') : '-' }}</span>.
                 </div>
 
                 <div class="paragraph paragraph-space">

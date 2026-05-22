@@ -113,9 +113,9 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <div class="form-group mb-0">
-                        <label class="small font-weight-bold">Exam Year</label>
+                        <label class="small font-weight-bold">Year</label>
                         <input v-model="bulk.exam_year" class="form-control form-control-sm" placeholder="e.g. 2025" maxlength="4">
                     </div>
                 </div>
@@ -125,9 +125,15 @@
                         <input v-model="bulk.session" class="form-control form-control-sm" placeholder="e.g. 2023-24" maxlength="20">
                     </div>
                 </div>
+                <div class="col-md-1">
+                    <div class="form-group mb-0">
+                        <label class="small font-weight-bold">Result</label>
+                        <input v-model="bulk.result" class="form-control form-control-sm" placeholder="GPA 5.00" maxlength="255">
+                    </div>
+                </div>
                 <div class="col-md-2">
                     <div class="form-group mb-0">
-                        <label class="small font-weight-bold">Candidate Type</label>
+                        <label class="small font-weight-bold">Cand. Type</label>
                         <select v-model="bulk.candidate_type" class="form-control form-control-sm">
                             <option value="">-- বাছাই --</option>
                             <option value="Regular">Regular</option>
@@ -147,10 +153,10 @@
                         <label class="small font-weight-bold d-block">প্রয়োগ করুন</label>
                         <div class="btn-group w-100">
                             <button @click="applyToAll" class="btn btn-warning btn-sm" title="সকল শিক্ষার্থীর জন্য প্রয়োগ">
-                                <i class="fas fa-users mr-1"></i> সবার জন্য
+                                <i class="fas fa-users mr-1"></i> সবার
                             </button>
                             <button @click="applyToSelected" class="btn btn-info btn-sm" :disabled="selectedIds.length === 0" :title="selectedIds.length + ' জন নির্বাচিতের জন্য প্রয়োগ'">
-                                <i class="fas fa-check-square mr-1"></i> নির্বাচিতদের
+                                <i class="fas fa-check-square mr-1"></i> নির্বাচিত
                             </button>
                         </div>
                     </div>
@@ -206,6 +212,7 @@
                             <th style="min-width:105px;">Board</th>
                             <th style="min-width:95px;">Roll No.</th>
                             <th style="min-width:115px;">Reg. No.</th>
+                            <th style="min-width:100px;">GPA / ফলাফল</th>
                             <th style="min-width:80px;">Year</th>
                             <th style="min-width:95px;">Session</th>
                             <th style="min-width:115px;">Cand. Type</th>
@@ -242,6 +249,7 @@
                             </td>
                             <td><input v-model="student.roll_no_pub" class="form-control form-control-sm" placeholder="Roll No."></td>
                             <td><input v-model="student.reg_no" class="form-control form-control-sm" placeholder="Reg. No."></td>
+                            <td><input v-model="student.result" class="form-control form-control-sm" placeholder="GPA / ফলাফল"></td>
                             <td><input v-model="student.exam_year" class="form-control form-control-sm" placeholder="Year" maxlength="4"></td>
                             <td><input v-model="student.session" class="form-control form-control-sm" placeholder="2023-24" maxlength="20"></td>
                             <td>
@@ -469,6 +477,7 @@ new Vue({
             session: '',
             candidate_type: '',
             center_name: '',
+            result: '',
         },
         students: [],
         selectedIds: [],
@@ -605,6 +614,7 @@ new Vue({
             if (this.bulk.session)        student.session        = this.bulk.session;
             if (this.bulk.candidate_type) student.candidate_type = this.bulk.candidate_type;
             if (this.bulk.center_name)    student.center_name    = this.bulk.center_name;
+            if (this.bulk.result)         student.result         = this.bulk.result;
         },
 
         // Print view (individual per student)
@@ -794,6 +804,7 @@ new Vue({
                         session:        student.session,
                         candidate_type: student.candidate_type,
                         center_name:    student.center_name,
+                        result:         student.result,
                     }),
                 });
                 const data = await res.json();

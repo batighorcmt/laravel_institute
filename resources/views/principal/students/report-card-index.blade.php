@@ -98,25 +98,11 @@
                     loadStudentsOptions();
                 });
 
-                // Student select2 with AJAX search
+                // Student select2
                 $student.select2({
                     placeholder: 'শিক্ষার্থীর নাম/আইডি অনুসন্ধান করুন',
                     allowClear: true,
-                    ajax: {
-                        delay: 250,
-                        url: studentsUrl,
-                        data: function (params) {
-                            return {
-                                q: params.term,
-                                class_id: $class.val(),
-                                section_id: $section.val(),
-                                year_id: $year.val(),
-                            };
-                        },
-                        processResults: function(data){
-                            return { results: data.map(d=>({ id: d.record_id, text: ((d.roll_no?d.roll_no+' - ':'') + d.name + ' ( ' + (d.student_id||'') + ' )'), extra: d })) };
-                        }
-                    }
+                    width: '100%'
                 });
 
                 // Preload students into the select so users can open dropdown without typing
