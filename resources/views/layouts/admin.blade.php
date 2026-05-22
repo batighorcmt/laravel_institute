@@ -545,6 +545,18 @@
                                             <p>Website Settings</p>
                                         </a>
                                     </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.frontend.pages.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.pages.*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Pages</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.frontend.posts.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.posts.*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Blog Posts</p>
+                                        </a>
+                                    </li>
                                 </ul>
                             </li>
                             @endif

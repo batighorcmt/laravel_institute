@@ -32,7 +32,7 @@
     "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-v4compatibility.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CCr9vk6L.css",
+    "file": "assets/app-Bdm4b-Z0.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -41,11 +41,7 @@
     ]
   },
   "resources/js/app.js": {
-<<<<<<< Updated upstream
-    "file": "assets/app-CBexbK7c.js",
-=======
-    "file": "assets/app-Cd7bNn4A.js",
->>>>>>> Stashed changes
+    "file": "assets/app-DPHe5jBJ.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,

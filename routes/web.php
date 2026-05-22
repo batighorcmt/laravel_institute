@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::get('/', [App\Http\Controllers\FrontendWebController::class, 'index'])->name('frontend.index');
+Route::get('/blog', [App\Http\Controllers\FrontendWebController::class, 'blogIndex'])->name('frontend.blog.index');
+Route::get('/blog/{slug}', [App\Http\Controllers\FrontendWebController::class, 'blogShow'])->name('frontend.blog.show');
 
 // Public admission flow
 Route::prefix('admission/{schoolCode}')->group(function () {
@@ -689,12 +691,26 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 });
             });
 
-            // Frontend Website Settings
+            // Frontend Website Settings & CMS
             Route::prefix('frontend')->name('frontend.')->middleware('module:frontend_website')->group(function () {
                 Route::get('/settings', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'index'])->name('settings');
                 Route::get('/settings/data', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'getData'])->name('settings.data');
                 Route::post('/settings/data', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'updateData'])->name('settings.update');
                 Route::post('/settings/upload', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'uploadImage'])->name('settings.upload');
+
+                Route::get('/pages', [\App\Http\Controllers\Principal\CmsPageController::class, 'index'])->name('pages.index');
+                Route::get('/pages/create', [\App\Http\Controllers\Principal\CmsPageController::class, 'create'])->name('pages.create');
+                Route::post('/pages', [\App\Http\Controllers\Principal\CmsPageController::class, 'store'])->name('pages.store');
+                Route::get('/pages/{page}/edit', [\App\Http\Controllers\Principal\CmsPageController::class, 'edit'])->name('pages.edit');
+                Route::put('/pages/{page}', [\App\Http\Controllers\Principal\CmsPageController::class, 'update'])->name('pages.update');
+                Route::delete('/pages/{page}', [\App\Http\Controllers\Principal\CmsPageController::class, 'destroy'])->name('pages.destroy');
+
+                Route::get('/posts', [\App\Http\Controllers\Principal\CmsPostController::class, 'index'])->name('posts.index');
+                Route::get('/posts/create', [\App\Http\Controllers\Principal\CmsPostController::class, 'create'])->name('posts.create');
+                Route::post('/posts', [\App\Http\Controllers\Principal\CmsPostController::class, 'store'])->name('posts.store');
+                Route::get('/posts/{post}/edit', [\App\Http\Controllers\Principal\CmsPostController::class, 'edit'])->name('posts.edit');
+                Route::put('/posts/{post}', [\App\Http\Controllers\Principal\CmsPostController::class, 'update'])->name('posts.update');
+                Route::delete('/posts/{post}', [\App\Http\Controllers\Principal\CmsPostController::class, 'destroy'])->name('posts.destroy');
             });
         }
         );
@@ -931,3 +947,8 @@ Route::get('/verify/document/{code}', [\App\Http\Controllers\Documents\Verificat
 Route::get('/print/marks/{exam}/{examSubject}/{type}', [App\Http\Controllers\Principal\MarkEntryController::class, 'printPortable'])
     ->name('print.marks.portable')
     ->middleware('signed');
+
+// CMS custom pages (WordPress-style clean URL: /about-us) — must be registered last
+Route::get('/{slug}', [App\Http\Controllers\FrontendWebController::class, 'cmsPage'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->name('frontend.cms.page');
