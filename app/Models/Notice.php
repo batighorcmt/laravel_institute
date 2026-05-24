@@ -8,15 +8,57 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Notice extends Model
 {
     protected $fillable = [
-        'school_id','title','body','publish_at','expiry_at','status','created_by',
-        'audience_type','reply_required','attachment_path'
+        'school_id', 'title', 'body', 'publish_at', 'expiry_at', 'status', 'created_by',
+        'audience_type', 'audience_channels', 'reply_required', 'attachment_path',
+        'show_on_frontend_marquee', 'show_on_frontend_board',
     ];
 
-    protected $casts = [
-        'publish_at' => 'datetime',
-        'expiry_at' => 'datetime',
-        'reply_required' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'publish_at' => 'datetime',
+            'expiry_at' => 'datetime',
+            'reply_required' => 'boolean',
+            'show_on_frontend_marquee' => 'boolean',
+            'show_on_frontend_board' => 'boolean',
+            'audience_channels' => 'array',
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function resolvedAudienceChannels(): array
+    {
+        if (is_array($this->audience_channels) && $this->audience_channels !== []) {
+            return array_values($this->audience_channels);
+        }
+
+        $channels = [];
+
+        if (in_array($this->audience_type, ['all', 'teachers'], true)) {
+            $channels[] = 'teachers';
+        }
+
+        if (in_array($this->audience_type, ['all', 'students'], true)) {
+            $channels[] = 'students';
+        }
+
+        if ($this->show_on_frontend_board || $this->show_on_frontend_marquee) {
+            $channels[] = 'website';
+        }
+
+        return array_values(array_unique($channels));
+    }
+
+    public function scopeVisibleInApp($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('audience_channels')
+                ->orWhereJsonContains('audience_channels', 'teachers')
+                ->orWhereJsonContains('audience_channels', 'students');
+        });
+    }
 
     public function school(): BelongsTo
     {
@@ -25,7 +67,7 @@ class Notice extends Model
 
     public function author(): BelongsTo
     {
-        return $this->belongsTo(User::class,'created_by');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function targets()
@@ -46,22 +88,22 @@ class Notice extends Model
     // Scopes
     public function scopePublished($q)
     {
-        return $q->where('status','published')->where(function($qq){
-            $qq->whereNull('publish_at')->orWhere('publish_at','<=', now());
+        return $q->where('status', 'published')->where(function ($qq) {
+            $qq->whereNull('publish_at')->orWhere('publish_at', '<=', now());
         });
     }
 
-    public function scopeForSchool($q,$schoolId)
+    public function scopeForSchool($q, $schoolId)
     {
-        return $q->where(function($qq) use ($schoolId){
-            $qq->whereNull('school_id')->orWhere('school_id',$schoolId);
+        return $q->where(function ($qq) use ($schoolId) {
+            $qq->whereNull('school_id')->orWhere('school_id', $schoolId);
         });
     }
 
     public function scopeActive($q)
     {
-        return $q->where(function($qq){
-            $qq->whereNull('expiry_at')->orWhere('expiry_at','>', now());
+        return $q->where(function ($qq) {
+            $qq->whereNull('expiry_at')->orWhere('expiry_at', '>', now());
         });
     }
 }

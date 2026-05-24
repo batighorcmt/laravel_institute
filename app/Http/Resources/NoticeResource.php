@@ -16,14 +16,18 @@ class NoticeResource extends JsonResource
             'expiry_at' => optional($this->expiry_at)->toDateTimeString(),
             'status' => $this->status,
             'audience_type' => $this->audience_type,
+            'audience_channels' => $this->resolvedAudienceChannels(),
             'reply_required' => $this->reply_required,
-            'attachment_url' => $this->attachment_path ? asset('storage/' . $this->attachment_path) : null,
+            'show_on_frontend_marquee' => (bool) $this->show_on_frontend_marquee,
+            'show_on_frontend_board' => (bool) $this->show_on_frontend_board,
+            'attachment_url' => $this->attachment_path ? storage_asset($this->attachment_path) : null,
+            'attachment_name' => $this->attachment_path ? basename($this->attachment_path) : null,
             'is_read' => $request->user() ? $this->reads()->where('user_id', $request->user()->id)->exists() : false,
             'has_replied' => $request->user() ? $this->replies()->where('parent_id', $request->user()->id)->exists() : false,
             'read_count' => $this->when(auth()->user()?->isPrincipal(), $this->reads()->count()),
             'reply_count' => $this->when(auth()->user()?->isPrincipal(), $this->replies()->count()),
-            'targets' => $this->when(auth()->user()?->isPrincipal(), function() {
-                return $this->targets->map(function($t) {
+            'targets' => $this->when(auth()->user()?->isPrincipal(), function () {
+                return $this->targets->map(function ($t) {
                     $typeMap = [
                         \App\Models\Teacher::class => 'Teacher',
                         \App\Models\Student::class => 'Student',
@@ -31,9 +35,10 @@ class NoticeResource extends JsonResource
                         \App\Models\Section::class => 'Section',
                         \App\Models\Group::class => 'Group',
                     ];
+
                     return [
                         'id' => $t->targetable_id,
-                        'type' => $typeMap[$t->targetable_type] ?? $t->targetable_type_
+                        'type' => $typeMap[$t->targetable_type] ?? $t->targetable_type_,
                     ];
                 });
             }),

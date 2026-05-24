@@ -27,10 +27,14 @@ class SchoolFrontendSetting extends Model
         'meta_title',
         'meta_description',
         'meta_keywords',
+        'homepage_content',
+        'frontend_menus',
     ];
 
     protected $casts = [
         'hero_images' => 'array',
+        'homepage_content' => 'array',
+        'frontend_menus' => 'array',
     ];
 
     public function school()

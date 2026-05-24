@@ -1,9 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -12,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::getConnection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Using raw SQL to avoid requiring doctrine/dbal for change()
         DB::statement('ALTER TABLE schools MODIFY address VARCHAR(255) NULL');
     }
@@ -21,6 +24,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (Schema::getConnection()->getDriverName() !== 'mysql') {
+            return;
+        }
+
         // If rows exist with NULL address this will fail; ensure cleanup before rollback.
         DB::statement("UPDATE schools SET address = '' WHERE address IS NULL");
         DB::statement('ALTER TABLE schools MODIFY address VARCHAR(255) NOT NULL');

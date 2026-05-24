@@ -450,14 +450,14 @@
                             </li>
                             @endif
 
-                            @if(auth()->user()->hasModule('notices'))
-            <li class="nav-item">
-                <a href="{{ route('principal.institute.notices', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.notices') || request()->is('principal/institute/*/notices*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-bullhorn"></i>
-                    <p>নোটিশ বোর্ড</p>
-                </a>
-            </li>
-            @endif
+                            @if($u->primarySchool() && auth()->user()->hasModule('notices'))
+                            <li class="nav-item">
+                                <a href="{{ route('principal.institute.notices', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.notices') || request()->is('principal/institute/*/notices*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-bullhorn"></i>
+                                    <p>নোটিশ বোর্ড</p>
+                                </a>
+                            </li>
+                            @endif
 
                             @if(auth()->user()->hasModule('accounts'))
                             <li class="nav-item has-treeview {{ request()->is('billing*') ? 'menu-open' : '' }}">
@@ -543,6 +543,18 @@
                                         <a href="{{ route('principal.institute.frontend.settings', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.settings') ? 'active' : '' }}">
                                             <i class="far fa-circle nav-icon"></i>
                                             <p>Website Settings</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.frontend.front-page-elements', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.front-page-elements*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>FrontPage Element</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.frontend.menus', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.menus*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Menus</p>
                                         </a>
                                     </li>
                                     <li class="nav-item">

@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::get('/', [App\Http\Controllers\FrontendWebController::class, 'index'])->name('frontend.index');
+Route::get('/notices/{notice}/download', [App\Http\Controllers\FrontendWebController::class, 'downloadNotice'])->name('frontend.notices.download');
 Route::get('/blog', [App\Http\Controllers\FrontendWebController::class, 'blogIndex'])->name('frontend.blog.index');
 Route::get('/blog/{slug}', [App\Http\Controllers\FrontendWebController::class, 'blogShow'])->name('frontend.blog.show');
 
@@ -132,6 +133,18 @@ Route::middleware(['auth', 'active_school'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
+
+    // CKEditor image upload endpoint (used by admin rich editor)
+    Route::post('/cms/ckeditor/upload', function (\Illuminate\Http\Request $request) {
+        if (! $request->hasFile('upload')) {
+            return response()->json(['uploaded' => 0, 'error' => ['message' => 'No file uploaded']]);
+        }
+        $file = $request->file('upload');
+        $path = $file->store('uploads/ckeditor', 'public');
+        $url = asset('storage/'.$path);
+
+        return response()->json(['uploaded' => 1, 'fileName' => $file->getClientOriginalName(), 'url' => $url]);
+    })->name('cms.ckeditor.upload');
 
     // Super Admin Routes (fully protected)
     Route::prefix('superadmin')->name('superadmin.')->middleware([EnsureSuperAdmin::class])->group(function () {
@@ -697,6 +710,15 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/settings/data', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'getData'])->name('settings.data');
                 Route::post('/settings/data', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'updateData'])->name('settings.update');
                 Route::post('/settings/upload', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'uploadImage'])->name('settings.upload');
+
+                Route::get('/front-page-elements', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'index'])->name('front-page-elements');
+                Route::get('/front-page-elements/data', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'getData'])->name('front-page-elements.data');
+                Route::post('/front-page-elements/data', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'updateData'])->name('front-page-elements.update');
+                Route::delete('/front-page-elements/gallery', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'deleteGalleryImage'])->name('front-page-elements.gallery.delete');
+
+                Route::get('/menus', [\App\Http\Controllers\Principal\FrontendMenuController::class, 'index'])->name('menus');
+                Route::get('/menus/data', [\App\Http\Controllers\Principal\FrontendMenuController::class, 'getData'])->name('menus.data');
+                Route::post('/menus/data', [\App\Http\Controllers\Principal\FrontendMenuController::class, 'updateData'])->name('menus.update');
 
                 Route::get('/pages', [\App\Http\Controllers\Principal\CmsPageController::class, 'index'])->name('pages.index');
                 Route::get('/pages/create', [\App\Http\Controllers\Principal\CmsPageController::class, 'create'])->name('pages.create');

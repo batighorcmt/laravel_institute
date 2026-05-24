@@ -3,15 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Notice;
 use App\Http\Resources\NoticeResource;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Carbon;
+use App\Models\Notice;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class NoticeController extends Controller
 {
-
     public function index(Request $request)
     {
         $schoolId = $request->attributes->get('current_school_id');
@@ -21,21 +19,21 @@ class NoticeController extends Controller
         $query = Notice::query();
 
         if ($filter === 'unread') {
-            $query->whereDoesntHave('reads', function($q) use ($user) {
+            $query->whereDoesntHave('reads', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
         }
 
         // Security: If not super admin, strictly limit to schools where the user is a principal|teacher|parent
-        if (!$user->isSuperAdmin()) {
+        if (! $user->isSuperAdmin()) {
             if ($schoolId) {
-                if (!$user->hasRole('principal', $schoolId) && !$user->hasRole('teacher', $schoolId) && !$user->hasRole('parent', $schoolId)) {
+                if (! $user->hasRole('principal', $schoolId) && ! $user->hasRole('teacher', $schoolId) && ! $user->hasRole('parent', $schoolId)) {
                     return response()->json(['message' => 'অননুমোদিত'], 403);
                 }
             } else {
                 // Determine all schools where the user has any active role
                 $schoolId = $user->activeSchoolRoles()->pluck('school_id')->unique()->toArray();
-                
+
                 if (empty($schoolId)) {
                     return response()->json(['message' => 'আপনার কোনো প্রতিষ্ঠানের সাথে সংযোগ পাওয়া যায়নি।'], 403);
                 }
@@ -44,7 +42,7 @@ class NoticeController extends Controller
 
         // Apply school filtering
         if ($schoolId) {
-            $query->where(function($q) use ($schoolId) {
+            $query->where(function ($q) use ($schoolId) {
                 // 1. Direct school match
                 if (is_array($schoolId)) {
                     $q->whereIn('school_id', $schoolId);
@@ -60,62 +58,62 @@ class NoticeController extends Controller
         // Determine if user is principal for the context
         $isManager = $user->isSuperAdmin() || $user->isPrincipal($schoolId);
 
-        if (!$isManager) {
-            $query->published()->active();
+        if (! $isManager) {
+            $query->published()->active()->visibleInApp();
         }
 
         $query->orderByDesc('publish_at')->latest();
 
         // Logic for different audiences
-        if (!$isManager) {
-            $query->where(function($q) use ($user) {
+        if (! $isManager) {
+            $query->where(function ($q) use ($user) {
                 // Global notices
                 $q->where('audience_type', 'all');
 
                 // Teacher notices
                 if ($user->teacher) {
-                    $q->orWhere(function($qq) use ($user) {
+                    $q->orWhere(function ($qq) use ($user) {
                         $qq->where('audience_type', 'teachers')
-                           ->where(function($qqq) use ($user) {
-                               $qqq->doesntHave('targets')
-                                   ->orWhereHas('targets', function($t) use ($user) {
-                                       $t->where('targetable_type', \App\Models\Teacher::class)
-                                         ->where('targetable_id', $user->teacher->id);
-                                   });
-                           });
+                            ->where(function ($qqq) use ($user) {
+                                $qqq->doesntHave('targets')
+                                    ->orWhereHas('targets', function ($t) use ($user) {
+                                        $t->where('targetable_type', \App\Models\Teacher::class)
+                                            ->where('targetable_id', $user->teacher->id);
+                                    });
+                            });
                     });
                 }
 
                 // Student/Parent notices
                 $student = $user->student; // Assuming parent user has student relation or similar
                 if ($student) {
-                    $q->orWhere(function($qq) use ($student) {
+                    $q->orWhere(function ($qq) use ($student) {
                         $qq->where('audience_type', 'students')
-                           ->where(function($qqq) use ($student) {
-                               $qqq->doesntHave('targets')
-                                   ->orWhereHas('targets', function($t) use ($student) {
-                                       $t->where(function($tt) use ($student) {
-                                           $tt->where('targetable_type', \App\Models\Student::class)
-                                              ->where('targetable_id', $student->id);
-                                       })->orWhere(function($tt) use ($student) {
-                                           $tt->where('targetable_type', \App\Models\SchoolClass::class)
-                                              ->where('targetable_id', $student->class_id);
-                                       })->orWhere(function($tt) use ($student) {
-                                           $tt->where('targetable_type', \App\Models\Section::class)
-                                              ->where('targetable_id', $student->currentEnrollment?->section_id);
-                                       })->orWhere(function($tt) use ($student) {
-                                           $tt->where('targetable_type', \App\Models\Group::class)
-                                              ->where('targetable_id', $student->group_id);
-                                       });
-                                   });
-                           });
+                            ->where(function ($qqq) use ($student) {
+                                $qqq->doesntHave('targets')
+                                    ->orWhereHas('targets', function ($t) use ($student) {
+                                        $t->where(function ($tt) use ($student) {
+                                            $tt->where('targetable_type', \App\Models\Student::class)
+                                                ->where('targetable_id', $student->id);
+                                        })->orWhere(function ($tt) use ($student) {
+                                            $tt->where('targetable_type', \App\Models\SchoolClass::class)
+                                                ->where('targetable_id', $student->class_id);
+                                        })->orWhere(function ($tt) use ($student) {
+                                            $tt->where('targetable_type', \App\Models\Section::class)
+                                                ->where('targetable_id', $student->currentEnrollment?->section_id);
+                                        })->orWhere(function ($tt) use ($student) {
+                                            $tt->where('targetable_type', \App\Models\Group::class)
+                                                ->where('targetable_id', $student->group_id);
+                                        });
+                                    });
+                            });
                     });
                 }
             });
         }
 
         $notices = $query->paginate(20);
-        
+
         return NoticeResource::collection($notices);
     }
 
@@ -129,31 +127,44 @@ class NoticeController extends Controller
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id');
 
-        if (!$schoolId && !$user->isSuperAdmin()) {
+        if (! $schoolId && ! $user->isSuperAdmin()) {
             $schoolId = $user->primarySchool()?->id;
         }
 
-        if (!$schoolId || (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin())) {
+        if (! $schoolId || (! $user->isPrincipal($schoolId) && ! $user->isSuperAdmin())) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
         $validated = $request->validate([
-            'title' => ['required','string','max:200'],
-            'body' => ['required','string'],
-            'audience_type' => ['required','in:all,teachers,students'],
-            'publish_at' => ['nullable','date'],
-            'expiry_at' => ['nullable','date','after:publish_at'],
-            'reply_required' => ['nullable','boolean'],
-            'status' => ['nullable','in:draft,published'],
+            'title' => ['required', 'string', 'max:200'],
+            'body' => ['required', 'string'],
+            'publish_at' => ['nullable', 'date'],
+            'expiry_at' => ['nullable', 'date', 'after:publish_at'],
+            'reply_required' => ['nullable', 'boolean'],
+            'show_on_frontend_marquee' => ['nullable', 'boolean'],
+            'show_on_frontend_board' => ['nullable', 'boolean'],
+            'status' => ['nullable', 'in:draft,published'],
             'targets' => ['nullable', 'array'], // array of ['id' => X, 'type' => 'Teacher|Student|Class|Section']
+            'audience_channels' => ['required', 'array', 'min:1'],
+            'audience_channels.*' => ['in:teachers,students,website'],
+            'attachment' => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:10240'],
         ]);
+
+        $audience = $this->resolveAudienceFromChannels(
+            $validated['audience_channels'] ?? [],
+            $validated['show_on_frontend_board'] ?? true,
+            $validated['show_on_frontend_marquee'] ?? false,
+        );
 
         $notice = Notice::create([
             'school_id' => $schoolId,
             'title' => $validated['title'],
             'body' => $validated['body'],
-            'audience_type' => $validated['audience_type'],
+            'audience_type' => $audience['audience_type'],
+            'audience_channels' => $audience['audience_channels'],
             'reply_required' => $validated['reply_required'] ?? false,
+            'show_on_frontend_marquee' => $audience['show_on_frontend_marquee'],
+            'show_on_frontend_board' => $audience['show_on_frontend_board'],
             'publish_at' => $validated['publish_at'] ?? now(),
             'expiry_at' => $validated['expiry_at'] ?? null,
             'status' => $validated['status'] ?? 'published',
@@ -163,14 +174,16 @@ class NoticeController extends Controller
         // Handle targets
         if ($request->has('targets') && is_array($request->input('targets'))) {
             foreach ($request->input('targets') as $target) {
-                if (empty($target['id']) || empty($target['type'])) continue;
+                if (empty($target['id']) || empty($target['type'])) {
+                    continue;
+                }
 
                 $typeMap = [
                     'Teacher' => \App\Models\Teacher::class,
                     'Student' => \App\Models\Student::class,
-                    'Class'   => \App\Models\SchoolClass::class,
+                    'Class' => \App\Models\SchoolClass::class,
                     'Section' => \App\Models\Section::class,
-                    'Group'   => \App\Models\Group::class,
+                    'Group' => \App\Models\Group::class,
                 ];
 
                 if (isset($typeMap[$target['type']])) {
@@ -181,12 +194,14 @@ class NoticeController extends Controller
                 }
             }
         }
-        
+
+        $this->persistAttachment($request, $notice, (int) $schoolId);
+
         // Send Push Notifications
         try {
             app(\App\Services\PushNotificationService::class)->sendNoticeNotification($notice);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Notice Push Error: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Notice Push Error: '.$e->getMessage());
         }
 
         return (new NoticeResource($notice))->additional(['message' => 'নোটিশ তৈরি সফল']);
@@ -197,7 +212,7 @@ class NoticeController extends Controller
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id');
 
-        if (!$schoolId && !$user->isSuperAdmin()) {
+        if (! $schoolId && ! $user->isSuperAdmin()) {
             $schoolId = $user->primarySchool()?->id;
         }
 
@@ -206,21 +221,35 @@ class NoticeController extends Controller
         }
 
         $validated = $request->validate([
-            'title' => ['required','string','max:200'],
-            'body' => ['required','string'],
-            'audience_type' => ['required','in:all,teachers,students'],
-            'publish_at' => ['nullable','date'],
-            'expiry_at' => ['nullable','date','after:publish_at'],
-            'reply_required' => ['nullable','boolean'],
-            'status' => ['nullable','in:draft,published'],
+            'title' => ['required', 'string', 'max:200'],
+            'body' => ['required', 'string'],
+            'publish_at' => ['nullable', 'date'],
+            'expiry_at' => ['nullable', 'date', 'after:publish_at'],
+            'reply_required' => ['nullable', 'boolean'],
+            'show_on_frontend_marquee' => ['nullable', 'boolean'],
+            'show_on_frontend_board' => ['nullable', 'boolean'],
+            'status' => ['nullable', 'in:draft,published'],
             'targets' => ['nullable', 'array'],
+            'audience_channels' => ['required', 'array', 'min:1'],
+            'audience_channels.*' => ['in:teachers,students,website'],
+            'attachment' => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:10240'],
+            'remove_attachment' => ['nullable', 'boolean'],
         ]);
+
+        $audience = $this->resolveAudienceFromChannels(
+            $validated['audience_channels'] ?? [],
+            $validated['show_on_frontend_board'] ?? true,
+            $validated['show_on_frontend_marquee'] ?? false,
+        );
 
         $notice->update([
             'title' => $validated['title'],
             'body' => $validated['body'],
-            'audience_type' => $validated['audience_type'],
+            'audience_type' => $audience['audience_type'],
+            'audience_channels' => $audience['audience_channels'],
             'reply_required' => $validated['reply_required'] ?? false,
+            'show_on_frontend_marquee' => $audience['show_on_frontend_marquee'],
+            'show_on_frontend_board' => $audience['show_on_frontend_board'],
             'publish_at' => $validated['publish_at'] ?? now(),
             'expiry_at' => $validated['expiry_at'] ?? null,
             'status' => $validated['status'] ?? 'published',
@@ -228,14 +257,14 @@ class NoticeController extends Controller
 
         // Refresh targets
         $notice->targets()->delete();
-        if (!empty($validated['targets'])) {
+        if (! empty($validated['targets'])) {
             foreach ($validated['targets'] as $target) {
                 $typeMap = [
                     'Teacher' => \App\Models\Teacher::class,
                     'Student' => \App\Models\Student::class,
-                    'Class'   => \App\Models\SchoolClass::class,
+                    'Class' => \App\Models\SchoolClass::class,
                     'Section' => \App\Models\Section::class,
-                    'Group'   => \App\Models\Group::class,
+                    'Group' => \App\Models\Group::class,
                 ];
 
                 if (isset($typeMap[$target['type']])) {
@@ -247,7 +276,13 @@ class NoticeController extends Controller
             }
         }
 
-        return (new NoticeResource($notice))->additional(['message' => 'নোটিশ আপডেট সফল']);
+        if ($request->boolean('remove_attachment')) {
+            $this->deleteAttachment($notice);
+        }
+
+        $this->persistAttachment($request, $notice, (int) ($notice->school_id ?? $schoolId));
+
+        return (new NoticeResource($notice->fresh()))->additional(['message' => 'নোটিশ আপডেট সফল']);
     }
 
     public function destroy(Request $request, Notice $notice)
@@ -255,7 +290,7 @@ class NoticeController extends Controller
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id');
 
-        if (!$schoolId && !$user->isSuperAdmin()) {
+        if (! $schoolId && ! $user->isSuperAdmin()) {
             $schoolId = $user->primarySchool()?->id;
         }
 
@@ -264,12 +299,71 @@ class NoticeController extends Controller
         }
 
         // Security: Prevent deleting notices from other schools
-        if ($notice->school_id && $notice->school_id != $schoolId && !$user->isSuperAdmin()) {
+        if ($notice->school_id && $notice->school_id != $schoolId && ! $user->isSuperAdmin()) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
+        $this->deleteAttachment($notice);
         $notice->delete();
+
         return response()->json(['message' => 'নোটিশ মুছে ফেলা হয়েছে']);
+    }
+
+    /**
+     * @param  list<string>  $channels
+     * @return array{audience_type: string, audience_channels: list<string>, show_on_frontend_board: bool, show_on_frontend_marquee: bool}
+     */
+    protected function resolveAudienceFromChannels(array $channels, bool $showOnBoard, bool $showOnMarquee): array
+    {
+        $channels = array_values(array_unique(array_filter($channels)));
+
+        $hasTeachers = in_array('teachers', $channels, true);
+        $hasStudents = in_array('students', $channels, true);
+        $hasWebsite = in_array('website', $channels, true);
+
+        if ($hasTeachers && $hasStudents) {
+            $audienceType = 'all';
+        } elseif ($hasTeachers) {
+            $audienceType = 'teachers';
+        } elseif ($hasStudents) {
+            $audienceType = 'students';
+        } else {
+            $audienceType = 'all';
+        }
+
+        return [
+            'audience_type' => $audienceType,
+            'audience_channels' => $channels,
+            'show_on_frontend_board' => $hasWebsite && $showOnBoard,
+            'show_on_frontend_marquee' => $hasWebsite && $showOnMarquee,
+        ];
+    }
+
+    protected function persistAttachment(Request $request, Notice $notice, int $schoolId): void
+    {
+        if (! $request->hasFile('attachment')) {
+            return;
+        }
+
+        $this->deleteAttachment($notice);
+
+        $path = $request->file('attachment')->store(
+            'notices/'.($schoolId ?: 'global'),
+            'public'
+        );
+
+        $notice->update(['attachment_path' => $path]);
+    }
+
+    protected function deleteAttachment(Notice $notice): void
+    {
+        if ($notice->attachment_path && Storage::disk('public')->exists($notice->attachment_path)) {
+            Storage::disk('public')->delete($notice->attachment_path);
+        }
+
+        if ($notice->attachment_path) {
+            $notice->update(['attachment_path' => null]);
+        }
     }
 
     public function stats(Notice $notice, Request $request)
@@ -277,22 +371,22 @@ class NoticeController extends Controller
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id') ?? $user->primarySchool()?->id;
 
-        if (!$schoolId && !$user->isSuperAdmin()) {
-             // Try to get it from notice if all else fails
-             $schoolId = $notice->school_id;
+        if (! $schoolId && ! $user->isSuperAdmin()) {
+            // Try to get it from notice if all else fails
+            $schoolId = $notice->school_id;
         }
 
-        if (!$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+        if (! $user->isPrincipal($schoolId) && ! $user->isSuperAdmin()) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
         // Security: Prevent viewing stats for notices from other schools
-        if ($notice->school_id && $notice->school_id != $schoolId && !$user->isSuperAdmin()) {
+        if ($notice->school_id && $notice->school_id != $schoolId && ! $user->isSuperAdmin()) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
         $reads = $notice->reads()->pluck('user_id')->toArray();
-        $replies = $notice->replies()->get()->keyBy(function($r) {
+        $replies = $notice->replies()->get()->keyBy(function ($r) {
             return $r->student_id ? 'student_'.$r->student_id : 'parent_'.$r->parent_id;
         });
 
@@ -301,7 +395,7 @@ class NoticeController extends Controller
         // 1. Handle Teachers
         if ($notice->audience_type === 'all' || $notice->audience_type === 'teachers') {
             $teacherQuery = \App\Models\Teacher::where('school_id', $schoolId)->where('status', 'active');
-            
+
             if ($notice->audience_type === 'teachers' && $notice->targets()->where('targetable_type', \App\Models\Teacher::class)->exists()) {
                 $targetIds = $notice->targets()->where('targetable_type', \App\Models\Teacher::class)->pluck('targetable_id');
                 $teacherQuery->whereIn('id', $targetIds);
@@ -310,10 +404,12 @@ class NoticeController extends Controller
             $teachers = $teacherQuery->get(['id', 'user_id', 'photo', 'first_name_bn', 'last_name_bn', 'first_name', 'last_name']);
             foreach ($teachers as $teacher) {
                 $status = 'unread';
-                if ($teacher->user_id && in_array($teacher->user_id, $reads)) $status = 'read';
-                
+                if ($teacher->user_id && in_array($teacher->user_id, $reads)) {
+                    $status = 'read';
+                }
+
                 // For teachers, we check if they replied using their user_id (parent_id in NoticeReply)
-                $replyKey = 'parent_' . $teacher->user_id;
+                $replyKey = 'parent_'.$teacher->user_id;
                 $voiceReply = null;
                 if ($teacher->user_id && $replies->has($replyKey)) {
                     $status = 'replied';
@@ -323,8 +419,8 @@ class NoticeController extends Controller
                     ];
                 }
 
-                $nameBn = trim(($teacher->first_name_bn ?? '') . ' ' . ($teacher->last_name_bn ?? ''));
-                $nameEn = trim(($teacher->first_name ?? '') . ' ' . ($teacher->last_name ?? ''));
+                $nameBn = trim(($teacher->first_name_bn ?? '').' '.($teacher->last_name_bn ?? ''));
+                $nameEn = trim(($teacher->first_name ?? '').' '.($teacher->last_name ?? ''));
 
                 $recipientList->push([
                     'id' => $teacher->id,
@@ -333,7 +429,7 @@ class NoticeController extends Controller
                     'photo_url' => $teacher->photo_url,
                     'status' => $status,
                     'reply' => $voiceReply,
-                    'details' => 'শিক্ষক'
+                    'details' => 'শিক্ষক',
                 ]);
             }
         }
@@ -345,17 +441,21 @@ class NoticeController extends Controller
                 ->with(['currentEnrollment.class', 'currentEnrollment.section']);
 
             if ($notice->audience_type === 'students' && $notice->targets()->exists()) {
-                $studentQuery->where(function($q) use ($notice) {
+                $studentQuery->where(function ($q) use ($notice) {
                     $targets = $notice->targets;
                     $studentIds = $targets->where('targetable_type', \App\Models\Student::class)->pluck('targetable_id');
-                    if ($studentIds->isNotEmpty()) $q->orWhereIn('id', $studentIds);
+                    if ($studentIds->isNotEmpty()) {
+                        $q->orWhereIn('id', $studentIds);
+                    }
 
                     $classIds = $targets->where('targetable_type', \App\Models\SchoolClass::class)->pluck('targetable_id');
-                    if ($classIds->isNotEmpty()) $q->orWhereIn('class_id', $classIds);
+                    if ($classIds->isNotEmpty()) {
+                        $q->orWhereIn('class_id', $classIds);
+                    }
 
                     $sectionIds = $targets->where('targetable_type', \App\Models\Section::class)->pluck('targetable_id');
                     if ($sectionIds->isNotEmpty()) {
-                        $q->orWhereHas('currentEnrollment', function($sq) use ($sectionIds) {
+                        $q->orWhereHas('currentEnrollment', function ($sq) use ($sectionIds) {
                             $sq->whereIn('section_id', $sectionIds);
                         });
                     }
@@ -365,9 +465,11 @@ class NoticeController extends Controller
             $students = $studentQuery->get();
             foreach ($students as $student) {
                 $status = 'unread';
-                if ($student->user_id && in_array($student->user_id, $reads)) $status = 'read';
-                
-                $replyKey = 'student_' . $student->id;
+                if ($student->user_id && in_array($student->user_id, $reads)) {
+                    $status = 'read';
+                }
+
+                $replyKey = 'student_'.$student->id;
                 $voiceReply = null;
                 if ($replies->has($replyKey)) {
                     $status = 'replied';
@@ -391,9 +493,9 @@ class NoticeController extends Controller
                     'roll' => $enroll?->roll_no,
                     'status' => $status,
                     'reply' => $voiceReply,
-                    'details' => "ক্লাস: " . ($className ?? 'N/A') . 
-                                 ", শাখা: " . ($sectionName ?? 'N/A') . 
-                                 ", রোল: " . ($enroll?->roll_no ?? 'N/A')
+                    'details' => 'ক্লাস: '.($className ?? 'N/A').
+                                 ', শাখা: '.($sectionName ?? 'N/A').
+                                 ', রোল: '.($enroll?->roll_no ?? 'N/A'),
                 ]);
             }
         }
@@ -404,9 +506,8 @@ class NoticeController extends Controller
                 'total_recipients' => $recipientList->count(),
                 'read_count' => $recipientList->whereIn('status', ['read', 'replied'])->count(),
                 'reply_count' => $recipientList->where('status', 'replied')->count(),
-                'all' => $recipientList->values()
-            ]
+                'all' => $recipientList->values(),
+            ],
         ]);
     }
 }
-

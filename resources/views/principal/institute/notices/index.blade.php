@@ -19,7 +19,3 @@
         <notice-manager :school-id="{{ $school->id }}"></notice-manager>
     </div>
 @stop
-
-@push('js')
-    @vite(['resources/js/app.js'])
-@endpush

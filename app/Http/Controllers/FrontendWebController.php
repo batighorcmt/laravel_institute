@@ -4,11 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\CmsPage;
 use App\Models\CmsPost;
+use App\Models\Notice;
 use App\Models\School;
 use App\Models\SchoolFrontendSetting;
 use App\Services\CmsSlugService;
+use App\Services\FrontendHomepageContentService;
+use App\Services\FrontendMenuService;
+use App\Services\FrontendNoticeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FrontendWebController extends Controller
 {
@@ -38,11 +44,41 @@ class FrontendWebController extends Controller
         }
 
         $settings = SchoolFrontendSetting::where('school_id', $school->id)->first();
+        $frontendNotices = app(FrontendNoticeService::class);
+        $homepageService = app(FrontendHomepageContentService::class);
+        $homepageContent = $homepageService->resolve($settings);
 
-        return view('frontend.index', [
-            'school' => $school,
-            'settings' => $settings,
-        ]);
+        if (empty($homepageContent['gallery'])) {
+            $homepageContent['gallery'] = $homepageService->placeholderGallery($school, $settings);
+        }
+
+        return view('frontend.index', array_merge(
+            $this->frontendChromeData($school, $settings),
+            [
+                'settings' => $settings,
+                'homepageContent' => $homepageContent,
+                'teachers' => $homepageService->teachersForSchool($school->id, 0),
+                'blogPosts' => $homepageService->blogPostsForSchool($school->id),
+                'boardNotices' => $frontendNotices->boardNoticesForSchool($school->id)->values()->all(),
+                'allBoardNotices' => $frontendNotices->allBoardNoticesForSchool($school->id)->values()->all(),
+            ]
+        ));
+    }
+
+    public function downloadNotice(Notice $notice): StreamedResponse
+    {
+        $school = $this->resolveSchoolOrAbort();
+
+        $downloadable = app(FrontendNoticeService::class)->findDownloadableNotice($school->id, $notice->id);
+
+        if (! $downloadable?->attachment_path || ! Storage::disk('public')->exists($downloadable->attachment_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->download(
+            $downloadable->attachment_path,
+            basename($downloadable->attachment_path)
+        );
     }
 
     public function blogIndex(Request $request): View
@@ -127,9 +163,86 @@ class FrontendWebController extends Controller
      */
     protected function cmsViewData(School $school, array $extra = []): array
     {
-        return array_merge([
-            'school' => $school,
-            'siteSettings' => SchoolFrontendSetting::where('school_id', $school->id)->first(),
+        $settings = SchoolFrontendSetting::where('school_id', $school->id)->first();
+
+        return array_merge($this->frontendChromeData($school, $settings), [
+            'siteSettings' => $settings,
         ], $extra);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function frontendChromeData(School $school, ?SchoolFrontendSetting $settings): array
+    {
+        $menuService = app(FrontendMenuService::class);
+        $frontendNotices = app(FrontendNoticeService::class);
+
+        return [
+            'school' => $school,
+            'schoolPayload' => $this->schoolPayload($school),
+            'settingsPayload' => $this->frontendSettingsPayload($settings),
+            'headerMenu' => $menuService->forLocation($settings, $school, 'header'),
+            'footerMenu' => $menuService->forLocation($settings, $school, 'footer'),
+            'marqueeNotices' => $frontendNotices->marqueeNoticesForSchool($school->id)->values()->all(),
+            'storageBase' => '/storage',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function schoolPayload(School $school): array
+    {
+        $payload = $school->only(['id', 'name', 'name_bn', 'code', 'eiin', 'phone', 'email', 'domain', 'logo', 'address', 'address_bn', 'founding_year']);
+        if (! empty($payload['logo'])) {
+            $payload['logo'] = storage_asset($payload['logo']);
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @return array<string, mixed>|object
+     */
+    protected function frontendSettingsPayload(?SchoolFrontendSetting $settings): array|object
+    {
+        if (! $settings) {
+            return new \stdClass;
+        }
+
+        $payload = $settings->toArray();
+
+        foreach (['hero_image', 'about_image', 'principal_image'] as $field) {
+            if (! empty($payload[$field])) {
+                $payload[$field] = storage_asset($payload[$field]);
+            }
+        }
+
+        $heroImages = $settings->hero_images;
+        if (is_string($heroImages)) {
+            $heroImages = json_decode($heroImages, true) ?: [];
+        }
+        if (! is_array($heroImages)) {
+            $heroImages = [];
+        }
+
+        $payload['hero_images'] = collect($heroImages)->map(function ($item) {
+            if (is_string($item)) {
+                return [
+                    'image' => storage_asset($item),
+                    'title' => '',
+                    'subtitle' => '',
+                    'active' => true,
+                ];
+            }
+            if (is_array($item) && ! empty($item['image'])) {
+                $item['image'] = storage_asset($item['image']);
+            }
+
+            return $item;
+        })->all();
+
+        return $payload;
     }
 }

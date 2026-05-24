@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Must stay false: Laravel registers GET /storage/{path} for served disks.
+            // The "local" disk is private; serving it caused 403 on public uploads (hero images).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
@@ -43,6 +45,7 @@ return [
             'root' => storage_path('app/public'),
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
+            'serve' => true,
             'throw' => false,
             'report' => false,
         ],

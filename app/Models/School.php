@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * @property int $id
@@ -21,8 +22,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class School extends Model
 {
     protected $fillable = [
-        'name', 'name_bn', 'code', 'eiin', 'mpo_code', 'address', 'address_bn', 
-        'short_address_bn', 'short_address_en', 'founding_year', 'school_code', 
+        'name', 'name_bn', 'code', 'eiin', 'mpo_code', 'address', 'address_bn',
+        'short_address_bn', 'short_address_en', 'founding_year', 'school_code',
         'phone', 'mobile', 'email', 'website', 'domain',
         'description', 'logo', 'status', 'admissions_enabled',
         'admission_academic_year_id', 'fine_enabled',
@@ -34,6 +35,25 @@ class School extends Model
         'admissions_enabled' => 'boolean',
         'fine_enabled' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (School $school): void {
+            if (! Schema::hasTable('modules')) {
+                return;
+            }
+
+            $syncData = Module::query()
+                ->where('status', 'active')
+                ->pluck('id')
+                ->mapWithKeys(fn (int $moduleId): array => [$moduleId => ['is_enabled' => true]])
+                ->all();
+
+            if ($syncData !== []) {
+                $school->modules()->sync($syncData);
+            }
+        });
+    }
 
     // Relationships
     public function users(): HasMany

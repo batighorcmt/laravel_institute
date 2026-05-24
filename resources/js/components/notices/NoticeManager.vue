@@ -9,13 +9,24 @@
 
     <!-- Notice List -->
     <div v-if="!showCreator" class="notice-list">
+      <div class="alert alert-info border-0 shadow-sm mb-4 d-flex align-items-start">
+        <i class="fas fa-paperclip fa-lg mt-1 mr-3 text-primary"></i>
+        <div class="small mb-0">
+          <strong>ফাইল সংযুক্তি</strong> যোগ করতে উপরের
+          <button type="button" class="btn btn-link btn-sm p-0 align-baseline font-weight-bold" @click="openCreator()">নতুন নোটিশ</button>
+          বাটনে ক্লিক করুন, অথবা তালিকা থেকে <strong>এডিট</strong> করুন।
+        </div>
+      </div>
       <div v-for="notice in notices" :key="notice.id" class="card mb-3 border-left-primary shadow-sm hover-shadow transition">
         <div class="card-body d-flex justify-content-between align-items-center py-3">
           <div @click="viewSingle(notice)" class="cursor-pointer flex-grow-1">
             <h5 class="card-title text-dark mb-1 font-weight-bold font-ui-force">{{ notice.title }}</h5>
             <p class="card-text text-muted small mb-0">
-              <i class="fas fa-user-friends mr-1"></i> {{ audienceLabel(notice.audience_type) }} |
+              <i class="fas fa-user-friends mr-1"></i> {{ audienceLabel(notice) }} |
               <i class="fas fa-calendar-alt mr-1"></i> {{ notice.publish_at }}
+              <span v-if="notice.attachment_url" class="badge badge-secondary ml-1"><i class="fas fa-paperclip"></i> ফাইল</span>
+              <span v-if="notice.show_on_frontend_marquee" class="badge badge-warning ml-1">মারকি</span>
+              <span v-if="notice.show_on_frontend_board" class="badge badge-primary ml-1">বোর্ড</span>
             </p>
           </div>
           <div class="text-right">
@@ -59,6 +70,32 @@
        <div class="card-body px-0 pl-md-4">
          <div class="row">
            <div class="col-md-7">
+             <div class="form-group notice-attachment-box p-3 mb-4 rounded border border-primary bg-light">
+               <label class="font-weight-bold d-block mb-2">
+                 <i class="fas fa-paperclip mr-1 text-primary"></i> ফাইল সংযুক্তি (ঐচ্ছিক)
+               </label>
+               <div class="custom-file">
+                 <input
+                   :key="attachmentInputKey"
+                   type="file"
+                   class="custom-file-input"
+                   id="noticeAttachmentInput"
+                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                   @change="onAttachmentSelected"
+                 >
+                 <label class="custom-file-label" for="noticeAttachmentInput">
+                   {{ attachmentFile ? attachmentFile.name : 'ফাইল বেছে নিন (PDF, Word, JPG/PNG — সর্বোচ্চ ১০ MB)' }}
+                 </label>
+               </div>
+               <small class="text-muted d-block mt-2">ফ্রন্টএন্ড নোটিশ বোর্ডে ক্লিক করলে এই ফাইল ডাউনলোড হবে।</small>
+               <div v-if="existingAttachmentName && !removeAttachment" class="alert alert-info py-2 px-3 mt-3 mb-0 small d-flex justify-content-between align-items-center">
+                 <span><i class="fas fa-file mr-1"></i> বর্তমান: {{ existingAttachmentName }}</span>
+                 <button type="button" class="btn btn-sm btn-outline-danger" @click="removeAttachment = true">সরান</button>
+               </div>
+               <div v-if="attachmentFile" class="text-success small mt-2 mb-0">
+                 <i class="fas fa-check-circle"></i> নির্বাচিত: {{ attachmentFile.name }}
+               </div>
+             </div>
              <div class="form-group">
                <label class="font-weight-bold">শিরোনাম *</label>
                <input v-model="form.title" type="text" class="form-control form-control-lg" placeholder="নোটিশের শিরোনাম লিখুন">
@@ -74,16 +111,38 @@
                 <h6 class="mb-3 border-bottom pb-2 font-weight-bold"><i class="fas fa-bullseye mr-2"></i>প্রাপক নির্বাচন</h6>
 
                 <div class="form-group">
-                  <label class="small text-muted">কাদের জন্য প্রযোজ্য?</label>
-                  <select v-model="form.audience_type" class="form-control" @change="resetTargets">
-                    <option value="all">সবাইকে (শিক্ষক ও শিক্ষার্থী)</option>
-                    <option value="teachers">শুধু শিক্ষকদের জন্য</option>
-                    <option value="students">শুধু শিক্ষার্থীদের জন্য</option>
-                  </select>
+                  <label class="small font-weight-bold d-block mb-2">কাদের জন্য প্রযোজ্য? <span class="text-danger">*</span></label>
+                  <small class="text-muted d-block mb-2">একাধিক বেছে নিতে পারবেন</small>
+                  <div class="border rounded bg-white p-2">
+                    <div class="custom-control custom-checkbox mb-2">
+                      <input v-model="form.audienceChannels" type="checkbox" value="teachers" class="custom-control-input" id="ch-teachers" @change="onAudienceChannelsChange">
+                      <label class="custom-control-label" for="ch-teachers">শিক্ষক</label>
+                    </div>
+                    <div class="custom-control custom-checkbox mb-2">
+                      <input v-model="form.audienceChannels" type="checkbox" value="students" class="custom-control-input" id="ch-students" @change="onAudienceChannelsChange">
+                      <label class="custom-control-label" for="ch-students">শিক্ষার্থী</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                      <input v-model="form.audienceChannels" type="checkbox" value="website" class="custom-control-input" id="ch-website" @change="onAudienceChannelsChange">
+                      <label class="custom-control-label" for="ch-website">ওয়েবসাইট (পাবলিক ফ্রন্টএন্ড)</label>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="hasWebsiteChannel" class="mb-3 p-2 border rounded bg-white">
+                  <label class="small font-weight-bold d-block mb-2">ওয়েবসাইটে কোথায় দেখাবে?</label>
+                  <div class="custom-control custom-checkbox mb-2">
+                    <input v-model="form.show_on_frontend_board" type="checkbox" class="custom-control-input" id="ch-board" :true-value="true" :false-value="false">
+                    <label class="custom-control-label small" for="ch-board">নোটিশ বোর্ড (ডান পাশ)</label>
+                  </div>
+                  <div class="custom-control custom-checkbox">
+                    <input v-model="form.show_on_frontend_marquee" type="checkbox" class="custom-control-input" id="ch-marquee" :true-value="true" :false-value="false">
+                    <label class="custom-control-label small" for="ch-marquee">উপরের স্ক্রলিং মারকি</label>
+                  </div>
                 </div>
 
                 <!-- Teacher Targeting -->
-                <div v-if="form.audience_type === 'teachers'" class="mt-3">
+                <div v-if="hasTeachersChannel" class="mt-3">
                    <label class="small font-weight-bold">শিক্ষক নির্বাচন করুন:</label>
                    <div class="targeting-list border rounded bg-white p-2">
                       <div v-for="teacher in teachers" :key="teacher.id" class="custom-control custom-checkbox mb-1">
@@ -95,7 +154,7 @@
                 </div>
 
                 <!-- Student Hierarchical Targeting -->
-                <div v-if="form.audience_type === 'students'" class="mt-3">
+                <div v-if="hasStudentsChannel" class="mt-3">
                    <!-- 1. Class Selection -->
                    <div class="mb-3">
                       <label class="small font-weight-bold">১. শ্রেণি নির্বাচন করুন:</label>
@@ -265,11 +324,18 @@
                    </div>
                 </div>
                 <div class="text-right">
-                   <div class="badge badge-light p-2">{{ audienceLabel(viewingNotice.audience_type) }}</div>
+                   <div class="badge badge-light p-2">{{ audienceLabel(viewingNotice) }}</div>
                 </div>
              </div>
 
              <div class="notice-content py-3 mb-4" v-html="formattedBody(viewingNotice.body)"></div>
+
+             <div v-if="viewingNotice.attachment_url" class="mb-4 p-3 bg-light rounded border">
+                <h6 class="small font-weight-bold text-muted text-uppercase mb-2">সংযুক্ত ফাইল</h6>
+                <a :href="viewingNotice.attachment_url" target="_blank" class="btn btn-outline-primary btn-sm">
+                  <i class="fas fa-download mr-1"></i> {{ viewingNotice.attachment_name || 'ফাইল ডাউনলোড' }}
+                </a>
+             </div>
 
              <div class="notice-targets bg-light p-3 rounded">
                 <h6 class="small font-weight-bold text-uppercase text-muted border-bottom pb-1 mb-2">প্রাপক সিলেকশন:</h6>
@@ -279,8 +345,7 @@
                    </div>
                 </div>
                 <div v-else class="text-muted small">
-                   {{ viewingNotice.audience_type === 'all' ? 'সকল শিক্ষক এবং শিক্ষার্থী' :
-                      viewingNotice.audience_type === 'teachers' ? 'সকল শিক্ষক' : 'সকল শিক্ষার্থী' }}
+                   {{ audienceLabel(viewingNotice) }}
                 </div>
              </div>
           </div>
@@ -336,12 +401,19 @@ export default {
       studentSearch: '',
       foundStudents: [],
 
+      attachmentFile: null,
+      attachmentInputKey: 0,
+      existingAttachmentName: null,
+      removeAttachment: false,
+
       form: {
         title: '',
         body: '',
-        audience_type: 'all',
+        audienceChannels: ['teachers', 'students'],
         targets: [], // {id, type, name}
         reply_required: false,
+        show_on_frontend_marquee: false,
+        show_on_frontend_board: true,
         publish_at: '',
         expiry_at: '',
       }
@@ -362,7 +434,16 @@ export default {
     statsReplies() {
       if (!this.statsData.all) return [];
       return this.statsData.all.filter(r => r.status === 'replied');
-    }
+    },
+    hasTeachersChannel() {
+      return this.form.audienceChannels.includes('teachers');
+    },
+    hasStudentsChannel() {
+      return this.form.audienceChannels.includes('students');
+    },
+    hasWebsiteChannel() {
+      return this.form.audienceChannels.includes('website');
+    },
   },
   watch: {
     selectedClasses(newVal) {
@@ -457,14 +538,54 @@ export default {
        this.form.targets = [];
        this.selectedClasses = [];
     },
+    onAudienceChannelsChange() {
+      if (!this.hasTeachersChannel) {
+        this.form.targets = this.form.targets.filter(t => t.type !== 'Teacher');
+      }
+      if (!this.hasStudentsChannel) {
+        this.form.targets = this.form.targets.filter(t => !['Student', 'Class', 'Section', 'Group'].includes(t.type));
+        this.selectedClasses = [];
+        this.foundStudents = [];
+        this.studentSearch = '';
+      }
+      if (!this.hasWebsiteChannel) {
+        this.form.show_on_frontend_board = false;
+        this.form.show_on_frontend_marquee = false;
+      } else if (!this.form.show_on_frontend_board && !this.form.show_on_frontend_marquee) {
+        this.form.show_on_frontend_board = true;
+      }
+    },
+    channelsFromNotice(notice) {
+      if (Array.isArray(notice.audience_channels) && notice.audience_channels.length) {
+        return [...notice.audience_channels];
+      }
+      const channels = [];
+      if (['all', 'teachers'].includes(notice.audience_type)) {
+        channels.push('teachers');
+      }
+      if (['all', 'students'].includes(notice.audience_type)) {
+        channels.push('students');
+      }
+      if (notice.show_on_frontend_board || notice.show_on_frontend_marquee) {
+        channels.push('website');
+      }
+      return channels.length ? channels : ['teachers', 'students'];
+    },
     openCreator() {
       this.editingId = null;
       this.resetTargets();
       this.form.title = '';
       this.form.body = '';
+      this.form.audienceChannels = ['teachers', 'students'];
       this.form.reply_required = false;
+      this.form.show_on_frontend_marquee = false;
+      this.form.show_on_frontend_board = true;
       this.form.publish_at = '';
       this.form.expiry_at = '';
+      this.attachmentFile = null;
+      this.attachmentInputKey += 1;
+      this.existingAttachmentName = null;
+      this.removeAttachment = false;
       this.showCreator = true;
     },
     viewSingle(notice) {
@@ -475,9 +596,11 @@ export default {
       this.form = {
         title: notice.title,
         body: notice.body,
-        audience_type: notice.audience_type,
+        audienceChannels: this.channelsFromNotice(notice),
         targets: notice.targets || [],
         reply_required: notice.reply_required,
+        show_on_frontend_marquee: !!notice.show_on_frontend_marquee,
+        show_on_frontend_board: notice.show_on_frontend_board !== false,
         publish_at: notice.publish_at ? notice.publish_at.replace(' ', 'T').slice(0, 16) : '',
         expiry_at: notice.expiry_at ? notice.expiry_at.replace(' ', 'T').slice(0, 16) : '',
       };
@@ -487,6 +610,10 @@ export default {
         .filter(t => t.type === 'Class')
         .map(t => t.id);
 
+      this.attachmentFile = null;
+      this.attachmentInputKey += 1;
+      this.existingAttachmentName = notice.attachment_name || (notice.attachment_url ? 'সংযুক্ত ফাইল' : null);
+      this.removeAttachment = false;
       this.showCreator = true;
       this.viewingNotice = null;
     },
@@ -504,16 +631,18 @@ export default {
       if (!this.form.title || !this.form.body) {
         return alert('শিরোনাম এবং বিবরণ আবশ্যক');
       }
+      if (!this.form.audienceChannels.length) {
+        return alert('কমপক্ষে একটি প্রাপক (শিক্ষক/শিক্ষার্থী/ওয়েবসাইট) বেছে নিন');
+      }
 
       this.saving = true;
       try {
         const url = this.editingId ? `/api/v1/notices/${this.editingId}` : '/api/v1/notices';
-        const method = this.editingId ? 'put' : 'post';
 
         // Prepare smart targets based on hierararchy: Student > Section/Group > Class
         let finalTargets = [...this.form.targets];
 
-        if (this.form.audience_type === 'students') {
+        if (this.hasStudentsChannel) {
            const studentTargets = finalTargets.filter(t => t.type === 'Student');
            const sectionTargets = finalTargets.filter(t => t.type === 'Section');
            const groupTargets   = finalTargets.filter(t => t.type === 'Group');
@@ -543,11 +672,13 @@ export default {
            finalTargets = filteredTargets;
         }
 
-        await axios[method](url, {
-           ...this.form,
-           school_id: this.schoolId,
-           targets: finalTargets
-        });
+        const payload = this.buildFormData(finalTargets);
+        if (this.editingId) {
+          payload.append('_method', 'PUT');
+          await axios.post(url, payload, { headers: { 'Content-Type': 'multipart/form-data' } });
+        } else {
+          await axios.post(url, payload, { headers: { 'Content-Type': 'multipart/form-data' } });
+        }
 
         if (window.toastr) {
             window.toastr.success(this.editingId ? 'নোটিশ আপডেট করা হয়েছে।' : 'নোটিশ তৈরি ও প্রচার করা হয়েছে।');
@@ -575,9 +706,10 @@ export default {
         console.error(err);
       }
     },
-    audienceLabel(type) {
-      const labels = { 'all': 'সবাই', 'teachers': 'শিক্ষক', 'students': 'শিক্ষার্থী' };
-      return labels[type] || type;
+    audienceLabel(notice) {
+      const channels = this.channelsFromNotice(notice);
+      const labels = { teachers: 'শিক্ষক', students: 'শিক্ষার্থী', website: 'ওয়েবসাইট' };
+      return channels.map(c => labels[c] || c).join(', ');
     },
     targetTypeLabel(type) {
        const labels = { 'Class': 'শ্রেণি', 'Section': 'শাখা', 'Group': 'বিভাগ', 'Student': 'শিক্ষার্থী', 'Teacher': 'শিক্ষক' };
@@ -586,13 +718,50 @@ export default {
     formattedBody(body) {
       if (!body) return '';
       return body.replace(/\n/g, '<br>');
-    }
+    },
+    onAttachmentSelected(event) {
+      const file = event.target.files?.[0];
+      this.attachmentFile = file || null;
+      if (file) {
+        this.removeAttachment = false;
+      }
+    },
+    buildFormData(finalTargets) {
+      const fd = new FormData();
+      fd.append('title', this.form.title);
+      fd.append('body', this.form.body);
+      this.form.audienceChannels.forEach((channel) => {
+        fd.append('audience_channels[]', channel);
+      });
+      fd.append('reply_required', this.form.reply_required ? '1' : '0');
+      fd.append('show_on_frontend_marquee', this.form.show_on_frontend_marquee ? '1' : '0');
+      fd.append('show_on_frontend_board', this.form.show_on_frontend_board ? '1' : '0');
+      if (this.form.publish_at) {
+        fd.append('publish_at', this.form.publish_at);
+      }
+      if (this.form.expiry_at) {
+        fd.append('expiry_at', this.form.expiry_at);
+      }
+      if (this.attachmentFile) {
+        fd.append('attachment', this.attachmentFile);
+      }
+      if (this.removeAttachment) {
+        fd.append('remove_attachment', '1');
+      }
+      finalTargets.forEach((target, index) => {
+        fd.append(`targets[${index}][id]`, target.id);
+        fd.append(`targets[${index}][type]`, target.type);
+      });
+      return fd;
+    },
   }
 }
 </script>
 
 <style scoped>
 .notice-manager { min-height: 500px; }
+.notice-attachment-box { border-style: dashed !important; border-width: 2px !important; }
+.notice-attachment-box .custom-file-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .transition { transition: all 0.2s ease-in-out; }
 .hover-shadow:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
 .cursor-pointer { cursor: pointer; }

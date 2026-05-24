@@ -28,7 +28,19 @@
     @endif
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
-    @vite(['resources/css/app.css'])
+    <script>
+        window.__FRONTEND_CHROME__ = {
+            school: @json($schoolPayload ?? $school),
+            settings: @json($settingsPayload ?? new stdClass()),
+            menuItems: @json($headerMenu ?? []),
+            footerMenu: @json($footerMenu ?? []),
+            marqueeNotices: @json($marqueeNotices ?? []),
+            storageBase: @json($storageBase ?? '/storage'),
+            showMarquee: true,
+            showAdmissionCta: true,
+        };
+    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         .cms-content h1,.cms-content h2,.cms-content h3 { font-weight: 700; margin-top: 1.25em; margin-bottom: .5em; }
         .cms-content p { margin-bottom: 1em; line-height: 1.75; }
@@ -38,32 +50,13 @@
         .cms-content td,.cms-content th { border: 1px solid #e2e8f0; padding: .5rem; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans antialiased" style="font-family: 'Hind Siliguri', sans-serif;">
-    <header class="bg-white border-b-4 border-indigo-600 shadow">
-        <div class="max-w-5xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-4">
-            <a href="{{ route('frontend.index') }}" class="flex items-center gap-3 text-inherit no-underline">
-                @if($school->logo ?? null)
-                    <img src="{{ asset('storage/'.$school->logo) }}" alt="" class="h-14 w-auto rounded-lg object-contain">
-                @endif
-                <div>
-                    <div class="text-xl font-bold text-indigo-950">{{ $school->name_bn ?? $school->name }}</div>
-                    <div class="text-xs text-slate-500 uppercase tracking-wider">{{ $school->name }}</div>
-                </div>
-            </a>
-            <nav class="flex flex-wrap gap-4 text-sm font-semibold">
-                <a href="{{ route('frontend.index') }}" class="text-slate-600 hover:text-indigo-600">হোম</a>
-                <a href="{{ route('frontend.blog.index') }}" class="text-slate-600 hover:text-indigo-600">ব্লগ</a>
-                <a href="{{ url('/admission/'.$school->code) }}" class="text-green-700 hover:text-green-600">ভর্তি</a>
-            </nav>
-        </div>
-    </header>
+<body class="bg-[#f8fafc] text-[#1e2a32] font-sans antialiased" style="font-family: 'Hind Siliguri', sans-serif;">
+    <div id="frontend-chrome-header"></div>
 
-    <main class="max-w-5xl mx-auto px-4 py-10">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         @yield('cms_body')
     </main>
 
-    <footer class="border-t bg-slate-900 text-slate-300 text-center text-sm py-6 mt-12">
-        <p>&copy; {{ date('Y') }} {{ $school->name_bn ?? $school->name }}</p>
-    </footer>
+    <div id="frontend-chrome-footer"></div>
 </body>
 </html>
