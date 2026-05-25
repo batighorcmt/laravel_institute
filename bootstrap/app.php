@@ -45,9 +45,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface ||
                     $e instanceof \Illuminate\Validation\ValidationException ||
                     $e instanceof \Illuminate\Auth\Access\AuthorizationException ||
+                    $e instanceof \Illuminate\Auth\AuthenticationException ||
                     $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
                     return null;
                 }
+
+                // Log the actual exception for debugging
+                \Illuminate\Support\Facades\Log::error('API Error: ' . $e->getMessage(), ['exception' => $e]);
 
                 // Return uniform error message for general server errors (500)
                 return response()->json([

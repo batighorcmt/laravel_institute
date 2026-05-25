@@ -53,6 +53,15 @@ class School extends Model
                 $school->modules()->sync($syncData);
             }
         });
+
+        // Clear domains cache when a school is created, updated, or deleted
+        static::saved(function () {
+            \Illuminate\Support\Facades\Cache::forget('school_domains');
+        });
+
+        static::deleted(function () {
+            \Illuminate\Support\Facades\Cache::forget('school_domains');
+        });
     }
 
     // Relationships

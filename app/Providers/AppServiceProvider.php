@@ -21,6 +21,27 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Dynamically add all school domains to Sanctum's stateful domains list
+        try {
+            $domains = \Illuminate\Support\Facades\Cache::rememberForever('school_domains', function () {
+                if (\Illuminate\Support\Facades\Schema::hasTable('schools')) {
+                    return \App\Models\School::whereNotNull('domain')->where('domain', '!=', '')->pluck('domain')->toArray();
+                }
+                return [];
+            });
+
+            if (!empty($domains)) {
+                $stateful = config('sanctum.stateful', []);
+                foreach ($domains as $domain) {
+                    $stateful[] = $domain;
+                    $stateful[] = $domain . ':8000'; // For local testing
+                }
+                config(['sanctum.stateful' => array_unique($stateful)]);
+            }
+        } catch (\Exception $e) {
+            // Ignore if DB is not available yet
+        }
+
         // Use Bootstrap pagination views to match AdminLTE 3
         \Illuminate\Pagination\Paginator::useBootstrap();
 
