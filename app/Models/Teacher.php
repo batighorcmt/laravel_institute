@@ -2,11 +2,10 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
-use App\Traits\BelongsToSchool;
 
 class Teacher extends Model
 {
@@ -35,12 +34,25 @@ class Teacher extends Model
         'photo',
         'signature',
         'status',
+        'job_type',
+        'show_on_website',
+        'present_division_id',
+        'present_district_id',
+        'present_thana_id',
+        'present_post_office',
+        'present_village',
+        'permanent_division_id',
+        'permanent_district_id',
+        'permanent_thana_id',
+        'permanent_post_office',
+        'permanent_village',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
         'joining_date' => 'date',
         'status' => 'string',
+        'show_on_website' => 'boolean',
     ];
 
     // Relationships
@@ -69,12 +81,12 @@ class Teacher extends Model
     // Accessor for full name
     public function getFullNameAttribute(): string
     {
-        return trim($this->first_name . ' ' . $this->last_name);
+        return trim($this->first_name.' '.$this->last_name);
     }
 
     public function getFullNameBnAttribute(): string
     {
-        return trim(($this->first_name_bn ?? '') . ' ' . ($this->last_name_bn ?? ''));
+        return trim(($this->first_name_bn ?? '').' '.($this->last_name_bn ?? ''));
     }
 
     // Scopes
@@ -100,9 +112,9 @@ class Teacher extends Model
         }
 
         // 1) Check in teachers folder
-        $path = 'teachers/' . $this->photo;
+        $path = 'teachers/'.$this->photo;
         if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
-            return asset('storage/' . $path);
+            return asset('storage/'.$path);
         }
 
         // 2) If stored directly in public path
@@ -111,16 +123,46 @@ class Teacher extends Model
         }
 
         // 3) If stored in storage/app/public (accessible via /storage/...)
-        if (file_exists(storage_path('app/public/' . $this->photo))) {
-            return asset('storage/' . ltrim($this->photo, '/'));
+        if (file_exists(storage_path('app/public/'.$this->photo))) {
+            return asset('storage/'.ltrim($this->photo, '/'));
         }
 
         // 4) Fallback to students folder
-        $studentsPath = 'students/' . $this->photo;
+        $studentsPath = 'students/'.$this->photo;
         if (\Illuminate\Support\Facades\Storage::disk('public')->exists($studentsPath)) {
-            return asset('storage/' . $studentsPath);
+            return asset('storage/'.$studentsPath);
         }
 
         return null;
+    }
+
+    public function presentDivision(): BelongsTo
+    {
+        return $this->belongsTo(Division::class, 'present_division_id');
+    }
+
+    public function presentDistrict(): BelongsTo
+    {
+        return $this->belongsTo(District::class, 'present_district_id');
+    }
+
+    public function presentThana(): BelongsTo
+    {
+        return $this->belongsTo(Thana::class, 'present_thana_id');
+    }
+
+    public function permanentDivision(): BelongsTo
+    {
+        return $this->belongsTo(Division::class, 'permanent_division_id');
+    }
+
+    public function permanentDistrict(): BelongsTo
+    {
+        return $this->belongsTo(District::class, 'permanent_district_id');
+    }
+
+    public function permanentThana(): BelongsTo
+    {
+        return $this->belongsTo(Thana::class, 'permanent_thana_id');
     }
 }

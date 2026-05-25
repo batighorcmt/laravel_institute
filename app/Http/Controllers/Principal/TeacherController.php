@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Principal;
 
 use App\Http\Controllers\Controller;
-use App\Models\School;
+use App\Models\Division;
 use App\Models\Role;
-use App\Models\User;
+use App\Models\School;
 use App\Models\Teacher;
+use App\Models\User;
 use App\Models\UserSchoolRole;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class TeacherController extends Controller
 {
@@ -22,26 +22,46 @@ class TeacherController extends Controller
             ->orderByRaw('COALESCE(serial_number, 999999)')
             ->orderBy('id')
             ->get();
-        
+
         $principalUserIds = UserSchoolRole::forSchool($school->id)
             ->withRole(Role::PRINCIPAL)
             ->pluck('user_id')
             ->all();
-        
-        return view('principal.teachers.index', compact('school','teachers','principalUserIds'));
+
+        return view('principal.teachers.index', compact('school', 'teachers', 'principalUserIds'));
+    }
+
+    public function print(School $school)
+    {
+        $teachers = Teacher::with(['user:id,username,email'])
+            ->where('school_id', $school->id)
+            ->orderByRaw('COALESCE(serial_number, 999999)')
+            ->orderBy('id')
+            ->get();
+
+        $printTitle = 'শিক্ষক তালিকা';
+        $printSubtitle = ($school->name_bn ?? $school->name).' | মোট শিক্ষক: '.$teachers->count().' জন';
+
+        return view('principal.teachers.print', compact('school', 'teachers', 'printTitle', 'printSubtitle'));
     }
 
     public function create(School $school)
     {
-        // empty teacherRole for the form partial
-        return view('principal.teachers.create', compact('school'));
+        $divisions = Division::where('status', 1)->orderBy('name')->get();
+
+        return view('principal.teachers.create', compact('school', 'divisions'));
     }
 
     public function edit(School $school, Teacher $teacher)
     {
         // authorize that this is a teacher for this school
-        if ($teacher->school_id !== $school->id) abort(404);
-        return view('principal.teachers.edit', ['school'=>$school, 'teacher'=>$teacher]);
+        if ($teacher->school_id !== $school->id) {
+            abort(404);
+        }
+
+        $divisions = Division::where('status', 1)->orderBy('name')->get();
+
+        return view('principal.teachers.edit', ['school' => $school, 'teacher' => $teacher, 'divisions' => $divisions]);
     }
 
     public function store(Request $request, School $school)
@@ -67,50 +87,64 @@ class TeacherController extends Controller
             'serial_number' => 'nullable|integer|min:1',
             'photo' => 'nullable|image|max:2048',
             'signature' => 'nullable|image|max:2048',
+            'status' => 'nullable|string|in:active,inactive',
+            'job_type' => 'nullable|string|max:100',
+            'show_on_website' => 'nullable|boolean',
+            'present_division_id' => 'nullable|exists:divisions,id',
+            'present_district_id' => 'nullable|exists:districts,id',
+            'present_thana_id' => 'nullable|exists:thanas,id',
+            'present_post_office' => 'nullable|string|max:191',
+            'present_village' => 'nullable|string|max:191',
+            'permanent_division_id' => 'nullable|exists:divisions,id',
+            'permanent_district_id' => 'nullable|exists:districts,id',
+            'permanent_thana_id' => 'nullable|exists:thanas,id',
+            'permanent_post_office' => 'nullable|string|max:191',
+            'permanent_village' => 'nullable|string|max:191',
         ]);
         DB::beginTransaction();
         try {
             // Find next available username
             $schoolCode = $school->code;
             $counter = 1;
-            
+
             // Find the highest existing username number for this school
-            $existingUsernames = User::where('username', 'LIKE', $schoolCode . 'T%')
+            $existingUsernames = User::where('username', 'LIKE', $schoolCode.'T%')
                 ->whereNotNull('username')
                 ->pluck('username')
-                ->map(function($username) use ($schoolCode) {
-                    $num = str_replace($schoolCode . 'T', '', $username);
-                    return is_numeric($num) ? (int)$num : 0;
+                ->map(function ($username) use ($schoolCode) {
+                    $num = str_replace($schoolCode.'T', '', $username);
+
+                    return is_numeric($num) ? (int) $num : 0;
                 })
                 ->filter()
                 ->toArray();
-            
-            if (!empty($existingUsernames)) {
+
+            if (! empty($existingUsernames)) {
                 $counter = max($existingUsernames) + 1;
             }
-            
+
             // Generate unique username
-            $username = $schoolCode . 'T' . str_pad($counter, 3, '0', STR_PAD_LEFT);
-            
+            $username = $schoolCode.'T'.str_pad($counter, 3, '0', STR_PAD_LEFT);
+
             // Double check uniqueness (safety)
             while (User::where('username', $username)->exists()) {
                 $counter++;
-                $username = $schoolCode . 'T' . str_pad($counter, 3, '0', STR_PAD_LEFT);
+                $username = $schoolCode.'T'.str_pad($counter, 3, '0', STR_PAD_LEFT);
             }
-            
+
             // Generate 6-digit random password
             $plainPassword = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-            
+
             $email = $data['email'] ?? (uniqid('t_').'@example.com');
-            
+
             // Step 1: Create User (authentication only)
             $user = User::create([
-                'name' => trim(($data['first_name']??'').' '.($data['last_name']??'')) ?: $data['first_name'],
+                'name' => trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')) ?: $data['first_name'],
                 'username' => $username,
                 'email' => $email,
                 'password' => bcrypt($plainPassword),
             ]);
-            
+
             // Step 2: Create UserSchoolRole (role assignment)
             UserSchoolRole::create([
                 'user_id' => $user->id,
@@ -118,17 +152,17 @@ class TeacherController extends Controller
                 'role_id' => $teacherRole->id,
                 'status' => 'active',
             ]);
-            
+
             // Step 3: Handle file uploads
             $photoPath = null;
             $signaturePath = null;
             if ($request->hasFile('photo')) {
-                $photoPath = $request->file('photo')->store('teachers/photos','public');
+                $photoPath = $request->file('photo')->store('teachers/photos', 'public');
             }
             if ($request->hasFile('signature')) {
-                $signaturePath = $request->file('signature')->store('teachers/signatures','public');
+                $signaturePath = $request->file('signature')->store('teachers/signatures', 'public');
             }
-            
+
             // Step 4: Create Teacher (all profile data)
             Teacher::create([
                 'user_id' => $user->id,
@@ -152,14 +186,28 @@ class TeacherController extends Controller
                 'qualification' => $data['qualification'] ?? null,
                 'photo' => $photoPath,
                 'signature' => $signaturePath,
-                'status' => 'active',
+                'status' => $data['status'] ?? 'active',
+                'job_type' => $data['job_type'] ?? null,
+                'show_on_website' => $request->boolean('show_on_website'),
+                'present_division_id' => $data['present_division_id'] ?? null,
+                'present_district_id' => $data['present_district_id'] ?? null,
+                'present_thana_id' => $data['present_thana_id'] ?? null,
+                'present_post_office' => $data['present_post_office'] ?? null,
+                'present_village' => $data['present_village'] ?? null,
+                'permanent_division_id' => $data['permanent_division_id'] ?? null,
+                'permanent_district_id' => $data['permanent_district_id'] ?? null,
+                'permanent_thana_id' => $data['permanent_thana_id'] ?? null,
+                'permanent_post_office' => $data['permanent_post_office'] ?? null,
+                'permanent_village' => $data['permanent_village'] ?? null,
             ]);
-            
+
             DB::commit();
-            return redirect()->back()->with('success','শিক্ষক যুক্ত হয়েছে');
+
+            return redirect()->back()->with('success', 'শিক্ষক যুক্ত হয়েছে');
         } catch (\Throwable $e) {
             DB::rollBack();
-            return redirect()->back()->with('error','ব্যর্থ: '.$e->getMessage());
+
+            return redirect()->back()->with('error', 'ব্যর্থ: '.$e->getMessage());
         }
     }
 
@@ -169,17 +217,19 @@ class TeacherController extends Controller
         $current = Auth::user();
         $hasSuperAdmin = false;
         if ($current) {
-            $hasSuperAdmin = \App\Models\UserSchoolRole::where('user_id',$current->id)
-                ->where('status','active')
-                ->whereHas('role', function($q){ $q->where('name', Role::SUPER_ADMIN); })
+            $hasSuperAdmin = \App\Models\UserSchoolRole::where('user_id', $current->id)
+                ->where('status', 'active')
+                ->whereHas('role', function ($q) {
+                    $q->where('name', Role::SUPER_ADMIN);
+                })
                 ->exists();
         }
         if ($teacher->user && $teacher->user->isPrincipal($school->id)) {
-            if (!$current) {
-                return redirect()->back()->with('error','অননুমোদিত অ্যাকশন');
+            if (! $current) {
+                return redirect()->back()->with('error', 'অননুমোদিত অ্যাকশন');
             }
-            if (!$hasSuperAdmin && $current->id !== $teacher->user_id) {
-                return redirect()->back()->with('error','প্রধান শিক্ষকের তথ্য কেবল নিজে বা সুপার অ্যাডমিন সম্পাদনা করতে পারবেন');
+            if (! $hasSuperAdmin && $current->id !== $teacher->user_id) {
+                return redirect()->back()->with('error', 'প্রধান শিক্ষকের তথ্য কেবল নিজে বা সুপার অ্যাডমিন সম্পাদনা করতে পারবেন');
             }
         }
         $data = $request->validate([
@@ -202,6 +252,19 @@ class TeacherController extends Controller
             'serial_number' => 'nullable|integer|min:1',
             'photo' => 'nullable|image|max:2048',
             'signature' => 'nullable|image|max:2048',
+            'status' => 'nullable|string|in:active,inactive',
+            'job_type' => 'nullable|string|max:100',
+            'show_on_website' => 'nullable|boolean',
+            'present_division_id' => 'nullable|exists:divisions,id',
+            'present_district_id' => 'nullable|exists:districts,id',
+            'present_thana_id' => 'nullable|exists:thanas,id',
+            'present_post_office' => 'nullable|string|max:191',
+            'present_village' => 'nullable|string|max:191',
+            'permanent_division_id' => 'nullable|exists:divisions,id',
+            'permanent_district_id' => 'nullable|exists:districts,id',
+            'permanent_thana_id' => 'nullable|exists:thanas,id',
+            'permanent_post_office' => 'nullable|string|max:191',
+            'permanent_village' => 'nullable|string|max:191',
         ]);
         DB::beginTransaction();
         try {
@@ -223,30 +286,45 @@ class TeacherController extends Controller
                 'designation' => $data['designation'] ?? null,
                 'initials' => $data['initials'] ?? null,
                 'serial_number' => $data['serial_number'] ?? null,
+                'status' => $data['status'] ?? 'active',
+                'job_type' => $data['job_type'] ?? null,
+                'show_on_website' => $request->boolean('show_on_website'),
+                'present_division_id' => $data['present_division_id'] ?? null,
+                'present_district_id' => $data['present_district_id'] ?? null,
+                'present_thana_id' => $data['present_thana_id'] ?? null,
+                'present_post_office' => $data['present_post_office'] ?? null,
+                'present_village' => $data['present_village'] ?? null,
+                'permanent_division_id' => $data['permanent_division_id'] ?? null,
+                'permanent_district_id' => $data['permanent_district_id'] ?? null,
+                'permanent_thana_id' => $data['permanent_thana_id'] ?? null,
+                'permanent_post_office' => $data['permanent_post_office'] ?? null,
+                'permanent_village' => $data['permanent_village'] ?? null,
             ];
-            
+
             // Handle photo upload
             if ($request->hasFile('photo')) {
-                $teacherUpdates['photo'] = $request->file('photo')->store('teachers/photos','public');
+                $teacherUpdates['photo'] = $request->file('photo')->store('teachers/photos', 'public');
             }
-            
+
             // Handle signature upload
             if ($request->hasFile('signature')) {
-                $teacherUpdates['signature'] = $request->file('signature')->store('teachers/signatures','public');
+                $teacherUpdates['signature'] = $request->file('signature')->store('teachers/signatures', 'public');
             }
-            
+
             $teacher->update($teacherUpdates);
-            
+
             // Update user email and name
             $teacher->user->update([
                 'email' => $data['email'] ?? $teacher->user->email,
-                'name' => trim(($data['first_name']??'').' '.($data['last_name']??'')) ?: $data['first_name'],
+                'name' => trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')) ?: $data['first_name'],
             ]);
             DB::commit();
-            return redirect()->back()->with('success','আপডেট সফল');
+
+            return redirect()->back()->with('success', 'আপডেট সফল');
         } catch (\Throwable $e) {
             DB::rollBack();
-            return redirect()->back()->with('error','আপডেট ব্যর্থ: '.$e->getMessage());
+
+            return redirect()->back()->with('error', 'আপডেট ব্যর্থ: '.$e->getMessage());
         }
     }
 
@@ -256,25 +334,30 @@ class TeacherController extends Controller
             $current = Auth::user();
             $hasSuperAdmin = false;
             if ($current) {
-                $hasSuperAdmin = \App\Models\UserSchoolRole::where('user_id',$current->id)
-                    ->where('status','active')
-                    ->whereHas('role', function($q){ $q->where('name', Role::SUPER_ADMIN); })
+                $hasSuperAdmin = \App\Models\UserSchoolRole::where('user_id', $current->id)
+                    ->where('status', 'active')
+                    ->whereHas('role', function ($q) {
+                        $q->where('name', Role::SUPER_ADMIN);
+                    })
                     ->exists();
             }
-            if ($teacher->user && $teacher->user->isPrincipal($school->id) && (!$current || !$hasSuperAdmin)) {
-                return redirect()->back()->with('error','প্রধান শিক্ষকের তথ্য কেবল সুপার অ্যাডমিন মুছতে পারবেন');
+            if ($teacher->user && $teacher->user->isPrincipal($school->id) && (! $current || ! $hasSuperAdmin)) {
+                return redirect()->back()->with('error', 'প্রধান শিক্ষকের তথ্য কেবল সুপার অ্যাডমিন মুছতে পারবেন');
             }
             // Delete teacher (cascade will delete user and user_school_roles)
             $teacher->delete();
-            return redirect()->back()->with('success','শিক্ষক মুছে ফেলা হয়েছে');
+
+            return redirect()->back()->with('success', 'শিক্ষক মুছে ফেলা হয়েছে');
         } catch (\Throwable $e) {
-            return redirect()->back()->with('error','মুছতে ব্যর্থ: '.$e->getMessage());
+            return redirect()->back()->with('error', 'মুছতে ব্যর্থ: '.$e->getMessage());
         }
     }
 
     public function resetPassword(School $school, Teacher $teacher)
     {
-        if ($teacher->school_id !== $school->id) abort(404);
+        if ($teacher->school_id !== $school->id) {
+            abort(404);
+        }
         try {
             // Generate new 6-digit password
             $plainPassword = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -287,9 +370,10 @@ class TeacherController extends Controller
             // Store plain password on teacher profile for principal visibility
             $teacher->plain_password = $plainPassword;
             $teacher->save();
-            return redirect()->back()->with('success','পাসওয়ার্ড রিসেট হয়েছে');
+
+            return redirect()->back()->with('success', 'পাসওয়ার্ড রিসেট হয়েছে');
         } catch (\Throwable $e) {
-            return redirect()->back()->with('error','রিসেট ব্যর্থ: '.$e->getMessage());
+            return redirect()->back()->with('error', 'রিসেট ব্যর্থ: '.$e->getMessage());
         }
     }
 }

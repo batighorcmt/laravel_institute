@@ -162,15 +162,15 @@ Route::middleware(['auth', 'active_school'])->group(function () {
         Route::get('schools/{school}/modules', [SchoolController::class, 'getModules'])->name('schools.modules');
         Route::post('schools/{school}/modules', [SchoolController::class, 'updateModules'])->name('schools.update-modules');
 
-        // Location Dependent Dropdowns (AJAX)
-        Route::get('location/districts', [\App\Http\Controllers\LocationController::class, 'districts'])->name('location.districts');
-        Route::get('location/thanas', [\App\Http\Controllers\LocationController::class, 'thanas'])->name('location.thanas');
-        Route::get('location/unions', [\App\Http\Controllers\LocationController::class, 'unions'])->name('location.unions');
-
         // App Updates management
         Route::resource('app-updates', \App\Http\Controllers\SuperAdmin\AppUpdateController::class);
     }
     );
+
+    // Location Dependent Dropdowns (AJAX) - Available to all authenticated users
+    Route::get('location/districts', [\App\Http\Controllers\LocationController::class, 'districts'])->name('location.districts');
+    Route::get('location/thanas', [\App\Http\Controllers\LocationController::class, 'thanas'])->name('location.thanas');
+    Route::get('location/unions', [\App\Http\Controllers\LocationController::class, 'unions'])->name('location.unions');
 
     // Principal Routes (role-protected)
     Route::prefix('principal')->name('principal.')->middleware(['role:principal'])->group(function () {
@@ -210,6 +210,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             // Teachers management
             Route::prefix('teachers')->name('teachers.')->group(function () {
                 Route::get('/', [PrincipalTeacherController::class, 'index'])->name('index');
+                Route::get('/print', [PrincipalTeacherController::class, 'print'])->name('print');
                 Route::get('/create', [PrincipalTeacherController::class, 'create'])->name('create');
                 Route::post('/', [PrincipalTeacherController::class, 'store'])->name('store');
                 Route::get('/{teacher}/edit', [PrincipalTeacherController::class, 'edit'])->name('edit');

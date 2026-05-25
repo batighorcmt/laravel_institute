@@ -752,13 +752,13 @@ class ResultController extends Controller
                         'is_absent' => $isAbsent,
                     ]);
 
+                    $grandTotal += $subTotal;
+
                     if ($isOptional) {
                         if ($subGP > 2.00) {
-                            $bonus = $subGP - 2.00;
-                            $totalGpa += $bonus;
+                            $totalGpa += $subGP - 2.00;
                         }
                     } else {
-                        $grandTotal += $subTotal;
                         $totalGpa += $subGP;
                         $subjectCount++; // Dynamic count of compulsory applicable subjects
 
@@ -1707,12 +1707,13 @@ class ResultController extends Controller
                         'is_optional' => $isOptional, 'is_absent' => $isAbsent,
                     ]);
 
+                    $grandTotal += $subTotal;
+
                     if ($isOptional) {
                         if ($subGP > 2.00) {
-                            $totalGpa += ($subGP - 2.00);
+                            $totalGpa += $subGP - 2.00;
                         }
                     } else {
-                        $grandTotal += $subTotal;
                         $totalGpa += $subGP;
                         $subjectCount++;
                         if ($subGrade == 'F' || $subGrade == 'N/R') {
