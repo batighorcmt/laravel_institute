@@ -193,12 +193,20 @@
         </select>
       </div>
       <div class="form-group">
-        <label>ডাকঘর</label>
+        <label>ডাকঘর (বাংলা)</label>
         <input type="text" name="present_post_office" id="present_post_office" class="form-control" value="{{ old('present_post_office', $teacher->present_post_office ?? '') }}">
       </div>
       <div class="form-group">
-        <label>গ্রাম/মহল্লা</label>
+        <label>ডাকঘর (English)</label>
+        <input type="text" name="present_post_office_en" id="present_post_office_en" class="form-control" value="{{ old('present_post_office_en', $teacher->present_post_office_en ?? '') }}">
+      </div>
+      <div class="form-group">
+        <label>গ্রাম/মহল্লা (বাংলা)</label>
         <input type="text" name="present_village" id="present_village" class="form-control" value="{{ old('present_village', $teacher->present_village ?? '') }}">
+      </div>
+      <div class="form-group">
+        <label>গ্রাম/মহল্লা (English)</label>
+        <input type="text" name="present_village_en" id="present_village_en" class="form-control" value="{{ old('present_village_en', $teacher->present_village_en ?? '') }}">
       </div>
     </div>
     <div class="col-md-6">
@@ -229,12 +237,20 @@
         </select>
       </div>
       <div class="form-group">
-        <label>ডাকঘর</label>
+        <label>ডাকঘর (বাংলা)</label>
         <input type="text" name="permanent_post_office" id="permanent_post_office" class="form-control" value="{{ old('permanent_post_office', $teacher->permanent_post_office ?? '') }}">
       </div>
       <div class="form-group">
-        <label>গ্রাম/মহল্লা</label>
+        <label>ডাকঘর (English)</label>
+        <input type="text" name="permanent_post_office_en" id="permanent_post_office_en" class="form-control" value="{{ old('permanent_post_office_en', $teacher->permanent_post_office_en ?? '') }}">
+      </div>
+      <div class="form-group">
+        <label>গ্রাম/মহল্লা (বাংলা)</label>
         <input type="text" name="permanent_village" id="permanent_village" class="form-control" value="{{ old('permanent_village', $teacher->permanent_village ?? '') }}">
+      </div>
+      <div class="form-group">
+        <label>গ্রাম/মহল্লা (English)</label>
+        <input type="text" name="permanent_village_en" id="permanent_village_en" class="form-control" value="{{ old('permanent_village_en', $teacher->permanent_village_en ?? '') }}">
       </div>
     </div>
   </div>
@@ -260,51 +276,48 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  function fetchLocationData(url, params, callback) {
+  function fetchLocationData(url, params) {
     const queryString = new URLSearchParams(params).toString();
-    fetch(`${url}?${queryString}`, {
+    return fetch(`${url}?${queryString}`, {
       headers: {
         'X-Requested-With': 'XMLHttpRequest',
         'Accept': 'application/json'
       }
-    })
-    .then(response => response.json())
-    .then(data => callback(data))
-    .catch(error => console.error('Error fetching location data:', error));
+    }).then(response => response.json());
   }
 
   function loadDistricts(divisionId, targetSelectId, selectedDistrictId = '') {
     const targetSelect = document.getElementById(targetSelectId);
     if(!divisionId) {
       targetSelect.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
-      return;
+      return Promise.resolve();
     }
-    fetchLocationData("{{ route('location.districts') }}", { division_id: divisionId }, function(data) {
-      let options = '<option value="">-- নির্বাচন করুন --</option>';
-      data.forEach(function(item) {
-        let selected = (selectedDistrictId == item.id) ? 'selected' : '';
-        options += `<option value="${item.id}" ${selected}>${item.bn_name || item.name}</option>`;
+    return fetchLocationData("{{ route('location.districts') }}", { division_id: divisionId })
+      .then(data => {
+        let options = '<option value="">-- নির্বাচন করুন --</option>';
+        data.forEach(function(item) {
+          let selected = (selectedDistrictId == item.id) ? 'selected' : '';
+          options += `<option value="${item.id}" ${selected}>${item.bn_name || item.name}</option>`;
+        });
+        targetSelect.innerHTML = options;
       });
-      targetSelect.innerHTML = options;
-      // manually trigger change event if needed
-      targetSelect.dispatchEvent(new Event('change'));
-    });
   }
 
   function loadThanas(districtId, targetSelectId, selectedThanaId = '') {
     const targetSelect = document.getElementById(targetSelectId);
     if(!districtId) {
       targetSelect.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
-      return;
+      return Promise.resolve();
     }
-    fetchLocationData("{{ route('location.thanas') }}", { district_id: districtId }, function(data) {
-      let options = '<option value="">-- নির্বাচন করুন --</option>';
-      data.forEach(function(item) {
-        let selected = (selectedThanaId == item.id) ? 'selected' : '';
-        options += `<option value="${item.id}" ${selected}>${item.bn_name || item.name}</option>`;
+    return fetchLocationData("{{ route('location.thanas') }}", { district_id: districtId })
+      .then(data => {
+        let options = '<option value="">-- নির্বাচন করুন --</option>';
+        data.forEach(function(item) {
+          let selected = (selectedThanaId == item.id) ? 'selected' : '';
+          options += `<option value="${item.id}" ${selected}>${item.bn_name || item.name}</option>`;
+        });
+        targetSelect.innerHTML = options;
       });
-      targetSelect.innerHTML = options;
-    });
   }
 
   // Element references
@@ -317,16 +330,21 @@ document.addEventListener('DOMContentLoaded', function() {
   const permanentThana = document.getElementById('permanent_thana_id');
   
   const presentPost = document.getElementById('present_post_office');
+  const presentPostEn = document.getElementById('present_post_office_en');
   const presentVill = document.getElementById('present_village');
+  const presentVillEn = document.getElementById('present_village_en');
   const permanentPost = document.getElementById('permanent_post_office');
+  const permanentPostEn = document.getElementById('permanent_post_office_en');
   const permanentVill = document.getElementById('permanent_village');
+  const permanentVillEn = document.getElementById('permanent_village_en');
   const sameAsPresent = document.getElementById('same_as_present');
 
   // Present Address Triggers
   if(presentDivision) {
     presentDivision.addEventListener('change', function() {
-      loadDistricts(this.value, 'present_district_id');
-      presentThana.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
+      loadDistricts(this.value, 'present_district_id').then(() => {
+        presentThana.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
+      });
     });
   }
   if(presentDistrict) {
@@ -338,8 +356,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // Permanent Address Triggers
   if(permanentDivision) {
     permanentDivision.addEventListener('change', function() {
-      loadDistricts(this.value, 'permanent_district_id');
-      permanentThana.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
+      loadDistricts(this.value, 'permanent_district_id').then(() => {
+        permanentThana.innerHTML = '<option value="">-- নির্বাচন করুন --</option>';
+      });
     });
   }
   if(permanentDistrict) {
@@ -351,22 +370,18 @@ document.addEventListener('DOMContentLoaded', function() {
   // Same as Present Checkbox
   if(sameAsPresent) {
     sameAsPresent.addEventListener('change', function() {
-      const permaFields = [permanentDivision, permanentDistrict, permanentThana, permanentPost, permanentVill];
+      const permaFields = [permanentDivision, permanentDistrict, permanentThana, permanentPost, permanentPostEn, permanentVill, permanentVillEn];
       
       if(this.checked) {
         permanentDivision.value = presentDivision.value;
-        permanentDivision.dispatchEvent(new Event('change'));
-        
-        setTimeout(() => {
-          permanentDistrict.value = presentDistrict.value;
-          permanentDistrict.dispatchEvent(new Event('change'));
-          setTimeout(() => {
-            permanentThana.value = presentThana.value;
-          }, 500);
-        }, 500);
+        loadDistricts(presentDivision.value, 'permanent_district_id', presentDistrict.value).then(() => {
+            loadThanas(presentDistrict.value, 'permanent_thana_id', presentThana.value);
+        });
 
         permanentPost.value = presentPost.value;
+        permanentPostEn.value = presentPostEn.value;
         permanentVill.value = presentVill.value;
+        permanentVillEn.value = presentVillEn.value;
         
         // Disable permanent fields
         permaFields.forEach(f => {
@@ -387,23 +402,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Initial Load
+  // Initial Load (Edit mode)
   if(presentDivision && presentDivision.value) {
-    loadDistricts(presentDivision.value, 'present_district_id', presentDistrict.getAttribute('data-selected'));
-  }
-  if(presentDistrict && presentDistrict.getAttribute('data-selected')) {
-    setTimeout(() => {
-        loadThanas(presentDistrict.getAttribute('data-selected'), 'present_thana_id', presentThana.getAttribute('data-selected'));
-    }, 500);
+    loadDistricts(presentDivision.value, 'present_district_id', presentDistrict.getAttribute('data-selected')).then(() => {
+        if(presentDistrict.getAttribute('data-selected')) {
+            loadThanas(presentDistrict.getAttribute('data-selected'), 'present_thana_id', presentThana.getAttribute('data-selected'));
+        }
+    });
   }
   
   if(permanentDivision && permanentDivision.value) {
-    loadDistricts(permanentDivision.value, 'permanent_district_id', permanentDistrict.getAttribute('data-selected'));
-  }
-  if(permanentDistrict && permanentDistrict.getAttribute('data-selected')) {
-    setTimeout(() => {
-        loadThanas(permanentDistrict.getAttribute('data-selected'), 'permanent_thana_id', permanentThana.getAttribute('data-selected'));
-    }, 500);
+    loadDistricts(permanentDivision.value, 'permanent_district_id', permanentDistrict.getAttribute('data-selected')).then(() => {
+        if(permanentDistrict.getAttribute('data-selected')) {
+            loadThanas(permanentDistrict.getAttribute('data-selected'), 'permanent_thana_id', permanentThana.getAttribute('data-selected'));
+        }
+    });
   }
 });
 </script>

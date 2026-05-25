@@ -213,6 +213,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/print', [PrincipalTeacherController::class, 'print'])->name('print');
                 Route::get('/create', [PrincipalTeacherController::class, 'create'])->name('create');
                 Route::post('/', [PrincipalTeacherController::class, 'store'])->name('store');
+                Route::get('/{teacher}', [PrincipalTeacherController::class, 'show'])->name('show');
                 Route::get('/{teacher}/edit', [PrincipalTeacherController::class, 'edit'])->name('edit');
                 Route::put('/{teacher}', [PrincipalTeacherController::class, 'update'])->name('update');
                 Route::delete('/{teacher}', [PrincipalTeacherController::class, 'destroy'])->name('destroy');
@@ -555,6 +556,9 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 );
             }
             );
+
+            // Blank Admission Form
+            Route::get('students/blank-form', [PrincipalStudentController::class, 'blankFormView'])->name('students.blank-form');
 
             // Bulk student import routes should be defined before the resource route
             // to avoid the 'bulk' segment being interpreted as a student ID.

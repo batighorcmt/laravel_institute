@@ -662,6 +662,20 @@ class StudentController extends Controller
     }
 
     /**
+     * Show a blank student admission form for printing
+     */
+    public function blankFormView(School $school)
+    {
+        $this->authorizePrincipal($school);
+        
+        // Get active academic years, classes, groups for dropdown options in the form if needed
+        $years = AcademicYear::forSchool($school->id)->orderByDesc('start_date')->get();
+        $classes = SchoolClass::forSchool($school->id)->ordered()->get();
+        
+        return view('principal.institute.students.blank_form', compact('school', 'years', 'classes'));
+    }
+
+    /**
      * Show bulk import form (CSV)
      */
     public function bulkForm(School $school)

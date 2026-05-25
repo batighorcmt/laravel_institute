@@ -6,6 +6,8 @@
     $totalTeachers = $teachers->count();
     $activeTeachers = $teachers->where('status', 'active')->count();
     $websiteTeachers = $teachers->where('show_on_website', true)->count();
+    $designations = $teachers->pluck('designation')->filter()->unique();
+    $jobTypes = $teachers->pluck('job_type')->filter()->unique();
 @endphp
 
 <div class="teachers-page">
@@ -18,9 +20,9 @@
                 <p class="teachers-hero-sub mb-0">{{ $school->name_bn ?? $school->name }} — সকল শিক্ষক এক জায়গায় পরিচালনা করুন</p>
             </div>
             <div class="d-flex flex-wrap gap-2">
-                <a href="{{ route('principal.institute.teachers.print', $school) }}" target="_blank" class="btn btn-teachers-print">
+                <button type="button" class="btn btn-teachers-print" data-toggle="modal" data-target="#printSettingsModal">
                     <i class="fas fa-print mr-1"></i> তালিকা প্রিন্ট
-                </a>
+                </button>
                 <a href="{{ route('principal.institute.teachers.create', $school) }}" class="btn btn-teachers-add">
                     <i class="fas fa-plus mr-1"></i> নতুন শিক্ষক
                 </a>
@@ -96,7 +98,9 @@
                                 </td>
                                 <td class="align-middle">
                                     <div class="teacher-name-block">
-                                        <strong class="teacher-name-bn">{{ $displayNameBn ?: $displayNameEn }}</strong>
+                                        <a href="{{ route('principal.institute.teachers.show', [$school, $t->id]) }}" class="text-decoration-none">
+                                            <strong class="teacher-name-bn text-primary hover-underline">{{ $displayNameBn ?: $displayNameEn }}</strong>
+                                        </a>
                                         @if($displayNameBn && $displayNameEn)
                                             <span class="teacher-name-en d-block">{{ $displayNameEn }}</span>
                                         @endif
@@ -174,6 +178,124 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Settings Modal -->
+<div class="modal fade" id="printSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-print mr-2 text-primary"></i>প্রিন্ট সেটিংস</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="GET" action="{{ route('principal.institute.teachers.print', $school) }}" target="_blank">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="font-weight-bold">পদবী অনুযায়ী ফিল্টার</label>
+                        <select name="designation" class="form-control">
+                            <option value="">সকল পদবী</option>
+                            @foreach($designations as $desig)
+                                <option value="{{ $desig }}">{{ $desig }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">চাকুরী টাইপ</label>
+                        <select name="job_type" class="form-control">
+                            <option value="">সকল টাইপ</option>
+                            @foreach($jobTypes as $jt)
+                                <option value="{{ $jt }}">{{ $jt }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">স্ট্যাটাস</label>
+                        <select name="status" class="form-control">
+                            <option value="">সকল স্ট্যাটাস</option>
+                            <option value="active">সক্রিয়</option>
+                            <option value="inactive">নিষ্ক্রিয়</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">প্রিন্ট ভাষা (সংখ্যা ও অন্যান্য)</label>
+                        <select name="lang" class="form-control">
+                            <option value="bn">বাংলা</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label class="font-weight-bold">প্রিন্ট কলামসমূহ</label>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="col_photo" name="columns[]" value="col-photo" checked>
+                                    <label class="custom-control-label" for="col_photo">ছবি</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_name_bn" name="columns[]" value="col-name-bn" checked>
+                                    <label class="custom-control-label" for="col_name_bn">নাম (বাংলা)</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_name_en" name="columns[]" value="col-name-en">
+                                    <label class="custom-control-label" for="col_name_en">নাম (ইংরেজি)</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_father_bn" name="columns[]" value="col-father-bn">
+                                    <label class="custom-control-label" for="col_father_bn">পিতার নাম (বাংলা)</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_father_en" name="columns[]" value="col-father-en">
+                                    <label class="custom-control-label" for="col_father_en">পিতার নাম (English)</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_mother_bn" name="columns[]" value="col-mother-bn">
+                                    <label class="custom-control-label" for="col_mother_bn">মাতার নাম (বাংলা)</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_mother_en" name="columns[]" value="col-mother-en">
+                                    <label class="custom-control-label" for="col_mother_en">মাতার নাম (English)</label>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="col_designation" name="columns[]" value="col-designation" checked>
+                                    <label class="custom-control-label" for="col_designation">পদবী</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_mobile" name="columns[]" value="col-mobile" checked>
+                                    <label class="custom-control-label" for="col_mobile">মোবাইল</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_dob" name="columns[]" value="col-dob">
+                                    <label class="custom-control-label" for="col_dob">জন্ম তারিখ</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_join_date" name="columns[]" value="col-join-date">
+                                    <label class="custom-control-label" for="col_join_date">যোগদান তারিখ</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_present_addr" name="columns[]" value="col-present-addr">
+                                    <label class="custom-control-label" for="col_present_addr">বর্তমান ঠিকানা</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_permanent_addr" name="columns[]" value="col-permanent-addr">
+                                    <label class="custom-control-label" for="col_permanent_addr">স্থায়ী ঠিকানা</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">বাতিল</button>
+                    <button type="submit" class="btn btn-primary" onclick="$('#printSettingsModal').modal('hide')"><i class="fas fa-print mr-1"></i> প্রিন্ট করুন</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

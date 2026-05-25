@@ -31,18 +31,71 @@ class TeacherController extends Controller
         return view('principal.teachers.index', compact('school', 'teachers', 'principalUserIds'));
     }
 
-    public function print(School $school)
+    public function print(Request $request, School $school)
     {
-        $teachers = Teacher::with(['user:id,username,email'])
-            ->where('school_id', $school->id)
-            ->orderByRaw('COALESCE(serial_number, 999999)')
-            ->orderBy('id')
-            ->get();
+        $query = Teacher::with([
+            'user:id,username,email',
+            'presentDivision:id,name,bn_name', 'presentDistrict:id,name,bn_name', 'presentThana:id,name,bn_name',
+            'permanentDivision:id,name,bn_name', 'permanentDistrict:id,name,bn_name', 'permanentThana:id,name,bn_name'
+        ])->where('school_id', $school->id);
+
+        if ($request->filled('designation')) {
+            $query->where('designation', $request->designation);
+        }
+        if ($request->filled('job_type')) {
+            $query->where('job_type', $request->job_type);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $teachers = $query->orderByRaw('COALESCE(serial_number, 999999)')->orderBy('id')->get();
 
         $printTitle = 'শিক্ষক তালিকা';
-        $printSubtitle = ($school->name_bn ?? $school->name).' | মোট শিক্ষক: '.$teachers->count().' জন';
+        
+        $filters = [];
+        if ($request->filled('designation')) {
+            $filters[] = "পদবী: " . $request->designation;
+        }
+        if ($request->filled('job_type')) {
+            $filters[] = "টাইপ: " . $request->job_type;
+        }
+        if ($request->filled('status')) {
+            $filters[] = "স্ট্যাটাস: " . ($request->status == 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়');
+        }
+
+        if (count($filters) > 0) {
+            $printSubtitle = implode(', ', $filters);
+        } else {
+            $printSubtitle = 'সকল শিক্ষক';
+        }
 
         return view('principal.teachers.print', compact('school', 'teachers', 'printTitle', 'printSubtitle'));
+    }
+
+    public function show(School $school, Teacher $teacher)
+    {
+        abort_if($teacher->school_id !== $school->id, 404);
+        
+        $teacher->load([
+            'presentDivision', 'presentDistrict', 'presentThana',
+            'permanentDivision', 'permanentDistrict', 'permanentThana'
+        ]);
+
+        $principalUserRole = \App\Models\UserSchoolRole::where('school_id', $school->id)
+            ->whereHas('role', function($q) {
+                $q->where('name', 'principal');
+            })
+            ->first();
+
+        $headTeacher = null;
+        if ($principalUserRole) {
+            $headTeacher = \App\Models\Teacher::where('school_id', $school->id)
+                ->where('user_id', $principalUserRole->user_id)
+                ->first();
+        }
+
+        return view('principal.teachers.show', compact('school', 'teacher', 'headTeacher'));
     }
 
     public function create(School $school)

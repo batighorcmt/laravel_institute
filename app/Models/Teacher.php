@@ -40,12 +40,16 @@ class Teacher extends Model
         'present_district_id',
         'present_thana_id',
         'present_post_office',
+        'present_post_office_en',
         'present_village',
+        'present_village_en',
         'permanent_division_id',
         'permanent_district_id',
         'permanent_thana_id',
         'permanent_post_office',
+        'permanent_post_office_en',
         'permanent_village',
+        'permanent_village_en',
     ];
 
     protected $casts = [
