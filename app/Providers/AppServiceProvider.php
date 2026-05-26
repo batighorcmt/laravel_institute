@@ -33,8 +33,16 @@ class AppServiceProvider extends ServiceProvider
             if (!empty($domains)) {
                 $stateful = config('sanctum.stateful', []);
                 foreach ($domains as $domain) {
-                    $stateful[] = $domain;
-                    $stateful[] = $domain . ':8000'; // For local testing
+                    // Remove 'www.' if it exists to get the base domain
+                    $baseDomain = preg_replace('/^www\./', '', $domain);
+                    
+                    // Add base domain
+                    $stateful[] = $baseDomain;
+                    $stateful[] = $baseDomain . ':8000';
+                    
+                    // Add www. prefixed domain automatically
+                    $stateful[] = 'www.' . $baseDomain;
+                    $stateful[] = 'www.' . $baseDomain . ':8000';
                 }
                 config(['sanctum.stateful' => array_unique($stateful)]);
             }
