@@ -69,7 +69,7 @@ class PushNotificationService
             if (strlen($notice->body ?? '') > 100) $body .= '...';
 
             foreach ($tokensData->unique('token') as $item) {
-                SendPushNotificationJob::dispatchSync(
+                SendPushNotificationJob::dispatch(
                     [$item->token],
                     $title,
                     $body,
