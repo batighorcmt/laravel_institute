@@ -655,6 +655,12 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/testimonial/{document}/edit', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'edit'])->name('testimonial.edit');
                 Route::put('/testimonial/{document}', [\App\Http\Controllers\Principal\Documents\TestimonialController::class, 'update'])->name('testimonial.update');
 
+                // Guardian Pledge (অভিভাবক অঙ্গীকার নামা)
+                Route::get('/guardian-pledge', [\App\Http\Controllers\Principal\Documents\GuardianPledgeController::class, 'index'])->name('guardian_pledge.index');
+                Route::get('/guardian-pledge/load-students', [\App\Http\Controllers\Principal\Documents\GuardianPledgeController::class, 'loadStudents'])->name('guardian_pledge.load-students');
+                Route::get('/guardian-pledge/print', [\App\Http\Controllers\Principal\Documents\GuardianPledgeController::class, 'print'])->name('guardian_pledge.print');
+
+
                 // Settings (backgrounds, colors for print pages)
                 Route::get('/settings', [\App\Http\Controllers\Principal\Documents\SettingsController::class, 'index'])->name('settings.index');
                 Route::post('/settings', [\App\Http\Controllers\Principal\Documents\SettingsController::class, 'store'])->name('settings.store');
