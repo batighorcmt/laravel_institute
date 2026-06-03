@@ -197,44 +197,52 @@ class Student extends Model
         return $prefix . str_pad($serial, 4, '0', STR_PAD_LEFT);
     }
 
-    // Return a URL for the student's photo, trying common storage locations.
+    // Return a full absolute URL for the student's photo (required by mobile app).
+    // Web views also work fine with absolute URLs.
     public function getPhotoUrlAttribute(): string
     {
+        $baseUrl = rtrim(config('app.url'), '/');
+
         if (empty($this->photo)) {
-            return '/images/default-avatar.svg';
+            return $baseUrl . '/images/default-avatar.svg';
         }
 
         // 1) Check in students folder (primary location for enrolled students)
         $studentsPath = 'students/' . $this->photo;
         if (Storage::disk('public')->exists($studentsPath)) {
-            return '/storage/' . $studentsPath;
+            return $baseUrl . '/storage/' . $studentsPath;
         }
 
         // 2) If stored directly in public path (rare)
         if (file_exists(public_path($this->photo))) {
-            return '/' . ltrim($this->photo, '/');
+            return $baseUrl . '/' . ltrim($this->photo, '/');
         }
 
         // 3) If stored in storage/app/public (accessible via /storage/... when storage:link exists)
         if (file_exists(storage_path('app/public/' . $this->photo))) {
-            return '/storage/' . ltrim($this->photo, '/');
+            return $baseUrl . '/storage/' . ltrim($this->photo, '/');
         }
 
-        // 4) If stored in storage/app (not public) but present, try to serve via storage URL (may require storage:link)
+        // 4) If stored in storage/app (not public) but present
         if (file_exists(storage_path('app/' . $this->photo))) {
-            return '/storage/' . ltrim($this->photo, '/');
+            return $baseUrl . '/storage/' . ltrim($this->photo, '/');
         }
 
         // 5) As a last resort, if the default filesystem can generate a URL
         try {
             if (Storage::exists($this->photo)) {
-                return Storage::url($this->photo);
+                $storageUrl = Storage::url($this->photo);
+                // Avoid double base URL if Storage::url already returns an absolute URL
+                if (str_starts_with($storageUrl, 'http')) {
+                    return $storageUrl;
+                }
+                return $baseUrl . '/' . ltrim($storageUrl, '/');
             }
         } catch (\Throwable $e) {
             // ignore
         }
 
-        return '/images/default-avatar.svg';
+        return $baseUrl . '/images/default-avatar.svg';
     }
 
     public function noticeTargets()
