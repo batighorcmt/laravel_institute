@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string $name
  * @property string|null $type
  * @property string|null $description
+ * @property string|null $instructor_name
  * @property string $status
  *
  * @method static \Illuminate\Database\Eloquent\Builder forSchool(int $schoolId)
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Team extends Model
 {
     protected $fillable = [
-        'school_id','name','type','description','status'
+        'school_id','name','type','description','instructor_name','status'
     ];
 
     protected $casts = [

@@ -16,6 +16,10 @@
     <input type="text" name="type" class="form-control" value="{{ old('type', $team->type) }}" placeholder="যেমন: club, extra-class">
   </div>
   <div class="form-group">
+    <label>প্রশিক্ষকের নাম</label>
+    <input type="text" name="instructor_name" class="form-control" value="{{ old('instructor_name', $team->instructor_name) }}" placeholder="প্রশিক্ষকের পূর্ণ নাম লিখুন">
+  </div>
+  <div class="form-group">
     <label>বর্ণনা</label>
     <textarea name="description" class="form-control" rows="3">{{ old('description', $team->description) }}</textarea>
   </div>

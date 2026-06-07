@@ -625,7 +625,10 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             Route::resource('teams', PrincipalTeamController::class)->except(['show']);
             Route::get('teams/{team}/add-students', [PrincipalTeamController::class, 'addStudents'])->name('teams.add-students');
             Route::post('teams/{team}/add-students', [PrincipalTeamController::class, 'storeStudents'])->name('teams.store-students');
+            Route::post('teams/{team}/toggle-student', [PrincipalTeamController::class, 'toggleStudent'])->name('teams.toggle-student');
             Route::get('teams/{team}/members', [PrincipalTeamController::class, 'members'])->name('teams.members');
+            Route::get('teams/{team}/student/{student}/report-card', [PrincipalTeamController::class, 'studentReportCard'])->name('teams.student-report-card');
+            Route::get('teams/{team}/print-all-report-cards', [PrincipalTeamController::class, 'printAllReportCards'])->name('teams.print-all-report-cards');
 
             // Documents (Prottayon, Certificate, Testimonial, Settings)
             Route::prefix('documents')->name('documents.')->middleware('module:documents')->group(function () {

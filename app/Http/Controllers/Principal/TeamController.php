@@ -30,14 +30,15 @@ class TeamController extends Controller
     public function store(Request $request, School $school)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'type' => 'nullable|string|max:100',
-            'description' => 'nullable|string',
-            'status' => 'required|in:active,inactive',
+            'name'            => 'required|string|max:255',
+            'type'            => 'nullable|string|max:100',
+            'description'     => 'nullable|string',
+            'instructor_name' => 'nullable|string|max:255',
+            'status'          => 'required|in:active,inactive',
         ]);
         $data['school_id'] = $school->id;
         Team::create($data);
-        return redirect()->route('principal.institute.teams.index', $school)->with('success','টিম তৈরি হয়েছে');
+        return redirect()->route('principal.institute.teams.index', $school)->with('success','টিম তৈরি হয়েছে');
     }
 
     public function edit(School $school, Team $team)
@@ -50,20 +51,21 @@ class TeamController extends Controller
     {
         abort_unless($team->school_id === $school->id, 404);
         $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'type' => 'nullable|string|max:100',
-            'description' => 'nullable|string',
-            'status' => 'required|in:active,inactive',
+            'name'            => 'required|string|max:255',
+            'type'            => 'nullable|string|max:100',
+            'description'     => 'nullable|string',
+            'instructor_name' => 'nullable|string|max:255',
+            'status'          => 'required|in:active,inactive',
         ]);
         $team->update($data);
-        return redirect()->route('principal.institute.teams.index', $school)->with('success','টিম আপডেট হয়েছে');
+        return redirect()->route('principal.institute.teams.index', $school)->with('success','টিম আপডেট হয়েছে');
     }
 
     public function destroy(School $school, Team $team)
     {
         abort_unless($team->school_id === $school->id, 404);
         $team->delete();
-        return back()->with('success','টিম মুছে ফেলা হয়েছে');
+        return back()->with('success','টিম মুছে ফেলা হয়েছে');
     }
 
     public function addStudents(School $school, Team $team)
@@ -148,7 +150,7 @@ class TeamController extends Controller
             $team->students()->attach($attachData);
         }
 
-        return redirect()->route('principal.institute.teams.add-students', [$school,$team])->with('success','টিম সদস্য তালিকা হালনাগাদ হয়েছে');
+        return redirect()->route('principal.institute.teams.add-students', [$school,$team])->with('success','টিম সদস্য তালিকা হালনাগাদ হয়েছে');
     }
 
     public function members(School $school, Team $team)
@@ -160,7 +162,8 @@ class TeamController extends Controller
 
         $members = \App\Models\StudentEnrollment::select(
                 'student_enrollments.student_id','student_enrollments.roll_no','student_enrollments.class_id','student_enrollments.section_id',
-                'students.student_name_bn','students.student_name_en',
+                'students.student_name_bn','students.student_name_en','students.photo','students.student_id as student_code',
+                'students.present_village','students.present_post_office','students.present_upazilla','students.present_district',
                 'classes.name as class_name','sections.name as section_name'
             )
             ->join('students','students.id','=','student_enrollments.student_id')
@@ -180,4 +183,70 @@ class TeamController extends Controller
             'members' => $members,
         ]);
     }
+
+    /**
+     * Show printable monthly report card for a team member.
+     */
+    public function studentReportCard(School $school, Team $team, Student $student)
+    {
+        abort_unless($team->school_id === $school->id, 404);
+
+        // Verify student is a member of this team
+        $isMember = $team->students()->where('students.id', $student->id)->exists();
+        abort_unless($isMember, 403, 'এই শিক্ষার্থী এই টিমের সদস্য নন।');
+
+        $student->load(['currentEnrollment.class', 'currentEnrollment.section']);
+
+        return view('principal.institute.teams.report-card', [
+            'school'  => $school,
+            'team'    => $team,
+            'student' => $student,
+        ]);
+    }
+
+    /**
+     * AJAX toggle student membership.
+     */
+    public function toggleStudent(Request $request, School $school, Team $team)
+    {
+        abort_unless($team->school_id === $school->id, 404);
+
+        $data = $request->validate([
+            'student_id' => 'required|exists:students,id',
+        ]);
+        $studentId = (int)$data['student_id'];
+
+        $isMember = $team->students()->where('students.id', $studentId)->exists();
+
+        if ($isMember) {
+            $team->students()->detach($studentId);
+            $added = false;
+            $message = 'দলের সদস্য তালিকা থেকে শিক্ষার্থীকে বাদ দেওয়া হয়েছে।';
+        } else {
+            $team->students()->attach($studentId, ['joined_at' => now(), 'status' => 'active']);
+            $added = true;
+            $message = 'শিক্ষার্থীকে সফলভাবে দলে যুক্ত করা হয়েছে।';
+        }
+
+        return response()->json([
+            'success' => true,
+            'added' => $added,
+            'message' => $message,
+        ]);
+    }
+
+    /**
+     * Show printable monthly report cards for all team members.
+     */
+    public function printAllReportCards(School $school, Team $team)
+    {
+        abort_unless($team->school_id === $school->id, 404);
+
+        $members = Student::with(['currentEnrollment.class', 'currentEnrollment.section'])
+            ->whereIn('id', $team->students()->pluck('students.id'))
+            ->get();
+
+        return view('principal.institute.teams.print-all-report-cards', compact('school', 'team', 'members'));
+    }
 }
+

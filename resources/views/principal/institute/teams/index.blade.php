@@ -16,9 +16,10 @@
         <th style="width:60px">#</th>
         <th>নাম</th>
         <th>ধরণ</th>
+        <th>প্রশিক্ষক</th>
         <th>সদস্য সংখ্যা</th>
         <th>স্ট্যাটাস</th>
-        <th style="width:140px">অ্যাকশন</th>
+        <th style="width:180px">অ্যাকশন</th>
       </tr>
     </thead>
     <tbody>
@@ -27,11 +28,13 @@
           <td>{{ $teams->firstItem()+$i }}</td>
           <td>{{ $team->name }}</td>
           <td>{{ $team->type ?: '-' }}</td>
+          <td>{{ $team->instructor_name ?: '-' }}</td>
           <td>{{ $team->students()->count() }}</td>
           <td>
             <span class="badge badge-{{ $team->status==='active'?'success':'secondary' }}">{{ $team->status }}</span>
           </td>
           <td class="text-nowrap">
+            <a href="{{ route('principal.institute.teams.members',[$school,$team]) }}" class="btn btn-sm btn-outline-info" title="সদস্য তালিকা"><i class="fas fa-users"></i></a>
             <a href="{{ route('principal.institute.teams.add-students',[$school,$team]) }}" class="btn btn-sm btn-outline-success" title="শিক্ষার্থী যুক্ত করুন"><i class="fas fa-user-plus"></i></a>
             <a href="{{ route('principal.institute.teams.edit',[$school,$team]) }}" class="btn btn-sm btn-outline-primary" title="এডিট"><i class="fas fa-edit"></i></a>
             <form action="{{ route('principal.institute.teams.destroy',[$school,$team]) }}" method="post" class="d-inline" onsubmit="return confirm('মুছে ফেলতে চাই?');">
