@@ -319,12 +319,13 @@
                                     </a>
                                     <ul class="nav nav-treeview">
                                         {{-- Class Attendance --}}
-                                        <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.attendance.class*') ? 'menu-open' : '' }}">
-                                            <a href="#" class="nav-link {{ request()->routeIs('principal.institute.attendance.class*') ? 'active' : '' }}">
+                                        <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.attendance.class*') || request()->routeIs('principal.institute.attendance.dashboard') ? 'menu-open' : '' }}">
+                                            <a href="#" class="nav-link {{ request()->routeIs('principal.institute.attendance.class*') || request()->routeIs('principal.institute.attendance.dashboard') ? 'active' : '' }}">
                                                 <i class="far fa-dot-circle nav-icon"></i>
                                                 <p>Class Attendance <i class="right fas fa-angle-left"></i></p>
                                             </a>
                                             <ul class="nav nav-treeview">
+                                                <li class="nav-item"><a href="{{ route('principal.institute.attendance.dashboard', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.attendance.dashboard') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Attendance Dashboard</p></a></li>
                                                 <li class="nav-item"><a href="{{ route('principal.institute.attendance.class.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.attendance.class.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Mark Attendance</p></a></li>
                                                 <li class="nav-item"><a href="{{ route('principal.institute.attendance.monthly_report', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.attendance.monthly_report') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Monthly Report</p></a></li>
                                             </ul>
@@ -357,7 +358,6 @@
                                         </li>
 
                                         {{-- Common Items --}}
-                                        <li class="nav-item"><a href="{{ route('principal.institute.attendance.dashboard', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.attendance.dashboard') ? 'active' : '' }}"><i class="far fa-dot-circle nav-icon"></i><p>Attendance Dashboard</p></a></li>
                                         <li class="nav-item"><a href="{{ route('principal.institute.holidays.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.holidays.*') || request()->routeIs('principal.institute.weekly-holidays.*') ? 'active' : '' }}"><i class="far fa-dot-circle nav-icon"></i><p>Holiday Management</p></a></li>
                                     </ul>
                                 </li>

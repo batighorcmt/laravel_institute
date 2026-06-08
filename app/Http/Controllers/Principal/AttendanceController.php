@@ -214,6 +214,7 @@ class AttendanceController extends Controller
         $sectionTotals = StudentEnrollment::select(
             'classes.id as class_id', 'classes.name as class_name', 'classes.numeric_value',
             'sections.id as section_id', 'sections.name as section_name',
+            'teachers.initials as teacher_initials',
             DB::raw('COUNT(DISTINCT student_enrollments.student_id) as total'),
             DB::raw("SUM(CASE WHEN students.gender='male' THEN 1 ELSE 0 END) as total_male"),
             DB::raw("SUM(CASE WHEN students.gender='female' THEN 1 ELSE 0 END) as total_female")
@@ -221,55 +222,17 @@ class AttendanceController extends Controller
             ->join('classes', 'student_enrollments.class_id', '=', 'classes.id')
             ->join('sections', 'student_enrollments.section_id', '=', 'sections.id')
             ->join('students', 'students.id', '=', 'student_enrollments.student_id')
+            ->leftJoin('teachers', 'teachers.id', '=', 'sections.class_teacher_id')
             ->where('student_enrollments.school_id', $school->id)
             ->where('student_enrollments.status', 'active')
             ->where('students.status', 'active')
             ->where('sections.status', 'active')
             ->when($yearVal, fn ($q) => $q->where('student_enrollments.academic_year_id', $yearVal))
-            ->groupBy('classes.id', 'classes.name', 'classes.numeric_value', 'sections.id', 'sections.name')
+            ->groupBy('classes.id', 'classes.name', 'classes.numeric_value', 'sections.id', 'sections.name', 'teachers.initials')
             ->get();
 
-        // Ensure ALL active classes and their active sections appear even if zero enrollment
-        $allClasses = SchoolClass::forSchool($school->id)->active()->get(['id', 'name', 'numeric_value']);
-        $existingKeys = $sectionTotals->map(fn ($r) => "{$r->class_id}|{$r->section_id}")->all();
-        foreach ($allClasses as $cls) {
-            $classHasAny = false;
-            $classSections = Section::forSchool($school->id)
-                ->where('class_id', $cls->id)
-                ->where('status', 'active')
-                ->get(['id', 'name']);
-            if ($classSections->isEmpty()) {
-                // Create a placeholder section entry so the class appears at least once
-                $sectionTotals->push((object) [
-                    'class_id' => $cls->id,
-                    'class_name' => $cls->name,
-                    'numeric_value' => $cls->numeric_value,
-                    'section_id' => 0,
-                    'section_name' => '—',
-                    'total' => 0,
-                    'total_male' => 0,
-                    'total_female' => 0,
-                ]);
-
-                continue;
-            }
-            foreach ($classSections as $sec) {
-                $key = $cls->id.'|'.$sec->id;
-                if (! in_array($key, $existingKeys, true)) {
-                    // Synthetic zero row for this real section
-                    $sectionTotals->push((object) [
-                        'class_id' => $cls->id,
-                        'class_name' => $cls->name,
-                        'numeric_value' => $cls->numeric_value,
-                        'section_id' => $sec->id,
-                        'section_name' => $sec->name,
-                        'total' => 0,
-                        'total_male' => 0,
-                        'total_female' => 0,
-                    ]);
-                }
-            }
-        }
+        // Only keep sections that have at least one enrolled student
+        $sectionTotals = $sectionTotals->filter(fn ($r) => (int) $r->total > 0)->values();
         // Re-order after injecting synthetic rows (by class numeric then section name)
         $sectionTotals = $sectionTotals->sortBy(function ($r) {
             return sprintf('%05d|%s', (int) $r->numeric_value, (string) $r->section_name);
@@ -338,6 +301,7 @@ class AttendanceController extends Controller
             $classBreakdown[$key]['sections'][] = [
                 'section_id' => $row->section_id,
                 'section_name' => $row->section_name,
+                'teacher_initials' => $row->teacher_initials ?? null,
                 'total' => (int) $row->total,
                 'total_male' => (int) $row->total_male,
                 'total_female' => (int) $row->total_female,
