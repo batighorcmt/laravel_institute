@@ -433,6 +433,9 @@ class TeacherExamController extends Controller
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $request->class_id)
             ->where('status', 'active')
+            ->whereHas('student', function ($query) {
+                $query->where('status', 'active');
+            })
             ->whereHas('subjects', function ($query) use ($request) {
                 $query->where('subject_id', $request->subject_id);
             })
