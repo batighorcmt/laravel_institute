@@ -87,6 +87,7 @@ class MetaController extends Controller
         $classId = $request->query('class_id');
         $sectionId = $request->query('section_id');
         $studentId = $request->query('student_id');
+        $status = $request->query('status');
         $qText = trim((string)$request->query('q', ''));
 
         $currentYear = AcademicYear::forSchool($school->id)->current()->first();
@@ -115,6 +116,7 @@ class MetaController extends Controller
         ->when($classId, fn($qq)=>$qq->where('student_enrollments.class_id',(int)$classId))
         ->when($sectionId, fn($qq)=>$qq->where('student_enrollments.section_id',(int)$sectionId))
         ->when($studentId, fn($qq)=>$qq->where('student_enrollments.student_id',(int)$studentId))
+        ->when($status, fn($qq)=>$qq->where('student_enrollments.status', $status))
         ->when($qText !== '', function($qq) use ($qText){
             $qq->where(function($sub) use ($qText){
                 $sub->where('students.student_name_en','like','%'.$qText.'%')

@@ -42,6 +42,7 @@
 
         <div class="mb-3">
             <button id="list_btn" class="btn btn-sm btn-primary">তালিকা দেখুন</button>
+            <button id="print_all_btn" class="btn btn-sm btn-success ml-2"><i class="fas fa-print"></i> সকল রিপোর্ট কার্ড প্রিন্ট</button>
             <a id="reset_btn" href="{{ route('principal.institute.students.report-cards.index', $schoolId) }}" class="btn btn-sm btn-outline-secondary ml-2">রিসেট</a>
         </div>
 
@@ -57,6 +58,7 @@
                 const sectionsUrl = '{{ route("principal.institute.meta.sections", [$schoolId]) }}';
                 const studentsUrl = '{{ route("principal.institute.meta.students", [$schoolId]) }}';
                 const showTemplate = @json(route('principal.institute.students.report-cards.show', [$schoolId, '__STUDENT__']));
+                const printAllUrl = @json(route('principal.institute.students.report-cards.print-all', [$schoolId]));
 
                 const $class = jQuery('#class_select');
                 const $section = jQuery('#section_select');
@@ -111,6 +113,7 @@
                     if ($year.val()) params.append('year_id', $year.val());
                     if ($class.val()) params.append('class_id', $class.val());
                     if ($section.val()) params.append('section_id', $section.val());
+                    params.append('status', 'active');
                     const url = studentsUrl + '?' + params.toString();
                     $student.prop('disabled', true);
                     fetch(url).then(r=>r.json()).then(data=>{
@@ -121,6 +124,26 @@
                         $student.prop('disabled', false).trigger('change');
                     }).catch(()=>{ $student.prop('disabled', false); });
                 }
+
+                // Handle print all button
+                document.getElementById('print_all_btn').addEventListener('click', function(e){
+                    e.preventDefault();
+                    if (!$class.val()) {
+                        alert('অনুগ্রহ করে শ্রেণি নির্বাচন করুন।');
+                        return;
+                    }
+                    const params = new URLSearchParams();
+                    params.append('class_id', $class.val());
+                    if ($section.val()) params.append('section_id', $section.val());
+                    
+                    const startDate = document.getElementById('start_date').value;
+                    const endDate = document.getElementById('end_date').value;
+                    if (startDate && endDate) {
+                        params.append('start_date', startDate);
+                        params.append('end_date', endDate);
+                    }
+                    window.open(printAllUrl + '?' + params.toString(), '_blank');
+                });
 
                 // Handle list button
                 document.getElementById('list_btn').addEventListener('click', function(e){
@@ -134,6 +157,7 @@
                     if ($class.val()) params.append('class_id', $class.val());
                     if ($section.val()) params.append('section_id', $section.val());
                     if ($student.val()) params.append('student_id', $student.val());
+                    params.append('status', 'active');
 
                     fetch(studentsUrl + '?' + params.toString()).then(r=>r.json()).then(data=>{
                         renderTable(data);

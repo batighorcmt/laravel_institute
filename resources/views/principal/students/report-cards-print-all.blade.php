@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>রিপোর্ট কার্ড - {{ $student->student_name_bn }}</title>
+    <title>সকল রিপোর্ট কার্ড</title>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -171,10 +171,16 @@
             .no-print { display: none; }
             .exam-item { page-break-inside: avoid; }
             .section-title { page-break-after: avoid; }
+            .page-break { page-break-after: always; }
+            .page-break:last-child { page-break-after: avoid; }
         }
     </style>
 </head>
 <body onload="window.print()">
-    @include('principal.students.report-card-print-content')
+    @foreach($studentsData as $data)
+    <div class="page-break">
+        @include('principal.students.report-card-print-content', $data)
+    </div>
+    @endforeach
 </body>
 </html>
