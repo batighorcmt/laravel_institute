@@ -7,533 +7,697 @@
   $selectedYear = $selectedYear ?? null;
   $selectedYearId = $selectedYearId ?? 0;
   $yearLabel = $selectedYear ? $selectedYear->name : ($currentYear ? $currentYear->name : 'বর্ষ নির্ধারিত নয়');
+  
+  $initialFilters = [
+      'q' => request('q', ''),
+      'roll_no' => request('roll_no', ''),
+      'year_id' => request('year_id', $selectedYearId),
+      'class_id' => request('class_id', ''),
+      'section_id' => request('section_id', ''),
+      'group_id' => request('group_id', ''),
+      'status' => request('status', 'active'),
+      'gender' => request('gender', ''),
+      'religion' => request('religion', ''),
+      'village' => request('village', ''),
+      'per_page' => request('per_page', 10),
+  ];
 @endphp
-<div class="d-flex flex-column flex-md-row justify-content-between mb-3">
-  <h1 class="m-0 mb-2 mb-md-0">শিক্ষার্থী তালিকা - {{ $school->name }}</h1>
-  <div class="d-flex flex-column flex-sm-row">
-    <a href="{{ route('principal.institute.students.create',$school) }}" class="btn btn-success mb-1 mb-sm-0 mr-sm-2"><i class="fas fa-user-plus mr-1"></i> নতুন শিক্ষার্থী</a>
-    <a href="{{ route('principal.institute.students.bulk',$school) }}" class="btn btn-outline-primary mb-1 mb-sm-0 mr-sm-2"><i class="fas fa-file-import mr-1"></i> Bulk student add</a>
-    <a href="{{ route('principal.institute.students.print-controls',$school) }}" class="btn btn-outline-secondary"><i class="fas fa-print mr-1"></i> প্রিন্ট</a>
-  </div>
-</div>
-<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-3">
-  <div class="d-flex align-items-center mb-2 mb-sm-0">
-    <label class="mr-2 mb-0">প্রতি পৃষ্ঠায়:</label>
-    <select name="per_page" class="form-control form-control-sm" style="width: auto;" onchange="changePerPage(this.value)">
-      <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10</option>
-      <option value="20" {{ request('per_page', 10) == 20 ? 'selected' : '' }}>20</option>
-      <option value="50" {{ request('per_page', 10) == 50 ? 'selected' : '' }}>50</option>
-      <option value="100" {{ request('per_page', 10) == 100 ? 'selected' : '' }}>100</option>
-      <option value="500" {{ request('per_page', 10) == 500 ? 'selected' : '' }}>500</option>
-    </select>
-  </div>
-</div>
-<div id="filtersBar" class="card card-body p-2 mb-3" style="background:#f8fafc;">
-  <div class="d-flex align-items-center mb-2">
-    <strong class="mr-2">Filters</strong>
-    <button class="btn btn-outline-secondary d-md-none ml-auto" type="button" data-toggle="collapse" data-target="#filtersCollapse" aria-expanded="false" aria-controls="filtersCollapse">
-      ফিল্টার দেখুন/লুকান
-    </button>
-  </div>
-  <form id="filtersCollapse" class="form-inline" method="get" style="display:flex; flex-wrap:wrap; gap:.5rem; align-items:flex-start;">
-  <div class="mr-2" style="min-width: 150px;">
-    <input type="text" id="student-search" name="q" value="{{ $q }}" class="form-control" placeholder="নাম / আইডি / রোল সার্চ..." autocomplete="off">
-    <div id="search-results" class="position-absolute bg-white border rounded shadow-sm" style="top: 100%; left: 0; right: 0; z-index: 1000; display: none; max-height: 300px; overflow-y: auto;"></div>
-  </div>
-  <div class="mr-2" style="max-width: 100px;">
-    <input type="number" name="roll_no" value="{{ request('roll_no') }}" class="form-control" placeholder="রোল নং" min="1">
-  </div>
-  <select name="year_id" class="form-control mr-2">
-    <option value="">-- বছর নির্বাচন --</option>
-    @foreach(($years ?? []) as $y)
-      <option value="{{ $y->id }}" {{ (int)($selectedYearId ?? 0)===$y->id?'selected':'' }}>{{ $y->name }}</option>
-    @endforeach
-  </select>
-  <select name="class_id" class="form-control mr-2">
-    <option value="">-- শ্রেণি নির্বাচন --</option>
-    @foreach(($classes ?? ($school->classes ?? collect())) as $class)
-      <option value="{{ $class->id }}" {{ request('class_id') == $class->id ? 'selected' : '' }}>{{ $class->name }}</option>
-    @endforeach
-  </select>
-  <select name="section_id" class="form-control mr-2">
-    <option value="">-- শাখা নির্বাচন --</option>
-    @foreach(($sections ?? collect()) as $section)
-      <option value="{{ $section->id }}" {{ request('section_id') == $section->id ? 'selected' : '' }}>{{ $section->name }}</option>
-    @endforeach
-  </select>
-  <select name="group_id" class="form-control mr-2">
-    <option value="">-- গ্রুপ নির্বাচন --</option>
-    @foreach(($groups ?? collect()) as $group)
-      <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
-    @endforeach
-  </select>
-  <select name="status" class="form-control mr-2">
-    <option value="">-- স্ট্যাটাস নির্বাচন --</option>
-    <option value="active" {{ $status == 'active' ? 'selected' : '' }}>সক্রিয়</option>
-    <option value="inactive" {{ $status == 'inactive' ? 'selected' : '' }}>নিষ্ক্রিয়</option>
-    <option value="graduated" {{ $status == 'graduated' ? 'selected' : '' }}>গ্র্যাজুয়েট</option>
-    <option value="transferred" {{ $status == 'transferred' ? 'selected' : '' }}>ট্রান্সফার্ড</option>
-  </select>
-  <select name="gender" class="form-control mr-2">
-    <option value="">-- লিঙ্গ নির্বাচন --</option>
-    <option value="male" {{ request('gender') == 'male' ? 'selected' : '' }}>পুরুষ</option>
-    <option value="female" {{ request('gender') == 'female' ? 'selected' : '' }}>মহিলা</option>
-  </select>
-  <select name="religion" class="form-control mr-2">
-    <option value="">-- ধর্ম নির্বাচন --</option>
-    <option value="Islam" {{ request('religion') == 'Islam' ? 'selected' : '' }}>ইসলাম</option>
-    <option value="Hindu" {{ request('religion') == 'Hindu' ? 'selected' : '' }}>হিন্দু</option>
-    <option value="Buddhist" {{ request('religion') == 'Buddhist' ? 'selected' : '' }}>বৌদ্ধ</option>
-    <option value="Christian" {{ request('religion') == 'Christian' ? 'selected' : '' }}>খ্রিস্টান</option>
-    <option value="Other" {{ request('religion') == 'Other' ? 'selected' : '' }}>অন্যান্য</option>
-  </select>
-  <select name="village" class="form-control mr-2">
-    <option value="">-- গ্রাম নির্বাচন --</option>
-    @php
-      $villages = \App\Models\Student::forSchool($school->id)->whereNotNull('present_village')->distinct()->pluck('present_village')->sort()->unique();
-    @endphp
-    @foreach($villages as $village)
-      <option value="{{ $village }}" {{ request('village') == $village ? 'selected' : '' }}>{{ $village }}</option>
-    @endforeach
-  </select>
-  <button class="btn btn-outline-secondary mr-2">ফিল্টার</button>
-  <a href="{{ route('principal.institute.students.index', $school) }}" class="btn btn-outline-danger">রিসেট</a>
-</form>
-</div>
-<div class="table-responsive">
-  <table class="table table-bordered table-sm">
-    <thead class="thead-light">
-      <tr>
-        <th style="width:60px">ক্রমিক</th>
-        <th>আইডি নং</th>
-        <th>নাম</th>
-        <th class="d-none d-lg-table-cell">পিতার নাম</th>
-        <th class="d-none d-md-table-cell">শ্রেণি</th>
-        <th class="d-none d-sm-table-cell">শাখা</th>
-        <th>রোল</th>
-        <th class="d-none d-md-table-cell">গ্রুপ</th>
-        <th class="d-none d-lg-table-cell">মোবাইল নং</th>
-        <th>স্ট্যাটাস</th>
-        <th style="width:80px" class="d-none d-sm-table-cell">ছবি</th>
-        <th class="d-none d-xl-table-cell">বিষয়সমূহ ({{ $yearLabel }})</th>
-        <th style="width:120px">অ্যাকশন</th>
-      </tr>
-    </thead>
-    <tbody>
-    @foreach($students as $idx=>$stu)
-      @php
-        $en = $stu->enrollments->first();
-        $subsHtml = '';
-        if ($en) {
-          $subs = collect($en->subjects);
-          $subsSorted = $subs->sortBy(function($ss){
-            $code = optional($ss->subject)->code;
-            $num  = $code ? intval(preg_replace('/\D+/', '', $code)) : PHP_INT_MAX;
-            return [ $ss->is_optional ? 1 : 0, $num, $code ]; // optional last, then by numeric code
-          })->values();
-          $parts = [];
-          foreach ($subsSorted as $ss) {
-            $code = optional($ss->subject)->code;
-            if (!$code) { continue; }
-            if ($ss->is_optional) {
-              $parts[] = '<span class="text-primary">'.e($code).'</span>';
-            } else {
-              $parts[] = e($code);
-            }
-          }
-          $subsHtml = implode(', ', $parts);
-        }
-      @endphp
-      <tr>
-        <td>{{ $students->firstItem() + $idx }}</td>
-        <td>{{ $stu->student_id }}</td>
-        <td>
-            <div class="font-weight-bold">{{ $stu->full_name }}</div>
-            <div class="d-sm-none small text-muted">
-                {{ $en? $en->{'class'}?->name : '-' }} | {{ $en? $en->section?->name : '-' }}
+
+<div id="student-vue-app" v-cloak class="student-list-container">
+    <div class="d-flex flex-column flex-md-row justify-content-end mb-4 align-items-md-center">
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{{ route('principal.institute.students.create',$school) }}" class="btn btn-primary shadow-sm rounded-pill px-3 py-2 mr-2 mb-2">
+            <i class="fas fa-user-plus mr-1"></i> নতুন শিক্ষার্থী
+        </a>
+        <a href="{{ route('principal.institute.students.bulk',$school) }}" class="btn btn-outline-info shadow-sm rounded-pill px-3 py-2 mr-2 mb-2">
+            <i class="fas fa-file-import mr-1"></i> Bulk Add
+        </a>
+        <a href="{{ route('principal.institute.students.print-controls',$school) }}" class="btn btn-outline-secondary shadow-sm rounded-pill px-3 py-2 mb-2">
+            <i class="fas fa-print mr-1"></i> প্রিন্ট
+        </a>
+      </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card glass-card mb-4 shadow-sm border-0">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pt-3 pb-0">
+        <h5 class="mb-0 font-weight-bold text-primary">
+          <i class="fas fa-filter mr-2"></i> ফিল্টার করুন
+        </h5>
+        <button class="btn btn-sm btn-light d-md-none rounded-pill shadow-sm" type="button" @click="toggleFilters">
+          <i class="fas" :class="showFilters ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+        </button>
+      </div>
+      
+      <transition name="fade-slide">
+        <div class="card-body" v-show="showFilters || isDesktop">
+          <div class="row g-3 align-items-end">
+            <div class="col-12 col-md-4 col-lg-3">
+              <label class="form-label text-muted small mb-1">শিক্ষার্থীর নাম/আইডি/রোল/পিতা/মোবাইল</label>
+              <div class="input-group">
+                <div class="input-group-prepend">
+                  <span class="input-group-text bg-white border-right-0 rounded-left"><i class="fas fa-search text-muted"></i></span>
+                </div>
+                <input type="text" v-model="filters.q" class="form-control border-left-0 rounded-right shadow-none focus-ring" placeholder="সার্চ করুন..." @input="debouncedFetch">
+              </div>
             </div>
-        </td>
-        <td class="d-none d-lg-table-cell">{{ $stu->father_name_bn ?: $stu->father_name }}</td>
-        <td class="d-none d-md-table-cell">{{ $en? $en->{'class'}?->name : '-' }}</td>
-        <td class="d-none d-sm-table-cell">{{ $en? $en->section?->name : '-' }}</td>
-        <td>{{ $en? $en->roll_no : '-' }}</td>
-        <td class="d-none d-md-table-cell">{{ $en? $en->group?->name : '-' }}</td>
-        <td class="d-none d-lg-table-cell">{{ $stu->guardian_phone }}</td>
-        <td>
-          @php
-            $st = $stu->status;
-            $badgeClass = 'badge ' . ($st === 'active' ? 'badge-success' : ($st === 'inactive' ? 'badge-secondary' : ($st === 'graduated' ? 'badge-info' : 'badge-warning')));
-          @endphp
-          <span class="{{ $badgeClass }}">{{ $st }}</span>
-        </td>
-        <td class="text-center d-none d-sm-table-cell">
-          <img src="{{ $stu->photo_url }}" alt="photo" style="width:40px;height:40px;object-fit:cover;border-radius:10%;">
-        </td>
-        <td class="small d-none d-xl-table-cell">{!! $subsHtml ?: '-' !!}</td>
-        <td class="text-nowrap">
-          <div class="dropdown">
-            <button class="btn btn-outline-secondary btn-sm dropdown-toggle student-action-dd" type="button" data-toggle="dropdown" data-boundary="viewport" aria-haspopup="true" aria-expanded="false">
-              Action
-            </button>
-            <div class="dropdown-menu dropdown-menu-right">
-              <a class="dropdown-item" href="{{ route('principal.institute.students.show',[$school,$stu]) }}"><i class="fas fa-id-card mr-1"></i> প্রোফাইল</a>
-              <a class="dropdown-item" href="{{ route('principal.institute.students.print-cv', [$school, $stu]) }}" target="_blank"><i class="fas fa-print mr-1"></i> প্রোফাইল প্রিন্ট</a>
-              <a class="dropdown-item" href="{{ route('principal.institute.students.edit',[$school,$stu]) }}"><i class="fas fa-edit mr-1"></i> সম্পাদনা</a>
-              @if($en)
-                <a class="dropdown-item" href="{{ route('principal.institute.enrollments.subjects.edit',[$school,$en]) }}"><i class="fas fa-book mr-1"></i> বিষয় নির্বাচন</a>
-              @endif
-              <div class="dropdown-divider"></div>
-              <form action="{{ route('principal.institute.students.toggle-status',[$school,$stu]) }}" method="post" class="px-3 py-1">
-                @csrf @method('PATCH')
-                <button type="submit" class="btn btn-link p-0 m-0 align-baseline">
-                  <i class="fas fa-toggle-{{ $stu->status==='active'?'on':'off' }} mr-1"></i>
-                  {{ $stu->status==='active' ? 'নিষ্ক্রিয় করুন' : 'সক্রিয় করুন' }}
-                </button>
-              </form>
+            <div class="col-6 col-md-2 col-lg-1">
+              <label class="form-label text-muted small mb-1">রোল নং</label>
+              <input type="number" v-model="filters.roll_no" class="form-control shadow-none focus-ring" placeholder="রোল" min="1" @input="debouncedFetch">
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <label class="form-label text-muted small mb-1">বছর</label>
+              <select v-model="filters.year_id" class="form-control shadow-none focus-ring custom-select" @change="fetchStudents(1)">
+                <option value="">-- সকল --</option>
+                <option v-for="y in years" :key="y.id" :value="y.id">@{{ y.name }}</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <label class="form-label text-muted small mb-1">শ্রেণি</label>
+              <select v-model="filters.class_id" class="form-control shadow-none focus-ring custom-select" @change="onClassChange">
+                <option value="">-- সকল --</option>
+                <option v-for="c in classes" :key="c.id" :value="c.id">@{{ c.name }}</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <label class="form-label text-muted small mb-1">শাখা</label>
+              <select v-model="filters.section_id" class="form-control shadow-none focus-ring custom-select" @change="fetchStudents(1)">
+                <option value="">-- সকল --</option>
+                <option v-for="s in dynamicSections" :key="s.id" :value="s.id">@{{ s.name }}</option>
+              </select>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <label class="form-label text-muted small mb-1">গ্রুপ</label>
+              <select v-model="filters.group_id" class="form-control shadow-none focus-ring custom-select" @change="fetchStudents(1)">
+                <option value="">-- সকল --</option>
+                <option v-for="g in dynamicGroups" :key="g.id" :value="g.id">@{{ g.name }}</option>
+              </select>
+            </div>
+            
+            <div class="col-6 col-md-3 col-lg-2">
+              <label class="form-label text-muted small mb-1">স্ট্যাটাস</label>
+              <select v-model="filters.status" class="form-control shadow-none focus-ring custom-select" @change="fetchStudents(1)">
+                <option value="">-- সকল --</option>
+                <option value="active">সক্রিয়</option>
+                <option value="inactive">নিষ্ক্রিয়</option>
+                <option value="graduated">গ্র্যাজুয়েট</option>
+                <option value="transferred">ট্রান্সফার্ড</option>
+              </select>
+            </div>
+            
+            <div class="col-6 col-md-3 col-lg-2">
+              <label class="form-label text-muted small mb-1">প্রতি পৃষ্ঠায়</label>
+              <select v-model="filters.per_page" class="form-control shadow-none focus-ring custom-select" @change="fetchStudents(1)">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            
+            <div class="col-12 col-md-12 col-lg-2 text-md-right text-lg-left mt-3 mt-lg-0">
+              <button class="btn btn-outline-danger shadow-sm rounded-pill px-4 w-100" @click="resetFilters">
+                <i class="fas fa-undo-alt mr-1"></i> রিসেট
+              </button>
             </div>
           </div>
-        </td>
-      </tr>
-    @endforeach
-    </tbody>
-  </table>
-</div>
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-2">
-  <div class="mb-2 mb-md-0">মোট {{ $students->total() }}টির মধ্যে {{ $students->firstItem() }}–{{ $students->lastItem() }}</div>
-  <div class="pagination-mobile">
-    @if($students->hasPages())
-      <nav aria-label="Student pagination">
-        <ul class="pagination pagination-sm justify-content-center justify-content-md-end mb-0">
-          {{-- Previous Page Link --}}
-          @if ($students->onFirstPage())
-            <li class="page-item disabled">
-              <span class="page-link">&laquo;</span>
+        </div>
+      </transition>
+    </div>
+
+    <!-- Main Content -->
+    <div class="card border-0 shadow-sm rounded-lg overflow-hidden position-relative">
+      
+      <!-- Loading Overlay -->
+      <div v-if="loading" class="loading-overlay d-flex justify-content-center align-items-center">
+        <div class="spinner-grow text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+        <div class="spinner-grow text-success mx-2" role="status" style="animation-delay: 0.2s"></div>
+        <div class="spinner-grow text-info" role="status" style="animation-delay: 0.4s"></div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover table-modern mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="border-top-0 text-center text-muted" style="width:60px">ক্রমিক</th>
+              <th class="border-top-0 text-muted">আইডি নং</th>
+              <th class="border-top-0 text-muted">শিক্ষার্থীর নাম</th>
+              <th class="border-top-0 text-muted d-none d-lg-table-cell">পিতার নাম</th>
+              <th class="border-top-0 text-muted d-none d-md-table-cell">শ্রেণি</th>
+              <th class="border-top-0 text-muted d-none d-sm-table-cell">শাখা</th>
+              <th class="border-top-0 text-muted">রোল</th>
+              <th class="border-top-0 text-muted d-none d-lg-table-cell">মোবাইল নং</th>
+              <th class="border-top-0 text-muted text-center">স্ট্যাটাস</th>
+              <th class="border-top-0 text-muted text-center" style="width:120px">বিষয়সমূহ</th>
+              <th class="border-top-0 text-muted text-center" style="width:100px">অ্যাকশন</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-if="studentsData.data && studentsData.data.length > 0">
+              <tr v-for="(stu, idx) in studentsData.data" :key="stu.id" class="align-middle">
+                <td class="text-center text-muted">@{{ studentsData.from + idx }}</td>
+                <td class="font-weight-bold text-primary">@{{ stu.student_id }}</td>
+                <td>
+                  <div class="d-flex align-items-center" style="cursor: pointer;" @click="openProfileModal(stu)" title="প্রোফাইল দেখুন">
+                    <img :src="getPhotoUrl(stu)" class="rounded-circle mr-3 shadow-sm d-none d-sm-block transition-all" style="width: 40px; height: 40px; object-fit: cover; border: 2px solid #fff;" alt="Photo">
+                    <div>
+                      <div class="font-weight-bold text-primary">@{{ getFullName(stu) }}</div>
+                      <div class="d-sm-none small text-muted mt-1">
+                        <span class="badge badge-light border">@{{ getEnrollmentClass(stu) }}</span> | 
+                        <span class="badge badge-light border">@{{ getEnrollmentSection(stu) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="d-none d-lg-table-cell text-muted">@{{ stu.father_name_bn || stu.father_name }}</td>
+                <td class="d-none d-md-table-cell"><span class="badge badge-soft-primary">@{{ getEnrollmentClass(stu) }}</span></td>
+                <td class="d-none d-sm-table-cell text-muted">@{{ getEnrollmentSection(stu) }}</td>
+                <td class="font-weight-bold">@{{ getEnrollmentRoll(stu) }}</td>
+                <td class="d-none d-lg-table-cell text-muted">@{{ stu.guardian_phone }}</td>
+                <td class="text-center">
+                  <span class="badge rounded-pill px-3 py-2" :class="getStatusClass(stu.status)">
+                    @{{ stu.status }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <button @click="openSubjectsModal(stu)" class="btn btn-sm btn-light rounded-pill shadow-sm view-btn" title="বিষয়সমূহ দেখুন">
+                    <i class="fas fa-book-open text-info mr-1"></i> দেখুন
+                  </button>
+                </td>
+                <td class="text-center">
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill dropdown-toggle shadow-none student-action-dd" type="button" data-toggle="dropdown">
+                      Action
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right shadow border-0" style="border-radius: 10px;">
+                      <a class="dropdown-item py-2" :href="`/principal/institute/${school.id}/students/${stu.id}`"><i class="fas fa-id-card text-primary mr-2"></i> প্রোফাইল</a>
+                      <a class="dropdown-item py-2" :href="`/principal/institute/${school.id}/students/${stu.id}/print-cv`" target="_blank"><i class="fas fa-print text-secondary mr-2"></i> প্রোফাইল প্রিন্ট</a>
+                      <a class="dropdown-item py-2" :href="`/principal/institute/${school.id}/students/${stu.id}/edit`"><i class="fas fa-edit text-warning mr-2"></i> সম্পাদনা</a>
+                      <div class="dropdown-divider"></div>
+                      <form :action="`/principal/institute/${school.id}/students/${stu.id}/status`" method="post" class="px-3 py-1 m-0">
+                        <input type="hidden" name="_token" :value="csrfToken">
+                        <input type="hidden" name="_method" value="PATCH">
+                        <button type="submit" class="btn btn-link text-dark p-0 m-0 w-100 text-left text-decoration-none dropdown-item py-2 px-0">
+                          <i class="fas" :class="stu.status === 'active' ? 'fa-toggle-on text-success' : 'fa-toggle-off text-muted'" class="mr-2"></i>
+                          @{{ stu.status === 'active' ? 'নিষ্ক্রিয় করুন' : 'সক্রিয় করুন' }}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </template>
+            <template v-else>
+              <tr>
+                <td colspan="11" class="text-center py-5 text-muted">
+                  <i class="fas fa-inbox fa-3x mb-3 text-light"></i>
+                  <h5>কোনো শিক্ষার্থী পাওয়া যায়নি</h5>
+                  <p class="mb-0">অনুগ্রহ করে ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন।</p>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination -->
+      <div class="card-footer bg-white border-top d-flex flex-column flex-md-row justify-content-between align-items-center py-3" v-if="studentsData.total > 0">
+        <div class="text-muted small mb-2 mb-md-0">
+          মোট <strong>@{{ studentsData.total }}</strong> টির মধ্যে <strong>@{{ studentsData.from }}</strong> - <strong>@{{ studentsData.to }}</strong> দেখাচ্ছে
+        </div>
+        
+        <nav aria-label="Pagination" class="ml-auto">
+          <ul class="pagination pagination-sm mb-0 justify-content-end">
+            <li class="page-item" :class="{ disabled: !studentsData.prev_page_url }">
+              <button class="page-link shadow-none rounded-left" @click.prevent="changePage(studentsData.current_page - 1)">&laquo; পূর্ববর্তী</button>
             </li>
-          @else
-            <li class="page-item">
-              <a class="page-link" href="{{ $students->previousPageUrl() }}" rel="prev">&laquo;</a>
+            
+            <li v-for="page in visiblePages" :key="page" class="page-item" :class="{ active: page === studentsData.current_page, disabled: page === '...' }">
+              <button class="page-link shadow-none" @click.prevent="page !== '...' ? changePage(page) : null">@{{ page }}</button>
             </li>
-          @endif
-
-          {{-- Compact Pagination Logic --}}
-          @php
-            $currentPage = $students->currentPage();
-            $lastPage = $students->lastPage();
-            $showRange = 2; // Show 2 pages on each side of current page
-            $pages = []; // Initialize pages array
-
-            // Always show first page
-            if ($currentPage > $showRange + 2) {
-              $pages[] = 1;
-              if ($currentPage > $showRange + 3) {
-                $pages[] = '...';
-              }
-            }
-
-            // Show pages around current page
-            for ($i = max(1, $currentPage - $showRange); $i <= min($lastPage, $currentPage + $showRange); $i++) {
-              $pages[] = $i;
-            }
-
-            // Always show last page
-            if ($currentPage < $lastPage - $showRange - 1) {
-              if ($currentPage < $lastPage - $showRange - 2) {
-                $pages[] = '...';
-              }
-              $pages[] = $lastPage;
-            }
-          @endphp
-
-          @foreach($pages as $page)
-            @if($page === '...')
-              <li class="page-item disabled">
-                <span class="page-link">{{ $page }}</span>
-              </li>
-            @elseif($page == $currentPage)
-              <li class="page-item active">
-                <span class="page-link">{{ $page }}</span>
-              </li>
-            @else
-              <li class="page-item">
-                <a class="page-link" href="{{ $students->url($page) }}">{{ $page }}</a>
-              </li>
-            @endif
-          @endforeach
-
-          {{-- Next Page Link --}}
-          @if ($students->hasMorePages())
-            <li class="page-item">
-              <a class="page-link" href="{{ $students->nextPageUrl() }}" rel="next">&raquo;</a>
+            
+            <li class="page-item" :class="{ disabled: !studentsData.next_page_url }">
+              <button class="page-link shadow-none rounded-right" @click.prevent="changePage(studentsData.current_page + 1)">পরবর্তী &raquo;</button>
             </li>
-          @else
-            <li class="page-item disabled">
-              <span class="page-link">&raquo;</span>
-            </li>
-          @endif
-        </ul>
-      </nav>
-    @endif
-  </div>
+          </ul>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Subjects Modal -->
+    <div class="modal fade" id="subjectsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-lg">
+          <div class="modal-header bg-primary text-white border-bottom-0 rounded-top" style="border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem;">
+            <h5 class="modal-title font-weight-bold">
+              <i class="fas fa-layer-group mr-2"></i> নির্বাচিত বিষয়সমূহ
+            </h5>
+            <button type="button" class="close text-white shadow-none" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body p-4 bg-light">
+            <div v-if="selectedStudent" class="mb-4 text-center">
+              <img :src="getPhotoUrl(selectedStudent)" class="rounded-circle shadow-sm mb-3 border border-white" style="width: 80px; height: 80px; object-fit: cover;">
+              <h5 class="font-weight-bold text-dark mb-1">@{{ getFullName(selectedStudent) }}</h5>
+              <div class="text-muted small">আইডি: @{{ selectedStudent.student_id }} | রোল: @{{ getEnrollmentRoll(selectedStudent) }}</div>
+            </div>
+            
+            <div class="card border-0 shadow-sm">
+              <div class="card-body p-0">
+                <ul class="list-group list-group-flush rounded-lg">
+                  <li v-if="!selectedStudentSubjects.length" class="list-group-item text-center text-muted py-4">
+                    কোনো বিষয় পাওয়া যায়নি
+                  </li>
+                  <li v-for="sub in selectedStudentSubjects" :key="sub.id" class="list-group-item d-flex justify-content-between align-items-center py-3 hover-bg-light transition-all">
+                    <div>
+                      <div class="font-weight-bold text-dark">@{{ sub.name }}</div>
+                      <div class="small text-muted">@{{ sub.code || 'No Code' }}</div>
+                    </div>
+                    <span v-if="sub.is_optional" class="badge badge-pill badge-info px-3 py-1 shadow-sm">ঐচ্ছিক</span>
+                    <span v-else class="badge badge-pill badge-primary px-3 py-1 shadow-sm">আবশ্যিক</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer bg-white border-top-0 rounded-bottom" style="border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem;">
+            <button type="button" class="btn btn-secondary rounded-pill px-4 shadow-sm" data-dismiss="modal">বন্ধ করুন</button>
+            <a v-if="selectedStudent" :href="getSubjectSelectUrl(selectedStudent)" class="btn btn-primary rounded-pill px-4 shadow-sm">
+              <i class="fas fa-edit mr-1"></i> বিষয় পরিবর্তন
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-lg">
+          <div class="modal-header bg-info text-white border-bottom-0 rounded-top" style="border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem;">
+            <h5 class="modal-title font-weight-bold">
+              <i class="far fa-id-card mr-2"></i> শিক্ষার্থীর প্রোফাইল
+            </h5>
+            <button type="button" class="close text-white shadow-none" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body p-4 bg-light text-center" v-if="profileModalStudent">
+            <img :src="getPhotoUrl(profileModalStudent)" class="rounded-circle shadow mb-3 border border-white" style="width: 140px; height: 140px; object-fit: cover;">
+            <h4 class="font-weight-bold text-dark mb-1">@{{ getFullName(profileModalStudent) }}</h4>
+            <div class="text-muted mb-4">আইডি: @{{ profileModalStudent.student_id }} | রোল: @{{ getEnrollmentRoll(profileModalStudent) }}</div>
+            
+            <div class="row text-left mt-2">
+                <div class="col-6 mb-2"><strong>শ্রেণি:</strong> <span class="text-muted">@{{ getEnrollmentClass(profileModalStudent) }}</span></div>
+                <div class="col-6 mb-2"><strong>শাখা:</strong> <span class="text-muted">@{{ getEnrollmentSection(profileModalStudent) }}</span></div>
+                <div class="col-12 border-top pt-2 mt-1 mb-2"><strong>পিতার নাম:</strong> <span class="text-muted">@{{ profileModalStudent.father_name_bn || profileModalStudent.father_name }}</span></div>
+                <div class="col-12 mb-2"><strong>মোবাইল নং:</strong> <span class="text-muted">@{{ profileModalStudent.guardian_phone }}</span></div>
+                <div class="col-12 mb-2"><strong>বর্তমান ঠিকানা:</strong> <span class="text-muted">@{{ profileModalStudent.present_village }}</span></div>
+            </div>
+          </div>
+          <div class="modal-footer bg-white border-top-0 rounded-bottom" style="border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem;">
+            <button type="button" class="btn btn-secondary rounded-pill px-4 shadow-sm" data-dismiss="modal">বন্ধ করুন</button>
+            <a v-if="profileModalStudent" :href="`/principal/institute/${school.id}/students/${profileModalStudent.id}`" class="btn btn-info rounded-pill px-4 shadow-sm text-white">
+              <i class="fas fa-external-link-alt mr-1"></i> বিস্তারিত প্রোফাইল
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
 </div>
 @endsection
+
 @push('styles')
 <style>
-/* Mobile-friendly pagination styles */
-.pagination-mobile .pagination {
-  margin: 0;
+[v-cloak] { display: none !important; }
+
+.student-list-container {
+  position: relative;
 }
 
-.pagination-mobile .page-link {
-  padding: 0.375rem 0.5rem;
-  font-size: 0.875rem;
-  line-height: 1.25;
-  border-radius: 0.2rem;
+/* Glassmorphism card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
 }
 
-@media (max-width: 576px) {
-  .pagination-mobile .pagination {
-    flex-wrap: wrap;
-  }
-
-  .pagination-mobile .page-item {
-    flex: 0 0 auto;
-    margin: 0.125rem;
-  }
-
-  .pagination-mobile .page-link {
-    padding: 0.25rem 0.375rem;
-    font-size: 0.75rem;
-    min-width: 2rem;
-  }
-
-  /* Compact pagination already handles ellipsis, no need for additional hiding */
+.focus-ring:focus {
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+  border-color: #86b7fe;
 }
 
-  /* Responsive filter form */
-  @media (max-width: 768px) {
-    .form-inline .form-control {
-      margin-bottom: 0.5rem;
-      width: 100%;
-    }
+/* Modern table styling */
+.table-modern {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.table-modern th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  background-color: #f8f9fc;
+}
+.table-modern td {
+  vertical-align: middle;
+  padding: 1rem 0.75rem;
+  border-top: 1px solid #edf2f9;
+}
+.table-modern tbody tr {
+  transition: all 0.2s ease;
+}
+.table-modern tbody tr:hover {
+  background-color: #fbfdff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  z-index: 1;
+  position: relative;
+}
 
-    .form-inline .btn {
-      margin-bottom: 0.5rem;
-    }
+/* Custom Soft Badges */
+.bg-success-soft { background-color: rgba(40, 167, 69, 0.1); }
+.text-success { color: #28a745 !important; }
+.bg-info-soft { background-color: rgba(23, 162, 184, 0.1); }
+.bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
+.text-warning { color: #ffc107 !important; }
+.bg-secondary-soft { background-color: rgba(108, 117, 125, 0.1); }
 
-    .form-inline {
-      flex-direction: column;
-      align-items: stretch;
-    }
+.badge-soft-primary {
+  background-color: rgba(0, 123, 255, 0.1);
+  color: #007bff;
+  padding: 0.4em 0.8em;
+}
 
-    .form-inline .mr-2 {
-      margin-right: 0 !important;
-    }
-  }
+.view-btn {
+  transition: all 0.3s;
+}
+.view-btn:hover {
+  background-color: #e3f2fd;
+  color: #007bff;
+  transform: scale(1.05);
+}
 
-  /* Ensure filters are always visible on md+ screens even if collapse JS/CSS conflicts */
-  @media (min-width: 768px) {
-    #filtersCollapse.collapse {
-      display: flex !important;
-      height: auto !important;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-  }
+.hover-bg-light:hover {
+  background-color: #f8f9fa !important;
+}
+.transition-all {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Transitions */
+.fade-slide-enter-active, .fade-slide-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+.fade-slide-enter-from, .fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+  max-height: 0;
+}
+.fade-slide-enter-to, .fade-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 500px;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.7);
+  z-index: 10;
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  border-radius: 1rem;
+  overflow: hidden;
+}
 </style>
 @endpush
+
 @push('scripts')
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
-(function(){
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+document.addEventListener('DOMContentLoaded', function() {
+  const { createApp } = Vue;
 
-  // Ensure filters form is collapsed on mobile and visible on md+ screens
-  const filtersCollapse = document.getElementById('filtersCollapse');
-  let resizeTO;
-  function syncFiltersCollapse() {
-    if (!filtersCollapse) return;
-    if (window.innerWidth >= 768) {
-      if (!filtersCollapse.classList.contains('show')) {
-        filtersCollapse.classList.add('show');
-        filtersCollapse.style.height = 'auto';
-      }
-    } else {
-      if (filtersCollapse.classList.contains('show')) {
-        filtersCollapse.classList.remove('show');
-        filtersCollapse.style.height = '';
-      }
-    }
-  }
-  syncFiltersCollapse();
-  window.addEventListener('resize', function(){
-    clearTimeout(resizeTO);
-    resizeTO = setTimeout(syncFiltersCollapse, 150);
-  });
+  createApp({
+    data() {
+      return {
+        school: @json($school),
+        studentsData: @json($students),
+        filters: @json($initialFilters),
+        years: @json($years),
+        classes: @json($classes ?? ($school->classes ?? collect())),
+        sections: @json($sections ?? collect()),
+        groups: @json($groups ?? collect()),
+        
+        dynamicSections: @json($sections ?? collect()),
+        dynamicGroups: @json($groups ?? collect()),
+        
+        loading: false,
+        debounceTimer: null,
+        showFilters: false,
+        windowWidth: window.innerWidth,
+        selectedStudent: null,
+        profileModalStudent: null,
+        csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      };
+    },
+    computed: {
+      isDesktop() {
+        return this.windowWidth >= 768;
+      },
+      visiblePages() {
+        const current = this.studentsData.current_page;
+        const last = this.studentsData.last_page;
+        if (!last || last === 1) return [];
+        
+        const delta = 2;
+        const left = current - delta;
+        const right = current + delta + 1;
+        const range = [];
+        const rangeWithDots = [];
+        let l;
 
-  // AJAX helper function
-  function ajaxRequest(url, data = {}) {
-    const urlWithParams = new URL(url, window.location.origin);
-    Object.keys(data).forEach(key => {
-      if (data[key] !== null && data[key] !== undefined && data[key] !== '') {
-        urlWithParams.searchParams.append(key, data[key]);
-      }
-    });
-
-    return fetch(urlWithParams.toString(), {
-      method: 'GET',
-      headers: {
-        'X-CSRF-TOKEN': csrfToken,
-        'Accept': 'application/json'
-      }
-    }).then(response => response.json());
-  }
-
-  // Student search with autocomplete
-  const searchInput = document.getElementById('student-search');
-  const searchResults = document.getElementById('search-results');
-  let searchTimeout;
-
-  searchInput.addEventListener('input', function() {
-    const query = this.value.trim();
-    clearTimeout(searchTimeout);
-
-    if (query.length < 2) {
-      searchResults.style.display = 'none';
-      return;
-    }
-
-    searchTimeout = setTimeout(() => {
-      ajaxRequest(`{{ route('principal.institute.meta.students', $school) }}?q=${encodeURIComponent(query)}`)
-        .then(data => {
-          if (data.length > 0) {
-            const html = data.map(student => `
-              <div class="p-2 border-bottom hover-bg-light cursor-pointer" onclick="selectStudent('${student.student_id}', '${student.name}')">
-                <div class="font-weight-bold">${student.name}</div>
-                <small class="text-muted">ID: ${student.student_id} | Roll: ${student.roll_no} | Class: ${student.class_name || 'N/A'} | Phone: ${student.phone || 'N/A'}</small>
-              </div>
-            `).join('');
-            searchResults.innerHTML = html;
-            searchResults.style.display = 'block';
-          } else {
-            searchResults.innerHTML = '<div class="p-2 text-muted">No students found</div>';
-            searchResults.style.display = 'block';
+        for (let i = 1; i <= last; i++) {
+          if (i === 1 || i === last || i >= left && i < right) {
+            range.push(i);
           }
-        })
-        .catch(error => {
-          console.error('Search error:', error);
-          searchResults.style.display = 'none';
+        }
+
+        for (let i of range) {
+          if (l) {
+            if (i - l === 2) {
+              rangeWithDots.push(l + 1);
+            } else if (i - l !== 1) {
+              rangeWithDots.push('...');
+            }
+          }
+          rangeWithDots.push(i);
+          l = i;
+        }
+
+        return rangeWithDots;
+      },
+      selectedStudentSubjects() {
+        if (!this.selectedStudent) return [];
+        const en = this.selectedStudent.enrollments && this.selectedStudent.enrollments.length > 0 ? this.selectedStudent.enrollments[0] : null;
+        if (!en || !en.subjects) return [];
+        
+        let subs = [...en.subjects].map(s => ({
+          id: s.id,
+          is_optional: s.is_optional,
+          name: s.subject ? s.subject.name : 'Unknown',
+          code: s.subject ? s.subject.code : ''
+        }));
+        
+        return subs.sort((a, b) => {
+          if (a.is_optional && !b.is_optional) return 1;
+          if (!a.is_optional && b.is_optional) return -1;
+          const numA = a.code ? parseInt(a.code.replace(/\\D/g, '')) || 999999 : 999999;
+          const numB = b.code ? parseInt(b.code.replace(/\\D/g, '')) || 999999 : 999999;
+          return numA - numB;
         });
-    }, 300);
-  });
-
-  // Hide search results when clicking outside
-  document.addEventListener('click', function(e) {
-    if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-      searchResults.style.display = 'none';
-    }
-  });
-
-  // Function to select a student from search results
-  window.selectStudent = function(studentId, fullName) {
-    searchInput.value = fullName;
-    searchResults.style.display = 'none';
-    document.getElementById('filtersCollapse').submit();
-  };
-
-  // Function to change per page
-  window.changePerPage = function(perPage) {
-    const url = new URL(window.location);
-    url.searchParams.set('per_page', perPage);
-    window.location.href = url.toString();
-  };
-
-  // Dependent dropdowns for class -> section and class -> group
-  const classSelect = document.querySelector('select[name="class_id"]');
-  const sectionSelect = document.querySelector('select[name="section_id"]');
-  const groupSelect = document.querySelector('select[name="group_id"]');
-
-  if (classSelect && sectionSelect && groupSelect) classSelect.addEventListener('change', function() {
-    const classId = this.value;
-
-    // Reset section and group
-    sectionSelect.innerHTML = '<option value="">-- শাখা নির্বাচন --</option>';
-    groupSelect.innerHTML = '<option value="">-- গ্রুপ নির্বাচন --</option>';
-
-    if (classId) {
-      // Load sections for this class
-      ajaxRequest(`{{ route('principal.institute.meta.sections', $school) }}?class_id=${classId}`)
-        .then(sections => {
-          sections.forEach(section => {
-            const option = document.createElement('option');
-            option.value = section.id;
-            option.textContent = section.name;
-            sectionSelect.appendChild(option);
+      }
+    },
+    mounted() {
+      window.addEventListener('resize', this.onResize);
+      const urlParams = new URLSearchParams(window.location.search);
+      for (let key in this.filters) {
+        if (urlParams.has(key)) {
+          this.filters[key] = urlParams.get(key);
+        }
+      }
+      
+      // Fix AdminLTE dropdown positioning for Vue rendered elements
+      this.attachDropdownFix();
+    },
+    beforeUnmount() {
+      window.removeEventListener('resize', this.onResize);
+    },
+    methods: {
+      onResize() {
+        this.windowWidth = window.innerWidth;
+      },
+      toggleFilters() {
+        this.showFilters = !this.showFilters;
+      },
+      debouncedFetch() {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => {
+          this.fetchStudents(1);
+        }, 400);
+      },
+      async onClassChange() {
+        this.filters.section_id = '';
+        this.filters.group_id = '';
+        
+        try {
+          if (this.filters.class_id) {
+            const [secRes, grpRes] = await Promise.all([
+              axios.get(`/principal/institute/${this.school.id}/meta/sections?class_id=${this.filters.class_id}`),
+              axios.get(`/principal/institute/${this.school.id}/meta/groups?class_id=${this.filters.class_id}`)
+            ]);
+            this.dynamicSections = secRes.data || [];
+            this.dynamicGroups = grpRes.data || [];
+          } else {
+            this.dynamicSections = this.sections;
+            this.dynamicGroups = this.groups;
+          }
+        } catch (err) {
+          console.error('Error fetching class meta:', err);
+        }
+        
+        this.fetchStudents(1);
+      },
+      async fetchStudents(page = null) {
+        this.loading = true;
+        const params = { ...this.filters };
+        if (page) {
+          params.page = page;
+        } else {
+          params.page = this.studentsData.current_page;
+        }
+        
+        Object.keys(params).forEach(key => {
+          if (params[key] === null || params[key] === '') {
+            delete params[key];
+          }
+        });
+        
+        try {
+          const response = await axios.get(window.location.pathname, {
+            params: params,
+            headers: { 'Accept': 'application/json' }
           });
-        })
-        .catch(error => console.error('Error loading sections:', error));
-
-      // Load groups for this class
-      ajaxRequest(`{{ route('principal.institute.meta.groups', $school) }}?class_id=${classId}`)
-        .then(groups => {
-          groups.forEach(group => {
-            const option = document.createElement('option');
-            option.value = group.id;
-            option.textContent = group.name;
-            groupSelect.appendChild(option);
+          
+          if (response.data && response.data.students) {
+            this.studentsData = response.data.students;
+            
+            const url = new URL(window.location);
+            url.search = new URLSearchParams(params).toString();
+            window.history.pushState({}, '', url);
+            
+            // Re-attach dropdown fixes after data changes
+            this.$nextTick(() => {
+              this.attachDropdownFix();
+            });
+          }
+        } catch (error) {
+          if(window.toastr) {
+            window.toastr.error('ডেটা লোড করতে সমস্যা হয়েছে।');
+          }
+          console.error('Fetch error:', error);
+        } finally {
+          this.loading = false;
+        }
+      },
+      changePage(page) {
+        if (page >= 1 && page <= this.studentsData.last_page) {
+          this.fetchStudents(page);
+        }
+      },
+      resetFilters() {
+        this.filters = {
+          q: '', roll_no: '', year_id: '', class_id: '', section_id: '', group_id: '',
+          status: 'active', gender: '', religion: '', village: '', per_page: 10
+        };
+        this.dynamicSections = this.sections;
+        this.dynamicGroups = this.groups;
+        this.fetchStudents(1);
+      },
+      openSubjectsModal(student) {
+        this.selectedStudent = student;
+        if (window.$) {
+          window.$('#subjectsModal').modal('show');
+        }
+      },
+      openProfileModal(student) {
+        this.profileModalStudent = student;
+        if (window.$) {
+          window.$('#profileModal').modal('show');
+        }
+      },
+      getFullName(stu) {
+        if (stu.student_name_bn) return stu.student_name_bn;
+        if (stu.student_name_en) return stu.student_name_en;
+        return 'Unknown';
+      },
+      getEnrollmentClass(stu) {
+        if (!stu.enrollments || stu.enrollments.length === 0) return '-';
+        return stu.enrollments[0].class ? stu.enrollments[0].class.name : '-';
+      },
+      getEnrollmentSection(stu) {
+        if (!stu.enrollments || stu.enrollments.length === 0) return '-';
+        return stu.enrollments[0].section ? stu.enrollments[0].section.name : '-';
+      },
+      getEnrollmentRoll(stu) {
+        if (!stu.enrollments || stu.enrollments.length === 0) return '-';
+        return stu.enrollments[0].roll_no || '-';
+      },
+      getPhotoUrl(stu) {
+        if (stu.photo) {
+            return `/storage/${stu.photo}`;
+        }
+        return '/images/default-avatar.png';
+      },
+      getStatusClass(status) {
+        const map = {
+          'active': 'bg-success-soft text-success',
+          'inactive': 'bg-secondary-soft text-secondary',
+          'graduated': 'bg-info-soft text-info',
+          'transferred': 'bg-warning-soft text-warning'
+        };
+        return map[status] || 'bg-light text-dark';
+      },
+      getSubjectSelectUrl(student) {
+        const en = student.enrollments && student.enrollments.length > 0 ? student.enrollments[0] : null;
+        if (en) {
+          return `/principal/institute/${this.school.id}/enrollments/${en.id}/subjects`;
+        }
+        return '#';
+      },
+      attachDropdownFix() {
+        // AdminLTE/Bootstrap dropdown fix for tables with overflow
+        setTimeout(() => {
+          if (!window.$) return;
+          $('.student-action-dd').off('show.bs.dropdown').on('show.bs.dropdown', function () {
+            $('.table-responsive').css( "overflow", "inherit" );
           });
-        })
-        .catch(error => console.error('Error loading groups:', error));
+          $('.student-action-dd').off('hide.bs.dropdown').on('hide.bs.dropdown', function () {
+            $('.table-responsive').css( "overflow", "auto" );
+          });
+        }, 100);
+      }
     }
-  });
-
-  // Detach dropdown menus to body so table/layout overflow/transform doesn't misplace them
-  function positionMenu(button, menu){
-    const rect = button.getBoundingClientRect();
-    const top = rect.bottom + window.scrollY;
-    menu.style.position = 'absolute';
-    menu.style.top = top + 'px';
-    menu.style.minWidth = rect.width + 'px';
-    menu.style.zIndex = 2000;
-    // Align by direction
-    // Measure after show to get correct width
-    const menuWidth = menu.offsetWidth || rect.width;
-    const rightAligned = menu.classList.contains('dropdown-menu-right');
-    const left = rightAligned
-      ? (rect.right + window.scrollX - menuWidth)
-      : (rect.left + window.scrollX);
-    menu.style.left = Math.max(0, left) + 'px';
-  }
-
-  document.addEventListener('shown.bs.dropdown', function(e){
-    const btn = e.target; // button
-    if(!btn.classList.contains('student-action-dd')) return;
-    const menu = btn.parentElement.querySelector('.dropdown-menu');
-    if(!menu) return;
-    // Move to body
-    document.body.appendChild(menu);
-    menu.classList.add('show'); // ensure visible after move
-    positionMenu(btn, menu);
-    // Reposition on resize/scroll
-    function realign(){ if(menu.classList.contains('show')) positionMenu(btn, menu); }
-    window.addEventListener('scroll', realign, {passive:true});
-    window.addEventListener('resize', realign);
-    menu._realignHandler = realign;
-    menu._originButton = btn;
-  });
-
-  document.addEventListener('hide.bs.dropdown', function(e){
-    const btn = e.target;
-    if(!btn.classList.contains('student-action-dd')) return;
-    const menu = document.querySelector('.dropdown-menu.show');
-    if(menu && menu._originButton === btn){
-      menu.classList.remove('show');
-      // Put back inside dropdown container to keep DOM tidy
-      btn.parentElement.appendChild(menu);
-      window.removeEventListener('scroll', menu._realignHandler);
-      window.removeEventListener('resize', menu._realignHandler);
-      delete menu._realignHandler;
-      delete menu._originButton;
-    }
-  });
-})();
+  }).mount('#student-vue-app');
+});
 </script>
 @endpush
