@@ -313,7 +313,9 @@ class StudentReportCardController extends Controller
             $enrollQuery->where('section_id', $sectionId);
         }
 
-        $enrollments = $enrollQuery->with(['student', 'class', 'section', 'group'])->get();
+        $enrollments = $enrollQuery->with(['student', 'class', 'section', 'group'])
+            ->orderByRaw('CAST(roll_no AS UNSIGNED) ASC, roll_no ASC')
+            ->get();
 
         $studentsData = [];
         
