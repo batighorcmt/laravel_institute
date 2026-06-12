@@ -24,7 +24,7 @@
             <div class="student-info" style="flex: 1;">
                 <h1 style="font-size: 16pt; margin: 0 0 5px;">{{ $student->student_name_bn }}</h1>
                 <div class="details" style="gap: 12px; row-gap: 5px;">
-                    <div class="detail-item">আইডি: {{ toBengaliNumber($student->student_id) }}</div>
+                    <div class="detail-item">আইডি: {{ $student->student_id }}</div>
                     <div class="detail-item">শ্রেণি: {{ langField($student->currentEnrollment->class, 'name', 'bn') }}</div>
                     <div class="detail-item">শাখা: {{ langField($student->currentEnrollment->section, 'name', 'bn') }}</div>
                     <div class="detail-item">রোল: {{ toBengaliNumber($student->currentEnrollment->roll_no ?? 'N/A') }}</div>
@@ -123,12 +123,37 @@
                 </tr>
                 @endforeach
             </tbody>
+            <tfoot>
+                @php
+                    $leCompleted = (int) ($lessonSummary['completed'] ?? 0);
+                    $lePartial = (int) ($lessonSummary['partial'] ?? 0);
+                    $leNotDone = (int) ($lessonSummary['not_done'] ?? 0);
+                    $leAbsent = (int) ($lessonSummary['absent'] ?? 0);
+                    $leTotal = $leCompleted + $lePartial + $leNotDone + $leAbsent;
+                    $lePositive = $leCompleted + $lePartial;
+                    $leNegative = $leNotDone + $leAbsent;
+                    $lePct = fn (int $count) => $leTotal > 0 ? round(($count / $leTotal) * 100, 1) : 0;
+                @endphp
+                <tr style="background-color: #f9fafb;">
+                    <td style="font-weight: bold; font-size: 11pt;">মোট সারাংশ</td>
+                    <td style="text-align: center; font-size: 11pt; font-weight: bold;">{{ toBengaliNumber($leCompleted) }}</td>
+                    <td style="text-align: center; font-size: 11pt; font-weight: bold;">{{ toBengaliNumber($lePartial) }}</td>
+                    <td style="text-align: center; font-size: 11pt; font-weight: bold;">{{ toBengaliNumber($leNotDone) }}</td>
+                    <td style="text-align: center; font-size: 11pt; font-weight: bold;">{{ toBengaliNumber($leAbsent) }}</td>
+                </tr>
+                <tr style="background-color: #f9fafb;">
+                    <td style="font-weight: bold; font-size: 11pt;">শতকরা হার</td>
+                    <td colspan="2" style="text-align: center; font-size: 11pt; font-weight: bold; color: #047857;">{{ toBengaliNumber($lePct($lePositive)) }}%</td>
+                    <td colspan="2" style="text-align: center; font-size: 11pt; font-weight: bold; color: #b91c1c;">{{ toBengaliNumber($lePct($leNegative)) }}%</td>
+                </tr>
+            </tfoot>
         </table>
 
+        @if(count($exams) > 0)
         <div class="section-title">
             <i class="fas fa-file-invoice"></i> সম্পন্ন পরীক্ষা ও ফলাফল
         </div>
-        @forelse($exams as $exam)
+        @foreach($exams as $exam)
         @php 
             $examData = $examsData[$exam->id] ?? null;
             $studentResult = $examData['result'] ?? null;
@@ -239,11 +264,13 @@
             <div style="padding: 10px; text-align: center; color: #6b7280; font-style: italic;">ফলাফল প্রক্রিয়াকরণধীন...</div>
             @endif
         </div>
-        @empty
-        <div style="padding: 20px; text-align: center; color: #6b7280;">কোন নির্ধারিত পরীক্ষা সম্পন্ন হয়নি।</div>
-        @endforelse
+        @endforeach
+        @endif
 
-        <div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div class="signature-section">
+            <div class="report-card-signature-note"></div>
+
+            <div class="signature-row">
             <div style="text-align: center; width: 150px;">
                 <div style="border-top: 1px solid #000; padding-top: 5px;">অভিভাবকের স্বাক্ষর</div>
             </div>
@@ -260,6 +287,7 @@
                     <img src="{{ Storage::url($headTeacher->signature) }}" style="max-height: 40px; margin-bottom: 5px;" alt="Signature">
                 @endif
                 <div style="border-top: 1px solid #000; padding-top: 5px;">প্রতিষ্ঠান প্রধানের স্বাক্ষর</div>
+            </div>
             </div>
         </div>
     </div>

@@ -165,16 +165,140 @@
         .badge-danger { background: #fee2e2; color: #991b1b; }
         .badge-secondary { background: #f3f4f6; color: #374151; }
 
+        .report-card-signature-note {
+            display: none;
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border: 1px dashed #666;
+            font-size: 10pt;
+            text-align: center;
+            background: #fafafa;
+            white-space: pre-wrap;
+            z-index: 2;
+        }
+
+        .report-card-signature-note.visible {
+            display: block;
+        }
+
+        .signature-section {
+            position: relative;
+            margin-top: 60px;
+        }
+
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .print-overlay-settings {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 1000;
+        }
+
+        .overlay-toggle-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid #aaa;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            font-size: 16px;
+            color: #374151;
+        }
+
+        .overlay-toggle-btn.active {
+            background: #4f46e5;
+            color: #fff;
+            border-color: #4f46e5;
+        }
+
+        .overlay-panel {
+            position: absolute;
+            top: 48px;
+            right: 0;
+            width: 280px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .overlay-panel-title {
+            font-weight: 700;
+            font-size: 11pt;
+            margin-bottom: 10px;
+        }
+
+        .overlay-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 10pt;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .overlay-note-input {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 8px;
+            font-family: inherit;
+            font-size: 10pt;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+
+        .overlay-note-input:disabled {
+            background: #f3f4f6;
+            cursor: not-allowed;
+        }
+
+        .overlay-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .overlay-print-btn,
+        .overlay-back-btn {
+            flex: 1;
+            text-align: center;
+            border: 1px solid #666;
+            background: #fff;
+            padding: 6px 10px;
+            font-size: 10pt;
+            cursor: pointer;
+            text-decoration: none;
+            color: #111;
+            border-radius: 6px;
+        }
+
+        .overlay-print-btn {
+            background: #4f46e5;
+            color: #fff;
+            border-color: #4f46e5;
+        }
+
         @media print {
             body { padding: 0; }
             .print-container { width: 100%; padding: 0; margin: 0; }
-            .no-print { display: none; }
+            .no-print { display: none !important; }
             .exam-item { page-break-inside: avoid; }
             .section-title { page-break-after: avoid; }
+            .report-card-signature-note.visible {
+                display: block !important;
+            }
         }
     </style>
 </head>
-<body onload="window.print()">
+<body>
+    @include('principal.students.partials.report-card-print-overlay')
     @include('principal.students.report-card-print-content')
 </body>
 </html>

@@ -14,7 +14,7 @@
                 <h1 class="student-name">{{ $student->student_name_bn }}</h1>
                 <h3 class="student-name-en">{{ $student->student_name_en }}</h3>
                 <div class="badge-row">
-                    <span class="info-badge">আইডি: {{ toBengaliNumber($student->student_id) }}</span>
+                    <span class="info-badge">আইডি: {{ $student->student_id }}</span>
                     <span class="info-badge success">রোল: {{ toBengaliNumber($student->currentEnrollment->roll_no ?? 'N/A') }}</span>
                 </div>
                 <div class="enrollment-details mt-3">
@@ -210,11 +210,12 @@
     </div>
 
     {{-- 4. Exams List --}}
+    @if(count($exams) > 0)
     <div class="section-title mt-5">
         <i class="fas fa-file-invoice text-warning"></i> পরীক্ষার মার্কশীট (অবস্থাভেদে)
     </div>
     <div class="exam-container">
-        @forelse($exams as $exam)
+        @foreach($exams as $exam)
         @php $result = $exam->results->first(); @endphp
         <div class="premium-card p-0 mb-4 overflow-hidden exam-card">
             <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light-soft">
@@ -400,13 +401,9 @@
             </div>
             @endif
         </div>
-        @empty
-        <div class="premium-card p-5 text-center text-muted">
-            <div class="mb-3"><i class="fas fa-info-circle fa-3x text-light"></i></div>
-            <p class="h5">এই শিক্ষার্থীর জন্য এই শিক্ষাবর্ষে এখনো কোনো নির্ধারিত পরীক্ষা সম্পন্ন হয়নি।</p>
-        </div>
-        @endforelse
+        @endforeach
     </div>
+    @endif
 </div>
 @endsection
 
