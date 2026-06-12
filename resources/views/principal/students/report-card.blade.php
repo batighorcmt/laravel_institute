@@ -11,7 +11,7 @@
                 <img src="{{ $student->photo_url }}" alt="{{ $student->full_name }}" id="student-avatar">
             </div>
             <div class="profile-info">
-                <h1 class="student-name">{{ $student->student_name_bn }}</h1>
+                <h1 class="student-name">{{ $student->student_name_bn ?: $student->student_name_en }}</h1>
                 <h3 class="student-name-en">{{ $student->student_name_en }}</h3>
                 <div class="badge-row">
                     <span class="info-badge">আইডি: {{ $student->student_id }}</span>

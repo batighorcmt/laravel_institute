@@ -19,10 +19,10 @@
         <!-- Student Info (Compact) -->
         <div style="display: flex; align-items: start; gap: 15px; margin-bottom: 20px; background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb;">
             <div class="avatar" style="width: 70px; height: 70px;">
-                <img src="{{ $student->photo_url }}" alt="{{ $student->student_name_bn }}">
+                <img src="{{ $student->photo_url }}" alt="{{ $student->student_name_bn ?: $student->student_name_en }}">
             </div>
             <div class="student-info" style="flex: 1;">
-                <h1 style="font-size: 16pt; margin: 0 0 5px;">{{ $student->student_name_bn }}</h1>
+                <h1 style="font-size: 16pt; margin: 0 0 5px;">{{ $student->student_name_bn ?: $student->student_name_en }}</h1>
                 <div class="details" style="gap: 12px; row-gap: 5px;">
                     <div class="detail-item">আইডি: {{ $student->student_id }}</div>
                     <div class="detail-item">শ্রেণি: {{ langField($student->currentEnrollment->class, 'name', 'bn') }}</div>
