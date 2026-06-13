@@ -81,7 +81,10 @@ class StudentController extends Controller
                 $x->where(function($inner) use ($q){
                     $inner->where('students.student_name_en','like',"%$q%")
                           ->orWhere('students.student_name_bn','like',"%$q%")
-                          ->orWhere('students.student_id','like',"%$q%");
+                          ->orWhere('students.student_id','like',"%$q%")
+                          ->orWhere('students.father_name','like',"%$q%")
+                          ->orWhere('students.father_name_bn','like',"%$q%")
+                          ->orWhere('students.guardian_phone','like',"%$q%");
                 });
             })
             ->when($status, function($x) use ($status){
@@ -116,6 +119,12 @@ class StudentController extends Controller
             ->orderBy('sections.name')
             ->orderBy('student_enrollments.roll_no')
             ->paginate($request->get('per_page', 10))->withQueryString();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'students' => $students
+            ]);
+        }
 
         return view('principal.institute.students.index',[
             'school'=>$school,

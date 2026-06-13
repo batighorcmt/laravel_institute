@@ -202,6 +202,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             Route::prefix('students')->name('students.')->group(function () {
                 Route::get('/report-cards', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'index'])->name('report-cards.index');
                 Route::get('/report-cards/print-all', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'printAll'])->name('report-cards.print-all');
+                Route::get('/report-cards/print-summary', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'printSummary'])->name('report-cards.print-summary');
                 Route::get('/{student}/report-card', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'show'])->name('report-cards.show');
                 Route::get('/{student}/report-card/print', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'printRecord'])->name('report-cards.print');
                 Route::get('/{student}/report-card/data', [\App\Http\Controllers\Principal\StudentReportCardController::class, 'data'])->name('report-cards.data');
