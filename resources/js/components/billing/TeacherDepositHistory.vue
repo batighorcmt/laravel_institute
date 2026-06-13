@@ -268,7 +268,7 @@ export default {
     .shadow-sm, .shadow-2xl, .shadow-xl {
         box-shadow: none !important;
     }
-    .rounded-[2.5rem], .rounded-[2rem] {
+    \.rounded-\[2\.5rem\], \.rounded-\[2rem\] {
         border-radius: 0 !important;
     }
     table {

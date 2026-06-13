@@ -157,12 +157,13 @@ class StudentController extends Controller
             'student_name_en'=>['nullable','string','max:150'],
             'student_name_bn'=>['nullable','string','max:150'],
             'board_registration_no'=>['nullable','string','max:50'],
+            'birth_certificate_no'=>['nullable','string','max:50'],
             'date_of_birth'=>['required','date'],
             'gender'=>['required','in:male,female'],
-            'father_name'=>['required','string','max:120'],
-            'mother_name'=>['required','string','max:120'],
-            'father_name_bn'=>['required','string','max:150'],
-            'mother_name_bn'=>['required','string','max:150'],
+            'father_name'=>['nullable','string','max:120'],
+            'mother_name'=>['nullable','string','max:120'],
+            'father_name_bn'=>['nullable','string','max:150'],
+            'mother_name_bn'=>['nullable','string','max:150'],
             'guardian_phone'=>['required','string','max:20'],
             'guardian_relation'=>['nullable','in:father,mother,other'],
             'guardian_name_en'=>['nullable','string','max:120'],
@@ -196,6 +197,10 @@ class StudentController extends Controller
             'status'=>['required','in:active,inactive,graduated,transferred'],
             'photo'=>['nullable','image','max:1024'],
         ]);
+        // Default admission_date to today if not provided
+        if (empty($data['admission_date'])) {
+            $data['admission_date'] = now()->toDateString();
+        }
         $data['school_id']=$school->id;
         // keep class_id null; enrollments drive class/year history
         $data['class_id']=null;
