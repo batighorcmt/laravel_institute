@@ -26,7 +26,7 @@
         <div class="card">
           <div class="card-body">
             <div class="d-flex align-items-center">
-              <img src="{{ $student->photo ? asset('storage/'.$student->photo) : asset('images/avatar-student.png') }}" class="img-thumbnail mr-3" style="width:90px;height:90px;object-fit:cover;" alt="Photo">
+              <img src="{{ $student->photo_url }}" class="img-thumbnail mr-3" style="width:90px;height:90px;object-fit:cover;" alt="Photo">
               <div>
                 <h4 class="mb-1">{{ $student->student_name_bn ?? $student->student_name_en }}</h4>
                 <div class="text-muted">ID: {{ $student->id }}</div>
