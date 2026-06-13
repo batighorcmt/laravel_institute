@@ -14,10 +14,16 @@
       $photoFile = $en->photo ?? null;
       $photoUrl = asset('images/default-avatar.svg');
       if($photoFile){
-        $photoFile = ltrim($photoFile, '/\\');
-        $checkPath = str_starts_with($photoFile, 'students/') ? $photoFile : 'students/' . $photoFile;
-        if(file_exists(storage_path('app/public/' . $checkPath))){
-          $photoUrl = asset('storage/' . $checkPath);
+        $paths = [
+          'storage/students/'.$photoFile,
+          'storage/'.$photoFile,
+          $photoFile,
+        ];
+        foreach($paths as $p){
+          if(file_exists(public_path($p))){
+            $photoUrl = asset($p);
+            break;
+          }
         }
       }
     @endphp

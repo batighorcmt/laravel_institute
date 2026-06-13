@@ -207,46 +207,32 @@ class Student extends Model
             return $baseUrl . '/images/default-avatar.svg';
         }
 
-        // Normalize: strip any leading slashes and existing 'students/' prefix for uniform checks
-        $photo = ltrim($this->photo, '/\\');
-        $bareFilename  = str_starts_with($photo, 'students/') ? substr($photo, strlen('students/')) : $photo;
-        $withPrefix    = 'students/' . $bareFilename;
-
-        // 1) Check in students/ folder (primary location for enrolled students)
-        if (Storage::disk('public')->exists($withPrefix)) {
-            return $baseUrl . '/storage/' . $withPrefix;
+        // 1) Check in students folder (primary location for enrolled students)
+        $studentsPath = 'students/' . $this->photo;
+        if (Storage::disk('public')->exists($studentsPath)) {
+            return $baseUrl . '/storage/' . $studentsPath;
         }
 
-        // 2) Check if already stored at root of public disk (legacy uploads)
-        if (Storage::disk('public')->exists($bareFilename)) {
-            return $baseUrl . '/storage/' . $bareFilename;
+        // 2) If stored directly in public path (rare)
+        if (file_exists(public_path($this->photo))) {
+            return $baseUrl . '/' . ltrim($this->photo, '/');
         }
 
-        // 3) If stored directly in public/web-root path (rare)
-        if (file_exists(public_path($photo))) {
-            return $baseUrl . '/' . $photo;
+        // 3) If stored in storage/app/public (accessible via /storage/... when storage:link exists)
+        if (file_exists(storage_path('app/public/' . $this->photo))) {
+            return $baseUrl . '/storage/' . ltrim($this->photo, '/');
         }
 
-        // 4) If the photo column itself contains a path that starts with 'students/'
-        //    and the file exists physically (e.g. symlinked storage)
-        if (file_exists(storage_path('app/public/' . $withPrefix))) {
-            return $baseUrl . '/storage/' . $withPrefix;
+        // 4) If stored in storage/app (not public) but present
+        if (file_exists(storage_path('app/' . $this->photo))) {
+            return $baseUrl . '/storage/' . ltrim($this->photo, '/');
         }
 
-        // 5) If stored in storage/app/public root (accessible via /storage/...)
-        if (file_exists(storage_path('app/public/' . $bareFilename))) {
-            return $baseUrl . '/storage/' . $bareFilename;
-        }
-
-        // 6) If stored in storage/app (not public) but present
-        if (file_exists(storage_path('app/' . $bareFilename))) {
-            return $baseUrl . '/storage/' . $bareFilename;
-        }
-
-        // 7) As a last resort, if the default filesystem can generate a URL
+        // 5) As a last resort, if the default filesystem can generate a URL
         try {
-            if (Storage::exists($photo)) {
-                $storageUrl = Storage::url($photo);
+            if (Storage::exists($this->photo)) {
+                $storageUrl = Storage::url($this->photo);
+                // Avoid double base URL if Storage::url already returns an absolute URL
                 if (str_starts_with($storageUrl, 'http')) {
                     return $storageUrl;
                 }

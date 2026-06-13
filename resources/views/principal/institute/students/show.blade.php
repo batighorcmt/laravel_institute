@@ -143,11 +143,11 @@
 <div class="container-fluid">
     <!-- Profile Header -->
     <div class="profile-header mb-4">
-        <div class="d-flex flex-column flex-md-row align-items-center">
-            <div class="text-center mb-3 mb-md-0 mr-md-4">
+        <div class="row align-items-center">
+            <div class="col-auto">
                 <img src="{{ $student->photo_url }}" alt="Profile" class="profile-avatar">
             </div>
-            <div class="text-center text-md-left">
+            <div class="col">
                 <h2 class="mb-2 font-weight-bold">{{ $student->student_name_bn ?? $student->student_name_en }}</h2>
                 <div class="mb-2">
                     <span class="badge badge-light badge-modern mr-2">
@@ -166,7 +166,7 @@
                     <i class="fas fa-calendar-alt mr-1"></i> সেশন: {{ $currentYear->name ?? 'N/A' }}
                 </p>
             </div>
-            <div class="ml-auto text-right mt-3 mt-md-0">
+            <div class="col-auto text-right">
                 <form action="{{ route('principal.institute.students.reset-password', [$school, $student]) }}" method="POST" class="d-inline" onsubmit="return confirm('পাসওয়ার্ড রিসেট করতে চান? ডিফল্ট পাসওয়ার্ড হবে 123456')">
                     @csrf
                     <button type="submit" class="btn btn-warning btn-sm mr-2">
