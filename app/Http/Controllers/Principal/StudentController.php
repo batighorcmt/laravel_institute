@@ -158,7 +158,7 @@ class StudentController extends Controller
             'student_name_bn'=>['nullable','string','max:150'],
             'board_registration_no'=>['nullable','string','max:50'],
             'birth_certificate_no'=>['nullable','string','max:50'],
-            'date_of_birth'=>['required','date'],
+            'date_of_birth'=>['nullable','date'],
             'gender'=>['required','in:male,female'],
             'father_name'=>['nullable','string','max:120'],
             'mother_name'=>['nullable','string','max:120'],
