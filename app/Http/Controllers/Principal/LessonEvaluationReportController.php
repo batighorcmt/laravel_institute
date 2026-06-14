@@ -119,6 +119,151 @@ class LessonEvaluationReportController extends Controller
         return view('principal.lesson-evaluations.entry_report_print', compact('school', 'reportData', 'fromDate', 'toDate', 'class', 'section', 'lang', 'printTitle', 'printSubtitle'));
     }
 
+    public function routineWiseReport(School $school, Request $request)
+    {
+        $selectedDate = $request->get('date', \Carbon\Carbon::today()->format('Y-m-d'));
+        $date = \Carbon\Carbon::parse($selectedDate);
+        $dayOfWeek = strtolower($date->format('l'));
+
+        $days = [
+            'saturday'  => 'শনিবার',
+            'sunday'    => 'রবিবার',
+            'monday'    => 'সোমবার',
+            'tuesday'   => 'মঙ্গলবার',
+            'wednesday' => 'বুধবার',
+            'thursday'  => 'বৃহস্পতিবার',
+            'friday'    => 'শুক্রবার',
+        ];
+        $dayNameBn = $days[$dayOfWeek] ?? ucfirst($dayOfWeek);
+
+        // Get all teachers who have a routine entry on that day
+        $teachers = \App\Models\Teacher::forSchool($school->id)
+            ->with('user:id,name')
+            ->orderByRaw('COALESCE(serial_number, 999999) asc')
+            ->orderBy(\App\Models\User::select('name')->whereColumn('users.id', 'teachers.user_id'))
+            ->get();
+
+        // Get all routine entries for that day
+        $routineEntries = \App\Models\RoutineEntry::forSchool($school->id)
+            ->where('day_of_week', $dayOfWeek)
+            ->with(['subject:id,name,bangla_name', 'class:id,name,bangla_name', 'section:id,name,bangla_name'])
+            ->get();
+
+        // Determine max period number
+        $maxPeriod = $routineEntries->max('period_number') ?? 0;
+
+        // Build a lookup: teacher_id -> period_number -> routine entry
+        // Key: "teacher_id#period_number"
+        $routineGrid = $routineEntries->groupBy(fn($e) => $e->teacher_id . '#' . $e->period_number);
+
+        // Get all lesson evaluations for that date (for this school)
+        $evaluations = \App\Models\LessonEvaluation::forSchool($school->id)
+            ->whereDate('evaluation_date', $selectedDate)
+            ->get(['id', 'teacher_id', 'class_id', 'section_id', 'subject_id', 'routine_entry_id']);
+
+        // Build a fast lookup
+        // Key 1: "teacher_id#class_id#section_id#subject_id" -> evaluation id (most reliable)
+        // Key 2: "routine_entry_id" -> evaluation id (if routine_entry_id is set)
+        $evalLookup = [];
+        foreach ($evaluations as $ev) {
+            $key = $ev->teacher_id . '#' . $ev->class_id . '#' . $ev->section_id . '#' . $ev->subject_id;
+            $evalLookup[$key] = $ev->id;
+
+            if ($ev->routine_entry_id) {
+                $evalLookup['re#' . $ev->routine_entry_id] = $ev->id;
+            }
+        }
+
+        // Filter teachers who actually have classes on this day
+        $activeTeachers = $teachers->filter(function ($t) use ($routineEntries) {
+            return $routineEntries->where('teacher_id', $t->id)->isNotEmpty();
+        })->values();
+
+        return view('principal.lesson-evaluations.routine_wise_report', compact(
+            'school',
+            'selectedDate',
+            'date',
+            'dayOfWeek',
+            'dayNameBn',
+            'days',
+            'teachers',
+            'activeTeachers',
+            'maxPeriod',
+            'routineGrid',
+            'routineEntries',
+            'evaluations',
+            'evalLookup'
+        ));
+    }
+
+    public function routineWiseReportPrint(School $school, Request $request)
+    {
+        $selectedDate = $request->get('date', \Carbon\Carbon::today()->format('Y-m-d'));
+        $date         = \Carbon\Carbon::parse($selectedDate);
+        $dayOfWeek    = strtolower($date->format('l'));
+        $lang         = $request->get('lang', 'bn');
+
+        $days = [
+            'saturday'  => 'শনিবার',
+            'sunday'    => 'রবিবার',
+            'monday'    => 'সোমবার',
+            'tuesday'   => 'মঙ্গলবার',
+            'wednesday' => 'বুধবার',
+            'thursday'  => 'বৃহস্পতিবার',
+            'friday'    => 'শুক্রবার',
+        ];
+        $dayNameBn = $days[$dayOfWeek] ?? ucfirst($dayOfWeek);
+
+        $dtBn = function ($d) {
+            $digits = ['0'=>'০','1'=>'১','2'=>'২','3'=>'৩','4'=>'৪','5'=>'৫','6'=>'৬','7'=>'৭','8'=>'৮','9'=>'৯'];
+            return strtr(\Carbon\Carbon::parse($d)->format('d-m-Y'), $digits);
+        };
+
+        if ($lang === 'bn') {
+            $printTitle    = 'রুটিন ভিত্তিক ইভ্যালুয়েশন রিপোর্ট';
+            $printSubtitle = $dayNameBn . ' | তারিখ: ' . $dtBn($selectedDate);
+        } else {
+            $printTitle    = 'Routine Wise Evaluation Report';
+            $printSubtitle = ucfirst($dayOfWeek) . ' | Date: ' . $date->format('d-m-Y');
+        }
+
+        // Fetch same data as routineWiseReport
+        $teachers = \App\Models\Teacher::forSchool($school->id)
+            ->with('user:id,name')
+            ->orderByRaw('COALESCE(serial_number, 999999) asc')
+            ->orderBy(\App\Models\User::select('name')->whereColumn('users.id', 'teachers.user_id'))
+            ->get();
+
+        $routineEntries = \App\Models\RoutineEntry::forSchool($school->id)
+            ->where('day_of_week', $dayOfWeek)
+            ->with(['subject:id,name,bangla_name', 'class:id,name,bangla_name', 'section:id,name,bangla_name'])
+            ->get();
+
+        $maxPeriod  = $routineEntries->max('period_number') ?? 0;
+        $routineGrid = $routineEntries->groupBy(fn($e) => $e->teacher_id . '#' . $e->period_number);
+
+        $evaluations = \App\Models\LessonEvaluation::forSchool($school->id)
+            ->whereDate('evaluation_date', $selectedDate)
+            ->get(['id', 'teacher_id', 'class_id', 'section_id', 'subject_id', 'routine_entry_id']);
+
+        $evalLookup = [];
+        foreach ($evaluations as $ev) {
+            $key = $ev->teacher_id . '#' . $ev->class_id . '#' . $ev->section_id . '#' . $ev->subject_id;
+            $evalLookup[$key] = $ev->id;
+            if ($ev->routine_entry_id) {
+                $evalLookup['re#' . $ev->routine_entry_id] = $ev->id;
+            }
+        }
+
+        $activeTeachers = $teachers->filter(fn($t) => $routineEntries->where('teacher_id', $t->id)->isNotEmpty())->values();
+
+        return view('principal.lesson-evaluations.routine_wise_report_print', compact(
+            'school', 'selectedDate', 'date', 'dayOfWeek', 'dayNameBn', 'days', 'lang',
+            'activeTeachers', 'maxPeriod', 'routineGrid', 'routineEntries',
+            'evaluations', 'evalLookup', 'printTitle', 'printSubtitle'
+        ));
+    }
+
     private function getEntryReportData(School $school, Request $request)
     {
         $lang = $request->get('lang', 'bn');
