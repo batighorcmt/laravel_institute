@@ -58,7 +58,7 @@
                             <option value="">-- Select Teacher --</option>
                             @foreach($teachers as $t)
                                 <option value="{{ $t->id }}" {{ ($currentController && $currentController->user_id === $t->id) ? 'selected' : '' }}>
-                                    {{ $t->name }} {{ $t->teacher && $t->teacher->initials ? '(' . $t->teacher->initials . ')' : '' }}
+                                    {{ $t->teacher_full_name ?? $t->name }} {{ $t->teacher_initials ? '(' . $t->teacher_initials . ')' : '' }}
                                 </option>
                             @endforeach
                         </select>
@@ -141,7 +141,7 @@
                                                         @foreach($teachers as $t)
                                                             <option value="{{ $t->id }}" 
                                                                 {{ isset($dutyMap[$r->id]) && $dutyMap[$r->id] == $t->id ? 'selected' : '' }}>
-                                                                {{ $t->name }} {{ $t->teacher && $t->teacher->initials ? '(' . $t->teacher->initials . ')' : '' }}
+                                                                {{ $t->teacher_full_name ?? $t->name }} {{ $t->teacher_initials ? '(' . $t->teacher_initials . ')' : '' }}
                                                             </option>
                                                         @endforeach
                                                     </select>

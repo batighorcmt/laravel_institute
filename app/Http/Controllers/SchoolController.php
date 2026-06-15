@@ -180,7 +180,15 @@ class SchoolController extends Controller
             ->withRole(Role::PRINCIPAL)
             ->with('user')
             ->first();
-        return view('superadmin.schools.show', compact('school','principal'));
+            
+        $stats = [
+            'total_students' => $school->students()->count(),
+            'active_students' => $school->students()->where('status', 'active')->count(),
+            'total_teachers' => $school->teachers()->count(),
+            'active_teachers' => $school->teachers()->where('status', 'active')->count(),
+        ];
+        
+        return view('superadmin.schools.show', compact('school', 'principal', 'stats'));
     }
 
     /**

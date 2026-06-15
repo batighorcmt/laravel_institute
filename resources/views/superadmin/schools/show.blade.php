@@ -7,6 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h4 mb-0">স্কুল বিস্তারিত</h1>
         <div class="btn-group">
+            <a href="{{ route('superadmin.impersonate', $school) }}" class="btn btn-sm btn-success"><i class="fas fa-sign-in-alt mr-1"></i> লগইন করুন (Login as)</a>
             <a href="{{ route('superadmin.schools.index') }}" class="btn btn-sm btn-secondary"><i class="fas fa-arrow-left mr-1"></i> তালিকা</a>
             <a href="{{ route('superadmin.schools.edit', $school) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit mr-1"></i> সম্পাদনা</a>
             <a href="{{ route('superadmin.schools.manage', $school) }}" class="btn btn-sm btn-info"><i class="fas fa-cogs mr-1"></i> ম্যানেজ</a>
@@ -83,6 +84,38 @@
                     @else
                         <p class="text-muted mb-0">প্রধানের তথ্য পাওয়া যায়নি বা এখনো সেট করা হয়নি।</p>
                     @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Section -->
+    <div class="row mt-2">
+        <div class="col-md-6 mb-3">
+            <div class="card bg-primary text-white h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0 text-white font-weight-bold">শিক্ষার্থী পরিসংখ্যান</h4>
+                            <p class="mb-0 mt-2"><i class="fas fa-users mr-1"></i> মোট শিক্ষার্থী: <strong>{{ $stats['total_students'] }}</strong> জন</p>
+                            <p class="mb-0"><i class="fas fa-user-check mr-1"></i> একটিভ শিক্ষার্থী: <strong>{{ $stats['active_students'] }}</strong> জন</p>
+                        </div>
+                        <i class="fas fa-user-graduate fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card bg-success text-white h-100 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0 text-white font-weight-bold">শিক্ষক পরিসংখ্যান</h4>
+                            <p class="mb-0 mt-2"><i class="fas fa-chalkboard-teacher mr-1"></i> মোট শিক্ষক: <strong>{{ $stats['total_teachers'] }}</strong> জন</p>
+                            <p class="mb-0"><i class="fas fa-user-check mr-1"></i> একটিভ শিক্ষক: <strong>{{ $stats['active_teachers'] }}</strong> জন</p>
+                        </div>
+                        <i class="fas fa-chalkboard-teacher fa-3x opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>

@@ -125,6 +125,16 @@
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
 
+    @if(session()->has('impersonated_by'))
+    <div class="bg-warning text-dark text-center py-2 font-weight-bold shadow-sm" style="position: relative; z-index: 1050;">
+        আপনি এখন {{ session('impersonated_school_name', 'প্রতিষ্ঠান') }} এর প্রধান হিসেবে লগইন আছেন। 
+        <form action="{{ route('impersonate.leave') }}" method="POST" class="d-inline ml-2">
+            @csrf
+            <button type="submit" class="btn btn-sm btn-dark"><i class="fas fa-sign-out-alt mr-1"></i> Leave Impersonation</button>
+        </form>
+    </div>
+    @endif
+
     <!-- Header -->
     <nav class="main-header navbar navbar-expand navbar-white navbar-light">
         <div class="container-fluid">
@@ -226,6 +236,20 @@
                                 <i class="nav-icon fas fa-users"></i>
                                 <p>Users</p>
                             </a>
+                        </li>
+                        <li class="nav-item has-treeview {{ request()->routeIs('superadmin.designations.*') ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->routeIs('superadmin.designations.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-cogs"></i>
+                                <p>সেটিংস <i class="right fas fa-angle-left"></i></p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('superadmin.designations.index') }}" class="nav-link {{ request()->routeIs('superadmin.designations.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>পদবী (Designations)</p>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
 
                         {{--Principal Menu Items--}}

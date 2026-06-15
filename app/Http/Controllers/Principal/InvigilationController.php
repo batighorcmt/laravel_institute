@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\School;
 use App\Models\User;
+use App\Models\Teacher;
 use App\Models\SeatPlan;
 use App\Models\SeatPlanRoom;
 use App\Models\SeatPlanExam;
 use App\Models\ExamController;
 use App\Models\ExamRoomInvigilation;
+use App\Models\ExamSubject;
 use Illuminate\Support\Facades\Auth;
 
 class InvigilationController extends Controller
@@ -25,14 +27,21 @@ class InvigilationController extends Controller
             abort(403, 'Unauthorized.');
         }
 
-        // 1. Get Teachers for the Select2 dropdowns (filtered by active schoolRoles that have the 'teacher' role)
-        $teachers = User::whereHas('activeSchoolRoles', function($query) use ($school) {
-            $query->where('school_id', $school->id)->whereHas('role', function($r) {
-                $r->where('name', 'teacher');
-            });
-        })->with(['teacher' => function($query) use ($school) {
-            $query->where('school_id', $school->id)->select('user_id', 'initials');
-        }])->get();
+        // 1. Get active Teachers for the Select2 dropdowns
+        // Query from Teacher model (status=active) then load the associated user
+        $teacherModels = Teacher::where('school_id', $school->id)
+            ->where('status', 'active')
+            ->with(['user'])
+            ->orderBy('serial_number')
+            ->get();
+
+        // Build a collection of User objects with teacher initials attached
+        $teachers = $teacherModels->map(function($t) {
+            if (!$t->user) return null;
+            $t->user->teacher_initials = $t->initials;
+            $t->user->teacher_full_name = $t->full_name ?: $t->user->name;
+            return $t->user;
+        })->filter()->values();
 
         // 2. Get active Seat Plans
         $plans = SeatPlan::where('school_id', $school->id)
@@ -63,15 +72,28 @@ class InvigilationController extends Controller
             // Let's assume there is an 'exams' relationship on SeatPlan, and each exam has start/end dates or subjects with dates.
             // Note: Since I don't have exact visibility into Seat Plan -> Date linkage in the new schema, I will look up dates dynamically.
             if ($selectedPlan) {
-                // If the app uses SeatPlan->exams->examSubjects->exam_date, we pull that.
-                // For safety and compatibility with standard structure, let's fetch any exams tied to this seat plan.
-                $exams = $selectedPlan->exams()->with('examSubjects')->get();
-                foreach($exams as $ex) {
-                    foreach($ex->examSubjects as $sub) {
-                        if ($sub->exam_date) {
-                            $examDates->push($sub->exam_date->format('Y-m-d'));
-                        }
-                    }
+                // First try: fetch dates from exams tied to this seat plan via seat_plan_exams table
+                $examIds = $selectedPlan->seatPlanExams()->pluck('exam_id');
+
+                if ($examIds->isNotEmpty()) {
+                    $examDates = ExamSubject::whereIn('exam_id', $examIds)
+                        ->whereNotNull('exam_date')
+                        ->distinct()
+                        ->orderBy('exam_date')
+                        ->pluck('exam_date')
+                        ->map(fn($d) => $d->format('Y-m-d'))
+                        ->values();
+                } else {
+                    // Fallback: if no exam mapping, show all exam subject dates for this school
+                    $examDates = ExamSubject::whereHas('exam', function($q) use ($school) {
+                            $q->where('school_id', $school->id);
+                        })
+                        ->whereNotNull('exam_date')
+                        ->distinct()
+                        ->orderBy('exam_date')
+                        ->pluck('exam_date')
+                        ->map(fn($d) => $d->format('Y-m-d'))
+                        ->values();
                 }
                 $examDates = $examDates->unique()->sort()->values();
 

@@ -85,6 +85,7 @@
                                     <span class="badge badge-{{ $school->status === 'active' ? 'success' : 'secondary' }}">{{ $school->status }}</span>
                                 </td>
                                 <td class="text-right">
+                                    <a href="{{ route('superadmin.impersonate', $school) }}" class="btn btn-sm btn-success" title="লগইন করুন (Login as)"><i class="fas fa-sign-in-alt"></i></a>
                                     <a href="{{ route('superadmin.schools.show', $school) }}" class="btn btn-sm btn-secondary" title="বিস্তারিত"><i class="fas fa-eye"></i></a>
                                     <a href="{{ route('superadmin.schools.manage', $school) }}" class="btn btn-sm btn-info"><i class="fas fa-cogs"></i></a>
                                     <a href="{{ route('superadmin.schools.edit', $school) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
