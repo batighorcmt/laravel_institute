@@ -147,7 +147,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
     })->name('cms.ckeditor.upload');
 
     // Impersonation leave route
-    Route::post('/impersonate/leave', [\App\Http\Controllers\Superadmin\ImpersonationController::class, 'leave'])->name('impersonate.leave');
+    Route::post('/impersonate/leave', [\App\Http\Controllers\SuperAdmin\ImpersonationController::class, 'leave'])->name('impersonate.leave');
 
     // Super Admin Routes (fully protected)
     Route::prefix('superadmin')->name('superadmin.')->middleware([EnsureSuperAdmin::class])->group(function () {
@@ -162,7 +162,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
         Route::post('schools/{school}/reset-password', [SchoolController::class, 'resetPassword'])->name('schools.reset-password');
         
         // Impersonate
-        Route::get('schools/{school}/impersonate', [\App\Http\Controllers\Superadmin\ImpersonationController::class, 'impersonate'])->name('impersonate');
+        Route::get('schools/{school}/impersonate', [\App\Http\Controllers\SuperAdmin\ImpersonationController::class, 'impersonate'])->name('impersonate');
 
         // School Modules management
         Route::get('schools/{school}/modules', [SchoolController::class, 'getModules'])->name('schools.modules');
@@ -172,7 +172,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
         Route::resource('app-updates', \App\Http\Controllers\SuperAdmin\AppUpdateController::class);
 
         // Designations management
-        Route::resource('designations', \App\Http\Controllers\Superadmin\DesignationController::class)->except(['create', 'show', 'edit']);
+        Route::resource('designations', \App\Http\Controllers\SuperAdmin\DesignationController::class)->except(['create', 'show', 'edit']);
     }
     );
 
