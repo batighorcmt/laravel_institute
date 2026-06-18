@@ -251,10 +251,7 @@ class StudentDirectoryController extends Controller
         $groups = \App\Models\Group::where('school_id', $schoolId);
 
         if ($classId) {
-            // Get groups that have enrollments for this class
-            $groups->whereHas('enrollments', function($q) use ($classId) {
-                $q->where('class_id', $classId);
-            });
+            $groups->where('class_id', $classId);
         }
 
         $groups = $groups->orderBy('name')->get(['id', 'name']);
