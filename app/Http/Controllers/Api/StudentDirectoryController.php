@@ -217,4 +217,48 @@ class StudentDirectoryController extends Controller
             'genders' => $genders,
         ]);
     }
+    public function getSections(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        $classId = $request->get('class_id');
+
+        if (!$schoolId || !($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
+            return response()->json(['message' => 'অননুমোদিত'], 403);
+        }
+
+        $sections = \App\Models\Section::where('school_id', $schoolId)->where('status', 'active');
+
+        if ($classId) {
+            $sections->where('class_id', $classId);
+        }
+
+        $sections = $sections->orderBy('name')->get(['id', 'name']);
+
+        return response()->json($sections);
+    }
+
+    public function getGroups(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        $classId = $request->get('class_id');
+
+        if (!$schoolId || !($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
+            return response()->json(['message' => 'অননুমোদিত'], 403);
+        }
+
+        $groups = \App\Models\Group::where('school_id', $schoolId);
+
+        if ($classId) {
+            // Get groups that have enrollments for this class
+            $groups->whereHas('enrollments', function($q) use ($classId) {
+                $q->where('class_id', $classId);
+            });
+        }
+
+        $groups = $groups->orderBy('name')->get(['id', 'name']);
+
+        return response()->json($groups);
+    }
 }
