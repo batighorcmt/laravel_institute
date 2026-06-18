@@ -45,9 +45,23 @@ class ExamRoomAttendanceController extends Controller
         $examDates = [];
         if ($planId) {
             if ($isPrincipal) {
+                // First try: get dates linked via seat_plan_exams mapping
                 $examDates = ExamSubject::whereIn('exam_id', function($query) use ($planId) {
                     $query->select('exam_id')->from('seat_plan_exams')->where('seat_plan_id', $planId);
                 })->whereNotNull('exam_date')->distinct()->orderBy('exam_date')->pluck('exam_date')->map(fn($d) => $d->format('Y-m-d'))->toArray();
+
+                // Fallback: if no dates found via exam mapping, show all exam dates for this school
+                if (empty($examDates)) {
+                    $examDates = ExamSubject::whereHas('exam', function($q) use ($school) {
+                            $q->where('school_id', $school->id);
+                        })
+                        ->whereNotNull('exam_date')
+                        ->distinct()
+                        ->orderBy('exam_date')
+                        ->pluck('exam_date')
+                        ->map(fn($d) => $d->format('Y-m-d'))
+                        ->toArray();
+                }
             } else {
                 // Teacher: dates they are invigilating for this plan
                 $examDates = ExamRoomInvigilation::where('seat_plan_id', $planId)

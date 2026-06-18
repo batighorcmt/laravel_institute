@@ -217,10 +217,13 @@ class SeatPlanController extends Controller
             }
         }
 
-        $classes = SchoolClass::forSchool($school->id)
-            ->whereIn('id', $seatPlan->seatPlanClasses()->pluck('class_id'))
-            ->orderBy('numeric_value')
-            ->get();
+        $classIds = $seatPlan->seatPlanClasses()->pluck('class_id');
+
+        $classesQuery = SchoolClass::forSchool($school->id)->orderBy('numeric_value');
+        if ($classIds->isNotEmpty()) {
+            $classesQuery->whereIn('id', $classIds);
+        }
+        $classes = $classesQuery->get();
 
         // Get current academic year
         $currentAcademicYear = AcademicYear::where('school_id', $school->id)
@@ -231,10 +234,12 @@ class SeatPlanController extends Controller
         $students = Student::forSchool($school->id)
             ->with('currentEnrollment')
             ->where('status', 'active')
-            ->whereHas('enrollments', function ($q) use ($currentAcademicYear, $seatPlan) {
+            ->whereHas('enrollments', function ($q) use ($currentAcademicYear, $classIds) {
             $q->where('status', 'active')
-                ->where('academic_year_id', $currentAcademicYear->id)
-                ->whereIn('class_id', $seatPlan->seatPlanClasses()->pluck('class_id'));
+                ->where('academic_year_id', $currentAcademicYear->id);
+            if ($classIds->isNotEmpty()) {
+                $q->whereIn('class_id', $classIds);
+            }
         })
             ->orderBy('student_id')
             ->get();
@@ -385,11 +390,13 @@ class SeatPlanController extends Controller
             ->whereHas('enrollments', function ($q) use ($currentAcademicYear, $seatPlan, $classId) {
             $q->where('status', 'active')
                 ->where('academic_year_id', $currentAcademicYear->id);
+            
+            $planClassIds = $seatPlan->seatPlanClasses()->pluck('class_id');
             if ($classId) {
                 $q->where('class_id', $classId);
             }
-            else {
-                $q->whereIn('class_id', $seatPlan->seatPlanClasses()->pluck('class_id'));
+            elseif ($planClassIds->isNotEmpty()) {
+                $q->whereIn('class_id', $planClassIds);
             }
         });
 

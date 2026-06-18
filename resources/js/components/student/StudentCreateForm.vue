@@ -632,7 +632,7 @@ export default {
       try {
         const resp = await fetch(this.storeUrl, {
           method: 'POST',
-          headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'text/html' },
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
           body: fd,
         });
 
