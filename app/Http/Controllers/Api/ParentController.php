@@ -189,9 +189,13 @@ class ParentController extends Controller
             'type' => ['nullable','string','max:50'],
         ]);
 
+        $student_id = (int)$validated['student_id'];
+        $student = $children->firstWhere('id', $student_id);
+        $finalSchoolId = $schoolId ?: ($student ? $student->school_id : null);
+
         $leave = StudentLeave::create([
-            'school_id' => $schoolId,
-            'student_id' => (int)$validated['student_id'],
+            'school_id' => $finalSchoolId,
+            'student_id' => $student_id,
             'type' => $validated['type'] ?? null,
             'reason' => $validated['reason'],
             'start_date' => $validated['start_date'],

@@ -103,6 +103,14 @@ class LessonEvaluationController extends Controller
             return response()->json(['message' => 'এই শাখার হাজিরা গ্রহণ করা না হলে লেসন ইভ্যালুয়েশন দেওয়া যাবে না। আগে হাজিরা সম্পন্ন করুন।'], 422);
         }
 
+        $routineId = $validated['routine_entry_id'] ?? 0;
+        $lockKey = "lesson_eval_lock_{$teacher->id}_{$validated['evaluation_date']}_{$routineId}_{$validated['subject_id']}";
+        $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 10);
+
+        if (!$lock->get()) {
+            return response()->json(['message' => 'অনুরোধটি ইতিমধ্যে প্রসেস হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন'], 429);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -169,6 +177,8 @@ class LessonEvaluationController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             return response()->json(['message' => 'সংরক্ষণে ত্রুটি: '.$e->getMessage()], 422);
+        } finally {
+            $lock->release();
         }
     }
 
