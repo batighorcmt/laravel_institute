@@ -296,6 +296,45 @@
             .report-card-signature-note.visible {
                 display: block !important;
             }
+
+            /* ===== পিওর কালো প্রিন্ট ===== */
+            * {
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            /* সব ব্যাকগ্রাউন্ড সাদা */
+            *:not(img) {
+                background: #fff !important;
+                background-color: #fff !important;
+            }
+            /* সব বর্ডার কালো */
+            table, table th, table td {
+                border-color: #000 !important;
+            }
+            /* badge গুলোতে border যোগ, রঙ কালো */
+            .badge {
+                border: 1px solid #000 !important;
+                background: #fff !important;
+                color: #000 !important;
+            }
+            /* summary box বর্ডার */
+            .summary-box {
+                border: 1px solid #000 !important;
+            }
+            /* detail-item বর্ডার */
+            .detail-item {
+                border: 1px solid #aaa !important;
+            }
+            /* section-title border */
+            .section-title {
+                border-bottom: 2px solid #000 !important;
+                color: #000 !important;
+            }
+            /* header bottom border */
+            .header {
+                border-bottom-color: #000 !important;
+            }
         }
     </style>
 </head>
