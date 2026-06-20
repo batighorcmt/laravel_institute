@@ -23,4 +23,9 @@ class Group extends Model
     {
         return $q->where('school_id', $schoolId);
     }
+
+    public function enrollments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(StudentEnrollment::class, 'group_id');
+    }
 }
