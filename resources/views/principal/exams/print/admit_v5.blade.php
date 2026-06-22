@@ -422,7 +422,7 @@
                                 <td class="label" style="width: 20mm; padding-left: 10px;">{{ $__('Section', 'শাখা') }}</td><td class="colon">:</td><td class="value">{{ $sectionNameStr }}</td>
                             </tr>
                             <tr>
-                                <td class="label">{{ $__('Roll No.', 'রোল নম্বর') }}</td><td class="colon">:</td><td class="value" style="font-size: 12pt; color: #5e72e4;">{{ $lang === 'bn' ? enToBnNumber($roll) : $roll }}</td>
+                                <td class="label">{{ $__('Roll No.', 'রোল নম্বর') }}</td><td class="colon">:</td><td class="value" style="font-size: 13pt; color: #cc0000; font-weight: 800; letter-spacing: 1px;">{{ $lang === 'bn' ? enToBnNumber($roll) : $roll }}</td>
                                 <td class="label" style="padding-left: 10px;">{{ $__('Group', 'বিভাগ') }}</td><td class="colon">:</td><td class="value">{{ $lang === 'bn' ? $groupName : capitalizeEachWord($groupName) }}</td>
                             </tr>
                             <tr>
@@ -506,7 +506,7 @@
                                             <span style="font-size:8pt; color:#8898aa; font-style:italic;">({{ $__('Optional', 'ঐচ্ছিক') }})</span>
                                         @endif
                                     </td>
-                                    <td>{{ $subject->exam_date ? ($lang === 'bn' ? enToBnNumber(date('d/m/Y', strtotime($subject->exam_date))) : date('d/M/Y', strtotime($subject->exam_date))) : '-' }}</td>
+                                    <td>{{ $subject->exam_date ? ($lang === 'bn' ? enToBnNumber(date('d/m/Y', strtotime($subject->exam_date))) : date('d/m/Y', strtotime($subject->exam_date))) : '-' }}</td>
                                     <td>{{ $subject->exam_time ? ($lang === 'bn' ? enToBnNumber(date('h:i A', strtotime($subject->exam_time))) : date('h:i A', strtotime($subject->exam_time))) : '-' }}</td>
                                 </tr>
                             @endforeach
