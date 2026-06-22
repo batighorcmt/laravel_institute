@@ -10,6 +10,8 @@ use App\Models\Student;
 use App\Models\Role;
 use App\Models\UserSchoolRole;
 use App\Models\Teacher;
+use App\Models\SeatPlanExam;
+use App\Models\SeatPlanAllocation;
 use Illuminate\Support\Facades\DB;
 
 class ExamPrintController extends Controller
@@ -108,7 +110,18 @@ class ExamPrintController extends Controller
 
         $principalTeacher = $this->getPrincipalTeacher($school);
 
-        return compact('school', 'exam', 'className', 'schedule', 'students', 'assigned_by_student', 'principalTeacher');
+        // Fetch Seat Plan Info for this exam
+        $seatPlanExam = SeatPlanExam::where('exam_id', $exam->id)->first();
+        $seatPlanAllocations = collect();
+        if ($seatPlanExam) {
+            $seatPlanAllocations = SeatPlanAllocation::where('seat_plan_id', $seatPlanExam->seat_plan_id)
+                ->whereIn('student_id', $students->pluck('id'))
+                ->with('room')
+                ->get()
+                ->keyBy('student_id');
+        }
+
+        return compact('school', 'exam', 'className', 'schedule', 'students', 'assigned_by_student', 'principalTeacher', 'seatPlanAllocations');
     }
 
     private function getPrincipalTeacher(School $school)
@@ -144,6 +157,11 @@ class ExamPrintController extends Controller
     public function admitV4(Request $request, School $school, Exam $exam)
     {
         return view('principal.exams.print.admit_v4', $this->prepareData($request, $school, $exam));
+    }
+
+    public function admitV5(Request $request, School $school, Exam $exam)
+    {
+        return view('principal.exams.print.admit_v5', $this->prepareData($request, $school, $exam));
     }
 
     public function attendanceSheet(Request $request, School $school, Exam $exam)

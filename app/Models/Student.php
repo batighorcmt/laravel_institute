@@ -201,48 +201,48 @@ class Student extends Model
     // Web views also work fine with absolute URLs.
     public function getPhotoUrlAttribute(): string
     {
-        $baseUrl = rtrim(config('app.url'), '/');
-
         if (empty($this->photo)) {
-            return $baseUrl . '/images/default-avatar.svg';
+            return asset('images/default-avatar.svg');
         }
 
+        $photoClean = ltrim($this->photo, '/');
+
         // 1) Check in students folder (primary location for enrolled students)
-        $studentsPath = 'students/' . $this->photo;
+        $studentsPath = str_starts_with($photoClean, 'students/') ? $photoClean : 'students/' . $photoClean;
         if (Storage::disk('public')->exists($studentsPath)) {
-            return $baseUrl . '/storage/' . $studentsPath;
+            return asset('storage/' . $studentsPath);
         }
 
         // 2) If stored directly in public path (rare)
-        if (file_exists(public_path($this->photo))) {
-            return $baseUrl . '/' . ltrim($this->photo, '/');
+        if (file_exists(public_path($photoClean))) {
+            return asset($photoClean);
         }
 
         // 3) If stored in storage/app/public (accessible via /storage/... when storage:link exists)
-        if (file_exists(storage_path('app/public/' . $this->photo))) {
-            return $baseUrl . '/storage/' . ltrim($this->photo, '/');
+        if (file_exists(storage_path('app/public/' . $photoClean))) {
+            return asset('storage/' . $photoClean);
         }
 
         // 4) If stored in storage/app (not public) but present
-        if (file_exists(storage_path('app/' . $this->photo))) {
-            return $baseUrl . '/storage/' . ltrim($this->photo, '/');
+        if (file_exists(storage_path('app/' . $photoClean))) {
+            return asset('storage/' . $photoClean);
         }
 
         // 5) As a last resort, if the default filesystem can generate a URL
         try {
-            if (Storage::exists($this->photo)) {
-                $storageUrl = Storage::url($this->photo);
+            if (Storage::exists($photoClean)) {
+                $storageUrl = Storage::url($photoClean);
                 // Avoid double base URL if Storage::url already returns an absolute URL
                 if (str_starts_with($storageUrl, 'http')) {
                     return $storageUrl;
                 }
-                return $baseUrl . '/' . ltrim($storageUrl, '/');
+                return asset(ltrim($storageUrl, '/'));
             }
         } catch (\Throwable $e) {
             // ignore
         }
 
-        return $baseUrl . '/images/default-avatar.svg';
+        return asset('images/default-avatar.svg');
     }
 
     public function noticeTargets()
