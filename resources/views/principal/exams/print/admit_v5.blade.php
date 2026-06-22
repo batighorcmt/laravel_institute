@@ -445,17 +445,39 @@
                         <div class="s-label">{{ $__('Room Number', 'রুম নম্বর') }}</div>
                         <div class="s-val">{{ $roomNo !== 'N/A' ? ($lang === 'bn' ? enToBnNumber($roomNo) : $roomNo) : 'N/A' }}</div>
                     </div>
+                    @php
+                        $colLabel = 'N/A';
+                        if ($colNo !== 'N/A') {
+                            $colInt = intval($colNo);
+                            if ($lang === 'bn') {
+                                $colLabel = $colInt == 1 ? 'বাম সারি' : ($colInt == 2 ? 'মধ্য সারি' : ($colInt == 3 ? 'ডান সারি' : enToBnNumber($colNo) . ' সারি'));
+                            } else {
+                                $colLabel = $colInt == 1 ? 'Left Row' : ($colInt == 2 ? 'Middle Row' : ($colInt == 3 ? 'Right Row' : $colNo . ' Row'));
+                            }
+                        }
+                    @endphp
                     <div class="seat-item">
-                        <div class="s-label">{{ $__('Column', 'কলাম') }}</div>
-                        <div class="s-val">{{ $colNo !== 'N/A' ? ($lang === 'bn' ? enToBnNumber($colNo) : $colNo) : 'N/A' }}</div>
+                        <div class="s-label">{{ $__('Row', 'সারি') }}</div>
+                        <div class="s-val" style="font-size:11pt;">{{ $colLabel }}</div>
                     </div>
                     <div class="seat-item">
                         <div class="s-label">{{ $__('Bench', 'বেঞ্চ') }}</div>
                         <div class="s-val">{{ $benchNo !== 'N/A' ? ($lang === 'bn' ? enToBnNumber($benchNo) : $benchNo) : 'N/A' }}</div>
                     </div>
+                    @php
+                        $positionLabel = 'N/A';
+                        if ($position !== 'N/A') {
+                            $posStr = strtolower(trim($position));
+                            if ($lang === 'bn') {
+                                $positionLabel = ($posStr === 'left' || $posStr === '1') ? 'বাম দিক' : (($posStr === 'right' || $posStr === '3') ? 'ডান দিক' : (($posStr === 'middle' || $posStr === 'center' || $posStr === '2') ? 'মধ্য দিক' : $position));
+                            } else {
+                                $positionLabel = ($posStr === 'left' || $posStr === '1') ? 'Left' : (($posStr === 'right' || $posStr === '3') ? 'Right' : (($posStr === 'middle' || $posStr === 'center' || $posStr === '2') ? 'Middle' : ucfirst($position)));
+                            }
+                        }
+                    @endphp
                     <div class="seat-item">
-                        <div class="s-label">{{ $__('Position', 'পজিশন') }}</div>
-                        <div class="s-val">{{ $position !== 'N/A' ? ($lang === 'bn' ? enToBnNumber($position) : $position) : 'N/A' }}</div>
+                        <div class="s-label">{{ $__('Position', 'অবস্থান') }}</div>
+                        <div class="s-val" style="font-size:11pt;">{{ $positionLabel }}</div>
                     </div>
                 </div>
 
