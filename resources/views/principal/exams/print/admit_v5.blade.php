@@ -427,7 +427,7 @@
                             </tr>
                             <tr>
                                 <td class="label">{{ $__('Student ID', 'শিক্ষার্থী আইডি') }}</td><td class="colon">:</td><td class="value">{{ $student->student_id ?: 'N/A' }}</td>
-                                <td class="label" style="padding-left: 10px;">{{ $__('Gender', 'লিঙ্গ') }}</td><td class="colon">:</td><td class="value">{{ $lang === 'bn' ? ($student->gender == 'Male' ? 'ছাত্র' : ($student->gender == 'Female' ? 'ছাত্রী' : 'অন্যান্য')) : capitalizeEachWord($student->gender) }}</td>
+                                <td class="label" style="padding-left: 10px;">{{ $__('Gender', 'লিঙ্গ') }}</td><td class="colon">:</td><td class="value">{{ $lang === 'bn' ? (strtolower($student->gender) == 'male' ? 'ছেলে' : (strtolower($student->gender) == 'female' ? 'মেয়ে' : 'অন্যান্য')) : capitalizeEachWord($student->gender) }}</td>
                             </tr>
                             <tr>
                                 <td class="label">{{ $__('Board Reg. No.', 'বোর্ড রেজিঃ নং') }}</td><td class="colon">:</td><td class="value" colspan="4">{{ $display_board_reg_no !== 'N/A' ? ($lang === 'bn' ? enToBnNumber($display_board_reg_no) : $display_board_reg_no) : 'N/A' }}</td>
