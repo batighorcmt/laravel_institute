@@ -234,10 +234,11 @@
         text-align: center;
     }
     .seat-item .s-label {
-        font-size: 8.5pt;
+        font-size: 10pt;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
         opacity: 0.95;
+        font-weight: 700;
     }
     .seat-item .s-val {
         font-size: 14pt;
