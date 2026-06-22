@@ -76,6 +76,8 @@
             @if(in_array('col-join-date', $columns)) <th>যোগদান তারিখ</th> @endif
             @if(in_array('col-present-addr', $columns)) <th>বর্তমান ঠিকানা</th> @endif
             @if(in_array('col-permanent-addr', $columns)) <th>স্থায়ী ঠিকানা</th> @endif
+            @if(in_array('col-username', $columns)) <th>ইউজারনেম</th> @endif
+            @if(in_array('col-password', $columns)) <th>পাসওয়ার্ড</th> @endif
         </tr>
     </thead>
     <tbody>
@@ -119,6 +121,8 @@
                 
                 @if(in_array('col-present-addr', $columns)) <td class="text-left">{{ !empty($presentAddr) ? bnNum(implode(', ', $presentAddr), $isBn) : '—' }}</td> @endif
                 @if(in_array('col-permanent-addr', $columns)) <td class="text-left">{{ !empty($permanentAddr) ? bnNum(implode(', ', $permanentAddr), $isBn) : '—' }}</td> @endif
+                    @if(in_array('col-username', $columns)) <td class="text-left">{{ $teacher->user->username ?? '—' }}</td> @endif
+                    @if(in_array('col-password', $columns)) <td class="text-center">{{ $teacher->plain_password ? bnNum($teacher->plain_password, $isBn) : '—' }}</td> @endif
             </tr>
         @empty
             <tr>

@@ -287,6 +287,14 @@
                                     <input type="checkbox" class="custom-control-input" id="col_permanent_addr" name="columns[]" value="col-permanent-addr">
                                     <label class="custom-control-label" for="col_permanent_addr">স্থায়ী ঠিকানা</label>
                                 </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_username" name="columns[]" value="col-username">
+                                    <label class="custom-control-label" for="col_username">ইউজারনেম</label>
+                                </div>
+                                <div class="custom-control custom-checkbox mt-1">
+                                    <input type="checkbox" class="custom-control-input" id="col_password" name="columns[]" value="col-password">
+                                    <label class="custom-control-label" for="col_password">পাসওয়ার্ড (সাময়িক)</label>
+                                </div>
                             </div>
                         </div>
                     </div>
