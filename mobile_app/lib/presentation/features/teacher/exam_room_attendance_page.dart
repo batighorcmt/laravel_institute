@@ -315,11 +315,41 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
                       'রোল: ${student['roll']}',
                       style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold, fontSize: 13),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Text(
                       student['class_name'] ?? 'N/A',
                       style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                     ),
+                    if (student['col_no'] != null && student['col_no'] != 999) ...[
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.purple.shade200),
+                        ),
+                        child: Text(
+                          'সারি-${student['col_no']}',
+                          style: TextStyle(color: Colors.purple.shade700, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                    if (student['bench_no'] != null && student['bench_no'] != 999) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Text(
+                          'বেঞ্চ-${student['bench_no']}',
+                          style: TextStyle(color: Colors.orange.shade700, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
