@@ -105,7 +105,7 @@ class TeacherExamController extends Controller
         $schoolId = $this->resolveSchoolId($request, $user);
         $planId = $request->get('plan_id');
 
-        $plans = SeatPlan::where('school_id', $schoolId)->active()->orderBy('id', 'desc')->get(['id', 'name']);
+        $plans = SeatPlan::where('school_id', $schoolId)->active()->orderBy('id', 'desc')->get(['id', 'name', 'shift'])->map(fn($p) => ['id' => $p->id, 'name' => $p->name . ($p->shift ? ' (' . ucfirst($p->shift) . ')' : '')]);
 
         $dates = [];
         if ($planId) {
@@ -137,7 +137,7 @@ class TeacherExamController extends Controller
         $find = trim($request->get('find', ''));
         $planId = $request->get('plan_id');
 
-        $plans = SeatPlan::where('school_id', $schoolId)->active()->get(['id', 'name']);
+        $plans = SeatPlan::where('school_id', $schoolId)->active()->get(['id', 'name', 'shift'])->map(fn($p) => ['id' => $p->id, 'name' => $p->name . ($p->shift ? ' (' . ucfirst($p->shift) . ')' : '')]);
 
         $results = [];
         if ($planId && $find !== '') {
@@ -240,7 +240,7 @@ class TeacherExamController extends Controller
                 'position' => $alloc->position,
             ];
         })->filter()->sortBy(function($item) {
-            return sprintf('%03d-%03d-%03d', $item['class_numeric'], $item['bench_no'], $item['col_no']);
+            return sprintf('%03d-%03d-%03d', $item['class_numeric'], $item['col_no'], $item['bench_no']);
         })->values();
 
         $genderStats = [
@@ -644,7 +644,7 @@ class TeacherExamController extends Controller
         $planId = $request->get('plan_id');
         $date = $request->get('date');
 
-        $plans = SeatPlan::where('school_id', $schoolId)->active()->get(['id', 'name']);
+        $plans = SeatPlan::where('school_id', $schoolId)->active()->get(['id', 'name', 'shift'])->map(fn($p) => ['id' => $p->id, 'name' => $p->name . ($p->shift ? ' (' . ucfirst($p->shift) . ')' : '')]);
 
         $rows = [];
         if ($planId && $date) {
