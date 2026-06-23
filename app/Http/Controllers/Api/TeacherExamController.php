@@ -142,25 +142,36 @@ class TeacherExamController extends Controller
         $results = [];
         if ($planId && $find !== '') {
             $query = SeatPlanAllocation::where('seat_plan_id', $planId)
-                ->with(['student', 'room']);
+                ->with(['student.currentEnrollment.class', 'student.currentEnrollment.section', 'room']);
 
-            if (is_numeric($find)) {
-                $query->whereHas('student.currentEnrollment', function ($q) use ($find) {
-                    $q->where('roll_no', 'like', '%'.$find.'%');
-                });
-            } else {
-                $query->whereHas('student', function ($q) use ($find) {
-                    $q->where('student_name_en', 'like', '%'.$find.'%')
-                        ->orWhere('student_name_bn', 'like', '%'.$find.'%');
-                });
-            }
+            $query->where(function ($q2) use ($find) {
+                if (is_numeric($find)) {
+                    $q2->whereHas('student.currentEnrollment', function ($q) use ($find) {
+                        $q->where('roll_no', $find);
+                    })->orWhereHas('student', function ($q) use ($find) {
+                        $q->where('student_name_en', 'like', '%'.$find.'%')
+                            ->orWhere('student_name_bn', 'like', '%'.$find.'%');
+                    });
+                } else {
+                    $q2->whereHas('student', function ($q) use ($find) {
+                        $q->where('student_name_en', 'like', '%'.$find.'%')
+                            ->orWhere('student_name_bn', 'like', '%'.$find.'%');
+                    });
+                }
+            });
 
             $results = $query->orderBy('id', 'asc')->limit(20)->get()->map(fn ($r) => [
                 'student_name' => $r->student?->full_name,
                 'student_id' => $r->student?->student_id,
-                'roll' => $r->student?->roll,
+                'roll' => $r->student?->currentEnrollment?->roll_no ?? $r->student?->roll,
+                'photo_url' => $r->student?->photo_url,
+                'class_name' => $r->student?->currentEnrollment?->class?->name,
+                'section_name' => $r->student?->currentEnrollment?->section?->name,
                 'room_no' => $r->room?->room_no,
                 'seat' => $r->seat_number,
+                'col_no' => $r->col_no,
+                'bench_no' => $r->bench_no,
+                'position' => $r->position,
             ]);
         }
 
