@@ -229,13 +229,19 @@ class TeacherExamController extends Controller
             return [
                 'id' => $student->id,
                 'name' => $student->full_name,
-                'roll' => $alloc->student->roll_no ?? $student->currentEnrollment?->roll_no,
+                'roll' => $student->roll_no ?? $student->currentEnrollment?->roll_no,
                 'class_name' => $student->currentEnrollment?->class?->name ?? 'N/A',
+                'class_numeric' => $student->currentEnrollment?->class?->numeric_value ?? 999,
                 'photo_url' => $student->photo_url,
                 'gender' => $student->gender,
                 'status' => $attendances->has($student->id) ? $attendances->get($student->id)->status : null,
+                'col_no' => $alloc->col_no ?? 999,
+                'bench_no' => $alloc->bench_no ?? 999,
+                'position' => $alloc->position,
             ];
-        })->filter()->values();
+        })->filter()->sortBy(function($item) {
+            return sprintf('%03d-%03d-%03d', $item['class_numeric'], $item['bench_no'], $item['col_no']);
+        })->values();
 
         $genderStats = [
             'male' => $students->where('gender', 'male')->count(),
