@@ -389,7 +389,9 @@
             },
             processResults: function(data) {
                 var results = (Array.isArray(data) ? data : []).map(function(s) {
-                    var roll = s.roll || s.student_id || '';
+                    var roll = s.roll
+                           || (s.current_enrollment && s.current_enrollment.roll_no)
+                           || '';
                     var name = s.student_name_en || '';
                     return {
                         id: s.id,

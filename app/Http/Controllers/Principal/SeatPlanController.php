@@ -385,36 +385,36 @@ class SeatPlanController extends Controller
             ->toArray();
 
         $query = Student::forSchool($school->id)
-            ->whereNotIn('id', $allocatedStudentIds)
-            ->where('status', 'active')
-            ->whereHas('enrollments', function ($q) use ($currentAcademicYear, $seatPlan, $classId) {
-            $q->where('status', 'active')
-                ->where('academic_year_id', $currentAcademicYear->id);
-            
+            ->select('students.*')
+            ->join('student_enrollments', function ($join) use ($currentAcademicYear) {
+                $join->on('students.id', '=', 'student_enrollments.student_id')
+                     ->where('student_enrollments.academic_year_id', '=', $currentAcademicYear->id)
+                     ->where('student_enrollments.status', '=', 'active');
+            })
+            ->whereNotIn('students.id', $allocatedStudentIds)
+            ->where('students.status', 'active');
+
+        if ($classId) {
+            $query->where('student_enrollments.class_id', $classId);
+        } else {
             $planClassIds = $seatPlan->seatPlanClasses()->pluck('class_id');
-            if ($classId) {
-                $q->where('class_id', $classId);
+            if ($planClassIds->isNotEmpty()) {
+                $query->whereIn('student_enrollments.class_id', $planClassIds);
             }
-            elseif ($planClassIds->isNotEmpty()) {
-                $q->whereIn('class_id', $planClassIds);
-            }
-        });
+        }
 
         if ($search) {
-            $query->where(function ($q) use ($search, $currentAcademicYear) {
-                $q->where('student_name_en', 'like', "%{$search}%")
-                    ->orWhere('student_name_bn', 'like', "%{$search}%")
-                    ->orWhere('student_id', 'like', "%{$search}%")
-                    ->orWhereHas('enrollments', function ($subQ) use ($search, $currentAcademicYear) {
-                    $subQ->where('academic_year_id', $currentAcademicYear->id)
-                        ->where('roll_no', 'like', "%{$search}%");
-                }
-                );
+            $search = trim($search);
+            $query->where(function ($q) use ($search) {
+                $q->where('students.student_name_en', 'like', "%{$search}%")
+                    ->orWhere('students.student_name_bn', 'like', "%{$search}%")
+                    ->orWhere('students.student_id', 'like', "{$search}%")
+                    ->orWhere('student_enrollments.roll_no', $search);
             });
         }
 
         $students = $query->with(['currentEnrollment', 'class'])
-            ->orderBy('student_id')
+            ->orderByRaw('CAST(student_enrollments.roll_no AS UNSIGNED) ASC')
             ->limit(100)
             ->get();
 
