@@ -65,7 +65,7 @@ class _TeacherLeaveListPageState extends State<TeacherLeaveListPage> {
             return ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
               itemCount: items.length,
-              separatorBuilder: (_, __) => const Divider(height: 0),
+              separatorBuilder: (_, _) => const Divider(height: 0),
               itemBuilder: (context, index) {
                 final m = items[index];
                 final start = (m['start_date'] ?? '').toString();
@@ -118,7 +118,7 @@ class _StatusChip extends StatelessWidget {
     }
     return Chip(
       visualDensity: VisualDensity.compact,
-      side: BorderSide(color: color.withOpacity(0.5)),
+      side: BorderSide(color: color.withValues(alpha: 0.5)),
       label: Text(status),
     );
   }

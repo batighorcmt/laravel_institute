@@ -23,7 +23,7 @@ class ClassRoutinePage extends ConsumerWidget {
           'বুধবার',
           'বৃহস্পতিবার',
           'শুক্রবার',
-          'শনিবার'
+          'শনিবার',
         ];
 
         // Group and sort data
@@ -43,7 +43,9 @@ class ClassRoutinePage extends ConsumerWidget {
           });
         }
 
-        final sortedDays = dayOrder.where((day) => grouped.containsKey(day)).toList();
+        final sortedDays = dayOrder
+            .where((day) => grouped.containsKey(day))
+            .toList();
         // Add any other days that might be in the data but not in our list
         for (var day in grouped.keys) {
           if (!sortedDays.contains(day)) sortedDays.add(day);
@@ -59,19 +61,28 @@ class ClassRoutinePage extends ConsumerWidget {
             return Card(
               margin: const EdgeInsets.only(bottom: 16),
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: ExpansionTile(
                 initiallyExpanded: false,
                 shape: const Border(),
                 title: Text(
                   dayName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Colors.blue,
+                  ),
                 ),
                 children: routines.map((rt) {
                   final subject = rt['subject']?['name'] ?? 'N/A';
-                  final teacher = rt['teacher']?['name'] ?? 'শিক্ষক নির্ধারিত নয়';
-                  final period = rt['period_number'] != null ? '${rt['period_number']}ম পিরিয়ড' : '';
-                  
+                  final teacher =
+                      rt['teacher']?['name'] ?? 'শিক্ষক নির্ধারিত নয়';
+                  final period = rt['period_number'] != null
+                      ? '${rt['period_number']}ম পিরিয়ড'
+                      : '';
+
                   // Only show time if strictly provided and not just "12:00 AM" or similar defaults if that's the case
                   // But the resource formats it. If DB is null, Carbon::parse(null) is the issue.
                   // For now, let's assume if it exists in JSON, we show it, but the user says it shows even when "not in database".
@@ -80,9 +91,16 @@ class ClassRoutinePage extends ConsumerWidget {
                   final hasTime = start != null && end != null;
 
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
-                      border: Border(top: BorderSide(color: Colors.grey.withOpacity(0.1))),
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.grey.withValues(alpha: 0.1),
+                        ),
+                      ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,12 +110,15 @@ class ClassRoutinePage extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.1),
+                                color: Colors.blue.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 rt['period_number']?.toString() ?? '?',
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
                               ),
                             ),
                           ],
@@ -109,16 +130,26 @@ class ClassRoutinePage extends ConsumerWidget {
                             children: [
                               Text(
                                 subject,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  const Icon(Icons.person_outline, size: 14, color: Colors.grey),
+                                  const Icon(
+                                    Icons.person_outline,
+                                    size: 14,
+                                    color: Colors.grey,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     teacher,
-                                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -126,11 +157,19 @@ class ClassRoutinePage extends ConsumerWidget {
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(Icons.access_time, size: 14, color: Colors.orange),
+                                    const Icon(
+                                      Icons.access_time,
+                                      size: 14,
+                                      color: Colors.orange,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       '$start - $end',
-                                      style: const TextStyle(color: Colors.orange, fontSize: 13, fontWeight: FontWeight.w500),
+                                      style: const TextStyle(
+                                        color: Colors.orange,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
                                   ],
                                 ),

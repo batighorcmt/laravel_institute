@@ -13,11 +13,11 @@ class DepositHistoryPage extends StatefulWidget {
 class _DepositHistoryPageState extends State<DepositHistoryPage> {
   final Dio _dio = DioClient().dio;
   final ScrollController _scrollController = ScrollController();
-  
+
   bool _isLoading = true;
   bool _isLoadingMore = false;
   String _error = '';
-  
+
   List<dynamic> _deposits = [];
   int _currentPage = 1;
   int _lastPage = 1;
@@ -46,7 +46,8 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       if (!_isLoadingMore && _currentPage < _lastPage) {
         _fetchHistory(loadMore: true);
       }
@@ -60,27 +61,36 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
     } catch (_) {}
   }
 
-  Future<void> _fetchHistory({bool loadMore = false, bool reset = false}) async {
+  Future<void> _fetchHistory({
+    bool loadMore = false,
+    bool reset = false,
+  }) async {
     if (reset) {
       _currentPage = 1;
       _deposits.clear();
     }
 
     setState(() {
-      if (loadMore) _isLoadingMore = true;
-      else _isLoading = true;
+      if (loadMore) {
+        _isLoadingMore = true;
+      } else {
+        _isLoading = true;
+      }
       _error = '';
     });
 
     try {
-      final res = await _dio.get('billing/reports/teacher-deposit-history', queryParameters: {
-        'from_date': DateFormat('yyyy-MM-dd').format(_fromDate),
-        'to_date': DateFormat('yyyy-MM-dd').format(_toDate),
-        'fee_category_id': _selectedCategoryId,
-        'month': _selectedMonth,
-        'status': _status,
-        'page': loadMore ? _currentPage + 1 : 1,
-      });
+      final res = await _dio.get(
+        'billing/reports/teacher-deposit-history',
+        queryParameters: {
+          'from_date': DateFormat('yyyy-MM-dd').format(_fromDate),
+          'to_date': DateFormat('yyyy-MM-dd').format(_toDate),
+          'fee_category_id': _selectedCategoryId,
+          'month': _selectedMonth,
+          'status': _status,
+          'page': loadMore ? _currentPage + 1 : 1,
+        },
+      );
 
       if (mounted) {
         final data = res.data;
@@ -99,10 +109,12 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
     } catch (e) {
       if (mounted) setState(() => _error = 'ইতিহাস লোড করতে ব্যর্থ: $e');
     } finally {
-      if (mounted) setState(() {
-        _isLoading = false;
-        _isLoadingMore = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isLoadingMore = false;
+        });
+      }
     }
   }
 
@@ -113,26 +125,49 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
       if (parts.length != 2) return monthStr;
       final year = parts[0];
       final month = parts[1];
-      const months = {'01':'জানুয়ারী','02':'ফেব্রুয়ারী','03':'মার্চ','04':'এপ্রিল','05':'মে','06':'জুন','07':'জুলাই','08':'আগস্ট','09':'সেপ্টেম্বর','10':'অক্টোবর','11':'নভেম্বর','12':'ডিসেম্বর'};
+      const months = {
+        '01': 'জানুয়ারী',
+        '02': 'ফেব্রুয়ারী',
+        '03': 'মার্চ',
+        '04': 'এপ্রিল',
+        '05': 'মে',
+        '06': 'জুন',
+        '07': 'জুলাই',
+        '08': 'আগস্ট',
+        '09': 'সেপ্টেম্বর',
+        '10': 'অক্টোবর',
+        '11': 'নভেম্বর',
+        '12': 'ডিসেম্বর',
+      };
       return '${months[month] ?? month}, $year';
-    } catch (_) { return monthStr; }
+    } catch (_) {
+      return monthStr;
+    }
   }
 
   String _getBengaliStatus(String status) {
     switch (status.toLowerCase()) {
-      case 'pending': return 'অপেক্ষমাণ';
-      case 'received': return 'গৃহীত';
-      case 'rejected': return 'বাতিল';
-      default: return status;
+      case 'pending':
+        return 'অপেক্ষমাণ';
+      case 'received':
+        return 'গৃহীত';
+      case 'rejected':
+        return 'বাতিল';
+      default:
+        return status;
     }
   }
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'received': return const Color(0xFF00BF6D);
-      case 'pending': return Colors.orange;
-      case 'rejected': return Colors.red;
-      default: return Colors.blue;
+      case 'received':
+        return const Color(0xFF00BF6D);
+      case 'pending':
+        return Colors.orange;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.blue;
     }
   }
 
@@ -141,12 +176,18 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F9),
       appBar: AppBar(
-        title: const Text('জমা ইতিহাস', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'জমা ইতিহাস',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF1A1D1F),
         elevation: 0.5,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: () => _fetchHistory(reset: true)),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _fetchHistory(reset: true),
+          ),
         ],
       ),
       body: Column(
@@ -170,18 +211,26 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
             child: Row(
               children: [
                 _FilterChip(
-                  label: '${DateFormat('dd MMM').format(_fromDate)} - ${DateFormat('dd MMM').format(_toDate)}',
+                  label:
+                      '${DateFormat('dd MMM').format(_fromDate)} - ${DateFormat('dd MMM').format(_toDate)}',
                   icon: Icons.date_range_outlined,
                   onTap: _pickDateRange,
                 ),
                 _FilterChip(
-                  label: _status == null ? 'অবস্থা' : _getBengaliStatus(_status!),
+                  label: _status == null
+                      ? 'অবস্থা'
+                      : _getBengaliStatus(_status!),
                   icon: Icons.filter_list,
                   onTap: _showStatusPicker,
                   isSelected: _status != null,
                 ),
                 _FilterChip(
-                  label: _selectedCategoryId == null ? 'ক্যাটাগরি' : _categories.firstWhere((c) => c['id'] == _selectedCategoryId, orElse: () => {'name': '...'})['name'],
+                  label: _selectedCategoryId == null
+                      ? 'ক্যাটাগরি'
+                      : _categories.firstWhere(
+                          (c) => c['id'] == _selectedCategoryId,
+                          orElse: () => {'name': '...'},
+                        )['name'],
                   icon: Icons.category_outlined,
                   onTap: _showCategoryPicker,
                   isSelected: _selectedCategoryId != null,
@@ -195,8 +244,14 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
   }
 
   Widget _buildList() {
-    if (_isLoading && _deposits.isEmpty) return const Center(child: CircularProgressIndicator(color: Color(0xFF00BF6D)));
-    if (_error.isNotEmpty && _deposits.isEmpty) return Center(child: Text(_error, style: const TextStyle(color: Colors.red)));
+    if (_isLoading && _deposits.isEmpty)
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF00BF6D)),
+      );
+    if (_error.isNotEmpty && _deposits.isEmpty)
+      return Center(
+        child: Text(_error, style: const TextStyle(color: Colors.red)),
+      );
 
     return RefreshIndicator(
       onRefresh: () => _fetchHistory(reset: true),
@@ -207,7 +262,12 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
         itemCount: _deposits.length + (_isLoadingMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == _deposits.length) {
-            return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: Color(0xFF00BF6D))));
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                child: CircularProgressIndicator(color: Color(0xFF00BF6D)),
+              ),
+            );
           }
           return _buildDepositCard(_deposits[index]);
         },
@@ -225,7 +285,13 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -234,21 +300,48 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: Icon(Icons.account_balance_wallet_outlined, color: color, size: 22),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: color,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(dep['category_name'] ?? 'ফি', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    Text(
+                      dep['category_name'] ?? 'ফি',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(_formatBengaliMonth(dep['month']), style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                    Text(
+                      _formatBengaliMonth(dep['month']),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Text('৳${dep['amount']}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: color)),
+              Text(
+                '৳${dep['amount']}',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: color,
+                ),
+              ),
             ],
           ),
           const Divider(height: 24),
@@ -258,15 +351,36 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildIconLabel(Icons.access_time, DateFormat('dd MMM, yyyy').format(DateTime.parse(dep['deposit_date']))),
+                  _buildIconLabel(
+                    Icons.access_time,
+                    DateFormat(
+                      'dd MMM, yyyy',
+                    ).format(DateTime.parse(dep['deposit_date'])),
+                  ),
                   const SizedBox(height: 4),
-                  _buildIconLabel(Icons.person_outline, dep['cashier_name'] ?? 'ক্যাশিয়ার অপেক্ষা'),
+                  _buildIconLabel(
+                    Icons.person_outline,
+                    dep['cashier_name'] ?? 'ক্যাশিয়ার অপেক্ষা',
+                  ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
-                child: Text(_getBengaliStatus(status), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _getBengaliStatus(status),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -286,9 +400,17 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
   }
 
   Future<void> _pickDateRange() async {
-    final picked = await showDateRangePicker(context: context, initialDateRange: DateTimeRange(start: _fromDate, end: _toDate), firstDate: DateTime(2020), lastDate: DateTime.now());
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: DateTimeRange(start: _fromDate, end: _toDate),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
     if (picked != null) {
-      setState(() { _fromDate = picked.start; _toDate = picked.end; });
+      setState(() {
+        _fromDate = picked.start;
+        _toDate = picked.end;
+      });
       _fetchHistory(reset: true);
     }
   }
@@ -296,12 +418,17 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
   void _showStatusPicker() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => ListView(
         shrinkWrap: true,
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('অবস্থা ফিল্টার করুন', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          const Text(
+            'অবস্থা ফিল্টার করুন',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
           const SizedBox(height: 16),
           _pickerOption('সব', null, _status == null),
           _pickerOption('অপেক্ষমাণ', 'pending', _status == 'pending'),
@@ -315,19 +442,38 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
   void _showCategoryPicker() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => ListView(
         shrinkWrap: true,
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('ক্যাটাগরি ফিল্টার করুন', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          const Text(
+            'ক্যাটাগরি ফিল্টার করুন',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
           const SizedBox(height: 16),
-          ListTile(title: const Text('সব'), selected: _selectedCategoryId == null, onTap: () { setState(() => _selectedCategoryId = null); Navigator.pop(context); _fetchHistory(reset: true); }),
-          ..._categories.map((c) => ListTile(
-            title: Text(c['name']),
-            selected: _selectedCategoryId == c['id'],
-            onTap: () { setState(() => _selectedCategoryId = c['id']); Navigator.pop(context); _fetchHistory(reset: true); },
-          )),
+          ListTile(
+            title: const Text('সব'),
+            selected: _selectedCategoryId == null,
+            onTap: () {
+              setState(() => _selectedCategoryId = null);
+              Navigator.pop(context);
+              _fetchHistory(reset: true);
+            },
+          ),
+          ..._categories.map(
+            (c) => ListTile(
+              title: Text(c['name']),
+              selected: _selectedCategoryId == c['id'],
+              onTap: () {
+                setState(() => _selectedCategoryId = c['id']);
+                Navigator.pop(context);
+                _fetchHistory(reset: true);
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -336,8 +482,14 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
   Widget _pickerOption(String label, String? value, bool isSelected) {
     return ListTile(
       title: Text(label),
-      trailing: isSelected ? const Icon(Icons.check, color: Color(0xFF00BF6D)) : null,
-      onTap: () { setState(() => _status = value); Navigator.pop(context); _fetchHistory(reset: true); },
+      trailing: isSelected
+          ? const Icon(Icons.check, color: Color(0xFF00BF6D))
+          : null,
+      onTap: () {
+        setState(() => _status = value);
+        Navigator.pop(context);
+        _fetchHistory(reset: true);
+      },
     );
   }
 }
@@ -347,7 +499,12 @@ class _FilterChip extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool isSelected;
-  const _FilterChip({required this.label, required this.icon, required this.onTap, this.isSelected = false});
+  const _FilterChip({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.isSelected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -359,15 +516,34 @@ class _FilterChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF00BF6D).withOpacity(0.1) : const Color(0xFFF0F2F5),
+            color: isSelected
+                ? const Color(0xFF00BF6D).withValues(alpha: 0.1)
+                : const Color(0xFFF0F2F5),
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: isSelected ? const Color(0xFF00BF6D) : Colors.transparent),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF00BF6D) : Colors.transparent,
+            ),
           ),
           child: Row(
             children: [
-              Icon(icon, size: 16, color: isSelected ? const Color(0xFF00BF6D) : const Color(0xFF64748B)),
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? const Color(0xFF00BF6D)
+                    : const Color(0xFF64748B),
+              ),
               const SizedBox(width: 6),
-              Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isSelected ? const Color(0xFF00BF6D) : const Color(0xFF64748B))),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? const Color(0xFF00BF6D)
+                      : const Color(0xFF64748B),
+                ),
+              ),
             ],
           ),
         ),

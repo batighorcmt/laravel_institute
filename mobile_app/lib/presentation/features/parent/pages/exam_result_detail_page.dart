@@ -8,13 +8,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/config/env.dart';
 
-final parentExamResultDetailProvider =
-    FutureProvider.autoDispose.family<Map<String, dynamic>, String>(
-        (ref, examId) async {
-  final dio = DioClient().dio;
-  final res = await dio.get('parent/exams/$examId/results');
-  return res.data as Map<String, dynamic>;
-});
+final parentExamResultDetailProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>, String>((ref, examId) async {
+      final dio = DioClient().dio;
+      final res = await dio.get('parent/exams/$examId/results');
+      return res.data as Map<String, dynamic>;
+    });
 
 class ParentExamResultDetailPage extends ConsumerStatefulWidget {
   final String examId;
@@ -48,12 +47,11 @@ class _ParentExamResultDetailPageState
       if (pdfUrl.isEmpty) {
         pdfUrl = '${baseUrl}parent/exams/${widget.examId}/marksheet';
       }
-      
+
       // Ensure the URL is absolute
       if (!pdfUrl.startsWith('http')) {
         pdfUrl = baseUrl + pdfUrl.replaceFirst('api/', '');
       }
-
 
       final dir = await getApplicationDocumentsDirectory();
       final savePath =
@@ -79,8 +77,7 @@ class _ParentExamResultDetailPageState
     } catch (e) {
       String msg = e.toString();
       if (e is DioException) {
-        msg = e.response?.data?['message'] ??
-            'সার্ভারের সাথে সংযোগ হচ্ছে না।';
+        msg = e.response?.data?['message'] ?? 'সার্ভারের সাথে সংযোগ হচ্ছে না।';
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -121,8 +118,9 @@ class _ParentExamResultDetailPageState
 
   @override
   Widget build(BuildContext context) {
-    final resultAsync =
-        ref.watch(parentExamResultDetailProvider(widget.examId));
+    final resultAsync = ref.watch(
+      parentExamResultDetailProvider(widget.examId),
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
@@ -139,12 +137,14 @@ class _ParentExamResultDetailPageState
                 onPressed: _isDownloading
                     ? null
                     : () => _downloadMarksheet(
-                        resultAsync.value!['marksheet_url'] ?? ''),
+                        resultAsync.value!['marksheet_url'] ?? '',
+                      ),
                 icon: _isDownloading
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2))
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Icon(Icons.picture_as_pdf, size: 18),
                 label: Text(_isDownloading ? 'ডাউনলোড...' : 'মার্কশিট'),
               ),
@@ -182,26 +182,28 @@ class _ParentExamResultDetailPageState
                 ],
               );
             },
-            loading: () =>
-                const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: CircularProgressIndicator()),
             error: (err, _) => Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline,
-                        size: 56, color: Colors.red.shade300),
+                    Icon(
+                      Icons.error_outline,
+                      size: 56,
+                      color: Colors.red.shade300,
+                    ),
                     const SizedBox(height: 16),
                     const Text(
                       'ফলাফল লোড করা যায়নি।',
-                      style:
-                          TextStyle(fontSize: 16, color: Colors.black54),
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => ref.invalidate(
-                          parentExamResultDetailProvider(widget.examId)),
+                        parentExamResultDetailProvider(widget.examId),
+                      ),
                       child: const Text('পুনরায় চেষ্টা করুন'),
                     ),
                   ],
@@ -220,10 +222,13 @@ class _ParentExamResultDetailPageState
                   children: [
                     CircularProgressIndicator(color: Colors.white),
                     SizedBox(height: 12),
-                    Text('মার্কশিট ডাউনলোড হচ্ছে...',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold)),
+                    Text(
+                      'মার্কশিট ডাউনলোড হচ্ছে...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -252,8 +257,7 @@ class _ParentExamResultDetailPageState
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color:
-                (isFailed ? Colors.red : Colors.blue).withOpacity(0.3),
+            color: (isFailed ? Colors.red : Colors.blue).withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -267,45 +271,47 @@ class _ParentExamResultDetailPageState
               exam['name'] ?? '',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _summaryPill(
-                    'প্রাপ্ত নম্বর', '${summary['total_marks'] ?? 0}'),
-                Container(width: 1, height: 40, color: Colors.white30),
-                _summaryPill('গ্রেড পয়েন্ট',
-                    _formatGp(summary['total_gpa'] ?? 0)),
+                _summaryPill('প্রাপ্ত নম্বর', '${summary['total_marks'] ?? 0}'),
                 Container(width: 1, height: 40, color: Colors.white30),
                 _summaryPill(
-                    'গ্রেড', summary['total_grade']?.toString() ?? 'F'),
+                  'গ্রেড পয়েন্ট',
+                  _formatGp(summary['total_gpa'] ?? 0),
+                ),
+                Container(width: 1, height: 40, color: Colors.white30),
+                _summaryPill(
+                  'গ্রেড',
+                  summary['total_grade']?.toString() ?? 'F',
+                ),
                 if (summary['position'] != null &&
                     summary['position'].toString() != '-') ...[
-                  Container(
-                      width: 1, height: 40, color: Colors.white30),
-                  _summaryPill(
-                      'অবস্থান', '${summary['position']}'),
+                  Container(width: 1, height: 40, color: Colors.white30),
+                  _summaryPill('অবস্থান', '${summary['position']}'),
                 ],
               ],
             ),
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.18),
+                color: Colors.white.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 summary['status']?.toString() ?? '',
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
             ),
           ],
@@ -317,17 +323,23 @@ class _ParentExamResultDetailPageState
   Widget _summaryPill(String label, String value) {
     return Column(
       children: [
-        Text(value,
-            style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white)),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(label,
-            style: TextStyle(
-                fontSize: 11,
-                color: Colors.white.withOpacity(0.8),
-                fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Colors.white.withValues(alpha: 0.8),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -339,15 +351,15 @@ class _ParentExamResultDetailPageState
       final subject = s as Map<String, dynamic>;
       final type = subject['type'] as String? ?? 'single';
       final isFailed = subject['is_failed'] == true;
-      final gradeColor =
-          _gradeColor(subject['letter_grade']?.toString() ?? 'F');
+      final gradeColor = _gradeColor(
+        subject['letter_grade']?.toString() ?? 'F',
+      );
       if (type == 'display_only') {
         widgets.add(_buildDisplayOnlyRow(subject, gradeColor));
       } else if (type == 'combined') {
         widgets.add(_buildCombinedRow(subject, gradeColor, isFailed));
       } else {
-        widgets.add(
-            _buildSingleSubjectCard(subject, gradeColor, isFailed));
+        widgets.add(_buildSingleSubjectCard(subject, gradeColor, isFailed));
       }
     }
     return widgets;
@@ -355,19 +367,24 @@ class _ParentExamResultDetailPageState
 
   // ── Normal subject card ──
   Widget _buildSingleSubjectCard(
-      Map<String, dynamic> subject, Color gradeColor, bool isFailed) {
+    Map<String, dynamic> subject,
+    Color gradeColor,
+    bool isFailed,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: isFailed ? Colors.red.shade100 : Colors.transparent),
+          color: isFailed ? Colors.red.shade100 : Colors.transparent,
+        ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2)),
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Padding(
@@ -379,38 +396,47 @@ class _ParentExamResultDetailPageState
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Row(children: [
-                    if (subject['is_optional'] == true)
-                      Container(
-                        margin: const EdgeInsets.only(right: 6),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.shade100,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text('ঐচ্ছিক',
+                  child: Row(
+                    children: [
+                      if (subject['is_optional'] == true)
+                        Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade100,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'ঐচ্ছিক',
                             style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.orange,
-                                fontWeight: FontWeight.bold)),
-                      ),
-                    Expanded(
-                      child: Text(
-                        subject['name']?.toString() ?? '',
-                        style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      Expanded(
+                        child: Text(
+                          subject['name']?.toString() ?? '',
+                          style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
-                            color: Color(0xFF263238)),
+                            color: Color(0xFF263238),
+                          ),
+                        ),
                       ),
-                    ),
-                  ]),
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 8),
                 _gradeBadge(
-                    subject['letter_grade']?.toString() ?? 'F',
-                    subject['grade_point'] ?? 0,
-                    gradeColor),
+                  subject['letter_grade']?.toString() ?? 'F',
+                  subject['grade_point'] ?? 0,
+                  gradeColor,
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -424,28 +450,27 @@ class _ParentExamResultDetailPageState
   }
 
   // ── display_only sub-row ──
-  Widget _buildDisplayOnlyRow(
-      Map<String, dynamic> subject, Color gradeColor) {
+  Widget _buildDisplayOnlyRow(Map<String, dynamic> subject, Color gradeColor) {
     return Container(
       margin: const EdgeInsets.only(bottom: 4, left: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFF9F9FF),
         border: Border(
-            left:
-                BorderSide(color: gradeColor.withOpacity(0.4), width: 3)),
+          left: BorderSide(color: gradeColor.withValues(alpha: 0.4), width: 3),
+        ),
       ),
       child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
             Expanded(
               child: Text(
                 subject['name']?.toString() ?? '',
                 style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF546E7A)),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF546E7A),
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -454,9 +479,10 @@ class _ParentExamResultDetailPageState
             Text(
               '${subject['total_marks'] ?? 0}/${subject['full_marks'] ?? 0}',
               style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Color(0xFF37474F)),
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Color(0xFF37474F),
+              ),
             ),
           ],
         ),
@@ -466,13 +492,16 @@ class _ParentExamResultDetailPageState
 
   // ── Combined/merged row ──
   Widget _buildCombinedRow(
-      Map<String, dynamic> subject, Color gradeColor, bool isFailed) {
+    Map<String, dynamic> subject,
+    Color gradeColor,
+    bool isFailed,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12, left: 12),
       decoration: BoxDecoration(
         color: isFailed
             ? Colors.red.shade50
-            : gradeColor.withOpacity(0.07),
+            : gradeColor.withValues(alpha: 0.07),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(10),
           bottomRight: Radius.circular(10),
@@ -481,7 +510,7 @@ class _ParentExamResultDetailPageState
         border: Border.all(
           color: isFailed
               ? Colors.red.shade200
-              : gradeColor.withOpacity(0.3),
+              : gradeColor.withValues(alpha: 0.3),
         ),
       ),
       child: Padding(
@@ -489,33 +518,40 @@ class _ParentExamResultDetailPageState
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(children: [
-              Icon(Icons.merge_type, size: 16, color: gradeColor),
-              const SizedBox(width: 6),
-              Text(
-                subject['name']?.toString() ?? '',
-                style: TextStyle(
+            Row(
+              children: [
+                Icon(Icons.merge_type, size: 16, color: gradeColor),
+                const SizedBox(width: 6),
+                Text(
+                  subject['name']?.toString() ?? '',
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: gradeColor),
-              ),
-            ]),
-            Row(children: [
-              Text(
-                'মোট: ${subject['total_marks'] ?? 0}/${subject['full_marks'] ?? 0}',
-                style: TextStyle(
+                    color: gradeColor,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Text(
+                  'মোট: ${subject['total_marks'] ?? 0}/${subject['full_marks'] ?? 0}',
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                     color: isFailed
                         ? Colors.red.shade700
-                        : const Color(0xFF37474F)),
-              ),
-              const SizedBox(width: 10),
-              _gradeBadge(
+                        : const Color(0xFF37474F),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                _gradeBadge(
                   subject['letter_grade']?.toString() ?? 'F',
                   subject['grade_point'] ?? 0,
-                  gradeColor),
-            ]),
+                  gradeColor,
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -525,25 +561,30 @@ class _ParentExamResultDetailPageState
   // ── Grade badge ──
   Widget _gradeBadge(String grade, dynamic gp, Color color) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
-          Text(grade,
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: color)),
-          Text('GP: ${_formatGp(gp)}',
-              style: TextStyle(
-                  fontSize: 10,
-                  color: color.withOpacity(0.8),
-                  fontWeight: FontWeight.w600)),
+          Text(
+            grade,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: color,
+            ),
+          ),
+          Text(
+            'GP: ${_formatGp(gp)}',
+            style: TextStyle(
+              fontSize: 10,
+              color: color.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -557,28 +598,34 @@ class _ParentExamResultDetailPageState
 
     final chips = <Widget>[];
     if (creative > 0) {
-      chips.add(_markChip(
-        label: 'সৃজনশীল',
-        got: subject['creative_marks'] ?? 0,
-        full: creative,
-        color: const Color(0xFF1565C0),
-      ));
+      chips.add(
+        _markChip(
+          label: 'সৃজনশীল',
+          got: subject['creative_marks'] ?? 0,
+          full: creative,
+          color: const Color(0xFF1565C0),
+        ),
+      );
     }
     if (mcq > 0) {
-      chips.add(_markChip(
-        label: 'বহুনির্বাচনী',
-        got: subject['mcq_marks'] ?? 0,
-        full: mcq,
-        color: const Color(0xFF6A1B9A),
-      ));
+      chips.add(
+        _markChip(
+          label: 'বহুনির্বাচনী',
+          got: subject['mcq_marks'] ?? 0,
+          full: mcq,
+          color: const Color(0xFF6A1B9A),
+        ),
+      );
     }
     if (practical > 0) {
-      chips.add(_markChip(
-        label: 'ব্যবহারিক',
-        got: subject['practical_marks'] ?? 0,
-        full: practical,
-        color: const Color(0xFF00838F),
-      ));
+      chips.add(
+        _markChip(
+          label: 'ব্যবহারিক',
+          got: subject['practical_marks'] ?? 0,
+          full: practical,
+          color: const Color(0xFF00838F),
+        ),
+      );
     }
 
     if (chips.isEmpty) return const SizedBox.shrink();
@@ -592,26 +639,25 @@ class _ParentExamResultDetailPageState
     required Color color,
   }) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: RichText(
         text: TextSpan(
           style: TextStyle(fontSize: 12, color: color),
           children: [
             TextSpan(
-                text: label,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w600)),
+              text: label,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             const TextSpan(text: ': '),
             TextSpan(
-                text: '$got',
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold)),
+              text: '$got',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             TextSpan(text: '/$full'),
           ],
         ),
@@ -620,14 +666,11 @@ class _ParentExamResultDetailPageState
   }
 
   // ── Total marks progress bar ──
-  Widget _buildTotalRow(
-      Map<String, dynamic> subject, bool isFailed) {
+  Widget _buildTotalRow(Map<String, dynamic> subject, bool isFailed) {
     final total = (subject['total_marks'] ?? 0) as num;
     final full = (subject['full_marks'] ?? 0) as num;
-    final percent =
-        (full > 0) ? (total / full).clamp(0, 1).toDouble() : 0.0;
-    final barColor =
-        isFailed ? Colors.red : const Color(0xFF1565C0);
+    final percent = (full > 0) ? (total / full).clamp(0, 1).toDouble() : 0.0;
+    final barColor = isFailed ? Colors.red : const Color(0xFF1565C0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -638,25 +681,26 @@ class _ParentExamResultDetailPageState
             Text(
               'মোট: $total / $full',
               style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: isFailed
-                      ? Colors.red.shade700
-                      : const Color(0xFF263238)),
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: isFailed ? Colors.red.shade700 : const Color(0xFF263238),
+              ),
             ),
             if (subject['is_absent'] == true)
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.orange.shade100,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text('অনুপস্থিত',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.deepOrange,
-                        fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'অনুপস্থিত',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.deepOrange,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
           ],
         ),

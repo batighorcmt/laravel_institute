@@ -12,7 +12,7 @@ class SeatFindingPage extends StatefulWidget {
 class _SeatFindingPageState extends State<SeatFindingPage> {
   final TextEditingController _searchController = TextEditingController();
   final TeacherExamRepository _repo = TeacherExamRepository();
-  
+
   bool _isLoading = true;
   bool _isSearching = false;
   List<dynamic> _plans = [];
@@ -79,10 +79,7 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Seat Finding'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Seat Finding'), elevation: 0),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -155,7 +152,10 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
                     decoration: const InputDecoration(
                       hintText: 'রোল বা নাম দিয়ে সার্চ করুন',
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
                       prefixIcon: Icon(Icons.search),
                     ),
                     onSubmitted: (_) => _search(),
@@ -170,7 +170,9 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   child: const Text('সার্চ'),
                 ),
@@ -190,8 +192,14 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
           Icon(Icons.person_search, size: 80, color: Colors.grey.shade300),
           const SizedBox(height: 16),
           Text(
-            _searchController.text.isEmpty ? 'ছাত্র-ছাত্রী খুঁজুন' : 'কোনো ফলাফল পাওয়া যায়নি',
-            style: const TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.bold),
+            _searchController.text.isEmpty
+                ? 'ছাত্র-ছাত্রী খুঁজুন'
+                : 'কোনো ফলাফল পাওয়া যায়নি',
+            style: const TextStyle(
+              fontSize: 18,
+              color: Colors.grey,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -211,7 +219,7 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -270,7 +278,10 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
                 ),
                 // Roll
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(12),
@@ -315,10 +326,30 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildInfoColumn('Room', '${student['room_no'] ?? '?'}', Icons.meeting_room, Colors.orange),
-                _buildInfoColumn('Column', '${student['col_no'] ?? '?'}', Icons.view_column, Colors.purple),
-                _buildInfoColumn('Bench', '${student['bench_no'] ?? '?'}', Icons.event_seat, Colors.green),
-                _buildInfoColumn('Position', student['position']?.toString().toUpperCase() ?? '?', Icons.person_pin_circle, Colors.teal),
+                _buildInfoColumn(
+                  'Room',
+                  '${student['room_no'] ?? '?'}',
+                  Icons.meeting_room,
+                  Colors.orange,
+                ),
+                _buildInfoColumn(
+                  'Column',
+                  '${student['col_no'] ?? '?'}',
+                  Icons.view_column,
+                  Colors.purple,
+                ),
+                _buildInfoColumn(
+                  'Bench',
+                  '${student['bench_no'] ?? '?'}',
+                  Icons.event_seat,
+                  Colors.green,
+                ),
+                _buildInfoColumn(
+                  'Position',
+                  student['position']?.toString().toUpperCase() ?? '?',
+                  Icons.person_pin_circle,
+                  Colors.teal,
+                ),
               ],
             ),
           ),
@@ -327,10 +358,15 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
     );
   }
 
-  Widget _buildInfoColumn(String label, String value, IconData icon, Color color) {
+  Widget _buildInfoColumn(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Column(
       children: [
-        Icon(icon, size: 20, color: color.withOpacity(0.8)),
+        Icon(icon, size: 20, color: color.withValues(alpha: 0.8)),
         const SizedBox(height: 4),
         Text(
           value,
@@ -343,10 +379,7 @@ class _SeatFindingPageState extends State<SeatFindingPage> {
         const SizedBox(height: 2),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
         ),
       ],
     );

@@ -91,7 +91,7 @@ class _TeacherProfilePageState extends ConsumerState<TeacherProfilePage> {
                       radius: 40,
                       backgroundColor: Theme.of(
                         context,
-                      ).primaryColor.withOpacity(0.1),
+                      ).primaryColor.withValues(alpha: 0.1),
                       backgroundImage:
                           (user.photoUrl != null && user.photoUrl!.isNotEmpty)
                           ? NetworkImage(user.photoUrl!)

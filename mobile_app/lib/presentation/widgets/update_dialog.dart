@@ -47,15 +47,18 @@ class _UpdateDialogState extends State<UpdateDialog> {
   @override
   Widget build(BuildContext context) {
     // User requested that any update should be mandatory ('অবশ্যই আপডেট করতে হবে')
-    bool isMandatory = true; 
+    bool isMandatory = true;
 
     return PopScope(
-      canPop: false, 
+      canPop: false,
 
       child: AlertDialog(
         title: Text(
           isMandatory ? 'নতুন আপডেট আবশ্যক' : 'নতুন আপডেট পাওয়া গেছে',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.indigo,
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -64,7 +67,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
             Text('ভার্সন: ${widget.updateData['version_name']}'),
             if (widget.updateData['release_notes'] != null) ...[
               const SizedBox(height: 10),
-              const Text('কি কি নতুন আছে:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'কি কি নতুন আছে:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 5),
               Text(widget.updateData['release_notes']),
             ],
@@ -72,7 +78,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
             if (_isDownloading) ...[
               LinearProgressIndicator(
                 value: _progress,
-                backgroundColor: Colors.indigo.withOpacity(0.1),
+                backgroundColor: Colors.indigo.withValues(alpha: 0.1),
                 valueColor: const AlwaysStoppedAnimation<Color>(Colors.indigo),
               ),
               const SizedBox(height: 10),
@@ -88,14 +94,19 @@ class _UpdateDialogState extends State<UpdateDialog> {
                 style: const TextStyle(color: Colors.red),
               ),
             ] else
-              const Text('এপ্লিকেশনটি নিরবচ্ছিন্নভাবে ব্যবহার করতে এখনই আপডেট করুন।'),
+              const Text(
+                'এপ্লিকেশনটি নিরবচ্ছিন্নভাবে ব্যবহার করতে এখনই আপডেট করুন।',
+              ),
           ],
         ),
         actions: [
           if (!isMandatory && !_isDownloading)
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('পরে করুন', style: TextStyle(color: Colors.grey)),
+              child: const Text(
+                'পরে করুন',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
           ElevatedButton(
             onPressed: _isDownloading ? null : _startDownload,
@@ -103,9 +114,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
               backgroundColor: Colors.indigo,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            child: Text(_isDownloading ? 'ডাউনলোড হচ্ছে...' : 'এখনই আপডেট করুন'),
+            child: Text(
+              _isDownloading ? 'ডাউনলোড হচ্ছে...' : 'এখনই আপডেট করুন',
+            ),
           ),
         ],
       ),

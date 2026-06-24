@@ -127,7 +127,7 @@ class LessonEvaluationPage extends ConsumerWidget {
                       ),
                       loading: () =>
                           const Text('...', style: TextStyle(fontSize: 11)),
-                      error: (_, __) =>
+                      error: (_, _) =>
                           const Text('!', style: TextStyle(fontSize: 11)),
                     ),
                   ),
@@ -167,7 +167,7 @@ class LessonEvaluationPage extends ConsumerWidget {
                       ),
                       loading: () =>
                           const Text('...', style: TextStyle(fontSize: 11)),
-                      error: (_, __) =>
+                      error: (_, _) =>
                           const Text('!', style: TextStyle(fontSize: 11)),
                     ),
                   ),
@@ -436,9 +436,9 @@ class LessonEvaluationPage extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         label ?? 'N/A',

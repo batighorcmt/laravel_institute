@@ -151,7 +151,7 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
               child: ListView.separated(
                 physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: _items.length + (_hasMore ? 1 : 0),
-                separatorBuilder: (_, __) => const Divider(height: 0),
+                separatorBuilder: (_, _) => const Divider(height: 0),
                 itemBuilder: (context, index) {
                   if (index == _items.length) {
                     return Padding(
@@ -177,8 +177,10 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                   final phone = (t['phone'] ?? '').toString();
                   final email = (t['email'] ?? '').toString();
                   final photoUrl = (t['photo_url'] ?? '').toString();
-                  
-                  final displayName = initials.isNotEmpty ? '$name ($initials)' : name;
+
+                  final displayName = initials.isNotEmpty
+                      ? '$name ($initials)'
+                      : name;
 
                   return ListTile(
                     leading: _TeacherAvatar(name: name, photoUrl: photoUrl),
@@ -194,7 +196,10 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                         if (phone.isNotEmpty)
                           Row(
                             children: [
-                              const Text('Call: ', style: TextStyle(fontSize: 12)),
+                              const Text(
+                                'Call: ',
+                                style: TextStyle(fontSize: 12),
+                              ),
                               Flexible(
                                 child: Text(
                                   phone,
@@ -206,7 +211,10 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                               ),
                               IconButton(
                                 constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 tooltip: 'Call',
                                 icon: const Icon(
                                   Icons.call,
@@ -220,7 +228,10 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                         if (email.isNotEmpty)
                           Row(
                             children: [
-                              const Text('Email: ', style: TextStyle(fontSize: 12)),
+                              const Text(
+                                'Email: ',
+                                style: TextStyle(fontSize: 12),
+                              ),
                               Flexible(
                                 child: Text(
                                   email,
@@ -232,7 +243,10 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
                               ),
                               IconButton(
                                 constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 tooltip: 'Email',
                                 icon: const Icon(
                                   Icons.email,

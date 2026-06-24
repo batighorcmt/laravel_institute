@@ -821,7 +821,7 @@ class _LessonEvaluationReportPageState
     return ListView.separated(
       padding: const EdgeInsets.only(bottom: 24),
       itemCount: _items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
         final it = _items[i] as Map<String, dynamic>;
         final stats = it['stats'] as Map<String, dynamic>?;

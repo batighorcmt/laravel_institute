@@ -30,7 +30,10 @@ class NoticeBoardPage extends ConsumerWidget {
                 children: [
                   Icon(Icons.campaign_outlined, size: 64, color: Colors.grey),
                   SizedBox(height: 16),
-                  Text('কোনো নতুন নোটিশ নেই', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                  Text(
+                    'কোনো নতুন নোটিশ নেই',
+                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
                 ],
               ),
             );
@@ -42,17 +45,24 @@ class NoticeBoardPage extends ConsumerWidget {
             itemBuilder: (context, index) {
               final notice = notices[index];
               final isRead = notice['is_read'] ?? false;
-              final publishAt = DateTime.tryParse(notice['publish_at'] ?? '') ?? DateTime.now();
+              final publishAt =
+                  DateTime.tryParse(notice['publish_at'] ?? '') ??
+                  DateTime.now();
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 elevation: isRead ? 1 : 3,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: isRead ? BorderSide.none : const BorderSide(color: Colors.blue, width: 0.5),
+                  side: isRead
+                      ? BorderSide.none
+                      : const BorderSide(color: Colors.blue, width: 0.5),
                 ),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   title: Text(
                     notice['title']?.toString() ?? 'N/A',
                     style: TextStyle(
@@ -64,13 +74,27 @@ class NoticeBoardPage extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 4.0),
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_month, size: 14, color: Colors.grey),
+                        const Icon(
+                          Icons.calendar_month,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(width: 4),
-                        Text(DateFormat('dd MMMM yyyy').format(publishAt), style: const TextStyle(fontSize: 12)),
+                        Text(
+                          DateFormat('dd MMMM yyyy').format(publishAt),
+                          style: const TextStyle(fontSize: 12),
+                        ),
                         const SizedBox(width: 12),
-                        const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                        const Icon(
+                          Icons.access_time,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(width: 4),
-                        Text(DateFormat('hh:mm a').format(publishAt), style: const TextStyle(fontSize: 12)),
+                        Text(
+                          DateFormat('hh:mm a').format(publishAt),
+                          style: const TextStyle(fontSize: 12),
+                        ),
                       ],
                     ),
                   ),
@@ -92,11 +116,13 @@ class NoticeBoardPage extends ConsumerWidget {
       ref.read(noticeRepositoryProvider).markAsRead(notice['id']);
       ref.invalidate(noticesListProvider);
     }
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.6,
         maxChildSize: 0.9,
@@ -112,49 +138,92 @@ class NoticeBoardPage extends ConsumerWidget {
               Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
               const SizedBox(height: 12),
               Expanded(
                 child: SingleChildScrollView(
                   controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                             child: Text(
-                              DateFormat('dd MMM yyyy').format(DateTime.tryParse(notice['publish_at'] ?? '') ?? DateTime.now()),
-                              style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12),
+                              DateFormat('dd MMM yyyy').format(
+                                DateTime.tryParse(notice['publish_at'] ?? '') ??
+                                    DateTime.now(),
+                              ),
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                           const Spacer(),
-                          if (notice['reply_required'] == true || notice['reply_required'] == 1) 
+                          if (notice['reply_required'] == true ||
+                              notice['reply_required'] == 1)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                              child: const Text('রিপ্লাই প্রয়োজন', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'রিপ্লাই প্রয়োজন',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
                         ],
                       ),
                       const SizedBox(height: 16),
                       Text(
                         notice['title']?.toString() ?? '',
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1F2937), height: 1.2),
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1F2937),
+                          height: 1.2,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       const Divider(height: 1),
                       const SizedBox(height: 20),
                       Text(
                         notice['body']?.toString() ?? '',
-                        style: const TextStyle(fontSize: 16, height: 1.7, color: Color(0xFF374151)),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          height: 1.7,
+                          color: Color(0xFF374151),
+                        ),
                       ),
                       const SizedBox(height: 40),
-                      if (notice['reply_required'] == true || notice['reply_required'] == 1) ...[
+                      if (notice['reply_required'] == true ||
+                          notice['reply_required'] == 1) ...[
                         NoticeReplySection(
                           noticeId: notice['id'] as int,
                           initialHasReplied: notice['has_replied'] ?? false,
@@ -167,9 +236,17 @@ class NoticeBoardPage extends ConsumerWidget {
                         child: FilledButton(
                           onPressed: () => Navigator.pop(context),
                           style: FilledButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
                           ),
-                          child: const Text('বন্ধ করুন', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          child: const Text(
+                            'বন্ধ করুন',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),

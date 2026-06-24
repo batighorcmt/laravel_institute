@@ -24,12 +24,12 @@ class VoiceRecorder extends StatefulWidget {
 class _VoiceRecorderState extends State<VoiceRecorder> {
   late final AudioRecorder _audioRecorder;
   final AudioPlayer _audioPlayer = AudioPlayer();
-  
+
   bool _isRecording = false;
   String? _filePath;
   int _recordDuration = 0;
   Timer? _timer;
-  
+
   // Playback state
   bool _isPlaying = false;
   Duration _playPosition = Duration.zero;
@@ -46,7 +46,9 @@ class _VoiceRecorderState extends State<VoiceRecorder> {
   }
 
   void _initPlayerListeners() {
-    _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
+    _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((
+      state,
+    ) {
       if (mounted) {
         setState(() {
           _isPlaying = state == PlayerState.playing;
@@ -76,7 +78,10 @@ class _VoiceRecorderState extends State<VoiceRecorder> {
     try {
       if (await _audioRecorder.hasPermission()) {
         final directory = await getApplicationDocumentsDirectory();
-        final path = p.join(directory.path, 'reply_${DateTime.now().millisecondsSinceEpoch}.m4a');
+        final path = p.join(
+          directory.path,
+          'reply_${DateTime.now().millisecondsSinceEpoch}.m4a',
+        );
 
         const config = RecordConfig(encoder: AudioEncoder.aacLc);
 
@@ -171,10 +176,11 @@ class _VoiceRecorderState extends State<VoiceRecorder> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: (_isRecording ? Colors.red : Colors.blue).withOpacity(0.3),
+                        color: (_isRecording ? Colors.red : Colors.blue)
+                            .withValues(alpha: 0.3),
                         blurRadius: 12,
                         spreadRadius: 4,
-                      )
+                      ),
                     ],
                   ),
                   child: Icon(
@@ -189,13 +195,19 @@ class _VoiceRecorderState extends State<VoiceRecorder> {
             Center(
               child: TextButton(
                 onPressed: widget.onCancel,
-                child: const Text('বাতিল করুন', style: TextStyle(color: Colors.grey)),
+                child: const Text(
+                  'বাতিল করুন',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
             ),
           ] else ...[
             const Text(
               'রেকর্ডিং সম্পন্ন হয়েছে',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
             ),
             const SizedBox(height: 12),
             Row(
@@ -208,11 +220,13 @@ class _VoiceRecorderState extends State<VoiceRecorder> {
                 Expanded(
                   child: Slider(
                     value: _playPosition.inMilliseconds.toDouble(),
-                    max: _playDuration.inMilliseconds.toDouble() > 0 
-                         ? _playDuration.inMilliseconds.toDouble() 
-                         : 100,
+                    max: _playDuration.inMilliseconds.toDouble() > 0
+                        ? _playDuration.inMilliseconds.toDouble()
+                        : 100,
                     onChanged: (value) async {
-                      await _audioPlayer.seek(Duration(milliseconds: value.toInt()));
+                      await _audioPlayer.seek(
+                        Duration(milliseconds: value.toInt()),
+                      );
                     },
                   ),
                 ),
@@ -229,12 +243,16 @@ class _VoiceRecorderState extends State<VoiceRecorder> {
                   child: OutlinedButton(
                     onPressed: widget.isSending ? null : _reset,
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: widget.isSending ? Colors.grey : Colors.red),
+                      side: BorderSide(
+                        color: widget.isSending ? Colors.grey : Colors.red,
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Text(
                       'আবার রেকর্ড করুন',
-                      style: TextStyle(color: widget.isSending ? Colors.grey : Colors.red),
+                      style: TextStyle(
+                        color: widget.isSending ? Colors.grey : Colors.red,
+                      ),
                     ),
                   ),
                 ),

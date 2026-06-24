@@ -77,7 +77,7 @@ class _AnimatedTileState extends State<AnimatedTile> {
           elevation: 3,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.black.withOpacity(0.12)),
+            side: BorderSide(color: Colors.black.withValues(alpha: 0.12)),
           ),
           color: bg,
           surfaceTintColor: Colors.transparent,

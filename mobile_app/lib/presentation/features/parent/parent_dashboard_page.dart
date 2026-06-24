@@ -9,11 +9,12 @@ class ParentDashboardPage extends ConsumerStatefulWidget {
   const ParentDashboardPage({super.key});
 
   @override
-  ConsumerState<ParentDashboardPage> createState() => _ParentDashboardPageState();
+  ConsumerState<ParentDashboardPage> createState() =>
+      _ParentDashboardPageState();
 }
 
-class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with RouteAware {
-
+class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage>
+    with RouteAware {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -81,14 +82,14 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [cs.primary, cs.primary.withOpacity(0.8)],
+                        colors: [cs.primary, cs.primary.withValues(alpha: 0.8)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: cs.primary.withOpacity(0.3),
+                          color: cs.primary.withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -123,7 +124,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Column(
@@ -217,9 +218,9 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                   final unreadNoticesList = notices
                       .where((n) => n['is_unread'] == true)
                       .toList();
-                  
+
                   if (unreadNoticesList.isEmpty) return const SizedBox.shrink();
-                  
+
                   final displayNotices = unreadNoticesList.take(2).toList();
                   final totalUnread = unreadNoticesList.length;
 
@@ -231,7 +232,11 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                                size: 20,
+                              ),
                               const SizedBox(width: 8),
                               _SectionTitle(
                                 title: 'সর্বশেষ নোটিশ ($totalUnreadটি অপঠিত)',
@@ -246,52 +251,74 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                         ],
                       ),
                       const SizedBox(height: 4),
-                      ...displayNotices.map((n) => Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            elevation: 2,
-                            shadowColor: Colors.red.withOpacity(0.2),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(color: Colors.red.withOpacity(0.3), width: 1)),
-                            child: ListTile(
-                              visualDensity: VisualDensity.compact,
-                              onTap: () => NoticeDetailsModal.show(context, ref, n, onRead: () {
+                      ...displayNotices.map(
+                        (n) => Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          elevation: 2,
+                          shadowColor: Colors.red.withValues(alpha: 0.2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: Colors.red.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: ListTile(
+                            visualDensity: VisualDensity.compact,
+                            onTap: () => NoticeDetailsModal.show(
+                              context,
+                              ref,
+                              n,
+                              onRead: () {
                                 ref.invalidate(parentNoticesProvider);
-                              }),
+                              },
+                            ),
 
-                              leading: CircleAvatar(
-                                radius: 18,
-                                backgroundColor: Colors.red.withOpacity(0.12),
-                                child: const Icon(Icons.campaign, color: Colors.red, size: 20),
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: Colors.red.withValues(
+                                alpha: 0.12,
                               ),
-                              title: Text(
-                                n['title'] ?? 'N/A',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                '${n['date']} | ${n['author']}',
-                                style: const TextStyle(fontSize: 11),
-                              ),
-                              trailing: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.red.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.arrow_forward_ios,
-                                    size: 10, color: Colors.red),
+                              child: const Icon(
+                                Icons.campaign,
+                                color: Colors.red,
+                                size: 20,
                               ),
                             ),
-                          )),
+                            title: Text(
+                              n['title'] ?? 'N/A',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              '${n['date']} | ${n['author']}',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            trailing: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.arrow_forward_ios,
+                                size: 10,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 16),
                     ],
                   );
-
                 },
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
               );
             },
           ),
@@ -359,8 +386,9 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
               return feesAsync.when(
                 data: (data) {
                   final dueFees = data['due_fees'] as List?;
-                  if (dueFees == null || dueFees.isEmpty)
+                  if (dueFees == null || dueFees.isEmpty) {
                     return const SizedBox.shrink();
+                  }
 
                   double totalDue = 0;
                   for (var f in dueFees) {
@@ -379,7 +407,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.3),
+                          color: Colors.red.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -390,7 +418,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -414,7 +442,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                               Text(
                                 'মোট বকেয়া: ৳${totalDue.toStringAsFixed(2)}',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   fontSize: 13,
                                 ),
                               ),
@@ -445,8 +473,6 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
               );
             },
           ),
-
-
 
           // Attendance Status Section
           const _SectionTitle(title: 'আজকের হাজিরার অবস্থা'),
@@ -499,7 +525,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                   );
                 },
                 loading: () => const _ShimmerBlock(height: 60),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
               );
             },
           ),
@@ -539,7 +565,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                   );
                 },
                 loading: () => const _ShimmerBlock(height: 80),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
               );
             },
           ),
@@ -555,11 +581,11 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                   .first;
               final todayItems = items
                   .where((e) => e['homework_date'] == todayStr)
-
                   .toList();
 
-              if (todayItems.isEmpty)
+              if (todayItems.isEmpty) {
                 return const _EmptyWidget(message: 'আজকের কোনো হোমওয়ার্ক নেই');
+              }
               return Column(
                 children: todayItems.map((e) {
                   return Card(
@@ -569,7 +595,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage> with 
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: Colors.purple.withOpacity(0.12),
+                          color: Colors.purple.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
@@ -660,7 +686,7 @@ class _AttendanceStatusCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 24),
@@ -688,9 +714,9 @@ class _AttendanceStatusCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: statusColor.withOpacity(0.2)),
+                border: Border.all(color: statusColor.withValues(alpha: 0.2)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -754,7 +780,6 @@ class _EvaluationStatusCard extends StatelessWidget {
       statusIcon = Icons.person_off;
     }
 
-
     String? formattedTime;
     if (time != null) {
       try {
@@ -783,7 +808,7 @@ class _EvaluationStatusCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -811,7 +836,7 @@ class _EvaluationStatusCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -885,15 +910,10 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: TextStyle(
-        fontSize: 17, 
-        fontWeight: FontWeight.bold,
-        color: color,
-      ),
+      style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: color),
     );
   }
 }
-
 
 class _QuickAccessChip extends StatelessWidget {
   final String label;
@@ -920,7 +940,7 @@ class _QuickAccessChip extends StatelessWidget {
               width: 54,
               height: 54,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(icon, color: color, size: 28),
@@ -975,7 +995,7 @@ class _ErrorWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Colors.red.withOpacity(0.05),
+      color: Colors.red.withValues(alpha: 0.05),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Text(

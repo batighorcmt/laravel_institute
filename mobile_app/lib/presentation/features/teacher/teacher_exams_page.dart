@@ -8,6 +8,7 @@ import 'mark_entry_selection_page.dart';
 import 'exam_duty_page.dart';
 import 'seat_finding_page.dart';
 import 'duty_allocation_page.dart';
+import 'exam_attendance_report_page.dart';
 
 class TeacherExamsPage extends ConsumerStatefulWidget {
   const TeacherExamsPage({super.key});
@@ -113,7 +114,9 @@ class _TeacherExamsPageState extends ConsumerState<TeacherExamsPage> {
                     icon: Icons.summarize_outlined,
                     background: const Color(0xFFFFF1F2),
                     onTap: () {
-                      showAppSnack(context, message: 'Attendance Report coming soon');
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ExamAttendanceReportPage()),
+                      );
                     },
                   ),
                 ],

@@ -201,7 +201,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/parent',
             name: 'parent-home',
-            redirect: (_, __) => '/parent/dashboard',
+            redirect: (_, _) => '/parent/dashboard',
           ),
           GoRoute(
             path: '/parent/dashboard',

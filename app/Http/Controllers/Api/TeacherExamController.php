@@ -647,6 +647,8 @@ class TeacherExamController extends Controller
         $plans = SeatPlan::where('school_id', $schoolId)->active()->get(['id', 'name', 'shift'])->map(fn($p) => ['id' => $p->id, 'name' => $p->name . ($p->shift ? ' (' . ucfirst($p->shift) . ')' : '')]);
 
         $rows = [];
+        $absentStudents = [];
+
         if ($planId && $date) {
             $rows = DB::table('exam_room_attendances as a')
                 ->join('seat_plan_rooms as r', function ($join) {
@@ -669,11 +671,29 @@ class TeacherExamController extends Controller
                 ])
                 ->groupBy('r.room_no', 'u.name')
                 ->get();
+
+            $absentRecords = ExamRoomAttendance::with(['student.currentEnrollment.class', 'room'])
+                ->where('duty_date', $date)
+                ->where('plan_id', $planId)
+                ->where('status', 'absent')
+                ->get();
+
+            $absentStudents = $absentRecords->map(function ($a) {
+                return [
+                    'id' => $a->student?->id,
+                    'name' => $a->student?->full_name,
+                    'roll' => $a->student?->currentEnrollment?->roll_no ?? $a->student?->roll_no,
+                    'class_name' => $a->student?->currentEnrollment?->class?->name,
+                    'photo_url' => $a->student?->photo_url,
+                    'room_no' => $a->room?->room_no,
+                ];
+            })->values();
         }
 
         return response()->json([
             'plans' => $plans,
             'rows' => $rows,
+            'absent_students' => $absentStudents,
         ]);
     }
 

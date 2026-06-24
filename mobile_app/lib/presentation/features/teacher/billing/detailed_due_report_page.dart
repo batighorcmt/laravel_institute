@@ -19,7 +19,7 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
   bool _loading = false;
   bool _downloading = false;
   List<dynamic> _fees = [];
-  
+
   List<dynamic> _classes = [];
   List<dynamic> _sections = [];
   List<dynamic> _categories = [];
@@ -68,7 +68,8 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
           final schoolData = responses[0].data;
           _academicYears = schoolData['academic_years'] ?? [];
           if (schoolData['current_academic_year'] != null) {
-            _selectedYearId = schoolData['current_academic_year']['id'].toString();
+            _selectedYearId = schoolData['current_academic_year']['id']
+                .toString();
           } else if (_academicYears.isNotEmpty) {
             _selectedYearId = _academicYears[0]['id'].toString();
           }
@@ -93,7 +94,10 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
 
     if (classId != null && classId.isNotEmpty) {
       try {
-        final resp = await _dio.get('meta/sections', queryParameters: {'class_id': classId});
+        final resp = await _dio.get(
+          'meta/sections',
+          queryParameters: {'class_id': classId},
+        );
         if (mounted) {
           setState(() {
             _sections = resp.data;
@@ -107,15 +111,21 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
 
   Future<void> _fetchReport() async {
     if (_selectedYearId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('শিক্ষাবর্ষ নির্বাচন করুন')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('শিক্ষাবর্ষ নির্বাচন করুন')));
       return;
     }
     if (_selectedClassId == null || _selectedClassId!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('শ্রেণি নির্বাচন করুন')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('শ্রেণি নির্বাচন করুন')));
       return;
     }
     if (_selectedSectionId == null || _selectedSectionId!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('শাখা নির্বাচন করুন')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('শাখা নির্বাচন করুন')));
       return;
     }
 
@@ -131,7 +141,10 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
         'status': _selectedStatus,
       };
 
-      final resp = await _dio.get('billing/reports/detailed-dues', queryParameters: params);
+      final resp = await _dio.get(
+        'billing/reports/detailed-dues',
+        queryParameters: params,
+      );
       if (mounted) {
         setState(() {
           _fees = resp.data;
@@ -153,7 +166,7 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
       _selectedStatus = 'all';
       _fees = [];
       _studentId = '';
-      
+
       // Reset to current academic year
       final currentYear = _academicYears.firstWhere(
         (y) => y['is_current'] == 1 || y['is_current'] == true,
@@ -168,75 +181,94 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
   Future<void> _pickMonth() async {
     final now = DateTime.now();
     final List<int> years = List.generate(10, (index) => 2020 + index);
-    int selectedYear = _selectedMonth != null 
-        ? int.parse(_selectedMonth!.split('-')[0]) 
+    int selectedYear = _selectedMonth != null
+        ? int.parse(_selectedMonth!.split('-')[0])
         : now.year;
 
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
-        return StatefulBuilder(builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text('মাস নির্বাচন করুন'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButton<int>(
-                    value: selectedYear,
-                    isExpanded: true,
-                    items: years.map((y) => DropdownMenuItem(
-                      value: y,
-                      child: Text(_toBengaliDigits(y.toString())),
-                    )).toList(),
-                    onChanged: (v) {
-                      if (v != null) setDialogState(() => selectedYear = v);
-                    },
-                  ),
-                  const Divider(),
-                  Expanded(
-                    child: GridView.builder(
-                      shrinkWrap: true,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        childAspectRatio: 2,
-                      ),
-                      itemCount: 12,
-                      itemBuilder: (context, index) {
-                        final m = index + 1;
-                        final isSelected = _selectedMonth == '$selectedYear-${m.toString().padLeft(2, '0')}';
-                        return InkWell(
-                          onTap: () => Navigator.pop(context, '$selectedYear-${m.toString().padLeft(2, '0')}'),
-                          child: Container(
-                            alignment: Alignment.center,
-                            margin: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.red.shade100 : null,
-                              border: Border.all(color: isSelected ? Colors.red : Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(4),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('মাস নির্বাচন করুন'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButton<int>(
+                      value: selectedYear,
+                      isExpanded: true,
+                      items: years
+                          .map(
+                            (y) => DropdownMenuItem(
+                              value: y,
+                              child: Text(_toBengaliDigits(y.toString())),
                             ),
-                            child: Text(_bnMonths[m] ?? ''),
-                          ),
-                        );
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setDialogState(() => selectedYear = v);
                       },
                     ),
+                    const Divider(),
+                    Expanded(
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              childAspectRatio: 2,
+                            ),
+                        itemCount: 12,
+                        itemBuilder: (context, index) {
+                          final m = index + 1;
+                          final isSelected =
+                              _selectedMonth ==
+                              '$selectedYear-${m.toString().padLeft(2, '0')}';
+                          return InkWell(
+                            onTap: () => Navigator.pop(
+                              context,
+                              '$selectedYear-${m.toString().padLeft(2, '0')}',
+                            ),
+                            child: Container(
+                              alignment: Alignment.center,
+                              margin: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: isSelected ? Colors.red.shade100 : null,
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.red
+                                      : Colors.grey.shade300,
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(_bnMonths[m] ?? ''),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, 'clear'),
+                  child: const Text(
+                    'ক্লিয়ার',
+                    style: TextStyle(color: Colors.red),
                   ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, 'clear'),
-                child: const Text('ক্লিয়ার', style: TextStyle(color: Colors.red)),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('বন্ধ করুন'),
-              ),
-            ],
-          );
-        });
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('বন্ধ করুন'),
+                ),
+              ],
+            );
+          },
+        );
       },
     );
 
@@ -249,9 +281,9 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
 
   Future<void> _downloadPdf() async {
     if (_selectedYearId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('শিক্ষাবর্ষ নির্বাচন করুন'))
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('শিক্ষাবর্ষ নির্বাচন করুন')));
       return;
     }
 
@@ -277,16 +309,17 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
       );
 
       final directory = await getApplicationDocumentsDirectory();
-      final filePath = '${directory.path}/Detailed_Due_Report_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final filePath =
+          '${directory.path}/Detailed_Due_Report_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final file = File(filePath);
       await file.writeAsBytes(response.data);
 
       setState(() => _downloading = false);
-      
+
       if (mounted) {
         // Automatically open the downloaded PDF
         await OpenFilex.open(filePath);
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('পিডিএফ ডাউনলোড সফল হয়েছে এবং ওপেন হচ্ছে...'),
@@ -299,7 +332,7 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
       developer.log('PDF Download Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('পিডিএফ ডাউনলোডে সমস্যা হয়েছে।'))
+          const SnackBar(content: Text('পিডিএফ ডাউনলোডে সমস্যা হয়েছে।')),
         );
       }
     }
@@ -324,7 +357,10 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
       '8': '৮',
       '9': '৯',
     };
-    return input.split('').map((char) => englishToBengali[char] ?? char).join('');
+    return input
+        .split('')
+        .map((char) => englishToBengali[char] ?? char)
+        .join('');
   }
 
   String _formatMonth(String? val) {
@@ -358,9 +394,16 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
         actions: [
           if (_fees.isNotEmpty)
             IconButton(
-              icon: _downloading 
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.picture_as_pdf),
+              icon: _downloading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.picture_as_pdf),
               tooltip: 'ডাউনলোড পিডিএফ',
               onPressed: _downloading ? null : _downloadPdf,
             ),
@@ -368,16 +411,16 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
             icon: const Icon(Icons.refresh),
             tooltip: 'রিফ্রেশ',
             onPressed: _fetchReport,
-          )
+          ),
         ],
       ),
       body: Column(
         children: [
           _buildFilters(),
           Expanded(
-            child: _loading 
-              ? const Center(child: CircularProgressIndicator())
-              : _fees.isEmpty 
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _fees.isEmpty
                 ? const Center(child: Text('কোন তথ্য পাওয়া যায়নি।'))
                 : _buildReportList(),
           ),
@@ -396,119 +439,161 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: ExpansionTile(
-        title: const Text('ফিল্টার করুন', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'ফিল্টার করুন',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         initiallyExpanded: _fees.isEmpty,
         children: [
-          LayoutBuilder(builder: (context, constraints) {
-            return Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildDropdown(
-                  label: 'শিক্ষাবর্ষ',
-                  width: (constraints.maxWidth - 8) / 2,
-                  value: _selectedYearId,
-                  items: _academicYears.map((y) => DropdownMenuItem(
-                    value: y['id'].toString(),
-                    child: Text(y['name_bn'] ?? y['name'] ?? ''),
-                  )).toList(),
-                  onChanged: (v) => setState(() => _selectedYearId = v),
-                ),
-                _buildDropdown(
-                  label: 'শ্রেণি',
-                  width: (constraints.maxWidth - 8) / 2,
-                  value: _selectedClassId,
-                  items: _classes.map((c) => DropdownMenuItem(
-                    value: c['id'].toString(),
-                    child: Text(c['bangla_name'] ?? c['name'] ?? ''),
-                  )).toList(),
-                  onChanged: _onClassChanged,
-                ),
-                _buildDropdown(
-                  label: 'শাখা',
-                  width: (constraints.maxWidth - 8) / 2,
-                  value: _selectedSectionId,
-                  items: _sections.map((s) => DropdownMenuItem(
-                    value: s['id'].toString(),
-                    child: Text(s['bangla_name'] ?? s['name'] ?? ''),
-                  )).toList(),
-                  onChanged: (v) => setState(() => _selectedSectionId = v),
-                ),
-                _buildDropdown(
-                  label: 'ক্যাটাগরি',
-                  width: (constraints.maxWidth - 8) / 2,
-                  value: _selectedCategoryId,
-                  items: [
-                    const DropdownMenuItem(value: '', child: Text('সকল ক্যাটাগরি')),
-                    ..._categories.map((cat) => DropdownMenuItem(
-                      value: cat['id'].toString(),
-                      child: Text(cat['name'] ?? ''),
-                    )),
-                  ],
-                  onChanged: (v) => setState(() => _selectedCategoryId = v),
-                ),
-                 SizedBox(
-                  width: (constraints.maxWidth - 8) / 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('মাসের নাম', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: _pickMonth,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade300),
-                            borderRadius: BorderRadius.circular(8),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildDropdown(
+                    label: 'শিক্ষাবর্ষ',
+                    width: (constraints.maxWidth - 8) / 2,
+                    value: _selectedYearId,
+                    items: _academicYears
+                        .map(
+                          (y) => DropdownMenuItem(
+                            value: y['id'].toString(),
+                            child: Text(y['name_bn'] ?? y['name'] ?? ''),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _selectedMonth == null ? 'নির্বাচন করুন' : _formatMonth(_selectedMonth),
-                                  style: const TextStyle(fontSize: 12),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (_selectedMonth != null)
-                                GestureDetector(
-                                  onTap: () => setState(() => _selectedMonth = null),
-                                  child: const Icon(Icons.close, size: 16, color: Colors.red),
-                                )
-                              else
-                                const Icon(Icons.calendar_today, size: 16),
-                            ],
+                        )
+                        .toList(),
+                    onChanged: (v) => setState(() => _selectedYearId = v),
+                  ),
+                  _buildDropdown(
+                    label: 'শ্রেণি',
+                    width: (constraints.maxWidth - 8) / 2,
+                    value: _selectedClassId,
+                    items: _classes
+                        .map(
+                          (c) => DropdownMenuItem(
+                            value: c['id'].toString(),
+                            child: Text(c['bangla_name'] ?? c['name'] ?? ''),
                           ),
+                        )
+                        .toList(),
+                    onChanged: _onClassChanged,
+                  ),
+                  _buildDropdown(
+                    label: 'শাখা',
+                    width: (constraints.maxWidth - 8) / 2,
+                    value: _selectedSectionId,
+                    items: _sections
+                        .map(
+                          (s) => DropdownMenuItem(
+                            value: s['id'].toString(),
+                            child: Text(s['bangla_name'] ?? s['name'] ?? ''),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) => setState(() => _selectedSectionId = v),
+                  ),
+                  _buildDropdown(
+                    label: 'ক্যাটাগরি',
+                    width: (constraints.maxWidth - 8) / 2,
+                    value: _selectedCategoryId,
+                    items: [
+                      const DropdownMenuItem(
+                        value: '',
+                        child: Text('সকল ক্যাটাগরি'),
+                      ),
+                      ..._categories.map(
+                        (cat) => DropdownMenuItem(
+                          value: cat['id'].toString(),
+                          child: Text(cat['name'] ?? ''),
                         ),
                       ),
                     ],
+                    onChanged: (v) => setState(() => _selectedCategoryId = v),
                   ),
-                ),
-                _buildDropdown(
-                  label: 'অবস্থা',
-                  width: (constraints.maxWidth - 8) / 2,
-                  value: _selectedStatus,
-                  items: const [
-                    DropdownMenuItem(value: 'all', child: Text('সবগুলো')),
-                    DropdownMenuItem(value: 'due', child: Text('বকেয়া (সব)')),
-                    DropdownMenuItem(value: 'unpaid', child: Text('অপরিশোধিত')),
-                    DropdownMenuItem(value: 'partial', child: Text('আংশিক')),
-                    DropdownMenuItem(value: 'paid', child: Text('পরিশোধিত')),
-                  ],
-                  onChanged: (v) => setState(() => _selectedStatus = v!),
-                ),
-              ],
-            );
-          }),
+                  SizedBox(
+                    width: (constraints.maxWidth - 8) / 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'মাসের নাম',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        InkWell(
+                          onTap: _pickMonth,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _selectedMonth == null
+                                        ? 'নির্বাচন করুন'
+                                        : _formatMonth(_selectedMonth),
+                                    style: const TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (_selectedMonth != null)
+                                  GestureDetector(
+                                    onTap: () =>
+                                        setState(() => _selectedMonth = null),
+                                    child: const Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: Colors.red,
+                                    ),
+                                  )
+                                else
+                                  const Icon(Icons.calendar_today, size: 16),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildDropdown(
+                    label: 'অবস্থা',
+                    width: (constraints.maxWidth - 8) / 2,
+                    value: _selectedStatus,
+                    items: const [
+                      DropdownMenuItem(value: 'all', child: Text('সবগুলো')),
+                      DropdownMenuItem(value: 'due', child: Text('বকেয়া (সব)')),
+                      DropdownMenuItem(
+                        value: 'unpaid',
+                        child: Text('অপরিশোধিত'),
+                      ),
+                      DropdownMenuItem(value: 'partial', child: Text('আংশিক')),
+                      DropdownMenuItem(value: 'paid', child: Text('পরিশোধিত')),
+                    ],
+                    onChanged: (v) => setState(() => _selectedStatus = v!),
+                  ),
+                ],
+              );
+            },
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -520,7 +605,9 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
                     backgroundColor: Colors.red.shade600,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   child: const Text('রিপোর্ট অনুসন্ধান করুন'),
                 ),
@@ -534,13 +621,15 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     side: BorderSide(color: Colors.red.shade600),
                     foregroundColor: Colors.red.shade600,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   child: const Text('রিসেট'),
                 ),
               ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -558,16 +647,28 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
           const SizedBox(height: 4),
           DropdownButtonFormField<String>(
             isExpanded: true,
-            value: value,
+            initialValue: value,
             items: items,
             onChanged: onChanged,
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 0,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             style: const TextStyle(fontSize: 12, color: Colors.black),
           ),
@@ -583,10 +684,12 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
       itemBuilder: (context, index) {
         final fee = _fees[index];
         final due = _calculateDue(fee);
-        
+
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -600,12 +703,20 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            fee['student_name_bn'] ?? fee['student_name_en'] ?? 'Unknown',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            fee['student_name_bn'] ??
+                                fee['student_name_en'] ??
+                                'Unknown',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                           Text(
                             'ID: ${fee['student_code']} | Roll: ${fee['roll_no']}',
-                            style: const TextStyle(color: Colors.grey, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -644,7 +755,10 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-          Text(value ?? '-', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          Text(
+            value ?? '-',
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
         ],
       ),
     );
@@ -658,7 +772,7 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
         Text(
           '৳${_formatNumber(value)}',
           style: TextStyle(
-            fontWeight: FontWeight.bold, 
+            fontWeight: FontWeight.bold,
             fontSize: 14,
             color: isDue ? Colors.red : Colors.black,
           ),
@@ -685,12 +799,16 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
       ),
     );
   }
@@ -707,7 +825,13 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, -2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: Offset(0, -2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -724,10 +848,17 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        ),
         Text(
           '৳${_formatNumber(amount)}',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
         ),
       ],
     );

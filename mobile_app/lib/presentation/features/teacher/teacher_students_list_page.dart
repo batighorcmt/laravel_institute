@@ -37,7 +37,7 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   List<String> _religions = [];
   String? _selectedReligion;
   List<String> _statuses = [];
-  final String? _selectedStatus = 'active';
+  final String _selectedStatus = 'active';
 
   final TextEditingController _searchCtrl = TextEditingController();
   final bool _classesLoading = false;
@@ -292,8 +292,9 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                                       });
                                     }
                                   } catch (_) {
-                                    if (mounted)
+                                    if (mounted) {
                                       setState(() => _sectionsLoading = false);
+                                    }
                                   }
                                 }
                                 _load(reset: true);
@@ -402,7 +403,7 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
                     onRefresh: () => _load(reset: true),
                     child: ListView.separated(
                       itemCount: _items.length + (_hasMore ? 1 : 0),
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         if (index >= _items.length) {
                           if (!_loading) _load();
@@ -1001,8 +1002,9 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                                       scheme: 'tel',
                                       path: classTeacherPhone,
                                     );
-                                    if (await canLaunchUrl(uri))
+                                    if (await canLaunchUrl(uri)) {
                                       await launchUrl(uri);
+                                    }
                                   },
                                 )
                               : null,
@@ -1105,8 +1107,9 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                                   scheme: 'tel',
                                   path: fatherPhone,
                                 );
-                                if (await canLaunchUrl(uri))
+                                if (await canLaunchUrl(uri)) {
                                   await launchUrl(uri);
+                                }
                               },
                       ),
                       _infoRow(
@@ -1120,8 +1123,9 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                                   scheme: 'tel',
                                   path: motherPhone,
                                 );
-                                if (await canLaunchUrl(uri))
+                                if (await canLaunchUrl(uri)) {
                                   await launchUrl(uri);
+                                }
                               },
                       ),
                       _infoRow(
@@ -1561,7 +1565,7 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
-                            backgroundColor: Colors.pink.withOpacity(0.1),
+                            backgroundColor: Colors.pink.withValues(alpha: 0.1),
                             child: const Icon(Icons.group, color: Colors.pink),
                           ),
                           title: Text(
@@ -1668,7 +1672,7 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
             backgroundImage: photoUrl.isNotEmpty
                 ? CachedNetworkImageProvider(photoUrl)
                 : null,
-            backgroundColor: Colors.white.withOpacity(0.2),
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
             child: photoUrl.isEmpty
                 ? const Icon(Icons.person, size: 48, color: Colors.white)
                 : null,
@@ -1728,7 +1732,7 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: Colors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white24),
       ),
@@ -1828,12 +1832,15 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [color.withOpacity(0.85), color.withOpacity(0.65)],
+                colors: [
+                  color.withValues(alpha: 0.85),
+                  color.withValues(alpha: 0.65),
+                ],
               ),
               borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.25),
+                  color: color.withValues(alpha: 0.25),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
                 ),
@@ -1878,15 +1885,15 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 18,
-            backgroundColor: color.withOpacity(0.25),
+            backgroundColor: color.withValues(alpha: 0.25),
             child: Icon(icon, color: _darken(color, 0.1), size: 18),
           ),
           const SizedBox(width: 10),

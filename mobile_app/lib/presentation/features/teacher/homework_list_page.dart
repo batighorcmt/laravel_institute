@@ -81,10 +81,11 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
         _load();
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('অপারেশন ব্যর্থ')));
+      }
     }
   }
 
@@ -112,7 +113,7 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(12),
                 itemCount: _items.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (ctx, i) {
                   final m = (_items[i] as Map).cast<String, dynamic>();
                   final id = (m['id'] as num).toInt();
@@ -294,9 +295,9 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

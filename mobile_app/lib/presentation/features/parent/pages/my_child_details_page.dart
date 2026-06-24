@@ -35,14 +35,14 @@ class _ProfileContent extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [cs.primary, cs.primary.withOpacity(0.8)],
+                colors: [cs.primary, cs.primary.withValues(alpha: 0.8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: cs.primary.withOpacity(0.2),
+                  color: cs.primary.withValues(alpha: 0.2),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -77,7 +77,7 @@ class _ProfileContent extends StatelessWidget {
                         Text(
                           profile['name_en'],
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 14,
                           ),
                         ),
@@ -104,7 +104,10 @@ class _ProfileContent extends StatelessWidget {
               _InfoItem(label: 'শ্রেণি', value: profile['class'] ?? 'N/A'),
               _InfoItem(label: 'শাখা', value: profile['section'] ?? 'N/A'),
               _InfoItem(label: 'বিভাগ', value: profile['group'] ?? 'N/A'),
-              _InfoItem(label: 'শিক্ষাবর্ষ', value: profile['academic_year'] ?? 'N/A'),
+              _InfoItem(
+                label: 'শিক্ষাবর্ষ',
+                value: profile['academic_year'] ?? 'N/A',
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -113,38 +116,68 @@ class _ProfileContent extends StatelessWidget {
           _SectionHeader(icon: Icons.person_outline, title: 'ব্যক্তিগত তথ্য'),
           _InfoCard(
             items: [
-              _InfoItem(label: 'জন্ম তারিখ', value: profile['date_of_birth'] ?? 'N/A'),
-              _InfoItem(label: 'লিঙ্গ', value: profile['gender'] == 'male' ? 'ছেলে' : 'মেয়ে'),
-              _InfoItem(label: 'রক্তের গ্রুপ', value: profile['blood_group'] ?? 'N/A'),
+              _InfoItem(
+                label: 'জন্ম তারিখ',
+                value: profile['date_of_birth'] ?? 'N/A',
+              ),
+              _InfoItem(
+                label: 'লিঙ্গ',
+                value: profile['gender'] == 'male' ? 'ছেলে' : 'মেয়ে',
+              ),
+              _InfoItem(
+                label: 'রক্তের গ্রুপ',
+                value: profile['blood_group'] ?? 'N/A',
+              ),
               _InfoItem(label: 'ধর্ম', value: profile['religion'] ?? 'N/A'),
             ],
           ),
           const SizedBox(height: 24),
 
           // Guardian Info
-          _SectionHeader(icon: Icons.family_restroom_outlined, title: 'অভিভাবকের তথ্য'),
+          _SectionHeader(
+            icon: Icons.family_restroom_outlined,
+            title: 'অভিভাবকের তথ্য',
+          ),
           _InfoCard(
             items: [
               _InfoItem(
                 label: 'পিতার নাম (BN)',
-                value: profile['father_name_bn'] ?? profile['guardians']?['father_name_bn'] ?? 'N/A',
+                value:
+                    profile['father_name_bn'] ??
+                    profile['guardians']?['father_name_bn'] ??
+                    'N/A',
                 isBold: true,
               ),
               _InfoItem(
                 label: 'পিতার নাম (EN)',
-                value: profile['father_name'] ?? profile['guardians']?['father_name'] ?? 'N/A',
+                value:
+                    profile['father_name'] ??
+                    profile['guardians']?['father_name'] ??
+                    'N/A',
               ),
               _InfoItem(
                 label: 'মাতার নাম (BN)',
-                value: profile['mother_name_bn'] ?? profile['guardians']?['mother_name_bn'] ?? 'N/A',
+                value:
+                    profile['mother_name_bn'] ??
+                    profile['guardians']?['mother_name_bn'] ??
+                    'N/A',
                 isBold: true,
               ),
               _InfoItem(
                 label: 'মাতার নাম (EN)',
-                value: profile['mother_name'] ?? profile['guardians']?['mother_name'] ?? 'N/A',
+                value:
+                    profile['mother_name'] ??
+                    profile['guardians']?['mother_name'] ??
+                    'N/A',
               ),
-              _InfoItem(label: 'অভিভাবক', value: profile['guardian_name'] ?? 'N/A'),
-              _InfoItem(label: 'মোবাইল', value: profile['guardian_phone'] ?? 'N/A'),
+              _InfoItem(
+                label: 'অভিভাবক',
+                value: profile['guardian_name'] ?? 'N/A',
+              ),
+              _InfoItem(
+                label: 'মোবাইল',
+                value: profile['guardian_phone'] ?? 'N/A',
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -153,8 +186,20 @@ class _ProfileContent extends StatelessWidget {
           _SectionHeader(icon: Icons.location_on_outlined, title: 'ঠিকানা'),
           _InfoCard(
             items: [
-              _InfoItem(label: 'বর্তমান ঠিকানা', value: profile['present_address_bn'] ?? profile['present_address'] ?? 'N/A'),
-              _InfoItem(label: 'স্থায়ী ঠিকানা', value: profile['permanent_address_bn'] ?? profile['permanent_address'] ?? 'N/A'),
+              _InfoItem(
+                label: 'বর্তমান ঠিকানা',
+                value:
+                    profile['present_address_bn'] ??
+                    profile['present_address'] ??
+                    'N/A',
+              ),
+              _InfoItem(
+                label: 'স্থায়ী ঠিকানা',
+                value:
+                    profile['permanent_address_bn'] ??
+                    profile['permanent_address'] ??
+                    'N/A',
+              ),
             ],
           ),
           const SizedBox(height: 32),
@@ -201,13 +246,11 @@ class _InfoCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+        side: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          children: items,
-        ),
+        child: Column(children: items),
       ),
     );
   }
@@ -235,10 +278,7 @@ class _InfoItem extends StatelessWidget {
             flex: 2,
             child: Text(
               label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
             ),
           ),
           Expanded(
@@ -267,7 +307,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(

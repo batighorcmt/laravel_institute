@@ -109,9 +109,9 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('শিক্ষার্থী লোড ব্যর্থ: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('শিক্ষার্থী লোড ব্যর্থ: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoadingStudents = false);
@@ -170,10 +170,7 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
     setState(() => _isLoadingStudents = true);
 
     try {
-      final queryParams = {
-        'roll_no': rollNameQ,
-        'q': studentIdQ,
-      };
+      final queryParams = {'roll_no': rollNameQ, 'q': studentIdQ};
       if (_academicYearId != null) {
         queryParams['academic_year_id'] = _academicYearId.toString();
       }
@@ -183,7 +180,10 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
         queryParams['allowed_section_ids'] = _allowedSectionIds.join(',');
       }
 
-      final res = await _dio.get('principal/students/search', queryParameters: queryParams);
+      final res = await _dio.get(
+        'principal/students/search',
+        queryParameters: queryParams,
+      );
       final List results = res.data is List ? res.data : [];
 
       // Map API fields (full_name, roll_no) to the keys used in our widget
@@ -219,7 +219,6 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
     }
   }
 
-
   Future<void> _fetchDueFees(Map<String, dynamic> student) async {
     setState(() {
       _selectedStudent = student;
@@ -236,7 +235,8 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
           _isFineEnabled = res.data['is_fine_enabled'] ?? false;
           _selectedFeesToPay = _dueFees.map((fee) {
             double fine = _isFineEnabled
-                ? double.tryParse(fee['calculated_fine']?.toString() ?? '0') ?? 0
+                ? double.tryParse(fee['calculated_fine']?.toString() ?? '0') ??
+                      0
                 : 0;
             double due =
                 (double.tryParse(fee['amount']?.toString() ?? '0') ?? 0) -
@@ -292,8 +292,9 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
   }
 
   Future<void> _collectFees() async {
-    final selected =
-        _selectedFeesToPay.where((f) => f['selected'] == true).toList();
+    final selected = _selectedFeesToPay
+        .where((f) => f['selected'] == true)
+        .toList();
     if (selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('কমপক্ষে একটি ফি নির্বাচন করুন')),
@@ -311,11 +312,13 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
         'payment_method': 'cash',
         'received_at': DateTime.now().toIso8601String(),
         'fees': selected
-            .map((f) => {
-                  'student_fee_id': f['student_fee_id'],
-                  'amount': f['amount'],
-                  'fine_amount': f['fine_amount'],
-                })
+            .map(
+              (f) => {
+                'student_fee_id': f['student_fee_id'],
+                'amount': f['amount'],
+                'fine_amount': f['fine_amount'],
+              },
+            )
             .toList(),
       };
 
@@ -324,7 +327,9 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(res.data['message'] ?? 'পেমেন্ট সফলভাবে সম্পন্ন হয়েছে!'),
+            content: Text(
+              res.data['message'] ?? 'পেমেন্ট সফলভাবে সম্পন্ন হয়েছে!',
+            ),
             backgroundColor: Colors.green.shade600,
             behavior: SnackBarBehavior.floating,
           ),
@@ -342,9 +347,8 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
         String msg = 'পেমেন্ট প্রসেস করতে ব্যর্থ হয়েছে';
         if (e is DioException) {
           if (e.response?.data is Map) {
-            msg = e.response?.data['message'] ??
-                e.response?.data['error'] ??
-                msg;
+            msg =
+                e.response?.data['message'] ?? e.response?.data['error'] ?? msg;
           } else {
             msg = 'সার্ভার ত্রুটি: ${e.response?.statusCode ?? "Unknown"}';
           }
@@ -367,7 +371,10 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F9),
       appBar: AppBar(
-        title: const Text('ফি সংগ্রহ', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'ফি সংগ্রহ',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF1A1D1F),
@@ -380,13 +387,12 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
                 ? _buildResultsList()
                 : ListView(
                     physics: const BouncingScrollPhysics(),
-                    children: [
-                      _buildStudentHeader(),
-                      _buildDuesSection(),
-                    ],
+                    children: [_buildStudentHeader(), _buildDuesSection()],
                   ),
           ),
-          if (_selectedStudent != null && _dueFees.isNotEmpty && !_isLoadingFees)
+          if (_selectedStudent != null &&
+              _dueFees.isNotEmpty &&
+              !_isLoadingFees)
             _buildBottomPaymentBar(),
         ],
       ),
@@ -399,7 +405,7 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -456,13 +462,18 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.indigo.shade300),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.indigo.shade300,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'লোড হচ্ছে…',
-                      style: TextStyle(fontSize: 12, color: Colors.indigo.shade300),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.indigo.shade300,
+                      ),
                     ),
                   ],
                 ),
@@ -478,7 +489,9 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
                 },
                 icon: const Icon(Icons.refresh, size: 18),
                 label: const Text('রিসেট'),
-                style: TextButton.styleFrom(foregroundColor: Colors.grey.shade600),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.grey.shade600,
+                ),
               ),
               const SizedBox(width: 8),
               ElevatedButton.icon(
@@ -489,8 +502,13 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
                   backgroundColor: Colors.indigo,
                   foregroundColor: Colors.white,
                   elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ],
@@ -517,7 +535,7 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: const Color(0xFF00BF6D).withOpacity(0.7),
+            color: const Color(0xFF00BF6D).withValues(alpha: 0.7),
           ),
         ),
         const SizedBox(height: 4),
@@ -529,11 +547,18 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
-            prefixIcon: Icon(icon, size: 18, color: const Color(0xFF00BF6D).withOpacity(0.3)),
+            prefixIcon: Icon(
+              icon,
+              size: 18,
+              color: const Color(0xFF00BF6D).withValues(alpha: 0.3),
+            ),
             filled: true,
             fillColor: const Color(0xFFF9FAFB),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.shade200),
@@ -544,7 +569,10 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF00BF6D), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFF00BF6D),
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -565,7 +593,7 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00BF6D).withOpacity(0.25),
+            color: const Color(0xFF00BF6D).withValues(alpha: 0.25),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -576,11 +604,16 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
         children: [
           Container(
             padding: const EdgeInsets.all(2),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
             child: CircleAvatar(
               radius: 32,
               backgroundColor: const Color(0xFFF0FDF4),
-              backgroundImage: (photoUrl != null && photoUrl.isNotEmpty) ? NetworkImage(photoUrl) : null,
+              backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                  ? NetworkImage(photoUrl)
+                  : null,
               child: (photoUrl == null || photoUrl.isEmpty)
                   ? const Icon(Icons.person, size: 32, color: Color(0xFF00BF6D))
                   : null,
@@ -604,9 +637,18 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
                   spacing: 8,
                   runSpacing: 4,
                   children: [
-                    _buildStudentBadge(Icons.school, 'শ্রেণি: ${_selectedStudent!['class_name'] ?? ''} (${_selectedStudent!['section_name'] ?? ''})'),
-                    _buildStudentBadge(Icons.tag, 'রোল: ${_selectedStudent!['roll'] ?? ''}'),
-                    _buildStudentBadge(Icons.badge, 'আইডি: ${_selectedStudent!['student_id'] ?? ''}'),
+                    _buildStudentBadge(
+                      Icons.school,
+                      'শ্রেণি: ${_selectedStudent!['class_name'] ?? ''} (${_selectedStudent!['section_name'] ?? ''})',
+                    ),
+                    _buildStudentBadge(
+                      Icons.tag,
+                      'রোল: ${_selectedStudent!['roll'] ?? ''}',
+                    ),
+                    _buildStudentBadge(
+                      Icons.badge,
+                      'আইডি: ${_selectedStudent!['student_id'] ?? ''}',
+                    ),
                   ],
                 ),
               ],
@@ -621,7 +663,7 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: Colors.white.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -631,7 +673,11 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
           const SizedBox(width: 6),
           Text(
             text,
-            style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -656,11 +702,19 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
         alignment: Alignment.center,
         child: Column(
           children: [
-            Icon(Icons.check_circle_outline, size: 64, color: Colors.green.shade200),
+            Icon(
+              Icons.check_circle_outline,
+              size: 64,
+              color: Colors.green.shade200,
+            ),
             const SizedBox(height: 16),
             const Text(
               'কোনো বকেয়া পাওয়া যায়নি',
-              style: TextStyle(fontSize: 16, color: Colors.green, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -677,13 +731,21 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
             children: [
               Text(
                 'বকেয়া তালিকা (${_dueFees.length})',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Colors.blueGrey,
+                ),
               ),
               InkWell(
                 onTap: _toggleSelectAll,
                 child: Text(
                   _allSelected ? 'সব বাতিল' : 'সবই সিলেক্ট',
-                  style: TextStyle(color: const Color(0xFF00BF6D), fontSize: 12, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: const Color(0xFF00BF6D),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -707,12 +769,18 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
                 color: isSelected ? const Color(0xFFF0FDF4) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF00BF6D).withOpacity(0.5) : Colors.grey.shade200,
+                  color: isSelected
+                      ? const Color(0xFF00BF6D).withValues(alpha: 0.5)
+                      : Colors.grey.shade200,
                   width: isSelected ? 1.5 : 1.0,
                 ),
                 boxShadow: [
                   if (isSelected)
-                    BoxShadow(color: const Color(0xFF00BF6D).withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+                    BoxShadow(
+                      color: const Color(0xFF00BF6D).withValues(alpha: 0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
                 ],
               ),
               child: ListTile(
@@ -721,29 +789,49 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
                   value: isSelected,
                   onChanged: (val) => _toggleFeeSelection(index, val),
                   activeColor: const Color(0xFF00BF6D),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
                 title: Text(
                   f['category_name'],
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: isSelected ? const Color(0xFF065F46) : const Color(0xFF1A1D1F),
+                    color: isSelected
+                        ? const Color(0xFF065F46)
+                        : const Color(0xFF1A1D1F),
                   ),
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 2),
-                    Text('বকেয়া: ৳${baseDue.toStringAsFixed(2)}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                    Text(
+                      'বকেয়া: ৳${baseDue.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
                     if (fine > 0)
                       Container(
                         margin: const EdgeInsets.only(top: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(4)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                         child: Text(
                           'জরিমানা: ৳${fine.toStringAsFixed(2)}',
-                          style: TextStyle(color: Colors.red.shade700, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                   ],
@@ -753,7 +841,9 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: isSelected ? const Color(0xFF00BF6D) : const Color(0xFF111111),
+                    color: isSelected
+                        ? const Color(0xFF00BF6D)
+                        : const Color(0xFF111111),
                   ),
                 ),
                 onTap: () => _toggleFeeSelection(index, !isSelected),
@@ -773,7 +863,11 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 15, offset: const Offset(0, -4)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 15,
+            offset: const Offset(0, -4),
+          ),
         ],
       ),
       child: SafeArea(
@@ -784,29 +878,60 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('নির্বাচিত মোট', style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
+                Text(
+                  'নির্বাচিত মোট',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   '৳${_totalSelectedAmount.toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1A1D1F)),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF1A1D1F),
+                  ),
                 ),
               ],
             ),
             const SizedBox(width: 16),
             ElevatedButton.icon(
-              onPressed: (_totalSelectedAmount > 0 && !_isPaying) ? _collectFees : null,
+              onPressed: (_totalSelectedAmount > 0 && !_isPaying)
+                  ? _collectFees
+                  : null,
               icon: _isPaying
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
                   : const Icon(Icons.check_circle_outline, size: 18),
-              label: const Text('গ্রহণ করুন', style: TextStyle(letterSpacing: 0.3)),
+              label: const Text(
+                'গ্রহণ করুন',
+                style: TextStyle(letterSpacing: 0.3),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00BF6D),
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 20,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -897,21 +1022,33 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
             side: BorderSide(color: Colors.grey.shade100),
           ),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 4,
+            ),
             leading: CircleAvatar(
               radius: 24,
               backgroundColor: const Color(0xFFF0FDF4),
-              backgroundImage: (photoUrl != null && photoUrl.isNotEmpty) ? NetworkImage(photoUrl) : null,
+              backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                  ? NetworkImage(photoUrl)
+                  : null,
               child: (photoUrl == null || photoUrl.isEmpty)
                   ? Text(
                       student['roll']?.toString() ?? '?',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00BF6D)),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF00BF6D),
+                      ),
                     )
                   : null,
             ),
             title: Text(
               student['name'] ?? 'Unknown',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1A1D1F)),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: Color(0xFF1A1D1F),
+              ),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -924,11 +1061,19 @@ class _FeeCollectionPageState extends ConsumerState<FeeCollectionPage> {
                 if (student['student_id'] != null)
                   Text(
                     'আইডি: ${student['student_id']}',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00BF6D)),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF00BF6D),
+                    ),
                   ),
               ],
             ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+            trailing: const Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Colors.grey,
+            ),
             onTap: () => _fetchDueFees(student),
           ),
         );

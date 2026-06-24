@@ -218,7 +218,7 @@ class _LessonEvaluationDetailsPageState
     }
     if (l.contains('complete')) return Colors.green;
     if (l.contains('partial')) return Colors.orange;
-    return scheme.onSurface.withOpacity(0.7);
+    return scheme.onSurface.withValues(alpha: 0.7);
   }
 
   Future<void> _callPhone(String? number) async {
@@ -869,8 +869,7 @@ class _LessonEvaluationDetailsPageState
                         return ListView.separated(
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           itemCount: groups.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 8),
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
                           itemBuilder: (ctx, idx) {
                             final g = groups[idx];
                             final title =
@@ -923,7 +922,7 @@ class _LessonEvaluationDetailsPageState
     return ListView.separated(
       padding: EdgeInsets.zero,
       itemCount: normalized.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (ctx, i) {
         final s = normalized[i];
         final st = (s['status'] ?? '').toString();
@@ -1001,7 +1000,7 @@ class _LessonEvaluationDetailsPageState
                 fontSize: 12,
               ),
             ),
-            backgroundColor: statusColor.withOpacity(0.12),
+            backgroundColor: statusColor.withValues(alpha: 0.12),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           ),
         );
@@ -1019,7 +1018,7 @@ class _LessonEvaluationDetailsPageState
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       itemCount: normalized.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, _) => const Divider(height: 1),
       itemBuilder: (ctx, i) {
         final s = normalized[i];
         final st = (s['status'] ?? '').toString();
@@ -1097,7 +1096,7 @@ class _LessonEvaluationDetailsPageState
                 fontSize: 12,
               ),
             ),
-            backgroundColor: statusColor.withOpacity(0.12),
+            backgroundColor: statusColor.withValues(alpha: 0.12),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           ),
         );

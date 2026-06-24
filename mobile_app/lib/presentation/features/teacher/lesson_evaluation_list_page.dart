@@ -58,7 +58,7 @@ class _LessonEvaluationListPageState extends State<LessonEvaluationListPage> {
               child: ListView.separated(
                 padding: const EdgeInsets.all(12),
                 itemCount: _items.length + 1,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (ctx, i) {
                   if (i == 0) {
                     return Text(

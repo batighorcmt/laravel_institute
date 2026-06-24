@@ -21,7 +21,7 @@ class SubjectsPage extends ConsumerWidget {
           Colors.purple,
           Colors.orange,
           Colors.red,
-          Colors.teal
+          Colors.teal,
         ];
 
         return GridView.builder(
@@ -53,7 +53,10 @@ class SubjectsPage extends ConsumerWidget {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [color.withOpacity(0.3), color.withOpacity(0.1)],
+                      colors: [
+                        color.withValues(alpha: 0.3),
+                        color.withValues(alpha: 0.1),
+                      ],
                     ),
                   ),
                   child: Padding(

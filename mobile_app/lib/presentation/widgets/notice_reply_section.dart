@@ -116,9 +116,9 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
         padding: const EdgeInsets.all(16),
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.05),
+          color: Colors.blue.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.blue.withOpacity(0.2)),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -140,9 +140,9 @@ class _NoticeReplySectionState extends ConsumerState<NoticeReplySection> {
         padding: const EdgeInsets.all(16),
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.05),
+          color: Colors.green.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.green.withOpacity(0.2)),
+          border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
         ),
         child: Column(
           children: [

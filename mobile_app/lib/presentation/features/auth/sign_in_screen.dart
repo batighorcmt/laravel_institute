@@ -100,7 +100,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 Image.asset(
                   'assets/images/Batighor_EIMS.png',
                   height: 200,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
                 ),
                 const SizedBox(height: 4),
                 Text(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
-import 'package:intl/intl.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../widgets/animated_tile.dart';
 import 'lesson_evaluation_list_page.dart';
@@ -27,7 +26,8 @@ class TeacherDashboardPage extends ConsumerStatefulWidget {
       _TeacherDashboardPageState();
 }
 
-class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> with RouteAware {
+class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage>
+    with RouteAware {
   final Dio _dio = DioClient().dio;
   Map<String, dynamic>? _todayRecord;
   List<dynamic> _unreadNotices = [];
@@ -57,28 +57,31 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> wit
   }
 
   Future<void> _refreshData() async {
-    await Future.wait([
-      _fetchTodayAttendance(),
-      _fetchUnreadNotices(),
-    ]);
+    await Future.wait([_fetchTodayAttendance(), _fetchUnreadNotices()]);
   }
 
   Future<void> _fetchUnreadNotices() async {
     try {
       if (mounted) setState(() => _noticesLoading = true);
-      
+
       developer.log('Fetching unread notices...', name: 'TeacherDashboard');
-      final resp = await _dio.get('notices', queryParameters: {'filter': 'unread', 'limit': 5});
+      final resp = await _dio.get(
+        'notices',
+        queryParameters: {'filter': 'unread', 'limit': 5},
+      );
       final data = resp.data;
-      
+
       List list = [];
       if (data is List) {
         list = data;
       } else if (data is Map && data['data'] is List) {
         list = data['data'];
       }
-      
-      developer.log('Fetched ${list.length} unread notices', name: 'TeacherDashboard');
+
+      developer.log(
+        'Fetched ${list.length} unread notices',
+        name: 'TeacherDashboard',
+      );
 
       if (mounted) {
         setState(() {
@@ -87,7 +90,11 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> wit
         });
       }
     } catch (e) {
-      developer.log('Error fetching notices: $e', name: 'TeacherDashboard', error: e);
+      developer.log(
+        'Error fetching notices: $e',
+        name: 'TeacherDashboard',
+        error: e,
+      );
       if (mounted) setState(() => _noticesLoading = false);
     }
   }
@@ -116,7 +123,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> wit
       }
       if (mounted) setState(() => _todayRecord = todayRec);
     } catch (e) {
-       developer.log('Error fetching attendance: $e', name: 'TeacherDashboard');
+      developer.log('Error fetching attendance: $e', name: 'TeacherDashboard');
     }
   }
 
@@ -173,7 +180,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage> wit
                   );
                 },
               ),
-              
+
               // Dynamic notices section - only show if loading or has notices
               if (_noticesLoading) ...[
                 const SizedBox(height: 16),
@@ -546,9 +553,7 @@ class _NoticeSkeleton extends StatelessWidget {
         color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Center(
-        child: CircularProgressIndicator(strokeWidth: 2),
-      ),
+      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
     );
   }
 }
@@ -614,7 +619,10 @@ class _UnreadNoticesHighlight extends StatelessWidget {
                   n['title'] ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
                 subtitle: Text(
                   n['body_plain'] ?? n['body'] ?? '',
@@ -622,15 +630,21 @@ class _UnreadNoticesHighlight extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 11),
                 ),
-                trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.red),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  size: 16,
+                  color: Colors.red,
+                ),
                 onTap: () => onTap(n),
               );
             },
           ),
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(12),
+            ),
             child: Material(
-              color: Colors.red.shade100.withOpacity(0.5),
+              color: Colors.red.shade100.withValues(alpha: 0.5),
               child: InkWell(
                 onTap: () => context.push('/notice-board'),
                 child: Container(

@@ -240,7 +240,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                     child: Container(
                       padding: const EdgeInsets.all(12.0),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
+                        color: Colors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.red),
                       ),
@@ -264,7 +264,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                 Expanded(
                   child: ListView.separated(
                     padding: const EdgeInsets.all(12),
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemCount: _filterStatus == null
                         ? _rows.length
                         : _rows.where((r) => r.status == _filterStatus).length,
@@ -331,7 +331,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: Colors.grey.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.grey.shade300),
                         ),

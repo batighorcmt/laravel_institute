@@ -138,7 +138,7 @@ class HomeworkListPage extends ConsumerWidget {
                       ),
                       loading: () =>
                           const Text('...', style: TextStyle(fontSize: 11)),
-                      error: (_, __) =>
+                      error: (_, _) =>
                           const Text('!', style: TextStyle(fontSize: 11)),
                     ),
                   ),
@@ -182,7 +182,7 @@ class HomeworkListPage extends ConsumerWidget {
                       ),
                       loading: () =>
                           const Text('...', style: TextStyle(fontSize: 11)),
-                      error: (_, __) =>
+                      error: (_, _) =>
                           const Text('!', style: TextStyle(fontSize: 11)),
                     ),
                   ),
@@ -197,11 +197,13 @@ class HomeworkListPage extends ConsumerWidget {
             data: (homeworks) {
               final filtered = homeworks.where((hw) {
                 if (selectedSubjectId != null &&
-                    hw['subject_id'] != selectedSubjectId)
+                    hw['subject_id'] != selectedSubjectId) {
                   return false;
+                }
                 if (selectedTeacherId != null &&
-                    hw['teacher_id'] != selectedTeacherId)
+                    hw['teacher_id'] != selectedTeacherId) {
                   return false;
+                }
                 return true;
               }).toList();
 

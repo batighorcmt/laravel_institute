@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../config/env.dart';
 import 'dart:developer' as developer;
 
@@ -24,7 +23,8 @@ class UpdateService {
         queryParameters: {'version_code': currentVersionCode},
       );
 
-      if (response.statusCode == 200 && response.data['update_available'] == true) {
+      if (response.statusCode == 200 &&
+          response.data['update_available'] == true) {
         return response.data;
       }
     } catch (e) {
@@ -41,9 +41,9 @@ class UpdateService {
     try {
       // 1. Request Storage Permissions
       if (Platform.isAndroid) {
-         // On Android 13+ (SDK 33+), WRITE_EXTERNAL_STORAGE is deprecated.
-         // We use getExternalStorageDirectory() which doesn't need it.
-         // However, REQUEST_INSTALL_PACKAGES is needed for opening the APK.
+        // On Android 13+ (SDK 33+), WRITE_EXTERNAL_STORAGE is deprecated.
+        // We use getExternalStorageDirectory() which doesn't need it.
+        // However, REQUEST_INSTALL_PACKAGES is needed for opening the APK.
       }
 
       final directory = await getExternalStorageDirectory();
@@ -53,7 +53,7 @@ class UpdateService {
       }
 
       final String filePath = '${directory.path}/update.apk';
-      
+
       // Delete existing file if exists
       final file = File(filePath);
       if (await file.exists()) {

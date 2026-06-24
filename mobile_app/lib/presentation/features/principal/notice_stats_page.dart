@@ -20,7 +20,7 @@ class NoticeStatsPage extends ConsumerStatefulWidget {
 class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   String? _currentlyPlayingUrl;
-  
+
   // Filters
   String _typeFilter = 'all'; // all, teacher, student
   String? _classFilter;
@@ -37,7 +37,7 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
             _currentlyPlayingUrl = null;
           });
         } else {
-          setState(() {}); 
+          setState(() {});
         }
       }
     });
@@ -87,41 +87,48 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
         data: (data) {
           final stats = data['stats'];
           final List allRecipients = stats['all'] ?? [];
-          
+
           // Apply Filters
           var filteredList = allRecipients.where((r) {
             bool matchesType = _typeFilter == 'all' || r['type'] == _typeFilter;
-            bool matchesClass = _classFilter == null || r['class_name'] == _classFilter;
-            bool matchesSection = _sectionFilter == null || r['section_name'] == _sectionFilter;
-            bool matchesStatus = _statusFilter == 'all' || 
-                                 (_statusFilter == 'read' && (r['status'] == 'read' || r['status'] == 'replied')) ||
-                                 (_statusFilter == 'replied' && r['status'] == 'replied') ||
-                                 (_statusFilter == 'unread' && r['status'] == 'unread') ||
-                                 (_statusFilter == 'not_replied' && r['status'] != 'replied');
-            
-            return matchesType && matchesClass && matchesSection && matchesStatus;
+            bool matchesClass =
+                _classFilter == null || r['class_name'] == _classFilter;
+            bool matchesSection =
+                _sectionFilter == null || r['section_name'] == _sectionFilter;
+            bool matchesStatus =
+                _statusFilter == 'all' ||
+                (_statusFilter == 'read' &&
+                    (r['status'] == 'read' || r['status'] == 'replied')) ||
+                (_statusFilter == 'replied' && r['status'] == 'replied') ||
+                (_statusFilter == 'unread' && r['status'] == 'unread') ||
+                (_statusFilter == 'not_replied' && r['status'] != 'replied');
+
+            return matchesType &&
+                matchesClass &&
+                matchesSection &&
+                matchesStatus;
           }).toList();
 
           return Column(
             children: [
               // Summary Header
               _buildHeader(stats, allRecipients),
-              
+
               // Filter Bar
               _buildFilterBar(classesAsync, sectionsAsync),
 
               // Results List
               Expanded(
-                child: filteredList.isEmpty 
-                  ? const Center(child: Text('ফলাফল পাওয়া যায়নি'))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filteredList.length,
-                      itemBuilder: (context, index) {
-                        final person = filteredList[index];
-                        return _buildPersonCard(person);
-                      },
-                    ),
+                child: filteredList.isEmpty
+                    ? const Center(child: Text('ফলাফল পাওয়া যায়নি'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredList.length,
+                        itemBuilder: (context, index) {
+                          final person = filteredList[index];
+                          return _buildPersonCard(person);
+                        },
+                      ),
               ),
             ],
           );
@@ -133,7 +140,9 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
   }
 
   Widget _buildHeader(Map stats, List allRecipients) {
-    final notRepliedCount = allRecipients.where((r) => r['status'] != 'replied').length;
+    final notRepliedCount = allRecipients
+        .where((r) => r['status'] != 'replied')
+        .length;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -141,14 +150,33 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(widget.noticeTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(
+            widget.noticeTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _StatMiniBox(label: 'মোট', value: '${stats['total_recipients']}', color: Colors.blue),
-              _StatMiniBox(label: 'দেখেছে', value: '${stats['read_count']}', color: Colors.orange),
-              _StatMiniBox(label: 'রিপ্লাই', value: '${stats['reply_count']}', color: Colors.green),
-              _StatMiniBox(label: 'রিপ্লাই দেয়নি', value: '$notRepliedCount', color: Colors.red),
+              _StatMiniBox(
+                label: 'মোট',
+                value: '${stats['total_recipients']}',
+                color: Colors.blue,
+              ),
+              _StatMiniBox(
+                label: 'দেখেছে',
+                value: '${stats['read_count']}',
+                color: Colors.orange,
+              ),
+              _StatMiniBox(
+                label: 'রিপ্লাই',
+                value: '${stats['reply_count']}',
+                color: Colors.green,
+              ),
+              _StatMiniBox(
+                label: 'রিপ্লাই দেয়নি',
+                value: '$notRepliedCount',
+                color: Colors.red,
+              ),
             ],
           ),
         ],
@@ -180,7 +208,7 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
                 }
               }),
             ),
-            
+
             if (_typeFilter == 'student') ...[
               const SizedBox(width: 8),
               // Class Filter
@@ -191,13 +219,28 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
                   const DropdownMenuItem(value: null, child: Text('সব শ্রেণি')),
                   ...classesAsync.maybeWhen(
                     data: (list) {
-                       return list.map<DropdownMenuItem<String?>>((c) {
-                         final name = c is Map ? c['name']?.toString() : c.toString();
-                         return DropdownMenuItem(value: name, child: Text(name ?? ''));
-                       }).toList();
+                      return list.map<DropdownMenuItem<String?>>((c) {
+                        final name = c is Map
+                            ? c['name']?.toString()
+                            : c.toString();
+                        return DropdownMenuItem(
+                          value: name,
+                          child: Text(name ?? ''),
+                        );
+                      }).toList();
                     },
-                    loading: () => [const DropdownMenuItem(value: null, child: Text('লোড হচ্ছে...'))],
-                    error: (err, _) => [DropdownMenuItem(value: null, child: Text('ত্রুটি: $err'))],
+                    loading: () => [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('লোড হচ্ছে...'),
+                      ),
+                    ],
+                    error: (err, _) => [
+                      DropdownMenuItem(
+                        value: null,
+                        child: Text('ত্রুটি: $err'),
+                      ),
+                    ],
                     orElse: () => [],
                   ),
                 ],
@@ -215,31 +258,54 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
                   const DropdownMenuItem(value: null, child: Text('সব শাখা')),
                   ...sectionsAsync.maybeWhen(
                     data: (list) {
-                      final filtered = _classFilter == null 
-                          ? list 
-                          : list.where((s) => s['class_name'] == _classFilter).toList();
+                      final filtered = _classFilter == null
+                          ? list
+                          : list
+                                .where((s) => s['class_name'] == _classFilter)
+                                .toList();
                       return filtered.map<DropdownMenuItem<String?>>((s) {
-                        final name = s is Map ? s['name']?.toString() : s.toString();
-                        return DropdownMenuItem(value: name, child: Text(name ?? ''));
+                        final name = s is Map
+                            ? s['name']?.toString()
+                            : s.toString();
+                        return DropdownMenuItem(
+                          value: name,
+                          child: Text(name ?? ''),
+                        );
                       }).toList();
                     },
-                    loading: () => [const DropdownMenuItem(value: null, child: Text('লোড হচ্ছে...'))],
-                    error: (err, _) => [DropdownMenuItem(value: null, child: Text('ত্রুটি: $err'))],
+                    loading: () => [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('লোড হচ্ছে...'),
+                      ),
+                    ],
+                    error: (err, _) => [
+                      DropdownMenuItem(
+                        value: null,
+                        child: Text('ত্রুটি: $err'),
+                      ),
+                    ],
                     orElse: () => [],
                   ),
                 ],
                 onChanged: (val) => setState(() => _sectionFilter = val),
               ),
             ],
-            
+
             const SizedBox(width: 8),
             // Status Filter
             _buildDropdown(
               value: _statusFilter,
               items: const [
                 DropdownMenuItem(value: 'all', child: Text('অবস্থা: সব')),
-                DropdownMenuItem(value: 'replied', child: Text('রিপ্লাই দিয়েছে')),
-                DropdownMenuItem(value: 'not_replied', child: Text('রিপ্লাই দেয়নি')),
+                DropdownMenuItem(
+                  value: 'replied',
+                  child: Text('রিপ্লাই দিয়েছে'),
+                ),
+                DropdownMenuItem(
+                  value: 'not_replied',
+                  child: Text('রিপ্লাই দেয়নি'),
+                ),
                 DropdownMenuItem(value: 'read', child: Text('পড়া হয়েছে')),
                 DropdownMenuItem(value: 'unread', child: Text('দেখা হয়নি')),
               ],
@@ -251,7 +317,12 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
     );
   }
 
-  Widget _buildDropdown({String? value, required List<DropdownMenuItem<String?>> items, required ValueChanged<String?> onChanged, String? hint}) {
+  Widget _buildDropdown({
+    String? value,
+    required List<DropdownMenuItem<String?>> items,
+    required ValueChanged<String?> onChanged,
+    String? hint,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
@@ -261,7 +332,9 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           value: value,
-          hint: hint != null ? Text(hint, style: const TextStyle(fontSize: 12)) : null,
+          hint: hint != null
+              ? Text(hint, style: const TextStyle(fontSize: 12))
+              : null,
           items: items,
           onChanged: onChanged,
           style: const TextStyle(fontSize: 12, color: Colors.black),
@@ -274,17 +347,19 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
     final status = person['status'];
     Color statusColor = Colors.grey;
     String statusText = 'দেখা হয়নি';
-    
+
     if (status == 'read') {
-        statusColor = Colors.blue;
-        statusText = 'পড়া হয়েছে';
+      statusColor = Colors.blue;
+      statusText = 'পড়া হয়েছে';
     } else if (status == 'replied') {
-        statusColor = Colors.green;
-        statusText = 'রিপ্লাই';
+      statusColor = Colors.green;
+      statusText = 'রিপ্লাই';
     }
 
     final voiceUrl = person['reply']?['url'];
-    final isPlaying = _currentlyPlayingUrl == voiceUrl && _audioPlayer.state == PlayerState.playing;
+    final isPlaying =
+        _currentlyPlayingUrl == voiceUrl &&
+        _audioPlayer.state == PlayerState.playing;
 
     return Card(
       elevation: 0,
@@ -300,10 +375,17 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
             CircleAvatar(
               radius: 20,
               backgroundColor: Colors.blue[50],
-              backgroundImage: person['photo_url'] != null ? NetworkImage(person['photo_url']) : null,
-              child: person['photo_url'] == null 
-                ? Icon(person['type'] == 'teacher' ? Icons.person_pin : Icons.person, color: Colors.blue)
-                : null,
+              backgroundImage: person['photo_url'] != null
+                  ? NetworkImage(person['photo_url'])
+                  : null,
+              child: person['photo_url'] == null
+                  ? Icon(
+                      person['type'] == 'teacher'
+                          ? Icons.person_pin
+                          : Icons.person,
+                      color: Colors.blue,
+                    )
+                  : null,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -312,15 +394,31 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
                 children: [
                   Row(
                     children: [
-                      Flexible(child: Text(person['name'] ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                      Flexible(
+                        child: Text(
+                          person['name'] ?? 'N/A',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
+                          color: statusColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text(statusText, style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          statusText,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: statusColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -334,7 +432,10 @@ class _NoticeStatsPageState extends ConsumerState<NoticeStatsPage> {
             ),
             if (voiceUrl != null)
               IconButton(
-                icon: Icon(isPlaying ? Icons.pause_circle : Icons.play_circle, color: isPlaying ? Colors.orange : Colors.blue),
+                icon: Icon(
+                  isPlaying ? Icons.pause_circle : Icons.play_circle,
+                  color: isPlaying ? Colors.orange : Colors.blue,
+                ),
                 onPressed: () => _togglePlay(voiceUrl),
               ),
           ],
@@ -348,7 +449,11 @@ class _StatMiniBox extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _StatMiniBox({required this.label, required this.value, required this.color});
+  const _StatMiniBox({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -357,13 +462,24 @@ class _StatMiniBox extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
+          color: color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           children: [
-            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-            Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600]), textAlign: TextAlign.center),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),

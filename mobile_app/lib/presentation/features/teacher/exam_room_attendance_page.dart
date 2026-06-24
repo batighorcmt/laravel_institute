@@ -51,7 +51,10 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        showAppSnack(context, message: 'শিক্ষার্থী তালিকা লোড করতে ব্যর্থ হয়েছে');
+        showAppSnack(
+          context,
+          message: 'শিক্ষার্থী তালিকা লোড করতে ব্যর্থ হয়েছে',
+        );
       }
     }
   }
@@ -139,10 +142,7 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: Text('কক্ষ: ${widget.roomNo}'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text('কক্ষ: ${widget.roomNo}'), centerTitle: true),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -153,7 +153,10 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
                   child: RefreshIndicator(
                     onRefresh: _loadStudents,
                     child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       itemCount: _students.length,
                       itemBuilder: (context, index) {
                         final student = _students[index];
@@ -183,11 +186,36 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _statGroup('মোট', _stats['total']?.toString() ?? '0', Icons.people, Colors.blue),
-              _statGroup('উপস্থিত', _stats['present']?.toString() ?? '0', Icons.check_circle, Colors.green),
-              _statGroup('অনুপস্থিত', _stats['absent']?.toString() ?? '0', Icons.cancel, Colors.red),
-              _statGroup('ছেলে', gender['male']?.toString() ?? '0', Icons.male, Colors.blue),
-              _statGroup('মেয়ে', gender['female']?.toString() ?? '0', Icons.female, Colors.pink),
+              _statGroup(
+                'মোট',
+                _stats['total']?.toString() ?? '0',
+                Icons.people,
+                Colors.blue,
+              ),
+              _statGroup(
+                'উপস্থিত',
+                _stats['present']?.toString() ?? '0',
+                Icons.check_circle,
+                Colors.green,
+              ),
+              _statGroup(
+                'অনুপস্থিত',
+                _stats['absent']?.toString() ?? '0',
+                Icons.cancel,
+                Colors.red,
+              ),
+              _statGroup(
+                'ছেলে',
+                gender['male']?.toString() ?? '0',
+                Icons.male,
+                Colors.blue,
+              ),
+              _statGroup(
+                'মেয়ে',
+                gender['female']?.toString() ?? '0',
+                Icons.female,
+                Colors.pink,
+              ),
             ],
           ),
           if (classes.isNotEmpty) ...[
@@ -196,15 +224,28 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
               spacing: 8,
               runSpacing: 4,
               alignment: WrapAlignment.center,
-              children: classes.entries.map<Widget>((e) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Text('${e.key}: ${e.value}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-              )).toList(),
+              children: classes.entries
+                  .map<Widget>(
+                    (e) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Text(
+                        '${e.key}: ${e.value}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ],
@@ -217,8 +258,18 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
       children: [
         Icon(icon, size: 18, color: color),
         const SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+        ),
       ],
     );
   }
@@ -228,7 +279,10 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
       children: [
         Icon(icon, size: 16, color: color),
         const SizedBox(width: 4),
-        Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        ),
       ],
     );
   }
@@ -260,7 +314,12 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
     );
   }
 
-  Widget _bulkButton({required String label, required String status, required Color color, required bool isSelected}) {
+  Widget _bulkButton({
+    required String label,
+    required String status,
+    required Color color,
+    required bool isSelected,
+  }) {
     return InkWell(
       onTap: () => _onBulkUpdate(status),
       child: Container(
@@ -269,7 +328,15 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
           color: isSelected ? color : Colors.white,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: isSelected ? color : Colors.grey.shade300),
-          boxShadow: isSelected ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))] : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Center(
           child: Text(
@@ -305,7 +372,10 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
               children: [
                 Text(
                   student['name'] ?? 'N/A',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
@@ -313,32 +383,28 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
                   children: [
                     Text(
                       'রোল: ${student['roll']}',
-                      style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        color: Colors.blue.shade900,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Text(
                       student['class_name'] ?? 'N/A',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                    ),
-                    if (student['col_no'] != null && student['col_no'] != 999) ...[
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: Colors.purple.shade50,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.purple.shade200),
-                        ),
-                        child: Text(
-                          'সারি-${student['col_no']}',
-                          style: TextStyle(color: Colors.purple.shade700, fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
                       ),
-                    ],
-                    if (student['bench_no'] != null && student['bench_no'] != 999) ...[
+                    ),
+                    if (student['bench_no'] != null &&
+                        student['bench_no'] != 999) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.orange.shade50,
                           borderRadius: BorderRadius.circular(4),
@@ -346,7 +412,11 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
                         ),
                         child: Text(
                           'বেঞ্চ-${student['bench_no']}',
-                          style: TextStyle(color: Colors.orange.shade700, fontSize: 11, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.orange.shade700,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
@@ -380,14 +450,18 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
             ? Image.network(
                 url,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.grey),
+                errorBuilder: (_, _, _) =>
+                    const Icon(Icons.person, color: Colors.grey),
               )
             : const Icon(Icons.person, color: Colors.grey),
       ),
     );
   }
 
-  Widget _statusToggle({required String? status, required Function(String) onChanged}) {
+  Widget _statusToggle({
+    required String? status,
+    required Function(String) onChanged,
+  }) {
     return Row(
       children: [
         _miniStatusBtn(
@@ -407,7 +481,12 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
     );
   }
 
-  Widget _miniStatusBtn({required IconData icon, required Color color, required bool isSelected, required VoidCallback onTap}) {
+  Widget _miniStatusBtn({
+    required IconData icon,
+    required Color color,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),

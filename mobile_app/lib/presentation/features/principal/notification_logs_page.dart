@@ -26,8 +26,11 @@ class _NotificationLogsPageState extends State<NotificationLogsPage> {
     setState(() => _isLoading = true);
     try {
       final statsResp = await DioClient().dio.get('notifications/stats');
-      final logsResp = await DioClient().dio.get('notifications/logs', queryParameters: {'page': 1});
-      
+      final logsResp = await DioClient().dio.get(
+        'notifications/logs',
+        queryParameters: {'page': 1},
+      );
+
       setState(() {
         _stats = statsResp.data;
         _logs = logsResp.data['data'];
@@ -37,9 +40,9 @@ class _NotificationLogsPageState extends State<NotificationLogsPage> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading stats: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading stats: $e')));
       }
       setState(() => _isLoading = false);
     }
@@ -49,8 +52,11 @@ class _NotificationLogsPageState extends State<NotificationLogsPage> {
     if (!_hasMore) return;
     try {
       final next = _currentPage + 1;
-      final logsResp = await DioClient().dio.get('notifications/logs', queryParameters: {'page': next});
-      
+      final logsResp = await DioClient().dio.get(
+        'notifications/logs',
+        queryParameters: {'page': next},
+      );
+
       setState(() {
         _logs.addAll(logsResp.data['data']);
         _currentPage = next;
@@ -67,37 +73,35 @@ class _NotificationLogsPageState extends State<NotificationLogsPage> {
       appBar: AppBar(
         title: const Text('নোটিফিকেশন লগ'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
         ],
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : Column(
-            children: [
-              _buildStatsGrid(),
-              const Divider(),
-              Expanded(
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: (ScrollNotification scrollInfo) {
-                    if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
-                      _loadMore();
-                    }
-                    return false;
-                  },
-                  child: ListView.builder(
-                    itemCount: _logs.length,
-                    itemBuilder: (context, index) {
-                      final log = _logs[index];
-                      return _buildLogItem(log);
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                _buildStatsGrid(),
+                const Divider(),
+                Expanded(
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (ScrollNotification scrollInfo) {
+                      if (scrollInfo.metrics.pixels ==
+                          scrollInfo.metrics.maxScrollExtent) {
+                        _loadMore();
+                      }
+                      return false;
                     },
+                    child: ListView.builder(
+                      itemCount: _logs.length,
+                      itemBuilder: (context, index) {
+                        final log = _logs[index];
+                        return _buildLogItem(log);
+                      },
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
     );
   }
 
@@ -117,13 +121,23 @@ class _NotificationLogsPageState extends State<NotificationLogsPage> {
   Widget _statCard(String label, String value, Color color) {
     return Expanded(
       child: Card(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
             children: [
-              Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-              Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+              Text(
+                label,
+                style: TextStyle(color: color, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
             ],
           ),
         ),
@@ -143,25 +157,42 @@ class _NotificationLogsPageState extends State<NotificationLogsPage> {
           isSuccess ? Icons.check_circle : Icons.error,
           color: isSuccess ? Colors.green : Colors.red,
         ),
-        title: Text(log['title'] ?? 'No Title', maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(
+          log['title'] ?? 'No Title',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(log['body'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
+            Text(
+              log['body'] ?? '',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 4),
             Row(
               children: [
                 Icon(Icons.person, size: 14, color: Colors.grey[600]),
                 const SizedBox(width: 4),
-                Text(log['user']?['name'] ?? 'Unknown User', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                Text(
+                  log['user']?['name'] ?? 'Unknown User',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
                 const Spacer(),
-                Text(timeStr, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                Text(
+                  timeStr,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
               ],
             ),
             if (!isSuccess && log['error_message'] != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4.0),
-                child: Text('Error: ${log['error_message']}', style: const TextStyle(color: Colors.red, fontSize: 11)),
+                child: Text(
+                  'Error: ${log['error_message']}',
+                  style: const TextStyle(color: Colors.red, fontSize: 11),
+                ),
               ),
           ],
         ),

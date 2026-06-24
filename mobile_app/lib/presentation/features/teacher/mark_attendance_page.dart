@@ -489,12 +489,14 @@ class _FilterChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? effectiveColor : effectiveColor.withOpacity(0.1),
+          color: isSelected
+              ? effectiveColor
+              : effectiveColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? effectiveColor
-                : effectiveColor.withOpacity(0.5),
+                : effectiveColor.withValues(alpha: 0.5),
           ),
         ),
         child: Text(
@@ -527,9 +529,9 @@ class _ActionChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.5)),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
         ),
         child: Row(
           children: [
@@ -598,7 +600,7 @@ class _StudentRowWidget extends StatelessWidget {
                     : Image.network(
                         row.photoUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Icon(
+                        errorBuilder: (_, _, _) => Icon(
                           Icons.person,
                           size: 20,
                           color: Colors.grey[600],
@@ -669,8 +671,8 @@ class _CountsBar extends StatelessWidget {
     Widget chip(Color c, String label, String value) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: c.withOpacity(0.08),
-        border: Border.all(color: c.withOpacity(0.4)),
+        color: c.withValues(alpha: 0.08),
+        border: Border.all(color: c.withValues(alpha: 0.4)),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -733,9 +735,9 @@ class _StatusButton extends StatelessWidget {
           width: 34,
           height: 34,
           decoration: BoxDecoration(
-            color: selected ? color : color.withOpacity(0.12),
+            color: selected ? color : color.withValues(alpha: 0.12),
             shape: BoxShape.circle,
-            border: Border.all(color: color.withOpacity(0.6)),
+            border: Border.all(color: color.withValues(alpha: 0.6)),
           ),
           child: Icon(icon, size: 18, color: selected ? Colors.white : color),
         ),

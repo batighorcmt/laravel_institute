@@ -150,7 +150,9 @@ class ParentShellPage extends ConsumerWidget {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: currentPath == '/parent/dashboard' ? const NavLogo() : Text(currentItem.label),
+          title: currentPath == '/parent/dashboard'
+              ? const NavLogo()
+              : Text(currentItem.label),
           elevation: 1,
           actions: [
             // Notification
@@ -246,7 +248,7 @@ class ParentShellPage extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [cs.primary, cs.primary.withOpacity(0.7)],
+                    colors: [cs.primary, cs.primary.withValues(alpha: 0.7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -256,7 +258,7 @@ class ParentShellPage extends ConsumerWidget {
                   children: [
                     CircleAvatar(
                       radius: 32,
-                      backgroundColor: Colors.white.withOpacity(0.3),
+                      backgroundColor: Colors.white.withValues(alpha: 0.3),
                       backgroundImage: profile?.photoUrl != null
                           ? NetworkImage(profile!.photoUrl!)
                           : null,
@@ -286,7 +288,7 @@ class ParentShellPage extends ConsumerWidget {
                     Text(
                       'অভিভাবক',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 13,
                       ),
                     ),
@@ -308,7 +310,9 @@ class ParentShellPage extends ConsumerWidget {
                       ),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        color: isSelected ? cs.primary.withOpacity(0.12) : null,
+                        color: isSelected
+                            ? cs.primary.withValues(alpha: 0.12)
+                            : null,
                       ),
                       child: ListTile(
                         dense: true,

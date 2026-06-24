@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -7,7 +6,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../state/auth_state.dart';
 import '../../../state/parent_state.dart';
 import '../../../../core/config/env.dart';
 
@@ -36,22 +34,28 @@ class _FeesPageState extends ConsumerState<FeesPage>
   }
 
   Future<void> _initiatePayment(
-      int academicYearId, int studentId, List dueFees) async {
+    int academicYearId,
+    int studentId,
+    List dueFees,
+  ) async {
     try {
       final selectedPayload = dueFees
-          .map((f) => {
-                'student_fee_id': f['id'],
-                'amount': f['amount'] - f['paid_amount'],
-                'fine_amount': f['fine'],
-              })
+          .map(
+            (f) => {
+              'student_fee_id': f['id'],
+              'amount': f['amount'] - f['paid_amount'],
+              'fine_amount': f['fine'],
+            },
+          )
           .toList();
 
-      final result =
-          await ref.read(parentRepositoryProvider).initiateSslPayment(
-                studentId: studentId,
-                fees: selectedPayload,
-                academicYearId: academicYearId,
-              );
+      final result = await ref
+          .read(parentRepositoryProvider)
+          .initiateSslPayment(
+            studentId: studentId,
+            fees: selectedPayload,
+            academicYearId: academicYearId,
+          );
 
       if (result['gateway_url'] != null) {
         final success = await Navigator.push<bool>(
@@ -65,8 +69,9 @@ class _FeesPageState extends ConsumerState<FeesPage>
           ref.invalidate(parentFeesProvider);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-                content: Text('পেমেন্ট সফলভাবে গ্রহণ করা হয়েছে।'),
-                backgroundColor: Colors.green),
+              content: Text('পেমেন্ট সফলভাবে গ্রহণ করা হয়েছে।'),
+              backgroundColor: Colors.green,
+            ),
           );
         }
       } else {
@@ -79,7 +84,10 @@ class _FeesPageState extends ConsumerState<FeesPage>
     }
   }
 
-  Future<void> _downloadReceipt(String? relativeUrl, String paymentNumber) async {
+  Future<void> _downloadReceipt(
+    String? relativeUrl,
+    String paymentNumber,
+  ) async {
     if (relativeUrl == null || _isDownloading) return;
 
     setState(() => _isDownloading = true);
@@ -91,7 +99,7 @@ class _FeesPageState extends ConsumerState<FeesPage>
           : '${Env.apiBaseUrl}/';
       // Env.apiBaseUrl is like https://xxx.com/api/v1/
       // relativeUrl is like billing/fees/receipt/59/download
-      final fullUrl = '${baseUrl}$relativeUrl';
+      final fullUrl = '$baseUrl$relativeUrl';
 
       final sp = await SharedPreferences.getInstance();
       final token = sp.getString('auth_token');
@@ -104,10 +112,12 @@ class _FeesPageState extends ConsumerState<FeesPage>
       await dio.download(
         fullUrl,
         savePath,
-        options: Options(headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/pdf',
-        }),
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/pdf',
+          },
+        ),
       );
 
       final result = await OpenFilex.open(savePath);
@@ -166,12 +176,12 @@ class _FeesPageState extends ConsumerState<FeesPage>
                 final dueFees = data['due_fees'] as List;
                 final paidFees = data['paid_fees'] as List;
                 final student = data['student'];
-                final academic_year_id = data['academic_year_id'];
+                final academicYearId = data['academic_year_id'];
 
                 return TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildDueTab(dueFees, student['id'], academic_year_id),
+                    _buildDueTab(dueFees, student['id'], academicYearId),
                     _buildPaidTab(paidFees),
                   ],
                 );
@@ -189,8 +199,10 @@ class _FeesPageState extends ConsumerState<FeesPage>
                   children: [
                     CircularProgressIndicator(color: Colors.white),
                     SizedBox(height: 10),
-                    Text('রিসিট ডাউনলোড হচ্ছে...',
-                        style: TextStyle(color: Colors.white)),
+                    Text(
+                      'রিসিট ডাউনলোড হচ্ছে...',
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ],
                 ),
               ),
@@ -244,17 +256,25 @@ class _FeesPageState extends ConsumerState<FeesPage>
                             Text(
                               fee['category_name'] ?? 'N/A',
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                             const SizedBox(height: 4),
-                            Text('শেষ তারিখ: ${fee['due_date'] ?? 'N/A'}',
-                                style: const TextStyle(
-                                    color: Colors.grey, fontSize: 13)),
+                            Text(
+                              'শেষ তারিখ: ${fee['due_date'] ?? 'N/A'}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 13,
+                              ),
+                            ),
                             if ((fee['fine'] as num) > 0)
                               Text(
                                 'জরিমানা: ৳${fee['fine']}',
                                 style: const TextStyle(
-                                    color: Colors.red, fontSize: 12),
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
                               ),
                           ],
                         ),
@@ -280,7 +300,7 @@ class _FeesPageState extends ConsumerState<FeesPage>
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, -5),
               ),
@@ -293,8 +313,10 @@ class _FeesPageState extends ConsumerState<FeesPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('মোট বকেয়া পেমেন্ট',
-                        style: TextStyle(color: Colors.grey)),
+                    const Text(
+                      'মোট বকেয়া পেমেন্ট',
+                      style: TextStyle(color: Colors.grey),
+                    ),
                     Text(
                       '৳${totalSelected.toStringAsFixed(2)}',
                       style: const TextStyle(
@@ -307,10 +329,13 @@ class _FeesPageState extends ConsumerState<FeesPage>
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: totalSelected > 0 && academicYearId != null
                     ? () => _initiatePayment(academicYearId, studentId, dueFees)
@@ -337,9 +362,10 @@ class _FeesPageState extends ConsumerState<FeesPage>
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-          onTap: () => _downloadReceipt(
+            onTap: () => _downloadReceipt(
               payment['receipt_url'] as String?,
-              payment['payment_number'] as String),
+              payment['payment_number'] as String,
+            ),
             leading: const CircleAvatar(
               backgroundColor: Colors.green,
               child: Icon(Icons.receipt_long, color: Colors.white),
@@ -352,8 +378,10 @@ class _FeesPageState extends ConsumerState<FeesPage>
               children: [
                 Text(
                   '৳${payment['amount_paid']}',
-                  style:
-                      const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 const Text(
                   'রিসিট ডাউনলোড করুন',
@@ -403,9 +431,11 @@ class _PaymentWebViewState extends State<PaymentWebView> {
                 javaScriptEnabled: true,
                 domStorageEnabled: true,
                 thirdPartyCookiesEnabled: true,
-                mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW, // For Android
+                mixedContentMode:
+                    MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW, // For Android
                 allowsBackForwardNavigationGestures: true, // For iOS
-                useShouldOverrideUrlLoading: true, // Vital for custom URL schemes
+                useShouldOverrideUrlLoading:
+                    true, // Vital for custom URL schemes
               ),
               shouldOverrideUrlLoading: (controller, navigationAction) async {
                 final uri = navigationAction.request.url;
@@ -415,19 +445,30 @@ class _PaymentWebViewState extends State<PaymentWebView> {
                 final scheme = uri.scheme.toLowerCase();
 
                 // If not standard web link, let OS handle it (e.g. bkash://, nagad://, intent://)
-                if (!['http', 'https', 'about', 'data', 'javascript', 'file'].contains(scheme)) {
+                if (![
+                  'http',
+                  'https',
+                  'about',
+                  'data',
+                  'javascript',
+                  'file',
+                ].contains(scheme)) {
                   try {
                     await launchUrl(uri, mode: LaunchMode.externalApplication);
                   } catch (e) {
                     debugPrint('Could not launch external app for $urlString');
                   }
-                  return NavigationActionPolicy.CANCEL; // Block webview rendering since external app opened
+                  return NavigationActionPolicy
+                      .CANCEL; // Block webview rendering since external app opened
                 }
-                
+
                 // Also intercept explicit intent URLs wrapped inside http if needed, though rare
                 if (urlString.startsWith('intent://')) {
                   try {
-                    await launchUrl(Uri.parse(urlString), mode: LaunchMode.externalApplication);
+                    await launchUrl(
+                      Uri.parse(urlString),
+                      mode: LaunchMode.externalApplication,
+                    );
                   } catch (e) {
                     debugPrint('Could not launch intent app for $urlString');
                   }

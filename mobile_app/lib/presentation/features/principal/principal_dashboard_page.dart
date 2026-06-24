@@ -15,8 +15,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../widgets/app_snack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../widgets/animated_tile.dart';
-import '../../../widgets/rive_icon_registry.dart';
-import 'principal_attendance_details_page.dart';
 import 'principal_reports_page.dart';
 import 'notice_list_page.dart';
 import '../../routes/app_router.dart';
@@ -30,8 +28,8 @@ class PrincipalDashboardPage extends ConsumerStatefulWidget {
       _PrincipalDashboardPageState();
 }
 
-class _PrincipalDashboardPageState
-    extends ConsumerState<PrincipalDashboardPage> with RouteAware {
+class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
+    with RouteAware {
   late final Dio _dio;
   String? _overridePhoto;
   String? _overrideDesignation;
@@ -242,12 +240,11 @@ class _PrincipalDashboardPageState
                       if (t is Map) {
                         final tp = t['photo_url'] ?? t['photo'];
                         final td = t['designation'];
-                        if ((photo == null || (photo?.isEmpty ?? true)) &&
+                        if ((photo == null || (photo.isEmpty ?? true)) &&
                             (tp?.toString().isNotEmpty == true)) {
                           setState(() => _overridePhoto = tp.toString());
                         }
-                        if ((designation == null ||
-                                (designation?.isEmpty ?? true)) &&
+                        if (((designation.isEmpty ?? true)) &&
                             (td?.toString().isNotEmpty == true)) {
                           setState(() => _overrideDesignation = td.toString());
                         }
@@ -818,7 +815,7 @@ class _PrincipalDashboardPageState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(8),
                 topRight: Radius.circular(8),

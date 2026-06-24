@@ -35,8 +35,9 @@ class TeacherStudentsRepository {
       params['year_id'] = academicYear;
     }
     if (religion != null && religion.isNotEmpty) params['religion'] = religion;
-    if (studentStatus != null && studentStatus.isNotEmpty)
+    if (studentStatus != null && studentStatus.isNotEmpty) {
       params['status'] = studentStatus;
+    }
 
     try {
       // Use relative path so DioClient base `/api/v1` isn't duplicated

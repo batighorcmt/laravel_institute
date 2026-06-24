@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import '../../../core/network/dio_client.dart';
@@ -289,7 +287,7 @@ class _PrincipalStudentProfilePageState
                 ? const Center(child: Text('No students found'))
                 : ListView.separated(
                     itemCount: _items.length + (_hasMore ? 1 : 0),
-                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (ctx, i) {
                       if (i >= _items.length) {
                         if (!_loading) _load();

@@ -31,7 +31,7 @@ class TeacherListPage extends ConsumerWidget {
               margin: const EdgeInsets.only(bottom: 12),
               child: ExpansionTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.blue.withOpacity(0.2),
+                  backgroundColor: Colors.blue.withValues(alpha: 0.2),
                   backgroundImage: photo != null ? NetworkImage(photo) : null,
                   child: photo == null
                       ? Text(

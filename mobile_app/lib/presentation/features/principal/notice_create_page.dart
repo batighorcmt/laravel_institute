@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dropdown_search/dropdown_search.dart';
-import 'package:intl/intl.dart';
 import '../../state/notice_state.dart';
 
 class NoticeCreatePage extends ConsumerStatefulWidget {
@@ -55,10 +54,11 @@ class _NoticeCreatePageState extends ConsumerState<NoticeCreatePage> {
           );
         }
       } catch (e) {
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('ত্রুটি: $e')));
+        }
       } finally {
         if (mounted) setState(() => _saving = false);
       }
