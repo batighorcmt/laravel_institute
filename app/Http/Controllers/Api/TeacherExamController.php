@@ -12,6 +12,7 @@ use App\Models\Mark;
 use App\Models\SchoolClass;
 use App\Models\SeatPlan;
 use App\Models\SeatPlanAllocation;
+use App\Models\SeatPlanRoom;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\Teacher;
@@ -650,6 +651,8 @@ class TeacherExamController extends Controller
         $absentStudents = [];
 
         if ($planId && $date) {
+            $allRooms = SeatPlanRoom::where('seat_plan_id', $planId)->get();
+
             $rawAttendances = ExamRoomAttendance::with(['student.currentEnrollment.class', 'room'])
                 ->where('duty_date', $date)
                 ->where('plan_id', $planId)
@@ -657,26 +660,55 @@ class TeacherExamController extends Controller
 
             $invigilations = DB::table('exam_room_invigilations as i')
                 ->leftJoin('users as u', 'u.id', '=', 'i.teacher_id')
+                ->leftJoin('teachers as t', 't.user_id', '=', 'u.id')
                 ->where('i.duty_date', $date)
                 ->where('i.seat_plan_id', $planId)
-                ->select('i.seat_plan_room_id', 'u.name as invigilator')
+                ->select(
+                    'i.seat_plan_room_id', 
+                    'u.name as invigilator_en',
+                    't.first_name_bn',
+                    't.last_name_bn'
+                )
                 ->get()
                 ->keyBy('seat_plan_room_id');
 
             $roomMap = [];
+            foreach ($allRooms as $room) {
+                $roomId = $room->id;
+                $roomNo = $room->room_no;
+                $invigilation = $invigilations->get($roomId);
+                
+                $invigilator_bn = trim(($invigilation->first_name_bn ?? '') . ' ' . ($invigilation->last_name_bn ?? ''));
+                $invigilator = $invigilator_bn ?: ($invigilation->invigilator_en ?? 'N/A');
+
+                $roomMap[$roomId] = [
+                    'room_no' => $roomNo,
+                    'invigilator' => $invigilator,
+                    'present_cnt' => 0,
+                    'absent_cnt' => 0,
+                    'classes' => [],
+                    'attendance_taken' => false,
+                ];
+            }
+
             foreach ($rawAttendances as $att) {
                 $roomId = $att->room_id;
-                $roomNo = $att->room->room_no ?? 'N/A';
                 
                 if (!isset($roomMap[$roomId])) {
                     $invigilation = $invigilations->get($roomId);
+                    $invigilator_bn = trim(($invigilation->first_name_bn ?? '') . ' ' . ($invigilation->last_name_bn ?? ''));
+                    $invigilator = $invigilator_bn ?: ($invigilation->invigilator_en ?? 'N/A');
+
                     $roomMap[$roomId] = [
-                        'room_no' => $roomNo,
-                        'invigilator' => $invigilation->invigilator ?? 'N/A',
+                        'room_no' => $att->room->room_no ?? 'N/A',
+                        'invigilator' => $invigilator,
                         'present_cnt' => 0,
                         'absent_cnt' => 0,
-                        'classes' => []
+                        'classes' => [],
+                        'attendance_taken' => true,
                     ];
+                } else {
+                    $roomMap[$roomId]['attendance_taken'] = true;
                 }
 
                 $isP = $att->status === 'present';
@@ -685,7 +717,8 @@ class TeacherExamController extends Controller
                 if ($isP) $roomMap[$roomId]['present_cnt']++;
                 if ($isA) $roomMap[$roomId]['absent_cnt']++;
 
-                $className = $att->student->currentEnrollment->class->name ?? 'Unknown';
+                $classModel = $att->student->currentEnrollment->class ?? null;
+                $className = $classModel ? ($classModel->bangla_name ?: $classModel->name) : 'Unknown';
                 
                 if (!isset($roomMap[$roomId]['classes'][$className])) {
                     $roomMap[$roomId]['classes'][$className] = [
