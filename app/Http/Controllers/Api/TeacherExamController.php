@@ -745,11 +745,12 @@ class TeacherExamController extends Controller
                 ->get();
 
             $absentStudents = $absentRecords->map(function ($a) {
+                $classModel = $a->student?->currentEnrollment?->class;
                 return [
                     'id' => $a->student?->id,
                     'name' => $a->student?->full_name,
                     'roll' => $a->student?->currentEnrollment?->roll_no ?? $a->student?->roll_no,
-                    'class_name' => $a->student?->currentEnrollment?->class?->name,
+                    'class_name' => $classModel ? ($classModel->bangla_name ?: $classModel->name) : null,
                     'photo_url' => $a->student?->photo_url,
                     'room_no' => $a->room?->room_no,
                 ];
