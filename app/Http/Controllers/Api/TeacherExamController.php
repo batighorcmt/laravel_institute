@@ -650,27 +650,60 @@ class TeacherExamController extends Controller
         $absentStudents = [];
 
         if ($planId && $date) {
-            $rows = DB::table('exam_room_attendances as a')
-                ->join('seat_plan_rooms as r', function ($join) {
-                    $join->on('r.id', '=', 'a.room_id')
-                        ->on('r.seat_plan_id', '=', 'a.plan_id');
-                })
-                ->leftJoin('exam_room_invigilations as i', function ($join) use ($date, $planId) {
-                    $join->on('i.seat_plan_room_id', '=', 'a.room_id')
-                        ->where('i.duty_date', '=', $date)
-                        ->where('i.seat_plan_id', '=', $planId);
-                })
-                ->leftJoin('users as u', 'u.id', '=', 'i.teacher_id')
-                ->where('a.duty_date', $date)
-                ->where('a.plan_id', $planId)
-                ->select([
-                    'r.room_no',
-                    'u.name as invigilator',
-                    DB::raw("SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END) AS present_cnt"),
-                    DB::raw("SUM(CASE WHEN a.status='absent' THEN 1 ELSE 0 END) AS absent_cnt"),
-                ])
-                ->groupBy('r.room_no', 'u.name')
+            $rawAttendances = ExamRoomAttendance::with(['student.currentEnrollment.class', 'room'])
+                ->where('duty_date', $date)
+                ->where('plan_id', $planId)
                 ->get();
+
+            $invigilations = DB::table('exam_room_invigilations as i')
+                ->leftJoin('users as u', 'u.id', '=', 'i.teacher_id')
+                ->where('i.duty_date', $date)
+                ->where('i.seat_plan_id', $planId)
+                ->select('i.seat_plan_room_id', 'u.name as invigilator')
+                ->get()
+                ->keyBy('seat_plan_room_id');
+
+            $roomMap = [];
+            foreach ($rawAttendances as $att) {
+                $roomId = $att->room_id;
+                $roomNo = $att->room->room_no ?? 'N/A';
+                
+                if (!isset($roomMap[$roomId])) {
+                    $invigilation = $invigilations->get($roomId);
+                    $roomMap[$roomId] = [
+                        'room_no' => $roomNo,
+                        'invigilator' => $invigilation->invigilator ?? 'N/A',
+                        'present_cnt' => 0,
+                        'absent_cnt' => 0,
+                        'classes' => []
+                    ];
+                }
+
+                $isP = $att->status === 'present';
+                $isA = $att->status === 'absent';
+                
+                if ($isP) $roomMap[$roomId]['present_cnt']++;
+                if ($isA) $roomMap[$roomId]['absent_cnt']++;
+
+                $className = $att->student->currentEnrollment->class->name ?? 'Unknown';
+                
+                if (!isset($roomMap[$roomId]['classes'][$className])) {
+                    $roomMap[$roomId]['classes'][$className] = [
+                        'class_name' => $className,
+                        'present_cnt' => 0,
+                        'absent_cnt' => 0,
+                    ];
+                }
+                
+                if ($isP) $roomMap[$roomId]['classes'][$className]['present_cnt']++;
+                if ($isA) $roomMap[$roomId]['classes'][$className]['absent_cnt']++;
+            }
+
+            foreach ($roomMap as &$r) {
+                $r['classes'] = array_values($r['classes']);
+            }
+
+            $rows = array_values($roomMap);
 
             $absentRecords = ExamRoomAttendance::with(['student.currentEnrollment.class', 'room'])
                 ->where('duty_date', $date)
