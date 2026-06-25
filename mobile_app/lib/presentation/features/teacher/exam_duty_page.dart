@@ -34,14 +34,18 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
   }
 
   Future<void> _loadInitialMeta() async {
+    setState(() => _isLoading = true);
     try {
       final meta = await _repo.getDutyMeta();
       if (mounted) {
         setState(() {
           _plans = meta['plans'] ?? [];
+          _isLoading = false;
         });
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _loadDatesForPlan(int planId) async {
@@ -50,21 +54,25 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
       if (mounted) {
         setState(() {
           _availableDates = List<String>.from(meta['dates'] ?? []);
-          if (_availableDates.isNotEmpty) {
-             // Try to keep same date or pick first/today
-             String today = _formatDate(DateTime.now());
-             if (_availableDates.contains(_selectedDate)) {
-               // keep selectedDate
-             } else if (_availableDates.contains(today)) {
-               _selectedDate = today;
-             } else {
-               _selectedDate = _availableDates.first;
-             }
-          } else {
+          if (widget.isController) {
             _selectedDate = null;
+            _duties = [];
+          } else {
+            if (_availableDates.isNotEmpty) {
+               String today = _formatDate(DateTime.now());
+               if (!_availableDates.contains(_selectedDate) && !_availableDates.contains(today)) {
+                 _selectedDate = _availableDates.first;
+               } else if (!_availableDates.contains(_selectedDate)) {
+                 _selectedDate = today;
+               }
+            } else {
+              _selectedDate = null;
+            }
           }
         });
-        _loadDuties();
+        if (!widget.isController || _selectedDate != null) {
+          _loadDuties();
+        }
       }
     } catch (_) {}
   }
@@ -148,7 +156,12 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
                 items: _plans.map<DropdownMenuItem<int>>((p) {
                   return DropdownMenuItem<int>(
                     value: p['id'],
-                    child: Text(p['name']),
+                    child: Text(
+                      p['name'],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
                   );
                 }).toList(),
                 onChanged: (val) {

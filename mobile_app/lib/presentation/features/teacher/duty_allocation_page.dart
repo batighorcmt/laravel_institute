@@ -227,7 +227,12 @@ class _DutyAllocationPageState extends State<DutyAllocationPage> {
                 items: _plans.map<DropdownMenuItem<int>>((p) {
                   return DropdownMenuItem<int>(
                     value: p['id'],
-                    child: Text(p['name']),
+                    child: Text(
+                      p['name'],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
                   );
                 }).toList(),
                 onChanged: (val) {
