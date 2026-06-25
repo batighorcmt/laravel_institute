@@ -135,7 +135,9 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
                     value: p['id'],
                     child: Text(
                       p['name'],
-                      style: const TextStyle(fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                   );
                 }).toList(),
@@ -220,8 +222,8 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
     int totalPresent = 0;
     int totalAbsent = 0;
     for (var r in _rows) {
-      totalPresent += (r['present_cnt'] as num?)?.toInt() ?? 0;
-      totalAbsent += (r['absent_cnt'] as num?)?.toInt() ?? 0;
+      totalPresent += int.tryParse(r['present_cnt']?.toString() ?? '0') ?? 0;
+      totalAbsent += int.tryParse(r['absent_cnt']?.toString() ?? '0') ?? 0;
     }
 
     return ListView(
@@ -297,13 +299,23 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
     );
   }
 
+  String _toBnNum(String number) {
+    const en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    String res = number;
+    for (int i = 0; i < en.length; i++) {
+      res = res.replaceAll(en[i], bn[i]);
+    }
+    return res;
+  }
+
   Widget _buildSummaryCards(int present, int absent) {
     return Row(
       children: [
         Expanded(
           child: _statCard(
             title: 'উপস্থিত',
-            value: present.toString(),
+            value: _toBnNum(present.toString()),
             color: Colors.green,
             icon: Icons.how_to_reg,
           ),
@@ -312,7 +324,7 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
         Expanded(
           child: _statCard(
             title: 'অনুপস্থিত',
-            value: absent.toString(),
+            value: _toBnNum(absent.toString()),
             color: Colors.red,
             icon: Icons.person_off,
           ),
@@ -348,10 +360,12 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
   }
 
   Widget _buildRoomRow(dynamic row) {
-    final roomNo = row['room_no'] ?? 'N/A';
+    final roomNo = _toBnNum((row['room_no'] ?? 'N/A').toString());
     final invigilator = row['invigilator'] ?? 'N/A';
-    final p = (row['present_cnt'] as num?)?.toInt() ?? 0;
-    final a = (row['absent_cnt'] as num?)?.toInt() ?? 0;
+    final p = int.tryParse(row['present_cnt']?.toString() ?? '0') ?? 0;
+    final a = int.tryParse(row['absent_cnt']?.toString() ?? '0') ?? 0;
+    final classes = row['classes'] as List<dynamic>? ?? [];
+    final attendanceTaken = row['attendance_taken'] == true;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -367,47 +381,90 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.indigo.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                roomNo.toString(),
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo.shade700, fontSize: 16),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'রুম: $roomNo',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'পরিদর্শক: $invigilator',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
             children: [
-              Text('উপস্থিত: $p', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('অনুপস্থিত: $a', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: attendanceTaken ? Colors.indigo.shade50 : Colors.red.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    roomNo,
+                    style: TextStyle(fontWeight: FontWeight.bold, color: attendanceTaken ? Colors.indigo.shade700 : Colors.red.shade700, fontSize: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'রুম: $roomNo',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'পরিদর্শক: $invigilator',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              if (attendanceTaken) 
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('মোট উপস্থিত: ${_toBnNum(p.toString())}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('মোট অনুপস্থিত: ${_toBnNum(a.toString())}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  ],
+                )
+              else 
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text('হাজিরা সম্পন্ন হয়নি', style: TextStyle(color: Colors.red.shade700, fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
             ],
           ),
+          if (attendanceTaken && classes.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.only(top: 12, bottom: 8),
+              child: Divider(),
+            ),
+            ...classes.map((c) {
+              final cName = c['class_name'] ?? '';
+              final cP = int.tryParse(c['present_cnt']?.toString() ?? '0') ?? 0;
+              final cA = int.tryParse(c['absent_cnt']?.toString() ?? '0') ?? 0;
+              final total = cP + cA;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('শ্রেণি: $cName (মোট: ${_toBnNum(total.toString())})', style: TextStyle(fontSize: 13, color: Colors.grey.shade800, fontWeight: FontWeight.w600)),
+                    Row(
+                      children: [
+                        Text('উপস্থিত: ${_toBnNum(cP.toString())}', style: const TextStyle(fontSize: 12, color: Colors.green)),
+                        const SizedBox(width: 8),
+                        Text('অনুপস্থিত: ${_toBnNum(cA.toString())}', style: const TextStyle(fontSize: 12, color: Colors.red)),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
         ],
       ),
     );
@@ -415,9 +472,9 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
 
   Widget _buildAbsentStudentCard(dynamic student) {
     final name = student['name'] ?? 'N/A';
-    final roll = student['roll'] ?? 'N/A';
+    final roll = _toBnNum((student['roll'] ?? 'N/A').toString());
     final className = student['class_name'] ?? 'N/A';
-    final roomNo = student['room_no'] ?? 'N/A';
+    final roomNo = _toBnNum((student['room_no'] ?? 'N/A').toString());
     final photoUrl = student['photo_url'];
 
     return Container(
