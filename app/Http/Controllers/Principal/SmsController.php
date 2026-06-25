@@ -330,16 +330,21 @@ class SmsController extends Controller
             $q->where('recipient_number', 'like', '%'.$v.'%');
         }
         if ($v = $request->get('status')) {
-            $q->where('status', $v);
+            // 'success' ফিল্টারে 'sent' status-ও অন্তর্ভুক্ত করা হয়েছে
+            if ($v === 'success') {
+                $q->whereIn('status', ['success', 'sent']);
+            } else {
+                $q->where('status', $v);
+            }
         }
         if ($v = $request->get('type')) {
             $q->where('recipient_type', $v);
         }
         if ($v = $request->get('date_from')) {
-            $q->where('created_at', '>=', $v.' 00:00:00');
+            $q->whereDate('created_at', '>=', $v);
         }
         if ($v = $request->get('date_to')) {
-            $q->where('created_at', '<=', $v.' 23:59:59');
+            $q->whereDate('created_at', '<=', $v);
         }
         $totalLogsCount = $q->count();
         $totalParts = $q->clone()->reorder()->selectRaw('
