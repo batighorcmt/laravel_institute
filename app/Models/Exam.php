@@ -17,6 +17,8 @@ class Exam extends Model
         'public_exam_id',
         'academic_year_id',
         'class_id',
+        'section_ids',
+        'group_ids',
         'name',
         'name_bn',
         'exam_type',
@@ -30,6 +32,8 @@ class Exam extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'section_ids' => 'array',
+        'group_ids' => 'array',
     ];
 
     // Relationships
@@ -47,6 +51,7 @@ class Exam extends Model
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
     }
+
 
     public function publicExam(): BelongsTo
     {

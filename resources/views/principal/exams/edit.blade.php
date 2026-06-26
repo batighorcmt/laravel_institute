@@ -77,6 +77,44 @@
                     </div>
 
                     <div class="row">
+                        <div class="col-md-6" id="section_wrapper">
+                            <div class="form-group">
+                                <label for="section_ids">শাখা (ঐচ্ছিক)</label>
+                                <select name="section_ids[]" id="section_ids" class="form-control select2 @error('section_ids') is-invalid @enderror" multiple="multiple" data-placeholder="-- সকল শাখা --">
+                                    @php $selectedSections = old('section_ids', $exam->section_ids ?? []); @endphp
+                                    @foreach($sections as $section)
+                                        <option value="{{ $section->id }}" {{ in_array($section->id, $selectedSections) ? 'selected' : '' }}>
+                                            {{ $section->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted">শাখা নির্বাচন না করলে সকল শিক্ষার্থীর জন্য পরীক্ষা হবে। একাধিক শাখা নির্বাচন করা যাবে।</small>
+                                @error('section_ids')
+                                    <span class="invalid-feedback">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="col-md-6" id="group_wrapper" style="{{ count($groups) > 0 ? '' : 'display:none;' }}">
+                            <div class="form-group">
+                                <label for="group_ids">বিভাগ/ গ্রুপ (ঐচ্ছিক)</label>
+                                <select name="group_ids[]" id="group_ids" class="form-control select2 @error('group_ids') is-invalid @enderror" multiple="multiple" data-placeholder="-- সকল গ্রুপ --">
+                                    @php $selectedGroups = old('group_ids', $exam->group_ids ?? []); @endphp
+                                    @foreach($groups as $group)
+                                        <option value="{{ $group->id }}" {{ in_array($group->id, $selectedGroups) ? 'selected' : '' }}>
+                                            {{ $group->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted">গ্রুপ নির্বাচন না করলে সকল শিক্ষার্থীর জন্য পরীক্ষা হবে। একাধিক গ্রুপ নির্বাচন করা যাবে।</small>
+                                @error('group_ids')
+                                    <span class="invalid-feedback">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="name">পরীক্ষার নাম (ইংরেজি) <span class="text-danger">*</span></label>
@@ -205,6 +243,10 @@
 
 @push('scripts')
 <script>
+(function waitForJQuery(fn) {
+    if (typeof window.$ !== 'undefined' && window.$.fn && window.$.fn.select2) { fn(); }
+    else { setTimeout(function(){ waitForJQuery(fn); }, 30); }
+})(function() {
 $(document).ready(function() {
     let isSubmitting = false;
     
@@ -224,7 +266,63 @@ $(document).ready(function() {
                 .html('<i class="fas fa-save"></i> আপডেট করুন');
         }, 5000);
     });
+
+    const oldSectionIds = @json(old('section_ids', $exam->section_ids ?? []));
+    const oldGroupIds = @json(old('group_ids', $exam->group_ids ?? []));
+
+    // Helper: safely destroy and init select2
+    function initSelect2(selector, placeholder) {
+        try { $(selector).select2('destroy'); } catch(e) {}
+        $(selector).select2({ width: '100%', allowClear: true, placeholder: placeholder });
+    }
+    function populateSelect2(selector, items, placeholder, selectedVals = []) {
+        try { $(selector).select2('destroy'); } catch(e) {}
+        var opts = '';
+        const stringSelectedVals = selectedVals.map(String);
+        $.each(items, function(i, item) { 
+            const isSelected = stringSelectedVals.includes(String(item.id)) ? 'selected' : '';
+            opts += '<option value="' + item.id + '" ' + isSelected + '>' + item.name + '</option>'; 
+        });
+        $(selector).html(opts);
+        try { $(selector).select2({ width: '100%', allowClear: true, placeholder: placeholder }); } catch(e) {}
+    }
+    initSelect2('#section_ids', '-- সকল শাখা --');
+    initSelect2('#group_ids',   '-- সকল গ্রুপ --');
+
+    $('#class_id').on('change', function() {
+        const classId = $(this).val();
+        if (!classId) {
+            populateSelect2('#section_ids', [], '-- সকল শাখা --', []);
+            populateSelect2('#group_ids',   [], '-- সকল গ্রুপ --', []);
+            $('#group_wrapper').hide();
+            return;
+        }
+
+        $.get('/principal/institute/{{ $school->id }}/exams/fetch-subjects', { class_id: classId })
+            .done(function(response) {
+                const sections  = response.sections || [];
+                const groupsRaw = response.groups || [];
+                const groups    = Array.isArray(groupsRaw) ? groupsRaw : Object.values(groupsRaw);
+
+                populateSelect2('#section_ids', sections, '-- সকল শাখা --', oldSectionIds);
+
+                if (groups.length > 0) {
+                    populateSelect2('#group_ids', groups, '-- সকল গ্রুপ --', oldGroupIds);
+                    $('#group_wrapper').show();
+                } else {
+                    populateSelect2('#group_ids', [], '-- সকল গ্রুপ --', []);
+                    $('#group_wrapper').hide();
+                }
+            });
+    });
+
+    // Trigger on load to ensure correct sections/groups are loaded 
+    // especially if old('class_id') differs from $exam->class_id
+    if ($('#class_id').val()) {
+        $('#class_id').trigger('change');
+    }
 });
+}); // end waitForJQuery
 </script>
 @endpush
 @endsection

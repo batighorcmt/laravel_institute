@@ -23,8 +23,17 @@
     <div class="container-fluid">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">সকল পরীক্ষা</h3>
-                <div class="card-tools">
+                <h3 class="card-title">{{ $status === 'completed' ? 'সম্পন্নকৃত পরীক্ষা তালিকা' : 'সকল পরীক্ষা' }}</h3>
+                <div class="card-tools d-flex gap-2">
+                    @if($status === 'completed')
+                        <a href="{{ route('principal.institute.exams.index', $school) }}" class="btn btn-sm btn-info mr-2">
+                            <i class="fas fa-list"></i> সক্রিয় পরীক্ষা
+                        </a>
+                    @else
+                        <a href="{{ route('principal.institute.exams.index', $school) }}?status=completed" class="btn btn-sm btn-success mr-2">
+                            <i class="fas fa-check-circle"></i> সম্পন্নকৃত পরীক্ষা
+                        </a>
+                    @endif
                     <a href="{{ route('principal.institute.exams.create', $school) }}" class="btn btn-sm btn-primary">
                         <i class="fas fa-plus"></i> নতুন পরীক্ষা তৈরি করুন
                     </a>

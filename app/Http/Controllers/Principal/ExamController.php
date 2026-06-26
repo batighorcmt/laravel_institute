@@ -15,14 +15,22 @@ use Illuminate\Http\Request;
 
 class ExamController extends Controller
 {
-    public function index(School $school)
+    public function index(Request $request, School $school)
     {
-        $exams = Exam::with(['academicYear', 'class'])
-            ->forSchool($school->id)
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $status = $request->query('status', 'active');
+        
+        $query = Exam::with(['academicYear', 'class'])
+            ->forSchool($school->id);
+            
+        if ($status === 'completed') {
+            $query->where('status', 'completed');
+        } else {
+            $query->whereIn('status', ['active', 'draft', 'cancelled']);
+        }
 
-        return view('principal.exams.index', compact('school', 'exams'));
+        $exams = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        return view('principal.exams.index', compact('school', 'exams', 'status'));
     }
 
     public function create(School $school)
@@ -61,7 +69,21 @@ class ExamController extends Controller
             })
             ->values();
 
-        return response()->json($subjects);
+        $sections = \App\Models\Section::where('school_id', $school->id)
+            ->where('class_id', $classId)
+            ->where('status', 'active')
+            ->get(['id', 'name']);
+
+        $groups = \App\Models\Group::where('school_id', $school->id)
+            ->where('class_id', $classId)
+            ->where('status', 'active')
+            ->get(['id', 'name']);
+
+        return response()->json([
+            'subjects' => $subjects,
+            'sections' => $sections->values(),
+            'groups'   => $groups->values()
+        ]);
     }
 
     public function store(Request $request, School $school)
@@ -69,6 +91,10 @@ class ExamController extends Controller
         $validated = $request->validate([
             'academic_year_id' => 'required|exists:academic_years,id',
             'class_id' => 'required|exists:classes,id',
+            'section_ids' => 'nullable|array',
+            'section_ids.*' => 'exists:sections,id',
+            'group_ids' => 'nullable|array',
+            'group_ids.*' => 'exists:groups,id',
             'name' => 'required|string|max:255',
             'name_bn' => 'nullable|string|max:255',
             'public_exam_id' => 'nullable|exists:public_exams,id',
@@ -129,6 +155,8 @@ class ExamController extends Controller
                 'school_id' => $validated['school_id'],
                 'academic_year_id' => $validated['academic_year_id'],
                 'class_id' => $validated['class_id'],
+                'section_ids' => $validated['section_ids'] ?? null,
+                'group_ids' => $validated['group_ids'] ?? null,
                 'public_exam_id' => $validated['public_exam_id'] ?? null,
                 'name' => $validated['name'],
                 'name_bn' => $validated['name_bn'] ?? null,
@@ -235,8 +263,10 @@ class ExamController extends Controller
         $academicYears = AcademicYear::forSchool($school->id)->get();
         $classes = SchoolClass::forSchool($school->id)->orderBy('numeric_value')->get();
         $publicExams = \App\Models\PublicExam::where('school_id', $school->id)->where('status', 'active')->get();
+        $sections = \App\Models\Section::where('school_id', $school->id)->where('class_id', $exam->class_id)->where('status', 'active')->get();
+        $groups = \App\Models\Group::where('school_id', $school->id)->where('class_id', $exam->class_id)->where('status', 'active')->get();
 
-        return view('principal.exams.edit', compact('school', 'exam', 'academicYears', 'classes', 'publicExams'));
+        return view('principal.exams.edit', compact('school', 'exam', 'academicYears', 'classes', 'publicExams', 'sections', 'groups'));
     }
 
     // Bulk Update View
@@ -253,6 +283,10 @@ class ExamController extends Controller
         $validated = $request->validate([
             'academic_year_id' => 'required|exists:academic_years,id',
             'class_id' => 'required|exists:classes,id',
+            'section_ids' => 'nullable|array',
+            'section_ids.*' => 'exists:sections,id',
+            'group_ids' => 'nullable|array',
+            'group_ids.*' => 'exists:groups,id',
             'public_exam_id' => 'nullable|exists:public_exams,id',
             'name' => 'required|string|max:255',
             'name_bn' => 'nullable|string|max:255',

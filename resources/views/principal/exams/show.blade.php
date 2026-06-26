@@ -58,10 +58,14 @@
                             <i class="fas fa-id-card"></i> Admit Cards
                         </button>
                         <div class="dropdown-menu dropdown-menu-right">
-                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v1', [$school, $exam]) }}" target="_blank">Admit Card V1</a>
-                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v2', [$school, $exam]) }}" target="_blank">Admit Card V2</a>
-                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v3', [$school, $exam]) }}" target="_blank">Admit Card V3 (Simple)</a>
-                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v4', [$school, $exam]) }}" target="_blank">Admit Card V4 (Modern)</a>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v1', [$school, $exam]) }}" target="_blank">Admit Card V1 (All)</a>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v2', [$school, $exam]) }}" target="_blank">Admit Card V2 (All)</a>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v3', [$school, $exam]) }}" target="_blank">Admit Card V3 (All)</a>
+                            <a class="dropdown-item" href="{{ route('principal.institute.exams.admit_v4', [$school, $exam]) }}" target="_blank">Admit Card V4 (All)</a>
+                            <div class="dropdown-divider"></div>
+                            <button type="button" class="dropdown-item" data-toggle="modal" data-target="#singleAdmitCardModal">
+                                <i class="fas fa-user"></i> একক শিক্ষার্থীর প্রবেশপত্র
+                            </button>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="{{ route('principal.institute.exams.attendance_sheet', [$school, $exam]) }}" target="_blank">Attendance Sheet</a>
                         </div>
@@ -92,6 +96,24 @@
                                 <th>শ্রেণি:</th>
                                 <td>{{ $exam->class->name ?? 'N/A' }}</td>
                             </tr>
+                            @if(!empty($exam->section_ids))
+                                @php
+                                    $sectionNames = \App\Models\Section::whereIn('id', $exam->section_ids)->pluck('name')->implode(', ');
+                                @endphp
+                                <tr>
+                                    <th>শাখা:</th>
+                                    <td>{{ $sectionNames }}</td>
+                                </tr>
+                            @endif
+                            @if(!empty($exam->group_ids))
+                                @php
+                                    $groupNames = \App\Models\Group::whereIn('id', $exam->group_ids)->pluck('name')->implode(', ');
+                                @endphp
+                                <tr>
+                                    <th>বিভাগ/ গ্রুপ:</th>
+                                    <td>{{ $groupNames }}</td>
+                                </tr>
+                            @endif
                             <tr>
                                 <th>শিক্ষাবর্ষ:</th>
                                 <td>{{ $exam->academicYear->name ?? 'N/A' }}</td>
@@ -513,6 +535,42 @@
                 </div>
             </div>
         </div>
+
+        <!-- Single Admit Card Modal -->
+        <div class="modal fade" id="singleAdmitCardModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form id="singleAdmitCardForm" method="GET" target="_blank">
+                        <div class="modal-header">
+                            <h5 class="modal-title">একক শিক্ষার্থীর প্রবেশপত্র প্রিন্ট</h5>
+                            <button type="button" class="close" data-dismiss="modal">
+                                <span>&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="admit_format">প্রবেশপত্রের ফরমেট</label>
+                                <select id="admit_format" class="form-control" required onchange="updateAdmitAction()">
+                                    <option value="{{ route('principal.institute.exams.admit_v1', [$school, $exam]) }}">V1 (Standard)</option>
+                                    <option value="{{ route('principal.institute.exams.admit_v2', [$school, $exam]) }}">V2 (Alternative)</option>
+                                    <option value="{{ route('principal.institute.exams.admit_v3', [$school, $exam]) }}">V3 (Simple)</option>
+                                    <option value="{{ route('principal.institute.exams.admit_v4', [$school, $exam]) }}">V4 (Modern)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="search_roll">শিক্ষার্থীর রোল নম্বর <span class="text-danger">*</span></label>
+                                <input type="number" name="search_roll" id="search_roll" class="form-control" placeholder="যেমন: 1" required>
+                                <small class="text-muted">যে শিক্ষার্থীর প্রবেশপত্র প্রিন্ট করতে চান তার রোল নম্বর দিন।</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">বাতিল</button>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-print"></i> প্রিন্ট করুন</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -547,7 +605,15 @@ document.addEventListener('DOMContentLoaded', function(){
     @if(session('error'))
         _showToast('error', {!! json_encode(session('error')) !!});
     @endif
+
+    // Update single admit card form action on load
+    updateAdmitAction();
 });
+
+function updateAdmitAction() {
+    var formatUrl = document.getElementById('admit_format').value;
+    document.getElementById('singleAdmitCardForm').action = formatUrl;
+}
 </script>
 @endpush
 

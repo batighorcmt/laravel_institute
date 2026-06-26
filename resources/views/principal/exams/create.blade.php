@@ -76,6 +76,32 @@
                     </div>
 
                     <div class="row">
+                        <div class="col-md-6" id="section_wrapper">
+                            <div class="form-group">
+                                <label for="section_ids">শাখা (ঐচ্ছিক)</label>
+                                <select name="section_ids[]" id="section_ids" class="form-control select2 @error('section_ids') is-invalid @enderror" multiple="multiple" data-placeholder="-- সকল শাখা --">
+                                </select>
+                                <small class="text-muted">শাখা নির্বাচন না করলে সকল শিক্ষার্থীর জন্য পরীক্ষা হবে। একাধিক শাখা নির্বাচন করা যাবে।</small>
+                                @error('section_ids')
+                                    <span class="invalid-feedback">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="col-md-6" id="group_wrapper" style="display:none;">
+                            <div class="form-group">
+                                <label for="group_ids">বিভাগ/ গ্রুপ (ঐচ্ছিক)</label>
+                                <select name="group_ids[]" id="group_ids" class="form-control select2 @error('group_ids') is-invalid @enderror" multiple="multiple" data-placeholder="-- সকল গ্রুপ --">
+                                </select>
+                                <small class="text-muted">গ্রুপ নির্বাচন না করলে সকল শিক্ষার্থীর জন্য পরীক্ষা হবে। একাধিক গ্রুপ নির্বাচন করা যাবে।</small>
+                                @error('group_ids')
+                                    <span class="invalid-feedback">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="name">পরীক্ষার নাম (ইংরেজি) <span class="text-danger">*</span></label>
@@ -143,34 +169,6 @@
                         </div>
                     </div>
 
-                    <div id="subjectsContainer" style="display:none;">
-                        <h5 class="mt-4 mb-2">বিষয়ভিত্তিক নম্বর নির্ধারণ করুন</h5>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered table-striped">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>বিষয়</th>
-                                        <th style="min-width:110px;">পরীক্ষার তারিখ</th>
-                                        <th style="min-width:130px;">নম্বর Entry শেষ তারিখ</th>
-                                        <th style="min-width:90px;">পরীক্ষার সময়</th>
-                                        <th>সৃজনশীল</th>
-                                        <th>MCQ</th>
-                                        <th>ব্যবহারিক</th>
-                                        <th>মোট</th>
-                                        <th>সৃজনশীল পাস</th>
-                                        <th>MCQ পাস</th>
-                                        <th>ব্যবহারিক পাস</th>
-                                        <th>পাস টাইপ</th>
-                                        <th>Combine Group</th>
-                                        <th>শিক্ষক</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="subjectsTableBody">
-                                    <!-- Will be loaded via AJAX -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
 
                     <div class="row">
                         <div class="col-md-4">
@@ -233,134 +231,82 @@
 
 @push('scripts')
 <script>
+(function waitForJQuery(fn) {
+    if (typeof window.$ !== 'undefined' && window.$.fn && window.$.fn.select2) { fn(); }
+    else { setTimeout(function(){ waitForJQuery(fn); }, 30); }
+})(function() {
 $(document).ready(function() {
-    const TEACHERS = @json($teachers->map(fn($t) => ['id' => $t->user_id, 'name' => $t->full_name]));
-    const teacherOptions = TEACHERS.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
     const classSelect = $('#class_id');
-    const subjectsContainer = $('#subjectsContainer');
-    const subjectsTableBody = $('#subjectsTableBody');
     const submitBtn = $('#submitBtn');
+
+    const oldSectionIds = @json(old('section_ids', []));
+    const oldGroupIds = @json(old('group_ids', []));
+
+    // Helper: safely destroy and init select2
+    function initSelect2(selector, placeholder) {
+        try { $(selector).select2('destroy'); } catch(e) {}
+        $(selector).select2({ width: '100%', allowClear: true, placeholder: placeholder });
+    }
+    function populateSelect2(selector, items, placeholder, selectedVals = []) {
+        try { $(selector).select2('destroy'); } catch(e) {}
+        var opts = '';
+        const stringSelectedVals = selectedVals.map(String);
+        $.each(items, function(i, item) { 
+            const isSelected = stringSelectedVals.includes(String(item.id)) ? 'selected' : '';
+            opts += '<option value="' + item.id + '" ' + isSelected + '>' + item.name + '</option>'; 
+        });
+        $(selector).html(opts);
+        try { $(selector).select2({ width: '100%', allowClear: true, placeholder: placeholder }); } catch(e) {}
+    }
+    initSelect2('#section_ids', '-- সকল শাখা --');
+    initSelect2('#group_ids',   '-- সকল গ্রুপ --');
 
     classSelect.on('change', function() {
         const classId = $(this).val();
         if (!classId) {
-            subjectsContainer.hide();
-            submitBtn.hide();
+            populateSelect2('#section_ids', [], '-- সকল শাখা --', []);
+            populateSelect2('#group_ids',   [], '-- সকল গ্রুপ --', []);
+            $('#group_wrapper').hide();
             return;
         }
 
-        $.get('{{ route("principal.institute.exams.fetch-subjects", $school) }}', { class_id: classId })
-            .done(function(data) {
-                if (data.length === 0) {
-                    subjectsTableBody.html('<tr><td colspan="13" class="text-center text-danger">এই শ্রেণির জন্য কোনো বিষয় পাওয়া যায়নি।</td></tr>');
-                    subjectsContainer.show();
-                    submitBtn.hide();
-                    return;
+        $.get('/principal/institute/{{ $school->id }}/exams/fetch-subjects', { class_id: classId })
+            .done(function(response) {
+                const sections  = response.sections || [];
+                const groupsRaw = response.groups || [];
+                const groups    = Array.isArray(groupsRaw) ? groupsRaw : Object.values(groupsRaw);
+
+                // Populate sections
+                populateSelect2('#section_ids', sections, '-- সকল শাখা --', oldSectionIds);
+
+                // Populate groups - show wrapper only when groups exist
+                if (groups.length > 0) {
+                    populateSelect2('#group_ids', groups, '-- সকল গ্রুপ --', oldGroupIds);
+                    $('#group_wrapper').show();
+                } else {
+                    populateSelect2('#group_ids', [], '-- সকল গ্রুপ --', []);
+                    $('#group_wrapper').hide();
                 }
-
-                let rows = '';
-                data.forEach(function(subject) {
-                    const hasC = Number(subject.has_creative) === 1;
-                    const hasO = Number(subject.has_objective) === 1;
-                    const hasP = Number(subject.has_practical) === 1;
-                    const passType = 'total';
-
-                    rows += `
-                        <tr>
-                            <td>
-                                ${subject.subject_name}
-                                <input type="hidden" name="subject_id[]" value="${subject.id}">
-                            </td>
-                            <td><input type="date" name="exam_date[]" class="form-control"></td>
-                            <td><input type="date" name="mark_entry_deadline[]" class="form-control"></td>
-                            <td><input type="time" name="exam_time[]" class="form-control"></td>
-                            <td>
-                                <input type="number" name="creative_marks[]" class="form-control creative_marks" min="0" value="0" ${hasC ? '' : 'disabled'} required>
-                                ${hasC ? '' : '<input type="hidden" name="creative_marks[]" value="0">'}
-                            </td>
-                            <td>
-                                <input type="number" name="objective_marks[]" class="form-control objective_marks" min="0" value="0" ${hasO ? '' : 'disabled'} required>
-                                ${hasO ? '' : '<input type="hidden" name="objective_marks[]" value="0">'}
-                            </td>
-                            <td>
-                                <input type="number" name="practical_marks[]" class="form-control practical_marks" min="0" value="0" ${hasP ? '' : 'disabled'} required>
-                                ${hasP ? '' : '<input type="hidden" name="practical_marks[]" value="0">'}
-                            </td>
-                            <td><input type="number" class="form-control total_marks" value="0" readonly></td>
-                            <td>
-                                <input type="number" name="creative_pass[]" class="form-control" min="0" value="0" ${hasC ? '' : 'disabled'} required>
-                                ${hasC ? '' : '<input type="hidden" name="creative_pass[]" value="0">'}
-                            </td>
-                            <td>
-                                <input type="number" name="objective_pass[]" class="form-control" min="0" value="0" ${hasO ? '' : 'disabled'} required>
-                                ${hasO ? '' : '<input type="hidden" name="objective_pass[]" value="0">'}
-                            </td>
-                            <td>
-                                <input type="number" name="practical_pass[]" class="form-control" min="0" value="0" ${hasP ? '' : 'disabled'} required>
-                                ${hasP ? '' : '<input type="hidden" name="practical_pass[]" value="0">'}
-                            </td>
-                            <td>
-                                <select name="pass_type[]" class="form-control">
-                                    <option value="total" ${passType === 'total' ? 'selected' : ''}>Total Marks</option>
-                                    <option value="individual" ${passType === 'individual' ? 'selected' : ''}>Individual</option>
-                                </select>
-                            </td>
-                            <td>
-                                <input type="text" name="combine_group[]" class="form-control" placeholder="Group">
-                            </td>
-                            <td>
-                                <select name="teacher_id[]" class="form-control teacher-select">
-                                    <option value=""></option>
-                                    ${teacherOptions}
-                                </select>
-                            </td>
-                        </tr>
-                    `;
-                });
-
-                subjectsTableBody.html(rows);
-                subjectsContainer.show();
-                submitBtn.show();
-
-                // Update totals when marks change
-                $(document).on('input', '.creative_marks, .objective_marks, .practical_marks', updateTotals);
-                updateTotals();
-            })
-            .fail(function() {
-                subjectsTableBody.html('<tr><td colspan="13" class="text-center text-danger">বিষয় লোড করতে সমস্যা হয়েছে।</td></tr>');
-                subjectsContainer.show();
-                submitBtn.hide();
             });
     });
 
-    function updateTotals() {
-        subjectsTableBody.find('tr').each(function() {
-            const $row = $(this);
-            const c = parseInt($row.find('.creative_marks').val()) || 0;
-            const o = parseInt($row.find('.objective_marks').val()) || 0;
-            const p = parseInt($row.find('.practical_marks').val()) || 0;
-            $row.find('.total_marks').val(c + o + p);
-        });
-    }
-
+    // Prevent double submit
     let isSubmitting = false;
     $('#examForm').on('submit', function(e) {
-        if (isSubmitting) {
-            e.preventDefault();
-            return false;
-        }
-        
+        if (isSubmitting) { e.preventDefault(); return false; }
         isSubmitting = true;
-        submitBtn.prop('disabled', true)
-            .html('<i class="fas fa-spinner fa-spin"></i> প্রক্রিয়াধীন...');
-        
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> প্রক্রিয়াধীন...');
         setTimeout(function() {
             isSubmitting = false;
-            submitBtn.prop('disabled', false)
-                .html('<i class="fas fa-save"></i> সংরক্ষণ করুন');
+            submitBtn.prop('disabled', false).html('<i class="fas fa-save"></i> সংরক্ষণ করুন');
         }, 5000);
     });
+
+    if (classSelect.val()) {
+        classSelect.trigger('change');
+    }
 });
+}); // end waitForJQuery
 </script>
 @endpush
 @endsection

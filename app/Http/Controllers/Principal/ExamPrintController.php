@@ -58,6 +58,28 @@ class ExamPrintController extends Controller
                   ->with(['section', 'group']);
             }]);
 
+        // Filter by exam's specific sections if any are selected
+        if (!empty($exam->section_ids)) {
+            $sectionIds = $exam->section_ids;
+            $query->whereHas('enrollments', function($q) use ($academicYearId, $classId, $sectionIds) {
+                $q->where('academic_year_id', $academicYearId)
+                  ->where('class_id', $classId)
+                  ->whereIn('section_id', $sectionIds)
+                  ->where('status', 'active');
+            });
+        }
+
+        // Filter by exam's specific groups if any are selected
+        if (!empty($exam->group_ids)) {
+            $groupIds = $exam->group_ids;
+            $query->whereHas('enrollments', function($q) use ($academicYearId, $classId, $groupIds) {
+                $q->where('academic_year_id', $academicYearId)
+                  ->where('class_id', $classId)
+                  ->whereIn('group_id', $groupIds)
+                  ->where('status', 'active');
+            });
+        }
+
         if ($request->has('section_id') && $request->section_id > 0) {
             $sectionId = $request->section_id;
             $query->whereHas('enrollments', function($q) use ($academicYearId, $classId, $sectionId) {
