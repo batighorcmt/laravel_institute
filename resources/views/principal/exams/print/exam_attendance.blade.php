@@ -119,7 +119,7 @@
     ? ($stu->student_name_bn ?: ($stu->student_name_en ?: ($stu->full_name ?? '')))
     : capitalizeEachWord($stu->student_name_en ?: ($stu->full_name ?? ''));
   $enrollment = $stu->enrollments->first();
-  $stu_roll = $enrollment ? $enrollment->roll_no : '';
+  $stu_roll = $enrollment ? str_pad((string)$enrollment->roll_no, 6, '0', STR_PAD_LEFT) : '';
   $stu_id_show = (string)($stu->student_id ?? $stu->id);
 
   $photoUrl = $stu->photo_url;
@@ -191,6 +191,8 @@
                 <td><strong>{{ $sec_name }}</strong></td>
                 <td>{{ t('Group','গ্রুপ') }}:</td>
                 <td><strong>{{ $division }}</strong></td>
+                <td>{{ t('Board Reg. No.','বোর্ড রেজি. নং') }}:</td>
+                <td><strong class="no-bn">{{ $stu->board_registration_no ?? '' }}</strong></td>
             </tr>
           </tbody>
         </table>
