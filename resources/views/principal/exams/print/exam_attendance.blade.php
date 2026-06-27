@@ -186,9 +186,7 @@
             </tr>
             <tr>
                 <td>{{ t('Class','শ্রেণি') }}:</td>
-                <td><strong>{{ $className }}</strong></td>
-                <td>{{ t('Section','শাখা') }}:</td>
-                <td><strong>{{ $sec_name }}</strong></td>
+                <td colspan="3"><strong>{{ $className }}{{ $sec_name ? ' (' . $sec_name . ')' : '' }}</strong></td>
                 <td>{{ t('Group','গ্রুপ') }}:</td>
                 <td><strong>{{ $division }}</strong></td>
                 <td>{{ t('Board Reg. No.','বোর্ড রেজি. নং') }}:</td>
