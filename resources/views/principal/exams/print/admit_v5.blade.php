@@ -58,7 +58,7 @@
 
 @push('print_head')
 <style type="text/css">
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Serif+Bengali:wght@400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&display=swap');
 
     @page {
         size: A4;
@@ -67,8 +67,8 @@
     body {
         margin: 0;
         padding: 0;
-        font-family: 'Times New Roman', 'Noto Serif Bengali', serif !important;
-        background: #fff;
+        font-family: 'Outfit', 'Noto Serif Bengali', sans-serif !important;
+        background: #f4f6f9;
         color: #000;
     }
     .admit-card-container {
@@ -87,9 +87,9 @@
         page-break-after: always;
         overflow: hidden;
         border-radius: 8px;
-        box-shadow: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         margin-bottom: 20px;
-        border: 2px solid #000;
+        border: 1px solid #e9ecef;
     }
 
     .admit-card-body {
@@ -106,7 +106,7 @@
     .header-section {
         display: flex;
         align-items: center;
-        border-bottom: 2px solid #000;
+        border-bottom: 2px solid #5e72e4;
         padding-bottom: 3mm;
         margin-bottom: 3mm;
     }
@@ -125,13 +125,13 @@
         flex: 1;
         text-align: center;
         padding: 0 3mm;
-        overflow: hidden; 
+        overflow: hidden; /* To prevent expanding past bounds */
     }
     .school-info h1 {
-        font-size: 18pt; 
+        font-size: 16pt; /* Fits in one line */
         margin: 0 0 2px 0;
         color: #000;
-        font-weight: 900;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         white-space: nowrap;
@@ -140,22 +140,20 @@
     }
     .school-info p {
         margin: 0;
-        font-size: 11pt;
+        font-size: 10pt;
         color: #000;
-        font-weight: 700;
     }
     .school-info .admit-title {
         display: inline-block;
-        background: #008000;
+        background: #5e72e4;
         color: white;
-        padding: 4px 18px;
+        padding: 3px 15px;
         border-radius: 50px;
-        font-weight: 800;
-        font-size: 14pt;
+        font-weight: 600;
+        font-size: 12pt;
         margin-top: 4px;
         letter-spacing: 1px;
         text-transform: uppercase;
-        font-family: 'Georgia', serif;
     }
 
     /* Exam Title */
@@ -165,10 +163,9 @@
     }
     .exam-title-section h2 {
         margin: 0;
-        font-size: 16pt;
+        font-size: 14pt;
         color: #000;
-        font-weight: 900;
-        font-family: 'Georgia', serif;
+        font-weight: 700;
     }
 
     /* Student Info Section */
@@ -176,15 +173,15 @@
         display: flex;
         justify-content: space-between;
         margin-bottom: 4mm;
-        background: none;
-        border: 2px solid #000;
+        background: #f8f9fe;
+        border: 1px solid #e9ecef;
         border-radius: 6px;
         padding: 3mm 4mm;
     }
     .info-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 11.5pt;
+        font-size: 10.5pt;
     }
     .info-table td {
         padding: 2px 0;
@@ -192,18 +189,16 @@
         color: #000;
     }
     .info-table td.label {
-        font-weight: 700;
+        font-weight: 600;
         width: 35mm;
         color: #000;
     }
     .info-table td.colon {
         width: 3mm;
-        font-weight: 700;
-        color: #000;
+        font-weight: 600;
     }
     .info-table td.value {
         font-weight: 700;
-        font-style: italic;
     }
 
     /* Smaller photo size */
@@ -212,7 +207,7 @@
         height: 33mm;
         margin-left: 4mm;
         flex-shrink: 0;
-        border: 2px solid #000;
+        border: 2px solid #e9ecef;
         border-radius: 4px;
         padding: 2px;
         background: #fff;
@@ -226,7 +221,7 @@
 
     /* Seat Plan Badge */
     .seat-plan-badge {
-        background: #1d4ed8;
+        background: #2dce89;
         color: white;
         border-radius: 6px;
         padding: 4px 15px;
@@ -234,21 +229,20 @@
         justify-content: space-around;
         align-items: center;
         margin-bottom: 4mm;
-        border: 2px solid #000;
     }
     .seat-item {
         text-align: center;
     }
     .seat-item .s-label {
-        font-size: 11pt;
+        font-size: 10pt;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         opacity: 0.95;
-        font-weight: 800;
+        font-weight: 700;
     }
     .seat-item .s-val {
-        font-size: 15pt;
-        font-weight: 900;
+        font-size: 14pt;
+        font-weight: 700;
         line-height: 1.2;
     }
 
@@ -259,31 +253,31 @@
     .routine-table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 11pt;
+        font-size: 10pt;
         border-radius: 4px;
         overflow: hidden;
-        border: 2px solid #000;
+        border: 1px solid #e9ecef;
     }
     .routine-table thead {
-        background: #008000;
+        background: #f6f9fc;
     }
     .routine-table th {
         padding: 6px;
         text-align: center;
-        color: #fff;
-        font-weight: 800;
-        border: 2px solid #000;
+        color: #000;
+        font-weight: 600;
+        border: 1px solid #e9ecef;
         text-transform: uppercase;
-        font-size: 9.5pt;
+        font-size: 8.5pt;
     }
     .routine-table td {
         padding: 4px 6px;
-        border: 1px solid #000;
+        border: 1px solid #e9ecef;
         color: #000;
-        font-weight: 700;
+        font-weight: 500;
     }
     .routine-table tbody tr:nth-child(even) {
-        background-color: #f0f0f0;
+        background-color: #fcfcfd;
     }
     .routine-table td:nth-child(1),
     .routine-table td:nth-child(2) {
@@ -292,7 +286,7 @@
     .routine-table td:nth-child(4),
     .routine-table td:nth-child(5) {
         text-align: center;
-        font-weight: 800;
+        font-weight: 600;
     }
 
     .bottom-wrapper {
@@ -317,20 +311,19 @@
         margin-bottom: 2px;
     }
     .signature-line {
-        border-top: 2px dashed #000;
+        border-top: 1px dashed #000;
         padding-top: 3px;
-        font-size: 11pt;
-        font-weight: 800;
+        font-size: 10pt;
+        font-weight: 600;
         color: #000;
     }
     .directions {
         margin-top: 3mm;
-        font-size: 10pt;
+        font-size: 8.5pt;
         color: #000;
-        border-top: 2px solid #000;
+        border-top: 1px solid #e9ecef;
         padding-top: 3px;
         line-height: 1.4;
-        font-weight: 600;
     }
 
     @media print {
@@ -339,12 +332,9 @@
         .admit-card { 
             margin: 0 !important;
             box-shadow: none !important;
-            border: 2px solid #000 !important;
+            border: none !important;
             height: 277mm;
         }
-        .seat-plan-badge { border: 2px solid #000 !important; }
-        .routine-table { border: 2px solid #000 !important; }
-        .routine-table th { border: 2px solid #000 !important; }
     }
 </style>
 @endpush
