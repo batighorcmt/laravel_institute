@@ -78,11 +78,13 @@ class TeacherExamController extends Controller
             ]));
         }
 
-        // Default: teacher duties
+        // Default: teacher duties (today + future)
+        $today = now()->toDateString();
         $query = ExamRoomInvigilation::with(['room', 'seatPlan', 'seatPlan.classes'])
             ->where('school_id', $schoolId)
             ->where('teacher_id', $user->id)
-            ->where('duty_date', $date);
+            ->where('duty_date', '>=', $today)
+            ->orderBy('duty_date');
 
         $duties = $query->get();
 
@@ -98,6 +100,7 @@ class TeacherExamController extends Controller
             'seat_plan' => $d->seatPlan?->name,
             'shift' => $d->seatPlan?->shift,
             'classes' => $d->seatPlan?->classes->pluck('name')->toArray() ?? [],
+            'is_today' => $d->duty_date->toDateString() === $today,
         ]));
     }
 

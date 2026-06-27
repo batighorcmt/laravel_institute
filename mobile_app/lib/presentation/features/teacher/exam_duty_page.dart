@@ -21,13 +21,14 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
   int? _selectedPlanId;
   String? _selectedDate;
 
+  String get _todayStr => _formatDate(DateTime.now());
+
   @override
   void initState() {
     super.initState();
     if (widget.isController) {
       _loadInitialMeta();
     } else {
-      _selectedDate = _formatDate(DateTime.now());
       setState(() => _isLoading = true);
       _loadDuties();
     }
@@ -82,7 +83,7 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
     try {
       final data = await _repo.getTodaysDuty(
         planId: _selectedPlanId,
-        date: _selectedDate,
+        date: widget.isController ? _selectedDate : null,
       );
       if (mounted) {
         setState(() {
@@ -120,18 +121,75 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
                     onRefresh: _loadDuties,
                     child: _duties.isEmpty
                         ? _buildEmptyState()
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _duties.length,
-                            itemBuilder: (context, index) {
-                              final duty = _duties[index];
-                              return _buildDutyCard(duty);
-                            },
-                          ),
+                        : _buildDutyListView(),
                   ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDutyListView() {
+    if (widget.isController) {
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _duties.length,
+        itemBuilder: (context, index) => _buildDutyCard(_duties[index]),
+      );
+    }
+
+    // Group duties by date for teacher view
+    final Map<String, List<dynamic>> grouped = {};
+    for (final duty in _duties) {
+      final date = duty['duty_date'] ?? '';
+      grouped.putIfAbsent(date, () => []).add(duty);
+    }
+    final sortedDates = grouped.keys.toList()..sort();
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: sortedDates.length,
+      itemBuilder: (context, index) {
+        final date = sortedDates[index];
+        final duties = grouped[date]!;
+        final isToday = date == _todayStr;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(bottom: 10, top: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isToday ? Colors.green.shade50 : Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isToday ? Colors.green.shade300 : Colors.orange.shade300,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isToday ? Icons.today : Icons.calendar_month,
+                    size: 16,
+                    color: isToday ? Colors.green.shade700 : Colors.orange.shade700,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    isToday ? '📌 আজকের ডিউটি — $date' : '📅 আসন্ন ডিউটি — $date',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: isToday ? Colors.green.shade800 : Colors.orange.shade800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ...duties.map((d) => _buildDutyCard(d)),
+          ],
+        );
+      },
     );
   }
 
@@ -225,105 +283,142 @@ class _ExamDutyPageState extends State<ExamDutyPage> {
 
   Widget _buildDutyCard(dynamic duty) {
     bool isAssigned = duty['is_assigned'] ?? true;
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ExamRoomAttendancePage(
-                planId: duty['seat_plan_id'],
-                roomId: duty['seat_plan_room_id'],
-                roomNo: duty['room_no'] ?? 'N/A',
-                date: duty['duty_date'],
-              ),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(10),
+    bool isToday = duty['is_today'] == true || duty['duty_date'] == _todayStr;
+    bool canTakeAttendance = isToday || widget.isController;
+
+    return Opacity(
+      opacity: canTakeAttendance ? 1.0 : 0.85,
+      child: Card(
+        elevation: canTakeAttendance ? 1 : 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: canTakeAttendance
+              ? BorderSide.none
+              : BorderSide(color: Colors.grey.shade300),
+        ),
+        margin: const EdgeInsets.only(bottom: 16),
+        child: InkWell(
+          onTap: canTakeAttendance
+              ? () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ExamRoomAttendancePage(
+                        planId: duty['seat_plan_id'],
+                        roomId: duty['seat_plan_room_id'],
+                        roomNo: duty['room_no'] ?? 'N/A',
+                        date: duty['duty_date'],
+                      ),
                     ),
-                    child: Icon(Icons.meeting_room, color: Colors.blue.shade700),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'কক্ষ নং: ${duty['room_no'] ?? 'N/A'}',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        if (duty['room_title'] != null)
-                          Text(
-                            duty['room_title'],
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                          ),
-                      ],
-                    ),
-                  ),
-                  if (widget.isController)
+                  );
+                }
+              : () {
+                  showAppSnack(
+                    context,
+                    message: 'শুধুমাত্র আজকের তারিখে হাজিরা গ্রহণ করা যাবে',
+                  );
+                },
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isAssigned ? Colors.green.shade50 : Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(4),
+                        color: canTakeAttendance ? Colors.blue.shade50 : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        canTakeAttendance ? Icons.meeting_room : Icons.lock_clock,
+                        color: canTakeAttendance ? Colors.blue.shade700 : Colors.grey.shade500,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'কক্ষ নং: ${duty['room_no'] ?? 'N/A'}',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          if (duty['room_title'] != null)
+                            Text(
+                              duty['room_title'],
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                            ),
+                        ],
+                      ),
+                    ),
+                    if (widget.isController)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isAssigned ? Colors.green.shade50 : Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          isAssigned ? (duty['teacher_name'] ?? 'Assigned') : 'Not Assigned',
+                          style: TextStyle(
+                            color: isAssigned ? Colors.green.shade800 : Colors.red.shade800,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    if (!widget.isController && !canTakeAttendance)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'আসন্ন',
+                          style: TextStyle(
+                            color: Colors.orange.shade800,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const Divider(height: 24),
+                _buildInfoRow(Icons.event_note, 'সীট প্ল্যান', duty['seat_plan'] ?? 'N/A'),
+                const SizedBox(height: 8),
+                _buildInfoRow(Icons.access_time, 'শীফট', duty['shift'] ?? 'N/A'),
+                const SizedBox(height: 8),
+                _buildInfoRow(Icons.business, 'অবস্থান', '${duty['building'] ?? ''} (${duty['floor'] ?? ''})'),
+                if (duty['classes'] != null && (duty['classes'] as List).isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Text(
+                    'শ্রেণি সমূহ:',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: (duty['classes'] as List).map((e) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.blue.shade100),
                       ),
                       child: Text(
-                        isAssigned ? (duty['teacher_name'] ?? 'Assigned') : 'Not Assigned',
-                        style: TextStyle(
-                          color: isAssigned ? Colors.green.shade800 : Colors.red.shade800,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        e.toString(),
+                        style: TextStyle(fontSize: 11, color: Colors.blue.shade900, fontWeight: FontWeight.bold),
                       ),
-                    ),
+                    )).toList(),
+                  ),
                 ],
-              ),
-              const Divider(height: 24),
-              _buildInfoRow(Icons.event_note, 'সীট প্ল্যান', duty['seat_plan'] ?? 'N/A'),
-              const SizedBox(height: 8),
-              _buildInfoRow(Icons.access_time, 'শীফট', duty['shift'] ?? 'N/A'),
-              const SizedBox(height: 8),
-              _buildInfoRow(Icons.business, 'অবস্থান', '${duty['building'] ?? ''} (${duty['floor'] ?? ''})'),
-              if (duty['classes'] != null && (duty['classes'] as List).isNotEmpty) ...[
-                const SizedBox(height: 12),
-                const Text(
-                  'শ্রেণি সমূহ:',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey),
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: (duty['classes'] as List).map((e) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.blue.shade100),
-                    ),
-                    child: Text(
-                      e.toString(),
-                      style: TextStyle(fontSize: 11, color: Colors.blue.shade900, fontWeight: FontWeight.bold),
-                    ),
-                  )).toList(),
-                ),
               ],
-            ],
+            ),
           ),
         ),
       ),
