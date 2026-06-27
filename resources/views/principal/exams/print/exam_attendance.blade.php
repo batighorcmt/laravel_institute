@@ -64,50 +64,86 @@
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  /* Keep existing layout styles but ensure letters use Hind Siliguri and numbers use Kalpurush */
   body{ font-family:'Hind Siliguri', system-ui, Segoe UI, Roboto, Arial, sans-serif !important; }
-  .num{ font-family: 'Kalpurush', 'Noto Sans Bengali', serif; font-size: 14pt; font-weight: bold; }
+  .num{ font-family: 'Kalpurush', 'Noto Sans Bengali', serif; font-size: 13pt; font-weight: bold; }
   .no-bn{ font-family: inherit; }
-  /* original page styles preserved below */
-  :root { --primary:#0ea5e9; --border:#1f2937; --ink:#0a0a0a; --muted:#111827; --bg:#ffffff; }
-    *{box-sizing:border-box}
-    .actions{position:sticky;top:0;z-index:10;background:#fff;padding:10px;text-align:center;border-bottom:1px solid var(--border)}
-    .btn{background:var(--primary);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer}
-    .page{width:100%;max-width:210mm;margin:0 auto;padding:10mm}
-    .sheet{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);page-break-after:always}
-    .sheet:last-child{page-break-after:auto}
-  .hdr{display:grid;grid-template-columns:70px 1fr 85px;gap:12px;align-items:center;padding:4px 12px 4px;border-bottom:1px solid var(--border)}
-    .logo{width:70px;height:70px;display:flex;align-items:center;justify-content:center}
-    .logo img{max-width:100%;max-height:100%}
-    .brand{text-align:center}
-  .school-name{font-size:24px;font-weight:800;color:#000;margin:0;line-height:1.1}
-  .school-meta{margin:0;color:#000;font-weight:700;line-height:1.1}
-    .stud-photo{width:80px;height:95px;border:1px solid var(--border);border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .stud-photo img{width:100%;height:100%;object-fit:cover}
-  .meta{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
-    .meta .row{display:flex;flex-wrap:wrap;gap:18px;align-items:center}
-    .meta .item{font-weight:800;color:#000}
-    .meta .light{font-weight:700;color:#000}
+  :root { --primary:#0ea5e9; --border:#374151; --ink:#0a0a0a; --muted:#111827; --bg:#ffffff; }
+  *{box-sizing:border-box}
+  .actions{position:sticky;top:0;z-index:10;background:#fff;padding:10px;text-align:center;border-bottom:1px solid var(--border)}
+  .btn{background:var(--primary);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer}
+  .page{width:100%;max-width:210mm;margin:0 auto;padding:10mm}
+  .sheet{background:#fff;border:2px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);page-break-after:always}
+  .sheet:last-child{page-break-after:auto}
 
+  /* Header */
+  .hdr{display:grid;grid-template-columns:75px 1fr 85px;gap:10px;align-items:center;padding:6px 12px;border-bottom:2px solid var(--border)}
+  .logo{width:75px;height:75px;display:flex;align-items:center;justify-content:center}
+  .logo img{max-width:100%;max-height:100%}
+  .brand{text-align:center}
+  .school-name{font-size:22px;font-weight:800;color:#000;margin:0;line-height:1.2}
+  .school-meta{margin:2px 0 0;color:#111;font-weight:600;line-height:1.3;font-size:11pt}
+  .stud-photo{width:80px;height:95px;border:1px solid var(--border);border-radius:4px;background:#f9fafb;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .stud-photo img{width:100%;height:100%;object-fit:cover}
+
+  /* Info Section */
+  .info-box{
+    border-bottom:2px solid var(--border);
+    padding:0;
+  }
+  .info-box table{
+    width:100%;
+    border-collapse:collapse;
+  }
+  .info-box td{
+    border:none;
+    border-bottom:1px solid #d1d5db;
+    padding:6px 10px;
+    font-size:12pt;
+    color:#000;
+    vertical-align:middle;
+    white-space:nowrap;
+  }
+  .info-box tr:last-child td{
+    border-bottom:none;
+  }
+  .info-box .lbl{
+    font-weight:700;
+    color:#374151;
+    width:1%;
+    padding-right:2px;
+  }
+  .info-box .colon{
+    padding:6px 3px;
+    font-weight:700;
+    width:1%;
+    color:#374151;
+  }
+  .info-box .val{
+    font-weight:800;
+    color:#000;
+    padding-left:4px;
+  }
+  .info-box .val.wide{
+    white-space:normal;
+  }
+
+  /* Data Table */
   table{width:100%;border-collapse:collapse}
-  th,td{border:1px solid var(--border);padding:8px 10px;text-align:center;font-size:12pt;color:#000}
+  th,td{border:1px solid var(--border);padding:7px 10px;text-align:center;font-size:12pt;color:#000}
   thead th{background:transparent;color:#000;font-weight:800}
-    td.name, th.name{text-align:left}
-    td.code, th.code{width:80px;white-space:nowrap}
-    .bn{font-family:'Noto Sans Bengali','Hind Siliguri',system-ui,Segoe UI,Roboto,Arial,sans-serif}
-    td.sigc{height:18mm}
-  table.info-table{margin:4px 0;padding-top:0;padding-bottom:5px;}
-  table.info-table td{border:none;padding:2px 8px;font-size:13pt;color:#000}
+  td.name, th.name{text-align:left}
+  td.code, th.code{width:80px;white-space:nowrap}
+  td.sigc{height:18mm}
 
-  .brandbar{padding:8px 12px;background:transparent;color:#0a0a0a;text-align:center;font-weight:800;letter-spacing:.3px;position:relative;z-index:1;border-top:1px solid var(--border)}
+  .brandbar{padding:7px 12px;background:transparent;color:#0a0a0a;text-align:center;font-weight:700;font-size:10pt;letter-spacing:.2px;border-top:2px solid var(--border)}
 
-    @media print{
-      @page{size:A4 portrait;margin:10mm}
-      .actions{display:none}
-      .page{padding:0}
-      .sheet{border:none;box-shadow:none}
-      thead{display:table-header-group}
-    }
+  @media print{
+    @page{size:A4 portrait;margin:8mm}
+    .actions{display:none}
+    .page{padding:0}
+    .sheet{border:none;box-shadow:none}
+    thead{display:table-header-group}
+  }
 </style>
 @endpush
 
@@ -174,41 +210,31 @@
           <?php endif; ?>
         </div>
       </div>
-  <div class="info-grid">
-    <div class="info-row">
-      <div class="info-item info-name">
-        <span class="ilabel">{{ t('Name','শিক্ষার্থীর নাম') }}</span>
-        <span class="icolon">:</span>
-        <span class="ivalue"><strong>{{ $stu_name }}</strong></span>
-      </div>
-      <div class="info-item">
-        <span class="ilabel">{{ t('ID','আইডি') }}</span>
-        <span class="icolon">:</span>
-        <span class="ivalue no-bn"><strong>{{ $stu_id_show }}</strong></span>
-      </div>
-      <div class="info-item">
-        <span class="ilabel">{{ t('Roll','রোল নং') }}</span>
-        <span class="icolon">:</span>
-        <span class="ivalue num"><strong>{{ bnNum($stu_roll) }}</strong></span>
-      </div>
-    </div>
-    <div class="info-row">
-      <div class="info-item info-name">
-        <span class="ilabel">{{ t('Class','শ্রেণি') }}</span>
-        <span class="icolon">:</span>
-        <span class="ivalue"><strong>{{ $className }}{{ $sec_name ? ' ('.$sec_name.')' : '' }}</strong></span>
-      </div>
-      <div class="info-item">
-        <span class="ilabel">{{ t('Group','গ্রুপ') }}</span>
-        <span class="icolon">:</span>
-        <span class="ivalue"><strong>{{ $division ?: '—' }}</strong></span>
-      </div>
-      <div class="info-item">
-        <span class="ilabel">{{ t('Board Reg. No.','বোর্ড রেজি. নং') }}</span>
-        <span class="icolon">:</span>
-        <span class="ivalue no-bn"><strong>{{ $stu->board_registration_no ?? '—' }}</strong></span>
-      </div>
-    </div>
+  <div class="info-box">
+    <table>
+      <tr>
+        <td class="lbl">{{ t('Name','শিক্ষার্থীর নাম') }}</td>
+        <td class="colon">:</td>
+        <td class="val wide"><strong>{{ $stu_name }}</strong></td>
+        <td class="lbl">{{ t('ID','আইডি') }}</td>
+        <td class="colon">:</td>
+        <td class="val"><strong class="no-bn">{{ $stu_id_show }}</strong></td>
+        <td class="lbl">{{ t('Roll No.','রোল নং') }}</td>
+        <td class="colon">:</td>
+        <td class="val"><strong class="num">{{ bnNum($stu_roll) }}</strong></td>
+      </tr>
+      <tr>
+        <td class="lbl">{{ t('Class','শ্রেণি') }}</td>
+        <td class="colon">:</td>
+        <td class="val"><strong>{{ $className }}{{ $sec_name ? ' ('.$sec_name.')' : '' }}</strong></td>
+        <td class="lbl">{{ t('Group','গ্রুপ') }}</td>
+        <td class="colon">:</td>
+        <td class="val"><strong>{{ $division ?: '—' }}</strong></td>
+        <td class="lbl">{{ t('Board Reg. No.','বোর্ড রেজি. নং') }}</td>
+        <td class="colon">:</td>
+        <td class="val"><strong class="num">{{ bnNum($stu->board_registration_no ?? '') ?: '—' }}</strong></td>
+      </tr>
+    </table>
   </div>
       <div class="tbl-wrap">
         <table>
