@@ -126,6 +126,7 @@ html, body {
 /* hide any global footers on this page */
 body footer, body .footer, body .main-footer, body .app-footer { display:none !important; }
 .content-wrapper, .content, .main-content, .page-content, .container, .container-fluid { background:#fff !important; }
+.admit-scope { font-family: 'Times New Roman', Times, serif; }
 .admit-scope .admit-wrapper { display:flex; flex-direction:column; justify-content:flex-start; padding:24px; background: none !important; min-height:calc(297mm - 20mm); }
 .admit-scope .admit-card {
     position: relative;
@@ -144,36 +145,36 @@ body footer, body .footer, body .main-footer, body .app-footer { display:none !i
 .admit-scope .admit-watermark { position:absolute; inset:0; opacity:0.06; background-position:center; background-repeat:no-repeat; background-size: 60% auto; }
 .admit-scope .admit-header { display:flex; align-items:center; gap:16px; border-bottom:2px solid #000; padding-bottom:12px; }
 .admit-scope .school-logo { width:82px; height:82px; object-fit:contain; }
-.admit-scope .school-name { font-size: 32px; font-weight: 800; line-height:1.2; color: #000; }
-.admit-scope .school-meta { color:#000; font-size: 18px; font-weight: 600; }
+.admit-scope .school-name { font-size: 32px; font-weight: 900; line-height:1.2; color: #000; text-transform: uppercase; }
+.admit-scope .school-meta { color:#000; font-size: 18px; font-weight: 700; }
 .admit-scope .title-row { display:flex; align-items:center; justify-content:space-between; margin-top:16px; margin-bottom:8px; }
-.admit-scope .admit-title { font-size: 28px; font-weight: 800; letter-spacing:.5px; color: #000; }
-.admit-scope .ac-badge { background:#000; color:#fff; padding:9px 16px; border-radius:6px; font-size:18px; font-weight: bold; }
-.admit-scope .class-badge { background:#000; color:#fff; padding:9px 16px; border-radius:6px; font-size:18px; margin-right:8px; font-weight: bold; }
+.admit-scope .admit-title { font-size: 28px; font-weight: 900; letter-spacing:.5px; color: #008000; font-family: 'Georgia', serif; }
+.admit-scope .ac-badge { background:#008000; color:#fff; padding:9px 16px; border-radius:6px; font-size:18px; font-weight: bold; }
+.admit-scope .class-badge { background:#1d4ed8; color:#fff; padding:9px 16px; border-radius:6px; font-size:18px; margin-right:8px; font-weight: bold; }
 .admit-scope .ac-grid { display:grid; gap:10px; grid-template-columns: 2fr 180px; }
 .admit-scope .ac-left { background:none; border:2px solid #000; border-radius:8px; padding:18px; }
 .admit-scope .ac-right { background:none; border:none; display:flex; align-items:flex-start; justify-content:center; padding:0; }
 .admit-scope .field { display:flex; gap:8px; font-size:20px; }
 .admit-scope .label { width:200px; color:#000; font-weight:700; }
-.admit-scope .value { color:#000; font-weight: 600; }
+.admit-scope .value { color:#000; font-weight: 700; font-style: italic; }
 .admit-scope .photo-box { display:none; }
 .admit-scope .ac-right img { width: 150px; height: 200px; object-fit: cover; border-radius: 8px; border: 2px solid #000; background: #fff; }
 .admit-scope .info-table { width:100%; border-collapse:separate; border-spacing:0 12px; font-size:20px; }
 .admit-scope .info-table td:first-child { color:#000; font-weight:700; width: 180px; }
-.admit-scope .info-table td:last-child { color:#000; font-weight: 600; }
+.admit-scope .info-table td:last-child { color:#000; font-weight: 700; font-style: italic; }
 .admit-scope .roll-digits { display:inline-flex; gap:0; vertical-align:middle; margin-left:8px; }
-.admit-scope .roll-digit { border: 2px solid #000; color:#000; font-size: 30px; font-weight:800; width: 42px; height: 48px; line-height: 48px; text-align:center; background:none; }
+.admit-scope .roll-digit { border: 2px solid #000; color:#000; font-size: 30px; font-weight:900; width: 42px; height: 48px; line-height: 48px; text-align:center; background:none; font-style: normal; }
 .admit-scope .sign-row { display:flex; justify-content:flex-end; gap:24px; margin-top:12px; }
 .admit-scope .sign { width:300px; text-align:center; margin-left:auto; }
 .admit-scope .sign .line { margin-top:6px; border-top:2px solid #000; padding-top:6px; font-size:18px; font-weight: 700; color: #000; }
 .admit-scope .signature-img { max-height:80px; width:auto; display:block; margin:0 auto 2px auto; border:2px solid #000; padding:2px; background:#fff; border-radius:4px; }
 .admit-scope .print-actions { position: absolute; top: 18px; right: 32px; z-index: 10; }
-.admit-scope .print-btn { background:#000; color:#fff; padding:12px 20px; border:none; border-radius:6px; cursor:pointer; font-size:18px; font-weight: bold; }
-.admit-scope .back-link { margin-left:10px; color:#2563eb; text-decoration:none; font-size:18px; font-weight: bold; }
+.admit-scope .print-btn { background:#008000; color:#fff; padding:12px 20px; border:none; border-radius:6px; cursor:pointer; font-size:18px; font-weight: bold; }
+.admit-scope .back-link { margin-left:10px; color:#1d4ed8; text-decoration:none; font-size:18px; font-weight: bold; }
 .admit-scope .exam-block { margin-top:14px; background:none; border:2px solid #000; border-radius:8px; padding:16px 18px; }
-.admit-scope .exam-block-title { font-weight:800; margin-bottom:10px; font-size:22px; color: #000; }
-.admit-scope .exam-row { display:flex; gap:12px; font-size:20px; margin:10px 0; align-items:flex-start; color: #000; font-weight: 600; }
-.admit-scope .exam-row .label { width:180px; font-weight: 700; }
+.admit-scope .exam-block-title { font-weight:900; margin-bottom:10px; font-size:22px; color: #008000; font-family: 'Georgia', serif; font-style: normal; }
+.admit-scope .exam-row { display:flex; gap:12px; font-size:20px; margin:10px 0; align-items:flex-start; color: #000; font-weight: 700; font-style: italic; }
+.admit-scope .exam-row .label { width:180px; font-weight: 700; font-style: normal; }
 .admit-scope .admit-footer {
     margin-top:auto;
     padding:4px 0 0;
@@ -184,9 +185,10 @@ body footer, body .footer, body .main-footer, body .app-footer { display:none !i
     border-top:2px solid #000;
     letter-spacing:.5px;
 }
-.admit-scope .venue-select { font-size:16px; padding:6px 8px; border:2px solid #000; border-radius:6px; }
+.admit-scope .venue-select { font-size:16px; padding:6px 8px; border:2px solid #000; border-radius:6px; font-family: 'Times New Roman', Times, serif; }
 @media print {
     @page { size: A4; margin: 0.5in; }
+    .admit-scope { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .admit-scope .no-print { display:none !important; }
     .admit-scope .admit-wrapper { padding:0; min-height:auto; width:100%; }
     .admit-scope .admit-card { width:100%; min-height: calc(297mm - 1in); box-shadow:none; border:2px solid #000; border-radius: 8px; display:flex; flex-direction:column; }
