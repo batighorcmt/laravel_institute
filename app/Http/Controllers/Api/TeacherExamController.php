@@ -16,6 +16,7 @@ use App\Models\SeatPlanRoom;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\Teacher;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
@@ -798,6 +799,8 @@ class TeacherExamController extends Controller
             'allocations.*.teacher_user_id' => 'nullable|integer',
         ]);
 
+        $notifier = new PushNotificationService();
+
         foreach ($request->allocations as $allocation) {
             if (empty($allocation['teacher_user_id'])) {
                 ExamRoomInvigilation::where('school_id', $schoolId)
@@ -806,7 +809,7 @@ class TeacherExamController extends Controller
                     ->where('seat_plan_room_id', $allocation['room_id'])
                     ->delete();
             } else {
-                ExamRoomInvigilation::updateOrCreate(
+                $invigilation = ExamRoomInvigilation::updateOrCreate(
                     [
                         'school_id' => $schoolId,
                         'duty_date' => $request->date,
@@ -817,6 +820,20 @@ class TeacherExamController extends Controller
                         'teacher_id' => $allocation['teacher_user_id'],
                         'assigned_by' => $user->id,
                     ]
+                );
+
+                // Fetch room & plan info for notification
+                $room     = SeatPlanRoom::with('seatPlan')->find($allocation['room_id']);
+                $roomNo   = $room?->room_no ?? (string) $allocation['room_id'];
+                $shift    = $room?->seatPlan?->shift ?? null;
+
+                // Send push notification to the assigned teacher
+                $notifier->sendInvigilationDutyNotification(
+                    teacherUserId:   $allocation['teacher_user_id'],
+                    dutyDate:        $request->date,
+                    roomNo:          (string) $roomNo,
+                    shift:           $shift,
+                    invigilationId:  $invigilation->id
                 );
             }
         }

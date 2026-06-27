@@ -14,6 +14,7 @@ use App\Models\ExamController;
 use App\Models\ExamRoomInvigilation;
 use App\Models\ExamSubject;
 use Illuminate\Support\Facades\Auth;
+use App\Services\PushNotificationService;
 
 class InvigilationController extends Controller
 {
@@ -192,12 +193,13 @@ class InvigilationController extends Controller
         }
 
         $assignedBy = Auth::id();
+        $notifier = new PushNotificationService();
 
         // Perform upserts
         foreach ($room_teacher as $room_id => $teacher_id) {
             if (!$teacher_id) continue;
 
-            ExamRoomInvigilation::updateOrCreate(
+            $invigilation = ExamRoomInvigilation::updateOrCreate(
                 [
                     'school_id' => $school->id,
                     'duty_date' => $duty_date,
@@ -208,6 +210,20 @@ class InvigilationController extends Controller
                     'teacher_id' => $teacher_id,
                     'assigned_by' => $assignedBy
                 ]
+            );
+
+            // Fetch room & plan info for notification
+            $room = SeatPlanRoom::with('seatPlan')->find($room_id);
+            $roomNo = $room?->room_no ?? (string) $room_id;
+            $shift = $room?->seatPlan?->shift ?? null;
+
+            // Send push notification to the assigned teacher
+            $notifier->sendInvigilationDutyNotification(
+                teacherUserId: $teacher_id,
+                dutyDate: $duty_date,
+                roomNo: (string) $roomNo,
+                shift: $shift,
+                invigilationId: $invigilation->id
             );
         }
 

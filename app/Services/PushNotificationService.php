@@ -81,6 +81,71 @@ class PushNotificationService
         }
     }
     /**
+     * Send push notification when a teacher is assigned invigilation duty.
+     *
+     * @param  int         $teacherUserId   The user_id of the assigned teacher
+     * @param  string      $dutyDate        Date string (Y-m-d)
+     * @param  string      $roomNo          Room number/label
+     * @param  string|null $shift           Shift name (e.g. "সকাল", "দুপুর")
+     * @param  int|null    $invigilationId  ID of the ExamRoomInvigilation record (for deep-link)
+     */
+    public function sendInvigilationDutyNotification(
+        int $teacherUserId,
+        string $dutyDate,
+        string $roomNo,
+        ?string $shift = null,
+        ?int $invigilationId = null
+    ): void {
+        $tokens = DeviceToken::where('user_id', $teacherUserId)
+            ->whereNotNull('token')
+            ->pluck('token')
+            ->unique();
+
+        if ($tokens->isEmpty()) return;
+
+        // Format date: Y-m-d -> d/m/Y  (Bangla style)
+        $dateFormatted = \Carbon\Carbon::parse($dutyDate)->format('d/m/Y');
+
+        // Build shift label in Bangla
+        $shiftBn = '';
+        if ($shift) {
+            $shiftMap = [
+                'morning'   => 'সকাল',
+                'afternoon' => 'দুপুর',
+                'evening'   => 'বিকেল',
+                'সকাল'      => 'সকাল',
+                'দুপুর'     => 'দুপুর',
+                'বিকেল'     => 'বিকেল',
+            ];
+            $shiftBn = $shiftMap[strtolower(trim($shift))] ?? $shift;
+        }
+
+        $shiftPart = $shiftBn ? "{$shiftBn} শিফটে " : '';
+
+        $title = 'কক্ষ পরিদর্শকের দায়িত্ব';
+        $body  = "আপনাকে {$dateFormatted} তারিখ {$shiftPart}{$roomNo} নম্বর কক্ষে {$shiftPart}পরিদর্শকের দায়িত্ব দেওয়া হয়েছে";
+
+        $data = [
+            'type'            => 'invigilation_duty',
+            'duty_date'       => $dutyDate,
+            'room_no'         => $roomNo,
+        ];
+        if ($invigilationId) {
+            $data['invigilation_id'] = (string) $invigilationId;
+        }
+
+        foreach ($tokens as $token) {
+            SendPushNotificationJob::dispatch(
+                [$token],
+                $title,
+                $body,
+                $data,
+                $teacherUserId
+            );
+        }
+    }
+
+    /**
      * Send push notification for attendance status update
      */
     public function sendAttendanceNotification($studentId, $status, $date, $type = 'class')

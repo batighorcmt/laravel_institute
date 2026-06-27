@@ -7,6 +7,7 @@ import '../navigation.dart';
 import 'package:go_router/go_router.dart';
 import '../network/dio_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../presentation/features/teacher/exam_duty_page.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -65,6 +66,13 @@ class NotificationService {
               if (ctx != null) {
                 GoRouter.of(ctx).push('/notices/${id.toString()}');
               }
+            } else if (type == 'invigilation_duty') {
+              final ctx = rootNavigatorKey.currentContext;
+              if (ctx != null) {
+                Navigator.of(ctx).push(MaterialPageRoute(
+                  builder: (_) => const ExamDutyPage(),
+                ));
+              }
             }
           }
         } catch (e) {
@@ -111,6 +119,13 @@ class NotificationService {
         if (type == 'notice' && id != null) {
           final ctx = rootNavigatorKey.currentContext;
           if (ctx != null) GoRouter.of(ctx).push('/notices/${id.toString()}');
+        } else if (type == 'invigilation_duty') {
+          final ctx = rootNavigatorKey.currentContext;
+          if (ctx != null) {
+            Navigator.of(ctx).push(MaterialPageRoute(
+              builder: (_) => const ExamDutyPage(),
+            ));
+          }
         }
       } catch (e) {
         developer.log('Error handling onMessageOpenedApp: $e');
