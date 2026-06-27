@@ -174,26 +174,42 @@
           <?php endif; ?>
         </div>
       </div>
-  <table class="info-table" cellpadding="0" cellspacing="0" style="margin:4px 0;width:100%">
-          <tbody style="text-align: left;">
-            <tr>
-              <td>{{ t('Name of Student','শিক্ষার্থীর নাম') }}:</td>
-              <td><strong>{{ $stu_name }}</strong></td>
-              <td>{{ t('ID','আইডি') }}:</td>
-              <td><strong class="no-bn">{{ $stu_id_show }}</strong></td>
-              <td>{{ t('Roll Number','রোল নং') }}:</td>
-              <td><strong class="num">{{ bnNum($stu_roll) }}</strong></td>
-            </tr>
-            <tr>
-                <td>{{ t('Class','শ্রেণি') }}:</td>
-                <td colspan="3"><strong>{{ $className }}{{ $sec_name ? ' (' . $sec_name . ')' : '' }}</strong></td>
-                <td>{{ t('Group','গ্রুপ') }}:</td>
-                <td><strong>{{ $division }}</strong></td>
-                <td>{{ t('Board Reg. No.','বোর্ড রেজি. নং') }}:</td>
-                <td><strong class="no-bn">{{ $stu->board_registration_no ?? '' }}</strong></td>
-            </tr>
-          </tbody>
-        </table>
+  <div class="info-grid">
+    <div class="info-row">
+      <div class="info-item info-name">
+        <span class="ilabel">{{ t('Name','শিক্ষার্থীর নাম') }}</span>
+        <span class="icolon">:</span>
+        <span class="ivalue"><strong>{{ $stu_name }}</strong></span>
+      </div>
+      <div class="info-item">
+        <span class="ilabel">{{ t('ID','আইডি') }}</span>
+        <span class="icolon">:</span>
+        <span class="ivalue no-bn"><strong>{{ $stu_id_show }}</strong></span>
+      </div>
+      <div class="info-item">
+        <span class="ilabel">{{ t('Roll','রোল নং') }}</span>
+        <span class="icolon">:</span>
+        <span class="ivalue num"><strong>{{ bnNum($stu_roll) }}</strong></span>
+      </div>
+    </div>
+    <div class="info-row">
+      <div class="info-item info-name">
+        <span class="ilabel">{{ t('Class','শ্রেণি') }}</span>
+        <span class="icolon">:</span>
+        <span class="ivalue"><strong>{{ $className }}{{ $sec_name ? ' ('.$sec_name.')' : '' }}</strong></span>
+      </div>
+      <div class="info-item">
+        <span class="ilabel">{{ t('Group','গ্রুপ') }}</span>
+        <span class="icolon">:</span>
+        <span class="ivalue"><strong>{{ $division ?: '—' }}</strong></span>
+      </div>
+      <div class="info-item">
+        <span class="ilabel">{{ t('Board Reg. No.','বোর্ড রেজি. নং') }}</span>
+        <span class="icolon">:</span>
+        <span class="ivalue no-bn"><strong>{{ $stu->board_registration_no ?? '—' }}</strong></span>
+      </div>
+    </div>
+  </div>
       <div class="tbl-wrap">
         <table>
           <thead>
