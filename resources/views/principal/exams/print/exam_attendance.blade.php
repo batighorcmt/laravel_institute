@@ -64,14 +64,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  body{ font-family:'Hind Siliguri', system-ui, Segoe UI, Roboto, Arial, sans-serif !important; }
+  body{ font-family:'Hind Siliguri', system-ui, Segoe UI, Roboto, Arial, sans-serif !important; color: #000; }
   .num{ font-family: 'Kalpurush', 'Noto Sans Bengali', serif; font-size: 13pt; font-weight: bold; }
   .no-bn{ font-family: inherit; }
-  :root { --primary:#0ea5e9; --border:#374151; --ink:#0a0a0a; --muted:#111827; --bg:#ffffff; }
+  :root { --primary:#0ea5e9; --border:#000; --ink:#000; --muted:#000; --bg:#ffffff; }
   *{box-sizing:border-box}
   .actions{position:sticky;top:0;z-index:10;background:#fff;padding:10px;text-align:center;border-bottom:1px solid var(--border)}
   .btn{background:var(--primary);border:none;color:#fff;padding:8px 14px;border-radius:8px;font-weight:700;cursor:pointer}
-  .page{width:100%;max-width:210mm;margin:0 auto;padding:10mm}
+  .page{width:100%;max-width:210mm;margin:0 auto;padding:10mm; color: #000;}
   .sheet{background:#fff;border:2px solid var(--border);border-radius:6px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);page-break-after:always}
   .sheet:last-child{page-break-after:auto}
 
@@ -81,7 +81,7 @@
   .logo img{max-width:100%;max-height:100%}
   .brand{text-align:center}
   .school-name{font-size:22px;font-weight:800;color:#000;margin:0;line-height:1.2}
-  .school-meta{margin:2px 0 0;color:#111;font-weight:600;line-height:1.3;font-size:11pt}
+  .school-meta{margin:2px 0 0;color:#000;font-weight:600;line-height:1.3;font-size:11pt}
   .stud-photo{width:80px;height:95px;border:1px solid var(--border);border-radius:4px;background:#f9fafb;display:flex;align-items:center;justify-content:center;overflow:hidden}
   .stud-photo img{width:100%;height:100%;object-fit:cover}
 
@@ -96,7 +96,7 @@
   }
   .info-box td{
     border:none;
-    border-bottom:1px solid #d1d5db;
+    border-bottom:1px solid var(--border);
     padding:6px 10px;
     font-size:12pt;
     color:#000;
@@ -108,7 +108,7 @@
   }
   .info-box .lbl{
     font-weight:700;
-    color:#374151;
+    color:#000;
     width:1%;
     padding-right:2px;
   }
@@ -116,7 +116,7 @@
     padding:6px 3px;
     font-weight:700;
     width:1%;
-    color:#374151;
+    color:#000;
   }
   .info-box .val{
     font-weight:800;
@@ -135,7 +135,7 @@
   td.code, th.code{width:80px;white-space:nowrap}
   td.sigc{height:18mm}
 
-  .brandbar{padding:7px 12px;background:transparent;color:#0a0a0a;text-align:center;font-weight:700;font-size:10pt;letter-spacing:.2px;border-top:2px solid var(--border)}
+  .brandbar{padding:7px 12px;background:transparent;color:#000;text-align:center;font-weight:700;font-size:10pt;letter-spacing:.2px;border-top:2px solid var(--border)}
 
   @media print{
     @page{size:A4 portrait;margin:8mm}
@@ -260,18 +260,18 @@
               <td class="sigc">&nbsp;</td>
             </tr>
           <?php endforeach; else: ?>
-            <tr><td colspan="6" style="text-align:center;color:#111827">{{ t('Schedule not found','সময়সূচী পাওয়া যায়নি') }}</td></tr>
+            <tr><td colspan="6" style="text-align:center;color:#000">{{ t('Schedule not found','সময়সূচী পাওয়া যায়নি') }}</td></tr>
           <?php endif; ?>
           </tbody>
         </table>
       </div>
       <div style="display:flex;justify-content:space-between;gap:16px;margin:16px 12px 12px">
         <div style="width:260px;text-align:center">
-          <div style="border-top:1px solid #475569;height:0;margin-top:60px"></div>
+          <div style="border-top:1px solid #000;height:0;margin-top:60px"></div>
           <div style="margin-top:6px;font-weight:700">{{ t('Verifier','যাচাইকারী') }}</div>
         </div>
         <div style="width:260px;text-align:center">
-          <div style="border-top:1px solid #475569;height:0;margin-top:60px"></div>
+          <div style="border-top:1px solid #000;height:0;margin-top:60px"></div>
           <div style="margin-top:6px;font-weight:700">{{ t('Principal / Head Teacher','অধ্যক্ষ / প্রধান শিক্ষক') }}</div>
         </div>
       </div>
