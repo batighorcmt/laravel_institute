@@ -65,7 +65,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   body{ font-family:'Hind Siliguri', system-ui, Segoe UI, Roboto, Arial, sans-serif !important; color: #000; }
-  .num{ font-family: 'Kalpurush', 'Noto Sans Bengali', serif; font-size: 13pt; font-weight: bold; }
+  .num{ font-family: inherit; font-size: 12pt; font-weight: 800; }
   .no-bn{ font-family: inherit; }
   :root { --primary:#0ea5e9; --border:#000; --ink:#000; --muted:#000; --bg:#ffffff; }
   *{box-sizing:border-box}
