@@ -775,6 +775,7 @@ class TeacherExamController extends Controller
 
         $teachers = \App\Models\Teacher::where('school_id', $schoolId)
             ->where('status', 'active')
+            ->orderBy('serial_number')
             ->get(['user_id', 'first_name', 'last_name', 'initials']);
 
         return response()->json($teachers->map(fn ($t) => [
