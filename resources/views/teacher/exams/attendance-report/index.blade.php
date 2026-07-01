@@ -26,21 +26,21 @@
                 <form id="statsForm" class="form-inline" method="GET" action="{{ auth()->user()->isPrincipal($school->id) ? route('principal.institute.exams.attendance-report', $school) : route('teacher.institute.exams.attendance-report', $school) }}">
                     <div class="form-row align-items-end w-100">
                         <div class="form-group mr-2">
-                            <label class="mr-2">Date</label>
-                            <select id="statDate" name="date" class="form-control" required>
-                                @foreach($dateOptions as $d)
-                                    <option value="{{ $d }}" {{ $date == $d ? 'selected' : '' }}>
-                                        {{ \Carbon\Carbon::parse($d)->format('d/m/Y') }}
+                            <label class="mr-2">Seat Plan</label>
+                            <select id="statPlan" name="plan_id" class="form-control" onchange="this.form.submit()" required>
+                                @foreach($plans as $p)
+                                    <option value="{{ $p->id }}" {{ $plan_id == $p->id ? 'selected' : '' }}>
+                                        {{ $p->name }} ({{ $p->shift }})
                                     </option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="form-group mr-2">
-                            <label class="mr-2">Seat Plan</label>
-                            <select id="statPlan" name="plan_id" class="form-control" required>
-                                @foreach($plans as $p)
-                                    <option value="{{ $p->id }}" {{ $plan_id == $p->id ? 'selected' : '' }}>
-                                        {{ $p->name }} ({{ $p->shift }})
+                            <label class="mr-2">Date</label>
+                            <select id="statDate" name="date" class="form-control" onchange="this.form.submit()" required>
+                                @foreach($dateOptions as $d)
+                                    <option value="{{ $d }}" {{ $date == $d ? 'selected' : '' }}>
+                                        {{ \Carbon\Carbon::parse($d)->format('d/m/Y') }}
                                     </option>
                                 @endforeach
                             </select>

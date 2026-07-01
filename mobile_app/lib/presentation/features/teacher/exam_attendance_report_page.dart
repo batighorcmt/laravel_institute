@@ -83,10 +83,11 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('Attendance Report'),
+        title: const Text('Attendance Report', style: TextStyle(color: Colors.black87)),
         elevation: 0,
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: _isLoadingMeta
           ? const Center(child: CircularProgressIndicator())

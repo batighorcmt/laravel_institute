@@ -85,7 +85,7 @@
                     <div class="form-row align-items-end w-100">
                         <div class="form-group mr-2">
                             <label class="mr-2">Seat Plan</label>
-                            <select id="ovPlan" name="plan_id" class="form-control" required>
+                            <select id="ovPlan" name="plan_id" class="form-control" onchange="this.form.submit()" required>
                                 @foreach($plans as $p)
                                     <option value="{{ $p->id }}" {{ $plan_id == $p->id ? 'selected' : '' }}>
                                         {{ $p->name }} ({{ $p->shift }})
