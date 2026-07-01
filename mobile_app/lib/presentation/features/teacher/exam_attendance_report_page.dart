@@ -21,6 +21,7 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
   String? _selectedDate;
 
   List<dynamic> _rows = [];
+  List<dynamic> _overallClasses = [];
   List<dynamic> _absentStudents = [];
 
   @override
@@ -49,6 +50,7 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
           _availableDates = List<String>.from(meta['dates'] ?? []);
           _selectedDate = null;
           _rows = [];
+          _overallClasses = [];
           _absentStudents = [];
         });
       }
@@ -63,6 +65,7 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
       if (mounted) {
         setState(() {
           _rows = data['rows'] ?? [];
+          _overallClasses = data['overall_classes'] ?? [];
           _absentStudents = data['absent_students'] ?? [];
           _isLoadingData = false;
         });
@@ -146,6 +149,7 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
                     setState(() {
                       _selectedPlanId = val;
                       _rows = [];
+                      _overallClasses = [];
                       _absentStudents = [];
                     });
                     _loadDatesForPlan(val);
@@ -230,6 +234,10 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
       padding: const EdgeInsets.all(16),
       children: [
         _buildSummaryCards(totalPresent, totalAbsent),
+        if (_overallClasses.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _buildClassWiseSummary(),
+        ],
         const SizedBox(height: 24),
         if (_rows.isNotEmpty) ...[
           const Text(
@@ -307,6 +315,64 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
       res = res.replaceAll(en[i], bn[i]);
     }
     return res;
+  }
+
+  Widget _buildClassWiseSummary() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            offset: const Offset(0, 4),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'শ্রেণি ভিত্তিক সারাংশ',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo),
+          ),
+          const SizedBox(height: 12),
+          ..._overallClasses.map((c) {
+            final cName = c['class_name'] ?? '';
+            final tS = int.tryParse(c['total_student']?.toString() ?? '0') ?? 0;
+            final cP = int.tryParse(c['present_cnt']?.toString() ?? '0') ?? 0;
+            final cA = int.tryParse(c['absent_cnt']?.toString() ?? '0') ?? 0;
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(cName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: Text('মোট: ${_toBnNum(tS.toString())}', style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: Text('উ: ${_toBnNum(cP.toString())}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: Text('অ: ${_toBnNum(cA.toString())}', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13), textAlign: TextAlign.right),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
   }
 
   Widget _buildSummaryCards(int present, int absent) {

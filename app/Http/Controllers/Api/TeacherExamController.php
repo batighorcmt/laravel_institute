@@ -653,6 +653,7 @@ class TeacherExamController extends Controller
 
         $rows = [];
         $absentStudents = [];
+        $overallClasses = [];
 
         if ($planId && $date) {
             $allRooms = SeatPlanRoom::where('seat_plan_id', $planId)->get();
@@ -734,6 +735,20 @@ class TeacherExamController extends Controller
                 
                 if ($isP) $roomMap[$roomId]['classes'][$className]['present_cnt']++;
                 if ($isA) $roomMap[$roomId]['classes'][$className]['absent_cnt']++;
+
+                // Overall class-wise summary
+                if (!isset($overallClasses[$className])) {
+                    $overallClasses[$className] = [
+                        'class_name' => $className,
+                        'total_student' => 0,
+                        'present_cnt' => 0,
+                        'absent_cnt' => 0,
+                    ];
+                }
+
+                $overallClasses[$className]['total_student']++;
+                if ($isP) $overallClasses[$className]['present_cnt']++;
+                if ($isA) $overallClasses[$className]['absent_cnt']++;
             }
 
             foreach ($roomMap as &$r) {
@@ -741,6 +756,9 @@ class TeacherExamController extends Controller
             }
 
             $rows = array_values($roomMap);
+            
+            $overallClasses = array_values($overallClasses);
+            usort($overallClasses, fn($a, $b) => strcmp($a['class_name'], $b['class_name']));
 
             $absentRecords = ExamRoomAttendance::with(['student.currentEnrollment.class', 'room'])
                 ->where('duty_date', $date)
@@ -764,6 +782,7 @@ class TeacherExamController extends Controller
         return response()->json([
             'plans' => $plans,
             'rows' => $rows,
+            'overall_classes' => $overallClasses,
             'absent_students' => $absentStudents,
         ]);
     }
