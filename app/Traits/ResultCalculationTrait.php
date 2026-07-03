@@ -71,7 +71,13 @@ trait ResultCalculationTrait
         $enrollmentQuery = StudentEnrollment::where('school_id', $school->id)
             ->where('class_id', $classId)
             ->where('academic_year_id', $exam->academic_year_id)
-            ->where('status','active');
+            ->where('status','active')
+            ->when(!empty($exam->section_ids), function ($query) use ($exam) {
+                $query->whereIn('section_id', $exam->section_ids);
+            })
+            ->when(!empty($exam->group_ids), function ($query) use ($exam) {
+                $query->whereIn('group_id', $exam->group_ids);
+            });
 
         $enrolledStudentIds = $enrollmentQuery->pluck('student_id')->unique()->values()->all();
 
@@ -120,6 +126,12 @@ trait ResultCalculationTrait
         $allEnrollmentIds = StudentEnrollment::whereIn('student_id', $activeStudentIds)
             ->where('academic_year_id', $exam->academic_year_id)
             ->where('class_id', $classId)
+            ->when(!empty($exam->section_ids), function ($query) use ($exam) {
+                $query->whereIn('section_id', $exam->section_ids);
+            })
+            ->when(!empty($exam->group_ids), function ($query) use ($exam) {
+                $query->whereIn('group_id', $exam->group_ids);
+            })
             ->pluck('id');
 
         $assignedSubjectsMap = StudentSubject::with('enrollment')->whereIn('student_enrollment_id', $allEnrollmentIds)

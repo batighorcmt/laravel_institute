@@ -461,6 +461,12 @@ class TeacherExamController extends Controller
             ->whereHas('subjects', function ($query) use ($request) {
                 $query->where('subject_id', $request->subject_id);
             })
+            ->when(!empty($exam->section_ids), function ($query) use ($exam) {
+                $query->whereIn('section_id', $exam->section_ids);
+            })
+            ->when(!empty($exam->group_ids), function ($query) use ($exam) {
+                $query->whereIn('group_id', $exam->group_ids);
+            })
             ->with(['student', 'section'])
             ->orderBy('roll_no')
             ->get();

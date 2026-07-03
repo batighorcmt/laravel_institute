@@ -43,6 +43,12 @@ class MarkEntryController extends Controller
                 ->whereHas('subjects', function ($query) use ($sub) {
                     $query->where('subject_id', $sub->subject_id);
                 })
+                ->when(!empty($exam->section_ids), function ($query) use ($exam) {
+                    $query->whereIn('section_id', $exam->section_ids);
+                })
+                ->when(!empty($exam->group_ids), function ($query) use ($exam) {
+                    $query->whereIn('group_id', $exam->group_ids);
+                })
                 ->count();
 
             // Count entered marks
@@ -77,6 +83,12 @@ class MarkEntryController extends Controller
             ->with(['student', 'subjects' => function ($query) use ($examSubject) {
                 $query->where('subject_id', $examSubject->subject_id);
             }])
+            ->when(!empty($exam->section_ids), function ($query) use ($exam) {
+                $query->whereIn('section_id', $exam->section_ids);
+            })
+            ->when(!empty($exam->group_ids), function ($query) use ($exam) {
+                $query->whereIn('group_id', $exam->group_ids);
+            })
             ->orderBy('roll_no')
             ->get();
 
@@ -217,6 +229,12 @@ class MarkEntryController extends Controller
             ->with(['student', 'subjects' => function ($query) use ($examSubject) {
                 $query->where('subject_id', $examSubject->subject_id);
             }])
+            ->when(!empty($exam->section_ids), function ($query) use ($exam) {
+                $query->whereIn('section_id', $exam->section_ids);
+            })
+            ->when(!empty($exam->group_ids), function ($query) use ($exam) {
+                $query->whereIn('group_id', $exam->group_ids);
+            })
             ->orderBy('roll_no')
             ->get();
 
@@ -241,6 +259,12 @@ class MarkEntryController extends Controller
             ->where('student_enrollments.class_id', $exam->class_id)
             ->whereIn('students.id', $studentIdsWithMarks)
             ->where('students.status', 'active')
+            ->when(!empty($exam->section_ids), function ($query) use ($exam) {
+                $query->whereIn('student_enrollments.section_id', $exam->section_ids);
+            })
+            ->when(!empty($exam->group_ids), function ($query) use ($exam) {
+                $query->whereIn('student_enrollments.group_id', $exam->group_ids);
+            })
             ->orderBy('student_enrollments.roll_no')
             ->select('students.*')
             ->with(['enrollments' => function ($query) use ($exam) {
