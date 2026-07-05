@@ -589,11 +589,11 @@
                                 <table class="table table-bordered table-hover mb-0 table-light-blue">
                                     <thead>
                                         <tr>
-                                            <th class="text-center" width="15%">শাখা</th>
-                                            <th class="text-center" width="12%">রোল</th>
-                                            <th width="28%">নাম</th>
-                                            <th class="text-center" width="10%">সংখ্যা</th>
-                                            <th>যেসব বিষয়ে ফেল করেছে</th>
+                                            <th class="text-center" width="12%">শাখা</th>
+                                            <th class="text-center" width="8%">রোল</th>
+                                            <th width="20%">নাম</th>
+                                            <th class="text-center" width="8%">সংখ্যা</th>
+                                            <th width="52%">যেসব বিষয়ে ফেল করেছে</th>
                                         </tr>
                                     </thead>
                                     <tbody>
