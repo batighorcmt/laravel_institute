@@ -152,22 +152,42 @@
                                     $isNR = ($grade === 'N/R' || ($grade === '' && empty($resData['display_only'])));
                                     $isAbsent = $resData['is_absent'] ?? false;
                                     $isNA = !empty($resData['is_not_applicable']);
+                                    $isSubFail = ($grade === 'F' || $grade === 'Abs') && !$isNR && !$isNA && !empty($resData) && empty($resData['display_only']);
+
+                                    // For 'each' pass type, check each part separately
+                                    $passType = $subject['pass_type'] ?? 'combined';
+                                    $creativePassMark = $subject['creative_pass_mark'] ?? 0;
+                                    $mcqPassMark = $subject['mcq_pass_mark'] ?? 0;
+                                    $practicalPassMark = $subject['practical_pass_mark'] ?? 0;
+
+                                    $isCreativeFail = false;
+                                    $isMcqFail = false;
+                                    $isPracticalFail = false;
+
+                                    if ($isSubFail && $passType === 'each' && !$isAbsent && !$isNR && !$isNA) {
+                                        if ($creativePassMark > 0 && (float)$creative < $creativePassMark) $isCreativeFail = true;
+                                        if ($mcqPassMark > 0 && (float)$mcq < $mcqPassMark) $isMcqFail = true;
+                                        if ($practicalPassMark > 0 && (float)$practical < $practicalPassMark) $isPracticalFail = true;
+                                    }
+
+                                    $failStyle = 'color:#c62828 !important; font-weight:bold !important;';
+                                    $totalGpaStyle = $isSubFail ? $failStyle : '';
                                 @endphp
-    
+
                                 @if($subject['creative_full_mark'] > 0)
-                                    <td class="text-center subgrp-{{ $loop->index }}">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : toBn($creative, $lang)) }}</td>
+                                    <td class="text-center subgrp-{{ $loop->index }}" style="{{ ($isCreativeFail || ($isSubFail && $isAbsent)) ? $failStyle : '' }}">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : toBn($creative, $lang)) }}</td>
                                 @endif
                                 @if($subject['mcq_full_mark'] > 0)
-                                    <td class="text-center subgrp-{{ $loop->index }}">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : toBn($mcq, $lang)) }}</td>
+                                    <td class="text-center subgrp-{{ $loop->index }}" style="{{ ($isMcqFail || ($isSubFail && $isAbsent)) ? $failStyle : '' }}">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : toBn($mcq, $lang)) }}</td>
                                 @endif
                                 @if($subject['practical_full_mark'] > 0)
-                                    <td class="text-center subgrp-{{ $loop->index }}">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : toBn($practical, $lang)) }}</td>
+                                    <td class="text-center subgrp-{{ $loop->index }}" style="{{ ($isPracticalFail || ($isSubFail && $isAbsent)) ? $failStyle : '' }}">{{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : toBn($practical, $lang)) }}</td>
                                 @endif
-    
-                                <td class="text-center font-weight-bold subgrp-{{ $loop->index }} col-total">
+
+                                <td class="text-center font-weight-bold subgrp-{{ $loop->index }} col-total" style="{{ $totalGpaStyle }}">
                                     {{ ($isNA || $isNR) ? '' : ($isAbsent ? 'Ab' : toBn($total, $lang)) }}
                                 </td>
-                                <td class="text-center subgrp-{{ $loop->index }} col-gpa">
+                                <td class="text-center subgrp-{{ $loop->index }} col-gpa" style="{{ $totalGpaStyle }}">
                                     @if($isNA || $isNR || !empty($resData['display_only']))
                                         {{-- Empty --}}
                                     @else
