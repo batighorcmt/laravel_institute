@@ -21,23 +21,32 @@
             @page { size: auto; margin: 10mm; }
             body { font-size: 9pt; padding: 0; margin: 0; background: #fff !important; color: #000; }
             .no-print, .btn { display: none !important; }
-            /* Optimize grids for print to keep them side by side */
-            .row { display: flex; flex-wrap: wrap; }
-            .col-6 { width: 20%; flex: 0 0 20%; max-width: 20%; }
-            .col-md-6 { width: 50%; flex: 0 0 50%; max-width: 50%; }
+            
+            /* Stat cards specific styling for print */
+            .stat-cards-row { display: flex !important; flex-wrap: nowrap !important; }
+            .stat-cards-row .col-6 { width: 20% !important; flex: 0 0 20% !important; max-width: 20% !important; padding: 0 3px !important; }
+            
+            /* General row behavior in print - let them be block to avoid overlap on page break */
+            .row:not(.stat-cards-row) { display: block !important; width: 100% !important; margin: 0 !important; }
+            .row:not(.stat-cards-row) > div[class*="col-"] { width: 100% !important; max-width: 100% !important; flex: none !important; margin-bottom: 10px !important; padding: 0 !important; }
+
             .page-break { page-break-after: auto; break-after: auto; }
             .stat-card, .chart-box, .panel-box, tr, td, th { page-break-inside: avoid; break-inside: avoid; }
+            
             .stat-card { padding: 0.5rem; margin-bottom: 0.5rem; }
             .stat-card h6 { font-size: 0.75rem; margin-bottom: 0.2rem; }
             .stat-card .stat-value { font-size: 1.25rem; }
-            .chart-box { height: 200px !important; padding: 0.5rem; margin-bottom: 0.5rem; }
+            .chart-box { height: auto !important; min-height: 250px !important; padding: 0.5rem; margin-bottom: 0.5rem; }
             .section-title { margin: 0.5rem 0 0.25rem; font-size: 1rem; border-bottom: 1px solid var(--primary); padding-bottom: 2px; }
             .table { margin-bottom: 0.5rem; font-size: 8.5pt; }
             .table th, .table td { padding: 0.2rem 0.3rem !important; }
             .screen-header { display: none !important; }
-            .print-header { display: block !important; margin-bottom: 0.5rem; padding-bottom: 0; border: none; }
-            .print-header h4 { font-size: 1.1rem; margin-bottom: 2px; }
-            .print-header p { font-size: 0.9rem; margin-bottom: 2px; }
+            
+            .print-header { display: flex !important; align-items: center; justify-content: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); text-align: left; }
+            .print-header-logo { max-height: 70px; margin-right: 15px; }
+            .print-header-text h4 { font-size: 1.8rem; font-weight: bold; margin-bottom: 2px; }
+            .print-header-text p { font-size: 0.95rem; margin-bottom: 2px; }
+            
             /* Reduce space between sections */
             .mb-3, .mb-4 { margin-bottom: 0.5rem !important; }
         }
@@ -211,10 +220,32 @@
         </div>
     </div>
 
+    @php
+        $logoUrl = null;
+        if(isset($school) && $school && $school->logo){
+            $candidates = [
+                'uploads/schools/'.$school->logo,
+                'storage/schools/'.$school->logo,
+                'storage/'.$school->logo,
+            ];
+            foreach($candidates as $c){ 
+                if(file_exists(public_path($c))){ 
+                    $logoUrl = asset($c); 
+                    break;
+                } 
+            }
+        }
+    @endphp
+
     <div class="print-header">
-        <h4>{{ $instituteName }}</h4>
-        @if($instituteAddress)<p>{{ $instituteAddress }}</p>@endif
-        <p><strong>{{ $exam->name }} — {{ $class->name }} ({{ $yearLabel }}) পরিসংখ্যান রিপোর্ট</strong></p>
+        @if($logoUrl)
+            <img src="{{ $logoUrl }}" alt="Logo" class="print-header-logo">
+        @endif
+        <div class="print-header-text">
+            <h4>{{ $instituteName }}</h4>
+            @if($instituteAddress)<p>{{ $instituteAddress }}</p>@endif
+            <p><strong>{{ $exam->name }} — {{ $class->name }} ({{ $yearLabel }}) পরিসংখ্যান রিপোর্ট</strong></p>
+        </div>
     </div>
 
     <div class="container-fluid px-3 px-md-4" style="max-width: 1200px;">
@@ -240,7 +271,7 @@
         @endif
 
         {{-- সার্বিক পরিসংখ্যান --}}
-        <div class="row g-2 mb-3">
+        <div class="row g-2 mb-3 stat-cards-row">
             <div class="col-6 col-md-4 col-lg">
                 <div class="stat-card stat-total">
                     <h6><i class="bi bi-people-fill"></i> মোট পরীক্ষার্থী</h6>
