@@ -31,7 +31,7 @@
             .row:not(.stat-cards-row) > div[class*="col-"] { width: 100% !important; max-width: 100% !important; flex: none !important; margin-bottom: 10px !important; padding: 0 !important; }
 
             .page-break { page-break-after: auto; break-after: auto; }
-            .stat-card, .chart-box, .panel-box, tr, td, th { page-break-inside: avoid; break-inside: avoid; }
+            .stat-card, .chart-box, tr, td, th { page-break-inside: avoid; break-inside: avoid; }
             
             .stat-card { padding: 0.5rem; margin-bottom: 0.5rem; }
             .stat-card h6 { font-size: 0.75rem; margin-bottom: 0.2rem; }
@@ -377,7 +377,7 @@
             {{-- ফেলের সংখ্যা ভিত্তিক সারাংশ --}}
             @if(count($failSummaryBySubjectCount) > 0)
                 <div class="row mb-3 page-break">
-                    <div class="col-md-5 mb-3 mb-md-0">
+                    <div class="col-12">
                         <h5 class="section-title"><i class="bi bi-exclamation-octagon"></i> ফেলের সংখ্যা ভিত্তিক সারাংশ</h5>
                         <div class="panel-box">
                             <div class="table-responsive">
@@ -397,40 +397,6 @@
                                                 <td class="rolls-cell">{{ $row['rolls'] }}</td>
                                             </tr>
                                         @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-7">
-                        <h5 class="section-title"><i class="bi bi-person-x"></i> শিক্ষার্থীর বিষয়ভিত্তিক ফেলের তালিকা</h5>
-                        <div class="panel-box">
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover mb-0 table-light-blue">
-                                    <thead>
-                                        <tr>
-                                            <th class="text-center" width="15%">রোল</th>
-                                            <th width="30%">নাম</th>
-                                            <th class="text-center" width="10%">সংখ্যা</th>
-                                            <th>যেসব বিষয়ে ফেল করেছে</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @if(isset($studentFailures) && count($studentFailures) > 0)
-                                            @foreach($studentFailures as $fail)
-                                                <tr>
-                                                    <td class="text-center"><strong>{{ $fail['roll'] }}</strong></td>
-                                                    <td>{{ $fail['name'] }}</td>
-                                                    <td class="text-center text-danger"><strong>{{ $fail['fail_count'] }}</strong></td>
-                                                    <td class="rolls-cell text-danger">{{ $fail['subjects'] }}</td>
-                                                </tr>
-                                            @endforeach
-                                        @else
-                                            <tr>
-                                                <td colspan="4" class="text-center">কোনো তথ্য নেই</td>
-                                            </tr>
-                                        @endif
                                     </tbody>
                                 </table>
                             </div>
@@ -608,6 +574,39 @@
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- শিক্ষার্থীর বিষয়ভিত্তিক ফেলের তালিকা (Moved to end) --}}
+            @if(isset($studentFailures) && count($studentFailures) > 0)
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h5 class="section-title"><i class="bi bi-person-x"></i> শিক্ষার্থীর বিষয়ভিত্তিক ফেলের তালিকা</h5>
+                        <div class="panel-box">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover mb-0 table-light-blue">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center" width="15%">রোল</th>
+                                            <th width="30%">নাম</th>
+                                            <th class="text-center" width="10%">সংখ্যা</th>
+                                            <th>যেসব বিষয়ে ফেল করেছে</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($studentFailures as $fail)
+                                            <tr>
+                                                <td class="text-center"><strong>{{ $fail['roll'] }}</strong></td>
+                                                <td>{{ $fail['name'] }}</td>
+                                                <td class="text-center text-danger"><strong>{{ $fail['fail_count'] }}</strong></td>
+                                                <td class="rolls-cell text-danger">{{ $fail['subjects'] }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
