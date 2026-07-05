@@ -1094,6 +1094,10 @@ class ResultController extends Controller
             $roll = optional(optional($res->student)->currentEnrollment)->roll_no ?? $res->student?->student_id ?? '—';
             $name = $res->student?->student_name_bn ?: ($res->student?->student_name_en ?? '—');
             
+            $section = optional(optional($res->student)->currentEnrollment)->section;
+            $sectionName = $section?->name ?? 'অনির্ধারিত';
+            $sectionId = $section?->id ?? 999999;
+            
             $failedSubjects = [];
             foreach ($finalSubjects as $key => $fSub) {
                 if (! empty($fSub['display_only'])) {
@@ -1113,6 +1117,8 @@ class ResultController extends Controller
             
             if (count($failedSubjects) > 0) {
                 $failures[] = [
+                    'section' => $sectionName,
+                    'section_id' => $sectionId,
                     'roll' => (string) $roll,
                     'name' => $name,
                     'fail_count' => count($failedSubjects),
@@ -1122,8 +1128,8 @@ class ResultController extends Controller
         }
         
         usort($failures, function ($a, $b) {
-            if ($a['fail_count'] !== $b['fail_count']) {
-                return $b['fail_count'] <=> $a['fail_count'];
+            if ($a['section_id'] !== $b['section_id']) {
+                return $a['section_id'] <=> $b['section_id'];
             }
             return strnatcasecmp($a['roll'], $b['roll']);
         });

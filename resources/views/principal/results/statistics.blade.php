@@ -589,8 +589,9 @@
                                 <table class="table table-bordered table-hover mb-0 table-light-blue">
                                     <thead>
                                         <tr>
-                                            <th class="text-center" width="15%">রোল</th>
-                                            <th width="30%">নাম</th>
+                                            <th class="text-center" width="15%">শাখা</th>
+                                            <th class="text-center" width="12%">রোল</th>
+                                            <th width="28%">নাম</th>
                                             <th class="text-center" width="10%">সংখ্যা</th>
                                             <th>যেসব বিষয়ে ফেল করেছে</th>
                                         </tr>
@@ -598,6 +599,7 @@
                                     <tbody>
                                         @foreach($studentFailures as $fail)
                                             <tr>
+                                                <td class="text-center">{{ $fail['section'] ?? 'অনির্ধারিত' }}</td>
                                                 <td class="text-center"><strong>{{ $fail['roll'] }}</strong></td>
                                                 <td>{{ $fail['name'] }}</td>
                                                 <td class="text-center text-danger"><strong>{{ $fail['fail_count'] }}</strong></td>
