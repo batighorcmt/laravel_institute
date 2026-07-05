@@ -242,9 +242,18 @@
         const n = groups.length; 
         
         if (n <= 11) {
-            table.classList.remove('original');
+            container.innerHTML = '';
+            const clone = table.cloneNode(true);
+            clone.id = '';
+            clone.classList.remove('original');
+            container.appendChild(clone);
+            
+            if (signatures) {
+                const sigClone = signatures.cloneNode(true);
+                sigClone.classList.remove('original');
+                container.appendChild(sigClone);
+            }
             window.print();
-            table.classList.add('original');
             return;
         }
 

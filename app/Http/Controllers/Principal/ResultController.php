@@ -1437,6 +1437,7 @@ class ResultController extends Controller
 
             $students = Student::with(['currentEnrollment.section', 'currentEnrollment.group'])
                 ->whereIn('id', $allStudentIds)
+                ->where('status', 'active')
                 ->get();
 
             // Pre-load assigned subjects for all these students
