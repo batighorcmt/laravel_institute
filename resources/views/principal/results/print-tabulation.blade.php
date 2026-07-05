@@ -236,7 +236,7 @@
                 {{ $lang === 'bn' ? 'যাচাইকারী' : 'Verified By' }}
             </div>
             <div style="text-align: center; width: 150px; border-top: 1px solid #000; padding-top: 5px; font-size: 10pt;">
-                {{ $lang === 'bn' ? 'প্রধান শিক্ষক' : 'Principal' }}
+                {{ $lang === 'bn' ? 'প্রধান শিক্ষক' : 'Head of Institute' }}
             </div>
         </div>
     @else
