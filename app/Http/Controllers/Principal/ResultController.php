@@ -60,8 +60,24 @@ class ResultController extends Controller
         $results = $calcData['results'];
         $class = SchoolClass::find($classId);
 
-        // Ensure merit positions are updated properly
-        $results = $results->sortByDesc('computed_gpa')->sortByDesc('computed_total_marks')->values();
+        // Sort: fail_count ASC → total_marks DESC → roll_no ASC
+        $results = $results->sort(function ($a, $b) {
+            $failA = (int) ($a->fail_count ?? 0);
+            $failB = (int) ($b->fail_count ?? 0);
+            if ($failA !== $failB) {
+                return $failA <=> $failB;
+            }
+
+            $marksA = (float) ($a->computed_total_marks ?? 0);
+            $marksB = (float) ($b->computed_total_marks ?? 0);
+            if ($marksA !== $marksB) {
+                return $marksB <=> $marksA;
+            }
+
+            $rollA = optional($a->student->currentEnrollment)->roll_no ?? PHP_INT_MAX;
+            $rollB = optional($b->student->currentEnrollment)->roll_no ?? PHP_INT_MAX;
+            return strnatcasecmp((string) $rollA, (string) $rollB);
+        })->values();
 
         // Add section-wise positions for each result
         $sectionGroups = $results->groupBy(function ($result) {
