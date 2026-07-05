@@ -18,14 +18,28 @@
         }
 
         @media print {
-            body { font-size: 11pt; padding: 0; margin: 0; background: #fff !important; color: #000; }
+            @page { size: auto; margin: 10mm; }
+            body { font-size: 9pt; padding: 0; margin: 0; background: #fff !important; color: #000; }
             .no-print, .btn { display: none !important; }
-            .page-break { page-break-after: always; break-after: page; }
-            .stat-card, .chart-box, .grade-pill { page-break-inside: avoid; break-inside: avoid; }
-            .table-responsive { overflow: visible !important; }
-            .chart-box { height: 240px !important; }
+            /* Optimize grids for print to keep them side by side */
+            .row { display: flex; flex-wrap: wrap; }
+            .col-6 { width: 20%; flex: 0 0 20%; max-width: 20%; }
+            .col-md-6 { width: 50%; flex: 0 0 50%; max-width: 50%; }
+            .page-break { page-break-after: auto; break-after: auto; }
+            .stat-card, .chart-box, .panel-box, tr, td, th { page-break-inside: avoid; break-inside: avoid; }
+            .stat-card { padding: 0.5rem; margin-bottom: 0.5rem; }
+            .stat-card h6 { font-size: 0.75rem; margin-bottom: 0.2rem; }
+            .stat-card .stat-value { font-size: 1.25rem; }
+            .chart-box { height: 200px !important; padding: 0.5rem; margin-bottom: 0.5rem; }
+            .section-title { margin: 0.5rem 0 0.25rem; font-size: 1rem; border-bottom: 1px solid var(--primary); padding-bottom: 2px; }
+            .table { margin-bottom: 0.5rem; font-size: 8.5pt; }
+            .table th, .table td { padding: 0.2rem 0.3rem !important; }
             .screen-header { display: none !important; }
-            .print-header { display: block !important; }
+            .print-header { display: block !important; margin-bottom: 0.5rem; padding-bottom: 0; border: none; }
+            .print-header h4 { font-size: 1.1rem; margin-bottom: 2px; }
+            .print-header p { font-size: 0.9rem; margin-bottom: 2px; }
+            /* Reduce space between sections */
+            .mb-3, .mb-4 { margin-bottom: 0.5rem !important; }
         }
 
         body {
@@ -331,27 +345,61 @@
 
             {{-- ফেলের সংখ্যা ভিত্তিক সারাংশ --}}
             @if(count($failSummaryBySubjectCount) > 0)
-                <div class="row mb-3">
-                    <div class="col-12">
+                <div class="row mb-3 page-break">
+                    <div class="col-md-5 mb-3 mb-md-0">
                         <h5 class="section-title"><i class="bi bi-exclamation-octagon"></i> ফেলের সংখ্যা ভিত্তিক সারাংশ</h5>
                         <div class="panel-box">
                             <div class="table-responsive">
                                 <table class="table table-bordered table-hover mb-0 table-light-blue">
                                     <thead>
                                         <tr>
-                                            <th class="text-center" width="18%">ফেলকৃত বিষয় সংখ্যা</th>
-                                            <th class="text-center" width="14%">শিক্ষার্থী সংখ্যা</th>
-                                            <th>ফেলকৃত শিক্ষার্থীর রোল নং</th>
+                                            <th class="text-center" width="25%">ফেলকৃত বিষয়</th>
+                                            <th class="text-center" width="25%">শিক্ষার্থী</th>
+                                            <th>রোল নং</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($failSummaryBySubjectCount as $row)
                                             <tr>
-                                                <td class="text-center"><strong>{{ $row['fail_count'] }}</strong></td>
-                                                <td class="text-center">{{ $row['student_count'] }}</td>
+                                                <td class="text-center"><strong>{{ $row['fail_count'] }}</strong> টি</td>
+                                                <td class="text-center">{{ $row['student_count'] }} জন</td>
                                                 <td class="rolls-cell">{{ $row['rolls'] }}</td>
                                             </tr>
                                         @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-7">
+                        <h5 class="section-title"><i class="bi bi-person-x"></i> শিক্ষার্থীর বিষয়ভিত্তিক ফেলের তালিকা</h5>
+                        <div class="panel-box">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover mb-0 table-light-blue">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center" width="15%">রোল</th>
+                                            <th width="30%">নাম</th>
+                                            <th class="text-center" width="10%">সংখ্যা</th>
+                                            <th>যেসব বিষয়ে ফেল করেছে</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if(isset($studentFailures) && count($studentFailures) > 0)
+                                            @foreach($studentFailures as $fail)
+                                                <tr>
+                                                    <td class="text-center"><strong>{{ $fail['roll'] }}</strong></td>
+                                                    <td>{{ $fail['name'] }}</td>
+                                                    <td class="text-center text-danger"><strong>{{ $fail['fail_count'] }}</strong></td>
+                                                    <td class="rolls-cell text-danger">{{ $fail['subjects'] }}</td>
+                                                </tr>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td colspan="4" class="text-center">কোনো তথ্য নেই</td>
+                                            </tr>
+                                        @endif
                                     </tbody>
                                 </table>
                             </div>

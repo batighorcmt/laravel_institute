@@ -905,6 +905,7 @@ class ResultController extends Controller
         $failSummaryBySubjectCount = $this->buildFailSummaryBySubjectCount($computedResults);
         $sectionPassRates = $this->buildSectionPassRates($computedResults);
         $groupPassRates = $this->buildGroupPassRates($computedResults);
+        $studentFailures = $this->buildStudentFailures($computedResults, $calcData);
 
         $topStudents = $computedResults
             ->sort(function ($a, $b) {
@@ -953,6 +954,7 @@ class ResultController extends Controller
             'failSummaryBySubjectCount',
             'sectionPassRates',
             'groupPassRates',
+            'studentFailures',
             'topStudents',
             'decimal',
         ));
@@ -1067,6 +1069,66 @@ class ResultController extends Controller
         }
 
         return $summary;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, mixed>  $computedResults
+     * @param  array<string, mixed>|null  $calcData
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildStudentFailures($computedResults, $calcData): array
+    {
+        if (! $calcData) {
+            return [];
+        }
+
+        $finalSubjects = $calcData['finalSubjects'] ?? collect();
+        $failures = [];
+
+        foreach ($computedResults as $res) {
+            $failCount = (int) ($res->fail_count ?? 0);
+            if ($failCount <= 0) {
+                continue;
+            }
+
+            $roll = optional(optional($res->student)->currentEnrollment)->roll_no ?? $res->student?->student_id ?? '—';
+            $name = $res->student?->student_name_bn ?: ($res->student?->student_name_en ?? '—');
+            
+            $failedSubjects = [];
+            foreach ($finalSubjects as $key => $fSub) {
+                if (! empty($fSub['display_only'])) {
+                    continue;
+                }
+
+                $sr = $res->subject_results?->get($key);
+                if (! $sr) {
+                    continue;
+                }
+
+                $grade = (string) ($sr['grade'] ?? '');
+                if ($grade === 'F' || $grade === 'Abs') {
+                    $failedSubjects[] = $fSub['name'] ?? 'অজানা';
+                }
+            }
+            
+            if (count($failedSubjects) > 0) {
+                $failures[] = [
+                    'roll' => (string) $roll,
+                    'name' => $name,
+                    'fail_count' => count($failedSubjects),
+                    'subjects' => implode(', ', $failedSubjects),
+                ];
+            }
+        }
+        
+        usort($failures, function ($a, $b) {
+            if ($a['fail_count'] !== $b['fail_count']) {
+                return $b['fail_count'] <=> $a['fail_count'];
+            }
+            return strnatcasecmp($a['roll'], $b['roll']);
+        });
+
+        return $failures;
     }
 
     /**
