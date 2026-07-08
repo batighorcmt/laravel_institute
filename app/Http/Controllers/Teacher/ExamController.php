@@ -536,6 +536,149 @@ class ExamController extends Controller
     }
 
     /**
+     * Absentee Report – print view of absent students for a specific plan.
+     */
+    public function absenteeReport(Request $request, $school)
+    {
+        $schoolModel = School::findOrFail($school);
+        $this->authorizeExamController($schoolModel->id);
+
+        $plan_id = (int) $request->get('plan_id');
+        $plans = SeatPlan::where('school_id', $schoolModel->id)->active()->orderBy('id', 'desc')->get();
+        
+        if ($plan_id === 0 && $plans->isNotEmpty()) {
+            $plan_id = $plans->first()->id;
+        }
+
+        $plan = SeatPlan::find($plan_id);
+        $matrix = [];
+        $dates = [];
+        $classes = [];
+
+        if ($plan) {
+            // Get all absences for this plan
+            $absentees = DB::table('exam_room_attendances as a')
+                ->join('students as s', 's.id', '=', 'a.student_id')
+                ->join('student_enrollments as se', function ($join) {
+                    $join->on('se.student_id', '=', 's.id')
+                        ->where('se.status', '=', 'active');
+                })
+                ->join('classes as c', 'c.id', '=', 'se.class_id')
+                ->leftJoin('seat_plan_exams as spe', 'spe.seat_plan_id', '=', 'a.plan_id')
+                ->leftJoin('exams as e', function($join) {
+                    $join->on('e.id', '=', 'spe.exam_id')
+                         ->on('e.class_id', '=', 'se.class_id'); 
+                })
+                ->leftJoin('exam_subjects as es', function($join) {
+                    $join->on('es.exam_id', '=', 'e.id')
+                        ->on('es.exam_date', '=', 'a.duty_date'); 
+                })
+                ->leftJoin('subjects as sub', 'sub.id', '=', 'es.subject_id')
+                ->where('a.plan_id', $plan_id)
+                ->where('a.status', 'absent')
+                ->select(
+                    's.id as student_id',
+                    's.student_name_en',
+                    's.student_name_bn',
+                    'se.roll_no',
+                    'c.name as class_name',
+                    'c.bangla_name as class_bangla_name',
+                    'c.numeric_value',
+                    'sub.name as subject_name',
+                    'sub.bangla_name as subject_bangla_name',
+                    'a.duty_date'
+                )
+                ->distinct()
+                ->orderBy('se.roll_no')
+                ->get();
+
+            // We also need to know which classes have exams on which dates to show 'অনুপস্থিত নেই' properly.
+            $examDatesQuery = DB::table('seat_plan_exams as spe')
+                ->join('exams as e', 'e.id', '=', 'spe.exam_id')
+                ->join('exam_subjects as es', 'es.exam_id', '=', 'e.id')
+                ->join('classes as c', 'c.id', '=', 'e.class_id')
+                ->leftJoin('subjects as sub', 'sub.id', '=', 'es.subject_id')
+                ->where('spe.seat_plan_id', $plan_id)
+                ->whereNotNull('es.exam_date')
+                ->select(
+                    'es.exam_date as duty_date', 
+                    'c.name as class_name', 
+                    'c.bangla_name as class_bangla_name', 
+                    'c.numeric_value', 
+                    'sub.name as subject_name',
+                    'sub.bangla_name as subject_bangla_name'
+                )
+                ->distinct()
+                ->orderBy('es.exam_date')
+                ->orderBy('c.numeric_value')
+                ->get();
+
+            $dateSet = [];
+            $classSet = [];
+            
+            // Initialize matrix from schedules
+            foreach ($examDatesQuery as $row) {
+                $d = $row->duty_date;
+                $cName = $row->class_bangla_name ?: $row->class_name;
+                $cNum = $row->numeric_value;
+                $subj = $row->subject_bangla_name ?: $row->subject_name;
+
+                $dateSet[$d] = $d;
+                $classSet[$cNum] = $cName;
+
+                if (!isset($matrix[$d])) {
+                    $matrix[$d] = [];
+                }
+                if (!isset($matrix[$d][$cName])) {
+                    $matrix[$d][$cName] = [
+                        'subject' => $subj,
+                        'absentees' => []
+                    ];
+                }
+            }
+
+            // Fill absentees
+            $addedAbsentees = [];
+            foreach ($absentees as $abs) {
+                $d = $abs->duty_date;
+                $cName = $abs->class_bangla_name ?: $abs->class_name;
+                $cNum = $abs->numeric_value;
+                $subj = $abs->subject_bangla_name ?: $abs->subject_name;
+
+                $dateSet[$d] = $d;
+                $classSet[$cNum] = $cName;
+
+                if (!isset($matrix[$d])) {
+                    $matrix[$d] = [];
+                }
+                if (!isset($matrix[$d][$cName])) {
+                    $matrix[$d][$cName] = [
+                        'subject' => $subj,
+                        'absentees' => []
+                    ];
+                }
+
+                $key = $d . '_' . $cNum . '_' . $abs->student_id;
+                if (!isset($addedAbsentees[$key])) {
+                    $matrix[$d][$cName]['absentees'][] = $abs;
+                    $addedAbsentees[$key] = true;
+                }
+            }
+
+            ksort($dateSet);
+            ksort($classSet);
+            $dates = array_values($dateSet);
+            $classes = array_values($classSet);
+        }
+
+        if ($request->get('action') === 'print') {
+            return view('teacher.exams.attendance-report.absentee_print', compact('schoolModel', 'plan', 'dates', 'classes', 'matrix'));
+        }
+
+        return view('teacher.exams.attendance-report.absentee', compact('schoolModel', 'plans', 'plan_id', 'plan', 'dates', 'classes', 'matrix'));
+    }
+
+    /**
      * Overall Attendance Report – only accessible by exam controllers.
      */
     public function overallAttendanceReport(Request $request, $school)
