@@ -23,24 +23,14 @@ class FrontendWebController extends Controller
         $domain = preg_replace('/^www\./', '', $request->getHost());
         $superAdminDomain = 'institute.batighorbd.com';
 
-        if ($domain === $superAdminDomain) {
-            return redirect('/login');
-        }
-
         $schoolId = config('school.id');
 
-        if (! $schoolId && app()->environment('local') && ($domain === 'localhost' || $domain === '127.0.0.1')) {
-            return redirect('/login');
-        }
-
-        $school = School::find($schoolId);
-
-        if (! $school) {
-            return redirect('/login');
+        if ($domain === $superAdminDomain || ! $schoolId || ! $school = School::find($schoolId)) {
+            return view('welcome');
         }
 
         if (! $school->hasModule('frontend_website')) {
-            return redirect('/login');
+            return view('welcome');
         }
 
         $settings = SchoolFrontendSetting::where('school_id', $school->id)->first();
