@@ -16,7 +16,7 @@ class IdentifySchool
     public function handle(Request $request, Closure $next): Response
     {
         $domain = preg_replace('/^www\./', '', $request->getHost());
-        $superAdminDomain = 'institute.batighorbd.com';
+        $superAdminDomain = env('SUPER_ADMIN_DOMAIN', 'institute.batighorbd.com');
 
         // If it's the Super Admin domain, allow access to Super Admin dash.
         if ($domain === $superAdminDomain) {
@@ -24,15 +24,16 @@ class IdentifySchool
         }
 
         // Try identifying school by domain
-        $school = \App\Models\School::where('domain', $domain)->first();
+        try {
+            $school = \App\Models\School::where('domain', $domain)->first();
+        } catch (\Exception $e) {
+            $school = null;
+        }
 
-        if (!$school) {
-            // Also allow local testing or direct access if necessary
-            // For now, abort as requested for school domains
-            if (app()->environment('local') && ($domain === 'localhost' || $domain === '127.0.0.1')) {
-                return $next($request);
-            }
-            abort(404, 'School Not Found');
+        if (! $school) {
+            // Pass through without setting school config so the application
+            // can show the landing page or handle setup.
+            return $next($request);
         }
 
         // Store globally

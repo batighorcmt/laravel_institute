@@ -21,7 +21,7 @@ class FrontendWebController extends Controller
     public function index(Request $request)
     {
         $domain = preg_replace('/^www\./', '', $request->getHost());
-        $superAdminDomain = 'institute.batighorbd.com';
+        $superAdminDomain = env('SUPER_ADMIN_DOMAIN', 'institute.batighorbd.com');
 
         $schoolId = config('school.id');
 
