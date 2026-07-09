@@ -555,6 +555,9 @@ class ExamController extends Controller
         $dates = [];
         $classes = [];
 
+        // Dates for which attendance has actually been recorded (at least one entry in exam_room_attendances)
+        $attendanceTakenDates = [];
+
         if ($plan) {
             // Get all absences for this plan
             $absentees = DB::table('exam_room_attendances as a')
@@ -669,13 +672,22 @@ class ExamController extends Controller
             ksort($classSet);
             $dates = array_values($dateSet);
             $classes = array_values($classSet);
+
+            // Get all dates that have at least one attendance record for this plan
+            $takenDatesRaw = DB::table('exam_room_attendances')
+                ->where('plan_id', $plan_id)
+                ->whereNotNull('duty_date')
+                ->distinct()
+                ->pluck('duty_date')
+                ->toArray();
+            $attendanceTakenDates = array_flip(array_map(fn($d) => is_string($d) ? substr($d, 0, 10) : date('Y-m-d', strtotime($d)), $takenDatesRaw));
         }
 
         if ($request->get('action') === 'print') {
-            return view('teacher.exams.attendance-report.absentee_print', compact('schoolModel', 'plan', 'dates', 'classes', 'matrix'));
+            return view('teacher.exams.attendance-report.absentee_print', compact('schoolModel', 'plan', 'dates', 'classes', 'matrix', 'attendanceTakenDates'));
         }
 
-        return view('teacher.exams.attendance-report.absentee', compact('schoolModel', 'plans', 'plan_id', 'plan', 'dates', 'classes', 'matrix'));
+        return view('teacher.exams.attendance-report.absentee', compact('schoolModel', 'plans', 'plan_id', 'plan', 'dates', 'classes', 'matrix', 'attendanceTakenDates'));
     }
 
     /**

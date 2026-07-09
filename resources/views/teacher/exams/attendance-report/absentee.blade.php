@@ -108,7 +108,9 @@
                                             <td>{{ bn_num(date('d/m/Y', strtotime($date))) }}</td>
                                             @foreach($classes as $cName)
                                                 <td>
-                                                    @if(isset($matrix[$date][$cName]))
+                                                    @if(!isset($attendanceTakenDates[$date]))
+                                                        <div style="color: #c0392b; font-style: italic; font-weight: 600;">হাজিরা হয়নি</div>
+                                                    @elseif(isset($matrix[$date][$cName]))
                                                         <div style="font-weight: bold; margin-bottom: 5px; border-bottom: 1px dashed #000; display: inline-block;">বিষয়ঃ {{ $matrix[$date][$cName]['subject'] ?? 'অজানা' }}</div>
                                                         @if(empty($matrix[$date][$cName]['absentees']))
                                                             <div style="margin-top: 5px;">অনুপস্থিত নেই</div>
@@ -117,6 +119,8 @@
                                                                 <div style="margin-top: 3px;">{{ bn_num($abs->roll_no) }} - {{ $abs->student_name_bn ?: $abs->student_name_en }}</div>
                                                             @endforeach
                                                         @endif
+                                                    @else
+                                                        <div style="color: #7f8c8d; font-style: italic;">—</div>
                                                     @endif
                                                 </td>
                                             @endforeach
