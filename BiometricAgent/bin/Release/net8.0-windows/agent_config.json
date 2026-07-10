@@ -1,7 +1,7 @@
 {
-  "SaasApiUrl": "http://127.0.0.1:8000/api",
+  "SaasApiUrl": "https://ins.batighorbd.com/api",
   "SchoolCode": "JSS",
-  "AgentToken": "6M7SGONV1Pn15hPRVR9vofiEV7qvFLjr8qG1b37h",
+  "AgentToken": "Jc5VM4K7KwAmUAAZFRAYXmaFvZ7uHRMDLTSIkkSd",
   "SyncIntervalSeconds": 60,
   "AutoStart": true,
   "Devices": [
