@@ -26,8 +26,11 @@ namespace BiometricAgent
         private RichTextBox rtfLog = null!;
 
         // Buttons
-        private Button btnSyncNow = null!, btnRefreshDevices = null!, btnSettings = null!;
-        private Button btnUploadTemplates = null!, btnDownloadTemplates = null!, btnUsers = null!;
+        private Button btnSyncNow;
+        private Button btnRefreshDevices;
+        private Button btnSettings;
+        private Button btnSyncManager;
+        private Button btnUsers;
 
         private void InitializeComponent()
         {
@@ -120,15 +123,11 @@ namespace BiometricAgent
             btnSettings = MakeButton("⚙ Settings", 250, pButtons, Color.FromArgb(75, 85, 99));
             btnSettings.Click += btnSettings_Click;
 
-            btnUploadTemplates = MakeButton("↑ Upload Templates", 370, pButtons, Color.FromArgb(16, 185, 129));
-            btnUploadTemplates.Width = 135;
-            btnUploadTemplates.Click += btnUploadTemplates_Click;
+            btnSyncManager = MakeButton("🔄 Sync Manager", 370, pButtons, Color.FromArgb(16, 185, 129));
+            btnSyncManager.Width = 140;
+            btnSyncManager.Click += btnSyncManager_Click;
 
-            btnDownloadTemplates = MakeButton("↓ Download Templates", 510, pButtons, Color.FromArgb(245, 158, 11));
-            btnDownloadTemplates.Width = 145;
-            btnDownloadTemplates.Click += btnDownloadTemplates_Click;
-
-            btnUsers = MakeButton("👥 ব্যবহারকারী", 660, pButtons, Color.FromArgb(168, 85, 247));
+            btnUsers = MakeButton("👥 ব্যবহারকারী", 515, pButtons, Color.FromArgb(168, 85, 247));
             btnUsers.Width = 130;
             btnUsers.Click += btnUsers_Click;
 

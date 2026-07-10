@@ -18,6 +18,13 @@
       "IpAddress": "192.168.1.202",
       "Port": 4370,
       "Location": "Academic Bulding"
+    },
+    {
+      "Name": "Device 3",
+      "SerialNumber": "",
+      "IpAddress": "192.168.1.203",
+      "Port": 4370,
+      "Location": "Office Staff"
     }
   ]
 }

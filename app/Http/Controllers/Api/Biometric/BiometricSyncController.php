@@ -219,11 +219,19 @@ class BiometricSyncController extends Controller
 
         $students = Student::where('school_id', $schoolId)
             ->active()
-            ->whereNotNull('biometric_id')
-            ->get(['id', 'biometric_id', 'student_name_en', 'student_name_bn'])
+            ->get(['id', 'biometric_id', 'student_id', 'student_name_en', 'student_name_bn'])
             ->map(function ($s) {
+                if (empty($s->biometric_id) && !empty($s->student_id)) {
+                    // Extract only numbers from student_id
+                    $numericId = preg_replace('/[^0-9]/', '', $s->student_id);
+                    if (!empty($numericId)) {
+                        $s->biometric_id = $numericId;
+                        $s->save();
+                    }
+                }
+                
                 return [
-                    'biometric_id' => $s->biometric_id,
+                    'biometric_id' => $s->biometric_id ?? (string)$s->id,
                     'name' => $s->student_name_en ?? $s->student_name_bn,
                     'role' => 'Student'
                 ];
@@ -231,9 +239,13 @@ class BiometricSyncController extends Controller
 
         $teachers = Teacher::where('school_id', $schoolId)
             ->where('status', 'active')
-            ->whereNotNull('biometric_id')
             ->get(['id', 'biometric_id', 'first_name', 'last_name'])
             ->map(function ($t) {
+                if (empty($t->biometric_id)) {
+                    $t->biometric_id = (string)$t->id;
+                    $t->save();
+                }
+                
                 return [
                     'biometric_id' => $t->biometric_id,
                     'name' => trim($t->first_name . ' ' . $t->last_name),

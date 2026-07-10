@@ -489,86 +489,10 @@ namespace BiometricAgent
             ConnectAllDevices();
         }
 
-        private async void btnUploadTemplates_Click(object sender, EventArgs e)
+        private void btnSyncManager_Click(object? sender, EventArgs e)
         {
-            btnUploadTemplates.Enabled = false;
-            LogMessage("↑ Starting Template Upload...");
-
-            if (_config.Devices.Count == 0)
-            {
-                LogMessage("ℹ️ No devices configured. Add a device in Settings first.");
-                btnUploadTemplates.Enabled = true;
-                return;
-            }
-
-            foreach (var dev in _config.Devices)
-            {
-                LogMessage($"Checking device: {dev.Name} ({dev.IpAddress}:{dev.Port})...");
-                if (_adapters.TryGetValue(dev.SerialNumber, out var adapter) && adapter.IsConnected)
-                {
-                    LogMessage($"Reading templates from {dev.Name}...");
-                    var templates = adapter.ReadAllTemplates();
-                    if (templates.Count > 0)
-                    {
-                        bool success = await _cloud.SyncTemplatesUpAsync(GetSchoolId(), dev.SerialNumber, templates);
-                        LogMessage(success ? $"✅ {dev.Name}: Uploaded {templates.Count} templates." : $"❌ {dev.Name}: Failed to upload templates.");
-                    }
-                    else
-                    {
-                        LogMessage($"ℹ️ {dev.Name}: No templates found.");
-                    }
-                }
-                else
-                {
-                    LogMessage($"⚠️ {dev.Name} is OFFLINE – cannot upload.");
-                }
-            }
-
-            LogMessage("↑ Template Upload Finished.");
-            btnUploadTemplates.Enabled = true;
-        }
-
-        private async void btnDownloadTemplates_Click(object sender, EventArgs e)
-        {
-            btnDownloadTemplates.Enabled = false;
-            LogMessage("↓ Starting Template Download...");
-
-            if (_config.Devices.Count == 0)
-            {
-                LogMessage("ℹ️ No devices configured. Add a device in Settings first.");
-                btnDownloadTemplates.Enabled = true;
-                return;
-            }
-
-            foreach (var dev in _config.Devices)
-            {
-                LogMessage($"Checking device: {dev.Name} ({dev.IpAddress}:{dev.Port})...");
-                if (_adapters.TryGetValue(dev.SerialNumber, out var adapter) && adapter.IsConnected)
-                {
-                    LogMessage($"Fetching templates for {dev.Name}...");
-                    var templates = await _cloud.SyncTemplatesDownAsync(GetSchoolId(), dev.SerialNumber);
-                    if (templates.Count > 0)
-                    {
-                        int successCount = 0;
-                        foreach (var tpl in templates)
-                        {
-                            if (adapter.UploadTemplate(tpl)) successCount++;
-                        }
-                        LogMessage($"✅ {dev.Name}: Downloaded & Applied {successCount}/{templates.Count} templates.");
-                    }
-                    else
-                    {
-                        LogMessage($"ℹ️ {dev.Name}: No new templates to download.");
-                    }
-                }
-                else
-                {
-                    LogMessage($"⚠️ {dev.Name} is OFFLINE – cannot download.");
-                }
-            }
-
-            LogMessage("↓ Template Download Finished.");
-            btnDownloadTemplates.Enabled = true;
+            using var frm = new SyncManagerForm(_config, _cloud, _adapters, GetSchoolId());
+            frm.ShowDialog(this);
         }
 
         private void btnUsers_Click(object sender, EventArgs e)
