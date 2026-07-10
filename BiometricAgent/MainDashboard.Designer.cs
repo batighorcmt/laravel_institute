@@ -22,8 +22,8 @@ namespace BiometricAgent
         // Device panel
         private FlowLayoutPanel panelDevices = null!;
 
-        // Log list
-        private ListBox lstLog = null!;
+        // Log display
+        private RichTextBox rtfLog = null!;
 
         // Buttons
         private Button btnSyncNow = null!, btnRefreshDevices = null!, btnSettings = null!;
@@ -66,9 +66,9 @@ namespace BiometricAgent
 
             lblVersion = new Label
             {
-                Text      = "v1.0",
-                Location  = new Point(16, 44),
-                Font      = new Font("Segoe UI", 8),
+                Text      = $"Version {AppVersion}",
+                Location  = new Point(16, 48),
+                Font      = new Font("Segoe UI", 7.5f),
                 ForeColor = Color.Gray,
                 AutoSize  = true
             };
@@ -170,15 +170,27 @@ namespace BiometricAgent
             };
             this.Controls.Add(lblLogTitle);
 
-            lstLog = new ListBox
+            rtfLog = new RichTextBox
             {
-                Dock      = DockStyle.Fill,
-                BackColor = Color.FromArgb(17, 17, 27),
-                ForeColor = Color.FromArgb(200, 200, 220),
-                Font      = new Font("Consolas", 8.5f),
-                BorderStyle = BorderStyle.None
+                Dock        = DockStyle.Fill,
+                BackColor   = Color.FromArgb(17, 17, 27),
+                ForeColor   = Color.FromArgb(200, 200, 220),
+                Font        = new Font("Consolas", 8.5f),
+                BorderStyle = BorderStyle.None,
+                ReadOnly    = true,
+                ScrollBars  = RichTextBoxScrollBars.Vertical,
+                WordWrap    = false,
             };
-            this.Controls.Add(lstLog);
+            this.Controls.Add(rtfLog);
+
+            // ── Fix Z-Order for correct layout ──
+            this.Controls.SetChildIndex(pHeader, 6);
+            this.Controls.SetChildIndex(pStats, 5);
+            this.Controls.SetChildIndex(pButtons, 4);
+            this.Controls.SetChildIndex(lblDevices, 3);
+            this.Controls.SetChildIndex(panelDevices, 2);
+            this.Controls.SetChildIndex(lblLogTitle, 1);
+            this.Controls.SetChildIndex(rtfLog, 0);
         }
 
         private Label MakeStatLabel(string text, int x, Control parent)

@@ -102,13 +102,12 @@ namespace BiometricAgent
         }
 
         // ── Bootstrap ───────────────────────────────────────────────────────
-        private async void MainDashboard_Load(object sender, EventArgs e)
+        private void MainDashboard_Load(object sender, EventArgs e)
         {
             ApplyAutoStart();
 
             if (string.IsNullOrWhiteSpace(_config.SchoolCode) || string.IsNullOrWhiteSpace(_config.AgentToken))
             {
-                LogMessage("Configuration missing. Please configure first.");
                 var settingsForm = new SettingsForm(_config);
                 if (settingsForm.ShowDialog() == DialogResult.OK)
                 {
@@ -119,8 +118,18 @@ namespace BiometricAgent
                 }
             }
 
+            // Fix: show company only once in lblCompany, version only in lblVersion
             lblSchool.Text  = _config.SchoolCode.Length > 0 ? _config.SchoolCode : "Not configured";
-            lblVersion.Text = $"{CompanyName}  |  Version {AppVersion}";
+            lblVersion.Text = $"Version {AppVersion}";
+
+            // Run startup connection logic immediately
+            _ = RunStartupLogicAsync();
+        }
+
+        private async Task RunStartupLogicAsync()
+        {
+            // Give UI a tiny bit of time to initialize fully before logging
+            await Task.Delay(100);
 
             LogMessage("Agent starting…");
             LogMessage($"📡 Connecting to: {_config.SaasApiUrl}");
@@ -129,16 +138,15 @@ namespace BiometricAgent
             if (auth)
             {
                 LogMessage("✅ Authenticated with SaaS server.");
-                // Immediately send heartbeat so web dashboard shows online right away
                 bool hb = await _cloud.SendAgentHeartbeatAsync();
                 if (hb)
-                    LogMessage("Connect request with server successful");
+                    LogMessage("✅ Connect request with server successful");
                 else
                     LogMessage("⚠️ Heartbeat failed – check API route on server.");
             }
             else
             {
-                LogMessage("⚠️  Authentication failed. Check URL, School Code & Token.");
+                LogMessage("❌ Authentication failed. Check URL, School Code & Token.");
                 LogMessage($"   URL used: {_config.SaasApiUrl}");
             }
 
@@ -416,10 +424,17 @@ namespace BiometricAgent
         // ── Logging ─────────────────────────────────────────────────────────
         private void LogMessage(string msg)
         {
-            if (lstLog.InvokeRequired)
-                lstLog.Invoke(() => LogMessage(msg));
+            if (rtfLog.InvokeRequired)
+            {
+                rtfLog.Invoke(new Action(() => LogMessage(msg)));
+            }
             else
-                lstLog.Items.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {msg}");
+            {
+                string timeStr = $"[{DateTime.Now:HH:mm:ss}] ";
+                rtfLog.AppendText(timeStr + msg + Environment.NewLine);
+                rtfLog.SelectionStart = rtfLog.Text.Length;
+                rtfLog.ScrollToCaret();
+            }
         }
 
         // ── Dark Theme ───────────────────────────────────────────────────────
@@ -461,8 +476,16 @@ namespace BiometricAgent
             btnUploadTemplates.Enabled = false;
             LogMessage("↑ Starting Template Upload...");
 
+            if (_config.Devices.Count == 0)
+            {
+                LogMessage("ℹ️ No devices configured. Add a device in Settings first.");
+                btnUploadTemplates.Enabled = true;
+                return;
+            }
+
             foreach (var dev in _config.Devices)
             {
+                LogMessage($"Checking device: {dev.Name} ({dev.IpAddress}:{dev.Port})...");
                 if (_adapters.TryGetValue(dev.SerialNumber, out var adapter) && adapter.IsConnected)
                 {
                     LogMessage($"Reading templates from {dev.Name}...");
@@ -477,6 +500,10 @@ namespace BiometricAgent
                         LogMessage($"ℹ️ {dev.Name}: No templates found.");
                     }
                 }
+                else
+                {
+                    LogMessage($"⚠️ {dev.Name} is OFFLINE – cannot upload.");
+                }
             }
 
             LogMessage("↑ Template Upload Finished.");
@@ -488,8 +515,16 @@ namespace BiometricAgent
             btnDownloadTemplates.Enabled = false;
             LogMessage("↓ Starting Template Download...");
 
+            if (_config.Devices.Count == 0)
+            {
+                LogMessage("ℹ️ No devices configured. Add a device in Settings first.");
+                btnDownloadTemplates.Enabled = true;
+                return;
+            }
+
             foreach (var dev in _config.Devices)
             {
+                LogMessage($"Checking device: {dev.Name} ({dev.IpAddress}:{dev.Port})...");
                 if (_adapters.TryGetValue(dev.SerialNumber, out var adapter) && adapter.IsConnected)
                 {
                     LogMessage($"Fetching templates for {dev.Name}...");
@@ -507,6 +542,10 @@ namespace BiometricAgent
                     {
                         LogMessage($"ℹ️ {dev.Name}: No new templates to download.");
                     }
+                }
+                else
+                {
+                    LogMessage($"⚠️ {dev.Name} is OFFLINE – cannot download.");
                 }
             }
 
