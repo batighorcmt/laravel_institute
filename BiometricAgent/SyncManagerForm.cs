@@ -169,19 +169,22 @@ namespace BiometricAgent
 
                 Log($"📤 Pushing {users.Count} users to {item.Name}...");
                 int successCount = 0;
-                foreach (var user in users)
+                await Task.Run(() =>
                 {
-                    // Upload a blank template with user info so they exist on the device for enrollment
-                    var tmpl = new BiometricTemplate
+                    foreach (var user in users)
                     {
-                        BiometricId = user.BiometricId,
-                        Name = user.Name,
-                        Privilege = user.Role == "Teacher" ? 0 : 0,
-                        FingerIndex = 0,
-                        TemplateData = ""
-                    };
-                    if (adapter.UploadTemplate(tmpl)) successCount++;
-                }
+                        var tmpl = new BiometricTemplate
+                        {
+                            BiometricId = user.BiometricId,
+                            Name = user.Name,
+                            Privilege = user.Role == "Teacher" ? 0 : 0,
+                            FingerIndex = 0,
+                            TemplateData = ""
+                        };
+                        if (adapter.UploadTemplate(tmpl)) successCount++;
+                    }
+                });
+
                 Log($"✅ Successfully sent {successCount}/{users.Count} users to {item.Name}.");
                 Log($"👉 Now physically enroll fingerprints on {item.Name}.");
             }
@@ -209,7 +212,7 @@ namespace BiometricAgent
             Log($"📥 Reading templates from {item.Name}...");
             try
             {
-                var templates = adapter.ReadAllTemplates();
+                var templates = await Task.Run(() => adapter.ReadAllTemplates());
                 if (templates.Count == 0)
                 {
                     Log("⚠️ No templates found on device.");
@@ -239,7 +242,6 @@ namespace BiometricAgent
             Log($"⬇️ Downloading templates from web...");
             try
             {
-                // We use any serial for downloading, preferably an active one
                 string dummySerial = _config.Devices.FirstOrDefault()?.SerialNumber ?? "0";
                 var templates = await _cloud.SyncTemplatesDownAsync(_schoolId, dummySerial);
                 
@@ -260,10 +262,13 @@ namespace BiometricAgent
 
                     Log($"📤 Distributing {templates.Count} templates to {dev.Name}...");
                     int successCount = 0;
-                    foreach (var t in templates)
+                    await Task.Run(() =>
                     {
-                        if (adapter.UploadTemplate(t)) successCount++;
-                    }
+                        foreach (var t in templates)
+                        {
+                            if (adapter.UploadTemplate(t)) successCount++;
+                        }
+                    });
                     Log($"✅ {successCount}/{templates.Count} distributed to {dev.Name}.");
                 }
             }

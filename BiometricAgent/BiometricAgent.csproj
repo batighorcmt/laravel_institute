@@ -10,6 +10,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <PlatformTarget>x64</PlatformTarget>
     <ApplicationIcon>app_icon.ico</ApplicationIcon>
+    <Company>Batighor Software Systems Ltd</Company>
+    <Authors>Batighor Software Systems Ltd</Authors>
+    <Product>BiometricAgent</Product>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,7 +20,6 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
-  <!-- ZKTeco SDK COM interop DLL – must be in output folder -->
   <ItemGroup>
     <Reference Include="Interop.zkemkeeper">
       <HintPath>sdk\Interop.zkemkeeper.dll</HintPath>
@@ -25,15 +27,19 @@
     </Reference>
   </ItemGroup>
 
-    <ItemGroup>
-      <!-- Copy all ZKTeco SDK DLLs to output directory -->
-      <Content Include="Sdk\*.dll">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <!-- Copy Icon -->
-      <Content Include="app_icon.ico">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
+  <ItemGroup>
+    <!-- Copy all ZKTeco SDK DLLs to output and publish directories -->
+    <Content Include="Sdk\*.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <IncludeInPublish>true</IncludeInPublish>
+    </Content>
+    <!-- Copy Icon -->
+    <Content Include="app_icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <IncludeInPublish>true</IncludeInPublish>
+    </Content>
+  </ItemGroup>
 
 </Project>

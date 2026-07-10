@@ -20,6 +20,7 @@ namespace BiometricAgent
         public string AgentToken { get; set; } = "";
         public int SyncIntervalSeconds { get; set; } = 60;
         public bool AutoStart { get; set; } = true;
+        public string MachineName { get; set; } = Environment.MachineName;
         public List<DeviceConfig> Devices { get; set; } = new();
 
         private static readonly string ConfigPath =
@@ -29,12 +30,26 @@ namespace BiometricAgent
         {
             if (!File.Exists(ConfigPath))
                 return new AgentConfig();
+
             try
             {
                 var json = File.ReadAllText(ConfigPath);
-                return JsonConvert.DeserializeObject<AgentConfig>(json) ?? new AgentConfig();
+                var config = JsonConvert.DeserializeObject<AgentConfig>(json) ?? new AgentConfig();
+
+                if (!string.Equals(config.MachineName, Environment.MachineName, StringComparison.OrdinalIgnoreCase))
+                {
+                    // New machine or moved install: keep credentials but clear stale per-machine devices.
+                    config.MachineName = Environment.MachineName;
+                    config.Devices = new List<DeviceConfig>();
+                    config.Save();
+                }
+
+                return config;
             }
-            catch { return new AgentConfig(); }
+            catch
+            {
+                return new AgentConfig();
+            }
         }
 
         public void Save()

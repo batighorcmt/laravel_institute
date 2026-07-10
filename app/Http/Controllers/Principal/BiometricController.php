@@ -219,10 +219,11 @@ class BiometricController extends Controller
         $unassignedCount = BiometricProfile::where('school_id', $school->id)->where('user_type', 'unassigned')->count();
 
         $agentLastSeen = $school->agent_last_seen ? Carbon::parse($school->agent_last_seen)->diffForHumans() : '—';
-        $agentIsOnline = $school->agent_last_seen && Carbon::parse($school->agent_last_seen)->diffInMinutes(now()) <= 5;
+        $agentIsOnline = $this->isAgentOnline($school);
+        $agentOnlineDuration = $this->formatAgentOnlineDuration($school, $agentIsOnline);
 
         return view('principal.biometric.monitor',
-            compact('school', 'devices', 'todayTotal', 'hourlyStats', 'recentPunches', 'unassignedCount', 'agentLastSeen', 'agentIsOnline'));
+            compact('school', 'devices', 'todayTotal', 'hourlyStats', 'recentPunches', 'unassignedCount', 'agentLastSeen', 'agentIsOnline', 'agentOnlineDuration'));
     }
 
     public function monitorStatus(School $school)
@@ -232,6 +233,8 @@ class BiometricController extends Controller
 
         $todayTotal = BiometricAttendanceLog::where('school_id', $school->id)->whereDate('punch_time', today())->count();
         $lastPunch  = BiometricAttendanceLog::where('school_id', $school->id)->latest('punch_time')->value('punch_time');
+
+        $agentIsOnline = $this->isAgentOnline($school);
 
         return response()->json([
             'devices'     => $devices->map(fn($d) => [
@@ -245,8 +248,47 @@ class BiometricController extends Controller
             'today_total' => $todayTotal,
             'last_punch'  => $lastPunch ? Carbon::parse($lastPunch)->diffForHumans() : '—',
             'agent_last_seen' => $school->agent_last_seen ? Carbon::parse($school->agent_last_seen)->diffForHumans() : '—',
-            'agent_is_online' => $school->agent_last_seen && Carbon::parse($school->agent_last_seen)->diffInMinutes(now()) <= 5,
+            'agent_is_online' => $agentIsOnline,
+            'agent_online_duration' => $this->formatAgentOnlineDuration($school, $agentIsOnline),
         ]);
+    }
+
+    private function isAgentOnline(School $school): bool
+    {
+        return (bool) ($school->agent_last_seen && Carbon::parse($school->agent_last_seen)->diffInMinutes(now()) <= 5);
+    }
+
+    private function formatAgentOnlineDuration(School $school, bool $isOnline): string
+    {
+        if (!$isOnline || !$school->agent_online_since) {
+            return '—';
+        }
+
+        $diff = Carbon::parse($school->agent_online_since)->diff(now());
+        $parts = [];
+
+        if ($diff->days > 0) {
+            $parts[] = $this->toBanglaNumber($diff->days) . ' দিন';
+        }
+        if ($diff->h > 0) {
+            $parts[] = $this->toBanglaNumber($diff->h) . ' ঘন্টা';
+        }
+        if ($diff->i > 0) {
+            $parts[] = $this->toBanglaNumber($diff->i) . ' মিনিট';
+        }
+        if ($diff->s > 0 && empty($parts)) {
+            $parts[] = $this->toBanglaNumber($diff->s) . ' সেকেন্ড';
+        }
+
+        return empty($parts) ? 'শূন্য সেকেন্ড' : implode(' ', $parts);
+    }
+
+    private function toBanglaNumber($value): string
+    {
+        $en = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        $bn = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+
+        return str_replace($en, $bn, (string) $value);
     }
     // ─── Devices & Enrollment ──────────────────────────────────────────────────
     public function devicesIndex(School $school)

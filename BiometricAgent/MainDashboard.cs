@@ -35,12 +35,13 @@ namespace BiometricAgent
         private Icon _appIcon = null!;
         private bool _allowVisible = false;
         private Dictionary<string, DateTime> _lastReconnectAttempt = new();
+        private int _isSyncing;
 
         public MainDashboard()
         {
             _config       = AgentConfig.Load();
             _offlineQueue = new OfflineQueue();
-            _cloud        = new CloudSyncManager(_config, _offlineQueue);
+            _cloud        = new CloudSyncManager(_config, _offlineQueue, LogMessage);
             InitializeComponent();
             ApplyDarkTheme();
 
@@ -151,7 +152,7 @@ namespace BiometricAgent
                 LogMessage($"   URL used: {_config.SaasApiUrl}");
             }
 
-            ConnectAllDevices();
+            await ConnectAllDevicesAsync();
             StartSyncTimer();
 
             // Check for updates in background (non-blocking)
@@ -177,22 +178,44 @@ namespace BiometricAgent
         }
 
         // ── Device management ───────────────────────────────────────────────
-        private void ConnectAllDevices()
+        private async Task ConnectAllDevicesAsync()
         {
             _adapters.Clear();
             panelDevices.Controls.Clear();
 
-            foreach (var dev in _config.Devices)
+            var deviceResults = await Task.Run(() =>
             {
-                var adapter = BiometricAdapterFactory.Create("zkteco");
-                bool ok     = adapter.Connect(dev.IpAddress, dev.Port);
-                string status = ok ? "online" : "offline";
+                var results = new List<(DeviceConfig dev, string status, bool ok, string serial)>();
 
-                _adapters[dev.IpAddress] = adapter;
-                _deviceStatus[dev.IpAddress] = status;
+                foreach (var dev in _config.Devices)
+                {
+                    var adapter = BiometricAdapterFactory.Create("zkteco");
+                    bool ok = adapter.Connect(dev.IpAddress, dev.Port);
+                    string status = ok ? "online" : "offline";
+                    string serial = ok ? adapter.GetSerialNumber() : string.Empty;
 
-                AddDeviceCard(dev, status);
-                LogMessage($"{(ok ? "🟢" : "🔴")} {dev.Name} ({dev.IpAddress}) – {status.ToUpper()}");
+                    results.Add((dev, status, ok, serial));
+                    _adapters[dev.IpAddress] = adapter;
+                    _deviceStatus[dev.IpAddress] = status;
+                }
+
+                return results;
+            });
+
+            foreach (var item in deviceResults)
+            {
+                if (!string.IsNullOrWhiteSpace(item.serial) && string.IsNullOrWhiteSpace(item.dev.SerialNumber))
+                {
+                    item.dev.SerialNumber = item.serial;
+                }
+
+                AddDeviceCard(item.dev, item.status);
+                LogMessage($"{(item.ok ? "🟢" : "🔴")} {item.dev.Name} ({item.dev.IpAddress}) – {item.status.ToUpper()}");
+            }
+
+            if (deviceResults.Any(x => !string.IsNullOrWhiteSpace(x.serial) && string.IsNullOrWhiteSpace(x.dev.SerialNumber)))
+            {
+                _config.Save();
             }
 
             lblOnline.Text  = _deviceStatus.Count(x => x.Value == "online").ToString();
@@ -253,88 +276,107 @@ namespace BiometricAgent
 
         private async Task DoSyncCycle()
         {
-            // 0. Send Agent Heartbeat (silently to keep logs clean)
-            bool hbSuccess = await _cloud.SendAgentHeartbeatAsync();
-            if (!hbSuccess) {
-                LogMessage("⚠️ Connection with server failed or offline");
+            if (Interlocked.CompareExchange(ref _isSyncing, 1, 0) != 0)
+            {
+                LogMessage("⚠️ Previous sync still running, skipping this interval.");
+                return;
             }
 
-            // 1. Retry offline queue
-            await _cloud.RetryOfflineQueueAsync();
-
-            // 2. Poll each connected device for new punches
-            foreach (var dev in _config.Devices)
+            try
             {
-                if (!_adapters.TryGetValue(dev.IpAddress, out var adapter))
-                    continue;
-
-                string status = "online";
-                if (!adapter.IsConnected)
-                {
-                    status = "offline";
-                    bool shouldReconnect = false;
-                    
-                    if (!_lastReconnectAttempt.TryGetValue(dev.IpAddress, out var lastTry) ||
-                        (DateTime.Now - lastTry).TotalMinutes >= 2)
-                    {
-                        shouldReconnect = true;
-                    }
-
-                    if (shouldReconnect)
-                    {
-                        _lastReconnectAttempt[dev.IpAddress] = DateTime.Now;
-                        LogMessage($"Attempting to reconnect {dev.Name}...");
-                        bool reconnected = adapter.Connect(dev.IpAddress, dev.Port);
-                        
-                        if (!reconnected)
-                        {
-                            ShowOfflineAlert(dev);
-                        }
-                        else
-                        {
-                            status = "online";
-                            CloseOfflineAlert(dev);
-                            LogMessage($"🟢 {dev.Name} reconnected.");
-                        }
-                    }
+                // 0. Send Agent Heartbeat (silently to keep logs clean)
+                bool hbSuccess = await _cloud.SendAgentHeartbeatAsync();
+                if (!hbSuccess) {
+                    LogMessage("⚠️ Connection with server failed or offline");
                 }
 
-                if (status == "online")
-                {
-                    // Auto-fetch serial number if missing
-                    if (string.IsNullOrWhiteSpace(dev.SerialNumber))
-                    {
-                        string sn = adapter.GetSerialNumber();
-                        if (!string.IsNullOrWhiteSpace(sn))
-                        {
-                            dev.SerialNumber = sn;
-                            _config.Save(); // Save back to config
-                            LogMessage($"ℹ️ Fetched Serial Number '{sn}' for {dev.Name}.");
-                        }
-                    }
+                // 1. Retry offline queue
+                await _cloud.RetryOfflineQueueAsync();
 
-                    var punches = adapter.ReadNewAttendanceLogs();
-                    if (punches.Count > 0)
+                var syncResults = await Task.Run(() =>
+                {
+                    var results = new List<(DeviceConfig dev, string status, List<PunchRecord> punches, string serialToSend, string hbSerial)>();
+
+                    foreach (var dev in _config.Devices)
                     {
-                        LogMessage($"📥 {dev.Name}: {punches.Count} punch(es) read.");
-                        
-                        string serialToSend = string.IsNullOrWhiteSpace(dev.SerialNumber) 
+                        if (!_adapters.TryGetValue(dev.IpAddress, out var adapter))
+                            continue;
+
+                        string status = adapter.IsConnected ? "online" : "offline";
+                        if (!adapter.IsConnected)
+                        {
+                            bool shouldReconnect = false;
+                            if (!_lastReconnectAttempt.TryGetValue(dev.IpAddress, out var lastTry) ||
+                                (DateTime.Now - lastTry).TotalMinutes >= 2)
+                            {
+                                shouldReconnect = true;
+                            }
+
+                            if (shouldReconnect)
+                            {
+                                _lastReconnectAttempt[dev.IpAddress] = DateTime.Now;
+                                LogMessage($"Attempting to reconnect {dev.Name}...");
+                                bool reconnected = adapter.Connect(dev.IpAddress, dev.Port);
+                                status = reconnected ? "online" : "offline";
+                                if (reconnected)
+                                {
+                                    CloseOfflineAlert(dev);
+                                    LogMessage($"🟢 {dev.Name} reconnected.");
+                                }
+                                else
+                                {
+                                    ShowOfflineAlert(dev);
+                                }
+                            }
+                        }
+
+                        string serialToSend = string.IsNullOrWhiteSpace(dev.SerialNumber)
                             ? $"UNKNOWN-{dev.IpAddress.Replace(".", "")}" 
                             : dev.SerialNumber;
 
-                        await _cloud.SyncAttendanceAsync(GetSchoolId(), serialToSend, punches);
+                        var punches = new List<PunchRecord>();
+                        if (status == "online")
+                        {
+                            if (string.IsNullOrWhiteSpace(dev.SerialNumber))
+                            {
+                                string sn = adapter.GetSerialNumber();
+                                if (!string.IsNullOrWhiteSpace(sn))
+                                {
+                                    dev.SerialNumber = sn;
+                                }
+                            }
+
+                            punches = adapter.ReadNewAttendanceLogs();
+                        }
+
+                        string hbSerial = string.IsNullOrWhiteSpace(dev.SerialNumber)
+                            ? $"UNKNOWN-{dev.IpAddress.Replace(".", "")}" 
+                            : dev.SerialNumber;
+
+                        results.Add((dev, status, punches, serialToSend, hbSerial));
                     }
+
+                    return results;
+                });
+
+                foreach (var item in syncResults)
+                {
+                    if (item.punches.Count > 0)
+                    {
+                        LogMessage($"📥 {item.dev.Name}: {item.punches.Count} punch(es) read.");
+                        await _cloud.SyncAttendanceAsync(GetSchoolId(), item.serialToSend, item.punches);
+                    }
+
+                    await _cloud.SendHeartbeatAsync(GetSchoolId(), item.hbSerial, item.status, item.dev.IpAddress, item.dev.Name, item.dev.Location);
                 }
 
-                // Send heartbeat
-                string hbSerial = string.IsNullOrWhiteSpace(dev.SerialNumber) 
-                    ? $"UNKNOWN-{dev.IpAddress.Replace(".", "")}" 
-                    : dev.SerialNumber;
-                await _cloud.SendHeartbeatAsync(GetSchoolId(), hbSerial, status, dev.IpAddress, dev.Name, dev.Location);
+                lblLastSync.Text = $"Last sync: {DateTime.Now:HH:mm:ss}";
+                UpdatePendingCount();
             }
-
-            lblLastSync.Text = $"Last sync: {DateTime.Now:HH:mm:ss}";
-            UpdatePendingCount();
+            finally
+            {
+                Interlocked.Exchange(ref _isSyncing, 0);
+            }
         }
 
         private void ShowOfflineAlert(DeviceConfig dev)
@@ -434,7 +476,14 @@ namespace BiometricAgent
 
         public bool PushUserToDevice(string serialNumber, UserRecord user)
         {
-            if (!_adapters.TryGetValue(serialNumber, out var adapter) || !adapter.IsConnected)
+            if (!_adapters.TryGetValue(serialNumber, out var adapter))
+            {
+                var dev = _config.Devices.FirstOrDefault(d => d.SerialNumber == serialNumber);
+                if (dev != null)
+                    _adapters.TryGetValue(dev.IpAddress, out adapter);
+            }
+
+            if (adapter == null || !adapter.IsConnected)
                 return false;
 
             var template = new BiometricTemplate
@@ -472,7 +521,7 @@ namespace BiometricAgent
         }
 
         // ── UI button handlers ───────────────────────────────────────────────
-        private void btnSettings_Click(object sender, EventArgs e)
+        private async void btnSettings_Click(object sender, EventArgs e)
         {
             var settingsForm = new SettingsForm(_config);
             if (settingsForm.ShowDialog() == DialogResult.OK)
@@ -481,7 +530,7 @@ namespace BiometricAgent
                 _config.Save();
                 _cloud = new CloudSyncManager(_config, _offlineQueue);
                 ApplyAutoStart();
-                ConnectAllDevices();
+                await ConnectAllDevicesAsync();
                 lblSchool.Text  = _config.SchoolCode.Length > 0 ? _config.SchoolCode : "Not configured";
             }
         }
@@ -493,9 +542,9 @@ namespace BiometricAgent
             btnSyncNow.Enabled = true;
         }
 
-        private void btnRefreshDevices_Click(object sender, EventArgs e)
+        private async void btnRefreshDevices_Click(object sender, EventArgs e)
         {
-            ConnectAllDevices();
+            await ConnectAllDevicesAsync();
         }
 
         private void btnSyncManager_Click(object? sender, EventArgs e)

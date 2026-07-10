@@ -154,6 +154,9 @@ body { background: #0f0f1a; }
                     {{ $agentIsOnline ? 'অনলাইন' : 'অফলাইন' }}
                 </strong>
                 <small class="ms-1 text-muted" id="statAgentLastSeen">({{ $agentLastSeen }})</small>
+                <div class="small text-muted mt-1" id="statAgentOnlineDuration">
+                    একটানা অনলাইন: {{ $agentOnlineDuration }}
+                </div>
             </div>
             <div class="stat-pill">
                 <i class="fas fa-calendar-day text-info me-1"></i>
@@ -318,10 +321,12 @@ async function pollStatus() {
         // Update agent status
         const agentEl = document.getElementById('statAgent');
         const agentLastSeenEl = document.getElementById('statAgentLastSeen');
+        const agentDurationEl = document.getElementById('statAgentOnlineDuration');
         const agentContainer = agentEl.parentElement;
         
         agentEl.textContent = data.agent_is_online ? 'অনলাইন' : 'অফলাইন';
         agentLastSeenEl.textContent = '(' + data.agent_last_seen + ')';
+        agentDurationEl.textContent = 'একটানা অনলাইন: ' + data.agent_online_duration;
         
         if (data.agent_is_online) {
             agentContainer.classList.remove('border-danger');

@@ -10,10 +10,10 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("BiometricAgent")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("Batighor Software Systems Ltd")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+087574e14c60cf1a10bacf030ba255445fde67b5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7858b9b32044ed3f774513f6028cf939d84541a7")]
 [assembly: System.Reflection.AssemblyProductAttribute("BiometricAgent")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BiometricAgent")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

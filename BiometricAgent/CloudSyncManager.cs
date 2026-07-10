@@ -16,12 +16,14 @@ namespace BiometricAgent
         private readonly AgentConfig _config;
         private readonly OfflineQueue _queue;
         private readonly HttpClient _http;
+        private readonly Action<string>? _logger;
 
-        public CloudSyncManager(AgentConfig config, OfflineQueue queue)
+        public CloudSyncManager(AgentConfig config, OfflineQueue queue, Action<string>? logger = null)
         {
             _config = config;
             _queue  = queue;
             _http   = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            _logger = logger;
         }
 
         /// <summary>Set Bearer token after agent login.</summary>
@@ -53,9 +55,16 @@ namespace BiometricAgent
                     SetToken(token);
                     return true;
                 }
+
+                var bodyText = await resp.Content.ReadAsStringAsync();
+                _logger?.Invoke($"Auth failed ({(int)resp.StatusCode}): {bodyText}");
                 return false;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                _logger?.Invoke($"Auth exception: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>Send agent heartbeat to SaaS.</summary>
@@ -66,9 +75,19 @@ namespace BiometricAgent
                 var resp = await _http.PostAsync(
                     $"{_config.SaasApiUrl}/biometric/agent/heartbeat",
                     new StringContent("", Encoding.UTF8, "application/json"));
-                return resp.IsSuccessStatusCode;
+
+                if (resp.IsSuccessStatusCode)
+                    return true;
+
+                var bodyText = await resp.Content.ReadAsStringAsync();
+                _logger?.Invoke($"Heartbeat failed ({(int)resp.StatusCode}): {bodyText}");
+                return false;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                _logger?.Invoke($"Heartbeat exception: {ex.Message}");
+                return false;
+            }
         }
 
         public async Task<bool> SendHeartbeatAsync(

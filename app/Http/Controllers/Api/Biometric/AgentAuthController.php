@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Biometric;
 
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\School;
@@ -29,8 +30,12 @@ class AgentAuthController extends Controller
             return response()->json(['message' => 'Invalid agent token'], 401);
         }
 
-        // Update the agent's last seen time upon successful login
-        $school->update(['agent_last_seen' => now()]);
+        $wasOnline = $school->agent_last_seen && Carbon::parse($school->agent_last_seen)->diffInMinutes(now()) <= 5;
+
+        $school->update([
+            'agent_last_seen' => now(),
+            'agent_online_since' => $wasOnline ? ($school->agent_online_since ?? now()) : now(),
+        ]);
 
         return response()->json([
             'message' => 'Authenticated successfully',
@@ -54,7 +59,13 @@ class AgentAuthController extends Controller
             return response()->json(['message' => 'Invalid token'], 401);
         }
 
-        $school->update(['agent_last_seen' => now()]);
+        $wasOnline = $school->agent_last_seen && Carbon::parse($school->agent_last_seen)->diffInMinutes(now()) <= 5;
+
+        $school->update([
+            'agent_last_seen' => now(),
+            'agent_online_since' => $wasOnline ? ($school->agent_online_since ?? now()) : now(),
+        ]);
+
         return response()->json(['message' => 'Agent heartbeat logged']);
     }
 }

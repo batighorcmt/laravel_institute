@@ -34,6 +34,23 @@ Or use the provided `Auto-install_sdk.bat` script in the SDK root folder.
 dotnet build BiometricAgent.csproj -c Release
 ```
 
+## Publish Single EXE
+
+```cmd
+cd BiometricAgent
+powershell .\BuildInstaller.ps1
+```
+
+- This will publish the app as a self-contained single `BiometricAgent.exe`.
+- If Inno Setup is installed (`iscc.exe` available), it also builds `BiometricAgentSetup.exe`.
+- If Inno Setup is not installed, use the published folder directly.
+
+## Installer
+
+1. Install Inno Setup from https://jrsoftware.org/isinfo.php
+2. Run `powershell .\BuildInstaller.ps1`
+3. The generated installer will be `BiometricAgentSetup.exe`
+
 ## First Run
 
 1. Launch `BiometricAgent.exe`

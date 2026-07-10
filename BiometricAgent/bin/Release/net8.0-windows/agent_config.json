@@ -1,7 +1,7 @@
 {
   "SaasApiUrl": "https://ins.batighorbd.com/api",
   "SchoolCode": "JSS",
-  "AgentToken": "Jc5VM4K7KwAmUAAZFRAYXmaFvZ7uHRMDLTSIkkSd",
+  "AgentToken": "Sq3yaZoZ2y4Ap4trjMWPanTV8msHxBSVidwhrJ0E",
   "SyncIntervalSeconds": 60,
   "AutoStart": true,
   "Devices": [

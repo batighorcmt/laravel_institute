@@ -203,28 +203,24 @@ namespace BiometricAgent
             }
         }
 
-        private void BtnPushSelected_Click(object? sender, EventArgs e)
+        private async void BtnPushSelected_Click(object? sender, EventArgs e)
         {
             if (cmbDevice.SelectedIndex < 0) { MessageBox.Show("একটি ডিভাইস বেছে নিন।"); return; }
             if (dgvUsers.SelectedRows.Count == 0) { MessageBox.Show("অন্তত একজন ব্যবহারকারী নির্বাচন করুন।"); return; }
 
-            string serial = _config.Devices[cmbDevice.SelectedIndex].SerialNumber;
-            int ok = 0, fail = 0;
+            var users = dgvUsers.SelectedRows
+                .OfType<DataGridViewRow>()
+                .Where(row => row.DataBoundItem is UserRecord)
+                .Select(row => (row, (UserRecord)row.DataBoundItem!))
+                .ToList();
 
-            foreach (DataGridViewRow row in dgvUsers.SelectedRows)
-            {
-                if (row.DataBoundItem is UserRecord user)
-                {
-                    bool success = _dashboard.PushUserToDevice(serial, user);
-                    row.Cells["Status"].Value     = success ? "✅ পাঠানো হয়েছে" : "❌ ব্যর্থ";
-                    row.Cells["Status"].Style.ForeColor = success ? Color.FromArgb(52, 211, 153) : Color.FromArgb(248, 113, 113);
-                    if (success) ok++; else fail++;
-                }
-            }
-            lblStatus.Text = $"সম্পন্ন: {ok} সফল, {fail} ব্যর্থ";
+            if (users.Count == 0)
+                return;
+
+            await PushUsersToDeviceAsync(users);
         }
 
-        private void BtnPushAll_Click(object? sender, EventArgs e)
+        private async void BtnPushAll_Click(object? sender, EventArgs e)
         {
             if (cmbDevice.SelectedIndex < 0) { MessageBox.Show("একটি ডিভাইস বেছে নিন।"); return; }
             if (_users.Count == 0) { MessageBox.Show("প্রথমে ক্লাউড থেকে ব্যবহারকারী আনুন।"); return; }
@@ -234,21 +230,53 @@ namespace BiometricAgent
                 "নিশ্চিত করুন", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (confirm != DialogResult.Yes) return;
 
-            string serial = _config.Devices[cmbDevice.SelectedIndex].SerialNumber;
-            int ok = 0, fail = 0;
+            var users = dgvUsers.Rows
+                .OfType<DataGridViewRow>()
+                .Where(row => row.DataBoundItem is UserRecord)
+                .Select(row => (row, (UserRecord)row.DataBoundItem!))
+                .ToList();
 
-            foreach (DataGridViewRow row in dgvUsers.Rows)
+            if (users.Count == 0)
+                return;
+
+            await PushUsersToDeviceAsync(users);
+        }
+
+        private async Task PushUsersToDeviceAsync(List<(DataGridViewRow row, UserRecord user)> items)
+        {
+            btnPushToDevice.Enabled = false;
+            btnPushAll.Enabled = false;
+            lblStatus.Text = "⏳ ডিভাইসে পাঠানো হচ্ছে...";
+            lblStatus.ForeColor = Color.FromArgb(251, 191, 36);
+
+            var device = _config.Devices[cmbDevice.SelectedIndex];
+            string deviceKey = string.IsNullOrEmpty(device.SerialNumber)
+                ? device.IpAddress
+                : device.SerialNumber;
+
+            var results = await Task.Run(() =>
             {
-                if (row.DataBoundItem is UserRecord user)
+                var list = new List<(DataGridViewRow row, UserRecord user, bool success)>();
+                foreach (var item in items)
                 {
-                    bool success = _dashboard.PushUserToDevice(serial, user);
-                    row.Cells["Status"].Value = success ? "✅ পাঠানো হয়েছে" : "❌ ব্যর্থ";
-                    row.Cells["Status"].Style.ForeColor = success ? Color.FromArgb(52, 211, 153) : Color.FromArgb(248, 113, 113);
-                    if (success) ok++; else fail++;
+                    bool success = _dashboard.PushUserToDevice(deviceKey, item.user);
+                    list.Add((item.row, item.user, success));
                 }
+                return list;
+            });
+
+            int ok = 0, fail = 0;
+            foreach (var item in results)
+            {
+                item.row.Cells["Status"].Value = item.success ? "✅ পাঠানো হয়েছে" : "❌ ব্যর্থ";
+                item.row.Cells["Status"].Style.ForeColor = item.success ? Color.FromArgb(52, 211, 153) : Color.FromArgb(248, 113, 113);
+                if (item.success) ok++; else fail++;
             }
+
             lblStatus.Text = $"সম্পন্ন: {ok} সফল, {fail} ব্যর্থ";
             lblStatus.ForeColor = ok > 0 ? Color.FromArgb(52, 211, 153) : Color.FromArgb(248, 113, 113);
+            btnPushToDevice.Enabled = true;
+            btnPushAll.Enabled = true;
         }
     }
 }
