@@ -27,7 +27,8 @@ namespace BiometricAgent
         // Active device adapters keyed by serial number
         private readonly Dictionary<string, IBiometricAdapter> _adapters = new();
         private readonly Dictionary<string, string> _deviceStatus = new();
-        private readonly Dictionary<string, NotificationAlertForm> _activeAlerts = new();
+        private readonly HashSet<string> _offlineDeviceNames = new();
+        private NotificationAlertForm? _masterAlert = null;
         
         // --- Added for tray & reconnect logic ---
         private NotifyIcon _notifyIcon = null!;
@@ -338,34 +339,42 @@ namespace BiometricAgent
 
         private void ShowOfflineAlert(DeviceConfig dev)
         {
-            if (_activeAlerts.ContainsKey(dev.SerialNumber)) return;
-
-            if (this.InvokeRequired)
+            if (this.InvokeRequired) { this.Invoke(new Action(() => ShowOfflineAlert(dev))); return; }
+            if (_offlineDeviceNames.Add(dev.Name))
             {
-                this.Invoke(new Action(() => ShowOfflineAlert(dev)));
-                return;
+                LogMessage($"🔴 {dev.Name} is OFFLINE!");
+                RefreshMasterAlert();
             }
-
-            var alert = new NotificationAlertForm($"Alert: Device '{dev.Name}' ({dev.IpAddress}) is offline!");
-            alert.FormClosed += (s, e) => _activeAlerts.Remove(dev.SerialNumber);
-            alert.Show();
-            _activeAlerts[dev.SerialNumber] = alert;
-            LogMessage($"🔴 {dev.Name} is OFFLINE!");
         }
 
         private void CloseOfflineAlert(DeviceConfig dev)
         {
-            if (_activeAlerts.TryGetValue(dev.SerialNumber, out var alert))
-            {
-                if (this.InvokeRequired)
-                {
-                    this.Invoke(new Action(() => CloseOfflineAlert(dev)));
-                    return;
-                }
-                alert.Close();
-                _activeAlerts.Remove(dev.SerialNumber);
-            }
+            if (this.InvokeRequired) { this.Invoke(new Action(() => CloseOfflineAlert(dev))); return; }
+            if (_offlineDeviceNames.Remove(dev.Name))
+                RefreshMasterAlert();
         }
+
+        private void RefreshMasterAlert()
+        {
+            // Close old alert safely
+            if (_masterAlert != null && !_masterAlert.IsDisposed)
+            {
+                _masterAlert.FormClosed -= OnMasterAlertClosed;
+                _masterAlert.Close();
+                _masterAlert = null;
+            }
+
+            if (_offlineDeviceNames.Count == 0) return;
+
+            // Build consolidated message
+            string lines = string.Join("\n", _offlineDeviceNames.Select(n => "• " + n));
+            string message = $"⚠️ Offline Devices ({_offlineDeviceNames.Count}):\n{lines}";
+            _masterAlert = new NotificationAlertForm(message);
+            _masterAlert.FormClosed += OnMasterAlertClosed;
+            _masterAlert.Show();
+        }
+
+        private void OnMasterAlertClosed(object? s, EventArgs e) => _masterAlert = null;
 
         private int GetSchoolId() => 1; // Loaded from SaaS after auth in production
 

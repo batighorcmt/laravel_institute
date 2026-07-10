@@ -7,72 +7,91 @@ namespace BiometricAgent
     public class NotificationAlertForm : Form
     {
         private Label lblMessage;
-        private Label lblIcon;
+        private Label lblTitle;
         private Button btnClose;
+        private Panel pTop;
 
         public NotificationAlertForm(string message)
         {
             this.Text = "Device Alert";
             this.StartPosition = FormStartPosition.Manual;
             this.FormBorderStyle = FormBorderStyle.None;
-            this.TopMost = true; // Stays on top
-            this.BackColor = Color.FromArgb(40, 42, 54); // Dark theme
-            this.ForeColor = Color.White;
+            this.TopMost = true;
             this.ShowInTaskbar = false;
+            this.BackColor = Color.FromArgb(30, 32, 48);
 
-            lblIcon = new Label
+            // ── Top bar ────────────────────────────────
+            pTop = new Panel
             {
-                Text = "⚠️",
-                Font = new Font("Segoe UI Emoji", 20),
-                Location = new Point(10, 15),
-                AutoSize = true,
-                ForeColor = Color.FromArgb(255, 184, 108) // Warning color
+                Dock = DockStyle.Top,
+                Height = 32,
+                BackColor = Color.FromArgb(220, 38, 38)  // Red header
             };
-            this.Controls.Add(lblIcon);
 
-            lblMessage = new Label
+            lblTitle = new Label
             {
-                Text = message,
-                Font = new Font("Segoe UI", 10, FontStyle.Regular),
-                Location = new Point(50, 15),
-                AutoSize = true,
-                MaximumSize = new Size(300, 0), // Allow wrapping
-                TextAlign = ContentAlignment.TopLeft
+                Text = "  ⚠  Device Alert",
+                Dock = DockStyle.Fill,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleLeft
             };
-            this.Controls.Add(lblMessage);
 
             btnClose = new Button
             {
                 Text = "✕",
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                Size = new Size(25, 25),
+                Dock = DockStyle.Right,
+                Width = 32,
                 FlatStyle = FlatStyle.Flat,
-                ForeColor = Color.FromArgb(200, 200, 200),
+                ForeColor = Color.White,
                 BackColor = Color.Transparent,
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                Font = new Font("Segoe UI", 9, FontStyle.Bold)
             };
             btnClose.FlatAppearance.BorderSize = 0;
-            btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(255, 85, 85);
+            btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(185, 28, 28);
             btnClose.Click += (s, e) => this.Close();
-            this.Controls.Add(btnClose);
 
-            // Auto-size the form based on the label text
-            int height = Math.Max(70, lblMessage.PreferredHeight + 30);
-            this.Size = new Size(360, height);
-            
-            // Reposition button to top right
-            btnClose.Location = new Point(this.Width - 30, 5);
+            pTop.Controls.Add(lblTitle);
+            pTop.Controls.Add(btnClose);
 
-            // Position at bottom right of the screen
-            Rectangle workingArea = Screen.GetWorkingArea(this);
-            this.Location = new Point(workingArea.Right - Size.Width - 20, workingArea.Bottom - Size.Height - 20);
+            // ── Message label ──────────────────────────
+            lblMessage = new Label
+            {
+                Text = message,
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                ForeColor = Color.FromArgb(230, 230, 250),
+                Padding = new Padding(12, 10, 12, 10),
+                AutoSize = false,
+                TextAlign = ContentAlignment.TopLeft
+            };
 
-            // Subtle border
-            this.Paint += (s, e) => {
-                using (var pen = new Pen(Color.FromArgb(255, 85, 85), 2))
-                {
-                    e.Graphics.DrawRectangle(pen, 0, 0, this.Width - 1, this.Height - 1);
-                }
+            // Calculate size
+            int formWidth = 320;
+            using (var g = Graphics.FromHwnd(IntPtr.Zero))
+            {
+                var sz = g.MeasureString(message, lblMessage.Font, formWidth - 24);
+                lblMessage.Size = new Size(formWidth, (int)sz.Height + 24);
+            }
+
+            this.Width = formWidth;
+            this.Height = 32 + lblMessage.Height + 4;
+
+            lblMessage.Location = new Point(0, 32);
+            lblMessage.Width = formWidth;
+
+            // ── Positioning: bottom-right ──────────────
+            Rectangle wa = Screen.GetWorkingArea(this);
+            this.Location = new Point(wa.Right - this.Width - 16, wa.Bottom - this.Height - 16);
+
+            this.Controls.Add(lblMessage);
+            this.Controls.Add(pTop);
+
+            // Subtle border via Paint
+            this.Paint += (s, e) =>
+            {
+                using var pen = new Pen(Color.FromArgb(220, 38, 38), 1);
+                e.Graphics.DrawRectangle(pen, 0, 0, this.Width - 1, this.Height - 1);
             };
         }
     }
