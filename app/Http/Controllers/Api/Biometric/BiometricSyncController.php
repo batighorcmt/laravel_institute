@@ -24,18 +24,31 @@ class BiometricSyncController extends Controller
             'device_serial' => 'required|string',
             'status' => 'required|string',
             'ip_address' => 'nullable|string',
+            'device_name' => 'nullable|string',
+            'location' => 'nullable|string',
         ]);
+
+        $deviceName = $request->device_name ?: ('Device ' . $request->device_serial);
 
         $device = BiometricDevice::firstOrCreate(
             ['school_id' => $request->school_id, 'serial_number' => $request->device_serial],
-            ['device_name' => 'Device ' . $request->device_serial, 'ip_address' => $request->ip_address, 'status' => 'offline']
+            ['device_name' => $deviceName, 'ip_address' => $request->ip_address, 'status' => 'offline', 'location' => $request->location]
         );
 
-        $device->update([
+        $updateData = [
             'status' => $request->status,
             'ip_address' => $request->ip_address,
             'last_seen' => now(),
-        ]);
+        ];
+        
+        if ($request->filled('device_name')) {
+            $updateData['device_name'] = $request->device_name;
+        }
+        if ($request->filled('location')) {
+            $updateData['location'] = $request->location;
+        }
+
+        $device->update($updateData);
 
         DeviceHeartbeat::create([
             'device_id' => $device->id,

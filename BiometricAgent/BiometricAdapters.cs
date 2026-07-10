@@ -24,6 +24,7 @@ namespace BiometricAgent
         List<PunchRecord> ReadNewAttendanceLogs();
         List<BiometricTemplate> ReadAllTemplates();
         bool UploadTemplate(BiometricTemplate template);
+        string GetSerialNumber();
         string Brand { get; }
     }
 
@@ -74,6 +75,17 @@ namespace BiometricAgent
             try { _sdk?.Disconnect(); }
             catch { }
             _isConnected = false;
+        }
+
+        public string GetSerialNumber()
+        {
+            if (_sdk == null || !_isConnected) return "";
+            try
+            {
+                _sdk.GetSerialNumber(_machineNumber, out string sn);
+                return sn?.Trim() ?? "";
+            }
+            catch { return ""; }
         }
 
         public List<PunchRecord> ReadNewAttendanceLogs()
@@ -201,6 +213,7 @@ namespace BiometricAgent
         public List<PunchRecord> ReadNewAttendanceLogs() => throw new NotImplementedException();
         public List<BiometricTemplate> ReadAllTemplates() => throw new NotImplementedException();
         public bool UploadTemplate(BiometricTemplate template) => throw new NotImplementedException();
+        public string GetSerialNumber() => throw new NotImplementedException();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

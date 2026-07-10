@@ -10,7 +10,14 @@
       "SerialNumber": "",
       "IpAddress": "192.168.1.201",
       "Port": 4370,
-      "Location": ""
+      "Location": "Main Gate"
+    },
+    {
+      "Name": "Device 2",
+      "SerialNumber": "",
+      "IpAddress": "192.168.1.202",
+      "Port": 4370,
+      "Location": "Academic Bulding"
     }
   ]
 }

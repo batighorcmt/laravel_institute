@@ -71,9 +71,8 @@ namespace BiometricAgent
             catch { return false; }
         }
 
-        /// <summary>Send heartbeat for a single device.</summary>
         public async Task<bool> SendHeartbeatAsync(
-            int schoolId, string serial, string status, string ip)
+            int schoolId, string serial, string status, string ip, string name = "", string location = "")
         {
             try
             {
@@ -82,7 +81,9 @@ namespace BiometricAgent
                     school_id     = schoolId,
                     device_serial = serial,
                     status,
-                    ip_address    = ip
+                    ip_address    = ip,
+                    device_name   = name,
+                    location      = location
                 });
                 var resp = await _http.PostAsync(
                     $"{_config.SaasApiUrl}/biometric/device/heartbeat",

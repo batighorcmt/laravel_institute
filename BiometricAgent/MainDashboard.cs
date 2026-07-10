@@ -187,8 +187,8 @@ namespace BiometricAgent
                 bool ok     = adapter.Connect(dev.IpAddress, dev.Port);
                 string status = ok ? "online" : "offline";
 
-                _adapters[dev.SerialNumber] = adapter;
-                _deviceStatus[dev.SerialNumber] = status;
+                _adapters[dev.IpAddress] = adapter;
+                _deviceStatus[dev.IpAddress] = status;
 
                 AddDeviceCard(dev, status);
                 LogMessage($"{(ok ? "🟢" : "🔴")} {dev.Name} ({dev.IpAddress}) – {status.ToUpper()}");
@@ -264,7 +264,7 @@ namespace BiometricAgent
             // 2. Poll each connected device for new punches
             foreach (var dev in _config.Devices)
             {
-                if (!_adapters.TryGetValue(dev.SerialNumber, out var adapter))
+                if (!_adapters.TryGetValue(dev.IpAddress, out var adapter))
                     continue;
 
                 string status = "online";
@@ -273,7 +273,7 @@ namespace BiometricAgent
                     status = "offline";
                     bool shouldReconnect = false;
                     
-                    if (!_lastReconnectAttempt.TryGetValue(dev.SerialNumber, out var lastTry) ||
+                    if (!_lastReconnectAttempt.TryGetValue(dev.IpAddress, out var lastTry) ||
                         (DateTime.Now - lastTry).TotalMinutes >= 2)
                     {
                         shouldReconnect = true;
@@ -281,7 +281,7 @@ namespace BiometricAgent
 
                     if (shouldReconnect)
                     {
-                        _lastReconnectAttempt[dev.SerialNumber] = DateTime.Now;
+                        _lastReconnectAttempt[dev.IpAddress] = DateTime.Now;
                         LogMessage($"Attempting to reconnect {dev.Name}...");
                         bool reconnected = adapter.Connect(dev.IpAddress, dev.Port);
                         
@@ -300,16 +300,36 @@ namespace BiometricAgent
 
                 if (status == "online")
                 {
+                    // Auto-fetch serial number if missing
+                    if (string.IsNullOrWhiteSpace(dev.SerialNumber))
+                    {
+                        string sn = adapter.GetSerialNumber();
+                        if (!string.IsNullOrWhiteSpace(sn))
+                        {
+                            dev.SerialNumber = sn;
+                            _config.Save(); // Save back to config
+                            LogMessage($"ℹ️ Fetched Serial Number '{sn}' for {dev.Name}.");
+                        }
+                    }
+
                     var punches = adapter.ReadNewAttendanceLogs();
                     if (punches.Count > 0)
                     {
                         LogMessage($"📥 {dev.Name}: {punches.Count} punch(es) read.");
-                        await _cloud.SyncAttendanceAsync(GetSchoolId(), dev.SerialNumber, punches);
+                        
+                        string serialToSend = string.IsNullOrWhiteSpace(dev.SerialNumber) 
+                            ? $"UNKNOWN-{dev.IpAddress.Replace(".", "")}" 
+                            : dev.SerialNumber;
+
+                        await _cloud.SyncAttendanceAsync(GetSchoolId(), serialToSend, punches);
                     }
                 }
 
                 // Send heartbeat
-                await _cloud.SendHeartbeatAsync(GetSchoolId(), dev.SerialNumber, status, dev.IpAddress);
+                string hbSerial = string.IsNullOrWhiteSpace(dev.SerialNumber) 
+                    ? $"UNKNOWN-{dev.IpAddress.Replace(".", "")}" 
+                    : dev.SerialNumber;
+                await _cloud.SendHeartbeatAsync(GetSchoolId(), hbSerial, status, dev.IpAddress, dev.Name, dev.Location);
             }
 
             lblLastSync.Text = $"Last sync: {DateTime.Now:HH:mm:ss}";
