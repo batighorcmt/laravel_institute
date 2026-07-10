@@ -36,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'strict_role' => \App\Http\Middleware\StrictRoleMiddleware::class,
             'active_school' => \App\Http\Middleware\EnsureSchoolIsActive::class,
             'module' => \App\Http\Middleware\CheckModuleAccess::class,
+            'agent_auth' => \App\Http\Middleware\CheckAgentToken::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

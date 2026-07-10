@@ -252,11 +252,9 @@ namespace BiometricAgent
 
         private async Task DoSyncCycle()
         {
-            // 0. Send Agent Heartbeat
+            // 0. Send Agent Heartbeat (silently to keep logs clean)
             bool hbSuccess = await _cloud.SendAgentHeartbeatAsync();
-            if (hbSuccess) {
-                LogMessage("Connect request with server successful");
-            } else {
+            if (!hbSuccess) {
                 LogMessage("⚠️ Connection with server failed or offline");
             }
 

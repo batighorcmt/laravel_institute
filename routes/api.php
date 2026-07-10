@@ -260,8 +260,8 @@ Route::prefix('biometric')->group(function () {
     Route::post('/agent/heartbeat', [\App\Http\Controllers\Api\Biometric\AgentAuthController::class, 'heartbeat'])
         ->name('biometric.agent.heartbeat');
 
-    // Routes requiring agent authentication via Sanctum token
-    Route::middleware(['auth:sanctum', 'throttle:300,1'])->group(function () {
+    // Routes requiring agent authentication via agent token
+    Route::middleware(['agent_auth', 'throttle:300,1'])->group(function () {
 
         // Device heartbeat (status ping from local agent)
         Route::post('/device/heartbeat', [\App\Http\Controllers\Api\Biometric\BiometricSyncController::class, 'heartbeat'])
