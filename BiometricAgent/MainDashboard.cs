@@ -123,9 +123,24 @@ namespace BiometricAgent
             lblVersion.Text = $"{CompanyName}  |  Version {AppVersion}";
 
             LogMessage("Agent starting…");
+            LogMessage($"📡 Connecting to: {_config.SaasApiUrl}");
 
             bool auth = await _cloud.AuthenticateAsync();
-            LogMessage(auth ? "✅ Authenticated with SaaS server." : "⚠️  Offline – local queue active.");
+            if (auth)
+            {
+                LogMessage("✅ Authenticated with SaaS server.");
+                // Immediately send heartbeat so web dashboard shows online right away
+                bool hb = await _cloud.SendAgentHeartbeatAsync();
+                if (hb)
+                    LogMessage("Connect request with server successful");
+                else
+                    LogMessage("⚠️ Heartbeat failed – check API route on server.");
+            }
+            else
+            {
+                LogMessage("⚠️  Authentication failed. Check URL, School Code & Token.");
+                LogMessage($"   URL used: {_config.SaasApiUrl}");
+            }
 
             ConnectAllDevices();
             StartSyncTimer();
