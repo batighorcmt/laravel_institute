@@ -237,12 +237,57 @@ Route::prefix('v1')->group(function () {
                 // Meta endpoints
                 Route::prefix('meta')->group(function () {
                     Route::get('classes', [\App\Http\Controllers\Api\SchoolMetaController::class , 'classes']);
-                    Route::get('sections', [\App\Http\Controllers\Api\SchoolMetaController::class , 'sections']);
-                    Route::get('groups', [\App\Http\Controllers\Api\SchoolMetaController::class , 'groups']);
-                    Route::get('subjects', [\App\Http\Controllers\Api\SchoolMetaController::class , 'subjects']);
-                    Route::get('teachers', [\App\Http\Controllers\Api\SchoolMetaController::class , 'teachers']);
-                    Route::get('school', [\App\Http\Controllers\Api\SchoolMetaController::class , 'school']);
+                    Route::get('sections', [\App\Http\Controllers\Api\SchoolMetaController::class, 'sections']);
+                    Route::get('groups', [\App\Http\Controllers\Api\SchoolMetaController::class, 'groups']);
+                    Route::get('subjects', [\App\Http\Controllers\Api\SchoolMetaController::class, 'subjects']);
+                    Route::get('teachers', [\App\Http\Controllers\Api\SchoolMetaController::class, 'teachers']);
+                    Route::get('school', [\App\Http\Controllers\Api\SchoolMetaController::class, 'school']);
                 }
                 );
             }
             );        });
+
+// ============================================================
+// Biometric Agent API Routes (No standard auth, uses Agent Token)
+// ============================================================
+Route::prefix('biometric')->group(function () {
+
+    // Agent Authentication
+    Route::post('/agent/login', [\App\Http\Controllers\Api\Biometric\AgentAuthController::class, 'login'])
+        ->name('biometric.agent.login');
+
+    // Agent Heartbeat (Periodic ping from agent itself)
+    Route::post('/agent/heartbeat', [\App\Http\Controllers\Api\Biometric\AgentAuthController::class, 'heartbeat'])
+        ->name('biometric.agent.heartbeat');
+
+    // Routes requiring agent authentication via Sanctum token
+    Route::middleware(['auth:sanctum', 'throttle:300,1'])->group(function () {
+
+        // Device heartbeat (status ping from local agent)
+        Route::post('/device/heartbeat', [\App\Http\Controllers\Api\Biometric\BiometricSyncController::class, 'heartbeat'])
+            ->name('biometric.device.heartbeat');
+
+        // Attendance sync (push punch logs to server)
+        Route::post('/attendance/sync', [\App\Http\Controllers\Api\Biometric\BiometricSyncController::class, 'syncAttendance'])
+            ->name('biometric.attendance.sync');
+
+        // Template sync (push templates to server, download templates to device)
+        Route::post('/templates/upload', [\App\Http\Controllers\Api\Biometric\BiometricSyncController::class, 'uploadTemplates'])
+            ->name('biometric.templates.upload');
+        Route::post('/templates/download', [\App\Http\Controllers\Api\Biometric\BiometricSyncController::class, 'downloadTemplates'])
+            ->name('biometric.templates.download');
+
+        // Device commands (agent polls for commands)
+        Route::post('/device-command', [\App\Http\Controllers\Api\Biometric\DeviceCommandController::class, 'getPendingCommands'])
+            ->name('biometric.device.command');
+
+        // Fetch all users with biometric_id for the agent
+        Route::get('/users', [\App\Http\Controllers\Api\Biometric\BiometricSyncController::class, 'getUsers'])
+            ->name('biometric.users.list');
+    });
+
+    // Agent Update Checker (No auth required to check version)
+    Route::get('/agent/check-update', [\App\Http\Controllers\Api\Biometric\AgentUpdateController::class, 'checkUpdate'])
+        ->name('biometric.agent.update');
+});
+

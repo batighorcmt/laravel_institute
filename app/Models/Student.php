@@ -57,7 +57,7 @@ class Student extends Model
         'present_village','present_village_en','present_para_moholla','present_post_office','present_post_office_en','present_upazilla','present_upazilla_en','present_district','present_district_en',
         'permanent_village','permanent_village_en','permanent_para_moholla','permanent_post_office','permanent_post_office_en','permanent_upazilla','permanent_upazilla_en','permanent_district','permanent_district_en',
         'blood_group', 'photo', 'admission_date', 'status',
-        'previous_school','pass_year','previous_result','previous_remarks'
+        'previous_school','pass_year','previous_result','previous_remarks', 'biometric_id'
     ];
 
     protected $casts = [

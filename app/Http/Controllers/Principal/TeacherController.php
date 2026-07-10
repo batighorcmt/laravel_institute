@@ -220,6 +220,7 @@ class TeacherController extends Controller
             Teacher::create([
                 'user_id' => $user->id,
                 'school_id' => $school->id,
+                'biometric_id' => strval(900000 + $counter),
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'] ?? null,
                 'first_name_bn' => $data['first_name_bn'] ?? null,

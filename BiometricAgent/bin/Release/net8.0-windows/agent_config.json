@@ -1,0 +1,16 @@
+{
+  "SaasApiUrl": "http://127.0.0.1:8000/api",
+  "SchoolCode": "JSS",
+  "AgentToken": "6M7SGONV1Pn15hPRVR9vofiEV7qvFLjr8qG1b37h",
+  "SyncIntervalSeconds": 60,
+  "AutoStart": true,
+  "Devices": [
+    {
+      "Name": "Device 1",
+      "SerialNumber": "",
+      "IpAddress": "192.168.1.201",
+      "Port": 4370,
+      "Location": ""
+    }
+  ]
+}

@@ -336,8 +336,8 @@
                             @if(method_exists($u,'primarySchool') && $u->primarySchool())
                                 @if(auth()->user()->hasModule('attendance'))
                                 {{-- Attendance (top-level) --}}
-                                <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.attendance*') || request()->routeIs('principal.institute.holidays*') ? 'menu-open' : '' }}">
-                                    <a href="#" class="nav-link {{ request()->routeIs('principal.institute.attendance*') || request()->routeIs('principal.institute.holidays*') ? 'active' : '' }}">
+                                <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.attendance*') || request()->routeIs('principal.institute.holidays*') || request()->routeIs('principal.institute.biometric*') ? 'menu-open' : '' }}">
+                                    <a href="#" class="nav-link {{ request()->routeIs('principal.institute.attendance*') || request()->routeIs('principal.institute.holidays*') || request()->routeIs('principal.institute.biometric*') ? 'active' : '' }}">
                                         <i class="nav-icon fas fa-calendar-check"></i>
                                         <p>Student Attendance <i class="right fas fa-angle-left"></i></p>
                                     </a>
@@ -378,6 +378,19 @@
                                                 <li class="nav-item"><a href="{{ route('principal.institute.extra-classes.attendance.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.extra-classes.attendance.take') || request()->routeIs('principal.institute.extra-classes.attendance.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Mark Attendance</p></a></li>
                                                 <li class="nav-item"><a href="{{ route('principal.institute.extra-classes.attendance.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.extra-classes.attendance.daily-report') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Daily Report</p></a></li>
                                                 <li class="nav-item"><a href="{{ route('principal.institute.extra-classes.attendance.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.extra-classes.attendance.monthly-report') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Monthly Report</p></a></li>
+                                            </ul>
+                                        </li>
+
+                                        {{-- Biometric Attendance --}}
+                                        <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.biometric*') ? 'menu-open' : '' }}">
+                                            <a href="#" class="nav-link {{ request()->routeIs('principal.institute.biometric*') ? 'active' : '' }}">
+                                                <i class="far fa-dot-circle nav-icon"></i>
+                                                <p>Biometric System <i class="right fas fa-angle-left"></i></p>
+                                            </a>
+                                            <ul class="nav nav-treeview">
+                                                <li class="nav-item"><a href="{{ route('principal.institute.biometric.dashboard', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.biometric.dashboard') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Dashboard</p></a></li>
+                                                <li class="nav-item"><a href="{{ route('principal.institute.biometric.reports.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.biometric.reports.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Reports</p></a></li>
+                                                <li class="nav-item"><a href="{{ route('principal.institute.biometric.settings', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.biometric.settings') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>সেটিংস</p></a></li>
                                             </ul>
                                         </li>
 

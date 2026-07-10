@@ -247,6 +247,42 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             }
             );
 
+            // ── Biometric Attendance Module (Phase 4, 5, 6) ──────────────────
+            Route::prefix('biometric')->name('biometric.')->group(function () {
+                // Dashboard
+                Route::get('/dashboard', [App\Http\Controllers\Principal\BiometricController::class, 'dashboard'])->name('dashboard');
+                Route::post('/generate-token', [App\Http\Controllers\Principal\BiometricController::class, 'generateToken'])->name('generate_token');
+
+                // Settings (API details for Desktop Agent)
+                Route::get('/settings', [App\Http\Controllers\Principal\BiometricController::class, 'settings'])->name('settings');
+
+                // Devices
+                Route::get('/devices', [App\Http\Controllers\Principal\BiometricController::class, 'devicesIndex'])->name('devices.index');
+
+                // Enrollment
+                Route::get('/enrollment', [App\Http\Controllers\Principal\BiometricController::class, 'enrollmentIndex'])->name('enrollment.index');
+
+                // ── Phase 6: Reports ─────────────────────────────────────────
+                Route::prefix('/reports')->name('reports.')->group(function () {
+                    Route::get('/', [App\Http\Controllers\Principal\BiometricController::class, 'reportsIndex'])->name('index');
+                    Route::get('/daily', [App\Http\Controllers\Principal\BiometricController::class, 'dailyReport'])->name('daily');
+                    Route::get('/sync-history', [App\Http\Controllers\Principal\BiometricController::class, 'syncHistory'])->name('sync-history');
+                });
+
+                // ── Phase 6: Unassigned Profiles (still needed for cloud sync reconciliation) ──
+                Route::prefix('/profiles')->name('profiles.')->group(function () {
+                    Route::get('/unassigned', [App\Http\Controllers\Principal\BiometricController::class, 'unassignedProfiles'])->name('unassigned');
+                    Route::post('/link/{profile}', [App\Http\Controllers\Principal\BiometricController::class, 'linkProfile'])->name('link');
+                    Route::delete('/delete/{profile}', [App\Http\Controllers\Principal\BiometricController::class, 'deleteProfile'])->name('delete');
+                });
+
+                // ── Phase 6: Live Device Monitor ──────────────────────────────
+                Route::get('/monitor', [App\Http\Controllers\Principal\BiometricController::class, 'liveMonitor'])->name('monitor');
+                Route::get('/monitor/status', [App\Http\Controllers\Principal\BiometricController::class, 'monitorStatus'])->name('monitor.status');
+            });
+
+
+
             // Teacher Attendance Settings
             Route::prefix('teacher-attendance')->name('teacher-attendance.')->group(function () {
                 Route::prefix('settings')->name('settings.')->group(function () {

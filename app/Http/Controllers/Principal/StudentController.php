@@ -225,6 +225,7 @@ class StudentController extends Controller
         for ($i = 0; $i < $maxRetries; $i++) {
             try {
                 $data['student_id'] = Student::generateStudentId($school->id, $classNumeric);
+                $data['biometric_id'] = $data['student_id'];
                 $student = Student::create($data);
                 break; // Success, exit loop
             } catch (\Illuminate\Database\QueryException $e) {

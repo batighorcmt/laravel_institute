@@ -24,6 +24,7 @@ class School extends Model
     protected $fillable = [
         'name', 'name_bn', 'code', 'eiin', 'mpo_code', 'address', 'address_bn',
         'short_address_bn', 'short_address_en', 'founding_year', 'school_code',
+        'agent_token',
         'phone', 'mobile', 'email', 'website', 'domain',
         'description', 'logo', 'status', 'admissions_enabled',
         'admission_academic_year_id', 'fine_enabled',

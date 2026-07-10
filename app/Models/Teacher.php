@@ -50,6 +50,7 @@ class Teacher extends Model
         'permanent_post_office_en',
         'permanent_village',
         'permanent_village_en',
+        'biometric_id',
     ];
 
     protected $casts = [
