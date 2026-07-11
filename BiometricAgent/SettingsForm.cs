@@ -78,11 +78,12 @@ namespace BiometricAgent
                 BorderStyle       = BorderStyle.None,
                 AllowUserToAddRows = true
             };
-            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name",         HeaderText = "Name",     Width = 110 });
-            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "SerialNumber", HeaderText = "Serial",   Width = 90  });
-            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "IpAddress",    HeaderText = "IP",       Width = 120 });
-            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "Port",         HeaderText = "Port",     Width = 60  });
-            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "Location",     HeaderText = "Location", Width = 120 });
+            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name",          HeaderText = "Name",          Width = 100 });
+            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "SerialNumber",  HeaderText = "Serial",        Width = 90  });
+            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "MachineNumber", HeaderText = "Device #",      Width = 70  });
+            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "IpAddress",     HeaderText = "IP",            Width = 110 });
+            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "Port",          HeaderText = "Port",          Width = 60  });
+            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "Location",      HeaderText = "Location",      Width = 120 });
             Controls.Add(gridDevices);
             y += 210;
 
@@ -111,7 +112,7 @@ namespace BiometricAgent
 
             foreach (var dev in Config.Devices)
             {
-                gridDevices.Rows.Add(dev.Name, dev.SerialNumber, dev.IpAddress, dev.Port.ToString(), dev.Location);
+                gridDevices.Rows.Add(dev.Name, dev.SerialNumber, dev.MachineNumber.ToString(), dev.IpAddress, dev.Port.ToString(), dev.Location);
             }
         }
 
@@ -135,6 +136,7 @@ namespace BiometricAgent
                 {
                     Name          = name,
                     SerialNumber  = serial,
+                    MachineNumber = int.TryParse(row.Cells["MachineNumber"].Value?.ToString(), out int m) ? m : 1,
                     IpAddress     = row.Cells["IpAddress"].Value?.ToString() ?? "",
                     Port          = int.TryParse(row.Cells["Port"].Value?.ToString(), out int p) ? p : 4370,
                     Location      = row.Cells["Location"].Value?.ToString() ?? ""

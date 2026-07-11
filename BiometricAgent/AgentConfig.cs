@@ -62,6 +62,7 @@ namespace BiometricAgent
     {
         public string Name { get; set; } = "";
         public string SerialNumber { get; set; } = "";
+        public int MachineNumber { get; set; } = 1;
         public string IpAddress { get; set; } = "";
         public int Port { get; set; } = 4370;
         public string Location { get; set; } = "";

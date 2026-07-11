@@ -153,6 +153,11 @@
                     <span class="badge badge-light badge-modern mr-2">
                         <i class="fas fa-id-card mr-1"></i> {{ $student->student_id }}
                     </span>
+                    @if($student->biometric_id)
+                        <span class="badge badge-light badge-modern mr-2">
+                            <i class="fas fa-fingerprint mr-1"></i> {{ $student->biometric_id }}
+                        </span>
+                    @endif
                     @if($activeEnrollment)
                         <span class="badge badge-light badge-modern mr-2">
                             <i class="fas fa-graduation-cap mr-1"></i> শ্রেণি: {{ $activeEnrollment->class?->name }} - {{ $activeEnrollment->section?->name }}

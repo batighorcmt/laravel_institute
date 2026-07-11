@@ -88,7 +88,7 @@ class BiometricSyncController extends Controller
             $attendanceLog = BiometricAttendanceLog::create([
                 'school_id' => $request->school_id,
                 'device_id' => $device->id,
-                'biometric_id' => $log['biometric_id'],
+                'biometric_id' => $this->normalizeBiometricId($log['biometric_id']),
                 'punch_time' => $log['punch_time'],
                 'punch_type' => $log['punch_type'] ?? null,
                 'sync_status' => 'pending'
@@ -126,9 +126,10 @@ class BiometricSyncController extends Controller
 
         $insertedCount = 0;
         foreach ($request->templates as $tpl) {
+            $normalizedId = $this->normalizeBiometricId($tpl['biometric_id']);
             // Find or create profile
             $profile = \App\Models\BiometricProfile::firstOrCreate(
-                ['school_id' => $request->school_id, 'biometric_id' => $tpl['biometric_id']],
+                ['school_id' => $request->school_id, 'biometric_id' => $normalizedId],
                 ['user_type' => 'unassigned']
             );
 
@@ -151,6 +152,11 @@ class BiometricSyncController extends Controller
         }
 
         return response()->json(['message' => "$insertedCount templates uploaded successfully"]);
+    }
+
+    private function normalizeBiometricId(string $biometricId): string
+    {
+        return trim(preg_replace('/[^0-9]/', '', $biometricId));
     }
 
     /**

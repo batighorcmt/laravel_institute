@@ -199,6 +199,11 @@ class Student extends Model
 
     // Return a full absolute URL for the student's photo (required by mobile app).
     // Web views also work fine with absolute URLs.
+    public function setBiometricIdAttribute($value): void
+    {
+        $this->attributes['biometric_id'] = trim(preg_replace('/\D/', '', (string)($value ?? '')));
+    }
+
     public function getPhotoUrlAttribute(): string
     {
         if (empty($this->photo)) {

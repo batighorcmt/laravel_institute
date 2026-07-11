@@ -30,16 +30,23 @@ class AttendanceProcessingEngine
     public function processPunch(BiometricAttendanceLog $log): void
     {
         $schoolId    = $log->school_id;
-        $biometricId = $log->biometric_id;
+        $biometricId = $this->normalizeBiometricId($log->biometric_id);
         $punchTime   = Carbon::parse($log->punch_time);
         $date        = $punchTime->toDateString();
 
         // ── Identify user ────────────────────────────────────────────────────
         $student = Student::where('school_id', $schoolId)
-                        ->where('biometric_id', $biometricId)
+                        ->where(function($query) use ($biometricId) {
+                            $query->where('biometric_id', $biometricId)
+                                  ->orWhere('biometric_id', 'like', '%'.$biometricId);
+                        })
                         ->first();
 
         if ($student) {
+            if (preg_replace('/\D/', '', $student->biometric_id) !== $biometricId) {
+                $student->biometric_id = $biometricId;
+                $student->save();
+            }
             $this->processStudentAttendance($student, $punchTime, $date, $log);
             return;
         }
@@ -49,12 +56,21 @@ class AttendanceProcessingEngine
                         ->first();
 
         if ($teacher) {
+            if (preg_replace('/\D/', '', $teacher->biometric_id) !== $biometricId) {
+                $teacher->biometric_id = $biometricId;
+                $teacher->save();
+            }
             $this->processTeacherAttendance($teacher, $punchTime, $date, $log);
             return;
         }
 
         Log::warning("[Biometric] Unknown biometric_id: {$biometricId} at school {$schoolId}");
         $log->update(['sync_status' => 'failed']);
+    }
+
+    private function normalizeBiometricId(string $biometricId): string
+    {
+        return trim(preg_replace('/\D/', '', $biometricId));
     }
 
     // ─────────────────────────────────────────────────────────────────────────

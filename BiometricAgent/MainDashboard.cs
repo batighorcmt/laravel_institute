@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using System.Drawing;
 using System.Linq;
 using System.Threading;
@@ -189,14 +190,21 @@ namespace BiometricAgent
 
                 foreach (var dev in _config.Devices)
                 {
+                    LogMessage($"⏳ Trying {dev.Name} at {dev.IpAddress}:{dev.Port} with device #{dev.MachineNumber}");
                     var adapter = BiometricAdapterFactory.Create("zkteco");
-                    bool ok = adapter.Connect(dev.IpAddress, dev.Port);
+                    bool ok = adapter.Connect(dev.IpAddress, dev.Port, dev.MachineNumber);
                     string status = ok ? "online" : "offline";
                     string serial = ok ? adapter.GetSerialNumber() : string.Empty;
+                    string error = string.Empty;
+                    if (!ok && adapter is ZKTecoAdapter zktecoAdapter)
+                        error = zktecoAdapter.LastError;
 
                     results.Add((dev, status, ok, serial));
                     _adapters[dev.IpAddress] = adapter;
                     _deviceStatus[dev.IpAddress] = status;
+                    
+                    if (!string.IsNullOrWhiteSpace(error))
+                        LogMessage($"❌ {dev.Name} ({dev.IpAddress}:{dev.Port}) error: {error}");
                 }
 
                 return results;
@@ -316,7 +324,7 @@ namespace BiometricAgent
                             {
                                 _lastReconnectAttempt[dev.IpAddress] = DateTime.Now;
                                 LogMessage($"Attempting to reconnect {dev.Name}...");
-                                bool reconnected = adapter.Connect(dev.IpAddress, dev.Port);
+                                bool reconnected = adapter.Connect(dev.IpAddress, dev.Port, dev.MachineNumber);
                                 status = reconnected ? "online" : "offline";
                                 if (reconnected)
                                 {
@@ -363,8 +371,16 @@ namespace BiometricAgent
                 {
                     if (item.punches.Count > 0)
                     {
-                        LogMessage($"📥 {item.dev.Name}: {item.punches.Count} punch(es) read.");
-                        await _cloud.SyncAttendanceAsync(GetSchoolId(), item.serialToSend, item.punches);
+                        var distinctIds = item.punches.Select(p => p.BiometricId).Distinct().ToList();
+                        LogMessage($"📥 {item.dev.Name}: {item.punches.Count} punch(es) read ({distinctIds.Count} distinct biometric IDs).");
+                        if (distinctIds.Count <= 10)
+                            LogMessage($"   Distinct IDs: {string.Join(", ", distinctIds)}");
+                        
+                        bool syncOk = await _cloud.SyncAttendanceAsync(GetSchoolId(), item.serialToSend, item.punches);
+                        if (!syncOk)
+                            LogMessage($"⚠️ {item.dev.Name}: sync queued for retry.");
+                        else
+                            LogMessage($"✅ {item.dev.Name}: attendance pushed.");
                     }
 
                     await _cloud.SendHeartbeatAsync(GetSchoolId(), item.hbSerial, item.status, item.dev.IpAddress, item.dev.Name, item.dev.Location);
@@ -486,9 +502,19 @@ namespace BiometricAgent
             if (adapter == null || !adapter.IsConnected)
                 return false;
 
+            var biometricId = user.BiometricId ?? string.Empty;
+            // If the server stores IDs with a school-code prefix (e.g. JSS26001), strip it
+            if (!string.IsNullOrWhiteSpace(_config.SchoolCode) &&
+                biometricId.StartsWith(_config.SchoolCode, StringComparison.OrdinalIgnoreCase))
+            {
+                biometricId = biometricId.Substring(_config.SchoolCode.Length);
+            }
+            // Remove any remaining leading non-digit characters so device gets numeric ID like 26001
+            biometricId = Regex.Replace(biometricId, "^\\D+", "");
+
             var template = new BiometricTemplate
             {
-                BiometricId = user.BiometricId,
+                BiometricId = biometricId,
                 Name = user.Name,
                 FingerIndex = 0,
                 TemplateData = "",   // Empty - user created, fingerprint to be enrolled locally

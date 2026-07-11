@@ -225,17 +225,15 @@ class StudentController extends Controller
         for ($i = 0; $i < $maxRetries; $i++) {
             try {
                 $data['student_id'] = Student::generateStudentId($school->id, $classNumeric);
-                $data['biometric_id'] = $data['student_id'];
+                $data['biometric_id'] = preg_replace('/\D/', '', $data['student_id']);
                 $student = Student::create($data);
                 break; // Success, exit loop
             } catch (\Illuminate\Database\QueryException $e) {
-                // Check if it's a duplicate key error
+                // Check if it's a duplicate key error and retry
                 if ($e->errorInfo[1] == 1062 && $i < $maxRetries - 1) {
-                    // Duplicate entry, retry with a small delay
                     usleep(100000); // 100ms delay
                     continue;
                 }
-                // If not duplicate or max retries reached, throw error
                 throw $e;
             }
         }
@@ -520,19 +518,20 @@ class StudentController extends Controller
         ]);
         // Handle photo upload on update: store new and remove old if present
         if ($request->hasFile('photo')) {
-                try {
-                    $photoPath = $request->file('photo')->store('students','public');
-                    // remove old photo from public disk if exists
-                    if (!empty($student->photo)) {
-                        try { Storage::disk('public')->delete($student->photo); } catch (\Throwable $e) { /* ignore */ }
-                    }
-                    $data['photo'] = $photoPath;
-                } catch (\Throwable $e) {
-                    Log::warning('Photo upload failed (update): '.$e->getMessage());
+            try {
+                $photoPath = $request->file('photo')->store('students','public');
+                // remove old photo from public disk if exists
+                if (!empty($student->photo)) {
+                    try { Storage::disk('public')->delete($student->photo); } catch (\Throwable $e) { /* ignore */ }
                 }
+                $data['photo'] = $photoPath;
+            } catch (\Throwable $e) {
+                Log::warning('Photo upload failed (update): '.$e->getMessage());
             }
+        }
 
-            $student->update($data);
+        $data['biometric_id'] = preg_replace('/\D/', '', $student->student_id);
+        $student->update($data);
 
         // Handle enrollment update if provided
         $enrollData = $request->validate([
@@ -544,10 +543,6 @@ class StudentController extends Controller
         ]);
 
         if (!empty($enrollData['enroll_academic_year_id']) && !empty($enrollData['enroll_class_id']) && !empty($enrollData['enroll_roll_no'])) {
-            // Check if enrollment exists for this year
-            $enrollment = $student->enrollments()->where('academic_year_id', $enrollData['enroll_academic_year_id'])->first();
-
-            // Validate group for class 9 and 10
             $class = SchoolClass::find($enrollData['enroll_class_id']);
             if ($class && $class->usesGroups() && empty($enrollData['enroll_group_id'])) {
                 return back()->withInput()->withErrors(['enroll_group_id' => 'এই শ্রেণির জন্য গ্রুপ নির্বাচন বাধ্যতামূলক']);
@@ -556,6 +551,8 @@ class StudentController extends Controller
             if ($class && !$class->usesGroups()) {
                 $enrollData['enroll_group_id'] = null;
             }
+
+            $enrollment = $student->enrollments()->where('academic_year_id', $enrollData['enroll_academic_year_id'])->first();
 
             try {
                 if ($enrollment) {

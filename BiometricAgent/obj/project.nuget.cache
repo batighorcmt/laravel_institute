@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "a35o3GIablc=",
+  "dgSpecHash": "778JCAirw04=",
   "success": true,
   "projectFilePath": "C:\\xampp\\htdocs\\laravel_institute\\BiometricAgent\\BiometricAgent.csproj",
   "expectedPackageFiles": [
@@ -15,7 +15,7 @@
     "C:\\Users\\You\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.28\\microsoft.netcore.app.ref.8.0.28.nupkg.sha512",
     "C:\\Users\\You\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.28\\microsoft.windowsdesktop.app.ref.8.0.28.nupkg.sha512",
     "C:\\Users\\You\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.28\\microsoft.aspnetcore.app.ref.8.0.28.nupkg.sha512",
-    "C:\\Users\\You\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\8.0.28\\microsoft.netcore.app.host.win-x64.8.0.28.nupkg.sha512"
+    "C:\\Users\\You\\.nuget\\packages\\microsoft.netcore.app.host.win-x86\\8.0.28\\microsoft.netcore.app.host.win-x86.8.0.28.nupkg.sha512"
   ],
   "logs": []
 }

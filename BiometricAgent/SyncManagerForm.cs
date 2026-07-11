@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -173,9 +174,17 @@ namespace BiometricAgent
                 {
                     foreach (var user in users)
                     {
+                        var biometricId = user.BiometricId ?? string.Empty;
+                        if (!string.IsNullOrWhiteSpace(_config.SchoolCode) &&
+                            biometricId.StartsWith(_config.SchoolCode, StringComparison.OrdinalIgnoreCase))
+                        {
+                            biometricId = biometricId.Substring(_config.SchoolCode.Length);
+                        }
+                        biometricId = Regex.Replace(biometricId, "^\\D+", "");
+
                         var tmpl = new BiometricTemplate
                         {
-                            BiometricId = user.BiometricId,
+                            BiometricId = biometricId,
                             Name = user.Name,
                             Privilege = user.Role == "Teacher" ? 0 : 0,
                             FingerIndex = 0,
@@ -266,6 +275,16 @@ namespace BiometricAgent
                     {
                         foreach (var t in templates)
                         {
+                            // Ensure BiometricId is normalized for device (strip school code prefix)
+                            var biometricId = t.BiometricId ?? string.Empty;
+                            if (!string.IsNullOrWhiteSpace(_config.SchoolCode) &&
+                                biometricId.StartsWith(_config.SchoolCode, StringComparison.OrdinalIgnoreCase))
+                            {
+                                biometricId = biometricId.Substring(_config.SchoolCode.Length);
+                            }
+                            biometricId = Regex.Replace(biometricId, "^\\D+", "");
+                            t.BiometricId = biometricId;
+
                             if (adapter.UploadTemplate(t)) successCount++;
                         }
                     });

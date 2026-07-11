@@ -20,7 +20,7 @@ namespace BiometricAgent
 
     public interface IBiometricAdapter
     {
-        bool Connect(string ip, int port);
+        bool Connect(string ip, int port, int machineNumber);
         void Disconnect();
         bool IsConnected { get; }
         List<PunchRecord> ReadNewAttendanceLogs();
@@ -121,6 +121,8 @@ namespace BiometricAgent
         public bool IsConnected => _isConnected;
         private int _machineNumber = 1;
         private const string ProgId = "zkemkeeper.ZKEM.1";
+        private string _lastError = string.Empty;
+        public string LastError => _lastError;
 
         public ZKTecoAdapter()
         {
@@ -139,21 +141,32 @@ namespace BiometricAgent
                 {
                     var type = Type.GetTypeFromProgID(ProgId);
                     if (type == null)
+                    {
+                        _lastError = "zkemkeeper COM ProgID not registered or wrong SDK bitness.";
                         return false;
+                    }
 
                     _sdk = Activator.CreateInstance(type);
-                    return _sdk != null;
+                    if (_sdk == null)
+                    {
+                        _lastError = "Failed to instantiate zkemkeeper COM object.";
+                        return false;
+                    }
+
+                    return true;
                 }
-                catch
+                catch (Exception ex)
                 {
                     _sdk = null;
+                    _lastError = $"Failed to initialize ZKTeco SDK: {ex.Message}";
                     return false;
                 }
             }).Result;
         }
 
-        public bool Connect(string ip, int port)
+        public bool Connect(string ip, int port, int machineNumber)
         {
+            _machineNumber = machineNumber;
             if (!EnsureSdkInitialized())
                 return false;
 
@@ -161,22 +174,51 @@ namespace BiometricAgent
             {
                 return _staQueue.Enqueue(() =>
                 {
-                    bool connected = _sdk.Connect_Net(ip, port);
-                    if (connected)
+                    try
                     {
-                        _sdk.RegEvent(_machineNumber, 65535); // Register all real-time events
-                        _isConnected = true;
+                        bool connected = _sdk.Connect_Net(ip, port);
+                        if (connected)
+                        {
+                            _sdk.RegEvent(_machineNumber, 65535); // Register all real-time events
+                            _isConnected = true;
+                            _lastError = string.Empty;
+                        }
+                        else
+                        {
+                            _isConnected = false;
+                            int lastError = 0;
+                            try
+                            {
+                                _sdk.GetLastError(out lastError);
+                            }
+                            catch { }
+                            _lastError = lastError != 0
+                                ? $"Connect_Net returned false (SDK error {lastError}). Check IP address, port and device network settings."
+                                : "Connect_Net returned false. Check IP address, port and device network settings.";
+                        }
+
+                        return connected;
                     }
-                    else
+                    catch (Exception ex)
                     {
                         _isConnected = false;
+                        int lastError = 0;
+                        try
+                        {
+                            _sdk.GetLastError(out lastError);
+                        }
+                        catch { }
+                        _lastError = lastError != 0
+                            ? $"Connect_Net failed: {ex.Message} (SDK error {lastError})"
+                            : $"Connect_Net failed: {ex.Message}";
+                        return false;
                     }
-                    return connected;
                 }).Result;
             }
-            catch
+            catch (Exception ex)
             {
                 _isConnected = false;
+                _lastError = $"Adapter connect error: {ex.Message}";
                 return false;
             }
         }
@@ -333,7 +375,7 @@ namespace BiometricAgent
     {
         public string Brand => "Hikvision";
         public bool IsConnected => false;
-        public bool Connect(string ip, int port) => throw new NotImplementedException("Hikvision adapter coming soon.");
+        public bool Connect(string ip, int port, int machineNumber) => throw new NotImplementedException("Hikvision adapter coming soon.");
         public void Disconnect() => throw new NotImplementedException();
         public List<PunchRecord> ReadNewAttendanceLogs() => throw new NotImplementedException();
         public List<BiometricTemplate> ReadAllTemplates() => throw new NotImplementedException();

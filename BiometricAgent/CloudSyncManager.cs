@@ -22,7 +22,9 @@ namespace BiometricAgent
         {
             _config = config;
             _queue  = queue;
-            _http   = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            _http   = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+            _http.DefaultRequestHeaders.Accept.Clear();
+            _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _logger = logger;
         }
 
@@ -113,7 +115,7 @@ namespace BiometricAgent
         }
 
         /// <summary>Send punch logs directly to the SaaS. If offline, enqueues them.</summary>
-        public async Task SyncAttendanceAsync(
+        public async Task<bool> SyncAttendanceAsync(
             int schoolId, string deviceSerial, List<PunchRecord> punches)
         {
             try
@@ -130,14 +132,19 @@ namespace BiometricAgent
 
                 if (!resp.IsSuccessStatusCode)
                 {
-                    // If server error, queue for retry
+                    var bodyText = await resp.Content.ReadAsStringAsync();
+                    _logger?.Invoke($"Attendance sync failed ({(int)resp.StatusCode}): {bodyText}");
                     _queue.Enqueue(schoolId, deviceSerial, punches);
+                    return false;
                 }
+
+                return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Internet unavailable — save locally
+                _logger?.Invoke($"Attendance sync exception: {ex.Message}");
                 _queue.Enqueue(schoolId, deviceSerial, punches);
+                return false;
             }
         }
 
