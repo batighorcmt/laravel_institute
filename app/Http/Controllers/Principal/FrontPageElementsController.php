@@ -75,7 +75,8 @@ class FrontPageElementsController extends Controller
             ],
             'achievements' => $validated['achievements'] ?? $current['achievements'],
             'facilities' => $validated['facilities'] ?? $current['facilities'],
-            'gallery' => $request->input('gallery_existing', []),
+            'committee_members' => $validated['committee_members'] ?? $current['committee_members'] ?? [],
+            'gallery' => $request->has('gallery_existing') ? $request->input('gallery_existing', []) : ($current['gallery'] ?? []),
         ];
 
         if ($request->hasFile('gallery_images')) {

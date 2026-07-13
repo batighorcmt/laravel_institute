@@ -41,7 +41,16 @@
         };
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @php($themeColors = $themeColors ?? [])
     <style>
+        :root {
+            --theme-primary: {{ $themeColors['primary'] ?? '#d97706' }};
+            --theme-secondary: {{ $themeColors['secondary'] ?? '#92400e' }};
+            --theme-accent: {{ $themeColors['accent'] ?? '#f59e0b' }};
+            --theme-bg: {{ $themeColors['bg'] ?? '#fefcf5' }};
+            --theme-text: {{ $themeColors['text'] ?? '#1f2937' }};
+            --theme-font: {{ $themeColors['font'] ?? "'Hind Siliguri', sans-serif" }};
+        }
         .cms-content h1,.cms-content h2,.cms-content h3 { font-weight: 700; margin-top: 1.25em; margin-bottom: .5em; }
         .cms-content p { margin-bottom: 1em; line-height: 1.75; }
         .cms-content ul,.cms-content ol { margin: 1em 0 1em 1.5em; }

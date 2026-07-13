@@ -23,5 +23,10 @@
             :school-id="{{ $school->id }}"
             blog-posts-url="{{ route('principal.institute.frontend.posts.index', $school) }}"
         ></front-page-elements-manager>
+
+        <div class="mt-4">
+            <h5 class="font-weight-bold text-muted mb-3">৮. এক নজরে প্রতিষ্ঠানের পরিসংখ্যান</h5>
+            <school-stats-manager :school-id="{{ $school->id }}"></school-stats-manager>
+        </div>
     </div>
 @endsection

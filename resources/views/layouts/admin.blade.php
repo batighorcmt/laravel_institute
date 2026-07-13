@@ -251,6 +251,32 @@
                                 </li>
                             </ul>
                         </li>
+                        <li class="nav-item has-treeview {{ request()->routeIs('superadmin.website.*') ? 'menu-open' : '' }}">
+                            <a href="#" class="nav-link {{ request()->routeIs('superadmin.website.*') ? 'active' : '' }}">
+                                <i class="nav-icon fas fa-globe"></i>
+                                <p>Website <i class="right fas fa-angle-left"></i></p>
+                            </a>
+                            <ul class="nav nav-treeview">
+                                <li class="nav-item">
+                                    <a href="{{ route('superadmin.website.themes.index') }}" class="nav-link {{ request()->routeIs('superadmin.website.themes.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Themes</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('superadmin.website.menu-templates.index') }}" class="nav-link {{ request()->routeIs('superadmin.website.menu-templates.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Menu Templates</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('superadmin.website.page-templates.index') }}" class="nav-link {{ request()->routeIs('superadmin.website.page-templates.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Page Templates</p>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
 
                         {{--Principal Menu Items--}}
                     @elseif($u && $u->isPrincipal())
@@ -351,7 +377,9 @@
                                             <ul class="nav nav-treeview">
                                                 <li class="nav-item"><a href="{{ route('principal.institute.attendance.dashboard', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.attendance.dashboard') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Attendance Dashboard</p></a></li>
                                                 <li class="nav-item"><a href="{{ route('principal.institute.attendance.class.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.attendance.class.index') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Mark Attendance</p></a></li>
+                                                <li class="nav-item"><a href="{{ route('principal.institute.attendance.daily_report', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.attendance.daily_report') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Daily Report</p></a></li>
                                                 <li class="nav-item"><a href="{{ route('principal.institute.attendance.monthly_report', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.attendance.monthly_report') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Monthly Report</p></a></li>
+                                                <li class="nav-item"><a href="{{ route('principal.institute.attendance.settings', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.attendance.settings') ? 'active' : '' }}"><i class="fas fa-cog nav-icon"></i><p>Settings</p></a></li>
                                             </ul>
                                         </li>
 
@@ -580,6 +608,12 @@
                                     <p>Website <i class="right fas fa-angle-left"></i></p>
                                 </a>
                                 <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.frontend.website-template', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.website-template*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Website Templates</p>
+                                        </a>
+                                    </li>
                                     <li class="nav-item">
                                         <a href="{{ route('principal.institute.frontend.settings', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.settings') ? 'active' : '' }}">
                                             <i class="far fa-circle nav-icon"></i>

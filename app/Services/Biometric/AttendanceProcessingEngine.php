@@ -7,47 +7,63 @@ use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\Attendance;
 use App\Models\TeacherAttendance;
+use App\Models\SchoolAttendanceSetting;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Phase 5: Attendance Processing Engine
- * 
+ *
  * Flow:
  *   BiometricAttendanceLog → Find Student/Teacher → Create/Update Attendance → Notify Guardian
  *
  * Duplicate Prevention:
  *   One student = one attendance record per day.
- *   Multiple punches = updates entry_time (first) and exit_time (last).
+ *   Multiple punches = updates entry_time (first punch) and exit_time (last punch).
  *
- * Late Logic (configurable per school – currently default times):
- *   Before 08:45 AM  → Present
- *   08:45 – 09:30 AM → Late
- *   After 09:30 AM   → Absent
+ * Late Logic (loaded from school_attendance_settings):
+ *   Before student_entry_end   → Present
+ *   student_entry_end to late_threshold → Late
+ *   After late_threshold       → Absent (punch recorded but status is absent)
+ *
+ * Medium:
+ *   Attendances created here are always tagged medium = 'biometric'.
  */
 class AttendanceProcessingEngine
 {
+    /** @var array<int, SchoolAttendanceSetting> In-memory cache per request */
+    private array $settingsCache = [];
+
     public function processPunch(BiometricAttendanceLog $log): void
     {
         $schoolId    = $log->school_id;
         $biometricId = $this->normalizeBiometricId($log->biometric_id);
         $punchTime   = Carbon::parse($log->punch_time);
         $date        = $punchTime->toDateString();
+        $timeOnly    = $punchTime->format('H:i:s');
 
-        // ── Identify user ────────────────────────────────────────────────────
+        $settings = $this->getSettings($schoolId);
+
+        // ── Identify user ──────────────────────────────────────────────────────
         $student = Student::where('school_id', $schoolId)
-                        ->where(function($query) use ($biometricId) {
+                        ->where(function ($query) use ($biometricId) {
                             $query->where('biometric_id', $biometricId)
-                                  ->orWhere('biometric_id', 'like', '%'.$biometricId);
+                                  ->orWhere('biometric_id', 'like', '%' . $biometricId);
                         })
                         ->first();
 
         if ($student) {
+            if ($student->status !== 'active') {
+                Log::warning("[Biometric] Skipping inactive student {$student->id} ({$student->biometric_id}) at school {$schoolId}");
+                $log->update(['sync_status' => 'failed']);
+                return;
+            }
+
             if (preg_replace('/\D/', '', $student->biometric_id) !== $biometricId) {
                 $student->biometric_id = $biometricId;
                 $student->save();
             }
-            $this->processStudentAttendance($student, $punchTime, $date, $log);
+            $this->processStudentAttendance($student, $punchTime, $timeOnly, $date, $log, $settings);
             return;
         }
 
@@ -56,11 +72,17 @@ class AttendanceProcessingEngine
                         ->first();
 
         if ($teacher) {
+            if ($teacher->status !== 'active') {
+                Log::warning("[Biometric] Skipping inactive teacher {$teacher->id} ({$teacher->biometric_id}) at school {$schoolId}");
+                $log->update(['sync_status' => 'failed']);
+                return;
+            }
+
             if (preg_replace('/\D/', '', $teacher->biometric_id) !== $biometricId) {
                 $teacher->biometric_id = $biometricId;
                 $teacher->save();
             }
-            $this->processTeacherAttendance($teacher, $punchTime, $date, $log);
+            $this->processTeacherAttendance($teacher, $punchTime, $timeOnly, $date, $log, $settings);
             return;
         }
 
@@ -68,68 +90,134 @@ class AttendanceProcessingEngine
         $log->update(['sync_status' => 'failed']);
     }
 
-    private function normalizeBiometricId(string $biometricId): string
+    private function normalizeBiometricId(?string $biometricId): string
     {
-        return trim(preg_replace('/\D/', '', $biometricId));
+        return trim(preg_replace('/\D/', '', (string) $biometricId));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    /**
+     * Fetch school settings from cache or DB (using sensible defaults if not configured).
+     */
+    private function getSettings(int $schoolId): object
+    {
+        if (isset($this->settingsCache[$schoolId])) {
+            return $this->settingsCache[$schoolId];
+        }
+
+        $settings = SchoolAttendanceSetting::where('school_id', $schoolId)->first();
+
+        if (!$settings) {
+            // Return a default settings object if the school hasn't configured yet
+            $settings = new SchoolAttendanceSetting([
+                'student_entry_start'    => '07:00:00',
+                'student_entry_end'      => '08:45:00',
+                'student_late_threshold' => '09:30:00',
+                'student_exit_start'     => '13:00:00',
+                'student_exit_end'       => '15:00:00',
+                'teacher_check_in_start' => '08:00:00',
+                'teacher_check_in_end'   => '09:00:00',
+                'teacher_late_threshold' => '09:30:00',
+                'teacher_check_out_start'=> '14:00:00',
+                'teacher_check_out_end'  => '17:00:00',
+            ]);
+        }
+
+        $this->settingsCache[$schoolId] = $settings;
+        return $settings;
+    }
+
+    /**
+     * Check if a punch time falls within a start..end window.
+     * Handles windows that span midnight (start > end).
+     */
+    private function isWithinWindow(Carbon $time, Carbon $start, Carbon $end): bool
+    {
+        if ($start->lte($end)) {
+            return $time->between($start, $end, true);
+        }
+        // Window spans midnight: true if time >= start OR time <= end
+        return $time->gte($start) || $time->lte($end);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
     private function processStudentAttendance(
-        Student $student, Carbon $punchTime, string $date, BiometricAttendanceLog $log
+        Student $student, Carbon $punchTime, string $timeOnly, string $date,
+        BiometricAttendanceLog $log, object $settings
     ): void {
+        $entryEnd      = Carbon::parse($date . ' ' . $settings->student_entry_end);
+        $lateThreshold = Carbon::parse($date . ' ' . $settings->student_late_threshold);
+        $exitStart     = Carbon::parse($date . ' ' . $settings->student_exit_start);
+        $exitEnd       = Carbon::parse($date . ' ' . $settings->student_exit_end);
+
+        // Determine if this is an exit punch (based on configured exit window)
+        $isExitWindow = $this->isWithinWindow($punchTime, $exitStart, $exitEnd);
+
         $attendance = Attendance::where('student_id', $student->id)
                         ->where('date', $date)
                         ->first();
 
-        // ── Calculate status based on punch time ─────────────────────────────
-        // TODO: Load from school settings table in future
-        $lateTime   = Carbon::parse($date . ' 08:45:00');
-        $absentTime = Carbon::parse($date . ' 09:30:00');
-
-        $status = 'present';
-        if ($punchTime->gt($lateTime) && $punchTime->lte($absentTime)) {
-            $status = 'late';
-        } elseif ($punchTime->gt($absentTime)) {
-            $status = 'absent';
-        }
-
         if (!$attendance) {
-            // ── First punch of the day → Entry ────────────────────────────────
+            // ── First punch of the day → Entry ──────────────────────────────
             $enrollment = $student->currentEnrollment;
+
+            if (!$enrollment || !$enrollment->section_id) {
+                Log::warning("[Biometric] Student {$student->id} has no current enrollment or section. Cannot save attendance.");
+                $log->update(['sync_status' => 'failed']);
+                return;
+            }
+
+            // Calculate status only based on entry time
+            $status = 'present';
+            if ($punchTime->gt($entryEnd) && $punchTime->lte($lateThreshold)) {
+                $status = 'late';
+            } elseif ($punchTime->gt($lateThreshold)) {
+                $status = 'absent';
+            }
+
             $attendance = Attendance::create([
                 'student_id'  => $student->id,
-                'class_id'    => $student->class_id,
-                'section_id'  => $enrollment?->section_id,
+                'class_id'    => $enrollment->class_id ?? $student->class_id,
+                'section_id'  => $enrollment->section_id,
                 'date'        => $date,
                 'status'      => $status,
-                'entry_time'  => $punchTime,
+                'entry_time'  => $isExitWindow ? null : $timeOnly, // Entry only if in entry window
+                'exit_time'   => $isExitWindow ? $timeOnly : null,  // Exit only if in exit window
+                'medium'      => 'biometric',
                 'recorded_by' => null,
             ]);
 
-            // ── Phase 5: Send Flutter push notification (Entry) ───────────────
-            \App\Jobs\SendAttendanceNotificationJob::dispatch($student, $attendance, 'entry');
-
-        } else {
-            // ── Subsequent punches → Update entry/exit ───────────────────────
-            $changed = false;
-
-            if (!$attendance->entry_time || $punchTime->lt(Carbon::parse($attendance->entry_time))) {
-                $attendance->entry_time = $punchTime;
-                $changed = true;
+            // ── Send entry notification ───────────────────────────────────
+            if (!$isExitWindow) {
+                \App\Jobs\SendAttendanceNotificationJob::dispatch($student, $attendance, 'entry');
             }
 
-            if (!$attendance->exit_time || $punchTime->gt(Carbon::parse($attendance->exit_time))) {
-                // Only send exit notification if this is genuinely later than entry
-                $isNewExit = $attendance->exit_time === null ||
-                    $punchTime->gt(Carbon::parse($attendance->exit_time));
+        } else {
+            // ── Subsequent punches → Update entry/exit ─────────────────────
+            $changed = false;
 
-                $attendance->exit_time = $punchTime;
-                $changed = true;
+            if (!$isExitWindow) {
+                // Update entry time if earlier than current
+                if (!$attendance->entry_time || $timeOnly < $attendance->entry_time) {
+                    $attendance->entry_time = $timeOnly;
+                    $changed = true;
+                }
+            } else {
+                // Update exit time if later than current
+                $isNewExit = !$attendance->exit_time || $timeOnly > $attendance->exit_time;
 
                 if ($isNewExit) {
-                    // ── Phase 5: Send exit notification ──────────────────────
+                    $attendance->exit_time = $timeOnly;
+                    $changed = true;
+
+                    // Send exit notification
                     \App\Jobs\SendAttendanceNotificationJob::dispatch($student, $attendance, 'exit');
                 }
+            }
+
+            // Upgrade medium to biometric if it was web/mobile
+            if ($attendance->medium !== 'biometric') {
+                $attendance->medium = 'biometric';
+                $changed = true;
             }
 
             if ($changed) {
@@ -140,29 +228,56 @@ class AttendanceProcessingEngine
         $log->update(['sync_status' => 'processed']);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ──────────────────────────────────────────────────────────────────────────
     private function processTeacherAttendance(
-        Teacher $teacher, Carbon $punchTime, string $date, BiometricAttendanceLog $log
+        Teacher $teacher, Carbon $punchTime, string $timeOnly, string $date,
+        BiometricAttendanceLog $log, object $settings
     ): void {
+        $checkOutStart = Carbon::parse($date . ' ' . $settings->teacher_check_out_start);
+        $checkOutEnd   = Carbon::parse($date . ' ' . $settings->teacher_check_out_end);
+        $lateThreshold = Carbon::parse($date . ' ' . $settings->teacher_late_threshold);
+
+        $isExitWindow = $this->isWithinWindow($punchTime, $checkOutStart, $checkOutEnd);
+
         $attendance = TeacherAttendance::where('user_id', $teacher->user_id)
                         ->where('school_id', $teacher->school_id)
                         ->where('date', $date)
                         ->first();
 
         if (!$attendance) {
+            $status = 'present';
+            if ($punchTime->gt(Carbon::parse($date . ' ' . $settings->teacher_check_in_end))
+                && $punchTime->lte($lateThreshold)) {
+                $status = 'late';
+            } elseif ($punchTime->gt($lateThreshold)) {
+                $status = 'present'; // Still record the punch even if late
+            }
+
             TeacherAttendance::create([
-                'user_id'       => $teacher->user_id,
-                'school_id'     => $teacher->school_id,
-                'date'          => $date,
-                'check_in_time' => $punchTime->format('H:i:s'),
-                'status'        => 'present',
+                'user_id'        => $teacher->user_id,
+                'school_id'      => $teacher->school_id,
+                'date'           => $date,
+                'check_in_time'  => $isExitWindow ? null : $timeOnly,
+                'check_out_time' => $isExitWindow ? $timeOnly : null,
+                'status'         => $status,
+                'medium'         => 'biometric',
             ]);
         } else {
-            // Update check-out if this punch is later than check-in
-            $checkIn = Carbon::parse($date . ' ' . $attendance->check_in_time);
-            if ($punchTime->gt($checkIn)) {
-                $attendance->update(['check_out_time' => $punchTime->format('H:i:s')]);
+            if ($isExitWindow) {
+                // Update check-out if this punch is later
+                if (!$attendance->check_out_time || $timeOnly > $attendance->check_out_time) {
+                    $attendance->check_out_time = $timeOnly;
+                }
+            } else {
+                // Update check-in if this punch is earlier
+                if (!$attendance->check_in_time || $timeOnly < $attendance->check_in_time) {
+                    $attendance->check_in_time = $timeOnly;
+                }
             }
+            if ($attendance->medium !== 'biometric') {
+                $attendance->medium = 'biometric';
+            }
+            $attendance->save();
         }
 
         $log->update(['sync_status' => 'processed']);

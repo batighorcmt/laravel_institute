@@ -20,14 +20,20 @@ namespace BiometricAgent
 
     public interface IBiometricAdapter
     {
-        bool Connect(string ip, int port, int machineNumber);
+        bool Connect(string ip, int port, int machineNumber, bool registerEvents = true);
         void Disconnect();
         bool IsConnected { get; }
+        /// <summary>Cheap round-trip to the device to detect a connection that has silently
+        /// dropped since Connect() (IsConnected alone never flips back to false on its own).
+        /// Attempts to reconnect if the probe fails. Returns the up-to-date connection state.</summary>
+        bool CheckConnection();
         List<PunchRecord> ReadNewAttendanceLogs();
-        List<BiometricTemplate> ReadAllTemplates();
+        bool ClearAttendanceLog();
+        List<BiometricTemplate> ReadAllTemplates(Action<int>? onProgress = null);
         bool UploadTemplate(BiometricTemplate template);
         string GetSerialNumber();
         string Brand { get; }
+        string LastError { get; }
     }
 
     internal abstract class StaTaskQueue : IDisposable
@@ -164,7 +170,7 @@ namespace BiometricAgent
             }).Result;
         }
 
-        public bool Connect(string ip, int port, int machineNumber)
+        public bool Connect(string ip, int port, int machineNumber, bool registerEvents = true)
         {
             _machineNumber = machineNumber;
             if (!EnsureSdkInitialized())
@@ -176,10 +182,30 @@ namespace BiometricAgent
                 {
                     try
                     {
+                        // This device only tolerates ONE active command connection at a
+                        // time - a second simultaneous connection doesn't get refused, but
+                        // every write on either session then silently fails (confirmed:
+                        // SSR_SetUserInfo returns SDK error -2 while two sessions are open,
+                        // succeeds immediately once only one exists). If we're already
+                        // connected, releasing that socket first guarantees this call never
+                        // leaves a stale duplicate session behind.
+                        if (_isConnected)
+                        {
+                            try { _sdk.Disconnect(); } catch { }
+                            _isConnected = false;
+                        }
+
                         bool connected = _sdk.Connect_Net(ip, port);
                         if (connected)
                         {
-                            _sdk.RegEvent(_machineNumber, 65535); // Register all real-time events
+                            // Real-time event callbacks require the owning STA thread to pump
+                            // Windows messages. Our worker thread only runs queued actions with
+                            // no message loop, so registering events on a connection that never
+                            // pumps messages (e.g. the short-lived template-uploader session)
+                            // leaves the SDK trying to deliver a callback with nowhere to go,
+                            // which manifests as a native access violation during later calls.
+                            if (registerEvents)
+                                _sdk.RegEvent(_machineNumber, 65535); // Register all real-time events
                             _isConnected = true;
                             _lastError = string.Empty;
                         }
@@ -252,6 +278,46 @@ namespace BiometricAgent
             catch { return ""; }
         }
 
+        public bool CheckConnection()
+        {
+            // IsConnected only reflects the last explicit Connect()/Disconnect() call - a
+            // device that drops mid-session still reports IsConnected == true forever, since
+            // nothing else flips it back. This does a cheap round-trip to catch that case
+            // and immediately reflects the real state (used by the fast connectivity timer).
+            if (_sdk == null || !_isConnected) return false;
+
+            try
+            {
+                var task = _staQueue.Enqueue(() =>
+                {
+                    try
+                    {
+                        _sdk.GetSerialNumber(_machineNumber, out string sn);
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                });
+
+                if (!task.Wait(TimeSpan.FromSeconds(10)))
+                {
+                    _lastError = "Connectivity probe timed out.";
+                    _isConnected = false;
+                    return false;
+                }
+
+                _isConnected = task.Result;
+                return _isConnected;
+            }
+            catch
+            {
+                _isConnected = false;
+                return false;
+            }
+        }
+
         public List<PunchRecord> ReadNewAttendanceLogs()
         {
             if (_sdk == null || !_isConnected) return new List<PunchRecord>();
@@ -306,17 +372,43 @@ namespace BiometricAgent
             catch { return new List<PunchRecord>(); }
         }
 
-        public List<BiometricTemplate> ReadAllTemplates()
+        public bool ClearAttendanceLog()
         {
-            if (_sdk == null || !_isConnected) return new List<BiometricTemplate>();
+            if (_sdk == null || !_isConnected) return false;
 
             try
             {
                 return _staQueue.Enqueue(() =>
                 {
+                    bool success = _sdk.ClearGLog(_machineNumber);
+                    _sdk.RefreshData(_machineNumber);
+                    return success;
+                }).Result;
+            }
+            catch { return false; }
+        }
+
+        public List<BiometricTemplate> ReadAllTemplates(Action<int>? onProgress = null)
+        {
+            if (_sdk == null || !_isConnected) return new List<BiometricTemplate>();
+
+            try
+            {
+                // A large roster (1000+ users) genuinely takes many minutes to read over
+                // this SDK's per-user/per-finger polling API (~1-1.5s/user measured) - a
+                // flat 5-minute timeout was firing on reads that were still progressing
+                // normally. Track *inactivity* instead of total elapsed time: only bail if
+                // no progress has been made for a while (a real stall), and keep a much
+                // larger absolute ceiling as a final safety net.
+                long lastProgressTicks = Environment.TickCount64;
+                int abandoned = 0;
+
+                var task = _staQueue.Enqueue(() =>
+                {
                     var templates = new List<BiometricTemplate>();
                     _sdk.ReadAllTemplate(_machineNumber);
 
+                    int processedUsers = 0;
                     while (_sdk.SSR_GetAllUserInfo(_machineNumber, out string enrollNo, out string name, out string password, out int privilege, out bool enabled))
                     {
                         for (int fingerIndex = 0; fingerIndex < 10; fingerIndex++)
@@ -335,10 +427,46 @@ namespace BiometricAgent
                                 });
                             }
                         }
+
+                        processedUsers++;
+                        Interlocked.Exchange(ref lastProgressTicks, Environment.TickCount64);
+                        onProgress?.Invoke(processedUsers);
+
+                        // The caller gave up (inactivity or absolute ceiling tripped) -
+                        // stop doing pointless work instead of running to completion
+                        // invisibly in the background.
+                        if (Volatile.Read(ref abandoned) != 0)
+                            return templates;
                     }
 
                     return templates;
-                }).Result;
+                });
+
+                const int pollIntervalMs = 5000;
+                const int inactivityTimeoutMs = 90_000;      // no progress for 90s = genuinely stuck
+                const int hardCeilingMs = 90 * 60_000;        // 90 minutes absolute max regardless of progress
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+
+                while (!task.Wait(pollIntervalMs))
+                {
+                    long idleMs = Environment.TickCount64 - Interlocked.Read(ref lastProgressTicks);
+                    if (idleMs > inactivityTimeoutMs)
+                    {
+                        _lastError = $"Reading templates stalled - no progress for {idleMs / 1000}s. Try 'Refresh Devices'.";
+                        _isConnected = false;
+                        Volatile.Write(ref abandoned, 1);
+                        return new List<BiometricTemplate>();
+                    }
+                    if (sw.ElapsedMilliseconds > hardCeilingMs)
+                    {
+                        _lastError = "Reading templates exceeded the maximum allowed time (90 minutes). Try 'Refresh Devices'.";
+                        _isConnected = false;
+                        Volatile.Write(ref abandoned, 1);
+                        return new List<BiometricTemplate>();
+                    }
+                }
+
+                return task.Result;
             }
             catch { return new List<BiometricTemplate>(); }
         }
@@ -351,11 +479,47 @@ namespace BiometricAgent
             {
                 return _staQueue.Enqueue(() =>
                 {
-                    _sdk.SSR_SetUserInfo(_machineNumber, template.BiometricId, template.Name ?? string.Empty, string.Empty, template.Privilege, true);
-                    return _sdk.SetUserTmpStr(_machineNumber, template.BiometricId, template.FingerIndex, template.TemplateData);
+                    // NOTE: an earlier version wrapped this in EnableDevice(false)/(true)
+                    // ("disable device while writing" is common SDK advice). In practice,
+                    // on this hardware it made things dramatically worse - toggling the
+                    // device on/off around every single call, back-to-back for 1000+ users,
+                    // drove SSR_SetUserInfo to fail almost universally. Removed.
+
+                    // SSR_SetUserInfo's result was previously discarded - if it fails,
+                    // the enrollNo record never gets (re)created, and SetUserTmpStr will
+                    // then reliably fail too since it has no user record to attach to.
+                    bool userOk = _sdk.SSR_SetUserInfo(_machineNumber, template.BiometricId, template.Name ?? string.Empty, string.Empty, template.Privilege, true);
+                    if (!userOk)
+                    {
+                        _lastError = DescribeSdkFailure("SSR_SetUserInfo");
+                        return false;
+                    }
+
+                    bool tmplOk = _sdk.SetUserTmpStr(_machineNumber, template.BiometricId, template.FingerIndex, template.TemplateData);
+                    if (!tmplOk)
+                        _lastError = DescribeSdkFailure("SetUserTmpStr");
+                    return tmplOk;
                 }).Result;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                _lastError = $"UploadTemplate exception: {ex.Message}";
+                return false;
+            }
+        }
+
+        private string DescribeSdkFailure(string apiName)
+        {
+            try
+            {
+                int code = 0;
+                _sdk.GetLastError(out code);
+                return $"{apiName} returned false (SDK error {code}).";
+            }
+            catch
+            {
+                return $"{apiName} returned false.";
+            }
         }
 
         public void Dispose()
@@ -375,10 +539,13 @@ namespace BiometricAgent
     {
         public string Brand => "Hikvision";
         public bool IsConnected => false;
-        public bool Connect(string ip, int port, int machineNumber) => throw new NotImplementedException("Hikvision adapter coming soon.");
+        public string LastError => "";
+        public bool Connect(string ip, int port, int machineNumber, bool registerEvents = true) => throw new NotImplementedException("Hikvision adapter coming soon.");
         public void Disconnect() => throw new NotImplementedException();
+        public bool CheckConnection() => throw new NotImplementedException();
         public List<PunchRecord> ReadNewAttendanceLogs() => throw new NotImplementedException();
-        public List<BiometricTemplate> ReadAllTemplates() => throw new NotImplementedException();
+        public bool ClearAttendanceLog() => throw new NotImplementedException();
+        public List<BiometricTemplate> ReadAllTemplates(Action<int>? onProgress = null) => throw new NotImplementedException();
         public bool UploadTemplate(BiometricTemplate template) => throw new NotImplementedException();
         public string GetSerialNumber() => throw new NotImplementedException();
     }

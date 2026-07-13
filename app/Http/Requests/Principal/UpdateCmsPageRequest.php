@@ -31,6 +31,8 @@ class UpdateCmsPageRequest extends FormRequest
                 Rule::unique('cms_pages', 'slug')->where('school_id', $schoolId)->ignore($pageId),
             ],
             'content' => ['nullable', 'string'],
+            'content_mode' => ['nullable', Rule::in([CmsPage::MODE_DYNAMIC, CmsPage::MODE_STATIC])],
+            'data_source' => ['nullable', 'string', Rule::in(\App\Services\DynamicPageContentService::SUPPORTED_SOURCES)],
             'status' => ['required', Rule::in([CmsPage::STATUS_DRAFT, CmsPage::STATUS_PUBLISHED])],
             'published_at' => ['nullable', 'date'],
             'sort_order' => ['nullable', 'integer', 'min:0'],

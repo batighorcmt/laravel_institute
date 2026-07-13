@@ -8,6 +8,10 @@ class SchoolFrontendSetting extends Model
 {
     protected $fillable = [
         'school_id',
+        'theme_id',
+        'theme_overrides',
+        'applied_menu_template_id',
+        'applied_at',
         'hero_title',
         'hero_subtitle',
         'hero_image',
@@ -17,6 +21,9 @@ class SchoolFrontendSetting extends Model
         'principal_name',
         'principal_message',
         'principal_image',
+        'chairman_name',
+        'chairman_message',
+        'chairman_image',
         'facebook_url',
         'youtube_url',
         'marquee_text',
@@ -35,10 +42,22 @@ class SchoolFrontendSetting extends Model
         'hero_images' => 'array',
         'homepage_content' => 'array',
         'frontend_menus' => 'array',
+        'theme_overrides' => 'array',
+        'applied_at' => 'datetime',
     ];
 
     public function school()
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function theme()
+    {
+        return $this->belongsTo(WebsiteTheme::class, 'theme_id');
+    }
+
+    public function appliedMenuTemplate()
+    {
+        return $this->belongsTo(WebsiteMenuTemplate::class, 'applied_menu_template_id');
     }
 }

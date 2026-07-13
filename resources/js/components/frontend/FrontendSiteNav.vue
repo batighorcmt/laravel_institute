@@ -89,7 +89,7 @@ export default {
         return 'site-nav-nested-link';
       }
       if (this.variant === 'footer') {
-        return 'text-slate-400 hover:text-indigo-400 transition-colors py-1';
+        return 'text-slate-400 hover:text-[var(--theme-accent)] transition-colors py-1';
       }
       return 'site-nav-top-link';
     },
@@ -150,7 +150,7 @@ export default {
 .site-nav-top-link:hover,
 .site-nav-parent.site-nav-top-link:hover {
   color: #fff;
-  background: rgba(99, 102, 241, 0.15);
+  background: color-mix(in srgb, var(--theme-primary, #4f46e5) 15%, transparent);
 }
 .site-nav-parent {
   background: transparent;
@@ -191,7 +191,7 @@ export default {
   white-space: nowrap;
 }
 .site-nav-nested-link:hover {
-  background: rgba(99, 102, 241, 0.35);
+  background: color-mix(in srgb, var(--theme-primary, #4f46e5) 35%, transparent);
   color: #fff;
 }
 </style>

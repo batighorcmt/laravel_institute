@@ -173,6 +173,28 @@ Route::middleware(['auth', 'active_school'])->group(function () {
 
         // Designations management
         Route::resource('designations', \App\Http\Controllers\SuperAdmin\DesignationController::class)->except(['create', 'show', 'edit']);
+
+        // Website Templates: Themes, Menu Templates, Page Templates
+        Route::prefix('website')->name('website.')->group(function () {
+            Route::get('themes', [\App\Http\Controllers\SuperAdmin\WebsiteThemeController::class, 'index'])->name('themes.index');
+            Route::post('themes', [\App\Http\Controllers\SuperAdmin\WebsiteThemeController::class, 'store'])->name('themes.store');
+            Route::put('themes/{theme}', [\App\Http\Controllers\SuperAdmin\WebsiteThemeController::class, 'update'])->name('themes.update');
+            Route::delete('themes/{theme}', [\App\Http\Controllers\SuperAdmin\WebsiteThemeController::class, 'destroy'])->name('themes.destroy');
+            Route::post('themes/{theme}/toggle', [\App\Http\Controllers\SuperAdmin\WebsiteThemeController::class, 'toggle'])->name('themes.toggle');
+            Route::post('themes/upload-preview', [\App\Http\Controllers\SuperAdmin\WebsiteThemeController::class, 'uploadPreview'])->name('themes.upload-preview');
+
+            Route::get('menu-templates', [\App\Http\Controllers\SuperAdmin\WebsiteMenuTemplateController::class, 'index'])->name('menu-templates.index');
+            Route::post('menu-templates', [\App\Http\Controllers\SuperAdmin\WebsiteMenuTemplateController::class, 'store'])->name('menu-templates.store');
+            Route::put('menu-templates/{menuTemplate}', [\App\Http\Controllers\SuperAdmin\WebsiteMenuTemplateController::class, 'update'])->name('menu-templates.update');
+            Route::delete('menu-templates/{menuTemplate}', [\App\Http\Controllers\SuperAdmin\WebsiteMenuTemplateController::class, 'destroy'])->name('menu-templates.destroy');
+            Route::post('menu-templates/{menuTemplate}/toggle', [\App\Http\Controllers\SuperAdmin\WebsiteMenuTemplateController::class, 'toggle'])->name('menu-templates.toggle');
+
+            Route::get('page-templates', [\App\Http\Controllers\SuperAdmin\WebsitePageTemplateController::class, 'index'])->name('page-templates.index');
+            Route::post('page-templates', [\App\Http\Controllers\SuperAdmin\WebsitePageTemplateController::class, 'store'])->name('page-templates.store');
+            Route::put('page-templates/{pageTemplate}', [\App\Http\Controllers\SuperAdmin\WebsitePageTemplateController::class, 'update'])->name('page-templates.update');
+            Route::delete('page-templates/{pageTemplate}', [\App\Http\Controllers\SuperAdmin\WebsitePageTemplateController::class, 'destroy'])->name('page-templates.destroy');
+            Route::post('page-templates/{pageTemplate}/toggle', [\App\Http\Controllers\SuperAdmin\WebsitePageTemplateController::class, 'toggle'])->name('page-templates.toggle');
+        });
     }
     );
 
@@ -240,6 +262,12 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/dashboard', [App\Http\Controllers\Principal\AttendanceController::class, 'dashboard'])->name('dashboard');
                 // Monthly report
                 Route::get('/monthly-report', [App\Http\Controllers\Principal\AttendanceController::class, 'monthlyReport'])->name('monthly_report');
+                // Daily report (new - with class/section/status filters and print)
+                Route::get('/daily-report', [App\Http\Controllers\Principal\AttendanceController::class, 'dailyReport'])->name('daily_report');
+                Route::get('/daily-report/print', [App\Http\Controllers\Principal\AttendanceController::class, 'dailyReportPrint'])->name('daily_report.print');
+                // Attendance Settings (student + teacher unified)
+                Route::get('/settings', [App\Http\Controllers\Principal\AttendanceSettingsController::class, 'index'])->name('settings');
+                Route::post('/settings', [App\Http\Controllers\Principal\AttendanceSettingsController::class, 'store'])->name('settings.store');
                 // Team attendance
                 Route::get('/team', [App\Http\Controllers\Principal\TeamAttendanceController::class, 'index'])->name('team.index');
                 Route::get('/team/take', [App\Http\Controllers\Principal\TeamAttendanceController::class, 'take'])->name('team.take');
@@ -771,6 +799,15 @@ Route::middleware(['auth', 'active_school'])->group(function () {
 
             // Frontend Website Settings & CMS
             Route::prefix('frontend')->name('frontend.')->middleware('module:frontend_website')->group(function () {
+                Route::get('/website-template', [\App\Http\Controllers\Principal\WebsiteTemplateController::class, 'index'])->name('website-template');
+                Route::get('/website-template/data', [\App\Http\Controllers\Principal\WebsiteTemplateController::class, 'data'])->name('website-template.data');
+                Route::post('/website-template/apply-theme', [\App\Http\Controllers\Principal\WebsiteTemplateController::class, 'applyTheme'])->name('website-template.apply-theme');
+                Route::post('/website-template/apply-menu', [\App\Http\Controllers\Principal\WebsiteTemplateController::class, 'applyMenu'])->name('website-template.apply-menu');
+                Route::post('/website-template/apply-pages', [\App\Http\Controllers\Principal\WebsiteTemplateController::class, 'applyPages'])->name('website-template.apply-pages');
+
+                Route::get('/stats/data', [\App\Http\Controllers\Principal\SchoolStatsController::class, 'data'])->name('stats.data');
+                Route::post('/stats/data', [\App\Http\Controllers\Principal\SchoolStatsController::class, 'update'])->name('stats.update');
+
                 Route::get('/settings', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'index'])->name('settings');
                 Route::get('/settings/data', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'getData'])->name('settings.data');
                 Route::post('/settings/data', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'updateData'])->name('settings.update');

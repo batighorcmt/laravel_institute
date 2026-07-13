@@ -21,7 +21,7 @@
       <aside class="w-full lg:w-80 shrink-0 lg:sticky lg:top-4">
         <div class="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
           <nav class="p-4 space-y-2">
-            <button v-for="section in sections" :key="section.id" @click="activeSection = section.id"
+            <button v-for="section in sections" :key="section.id" @click="switchSection(section.id)"
               class="w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group text-left"
               :class="activeSection === section.id ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 hover:bg-slate-50'">
               <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
@@ -131,7 +131,7 @@
               </div>
               <div class="section-body p-8 space-y-6">
                  <div v-if="activeSection === 'about'" class="space-y-6">
-                    <textarea id="about_editor_tinymce" v-model="form.about_text" class="tinymce"></textarea>
+                    <textarea ref="about_editor" v-model="form.about_text" class="rich-editor"></textarea>
                     <div class="p-4 border border-slate-100 rounded-[30px] flex items-center gap-6 bg-slate-50/50">
                        <img v-if="settings.about_image" :src="'/storage/' + settings.about_image" class="w-32 h-32 rounded-3xl object-cover shadow-sm">
                        <input type="file" @change="handleFileUpload('about_image', $event)" class="file-input flex-grow">
@@ -140,15 +140,28 @@
 
                  <div v-if="activeSection === 'principal'" class="space-y-6">
                     <input type="text" v-model="form.principal_name" class="input-field font-bold" placeholder="অধ্যক্ষের নাম">
-                    <textarea id="principal_editor_tinymce" v-model="form.principal_message" class="tinymce"></textarea>
+                    <textarea ref="principal_editor" v-model="form.principal_message" class="rich-editor"></textarea>
                     <div class="p-4 border border-slate-100 rounded-[30px] flex items-center gap-6 bg-slate-50/50">
                        <img v-if="settings.principal_image" :src="'/storage/' + settings.principal_image" class="w-32 h-40 rounded-3xl object-cover shadow-sm">
                        <input type="file" @change="handleFileUpload('principal_image', $event)" class="file-input flex-grow">
                     </div>
                  </div>
 
-                 <div v-if="activeSection === 'committee'">
-                    <textarea id="committee_editor_tinymce" v-model="form.committee_text" class="tinymce"></textarea>
+                 <div v-if="activeSection === 'chairman'" class="space-y-6">
+                    <input type="text" v-model="form.chairman_name" class="input-field font-bold" placeholder="সভাপতির নাম">
+                    <textarea ref="chairman_editor" v-model="form.chairman_message" class="rich-editor"></textarea>
+                    <div class="p-4 border border-slate-100 rounded-[30px] flex items-center gap-6 bg-slate-50/50">
+                       <img v-if="settings.chairman_image" :src="'/storage/' + settings.chairman_image" class="w-32 h-40 rounded-3xl object-cover shadow-sm">
+                       <input type="file" @change="handleFileUpload('chairman_image', $event)" class="file-input flex-grow">
+                    </div>
+                 </div>
+
+                 <div v-if="activeSection === 'committee'" class="space-y-8">
+                    <div>
+                       <label class="input-label">কমিটি সম্পর্কে ভূমিকা (ঐচ্ছিক)</label>
+                       <textarea ref="committee_editor" v-model="form.committee_text" class="rich-editor"></textarea>
+                    </div>
+                    <committee-members-manager :school-id="schoolId"></committee-members-manager>
                  </div>
 
                  <div v-if="activeSection === 'contact'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -186,46 +199,69 @@ export default {
         { id: 'banner', name: 'ব্যানার ও স্লাইডার', icon: 'fas fa-images' },
         { id: 'about', name: 'ইতিহাস ও পরিচিতি', icon: 'fas fa-history' },
         { id: 'principal', name: 'অধ্যক্ষের বাণী', icon: 'fas fa-user-tie' },
+        { id: 'chairman', name: 'সভাপতির বাণী', icon: 'fas fa-user-shield' },
         { id: 'committee', name: 'ম্যানেজিং কমিটি', icon: 'fas fa-users-cog' },
         { id: 'contact', name: 'যোগাযোগ তথ্য', icon: 'fas fa-address-book' },
         { id: 'seo', name: 'SEO সেটিংস', icon: 'fas fa-search' }
       ],
       settings: {},
-      form: { marquee_text: '', about_text: '', principal_name: '', principal_message: '', committee_text: '', contact_address: '', contact_email: '', contact_phone: '', meta_title: '', meta_description: '', meta_keywords: '' },
+      form: { marquee_text: '', about_text: '', principal_name: '', principal_message: '', chairman_name: '', chairman_message: '', committee_text: '', contact_address: '', contact_email: '', contact_phone: '', meta_title: '', meta_description: '', meta_keywords: '' },
       sliderItems: [],
-      files: { about_image: null, principal_image: null }
+      files: { about_image: null, principal_image: null, chairman_image: null }
     };
   },
   async mounted() {
     await this.fetchData();
-    await this.loadTinyMCE();
-    this.initAllTinyMCE();
+    this.$nextTick(() => this.initEditorForSection(this.activeSection));
+  },
+  beforeUnmount() {
+    this.destroyEditor();
   },
   methods: {
-    async loadTinyMCE() {
-      if (window.tinymce) return;
-      return new Promise(r => {
-        const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js';
-        s.async = true; s.onload = r; document.head.appendChild(s);
-      });
+    // Only the active section's fields exist in the DOM (see v-for filter above),
+    // so the rich-text editor for a field must be (re)created every time its
+    // section becomes active — a fixed selector on mount can't find elements
+    // that don't exist yet, which is why editors previously failed to appear.
+    switchSection(id) {
+      if (id === this.activeSection) return;
+      this.destroyEditor();
+      this.activeSection = id;
+      this.$nextTick(() => this.initEditorForSection(id));
     },
-    initAllTinyMCE() {
-      if (!window.tinymce) return;
-      const self = this;
-      const config = {
-        menubar: false, branding: false, height: 400,
-        plugins: 'image link lists table charmap code emoticons hr',
-        toolbar: 'undo redo | blocks | bold italic | alignleft aligncenter alignright | bullist numlist | link image table | code emoticons',
-        images_upload_handler: (blobInfo) => new Promise((resolve) => {
-           const xhr = new XMLHttpRequest(); xhr.open('POST', `/principal/institute/${this.schoolId}/frontend/settings/upload`);
-           xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').content);
-           xhr.onload = () => { resolve(JSON.parse(xhr.responseText).location); };
-           const fd = new FormData(); fd.append('upload', blobInfo.blob()); xhr.send(fd);
-        })
-      };
-      tinymce.init({...config, selector: '#about_editor_tinymce', setup: (e) => { e.on('init', () => e.setContent(self.form.about_text || '')); e.on('change keyup blur', () => self.form.about_text = e.getContent()); }});
-      tinymce.init({...config, selector: '#principal_editor_tinymce', setup: (e) => { e.on('init', () => e.setContent(self.form.principal_message || '')); e.on('change keyup blur', () => self.form.principal_message = e.getContent()); }});
-      tinymce.init({...config, selector: '#committee_editor_tinymce', setup: (e) => { e.on('init', () => e.setContent(self.form.committee_text || '')); e.on('change keyup blur', () => self.form.committee_text = e.getContent()); }});
+    editorConfigFor(sectionId) {
+      return {
+        about: { field: 'about_text', ref: 'about_editor' },
+        principal: { field: 'principal_message', ref: 'principal_editor' },
+        chairman: { field: 'chairman_message', ref: 'chairman_editor' },
+        committee: { field: 'committee_text', ref: 'committee_editor' },
+      }[sectionId] || null;
+    },
+    initEditorForSection(sectionId) {
+      const cfg = this.editorConfigFor(sectionId);
+      if (!cfg || !window.ClassicEditor) return;
+      const { field, ref } = cfg;
+      const el = this.$refs[ref];
+      const target = Array.isArray(el) ? el[0] : el;
+      if (!target) return;
+
+      window.ClassicEditor.create(target, {
+        toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', 'insertTable', 'undo', 'redo'],
+        language: 'bn',
+      }).then((editor) => {
+        this.editorInstance = editor;
+        this.editorField = field;
+        editor.setData(this.form[field] || '');
+        editor.model.document.on('change:data', () => {
+          this.form[field] = editor.getData();
+        });
+      }).catch(() => {});
+    },
+    destroyEditor() {
+      if (this.editorInstance) {
+        this.editorInstance.destroy().catch(() => {});
+        this.editorInstance = null;
+        this.editorField = null;
+      }
     },
     async fetchData() {
       this.loading = true;
@@ -235,10 +271,8 @@ export default {
         Object.keys(this.form).forEach(k => this.form[k] = this.settings[k] || '');
         this.sliderItems = Array.isArray(this.settings.hero_images) ? this.settings.hero_images : (JSON.parse(this.settings.hero_images || "[]"));
         this.sliderItems = this.sliderItems.map(item => typeof item === 'string' ? { image: item, title: '', subtitle: '', active: true } : item);
-        if (window.tinymce) { 
-           tinymce.get('about_editor_tinymce')?.setContent(this.form.about_text || '');
-           tinymce.get('principal_editor_tinymce')?.setContent(this.form.principal_message || '');
-           tinymce.get('committee_editor_tinymce')?.setContent(this.form.committee_text || '');
+        if (this.editorInstance && this.editorField) {
+          this.editorInstance.setData(this.form[this.editorField] || '');
         }
       } catch (e) { toastr.error('Load error'); } finally { this.loading = false; }
     },
@@ -285,6 +319,7 @@ export default {
         const map = {
           about: ['about_text', 'about_image'],
           principal: ['principal_name', 'principal_message', 'principal_image'],
+          chairman: ['chairman_name', 'chairman_message', 'chairman_image'],
           committee: ['committee_text'],
           contact: ['contact_address', 'contact_email', 'contact_phone'],
           seo: ['meta_title', 'meta_description', 'meta_keywords']

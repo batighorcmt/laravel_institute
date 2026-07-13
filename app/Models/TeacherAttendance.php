@@ -20,6 +20,7 @@ class TeacherAttendance extends Model
         'check_out_latitude',
         'check_out_longitude',
         'status',
+        'medium',
         'remarks',
     ];
 

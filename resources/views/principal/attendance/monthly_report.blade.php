@@ -12,6 +12,7 @@
     .late-icon { color: #ffc107; }
     .half-day-icon { color: #17a2b8; }
     .holiday-label { font-size: 0.65rem; font-weight: 600; color:#6c757d; }
+    .bio-time { display: block; font-size: 0.6rem; color: #555; line-height: 1.1; margin-top: 1px; white-space: nowrap; }
     /* Show only in print */
     .print-only { display: none; }
     @media print {
@@ -166,10 +167,13 @@
                                     <td>{{ $st->student_name_bn ?? $st->student_name_en }}</td>
                                     @foreach(($dateList ?? []) as $d)
                                         @php
-                                            $status = $attendanceMatrix[$st->student_id][$d] ?? null;
+                                            $rec    = $attendanceMatrix[$st->student_id][$d] ?? null;
+                                            $status = is_array($rec) ? ($rec['status'] ?? null) : $rec;
+                                            $medium = is_array($rec) ? ($rec['medium'] ?? null) : null;
+                                            $entryT = is_array($rec) ? ($rec['entry_time'] ?? null) : null;
+                                            $exitT  = is_array($rec) ? ($rec['exit_time']  ?? null) : null;
                                             $wdnLoop = (int)date('N', strtotime($d));
                                             $isHolidayCell = in_array($d, $holidayList) || in_array($wdnLoop, $weeklyHolidayNumsList);
-                                            // Only count attendance if not a holiday and status exists
                                             if(!$isHolidayCell && $status){ $totalCount++; }
                                             if(!$isHolidayCell){
                                                 if($status === 'present' || $status === 'late' || $status === 'half_day'){ $presentCount++; }
@@ -179,9 +183,19 @@
                                         <td>
                                             @if($isHolidayCell)
                                                 <span class="holiday-label" title="ছুটি">ছুটি</span>
-                                            @elseif($status === 'present')<span class="present-icon" title="উপস্থিত"><i class="fas fa-check"></i></span>
+                                            @elseif($status === 'present')
+                                                <span class="present-icon" title="উপস্থিত"><i class="fas fa-check"></i></span>
+                                                @if($medium === 'biometric')
+                                                    @if($entryT)<span class="bio-time">{{ \Carbon\Carbon::parse($entryT)->format('h:i') }}</span>@endif
+                                                    @if($exitT)<span class="bio-time" style="color:#888">{{ \Carbon\Carbon::parse($exitT)->format('h:i') }}</span>@endif
+                                                @endif
                                             @elseif($status === 'absent')<span class="absent-icon" title="অনুপস্থিত"><i class="fas fa-times"></i></span>
-                                            @elseif($status === 'late')<span class="late-icon" title="দেরি"><i class="fas fa-clock"></i></span>
+                                            @elseif($status === 'late')
+                                                <span class="late-icon" title="দেরি"><i class="fas fa-clock"></i></span>
+                                                @if($medium === 'biometric')
+                                                    @if($entryT)<span class="bio-time" style="color:#e6a800">{{ \Carbon\Carbon::parse($entryT)->format('h:i') }}</span>@endif
+                                                    @if($exitT)<span class="bio-time" style="color:#888">{{ \Carbon\Carbon::parse($exitT)->format('h:i') }}</span>@endif
+                                                @endif
                                             @elseif($status === 'half_day')<span class="half-day-icon" title="অর্ধদিবস"><i class="fas fa-adjust"></i></span>
                                             @else <span>&nbsp;</span>
                                             @endif
@@ -209,7 +223,8 @@
                             if(!isset($studentsCollection)) { $studentsCollection = collect($students ?? []); }
                             foreach($studentsCollection as $stRow){
                                 foreach(($dateList ?? []) as $d){
-                                    $status = $attendanceMatrix[$stRow->student_id][$d] ?? null;
+                                    $rec2 = $attendanceMatrix[$stRow->student_id][$d] ?? null;
+                                    $status = is_array($rec2) ? ($rec2['status'] ?? null) : $rec2;
                                     $wdnTmp = (int)date('N', strtotime($d));
                                     $isHoliday = in_array($d, $holidayList) || in_array($wdnTmp, $weeklyHolidayNumsList);
                                     if($isHoliday) { continue; }

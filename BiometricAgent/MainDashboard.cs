@@ -20,6 +20,7 @@ namespace BiometricAgent
         private OfflineQueue _offlineQueue;
         private CloudSyncManager _cloud;
         private System.Windows.Forms.Timer _syncTimer = null!;
+        private System.Windows.Forms.Timer _connectivityTimer = null!;
 
         // App version constant
         public const string AppVersion = "1.0.0";
@@ -28,6 +29,7 @@ namespace BiometricAgent
         // Active device adapters keyed by serial number
         private readonly Dictionary<string, IBiometricAdapter> _adapters = new();
         private readonly Dictionary<string, string> _deviceStatus = new();
+        private readonly Dictionary<string, Label> _deviceStatusLabels = new();
         private readonly HashSet<string> _offlineDeviceNames = new();
         private NotificationAlertForm? _masterAlert = null;
         
@@ -37,6 +39,7 @@ namespace BiometricAgent
         private bool _allowVisible = false;
         private Dictionary<string, DateTime> _lastReconnectAttempt = new();
         private int _isSyncing;
+        private int _isCheckingConnectivity;
 
         public MainDashboard()
         {
@@ -116,7 +119,7 @@ namespace BiometricAgent
                 {
                     _config = settingsForm.Config;
                     _config.Save();
-                    _cloud = new CloudSyncManager(_config, _offlineQueue);
+                    _cloud = new CloudSyncManager(_config, _offlineQueue, LogMessage);
                     ApplyAutoStart();
                 }
             }
@@ -155,6 +158,7 @@ namespace BiometricAgent
 
             await ConnectAllDevicesAsync();
             StartSyncTimer();
+            StartConnectivityTimer();
 
             // Check for updates in background (non-blocking)
             _ = CheckForUpdateAsync();
@@ -183,6 +187,7 @@ namespace BiometricAgent
         {
             _adapters.Clear();
             panelDevices.Controls.Clear();
+            _deviceStatusLabels.Clear();
 
             var deviceResults = await Task.Run(() =>
             {
@@ -195,9 +200,7 @@ namespace BiometricAgent
                     bool ok = adapter.Connect(dev.IpAddress, dev.Port, dev.MachineNumber);
                     string status = ok ? "online" : "offline";
                     string serial = ok ? adapter.GetSerialNumber() : string.Empty;
-                    string error = string.Empty;
-                    if (!ok && adapter is ZKTecoAdapter zktecoAdapter)
-                        error = zktecoAdapter.LastError;
+                    string error = ok ? string.Empty : adapter.LastError;
 
                     results.Add((dev, status, ok, serial));
                     _adapters[dev.IpAddress] = adapter;
@@ -250,14 +253,15 @@ namespace BiometricAgent
                 Font     = new Font("Segoe UI", 10, FontStyle.Bold),
                 AutoSize = true
             });
-            card.Controls.Add(new Label
+            var lblStatus = new Label
             {
                 Text      = status.ToUpper(),
                 Location  = new Point(10, 34),
                 ForeColor = statusColor,
                 Font      = new Font("Segoe UI", 9),
                 AutoSize  = true
-            });
+            };
+            card.Controls.Add(lblStatus);
             card.Controls.Add(new Label
             {
                 Text      = $"{dev.IpAddress}:{dev.Port}",
@@ -268,6 +272,7 @@ namespace BiometricAgent
             });
 
             panelDevices.Controls.Add(card);
+            _deviceStatusLabels[dev.IpAddress] = lblStatus;
         }
 
         // ── Sync timer ───────────────────────────────────────────────────────
@@ -280,6 +285,92 @@ namespace BiometricAgent
             _syncTimer.Tick += async (object? _, EventArgs __) => await DoSyncCycle();
             _syncTimer.Start();
             LogMessage($"⏱  Sync every {_config.SyncIntervalSeconds}s started.");
+        }
+
+        // ── Connectivity auto-refresh (fast, separate from the heavier attendance sync) ──
+        private void StartConnectivityTimer()
+        {
+            _connectivityTimer = new System.Windows.Forms.Timer { Interval = 7000 };
+            _connectivityTimer.Tick += async (object? _, EventArgs __) => await FastConnectivityCheckAsync();
+            _connectivityTimer.Start();
+        }
+
+        private async Task FastConnectivityCheckAsync()
+        {
+            if (Interlocked.CompareExchange(ref _isCheckingConnectivity, 1, 0) != 0)
+                return; // previous check still running, skip this tick
+
+            try
+            {
+                var statuses = await CheckDeviceConnectivityAsync();
+                bool changed = false;
+                foreach (var kv in statuses)
+                {
+                    if (!_deviceStatus.TryGetValue(kv.Key, out var prev) || prev != kv.Value)
+                        changed = true;
+
+                    _deviceStatus[kv.Key] = kv.Value;
+                    UpdateDeviceCardStatus(kv.Key, kv.Value);
+                }
+
+                if (changed)
+                {
+                    lblOnline.Text  = _deviceStatus.Count(x => x.Value == "online").ToString();
+                    lblOffline.Text = _deviceStatus.Count(x => x.Value == "offline").ToString();
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _isCheckingConnectivity, 0);
+            }
+        }
+
+        /// <summary>Cheap per-device liveness probe shared by the fast connectivity timer
+        /// and the heavier attendance-sync cycle, so both agree on device state and share
+        /// the same reconnect-attempt throttle (avoids hammering a persistently offline
+        /// device with connect attempts every few seconds).</summary>
+        private async Task<Dictionary<string, string>> CheckDeviceConnectivityAsync()
+        {
+            return await Task.Run(() =>
+            {
+                var statuses = new Dictionary<string, string>();
+
+                foreach (var dev in _config.Devices)
+                {
+                    if (!_adapters.TryGetValue(dev.IpAddress, out var adapter))
+                        continue;
+
+                    bool alive = adapter.CheckConnection();
+                    string status = alive ? "online" : "offline";
+
+                    if (!alive)
+                    {
+                        bool shouldReconnect = !_lastReconnectAttempt.TryGetValue(dev.IpAddress, out var lastTry) ||
+                            (DateTime.Now - lastTry).TotalMinutes >= 2;
+
+                        if (shouldReconnect)
+                        {
+                            _lastReconnectAttempt[dev.IpAddress] = DateTime.Now;
+                            LogMessage($"Attempting to reconnect {dev.Name}...");
+                            bool reconnected = adapter.Connect(dev.IpAddress, dev.Port, dev.MachineNumber);
+                            status = reconnected ? "online" : "offline";
+                            if (reconnected)
+                            {
+                                CloseOfflineAlert(dev);
+                                LogMessage($"🟢 {dev.Name} reconnected.");
+                            }
+                            else
+                            {
+                                ShowOfflineAlert(dev);
+                            }
+                        }
+                    }
+
+                    statuses[dev.IpAddress] = status;
+                }
+
+                return statuses;
+            });
         }
 
         private async Task DoSyncCycle()
@@ -301,6 +392,9 @@ namespace BiometricAgent
                 // 1. Retry offline queue
                 await _cloud.RetryOfflineQueueAsync();
 
+                // 2. Connectivity + reconnect (shared with the fast connectivity timer)
+                var connectivity = await CheckDeviceConnectivityAsync();
+
                 var syncResults = await Task.Run(() =>
                 {
                     var results = new List<(DeviceConfig dev, string status, List<PunchRecord> punches, string serialToSend, string hbSerial)>();
@@ -310,36 +404,10 @@ namespace BiometricAgent
                         if (!_adapters.TryGetValue(dev.IpAddress, out var adapter))
                             continue;
 
-                        string status = adapter.IsConnected ? "online" : "offline";
-                        if (!adapter.IsConnected)
-                        {
-                            bool shouldReconnect = false;
-                            if (!_lastReconnectAttempt.TryGetValue(dev.IpAddress, out var lastTry) ||
-                                (DateTime.Now - lastTry).TotalMinutes >= 2)
-                            {
-                                shouldReconnect = true;
-                            }
-
-                            if (shouldReconnect)
-                            {
-                                _lastReconnectAttempt[dev.IpAddress] = DateTime.Now;
-                                LogMessage($"Attempting to reconnect {dev.Name}...");
-                                bool reconnected = adapter.Connect(dev.IpAddress, dev.Port, dev.MachineNumber);
-                                status = reconnected ? "online" : "offline";
-                                if (reconnected)
-                                {
-                                    CloseOfflineAlert(dev);
-                                    LogMessage($"🟢 {dev.Name} reconnected.");
-                                }
-                                else
-                                {
-                                    ShowOfflineAlert(dev);
-                                }
-                            }
-                        }
+                        string status = connectivity.TryGetValue(dev.IpAddress, out var st) ? st : "offline";
 
                         string serialToSend = string.IsNullOrWhiteSpace(dev.SerialNumber)
-                            ? $"UNKNOWN-{dev.IpAddress.Replace(".", "")}" 
+                            ? $"UNKNOWN-{dev.IpAddress.Replace(".", "")}"
                             : dev.SerialNumber;
 
                         var punches = new List<PunchRecord>();
@@ -354,7 +422,15 @@ namespace BiometricAgent
                                 }
                             }
 
-                            punches = adapter.ReadNewAttendanceLogs();
+                            if (!string.IsNullOrWhiteSpace(dev.SerialNumber)
+                                && !string.Equals(serialToSend, dev.SerialNumber, StringComparison.OrdinalIgnoreCase))
+                            {
+                                _offlineQueue.MigrateDeviceSerial(serialToSend, dev.SerialNumber);
+                                serialToSend = dev.SerialNumber;
+                            }
+
+                            var allPunches = adapter.ReadNewAttendanceLogs();
+                            punches = _offlineQueue.FilterNewPunches(serialToSend, allPunches);
                         }
 
                         string hbSerial = string.IsNullOrWhiteSpace(dev.SerialNumber)
@@ -369,6 +445,9 @@ namespace BiometricAgent
 
                 foreach (var item in syncResults)
                 {
+                    _deviceStatus[item.dev.IpAddress] = item.status;
+                    UpdateDeviceCardStatus(item.dev.IpAddress, item.status);
+
                     if (item.punches.Count > 0)
                     {
                         var distinctIds = item.punches.Select(p => p.BiometricId).Distinct().ToList();
@@ -380,19 +459,31 @@ namespace BiometricAgent
                         if (!syncOk)
                             LogMessage($"⚠️ {item.dev.Name}: sync queued for retry.");
                         else
+                        {
                             LogMessage($"✅ {item.dev.Name}: attendance pushed.");
+                            _offlineQueue.MarkPunchesAsSynced(item.serialToSend, item.punches);
+                        }
                     }
 
                     await _cloud.SendHeartbeatAsync(GetSchoolId(), item.hbSerial, item.status, item.dev.IpAddress, item.dev.Name, item.dev.Location);
                 }
 
                 lblLastSync.Text = $"Last sync: {DateTime.Now:HH:mm:ss}";
+                lblOnline.Text  = _deviceStatus.Count(x => x.Value == "online").ToString();
+                lblOffline.Text = _deviceStatus.Count(x => x.Value == "offline").ToString();
                 UpdatePendingCount();
             }
             finally
             {
                 Interlocked.Exchange(ref _isSyncing, 0);
             }
+        }
+
+        private void UpdateDeviceCardStatus(string ipAddress, string status)
+        {
+            if (!_deviceStatusLabels.TryGetValue(ipAddress, out var lbl)) return;
+            lbl.Text = status.ToUpper();
+            lbl.ForeColor = status == "online" ? Color.FromArgb(52, 211, 153) : Color.FromArgb(248, 113, 113);
         }
 
         private void ShowOfflineAlert(DeviceConfig dev)
@@ -490,14 +581,16 @@ namespace BiometricAgent
             return await _cloud.GetUsersAsync(GetSchoolId());
         }
 
-        public bool PushUserToDevice(string serialNumber, UserRecord user)
+        public bool PushUserToDevice(string deviceKey, UserRecord user)
         {
-            if (!_adapters.TryGetValue(serialNumber, out var adapter))
-            {
-                var dev = _config.Devices.FirstOrDefault(d => d.SerialNumber == serialNumber);
-                if (dev != null)
-                    _adapters.TryGetValue(dev.IpAddress, out adapter);
-            }
+            // _adapters is keyed by IP address, but callers may pass a serial number or
+            // an IP - resolve via the device config either way instead of relying on a
+            // dictionary lookup that only matches for one of the two key shapes.
+            var dev = _config.Devices.FirstOrDefault(d =>
+                string.Equals(d.SerialNumber, deviceKey, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(d.IpAddress, deviceKey, StringComparison.OrdinalIgnoreCase));
+
+            IBiometricAdapter? adapter = dev != null && _adapters.TryGetValue(dev.IpAddress, out var found) ? found : null;
 
             if (adapter == null || !adapter.IsConnected)
                 return false;

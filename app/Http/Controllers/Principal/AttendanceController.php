@@ -117,13 +117,18 @@ class AttendanceController extends Controller
         $studentIds = $students->pluck('student_id')->all();
         $attendanceMatrix = [];
         if (! empty($studentIds)) {
-            $attRows = Attendance::select('student_id', 'date', 'status')
+            $attRows = Attendance::select('student_id', 'date', 'status', 'medium', 'entry_time', 'exit_time')
                 ->whereIn('student_id', $studentIds)
                 ->whereBetween('date', [$startDate, $endDate])
                 ->get();
             foreach ($attRows as $r) {
                 $dateKey = is_string($r->date) ? $r->date : (\Carbon\Carbon::parse($r->date)->toDateString());
-                $attendanceMatrix[$r->student_id][$dateKey] = $r->status;
+                $attendanceMatrix[$r->student_id][$dateKey] = [
+                    'status'     => $r->status,
+                    'medium'     => $r->medium,
+                    'entry_time' => $r->entry_time,
+                    'exit_time'  => $r->exit_time,
+                ];
             }
         }
 
@@ -899,4 +904,81 @@ class AttendanceController extends Controller
 
         return ['sent' => count($payloads), 'skipped' => $skipped];
     }
+
+    /**
+     * Student Daily Attendance Report
+     */
+    public function dailyReport(School $school, Request $request)
+    {
+        $date      = $request->query('date', now()->toDateString());
+        $classId   = $request->query('class_id');
+        $sectionId = $request->query('section_id');
+        $status    = $request->query('status');
+
+        $classes  = SchoolClass::where('school_id', $school->id)->orderBy('numeric_value')->get();
+        $sections = $sectionId || $classId
+            ? Section::where('class_id', $classId)->get()
+            : collect();
+
+        $query = Attendance::with(['student', 'student.currentEnrollment'])
+            ->where('attendance.date', $date)
+            ->join('students', 'attendance.student_id', '=', 'students.id')
+            ->where('students.school_id', $school->id)
+            ->where('students.status', 'active')
+            ->select('attendance.*');
+
+        if ($classId) {
+            $query->where('attendance.class_id', $classId);
+        }
+        if ($sectionId) {
+            $query->where('attendance.section_id', $sectionId);
+        }
+        if ($status) {
+            $query->where('attendance.status', $status);
+        }
+
+        $records = $query->orderBy('students.student_name_bn')->get();
+
+        return view('principal.attendance.daily-report', compact(
+            'school', 'date', 'classes', 'sections', 'records',
+            'classId', 'sectionId', 'status'
+        ));
+    }
+
+    /**
+     * Print version of Student Daily Attendance Report
+     */
+    public function dailyReportPrint(School $school, Request $request)
+    {
+        $date      = $request->query('date', now()->toDateString());
+        $classId   = $request->query('class_id');
+        $sectionId = $request->query('section_id');
+        $status    = $request->query('status');
+
+        $query = Attendance::with(['student'])
+            ->where('attendance.date', $date)
+            ->join('students', 'attendance.student_id', '=', 'students.id')
+            ->where('students.school_id', $school->id)
+            ->where('students.status', 'active')
+            ->select('attendance.*');
+
+        if ($classId) {
+            $query->where('attendance.class_id', $classId);
+        }
+        if ($sectionId) {
+            $query->where('attendance.section_id', $sectionId);
+        }
+        if ($status) {
+            $query->where('attendance.status', $status);
+        }
+
+        $records   = $query->orderBy('students.student_name_bn')->get();
+        $className = $classId ? SchoolClass::find($classId)?->name : 'সকল শ্রেণি';
+        $sectionName = $sectionId ? Section::find($sectionId)?->name : 'সকল শাখা';
+
+        return view('principal.attendance.daily-report-print', compact(
+            'school', 'date', 'records', 'className', 'sectionName', 'status'
+        ));
+    }
 }
+

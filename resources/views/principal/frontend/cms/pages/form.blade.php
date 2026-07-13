@@ -42,6 +42,32 @@
                             <small class="text-muted">ইংরেজি ছোট হাতের অক্ষর, সংখ্যা ও হাইফেন। যেমন: about-us</small>
                         </div>
                         <div class="form-group">
+                            <label>কনটেন্ট মোড</label>
+                            <div class="d-flex">
+                                <div class="custom-control custom-radio mr-4">
+                                    <input id="mode_static" type="radio" name="content_mode" value="static" class="custom-control-input"
+                                           {{ old('content_mode', $page->content_mode ?? 'static') === 'static' ? 'checked' : '' }}
+                                           onchange="document.getElementById('static_content_wrap').style.display='block';document.getElementById('dynamic_source_wrap').style.display='none';">
+                                    <label class="custom-control-label" for="mode_static">স্ট্যাটিক (এডিটরে টাইপ করা)</label>
+                                </div>
+                                <div class="custom-control custom-radio">
+                                    <input id="mode_dynamic" type="radio" name="content_mode" value="dynamic" class="custom-control-input"
+                                           {{ old('content_mode', $page->content_mode ?? 'static') === 'dynamic' ? 'checked' : '' }}
+                                           onchange="document.getElementById('static_content_wrap').style.display='none';document.getElementById('dynamic_source_wrap').style.display='block';">
+                                    <label class="custom-control-label" for="mode_dynamic">ডাইনামিক (সফটওয়্যার থেকে)</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="dynamic_source_wrap" class="form-group" style="display: {{ old('content_mode', $page->content_mode ?? 'static') === 'dynamic' ? 'block' : 'none' }};">
+                            <label>ডাটা সোর্স</label>
+                            <select name="data_source" class="form-control">
+                                <option value="">— নির্বাচন করুন —</option>
+                                @foreach(['teachers' => 'শিক্ষকমণ্ডলী', 'notices' => 'নোটিশ বোর্ড', 'gallery' => 'গ্যালারি', 'about' => 'পরিচিতি', 'contact' => 'যোগাযোগ', 'committee' => 'কমিটি তালিকা'] as $value => $label)
+                                    <option value="{{ $value }}" {{ old('data_source', $page->data_source) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div id="static_content_wrap" class="form-group" style="display: {{ old('content_mode', $page->content_mode ?? 'static') === 'dynamic' ? 'none' : 'block' }};">
                             <label>বিষয়বস্তু</label>
                             <textarea id="cms_content_editor" name="content" class="form-control">{{ old('content', $page->content) }}</textarea>
                         </div>

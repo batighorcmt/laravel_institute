@@ -36,6 +36,8 @@ class FrontendSettingsController extends Controller
             'about_text' => 'nullable|string',
             'principal_name' => 'nullable|string|max:255',
             'principal_message' => 'nullable|string',
+            'chairman_name' => 'nullable|string|max:255',
+            'chairman_message' => 'nullable|string',
             'facebook_url' => 'nullable|url|max:255',
             'youtube_url' => 'nullable|url|max:255',
             'marquee_text' => 'nullable|string',
@@ -69,6 +71,13 @@ class FrontendSettingsController extends Controller
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($settings->principal_image);
             }
             $data['principal_image'] = $request->file('principal_image')->store('frontend/'.$school->id, 'public');
+        }
+
+        if ($request->hasFile('chairman_image')) {
+            if ($settings->chairman_image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($settings->chairman_image);
+            }
+            $data['chairman_image'] = $request->file('chairman_image')->store('frontend/'.$school->id, 'public');
         }
 
         // Handle Multiple Hero Slider Items

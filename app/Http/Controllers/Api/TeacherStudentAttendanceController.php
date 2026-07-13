@@ -287,6 +287,18 @@ class TeacherStudentAttendanceController extends Controller
 
         DB::transaction(function() use ($items, $date, $section, $user) {
             foreach ($items as $it) {
+                // Biometric lock: if attendance was recorded via biometric machine, block mobile override
+                $existing = Attendance::where('student_id', $it['student_id'])
+                    ->where('date', $date)
+                    ->where('class_id', $section->class_id)
+                    ->where('section_id', $section->id)
+                    ->first();
+
+                if ($existing && $existing->medium === 'biometric') {
+                    // Skip – cannot override biometric attendance from mobile app
+                    continue;
+                }
+
                 Attendance::updateOrCreate(
                     [
                         'student_id' => $it['student_id'],
@@ -297,6 +309,7 @@ class TeacherStudentAttendanceController extends Controller
                     [
                         'status' => $it['status'],
                         'recorded_by' => $user->id,
+                        'medium' => 'mobile_app',
                     ]
                 );
             }

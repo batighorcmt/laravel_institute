@@ -50,3 +50,9 @@ C:\xampp\htdocs\laravel_institute\BiometricAgent\obj\Debug\net8.0-windows\refint
 C:\xampp\htdocs\laravel_institute\BiometricAgent\obj\Debug\net8.0-windows\BiometricAgent.pdb
 C:\xampp\htdocs\laravel_institute\BiometricAgent\obj\Debug\net8.0-windows\BiometricAgent.genruntimeconfig.cache
 C:\xampp\htdocs\laravel_institute\BiometricAgent\obj\Debug\net8.0-windows\ref\BiometricAgent.dll
+C:\xampp\htdocs\laravel_institute\BiometricAgent\bin\Debug\net8.0-windows\Sdk\plcommpro.dll
+C:\xampp\htdocs\laravel_institute\BiometricAgent\bin\Debug\net8.0-windows\Sdk\plcomms.dll
+C:\xampp\htdocs\laravel_institute\BiometricAgent\bin\Debug\net8.0-windows\Sdk\plrscagent.dll
+C:\xampp\htdocs\laravel_institute\BiometricAgent\bin\Debug\net8.0-windows\Sdk\plrscomm.dll
+C:\xampp\htdocs\laravel_institute\BiometricAgent\bin\Debug\net8.0-windows\Sdk\pltcpcomm.dll
+C:\xampp\htdocs\laravel_institute\BiometricAgent\bin\Debug\net8.0-windows\Sdk\usbstd.dll

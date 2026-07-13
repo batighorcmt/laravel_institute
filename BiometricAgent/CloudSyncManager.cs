@@ -191,9 +191,20 @@ namespace BiometricAgent
                 var resp = await _http.PostAsync(
                     $"{_config.SaasApiUrl}/biometric/templates/upload",
                     new StringContent(body, Encoding.UTF8, "application/json"));
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    var bodyText = await resp.Content.ReadAsStringAsync();
+                    _logger?.Invoke($"Template upload failed ({(int)resp.StatusCode}): {bodyText}");
+                }
+
                 return resp.IsSuccessStatusCode;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                _logger?.Invoke($"Template upload exception: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>Download templates from Web DB.</summary>
@@ -217,8 +228,14 @@ namespace BiometricAgent
                     var list = JsonConvert.DeserializeObject<List<BiometricTemplate>>(Convert.ToString(result?.templates));
                     return list ?? new List<BiometricTemplate>();
                 }
+
+                var failBody = await resp.Content.ReadAsStringAsync();
+                _logger?.Invoke($"Template download failed ({(int)resp.StatusCode}): {failBody}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger?.Invoke($"Template download exception: {ex.Message}");
+            }
             return new List<BiometricTemplate>();
         }
 
@@ -236,8 +253,14 @@ namespace BiometricAgent
                     var list = JsonConvert.DeserializeObject<List<UserRecord>>(Convert.ToString(result?.users));
                     return list ?? new List<UserRecord>();
                 }
+
+                var failBody = await resp.Content.ReadAsStringAsync();
+                _logger?.Invoke($"Fetching users failed ({(int)resp.StatusCode}): {failBody}");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                _logger?.Invoke($"Fetching users exception: {ex.Message}");
+            }
             return new List<UserRecord>();
         }
 

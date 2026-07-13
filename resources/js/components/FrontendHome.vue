@@ -40,8 +40,8 @@
 
            <!-- Slider Arrows -->
            <div v-if="activeSlides.length > 1" class="absolute inset-x-0 top-1/2 z-20 -translate-y-1/2 flex justify-between px-6 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
-              <button @click="prevSlide" class="w-12 h-12 bg-white/20 backdrop-blur-xl text-white rounded-full flex items-center justify-center hover:bg-white hover:text-indigo-600 transition-all"><i class="fas fa-chevron-left"></i></button>
-              <button @click="nextSlide" class="w-12 h-12 bg-white/20 backdrop-blur-xl text-white rounded-full flex items-center justify-center hover:bg-white hover:text-indigo-600 transition-all"><i class="fas fa-chevron-right"></i></button>
+              <button @click="prevSlide" class="w-12 h-12 bg-white/20 backdrop-blur-xl text-white rounded-full flex items-center justify-center hover:bg-white hover:text-[var(--theme-primary)] transition-all"><i class="fas fa-chevron-left"></i></button>
+              <button @click="nextSlide" class="w-12 h-12 bg-white/20 backdrop-blur-xl text-white rounded-full flex items-center justify-center hover:bg-white hover:text-[var(--theme-primary)] transition-all"><i class="fas fa-chevron-right"></i></button>
            </div>
         </div>
 
@@ -92,7 +92,7 @@
     <!-- Stats Section -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-24 relative -mt-10 lg:-mt-14 z-20">
        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          <div v-for="stat in stats" :key="stat.label" class="p-8 rounded-[40px] shadow-xl text-center text-white transform hover:-translate-y-2 transition-all" :class="stat.bg">
+          <div v-for="stat in statsCards" :key="stat.label" class="p-8 rounded-[40px] shadow-xl text-center text-white transform hover:-translate-y-2 transition-all" :class="stat.bg">
              <div class="text-4xl font-black mb-1 drop-shadow-md">{{ stat.value }}</div>
              <div class="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">{{ stat.label }}</div>
           </div>
@@ -116,7 +116,7 @@
              </div>
           </div>
           <div class="lg:w-2/3">
-             <h4 class="text-indigo-600 font-black uppercase text-xs tracking-[0.4em] mb-4">About School</h4>
+             <h4 class="text-[var(--theme-primary)] font-black uppercase text-xs tracking-[0.4em] mb-4">About School</h4>
              <h2 class="text-4xl md:text-5xl font-black text-[#1e1b4b] mb-8 leading-tight">জ্ঞানের আলোয় আলোকিত <br><span class="text-indigo-500">আগামীর সুন্দর ভবিষ্যৎ</span></h2>
              <div v-if="settings.about_text" class="prose prose-lg text-slate-600 max-w-none leading-relaxed prose-indigo mb-10" v-html="settings.about_text"></div>
              <p v-else class="text-lg text-slate-500">প্রতিষ্ঠার পর থেকে এটি একটি আধুনিক প্রগতিশীল শিক্ষাপ্রতিষ্ঠান হিসেবে দীর্ঘকাল ধরে তার শ্রেষ্ঠত্ব প্রমাণ করে আসছে।</p>
@@ -130,7 +130,7 @@
       <div class="max-w-7xl mx-auto px-4 relative z-10">
         <div class="grid md:grid-cols-2 gap-8">
           <div
-            class="group p-10 rounded-[40px] bg-gradient-to-br from-indigo-600 to-violet-700 text-white shadow-2xl hover:-translate-y-2 transition-all duration-500"
+            class="group p-10 rounded-[40px] bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-secondary)] text-white shadow-2xl hover:-translate-y-2 transition-all duration-500"
             data-aos="fade-right"
           >
             <div class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
@@ -156,7 +156,7 @@
 
     <!-- Achievements -->
     <section id="achievements" class="py-24 bg-[#0f172a] text-white relative overflow-hidden">
-      <div class="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse-slow"></div>
+      <div class="absolute top-0 right-0 w-96 h-96 bg-[var(--theme-accent)]/20 rounded-full blur-3xl animate-pulse-slow"></div>
       <div class="absolute bottom-0 left-0 w-80 h-80 bg-rose-500/20 rounded-full blur-3xl animate-pulse-slow"></div>
       <div class="max-w-7xl mx-auto px-4 relative z-10">
         <div class="text-center mb-16" data-aos="fade-up">
@@ -186,7 +186,7 @@
     <section id="faculty" class="py-24 bg-gradient-to-b from-slate-50 to-white">
       <div class="max-w-7xl mx-auto px-4">
         <div class="text-center mb-14" data-aos="fade-up">
-          <span class="text-indigo-600 font-black uppercase tracking-[0.4em] text-xs">Our Faculty</span>
+          <span class="text-[var(--theme-primary)] font-black uppercase tracking-[0.4em] text-xs">Our Faculty</span>
           <h2 class="text-4xl md:text-5xl font-black text-[#1e1b4b] mt-3">আমাদের শিক্ষকমণ্ডলী</h2>
         </div>
         <div v-if="teachers.length" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -211,16 +211,16 @@
             <button
               type="button"
               @click="openTeacherModal(teacher)"
-              class="font-black text-slate-800 hover:text-indigo-600 transition-colors focus:outline-none"
+              class="font-black text-slate-800 hover:text-[var(--theme-primary)] transition-colors focus:outline-none"
             >{{ teacher.name }}</button>
-            <p class="text-sm text-indigo-600 font-bold mt-1">{{ teacher.designation }}</p>
+            <p class="text-sm text-[var(--theme-primary)] font-bold mt-1">{{ teacher.designation }}</p>
           </div>
         </div>
         <div v-if="teachers.length > 12 && !showAllTeachers" class="text-center mt-12" data-aos="fade-up">
           <button
             type="button"
             @click="showAllTeachers = true"
-            class="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl hover:bg-indigo-700 hover:scale-105 transition-all"
+            class="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-[var(--theme-primary)] text-white font-black text-sm uppercase tracking-widest shadow-xl hover:brightness-90 hover:scale-105 transition-all"
           >
             সকল শিক্ষক দেখুন
             <i class="fas fa-chevron-down"></i>
@@ -317,24 +317,28 @@
       </div>
     </section>
 
-    <!-- Principal & Administration -->
+    <!-- Principal & Chairman Messages -->
     <section id="principal" class="py-24 bg-slate-50 border-y border-slate-100">
-       <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row gap-16 items-center">
-          <div class="md:w-1/3 text-center">
-             <div class="relative inline-block border-8 border-white shadow-2xl rounded-[40px] overflow-hidden group aspect-[3/4] max-w-[320px]">
-                <img v-if="settings.principal_image && !principalImageFailed" :src="storageUrl(settings.principal_image)" @error="principalImageFailed = true" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
-                <div v-else class="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 text-8xl"><i class="fas fa-user-tie"></i></div>
-                <div class="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-indigo-900 to-transparent text-white pt-10">
-                   <h4 class="text-xl font-black">{{ settings.principal_name || 'Principal Name' }}</h4>
+       <div class="max-w-7xl mx-auto px-4">
+          <div class="grid grid-cols-1 gap-16" :class="messagePersons.length > 1 ? 'lg:grid-cols-2' : ''">
+             <div v-for="person in messagePersons" :key="person.key" class="flex flex-col md:flex-row gap-10 items-center">
+                <div class="md:w-2/5 text-center shrink-0">
+                   <div class="relative inline-block border-8 border-white shadow-2xl rounded-[40px] overflow-hidden group aspect-[3/4] max-w-[280px]">
+                      <img v-if="personImageUrl(person)" :src="personImageUrl(person)" @error="markImageFailed(person.key)" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                      <div v-else class="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 text-7xl"><i :class="person.icon"></i></div>
+                      <div class="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-indigo-900 to-transparent text-white pt-10">
+                         <h4 class="text-xl font-black">{{ person.name || person.fallbackName }}</h4>
+                      </div>
+                   </div>
+                </div>
+                <div class="md:w-3/5 relative">
+                   <i class="fas fa-quote-left text-7xl text-indigo-500/10 absolute -top-8 -left-8"></i>
+                   <div class="px-6 py-2 bg-[var(--theme-primary)] text-white rounded-full text-[10px] font-black uppercase tracking-widest inline-block mb-6">{{ person.label }}</div>
+                   <div v-if="person.message" class="text-xl md:text-2xl text-slate-700 font-bold leading-relaxed prose max-w-none" v-html="person.message"></div>
+                   <p v-else-if="person.fallbackQuote" class="text-lg text-slate-500 italic leading-relaxed">{{ person.fallbackQuote }}</p>
+                   <div class="mt-10 h-1 w-20 bg-indigo-600 rounded-full"></div>
                 </div>
              </div>
-          </div>
-          <div class="md:w-2/3 relative">
-             <i class="fas fa-quote-left text-9xl text-indigo-500/10 absolute -top-10 -left-10"></i>
-             <div class="px-6 py-2 bg-indigo-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest inline-block mb-8">অধ্যক্ষের বাণী</div>
-             <div v-if="settings.principal_message" class="text-2xl md:text-3xl text-slate-700 font-bold leading-relaxed prose max-w-none" v-html="settings.principal_message"></div>
-             <p v-else class="text-xl text-slate-500 italic leading-relaxed">"শিক্ষাই জাতির মেরুদণ্ড। আদর্শ সুনাগরিক হিসেবে শিক্ষার্থীদের গড়ে তোলাই আমাদের মূল লক্ষ্য।"</p>
-             <div class="mt-12 h-1 w-20 bg-indigo-600 rounded-full"></div>
           </div>
        </div>
     </section>
@@ -396,7 +400,7 @@
                     <button
                       type="button"
                       @click="openNoticeDetail(notice)"
-                      class="font-bold text-slate-800 hover:text-indigo-600 text-left"
+                      class="font-bold text-slate-800 hover:text-[var(--theme-primary)] text-left"
                     >{{ notice.title }}</button>
                   </td>
                   <td class="px-4 py-4 text-slate-500 font-medium whitespace-nowrap">{{ notice.publish_at_label || '—' }}</td>
@@ -441,7 +445,7 @@
                 type="button"
                 @click="noticePage = page"
                 class="min-w-[2.25rem] px-3 py-2 rounded-xl text-xs font-black transition-colors"
-                :class="noticePage === page ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50'"
+                :class="noticePage === page ? 'bg-[var(--theme-primary)] text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50'"
               >
                 {{ page }}
               </button>
@@ -496,7 +500,7 @@
             <a
               v-if="selectedNotice.download_url"
               :href="selectedNotice.download_url"
-              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg transition-colors"
+              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black text-white bg-indigo-600 hover:brightness-90 shadow-lg transition-colors"
             >
               <i class="fas fa-download"></i>
               ডাউনলোড করুন
@@ -530,7 +534,7 @@
             </div>
             <div class="text-center mt-5">
               <h3 class="text-2xl font-black text-slate-800">{{ selectedTeacher.name }}</h3>
-              <p class="text-indigo-600 font-bold mt-1">{{ selectedTeacher.designation }}</p>
+              <p class="text-[var(--theme-primary)] font-bold mt-1">{{ selectedTeacher.designation }}</p>
             </div>
             <div class="mt-6 space-y-3">
               <a
@@ -538,7 +542,7 @@
                 :href="'tel:' + selectedTeacher.phone"
                 class="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 hover:bg-indigo-50 transition-colors text-slate-700 font-bold"
               >
-                <span class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0"><i class="fas fa-phone-alt"></i></span>
+                <span class="w-10 h-10 rounded-xl bg-indigo-100 text-[var(--theme-primary)] flex items-center justify-center shrink-0"><i class="fas fa-phone-alt"></i></span>
                 <span>{{ selectedTeacher.phone }}</span>
               </a>
               <a
@@ -580,6 +584,7 @@ export default {
     footerMenu: { type: Array, default: () => [] },
     teachers: { type: Array, default: () => [] },
     blogPosts: { type: Array, default: () => [] },
+    stats: { type: Object, default: () => ({}) },
   },
   data() {
     return {
@@ -592,19 +597,53 @@ export default {
       noticesPerPage: 10,
       activeSlide: 0,
       slideInterval: null,
-      principalImageFailed: false,
+      imageFailedMap: {},
       heroImageBroken: {},
       aboutImageBroken: false,
-      stats: [
-        { label: 'Students', value: '৮৫০+', bg: 'bg-emerald-600 shadow-emerald-500/20' },
-        { label: 'Teachers', value: '৩৫', bg: 'bg-indigo-600 shadow-indigo-500/20' },
-        { label: 'Awards', value: '৫+', bg: 'bg-purple-600 shadow-purple-500/20' },
-        { label: 'Pass Rate', value: '১০০%', bg: 'bg-rose-600 shadow-rose-500/20' }
-      ],
     };
   },
   computed: {
     schoolNameBn() { return this.school.name_bn || this.school.name || "বিদ্যালয়"; },
+    statsCards() {
+      const s = this.stats || {};
+      const fmt = (n) => (n === null || n === undefined) ? '—' : Number(n).toLocaleString('bn-BD');
+      const cards = [
+        { label: 'শিক্ষার্থী', value: fmt(s.students), bg: 'bg-emerald-600 shadow-emerald-500/20' },
+        { label: 'শিক্ষক', value: fmt(s.teachers), bg: 'bg-indigo-600 shadow-indigo-500/20' },
+      ];
+      if (s.staff) {
+        cards.push({ label: 'কর্মচারী', value: fmt(s.staff), bg: 'bg-purple-600 shadow-purple-500/20' });
+      } else {
+        cards.push({ label: 'শ্রেণি', value: fmt(s.classes), bg: 'bg-purple-600 shadow-purple-500/20' });
+      }
+      cards.push({ label: 'অভিজ্ঞতা (বছর)', value: s.experience_years ? fmt(s.experience_years) : '—', bg: 'bg-rose-600 shadow-rose-500/20' });
+      return cards;
+    },
+    messagePersons() {
+      const list = [{
+        key: 'principal',
+        name: this.settings.principal_name,
+        fallbackName: 'Principal Name',
+        message: this.settings.principal_message,
+        imagePath: this.settings.principal_image,
+        icon: 'fas fa-user-tie',
+        label: 'অধ্যক্ষের বাণী',
+        fallbackQuote: '"শিক্ষাই জাতির মেরুদণ্ড। আদর্শ সুনাগরিক হিসেবে শিক্ষার্থীদের গড়ে তোলাই আমাদের মূল লক্ষ্য।"',
+      }];
+      if (this.settings.chairman_message || this.settings.chairman_name || this.settings.chairman_image) {
+        list.push({
+          key: 'chairman',
+          name: this.settings.chairman_name,
+          fallbackName: 'Chairman Name',
+          message: this.settings.chairman_message,
+          imagePath: this.settings.chairman_image,
+          icon: 'fas fa-user-shield',
+          label: 'সভাপতির বাণী',
+          fallbackQuote: '',
+        });
+      }
+      return list;
+    },
     slideTitle() {
        return (this.currentSlide.title || '').trim()
          || (this.settings.hero_title || '').trim()
@@ -758,6 +797,13 @@ export default {
     },
     storageUrl(path) {
       return this.resolveImageUrl(path) || '';
+    },
+    personImageUrl(person) {
+      if (!person.imagePath || this.imageFailedMap[person.key]) return null;
+      return this.storageUrl(person.imagePath);
+    },
+    markImageFailed(key) {
+      this.imageFailedMap = { ...this.imageFailedMap, [key]: true };
     },
     onHeroImageError() {
        this.heroImageBroken = { ...this.heroImageBroken, [this.activeSlide]: true };

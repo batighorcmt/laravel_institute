@@ -2,16 +2,16 @@
   <footer id="contact" class="bg-[#020617] text-white pt-24 pb-10 px-4">
     <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-20 border-b border-white/5 pb-20 mb-10">
       <div>
-        <h4 class="text-3xl font-black mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">{{ schoolNameBn }}</h4>
+        <h4 class="text-3xl font-black mb-6 bg-clip-text text-transparent bg-gradient-to-r from-[var(--theme-primary)] to-[var(--theme-accent)]">{{ schoolNameBn }}</h4>
         <p class="text-slate-400 leading-relaxed font-medium">{{ settings.contact_address || school.address_bn || school.address }}</p>
       </div>
       <div class="space-y-4">
         <h5 class="text-xs font-black uppercase tracking-[0.5em] text-slate-500 mb-8">Contacts</h5>
-        <p class="flex items-center gap-4 text-slate-300 font-bold"><i class="fas fa-phone-alt text-indigo-500"></i> {{ settings.contact_phone || school.phone }}</p>
-        <p class="flex items-center gap-4 text-slate-300 font-bold"><i class="fas fa-envelope text-indigo-500"></i> {{ settings.contact_email || school.email }}</p>
+        <p class="flex items-center gap-4 text-slate-300 font-bold"><i class="fas fa-phone-alt text-[var(--theme-accent)]"></i> {{ settings.contact_phone || school.phone }}</p>
+        <p class="flex items-center gap-4 text-slate-300 font-bold"><i class="fas fa-envelope text-[var(--theme-accent)]"></i> {{ settings.contact_email || school.email }}</p>
       </div>
       <div class="bg-indigo-900/40 p-10 rounded-[40px] border border-indigo-500/20 text-center flex flex-col justify-center">
-        <span class="text-[9px] font-black uppercase tracking-[0.8em] text-indigo-400 block mb-4">Institution EIIN</span>
+        <span class="text-[9px] font-black uppercase tracking-[0.8em] text-[var(--theme-accent)] block mb-4">Institution EIIN</span>
         <div class="text-6xl font-black text-white">{{ school.eiin }}</div>
       </div>
     </div>

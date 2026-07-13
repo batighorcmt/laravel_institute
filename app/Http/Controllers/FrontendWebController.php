@@ -7,10 +7,14 @@ use App\Models\CmsPost;
 use App\Models\Notice;
 use App\Models\School;
 use App\Models\SchoolFrontendSetting;
+use App\Models\SchoolStatsSetting;
 use App\Services\CmsSlugService;
+use App\Services\DynamicPageContentService;
 use App\Services\FrontendHomepageContentService;
 use App\Services\FrontendMenuService;
 use App\Services\FrontendNoticeService;
+use App\Services\SchoolStatsResolver;
+use App\Services\WebsiteThemeResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -42,17 +46,26 @@ class FrontendWebController extends Controller
             $homepageContent['gallery'] = $homepageService->placeholderGallery($school, $settings);
         }
 
-        return view('frontend.index', array_merge(
-            $this->frontendChromeData($school, $settings),
-            [
-                'settings' => $settings,
-                'homepageContent' => $homepageContent,
-                'teachers' => $homepageService->teachersForSchool($school->id, 0),
-                'blogPosts' => $homepageService->blogPostsForSchool($school->id),
-                'boardNotices' => $frontendNotices->boardNoticesForSchool($school->id)->values()->all(),
-                'allBoardNotices' => $frontendNotices->allBoardNoticesForSchool($school->id)->values()->all(),
-            ]
-        ));
+        $chromeData = $this->frontendChromeData($school, $settings);
+
+        $statsSettings = SchoolStatsSetting::where('school_id', $school->id)->first();
+        $stats = app(SchoolStatsResolver::class)->resolve($school, $statsSettings);
+
+        $viewData = array_merge($chromeData, [
+            'settings' => $settings,
+            'homepageContent' => $homepageContent,
+            'teachers' => $homepageService->teachersForSchool($school->id, 0),
+            'blogPosts' => $homepageService->blogPostsForSchool($school->id),
+            'boardNotices' => $frontendNotices->boardNoticesForSchool($school->id)->values()->all(),
+            'allBoardNotices' => $frontendNotices->allBoardNoticesForSchool($school->id)->values()->all(),
+            'stats' => $stats,
+        ]);
+
+        $view = $chromeData['templateKey'] === \App\Models\WebsiteTheme::TEMPLATE_TWO
+            ? 'frontend.themes.theme2.index'
+            : 'frontend.index';
+
+        return view($view, $viewData);
     }
 
     public function downloadNotice(Notice $notice): StreamedResponse
@@ -124,8 +137,15 @@ class FrontendWebController extends Controller
             ->published()
             ->firstOrFail();
 
+        $settings = SchoolFrontendSetting::where('school_id', $school->id)->first();
+        $dynamicData = [];
+        if ($page->isDynamic() && $page->data_source) {
+            $dynamicData = app(DynamicPageContentService::class)->resolve($page->data_source, $school, $settings);
+        }
+
         return view('frontend.page', $this->cmsViewData($school, [
             'page' => $page,
+            'dynamicData' => $dynamicData,
             'seoTitle' => $page->meta_title ?: $page->title,
             'seoDescription' => $page->meta_description ?: \Illuminate\Support\Str::limit(strip_tags($page->content ?? ''), 160),
             'seoKeywords' => $page->meta_keywords,
@@ -167,6 +187,7 @@ class FrontendWebController extends Controller
     {
         $menuService = app(FrontendMenuService::class);
         $frontendNotices = app(FrontendNoticeService::class);
+        $templateKey = $settings?->theme?->template_key ?? \App\Models\WebsiteTheme::TEMPLATE_ONE;
 
         return [
             'school' => $school,
@@ -176,6 +197,11 @@ class FrontendWebController extends Controller
             'footerMenu' => $menuService->forLocation($settings, $school, 'footer'),
             'marqueeNotices' => $frontendNotices->marqueeNoticesForSchool($school->id)->values()->all(),
             'storageBase' => '/storage',
+            'themeColors' => app(WebsiteThemeResolver::class)->resolveColors($settings),
+            'templateKey' => $templateKey,
+            'cmsLayout' => $templateKey === \App\Models\WebsiteTheme::TEMPLATE_TWO
+                ? 'frontend.themes.theme2.cms-layout'
+                : 'frontend.cms-layout',
         ];
     }
 
@@ -188,6 +214,7 @@ class FrontendWebController extends Controller
         if (! empty($payload['logo'])) {
             $payload['logo'] = storage_asset($payload['logo']);
         }
+        $payload['phone'] = $school->displayPhone();
 
         return $payload;
     }
@@ -203,7 +230,7 @@ class FrontendWebController extends Controller
 
         $payload = $settings->toArray();
 
-        foreach (['hero_image', 'about_image', 'principal_image'] as $field) {
+        foreach (['hero_image', 'about_image', 'principal_image', 'chairman_image'] as $field) {
             if (! empty($payload[$field])) {
                 $payload[$field] = storage_asset($payload[$field]);
             }

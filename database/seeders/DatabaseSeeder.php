@@ -24,6 +24,9 @@ class DatabaseSeeder extends Seeder
             DistrictSeeder::class,
             ThanaSeeder::class,
             UnionSeeder::class,
+            WebsiteThemeSeeder::class,
+            WebsiteMenuTemplateSeeder::class,
+            WebsitePageTemplateSeeder::class,
         ]);
     }
 }

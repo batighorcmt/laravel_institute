@@ -50,6 +50,16 @@
 
     {{-- Standard Vite asset loading (Tailwind via app.css, Vue via app.js) --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        :root {
+            --theme-primary: {{ $themeColors['primary'] ?? '#d97706' }};
+            --theme-secondary: {{ $themeColors['secondary'] ?? '#92400e' }};
+            --theme-accent: {{ $themeColors['accent'] ?? '#f59e0b' }};
+            --theme-bg: {{ $themeColors['bg'] ?? '#fefcf5' }};
+            --theme-text: {{ $themeColors['text'] ?? '#1f2937' }};
+            --theme-font: {{ $themeColors['font'] ?? "'Hind Siliguri', sans-serif" }};
+        }
+    </style>
 </head>
 <body class="bg-[#fefcf5] text-gray-900 font-sans antialiased">
     <div id="app">
@@ -65,7 +75,8 @@
             :marquee-notices="{{ json_encode($marqueeNotices ?? []) }}"
             :homepage="{{ json_encode($homepageContent ?? []) }}"
             :teachers="{{ json_encode($teachers ?? []) }}"
-            :blog-posts="{{ json_encode($blogPosts ?? []) }}">
+            :blog-posts="{{ json_encode($blogPosts ?? []) }}"
+            :stats="{{ json_encode($stats ?? []) }}">
         </frontend-home>
     </div>
 

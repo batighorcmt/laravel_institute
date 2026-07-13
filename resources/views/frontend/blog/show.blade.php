@@ -1,4 +1,4 @@
-@extends('frontend.cms-layout')
+@extends($cmsLayout ?? 'frontend.cms-layout')
 
 @section('cms_body')
     <article class="blog-post-article max-w-6xl mx-auto">

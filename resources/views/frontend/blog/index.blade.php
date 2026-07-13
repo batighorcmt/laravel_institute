@@ -1,4 +1,4 @@
-@extends('frontend.cms-layout')
+@extends($cmsLayout ?? 'frontend.cms-layout')
 
 @section('cms_body')
     <h1 class="text-3xl font-black text-indigo-950 mb-8">ব্লগ ও সংবাদ</h1>

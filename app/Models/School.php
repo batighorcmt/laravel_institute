@@ -164,4 +164,47 @@ class School extends Model
     {
         return $query->where('status', 'active');
     }
+
+    /**
+     * The institution head's (Principal's) personal mobile number, sourced from
+     * their Teacher profile since User::phone is not reliably populated.
+     */
+    public function principalPhone(): ?string
+    {
+        if (! Schema::hasTable('roles') || ! Schema::hasTable('user_school_roles') || ! Schema::hasTable('teachers')) {
+            return null;
+        }
+
+        $principalRoleId = Role::where('name', Role::PRINCIPAL)->value('id');
+        if (! $principalRoleId) {
+            return null;
+        }
+
+        $userId = UserSchoolRole::where('school_id', $this->id)
+            ->where('role_id', $principalRoleId)
+            ->value('user_id');
+
+        if (! $userId) {
+            return null;
+        }
+
+        return Teacher::where('school_id', $this->id)->where('user_id', $userId)->value('phone');
+    }
+
+    /**
+     * The school's contact number for display, with the Principal's personal
+     * mobile appended (comma-separated) when it differs from the school's own.
+     */
+    public function displayPhone(): ?string
+    {
+        $base = $this->phone ? trim($this->phone) : null;
+        $principal = $this->principalPhone();
+        $principal = $principal ? trim($principal) : null;
+
+        if ($principal && $principal !== $base) {
+            return $base ? "{$base}, {$principal}" : $principal;
+        }
+
+        return $base;
+    }
 }

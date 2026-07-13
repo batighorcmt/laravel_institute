@@ -11,12 +11,19 @@ class CmsPage extends Model
 
     public const STATUS_PUBLISHED = 'published';
 
+    public const MODE_DYNAMIC = 'dynamic';
+
+    public const MODE_STATIC = 'static';
+
     protected $fillable = [
         'school_id',
         'author_id',
         'title',
         'slug',
         'content',
+        'content_mode',
+        'data_source',
+        'page_template_id',
         'status',
         'published_at',
         'sort_order',
@@ -43,6 +50,16 @@ class CmsPage extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');
+    }
+
+    public function pageTemplate(): BelongsTo
+    {
+        return $this->belongsTo(WebsitePageTemplate::class, 'page_template_id');
+    }
+
+    public function isDynamic(): bool
+    {
+        return $this->content_mode === self::MODE_DYNAMIC;
     }
 
     public function scopeForSchool($query, int $schoolId)

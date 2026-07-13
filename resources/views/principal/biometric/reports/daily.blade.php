@@ -78,8 +78,8 @@
                         <tr>
                             <th>#</th>
                             <th>বায়োমেট্রিক আইডি</th>
-                            <th>শিক্ষার্থীর নাম</th>
-                            <th>শ্রেণি</th>
+                            <th>ব্যবহারকারীর নাম</th>
+                            <th>শ্রেণি / শাখা / রোল</th>
                             <th>পাঞ্চ সময়</th>
                             <th>ধরন</th>
                             <th>ডিভাইস</th>
@@ -94,11 +94,32 @@
                             <td>
                                 @if($log->student)
                                     {{ $log->student->full_name }}
+                                @elseif($log->teacher)
+                                    {{ $log->teacher->full_name }}
                                 @else
                                     <span class="text-danger small">অজানা আইডি</span>
                                 @endif
                             </td>
-                            <td>{{ $log->student?->class?->name ?? '—' }}</td>
+                            <td>
+                                @if($log->student)
+                                    @php
+                                        $className = $log->student->currentEnrollment && $log->student->currentEnrollment->class
+                                            ? $log->student->currentEnrollment->class->name
+                                            : ($log->student?->class?->name ?? '—');
+                                    @endphp
+                                    {{ $className }}
+                                    @if($log->student?->currentEnrollment && $log->student->currentEnrollment->section)
+                                        / {{ $log->student->currentEnrollment->section->name }}
+                                    @endif
+                                    @if($log->student?->roll)
+                                        / {{ $log->student->roll }}
+                                    @endif
+                                @elseif($log->teacher)
+                                    {{ $log->teacher->designation ?? '—' }}
+                                @else
+                                    —
+                                @endif
+                            </td>
                             <td>{{ \Carbon\Carbon::parse($log->punch_time)->format('h:i:s A') }}</td>
                             <td>
                                 <span class="badge {{ $log->punch_type === 'check_in' ? 'bg-success' : 'bg-secondary' }}">

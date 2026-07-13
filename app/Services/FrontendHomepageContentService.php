@@ -42,6 +42,7 @@ class FrontendHomepageContentService
                 'title' => 'ব্লগ ও সংবাদ',
                 'subtitle' => 'স্কুলের সর্বশেষ সংবাদ ও আপডেট',
             ],
+            'committee_members' => [],
         ];
     }
 

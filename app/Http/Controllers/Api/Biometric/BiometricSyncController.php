@@ -229,7 +229,7 @@ class BiometricSyncController extends Controller
             ->map(function ($s) {
                 if (empty($s->biometric_id) && !empty($s->student_id)) {
                     // Extract only numbers from student_id
-                    $numericId = preg_replace('/[^0-9]/', '', $s->student_id);
+                    $numericId = preg_replace('/[^0-9]/', '', (string)$s->student_id);
                     if (!empty($numericId)) {
                         $s->biometric_id = $numericId;
                         $s->save();

@@ -105,6 +105,9 @@ class BiometricController extends Controller
                                 ->where('biometric_id', $log->biometric_id)
                                 ->with('class')
                                 ->first();
+            $log->teacher = \App\Models\Teacher::where('school_id', $school->id)
+                                ->where('biometric_id', $log->biometric_id)
+                                ->first();
             return $log;
         });
 
@@ -130,6 +133,39 @@ class BiometricController extends Controller
     public function unassignedProfiles(School $school, Request $request)
     {
         $search = $request->input('search');
+
+        // Auto-match any unassigned profiles to students or teachers when possible.
+        $toMatch = BiometricProfile::where('school_id', $school->id)
+            ->where('user_type', 'unassigned')
+            ->whereNotNull('biometric_id')
+            ->where('biometric_id', '!=', '')
+            ->pluck('biometric_id', 'id');
+
+        if ($toMatch->isNotEmpty()) {
+            foreach ($toMatch as $id => $bId) {
+                // Skip if already linked (defensive)
+                $profile = BiometricProfile::find($id);
+                if (!$profile || $profile->user_type !== 'unassigned') continue;
+
+                // Try student first
+                $student = Student::where('school_id', $school->id)
+                            ->where('biometric_id', $bId)
+                            ->first();
+                if ($student) {
+                    $profile->update(['user_type' => 'student', 'student_id' => $student->id, 'status' => 'active']);
+                    continue;
+                }
+
+                // Try teacher
+                $teacher = Teacher::where('school_id', $school->id)
+                            ->where('biometric_id', $bId)
+                            ->first();
+                if ($teacher) {
+                    $profile->update(['user_type' => 'teacher', 'teacher_id' => $teacher->id, 'status' => 'active']);
+                    continue;
+                }
+            }
+        }
 
         $profiles = BiometricProfile::where('school_id', $school->id)
             ->where('user_type', 'unassigned')
