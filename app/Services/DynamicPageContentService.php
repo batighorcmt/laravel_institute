@@ -182,8 +182,17 @@ class DynamicPageContentService
             'address' => $settings?->contact_address ?: $school->address,
             'email' => $settings?->contact_email ?: $school->email,
             'phone' => $settings?->contact_phone ?: $school->displayPhone(),
+            'mobile' => $settings?->contact_mobile,
+            'website' => $settings?->contact_website,
             'facebook_url' => $settings?->facebook_url,
             'youtube_url' => $settings?->youtube_url,
+            'dshe_info_center' => $settings?->dshe_info_center,
+            'dshe_info_mobile' => $settings?->dshe_info_mobile,
+            'gro_name' => $settings?->gro_name,
+            'gro_designation' => $settings?->gro_designation,
+            'gro_mobile' => $settings?->gro_mobile,
+            'office_hours' => $settings?->office_hours,
+            'map_embed_url' => $settings?->map_embed_url,
         ];
     }
 }

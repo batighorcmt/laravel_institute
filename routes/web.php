@@ -31,6 +31,7 @@ Route::get('/notices/{notice}/download', [App\Http\Controllers\FrontendWebContro
 Route::get('/blog', [App\Http\Controllers\FrontendWebController::class, 'blogIndex'])->name('frontend.blog.index');
 Route::get('/blog/{slug}', [App\Http\Controllers\FrontendWebController::class, 'blogShow'])->name('frontend.blog.show');
 Route::get('/gallery/album/{album}', [App\Http\Controllers\FrontendWebController::class, 'galleryAlbum'])->name('frontend.gallery.album');
+Route::post('/contact-message', [App\Http\Controllers\FrontendWebController::class, 'submitContactMessage'])->middleware('throttle:5,1')->name('frontend.contact.submit');
 
 // Public admission flow
 Route::prefix('admission/{schoolCode}')->group(function () {
@@ -833,6 +834,12 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/front-page-elements', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'index'])->name('front-page-elements');
                 Route::get('/front-page-elements/data', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'getData'])->name('front-page-elements.data');
                 Route::post('/front-page-elements/data', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'updateData'])->name('front-page-elements.update');
+
+                Route::get('/contact-settings', [\App\Http\Controllers\Principal\ContactSettingsController::class, 'index'])->name('contact-settings');
+                Route::get('/contact-settings/data', [\App\Http\Controllers\Principal\ContactSettingsController::class, 'data'])->name('contact-settings.data');
+                Route::post('/contact-settings/data', [\App\Http\Controllers\Principal\ContactSettingsController::class, 'updateSettings'])->name('contact-settings.update');
+                Route::post('/contact-settings/messages/{message}/read', [\App\Http\Controllers\Principal\ContactSettingsController::class, 'markMessageRead'])->name('contact-settings.messages.read');
+                Route::delete('/contact-settings/messages/{message}', [\App\Http\Controllers\Principal\ContactSettingsController::class, 'destroyMessage'])->name('contact-settings.messages.delete');
 
                 Route::get('/gallery', [\App\Http\Controllers\Principal\GalleryManagerController::class, 'index'])->name('gallery');
                 Route::get('/gallery/data', [\App\Http\Controllers\Principal\GalleryManagerController::class, 'data'])->name('gallery.data');

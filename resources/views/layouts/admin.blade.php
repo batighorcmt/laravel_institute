@@ -641,6 +641,12 @@
                                         </a>
                                     </li>
                                     <li class="nav-item">
+                                        <a href="{{ route('principal.institute.frontend.contact-settings', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.contact-settings*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>যোগাযোগ সেটিংস</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
                                         <a href="{{ route('principal.institute.frontend.gallery', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.gallery*') ? 'active' : '' }}">
                                             <i class="far fa-circle nav-icon"></i>
                                             <p>Gallery</p>

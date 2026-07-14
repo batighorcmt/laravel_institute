@@ -249,12 +249,6 @@
                     <committee-members-manager :school-id="schoolId"></committee-members-manager>
                  </div>
 
-                 <div v-if="activeSection === 'contact'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="md:col-span-2"><label class="input-label">ঠিকানা</label><textarea v-model="form.contact_address" class="input-field"></textarea></div>
-                    <div><label class="input-label">ইমেইল</label><input type="email" v-model="form.contact_email" class="input-field"></div>
-                    <div><label class="input-label">ফোন</label><input type="text" v-model="form.contact_phone" class="input-field"></div>
-                 </div>
-
                  <div v-if="activeSection === 'seo'" class="space-y-6">
                     <div><label class="input-label">মেটা টাইটেল</label><input type="text" v-model="form.meta_title" class="input-field"></div>
                     <div><label class="input-label">মেটা ডেসক্রিপশন</label><textarea v-model="form.meta_description" class="input-field"></textarea></div>
@@ -288,7 +282,6 @@ export default {
         { id: 'principal', name: 'অধ্যক্ষের বাণী', icon: 'fas fa-user-tie' },
         { id: 'chairman', name: 'সভাপতির বাণী', icon: 'fas fa-user-shield' },
         { id: 'committee', name: 'ম্যানেজিং কমিটি', icon: 'fas fa-users-cog' },
-        { id: 'contact', name: 'যোগাযোগ তথ্য', icon: 'fas fa-address-book' },
         { id: 'social', name: 'সোশ্যাল লিংক', icon: 'fas fa-share-nodes' },
         { id: 'seo', name: 'SEO সেটিংস', icon: 'fas fa-search' }
       ],
@@ -297,7 +290,7 @@ export default {
         marquee_text: '', about_text: '',
         principal_name: '', principal_message: '', principal_title: '', principal_designation: '',
         chairman_name: '', chairman_message: '', chairman_title: '', chairman_designation: '',
-        committee_text: '', contact_address: '', contact_email: '', contact_phone: '',
+        committee_text: '',
         facebook_url: '', youtube_url: '', meta_title: '', meta_description: '', meta_keywords: ''
       },
       sliderItems: [],
@@ -481,7 +474,6 @@ export default {
           principal: ['principal_name', 'principal_message', 'principal_title', 'principal_designation', 'principal_image', 'principal_feature_image'],
           chairman: ['chairman_name', 'chairman_message', 'chairman_title', 'chairman_designation', 'chairman_image', 'chairman_feature_image'],
           committee: ['committee_text'],
-          contact: ['contact_address', 'contact_email', 'contact_phone'],
           social: ['facebook_url', 'youtube_url'],
           seo: ['meta_title', 'meta_description', 'meta_keywords']
         };

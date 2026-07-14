@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CmsPage;
 use App\Models\CmsPost;
+use App\Models\ContactMessage;
 use App\Models\Notice;
 use App\Models\School;
 use App\Models\SchoolFrontendSetting;
@@ -167,6 +168,25 @@ class FrontendWebController extends Controller
             'seoOgImage' => $page->og_image,
             'ogType' => 'article',
         ]));
+    }
+
+    public function submitContactMessage(Request $request)
+    {
+        $school = $this->resolveSchoolOrAbort();
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:50',
+            'subject' => 'nullable|string|max:255',
+            'message' => 'required|string|max:5000',
+        ]);
+
+        ContactMessage::create($data + ['school_id' => $school->id]);
+
+        return response()->json([
+            'message' => 'আপনার বার্তা সফলভাবে পাঠানো হয়েছে। ধন্যবাদ।',
+        ]);
     }
 
     public function galleryAlbum(Request $request, \App\Models\GalleryAlbum $album): View
