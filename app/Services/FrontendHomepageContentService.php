@@ -79,9 +79,10 @@ class FrontendHomepageContentService
     public function teachersForSchool(int $schoolId, int $limit = 0): array
     {
         $query = Teacher::query()
-            ->with('user:id,email')
+            ->with(['user:id,email', 'presentThana:id,name,bn_name', 'presentDistrict:id,name,bn_name'])
             ->where('school_id', $schoolId)
             ->where('status', 'active')
+            ->where('show_on_website', true)
             ->orderBy('serial_number')
             ->orderBy('id');
 
@@ -92,14 +93,24 @@ class FrontendHomepageContentService
         return $query
             ->get()
             ->map(function (Teacher $teacher) {
-                $name = trim(($teacher->first_name_bn ?: $teacher->first_name).' '.($teacher->last_name_bn ?: $teacher->last_name));
+                $nameBn = trim(($teacher->first_name_bn ?: '').' '.($teacher->last_name_bn ?: ''));
+                $nameEn = trim(($teacher->first_name ?: '').' '.($teacher->last_name ?: ''));
+
+                $address = collect([
+                    $teacher->present_village,
+                    $teacher->presentThana?->bn_name,
+                    $teacher->presentDistrict?->bn_name,
+                ])->filter()->implode(', ');
 
                 return [
                     'id' => $teacher->id,
-                    'name' => $name ?: 'শিক্ষক',
+                    'name' => $nameBn ?: ($nameEn ?: 'শিক্ষক'),
+                    'name_bn' => $nameBn ?: null,
+                    'name_en' => $nameEn ?: null,
                     'designation' => $teacher->designation ?: 'শিক্ষক',
                     'phone' => $teacher->phone ?: null,
                     'email' => $teacher->user?->email ?: null,
+                    'address' => $address ?: null,
                     'photo' => $teacher->photo ? storage_asset($teacher->photo) : null,
                 ];
             })

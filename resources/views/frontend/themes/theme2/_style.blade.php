@@ -121,6 +121,7 @@ section{padding:80px 0;}
 .brand-text .school-sub{color:var(--maroon-700); font-family:var(--numeral); font-weight:600; font-size:.95rem; margin-top:2px; letter-spacing:.01em;}
 .brand-text .school-addr{color:var(--ink-500); font-size:.85rem; margin-top:4px; font-family:var(--mono);}
 .brand-cta{display:flex; gap:10px; flex-wrap:wrap;}
+@media (max-width:960px){.brand-cta{display:none;}}
 .btn{
   display:inline-flex; align-items:center; gap:8px;
   padding:11px 20px; border-radius:3px; font-weight:600; font-size:.9rem;
@@ -327,11 +328,14 @@ nav.mainnav{max-width:1240px; margin:0 auto; display:flex; align-items:center; j
 @media (max-width:880px){.split{grid-template-columns:1fr; gap:32px;}}
 .split.reverse .img-col{order:2;}
 @media (max-width:880px){.split.reverse .img-col{order:0;}}
+.split.single{grid-template-columns:1fr; max-width:760px; margin:0 auto;}
 .img-col{position:relative;}
 .img-frame{
   position:relative; border-radius:8px; overflow:hidden; box-shadow:var(--shadow-lift);
 }
 .img-frame img{width:100%; aspect-ratio:4/5; object-fit:cover;}
+.img-frame.feature-photo{max-width:420px; max-height:460px; margin:0 auto;}
+.img-frame.feature-photo img{aspect-ratio:4/5; max-height:460px;}
 .img-badge{
   position:absolute; bottom:-18px; right:-18px; background:var(--gold-500); color:var(--pine-900);
   padding:16px 20px; border-radius:6px; box-shadow:var(--shadow-card); text-align:center;
@@ -481,10 +485,10 @@ blockquote.hm-quote{
 .staff-tab.active{background:var(--pine-800); border-color:var(--pine-800); color:var(--white);}
 .staff-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:24px;}
 @media (max-width:960px){.staff-grid{grid-template-columns:repeat(2,1fr);}}
-@media (max-width:560px){.staff-grid{grid-template-columns:1fr;}}
+@media (max-width:560px){.staff-grid{grid-template-columns:1fr; gap:0; background:var(--white); border-radius:8px; box-shadow:var(--shadow-card); overflow:hidden;}}
 .staff-card{
   background:var(--white); border-radius:8px; overflow:hidden; box-shadow:var(--shadow-card);
-  text-align:center; transition:transform .25s;
+  text-align:center; transition:transform .25s; cursor:pointer;
 }
 .staff-card:hover{transform:translateY(-6px);}
 .staff-photo{aspect-ratio:1/1; overflow:hidden; background:var(--paper-300); position:relative;}
@@ -494,6 +498,35 @@ blockquote.hm-quote{
 .staff-info span{font-size:.8rem; color:var(--maroon-700); font-weight:600; display:block; margin-top:2px;}
 .staff-info .subj{font-size:.76rem; color:var(--ink-500); margin-top:4px;}
 .hidden-card{display:none;}
+
+@media (max-width:560px){
+  .staff-card{
+    display:flex; flex-direction:row; align-items:center; text-align:left; gap:14px;
+    padding:12px 16px; box-shadow:none; border-radius:0; border-bottom:1px solid var(--paper-200);
+  }
+  .staff-card:last-child{border-bottom:none;}
+  .staff-card:hover{transform:none; background:var(--paper-200);}
+  .staff-photo{width:52px; height:52px; aspect-ratio:auto; border-radius:50%; flex-shrink:0;}
+  .staff-info{padding:0;}
+}
+
+/* ============================================================
+   TEACHER DETAIL MODAL
+   ============================================================ */
+.teacher-modal-card{
+  background:var(--white); border-radius:12px; max-width:420px; width:100%;
+  padding:32px 28px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+.teacher-modal-card img{
+  width:120px; height:120px; border-radius:50%; object-fit:cover; margin:0 auto 18px;
+  border:4px solid var(--gold-100);
+}
+.teacher-modal-card h3{font-family:var(--display); color:var(--pine-900); font-size:1.3rem;}
+.tm-name-en{color:var(--ink-500); font-size:.9rem; margin-top:2px;}
+.tm-designation{display:inline-block; margin-top:8px; background:var(--gold-100); color:var(--maroon-700); font-weight:700; font-size:.78rem; padding:4px 14px; border-radius:20px;}
+.tm-rows{margin-top:20px; text-align:left; border-top:1px solid var(--paper-200); padding-top:16px;}
+.tm-row{display:flex; align-items:center; gap:10px; padding:8px 0; font-size:.9rem; color:var(--ink-700);}
+.tm-row i{color:var(--maroon-700); width:16px; text-align:center;}
 
 /* ============================================================
    BLOG / NEWS

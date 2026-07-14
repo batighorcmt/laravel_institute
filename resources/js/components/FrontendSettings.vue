@@ -145,6 +145,15 @@
                        <img v-if="settings.principal_image" :src="'/storage/' + settings.principal_image" class="w-32 h-40 rounded-3xl object-cover shadow-sm">
                        <input type="file" @change="handleFileUpload('principal_image', $event)" class="file-input flex-grow">
                     </div>
+
+                    <div class="border-t border-slate-100 pt-6">
+                       <label class="input-label">ফিচার ফটো (প্রধান শিক্ষক ও সভাপতির বাণী — উভয় সেকশনে বড় করে দেখানো হবে)</label>
+                       <div class="p-4 border border-slate-100 rounded-[30px] flex items-center gap-6 bg-slate-50/50 mt-2">
+                          <img v-if="settings.feature_image" :src="'/storage/' + settings.feature_image" class="w-32 h-40 rounded-3xl object-cover shadow-sm">
+                          <input type="file" @change="handleFileUpload('feature_image', $event)" class="file-input flex-grow">
+                       </div>
+                       <p class="text-xs text-slate-400 mt-2">ভালো ফলাফলের জন্য ৮০০x১০০০ পিক্সেল আকারের ছবি আপলোড করুন — বড় সাইজের ছবি ওয়েবসাইট ধীরগতির করে দিতে পারে।</p>
+                    </div>
                  </div>
 
                  <div v-if="activeSection === 'chairman'" class="space-y-6">
@@ -154,6 +163,12 @@
                        <img v-if="settings.chairman_image" :src="'/storage/' + settings.chairman_image" class="w-32 h-40 rounded-3xl object-cover shadow-sm">
                        <input type="file" @change="handleFileUpload('chairman_image', $event)" class="file-input flex-grow">
                     </div>
+                 </div>
+
+                 <div v-if="activeSection === 'social'" class="space-y-6">
+                    <div><label class="input-label"><i class="fab fa-facebook mr-1"></i> ফেসবুক পেজ/প্রোফাইল লিংক</label><input type="url" v-model="form.facebook_url" class="input-field" placeholder="https://facebook.com/..."></div>
+                    <div><label class="input-label"><i class="fab fa-youtube mr-1"></i> ইউটিউব চ্যানেল লিংক</label><input type="url" v-model="form.youtube_url" class="input-field" placeholder="https://youtube.com/..."></div>
+                    <p class="text-xs text-slate-400">এই লিংকগুলো ওয়েবসাইটের টপ বার ও ফুটারে দেখানো হবে।</p>
                  </div>
 
                  <div v-if="activeSection === 'committee'" class="space-y-8">
@@ -202,12 +217,13 @@ export default {
         { id: 'chairman', name: 'সভাপতির বাণী', icon: 'fas fa-user-shield' },
         { id: 'committee', name: 'ম্যানেজিং কমিটি', icon: 'fas fa-users-cog' },
         { id: 'contact', name: 'যোগাযোগ তথ্য', icon: 'fas fa-address-book' },
+        { id: 'social', name: 'সোশ্যাল লিংক', icon: 'fas fa-share-nodes' },
         { id: 'seo', name: 'SEO সেটিংস', icon: 'fas fa-search' }
       ],
       settings: {},
-      form: { marquee_text: '', about_text: '', principal_name: '', principal_message: '', chairman_name: '', chairman_message: '', committee_text: '', contact_address: '', contact_email: '', contact_phone: '', meta_title: '', meta_description: '', meta_keywords: '' },
+      form: { marquee_text: '', about_text: '', principal_name: '', principal_message: '', chairman_name: '', chairman_message: '', committee_text: '', contact_address: '', contact_email: '', contact_phone: '', facebook_url: '', youtube_url: '', meta_title: '', meta_description: '', meta_keywords: '' },
       sliderItems: [],
-      files: { about_image: null, principal_image: null, chairman_image: null }
+      files: { about_image: null, principal_image: null, chairman_image: null, feature_image: null }
     };
   },
   async mounted() {
@@ -318,10 +334,11 @@ export default {
         let fd = new FormData();
         const map = {
           about: ['about_text', 'about_image'],
-          principal: ['principal_name', 'principal_message', 'principal_image'],
+          principal: ['principal_name', 'principal_message', 'principal_image', 'feature_image'],
           chairman: ['chairman_name', 'chairman_message', 'chairman_image'],
           committee: ['committee_text'],
           contact: ['contact_address', 'contact_email', 'contact_phone'],
+          social: ['facebook_url', 'youtube_url'],
           seo: ['meta_title', 'meta_description', 'meta_keywords']
         };
         map[id].forEach(f => {

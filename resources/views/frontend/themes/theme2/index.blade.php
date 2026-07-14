@@ -144,15 +144,18 @@
 
 @if($settings?->principal_message || $settings?->chairman_message)
 <!-- ============ HEAD TEACHER'S & CHAIRMAN'S MESSAGE ============ -->
+@php($featureImage = $settings->feature_image ? storage_asset($settings->feature_image) : null)
 <section id="hm-message" class="bg-alt">
   <div class="container">
     @if($settings?->principal_message)
-    <div class="split reverse reveal" style="margin-bottom:48px;">
+    <div class="split reverse reveal {{ !$featureImage ? 'single' : '' }}" style="margin-bottom:48px;">
+      @if($featureImage)
       <div class="img-col">
-        <div class="img-frame">
-          <img src="{{ $settings->principal_image ? storage_asset($settings->principal_image) : ($heroSlides->first()['image'] ?? '') }}" alt="{{ $settings->principal_name }}">
+        <div class="img-frame feature-photo">
+          <img src="{{ $featureImage }}" alt="{{ $school->name_bn ?: $school->name }}">
         </div>
       </div>
+      @endif
       <div class="text-col">
         <span class="eyebrow">নেতৃত্বের বার্তা</span>
         <h2 style="font-family:var(--display); font-size:clamp(1.6rem,3vw,2.3rem); color:var(--pine-900); margin:12px 0 18px;">প্রধান শিক্ষকের বাণী</h2>
@@ -171,12 +174,14 @@
     @endif
 
     @if($settings?->chairman_message)
-    <div class="split reveal">
+    <div class="split reveal {{ !$featureImage ? 'single' : '' }}">
+      @if($featureImage)
       <div class="img-col">
-        <div class="img-frame">
-          <img src="{{ $settings->chairman_image ? storage_asset($settings->chairman_image) : ($heroSlides->first()['image'] ?? '') }}" alt="{{ $settings->chairman_name }}">
+        <div class="img-frame feature-photo">
+          <img src="{{ $featureImage }}" alt="{{ $school->name_bn ?: $school->name }}">
         </div>
       </div>
+      @endif
       <div class="text-col">
         <span class="eyebrow">সভাপতির বার্তা</span>
         <h2 style="font-family:var(--display); font-size:clamp(1.6rem,3vw,2.3rem); color:var(--pine-900); margin:12px 0 18px;">সভাপতির বাণী</h2>
@@ -327,7 +332,15 @@
     </div>
     <div class="staff-grid reveal" id="staffGrid">
       @foreach($teachers as $teacher)
-        <div class="staff-card">
+        <div class="staff-card"
+          data-photo="{{ $teacher['photo'] ?? asset('images/avatar-placeholder.png') }}"
+          data-name-bn="{{ $teacher['name_bn'] ?? $teacher['name'] }}"
+          data-name-en="{{ $teacher['name_en'] ?? '' }}"
+          data-designation="{{ $teacher['designation'] }}"
+          data-phone="{{ $teacher['phone'] ?? '' }}"
+          data-email="{{ $teacher['email'] ?? '' }}"
+          data-address="{{ $teacher['address'] ?? '' }}"
+        >
           <div class="staff-photo">
             <img src="{{ $teacher['photo'] ?? asset('images/avatar-placeholder.png') }}" alt="{{ $teacher['name'] }}">
           </div>
@@ -340,6 +353,21 @@
     </div>
   </div>
 </section>
+
+<div class="lightbox" id="teacherModal">
+  <button class="lb-close" id="teacherModalClose" aria-label="বন্ধ করুন"><i class="fa-solid fa-xmark"></i></button>
+  <div class="teacher-modal-card" role="dialog" aria-modal="true">
+    <img id="tmPhoto" src="" alt="">
+    <h3 id="tmNameBn"></h3>
+    <p id="tmNameEn" class="tm-name-en"></p>
+    <span id="tmDesignation" class="tm-designation"></span>
+    <div class="tm-rows">
+      <div id="tmPhoneRow" class="tm-row"><i class="fa-solid fa-phone"></i><span id="tmPhone"></span></div>
+      <div id="tmEmailRow" class="tm-row"><i class="fa-solid fa-envelope"></i><span id="tmEmail"></span></div>
+      <div id="tmAddressRow" class="tm-row"><i class="fa-solid fa-location-dot"></i><span id="tmAddress"></span></div>
+    </div>
+  </div>
+</div>
 @endif
 
 @if(!empty($blogPosts))

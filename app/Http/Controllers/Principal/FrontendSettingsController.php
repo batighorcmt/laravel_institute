@@ -80,6 +80,13 @@ class FrontendSettingsController extends Controller
             $data['chairman_image'] = $request->file('chairman_image')->store('frontend/'.$school->id, 'public');
         }
 
+        if ($request->hasFile('feature_image')) {
+            if ($settings->feature_image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($settings->feature_image);
+            }
+            $data['feature_image'] = $request->file('feature_image')->store('frontend/'.$school->id, 'public');
+        }
+
         // Handle Multiple Hero Slider Items
         $currentItems = [];
         if ($request->filled('hero_images_json')) {

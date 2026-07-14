@@ -127,6 +127,59 @@
     a.addEventListener('click', () => { if(window.innerWidth <= 960 && !a.nextElementSibling){ closeNav(); }});
   });
 
+  /* ===== Teacher/staff detail modal ===== */
+  const teacherModal = document.getElementById('teacherModal');
+  if (teacherModal) {
+    const tmClose = document.getElementById('teacherModalClose');
+    const tmPhoto = document.getElementById('tmPhoto');
+    const tmNameBn = document.getElementById('tmNameBn');
+    const tmNameEn = document.getElementById('tmNameEn');
+    const tmDesignation = document.getElementById('tmDesignation');
+    const tmPhoneRow = document.getElementById('tmPhoneRow');
+    const tmPhone = document.getElementById('tmPhone');
+    const tmEmailRow = document.getElementById('tmEmailRow');
+    const tmEmail = document.getElementById('tmEmail');
+    const tmAddressRow = document.getElementById('tmAddressRow');
+    const tmAddress = document.getElementById('tmAddress');
+
+    function toggleRow(row, valueEl, value) {
+      if (value) {
+        valueEl.textContent = value;
+        row.style.display = 'flex';
+      } else {
+        row.style.display = 'none';
+      }
+    }
+
+    function openTeacherModal(card) {
+      const d = card.dataset;
+      tmPhoto.src = d.photo || '';
+      tmPhoto.alt = d.nameBn || '';
+      tmNameBn.textContent = d.nameBn || '';
+      tmNameEn.textContent = (d.nameEn && d.nameEn !== d.nameBn) ? d.nameEn : '';
+      tmNameEn.style.display = tmNameEn.textContent ? 'block' : 'none';
+      tmDesignation.textContent = d.designation || '';
+      toggleRow(tmPhoneRow, tmPhone, d.phone);
+      toggleRow(tmEmailRow, tmEmail, d.email);
+      toggleRow(tmAddressRow, tmAddress, d.address);
+      teacherModal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeTeacherModal() {
+      teacherModal.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.staff-card').forEach(card => {
+      card.addEventListener('click', () => openTeacherModal(card));
+    });
+    tmClose.addEventListener('click', closeTeacherModal);
+    teacherModal.addEventListener('click', (e) => { if (e.target === teacherModal) closeTeacherModal(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && teacherModal.classList.contains('show')) closeTeacherModal();
+    });
+  }
+
   /* ===== Ticker marquee: keep a consistent scroll speed no matter how much notice text there is ===== */
   const tickerTrack = document.getElementById('tickerTrack');
   if (tickerTrack) {

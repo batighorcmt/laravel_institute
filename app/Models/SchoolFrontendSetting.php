@@ -24,6 +24,7 @@ class SchoolFrontendSetting extends Model
         'chairman_name',
         'chairman_message',
         'chairman_image',
+        'feature_image',
         'facebook_url',
         'youtube_url',
         'marquee_text',
