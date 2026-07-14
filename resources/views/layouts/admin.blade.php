@@ -316,12 +316,26 @@
                                 </ul>
                             </li>
 
-                                                            {{-- Teachers (top-level) --}}
-                            <li class="nav-item">
-                                <a href="{{ route('principal.institute.teachers.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teachers.*') ? 'active' : '' }}">
-                                    <i class="nav-icon fas fa-chalkboard-teacher"></i>
-                                    <p>Teachers</p>
+                                                            {{-- Manage HR (Teachers + Staff) --}}
+                            <li class="nav-item has-treeview {{ (request()->routeIs('principal.institute.teachers.*') || request()->routeIs('principal.institute.staff.*')) ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ (request()->routeIs('principal.institute.teachers.*') || request()->routeIs('principal.institute.staff.*')) ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-users-cog"></i>
+                                    <p>Manage HR <i class="right fas fa-angle-left"></i></p>
                                 </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.teachers.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teachers.*') ? 'active' : '' }}">
+                                            <i class="nav-icon fas fa-chalkboard-teacher"></i>
+                                            <p>Teachers</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.staff.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.staff.*') ? 'active' : '' }}">
+                                            <i class="nav-icon fas fa-id-badge"></i>
+                                            <p>Staff</p>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
 
                              {{-- Students (top-level) --}}

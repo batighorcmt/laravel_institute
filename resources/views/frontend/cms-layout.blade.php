@@ -59,7 +59,7 @@
         .cms-content td,.cms-content th { border: 1px solid #e2e8f0; padding: .5rem; }
     </style>
 </head>
-<body class="bg-[#f8fafc] text-[#1e2a32] font-sans antialiased" style="font-family: 'Hind Siliguri', sans-serif;">
+<body class="frontend-body bg-[#f8fafc] text-[#1e2a32] font-sans antialiased" style="font-family: 'Hind Siliguri', sans-serif;">
     <div id="frontend-chrome-header"></div>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

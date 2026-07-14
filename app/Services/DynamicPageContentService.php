@@ -6,12 +6,13 @@ use App\Models\GalleryAlbum;
 use App\Models\GalleryImage;
 use App\Models\School;
 use App\Models\SchoolFrontendSetting;
+use App\Models\StaffMember;
 use Illuminate\Support\Carbon;
 
 class DynamicPageContentService
 {
     /** @var array<int, string> */
-    public const SUPPORTED_SOURCES = ['teachers', 'notices', 'gallery', 'about', 'contact', 'committee'];
+    public const SUPPORTED_SOURCES = ['teachers', 'staff', 'notices', 'gallery', 'about', 'contact', 'committee'];
 
     public function __construct(
         protected FrontendHomepageContentService $homepageContent,
@@ -25,6 +26,7 @@ class DynamicPageContentService
     {
         return match ($dataSource) {
             'teachers' => ['teachers' => $this->homepageContent->teachersForSchool($school->id)],
+            'staff' => ['staff' => $this->staffForSchool($school->id)],
             'notices' => ['notices' => $this->notices->allBoardNoticesForSchool($school->id)->values()->all()],
             'gallery' => ['gallery' => $this->resolveGallery($school, $settings)],
             'about' => $this->resolveAbout($settings),
@@ -32,6 +34,29 @@ class DynamicPageContentService
             'committee' => $this->resolveCommittee($settings),
             default => [],
         };
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    protected function staffForSchool(int $schoolId): array
+    {
+        return StaffMember::where('school_id', $schoolId)
+            ->where('status', 'active')
+            ->where('show_on_website', true)
+            ->with('designationRef:id,name_en,name_bn')
+            ->orderByRaw('COALESCE(serial_number, 999999)')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (StaffMember $staff) => [
+                'id' => $staff->id,
+                'name' => $staff->full_name_bn ?: ($staff->full_name ?: 'কর্মচারী'),
+                'designation' => $staff->designationRef ? ($staff->designationRef->name_bn ?: $staff->designationRef->name_en) : 'কর্মচারী',
+                'phone' => $staff->phone,
+                'photo' => $staff->photo_url,
+            ])
+            ->values()
+            ->all();
     }
 
     /**

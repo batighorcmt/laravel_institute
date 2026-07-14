@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Principal;
 
 use App\Http\Controllers\Controller;
+use App\Models\Designation;
 use App\Models\Division;
 use App\Models\Role;
 use App\Models\School;
@@ -101,8 +102,9 @@ class TeacherController extends Controller
     public function create(School $school)
     {
         $divisions = Division::where('status', 1)->orderBy('name')->get();
+        $designations = Designation::orderBy('name_bn')->get();
 
-        return view('principal.teachers.create', compact('school', 'divisions'));
+        return view('principal.teachers.create', compact('school', 'divisions', 'designations'));
     }
 
     public function edit(School $school, Teacher $teacher)
@@ -113,8 +115,26 @@ class TeacherController extends Controller
         }
 
         $divisions = Division::where('status', 1)->orderBy('name')->get();
+        $designations = Designation::orderBy('name_bn')->get();
 
-        return view('principal.teachers.edit', ['school' => $school, 'teacher' => $teacher, 'divisions' => $divisions]);
+        return view('principal.teachers.edit', ['school' => $school, 'teacher' => $teacher, 'divisions' => $divisions, 'designations' => $designations]);
+    }
+
+    /**
+     * @return array{designation_id: ?int, designation: ?string}
+     */
+    protected function resolveDesignation(?int $designationId): array
+    {
+        if (! $designationId) {
+            return ['designation_id' => null, 'designation' => null];
+        }
+
+        $designation = Designation::find($designationId);
+
+        return [
+            'designation_id' => $designation?->id,
+            'designation' => $designation ? ($designation->name_bn ?: $designation->name_en) : null,
+        ];
     }
 
     public function store(Request $request, School $school)
@@ -135,7 +155,7 @@ class TeacherController extends Controller
             'qualification' => 'nullable|string',
             'phone' => 'nullable|string|max:32',
             'email' => 'nullable|email|max:191',
-            'designation' => 'nullable|string|max:100',
+            'designation_id' => 'nullable|exists:designations,id',
             'initials' => 'nullable|string|max:50',
             'serial_number' => 'nullable|integer|min:1',
             'photo' => 'nullable|image|max:2048',
@@ -231,7 +251,7 @@ class TeacherController extends Controller
                 'mother_name_en' => $data['mother_name_en'] ?? null,
                 'phone' => $data['phone'] ?? null,
                 'plain_password' => $plainPassword,
-                'designation' => $data['designation'] ?? null,
+                ...$this->resolveDesignation($data['designation_id'] ?? null),
                 'initials' => $data['initials'] ?? null,
                 'serial_number' => $data['serial_number'] ?? $counter,
                 'date_of_birth' => $data['date_of_birth'] ?? null,
@@ -301,7 +321,7 @@ class TeacherController extends Controller
             'qualification' => 'nullable|string',
             'phone' => 'nullable|string|max:32',
             'email' => 'nullable|email|max:191',
-            'designation' => 'nullable|string|max:100',
+            'designation_id' => 'nullable|exists:designations,id',
             'initials' => 'nullable|string|max:50',
             'serial_number' => 'nullable|integer|min:1',
             'photo' => 'nullable|image|max:2048',
@@ -337,7 +357,7 @@ class TeacherController extends Controller
                 'academic_info' => $data['academic_info'] ?? null,
                 'qualification' => $data['qualification'] ?? null,
                 'phone' => $data['phone'] ?? null,
-                'designation' => $data['designation'] ?? null,
+                ...$this->resolveDesignation($data['designation_id'] ?? null),
                 'initials' => $data['initials'] ?? null,
                 'serial_number' => $data['serial_number'] ?? null,
                 'status' => $data['status'] ?? 'active',

@@ -62,7 +62,7 @@
                             <label>ডাটা সোর্স</label>
                             <select name="data_source" class="form-control">
                                 <option value="">— নির্বাচন করুন —</option>
-                                @foreach(['teachers' => 'শিক্ষকমণ্ডলী', 'notices' => 'নোটিশ বোর্ড', 'gallery' => 'গ্যালারি', 'about' => 'পরিচিতি', 'contact' => 'যোগাযোগ', 'committee' => 'কমিটি তালিকা'] as $value => $label)
+                                @foreach(['teachers' => 'শিক্ষকমণ্ডলী', 'staff' => 'কর্মকর্তা-কর্মচারী', 'notices' => 'নোটিশ বোর্ড', 'gallery' => 'গ্যালারি', 'about' => 'পরিচিতি', 'contact' => 'যোগাযোগ', 'committee' => 'কমিটি তালিকা'] as $value => $label)
                                     <option value="{{ $value }}" {{ old('data_source', $page->data_source) === $value ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>

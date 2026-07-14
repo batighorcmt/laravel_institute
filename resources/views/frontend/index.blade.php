@@ -61,7 +61,7 @@
         }
     </style>
 </head>
-<body class="bg-[#fefcf5] text-gray-900 font-sans antialiased">
+<body class="frontend-body bg-[#fefcf5] text-gray-900 font-sans antialiased">
     <div id="app">
         {{-- Pass school data to the Vue component as a prop --}}
         <frontend-home 

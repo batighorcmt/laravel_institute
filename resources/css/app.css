@@ -43,6 +43,16 @@ body {
     font-family: 'Kalpurush', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
+/* Public-facing school website pages must consistently use Hind Siliguri
+   everywhere (header/nav/footer/content), not the admin panel's Kalpurush.
+   Scoped + !important because it must win over Tailwind's `font-sans`
+   utility (mapped to Kalpurush above) wherever that utility appears in the
+   frontend Vue chrome components. */
+body.frontend-body,
+body.frontend-body .font-sans {
+    font-family: 'Hind Siliguri', sans-serif !important;
+}
+
 /* ===============================
    UI Font (Hind Siliguri)
    =============================== */

@@ -19,7 +19,7 @@
 
 @include('frontend.themes.theme2._style')
 </head>
-<body class="theme2-frontend">
+<body class="frontend-body theme2-frontend">
 
 @include('frontend.themes.theme2._header')
 

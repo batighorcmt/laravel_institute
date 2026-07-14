@@ -25,6 +25,7 @@ class Teacher extends Model
         'phone',
         'plain_password',
         'designation',
+        'designation_id',
         'initials',
         'serial_number',
         'date_of_birth',
@@ -169,5 +170,10 @@ class Teacher extends Model
     public function permanentThana(): BelongsTo
     {
         return $this->belongsTo(Thana::class, 'permanent_thana_id');
+    }
+
+    public function designationRef(): BelongsTo
+    {
+        return $this->belongsTo(Designation::class, 'designation_id');
     }
 }

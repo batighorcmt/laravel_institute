@@ -7,11 +7,21 @@ use Illuminate\Support\Facades\Schema;
 
 beforeEach(function () {
     Schema::dropIfExists('school_frontend_settings');
+    Schema::dropIfExists('gallery_images');
 
     Schema::create('school_frontend_settings', function (Blueprint $table) {
         $table->id();
         $table->unsignedBigInteger('school_id');
         $table->json('homepage_content')->nullable();
+        $table->timestamps();
+    });
+
+    Schema::create('gallery_images', function (Blueprint $table) {
+        $table->id();
+        $table->unsignedBigInteger('school_id');
+        $table->unsignedBigInteger('gallery_album_id')->nullable();
+        $table->string('path');
+        $table->string('caption')->nullable();
         $table->timestamps();
     });
 });
@@ -32,12 +42,14 @@ it('merges stored homepage content with defaults', function () {
 });
 
 it('maps gallery paths to public urls on resolve', function () {
-    $settings = new SchoolFrontendSetting([
+    \Illuminate\Support\Facades\DB::table('gallery_images')->insert([
         'school_id' => 1,
-        'homepage_content' => [
-            'gallery' => ['frontend/1/gallery/photo.jpg'],
-        ],
+        'path' => 'frontend/1/gallery/photo.jpg',
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
+
+    $settings = new SchoolFrontendSetting(['school_id' => 1]);
 
     $content = app(FrontendHomepageContentService::class)->resolve($settings);
 

@@ -254,6 +254,16 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::post('/{teacher}/reset-password', [PrincipalTeacherController::class, 'resetPassword'])->name('reset-password');
             }
             );
+            // Staff (non-teaching HR) routes
+            Route::prefix('staff')->name('staff.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Principal\StaffController::class, 'index'])->name('index');
+                Route::get('/data', [\App\Http\Controllers\Principal\StaffController::class, 'data'])->name('data');
+                Route::get('/print', [\App\Http\Controllers\Principal\StaffController::class, 'print'])->name('print');
+                Route::post('/', [\App\Http\Controllers\Principal\StaffController::class, 'store'])->name('store');
+                Route::post('/{staffMember}', [\App\Http\Controllers\Principal\StaffController::class, 'update'])->name('update');
+                Route::delete('/{staffMember}', [\App\Http\Controllers\Principal\StaffController::class, 'destroy'])->name('destroy');
+            }
+            );
             // Attendance routes
             Route::prefix('attendance')->name('attendance.')->middleware('module:attendance')->group(function () {
                 Route::get('/class', [App\Http\Controllers\Principal\AttendanceController::class, 'index'])->name('class.index');
