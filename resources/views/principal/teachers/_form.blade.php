@@ -93,7 +93,7 @@
     </div>
     <div class="form-group col-md-4">
       <label>পদবী (Designation)</label>
-      <select name="designation_id" id="designation_id" class="form-control designation-select2">
+      <select name="designation_id" id="designation_id" class="form-control select2">
         <option value="">-- নির্বাচন করুন --</option>
         @foreach($designations ?? [] as $d)
           <option value="{{ $d->id }}" {{ old('designation_id', $teacher->designation_id ?? '') == $d->id ? 'selected' : '' }}>
@@ -283,14 +283,6 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  if (window.jQuery && jQuery.fn.select2) {
-    jQuery('.designation-select2').select2({
-      width: '100%',
-      placeholder: '-- পদবী নির্বাচন করুন --',
-      allowClear: true,
-    });
-  }
-
   function fetchLocationData(url, params) {
     const queryString = new URLSearchParams(params).toString();
     return fetch(`${url}?${queryString}`, {

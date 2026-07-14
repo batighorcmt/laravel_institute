@@ -53,6 +53,7 @@ class DynamicPageContentService
                 'name' => $staff->full_name_bn ?: ($staff->full_name ?: 'কর্মচারী'),
                 'designation' => $staff->designationRef ? ($staff->designationRef->name_bn ?: $staff->designationRef->name_en) : 'কর্মচারী',
                 'phone' => $staff->phone,
+                'email' => $staff->email,
                 'photo' => $staff->photo_url,
             ])
             ->values()
