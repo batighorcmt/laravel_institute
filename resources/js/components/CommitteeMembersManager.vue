@@ -26,7 +26,12 @@
           <tr v-for="(m, idx) in members" :key="'cm-'+idx">
             <td><input v-model="m.serial" type="text" class="form-control form-control-sm" placeholder="১"></td>
             <td><input v-model="m.name" type="text" class="form-control form-control-sm" placeholder="নাম"></td>
-            <td><input v-model="m.designation" type="text" class="form-control form-control-sm" placeholder="সভাপতি / সদস্য"></td>
+            <td>
+              <select v-model="m.designation" class="form-control form-control-sm select2-designation">
+                <option value="">-- পদবী নির্বাচন করুন --</option>
+                <option v-for="d in designations" :key="d.id" :value="d.id">{{ d.text }}</option>
+              </select>
+            </td>
             <td><input v-model="m.mobile" type="text" class="form-control form-control-sm" placeholder="01xxxxxxxxx"></td>
             <td><input v-model="m.address" type="text" class="form-control form-control-sm" placeholder="ঠিকানা"></td>
             <td class="text-center">
@@ -57,16 +62,47 @@ export default {
       loaded: false,
       saving: false,
       members: [],
+      designations: [],
     };
   },
+  watch: {
+    'members.length'() {
+      this.$nextTick(this.initSelect2);
+    },
+  },
   mounted() {
+    this.fetchDesignations();
     this.fetchData();
   },
   methods: {
+    async fetchDesignations() {
+      try {
+        const res = await axios.get(`/principal/institute/${this.schoolId}/frontend/meta/designations`);
+        this.designations = res.data || [];
+      } catch (e) {
+        // Designation list is a UI nicety; failing silently keeps the form usable as a plain text field.
+      }
+    },
+    initSelect2() {
+      if (!window.$ || !window.$.fn || !window.$.fn.select2) return;
+      const $els = window.$(this.$el).find('.select2-designation');
+      $els.each(function () {
+        const $el = window.$(this);
+        if ($el.data('select2')) $el.select2('destroy');
+        $el.select2({
+          width: '100%',
+          theme: 'bootstrap4',
+          placeholder: '-- পদবী নির্বাচন করুন --',
+          allowClear: true,
+          dropdownParent: $el.closest('.table-responsive').length ? $el.closest('.table-responsive') : window.$('body'),
+        });
+      });
+    },
     async fetchData() {
       try {
         const res = await axios.get(`/principal/institute/${this.schoolId}/frontend/front-page-elements/data`);
         this.members = (res.data.homepage_content?.committee_members || []).map((m) => ({ ...m }));
+        this.$nextTick(this.initSelect2);
       } catch (e) {
         if (window.toastr) window.toastr.error('কমিটি তালিকা লোড করতে সমস্যা হয়েছে');
       } finally {
@@ -104,3 +140,7 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+:deep(.select2-results__options) { max-height: 200px; overflow-y: auto; }
+</style>

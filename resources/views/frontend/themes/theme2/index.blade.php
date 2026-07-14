@@ -30,6 +30,10 @@
             'image' => storage_asset($s['image']),
             'title' => $s['title'] ?? null,
             'subtitle' => $s['subtitle'] ?? null,
+            'button1_text' => $s['button1_text'] ?? null,
+            'button1_url' => $s['button1_url'] ?? null,
+            'button2_text' => $s['button2_text'] ?? null,
+            'button2_url' => $s['button2_url'] ?? null,
         ])
         ->values();
 
@@ -38,6 +42,10 @@
             'image' => $settings?->hero_image ? storage_asset($settings->hero_image) : null,
             'title' => $settings?->hero_title ?: (($school->name_bn ?: $school->name).'-এ স্বাগতম'),
             'subtitle' => $settings?->hero_subtitle ?: 'মানসম্মত শিক্ষা ও চরিত্র গঠনে আমরা প্রতিশ্রুতিবদ্ধ।',
+            'button1_text' => $school->code ? 'ভর্তি চলছে' : null,
+            'button1_url' => $school->code ? url('/admission/'.$school->code) : null,
+            'button2_text' => 'প্রতিষ্ঠান সম্পর্কে জানুন',
+            'button2_url' => '#about',
         ]]);
     }
 
@@ -56,12 +64,16 @@
         @if($school->name_bn || $school->name)<span class="eyebrow">{{ $school->name_bn ?: $school->name }}</span>@endif
         @if($slide['title'])<h1>{{ $slide['title'] }}</h1>@endif
         @if($slide['subtitle'])<p>{{ $slide['subtitle'] }}</p>@endif
+        @if(!empty($slide['button1_text']) || !empty($slide['button2_text']))
         <div class="slide-actions">
-          @if($school->code)
-            <a href="{{ url('/admission/'.$school->code) }}" class="btn btn-gold"><i class="fa-solid fa-pen-to-square"></i> ভর্তি চলছে</a>
+          @if(!empty($slide['button1_text']))
+            <a href="{{ $slide['button1_url'] ?: '#' }}" class="btn btn-gold"><i class="fa-solid fa-pen-to-square"></i> {{ $slide['button1_text'] }}</a>
           @endif
-          <a href="#about" class="btn btn-outline" style="color:#fff; border-color:rgba(255,255,255,.6);">প্রতিষ্ঠান সম্পর্কে জানুন</a>
+          @if(!empty($slide['button2_text']))
+            <a href="{{ $slide['button2_url'] ?: '#' }}" class="btn btn-outline" style="color:#fff; border-color:rgba(255,255,255,.6);">{{ $slide['button2_text'] }}</a>
+          @endif
         </div>
+        @endif
       </div>
     </div>
   @endforeach
@@ -128,7 +140,7 @@
     <div class="split reveal">
       <div class="img-col">
         <div class="img-frame">
-          <img src="{{ $settings->about_image ? storage_asset($settings->about_image) : ($heroSlides->first()['image'] ?? '') }}" alt="{{ $school->name_bn ?: $school->name }}">
+          <img src="{{ $aboutImage }}" alt="{{ $school->name_bn ?: $school->name }}">
         </div>
         @if($experienceYears)<div class="img-badge"><div class="num">{{ $experienceYears }}</div><div class="lbl">বছরের ঐতিহ্য</div></div>@endif
       </div>
@@ -144,21 +156,24 @@
 
 @if($settings?->principal_message || $settings?->chairman_message)
 <!-- ============ HEAD TEACHER'S & CHAIRMAN'S MESSAGE ============ -->
-@php($featureImage = $settings->feature_image ? storage_asset($settings->feature_image) : null)
+@php($principalFeatureImage = $settings->principal_feature_image ? storage_asset($settings->principal_feature_image) : null)
+@php($chairmanFeatureImage = $settings->chairman_feature_image ? storage_asset($settings->chairman_feature_image) : null)
+@php($principalDesignation = $settings->principal_designation ?: 'প্রধান শিক্ষক')
+@php($chairmanDesignation = $settings->chairman_designation ?: 'সভাপতি')
 <section id="hm-message" class="bg-alt">
   <div class="container">
     @if($settings?->principal_message)
-    <div class="split reverse reveal {{ !$featureImage ? 'single' : '' }}" style="margin-bottom:48px;">
-      @if($featureImage)
+    <div class="split reverse reveal {{ !$principalFeatureImage ? 'single' : '' }}" style="margin-bottom:48px;">
+      @if($principalFeatureImage)
       <div class="img-col">
         <div class="img-frame feature-photo">
-          <img src="{{ $featureImage }}" alt="{{ $school->name_bn ?: $school->name }}">
+          <img src="{{ $principalFeatureImage }}" alt="{{ $school->name_bn ?: $school->name }}">
         </div>
       </div>
       @endif
       <div class="text-col">
         <span class="eyebrow">নেতৃত্বের বার্তা</span>
-        <h2 style="font-family:var(--display); font-size:clamp(1.6rem,3vw,2.3rem); color:var(--pine-900); margin:12px 0 18px;">প্রধান শিক্ষকের বাণী</h2>
+        <h2 style="font-family:var(--display); font-size:clamp(1.6rem,3vw,2.3rem); color:var(--pine-900); margin:12px 0 18px;">{{ $settings->principal_title ?: 'প্রধান শিক্ষকের বাণী' }}</h2>
         <blockquote class="hm-quote">{{ \Illuminate\Support\Str::limit(strip_tags($settings->principal_message), 200) }}</blockquote>
         <div class="signature-line">
           @if($settings->principal_image)
@@ -166,7 +181,7 @@
           @endif
           <div>
             <strong>{{ $settings->principal_name }}</strong>
-            <span>প্রধান শিক্ষক, {{ $school->name_bn ?: $school->name }}</span>
+            <span>{{ $principalDesignation }}, {{ $school->name_bn ?: $school->name }}</span>
           </div>
         </div>
       </div>
@@ -174,17 +189,17 @@
     @endif
 
     @if($settings?->chairman_message)
-    <div class="split reveal {{ !$featureImage ? 'single' : '' }}">
-      @if($featureImage)
+    <div class="split reveal {{ !$chairmanFeatureImage ? 'single' : '' }}">
+      @if($chairmanFeatureImage)
       <div class="img-col">
         <div class="img-frame feature-photo">
-          <img src="{{ $featureImage }}" alt="{{ $school->name_bn ?: $school->name }}">
+          <img src="{{ $chairmanFeatureImage }}" alt="{{ $school->name_bn ?: $school->name }}">
         </div>
       </div>
       @endif
       <div class="text-col">
         <span class="eyebrow">সভাপতির বার্তা</span>
-        <h2 style="font-family:var(--display); font-size:clamp(1.6rem,3vw,2.3rem); color:var(--pine-900); margin:12px 0 18px;">সভাপতির বাণী</h2>
+        <h2 style="font-family:var(--display); font-size:clamp(1.6rem,3vw,2.3rem); color:var(--pine-900); margin:12px 0 18px;">{{ $settings->chairman_title ?: 'সভাপতির বাণী' }}</h2>
         <blockquote class="hm-quote">{{ \Illuminate\Support\Str::limit(strip_tags($settings->chairman_message), 200) }}</blockquote>
         <div class="signature-line">
           @if($settings->chairman_image)
@@ -192,7 +207,7 @@
           @endif
           <div>
             <strong>{{ $settings->chairman_name }}</strong>
-            <span>সভাপতি, {{ $school->name_bn ?: $school->name }}</span>
+            <span>{{ $chairmanDesignation }}, {{ $school->name_bn ?: $school->name }}</span>
           </div>
         </div>
       </div>

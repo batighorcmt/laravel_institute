@@ -812,6 +812,12 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/settings/data', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'getData'])->name('settings.data');
                 Route::post('/settings/data', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'updateData'])->name('settings.update');
                 Route::post('/settings/upload', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'uploadImage'])->name('settings.upload');
+                Route::post('/settings/slider', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'addSlide'])->name('settings.slider.add');
+                Route::post('/settings/slider/{slideId}', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'updateSlide'])->name('settings.slider.update');
+                Route::delete('/settings/slider/{slideId}', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'deleteSlide'])->name('settings.slider.delete');
+                Route::post('/settings/about-images', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'addAboutImages'])->name('settings.about-images.add');
+                Route::delete('/settings/about-images', [\App\Http\Controllers\Principal\FrontendSettingsController::class, 'deleteAboutImage'])->name('settings.about-images.delete');
+                Route::get('/meta/designations', [\App\Http\Controllers\Principal\MetaController::class, 'designations'])->name('meta.designations');
 
                 Route::get('/front-page-elements', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'index'])->name('front-page-elements');
                 Route::get('/front-page-elements/data', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'getData'])->name('front-page-elements.data');

@@ -145,6 +145,25 @@ class FrontendHomepageContentService
     }
 
     /**
+     * Pick one image at random from the school's "about" gallery so the
+     * history section shows a different photo on each page load.
+     */
+    public function randomAboutImage(?SchoolFrontendSetting $settings, ?string $fallback = null): ?string
+    {
+        $pool = collect($settings?->about_images ?? [])->filter()->values();
+
+        if ($settings?->about_image) {
+            $pool->push($settings->about_image);
+        }
+
+        if ($pool->isEmpty()) {
+            return $fallback;
+        }
+
+        return storage_asset($pool->random());
+    }
+
+    /**
      * Placeholder gallery when none configured.
      *
      * @return list<string>
@@ -155,6 +174,14 @@ class FrontendHomepageContentService
 
         if ($settings?->about_image) {
             $images[] = storage_asset($settings->about_image);
+        }
+
+        if (is_array($settings?->about_images)) {
+            foreach ($settings->about_images as $path) {
+                if ($path) {
+                    $images[] = storage_asset($path);
+                }
+            }
         }
 
         if ($settings?->hero_image) {

@@ -9,6 +9,7 @@ use App\Models\Section;
 use App\Models\Group;
 use App\Models\StudentEnrollment;
 use App\Models\AcademicYear;
+use App\Models\Designation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -210,6 +211,15 @@ class MetaController extends Controller
         $years = AcademicYear::where('school_id',$school->id)->orderBy('name','desc')->get(['id','name','name_bn']);
         return response()->json($years->map(function($y){
             return ['id'=>$y->id,'text'=>$y->name_bn ?: $y->name];
+        }));
+    }
+
+    public function designations(School $school)
+    {
+        $this->authorizePrincipal($school);
+        $designations = Designation::orderBy('name_bn')->get(['id','name_bn','name_en']);
+        return response()->json($designations->map(function($d){
+            return ['id'=>$d->name_bn ?: $d->name_en,'text'=>$d->name_bn ?: $d->name_en];
         }));
     }
 }

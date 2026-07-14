@@ -51,6 +51,19 @@ class FrontendWebController extends Controller
         $statsSettings = SchoolStatsSetting::where('school_id', $school->id)->first();
         $stats = app(SchoolStatsResolver::class)->resolve($school, $statsSettings);
 
+        $heroFallbackImage = null;
+        if ($settings?->hero_image) {
+            $heroFallbackImage = storage_asset($settings->hero_image);
+        } elseif (is_array($settings?->hero_images)) {
+            foreach ($settings->hero_images as $item) {
+                $path = is_array($item) ? ($item['image'] ?? null) : $item;
+                if ($path) {
+                    $heroFallbackImage = storage_asset($path);
+                    break;
+                }
+            }
+        }
+
         $viewData = array_merge($chromeData, [
             'settings' => $settings,
             'homepageContent' => $homepageContent,
@@ -59,6 +72,7 @@ class FrontendWebController extends Controller
             'boardNotices' => $frontendNotices->boardNoticesForSchool($school->id)->values()->all(),
             'allBoardNotices' => $frontendNotices->allBoardNoticesForSchool($school->id)->values()->all(),
             'stats' => $stats,
+            'aboutImage' => $homepageService->randomAboutImage($settings, $heroFallbackImage),
         ]);
 
         $view = $chromeData['templateKey'] === \App\Models\WebsiteTheme::TEMPLATE_TWO
