@@ -24,7 +24,7 @@
 
   --display: "Tiro Bangla", serif;
   --body: {!! $themeColors['font'] ?? "'Hind Siliguri', sans-serif" !!};
-  --mono: "Inter", sans-serif;
+  --mono: "Inter", "Hind Siliguri", sans-serif;
   --numeral: "Noto Sans Bengali", "Hind Siliguri", sans-serif;
 
   --radius: 6px;

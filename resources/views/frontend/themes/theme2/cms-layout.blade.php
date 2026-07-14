@@ -28,7 +28,7 @@
     @vite(['resources/css/app.css'])
     @include('frontend.themes.theme2._style')
 </head>
-<body>
+<body class="theme2-frontend">
 
 @include('frontend.themes.theme2._header')
 

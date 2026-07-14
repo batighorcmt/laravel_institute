@@ -14,9 +14,10 @@
       <table class="table table-bordered table-sm align-middle">
         <thead class="thead-light">
           <tr>
-            <th width="80">ক্রমিক</th>
+            <th width="70">ছবি</th>
+            <th width="70">ক্রমিক</th>
             <th>নাম</th>
-            <th>পদবী</th>
+            <th width="200">পদবী</th>
             <th width="150">মোবাইল নং</th>
             <th>ঠিকানা</th>
             <th width="50"></th>
@@ -24,6 +25,13 @@
         </thead>
         <tbody>
           <tr v-for="(m, idx) in members" :key="'cm-'+idx">
+            <td class="text-center">
+              <label class="member-photo-upload">
+                <img :src="memberPhotoPreview(m)" class="member-photo-thumb" alt="">
+                <input type="file" accept="image/*" class="d-none" @change="onPhotoSelected(m, $event)">
+                <i class="fas fa-camera member-photo-icon"></i>
+              </label>
+            </td>
             <td><input v-model="m.serial" type="text" class="form-control form-control-sm" placeholder="১"></td>
             <td><input v-model="m.name" type="text" class="form-control form-control-sm" placeholder="নাম"></td>
             <td>
@@ -70,9 +78,12 @@ export default {
       this.$nextTick(this.initSelect2);
     },
   },
-  mounted() {
-    this.fetchDesignations();
-    this.fetchData();
+  async mounted() {
+    // Designations must be loaded before select2 initializes, otherwise it
+    // caches an empty option list and never picks up options added later.
+    await Promise.all([this.fetchDesignations(), this.fetchData()]);
+    this.loaded = true;
+    this.$nextTick(this.initSelect2);
   },
   methods: {
     async fetchDesignations() {
@@ -101,13 +112,21 @@ export default {
     async fetchData() {
       try {
         const res = await axios.get(`/principal/institute/${this.schoolId}/frontend/front-page-elements/data`);
-        this.members = (res.data.homepage_content?.committee_members || []).map((m) => ({ ...m }));
-        this.$nextTick(this.initSelect2);
+        this.members = (res.data.homepage_content?.committee_members || []).map((m) => ({ ...m, photoFile: null, photoPreview: null }));
       } catch (e) {
         if (window.toastr) window.toastr.error('কমিটি তালিকা লোড করতে সমস্যা হয়েছে');
-      } finally {
-        this.loaded = true;
       }
+    },
+    memberPhotoPreview(m) {
+      if (m.photoPreview) return m.photoPreview;
+      if (m.photo) return `/storage/${String(m.photo).replace(/^\/+/, '').replace(/^storage\//, '')}`;
+      return '/images/default-avatar.svg';
+    },
+    onPhotoSelected(m, e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      m.photoFile = file;
+      m.photoPreview = URL.createObjectURL(file);
     },
     addMember() {
       this.members.push({
@@ -116,6 +135,9 @@ export default {
         designation: '',
         mobile: '',
         address: '',
+        photo: '',
+        photoFile: null,
+        photoPreview: null,
       });
     },
     removeMember(idx) {
@@ -126,11 +148,20 @@ export default {
       try {
         const fd = new FormData();
         this.members.forEach((m, i) => {
-          Object.keys(m).forEach((key) => fd.append(`committee_members[${i}][${key}]`, m[key] ?? ''));
+          fd.append(`committee_members[${i}][serial]`, m.serial ?? '');
+          fd.append(`committee_members[${i}][name]`, m.name ?? '');
+          fd.append(`committee_members[${i}][designation]`, m.designation ?? '');
+          fd.append(`committee_members[${i}][mobile]`, m.mobile ?? '');
+          fd.append(`committee_members[${i}][address]`, m.address ?? '');
+          fd.append(`committee_members[${i}][photo]`, m.photo ?? '');
+          if (m.photoFile) {
+            fd.append(`committee_member_photos[${i}]`, m.photoFile);
+          }
         });
         await axios.post(`/principal/institute/${this.schoolId}/frontend/front-page-elements/data`, fd);
         if (window.toastr) window.toastr.success('কমিটি তালিকা সংরক্ষণ হয়েছে');
         await this.fetchData();
+        this.$nextTick(this.initSelect2);
       } catch (e) {
         if (window.toastr) window.toastr.error(e.response?.data?.message || 'সংরক্ষণ করতে সমস্যা হয়েছে');
       } finally {
@@ -143,4 +174,10 @@ export default {
 
 <style scoped>
 :deep(.select2-results__options) { max-height: 200px; overflow-y: auto; }
+.member-photo-upload { position: relative; display: block; width: 44px; height: 44px; margin: 0 auto; cursor: pointer; }
+.member-photo-thumb { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid #dee2e6; display: block; }
+.member-photo-icon {
+  position: absolute; bottom: -2px; right: -2px; background: #4f46e5; color: #fff; border-radius: 50%;
+  width: 16px; height: 16px; font-size: 8px; display: flex; align-items: center; justify-content: center;
+}
 </style>

@@ -8,6 +8,7 @@ use App\Models\School;
 use App\Models\SchoolFrontendSetting;
 use App\Services\FrontendHomepageContentService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class FrontPageElementsController extends Controller
@@ -69,6 +70,22 @@ class FrontPageElementsController extends Controller
             'facilities' => $validated['facilities'] ?? $current['facilities'],
             'committee_members' => $validated['committee_members'] ?? $current['committee_members'] ?? [],
         ];
+
+        if ($request->hasFile('committee_member_photos')) {
+            $existingMembers = $current['committee_members'] ?? [];
+            foreach ($request->file('committee_member_photos') as $idx => $file) {
+                if (! $file) {
+                    continue;
+                }
+
+                $oldPhoto = $existingMembers[$idx]['photo'] ?? null;
+                if ($oldPhoto) {
+                    Storage::disk('public')->delete($oldPhoto);
+                }
+
+                $content['committee_members'][$idx]['photo'] = $file->store('frontend/'.$school->id.'/committee', 'public');
+            }
+        }
 
         $settings->update(['homepage_content' => $content]);
 

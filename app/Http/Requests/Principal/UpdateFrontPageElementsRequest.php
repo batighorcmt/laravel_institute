@@ -40,6 +40,8 @@ class UpdateFrontPageElementsRequest extends FormRequest
             'committee_members.*.designation' => ['nullable', 'string', 'max:255'],
             'committee_members.*.mobile' => ['nullable', 'string', 'max:50'],
             'committee_members.*.address' => ['nullable', 'string', 'max:500'],
+            'committee_members.*.photo' => ['nullable', 'string', 'max:500'],
+            'committee_member_photos.*' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
         ];
     }
 }

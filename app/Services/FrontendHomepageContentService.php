@@ -75,6 +75,17 @@ class FrontendHomepageContentService
                 ->all();
         }
 
+        $content['committee_members'] = collect($content['committee_members'] ?? [])
+            ->map(function ($member) {
+                if (is_array($member) && ! empty($member['photo'])) {
+                    $member['photo'] = storage_asset($member['photo']);
+                }
+
+                return $member;
+            })
+            ->values()
+            ->all();
+
         return $content;
     }
 

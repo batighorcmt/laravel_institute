@@ -120,38 +120,40 @@ html {
     font-family: var(--font-content);
 }
 
-/* UI elements: use Hind Siliguri with higher specificity */
-html body h1,
-html body h2,
-html body h3,
-html body h4,
-html body h5,
-html body h6,
-html body .main-header,
-html body .nav-sidebar .nav-link,
-html body .sidebar,
-html body .btn,
-html body .card,
-html body .card .card-title,
-html body .form-label,
-html body .form-control,
-html body .select2-container,
-html body .breadcrumb,
-html body .page-title,
-html body .brand-text,
-html body .notice-manager,
-html body .notice-manager .card-title,
+/* UI elements: use Hind Siliguri with higher specificity.
+   :not(.theme2-frontend) keeps these admin/AdminLTE-only overrides from bleeding
+   into the theme2 public frontend, which sets its own fonts via CSS variables. */
+html body:not(.theme2-frontend) h1,
+html body:not(.theme2-frontend) h2,
+html body:not(.theme2-frontend) h3,
+html body:not(.theme2-frontend) h4,
+html body:not(.theme2-frontend) h5,
+html body:not(.theme2-frontend) h6,
+html body:not(.theme2-frontend) .main-header,
+html body:not(.theme2-frontend) .nav-sidebar .nav-link,
+html body:not(.theme2-frontend) .sidebar,
+html body:not(.theme2-frontend) .btn,
+html body:not(.theme2-frontend) .card,
+html body:not(.theme2-frontend) .card .card-title,
+html body:not(.theme2-frontend) .form-label,
+html body:not(.theme2-frontend) .form-control,
+html body:not(.theme2-frontend) .select2-container,
+html body:not(.theme2-frontend) .breadcrumb,
+html body:not(.theme2-frontend) .page-title,
+html body:not(.theme2-frontend) .brand-text,
+html body:not(.theme2-frontend) .notice-manager,
+html body:not(.theme2-frontend) .notice-manager .card-title,
 .notice-list .card-title,
 .notice-manager h5.card-title {
     font-family: var(--font-ui) !important;
 }
 
-/* Ensure small text uses content font */
-html body p,
-html body li,
-html body span,
-html body .card-body,
-html body .notice-manager .card-text {
+/* Ensure small text uses content font (same theme2 exclusion as above) */
+html body:not(.theme2-frontend) p,
+html body:not(.theme2-frontend) li,
+html body:not(.theme2-frontend) span,
+html body:not(.theme2-frontend) .card-body,
+html body:not(.theme2-frontend) .notice-manager .card-text {
     font-family: var(--font-content) !important;
 }
 

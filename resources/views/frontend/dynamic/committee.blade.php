@@ -7,29 +7,28 @@
 
     @php($members = $committee['members'] ?? [])
     @if(count($members))
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead>
-                    <tr class="bg-slate-50 text-slate-600 text-sm">
-                        <th class="p-3 border border-slate-100">ক্রমিক</th>
-                        <th class="p-3 border border-slate-100">নাম</th>
-                        <th class="p-3 border border-slate-100">পদবী</th>
-                        <th class="p-3 border border-slate-100">মোবাইল নং</th>
-                        <th class="p-3 border border-slate-100">ঠিকানা</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($members as $member)
-                        <tr class="text-sm">
-                            <td class="p-3 border border-slate-100">{{ $member['serial'] ?? '' }}</td>
-                            <td class="p-3 border border-slate-100 font-semibold">{{ $member['name'] ?? '' }}</td>
-                            <td class="p-3 border border-slate-100">{{ $member['designation'] ?? '' }}</td>
-                            <td class="p-3 border border-slate-100">{{ $member['mobile'] ?? '' }}</td>
-                            <td class="p-3 border border-slate-100">{{ $member['address'] ?? '' }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($members as $member)
+                <div class="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
+                    <img
+                        src="{{ $member['photo'] ?? asset('images/default-avatar.svg') }}"
+                        alt="{{ $member['name'] ?? '' }}"
+                        class="w-16 h-16 rounded-full object-cover border border-slate-200 shrink-0"
+                    >
+                    <div class="min-w-0">
+                        <div class="font-bold text-slate-800 truncate">{{ $member['name'] ?? '' }}</div>
+                        @if(!empty($member['designation']))
+                            <div class="text-indigo-600 text-sm font-semibold">{{ $member['designation'] }}</div>
+                        @endif
+                        @if(!empty($member['mobile']))
+                            <div class="text-slate-500 text-xs mt-1"><i class="fas fa-phone-alt mr-1"></i>{{ $member['mobile'] }}</div>
+                        @endif
+                        @if(!empty($member['address']))
+                            <div class="text-slate-500 text-xs mt-0.5"><i class="fas fa-location-dot mr-1"></i>{{ $member['address'] }}</div>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
         </div>
     @else
         <p class="text-slate-500 text-center py-10">কোনো কমিটি সদস্য যুক্ত করা হয়নি।</p>
