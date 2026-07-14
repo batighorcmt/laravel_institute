@@ -32,6 +32,7 @@ Route::get('/blog', [App\Http\Controllers\FrontendWebController::class, 'blogInd
 Route::get('/blog/{slug}', [App\Http\Controllers\FrontendWebController::class, 'blogShow'])->name('frontend.blog.show');
 Route::get('/gallery/album/{album}', [App\Http\Controllers\FrontendWebController::class, 'galleryAlbum'])->name('frontend.gallery.album');
 Route::post('/contact-message', [App\Http\Controllers\FrontendWebController::class, 'submitContactMessage'])->middleware('throttle:5,1')->name('frontend.contact.submit');
+Route::get('/contact-message/captcha', [App\Http\Controllers\FrontendWebController::class, 'contactCaptcha'])->middleware('throttle:20,1')->name('frontend.contact.captcha');
 
 // Public admission flow
 Route::prefix('admission/{schoolCode}')->group(function () {

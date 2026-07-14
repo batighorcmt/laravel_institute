@@ -35,17 +35,19 @@ class SchoolFrontendSetting extends Model
         'youtube_url',
         'marquee_text',
         'contact_address',
-        'contact_email',
         'contact_phone',
         'contact_mobile',
+        'contact_email',
         'contact_website',
         'dshe_info_center',
         'dshe_info_mobile',
+        'gro_teacher_id',
         'gro_name',
         'gro_designation',
         'gro_mobile',
         'office_hours',
         'map_embed_url',
+        'contact_email_secondary',
         'committee_text',
         'meta_title',
         'meta_description',
@@ -76,5 +78,10 @@ class SchoolFrontendSetting extends Model
     public function appliedMenuTemplate()
     {
         return $this->belongsTo(WebsiteMenuTemplate::class, 'applied_menu_template_id');
+    }
+
+    public function groTeacher()
+    {
+        return $this->belongsTo(Teacher::class, 'gro_teacher_id');
     }
 }

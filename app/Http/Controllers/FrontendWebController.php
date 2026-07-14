@@ -170,9 +170,30 @@ class FrontendWebController extends Controller
         ]));
     }
 
+    public function contactCaptcha(Request $request)
+    {
+        $a = random_int(1, 9);
+        $b = random_int(1, 9);
+        $request->session()->put('contact_captcha_answer', $a + $b);
+
+        return response()->json([
+            'question' => toBengaliNumber($a).' + '.toBengaliNumber($b).' = ?',
+        ]);
+    }
+
     public function submitContactMessage(Request $request)
     {
         $school = $this->resolveSchoolOrAbort();
+
+        // Honeypot: a real bot fills every field including this off-screen one;
+        // silently pretend success so it doesn't learn to skip the field.
+        if (filled($request->input('website_confirm'))) {
+            return response()->json([
+                'message' => 'আপনার বার্তা সফলভাবে পাঠানো হয়েছে। ধন্যবাদ।',
+            ]);
+        }
+
+        $expectedAnswer = $request->session()->pull('contact_captcha_answer');
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
@@ -180,7 +201,17 @@ class FrontendWebController extends Controller
             'phone' => 'nullable|string|max:50',
             'subject' => 'nullable|string|max:255',
             'message' => 'required|string|max:5000',
+            'captcha_answer' => 'required|numeric',
         ]);
+
+        if ($expectedAnswer === null || (int) $data['captcha_answer'] !== (int) $expectedAnswer) {
+            return response()->json([
+                'message' => 'ক্যাপচার উত্তরটি সঠিক নয়। আবার চেষ্টা করুন।',
+                'errors' => ['captcha_answer' => ['ক্যাপচার উত্তরটি সঠিক নয়।']],
+            ], 422);
+        }
+
+        unset($data['captcha_answer']);
 
         ContactMessage::create($data + ['school_id' => $school->id]);
 

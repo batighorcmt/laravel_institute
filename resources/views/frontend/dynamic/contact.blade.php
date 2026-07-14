@@ -36,6 +36,12 @@
                     <p class="text-slate-700 pt-1.5">{{ $contact['email'] }}</p>
                 </div>
             @endif
+            @if(!empty($contact['email_secondary']))
+                <div class="flex items-start gap-3">
+                    <span class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0"><i class="fas fa-envelope-open-text"></i></span>
+                    <p class="text-slate-700 pt-1.5">{{ $contact['email_secondary'] }}</p>
+                </div>
+            @endif
             @if(!empty($contact['website']))
                 <div class="flex items-start gap-3">
                     <span class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0"><i class="fas fa-globe"></i></span>
@@ -111,6 +117,25 @@
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">বার্তা <span class="text-red-500">*</span></label>
                 <textarea name="message" rows="5" required class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-indigo-500"></textarea>
             </div>
+
+            <!-- Honeypot: hidden from humans via off-screen positioning, but a naive bot will fill it -->
+            <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
+                <label>Website</label>
+                <input type="text" name="website_confirm" tabindex="-1" autocomplete="off">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">
+                    ক্যাপচা: <span id="contact-captcha-question" class="text-indigo-600">লোড হচ্ছে...</span> <span class="text-red-500">*</span>
+                </label>
+                <div class="flex gap-2">
+                    <input type="text" name="captcha_answer" id="contact-captcha-answer" required inputmode="numeric" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:border-indigo-500" placeholder="উত্তর লিখুন">
+                    <button type="button" id="contact-captcha-refresh" title="নতুন ক্যাপচা" class="shrink-0 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors">
+                        <i class="fas fa-rotate"></i>
+                    </button>
+                </div>
+            </div>
+
             <p class="text-xs text-slate-400">আপনার তথ্য শুধুমাত্র প্রতিষ্ঠান কর্তৃপক্ষের সাথে যোগাযোগের উদ্দেশ্যে ব্যবহৃত হবে।</p>
             <button type="submit" id="contact-form-submit" class="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black transition-colors">
                 বার্তা পাঠান
@@ -131,6 +156,9 @@
     var form = document.getElementById('public-contact-form');
     var alertBox = document.getElementById('contact-form-alert');
     var submitBtn = document.getElementById('contact-form-submit');
+    var captchaQuestionEl = document.getElementById('contact-captcha-question');
+    var captchaAnswerEl = document.getElementById('contact-captcha-answer');
+    var captchaRefreshBtn = document.getElementById('contact-captcha-refresh');
     if (!form) return;
 
     function showAlert(message, isError) {
@@ -138,6 +166,18 @@
         alertBox.classList.remove('hidden');
         alertBox.className = 'mb-4 p-4 rounded-xl text-sm font-semibold ' + (isError ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100');
     }
+
+    function loadCaptcha() {
+        captchaQuestionEl.textContent = 'লোড হচ্ছে...';
+        captchaAnswerEl.value = '';
+        fetch('/contact-message/captcha', { headers: { 'Accept': 'application/json' } })
+            .then(function (res) { return res.json(); })
+            .then(function (data) { captchaQuestionEl.textContent = data.question || '?'; })
+            .catch(function () { captchaQuestionEl.textContent = 'ক্যাপচা লোড করা যায়নি'; });
+    }
+
+    loadCaptcha();
+    if (captchaRefreshBtn) captchaRefreshBtn.addEventListener('click', loadCaptcha);
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -170,9 +210,11 @@
                     }
                     showAlert(msg, true);
                 }
+                loadCaptcha();
             })
             .catch(function () {
                 showAlert('দুঃখিত, বার্তা পাঠানো যায়নি। আবার চেষ্টা করুন।', true);
+                loadCaptcha();
             })
             .finally(function () {
                 submitBtn.disabled = false;

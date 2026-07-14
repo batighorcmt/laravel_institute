@@ -179,11 +179,12 @@ class DynamicPageContentService
     protected function resolveContact(School $school, ?SchoolFrontendSetting $settings): array
     {
         return [
-            'address' => $settings?->contact_address ?: $school->address,
+            'address' => $settings?->contact_address ?: ($school->address_bn ?: $school->address),
             'email' => $settings?->contact_email ?: $school->email,
+            'email_secondary' => $settings?->contact_email_secondary,
             'phone' => $settings?->contact_phone ?: $school->displayPhone(),
-            'mobile' => $settings?->contact_mobile,
-            'website' => $settings?->contact_website,
+            'mobile' => $settings?->contact_mobile ?: $school->mobile,
+            'website' => $settings?->contact_website ?: $school->website,
             'facebook_url' => $settings?->facebook_url,
             'youtube_url' => $settings?->youtube_url,
             'dshe_info_center' => $settings?->dshe_info_center,

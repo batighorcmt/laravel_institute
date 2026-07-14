@@ -37,6 +37,7 @@
 
         <div>
           <h5 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">সাধারণ তথ্য</h5>
+          <p class="text-xs text-slate-400 -mt-2 mb-4">প্রথমবার প্রতিষ্ঠানের মূল তথ্য (schools) থেকে ডিফল্টভাবে পূরণ করা থাকে। এখানে পরিবর্তন করলে তা পৃথকভাবে সংরক্ষিত হবে এবং মূল প্রতিষ্ঠানের তথ্য অপরিবর্তিত থাকবে।</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="md:col-span-2">
               <label class="input-label">ঠিকানা</label>
@@ -46,6 +47,11 @@
             <div><label class="input-label">মোবাইল নম্বর</label><input type="text" v-model="form.contact_mobile" class="input-field"></div>
             <div><label class="input-label">ইমেইল</label><input type="email" v-model="form.contact_email" class="input-field"></div>
             <div><label class="input-label">ওয়েবসাইট</label><input type="text" v-model="form.contact_website" class="input-field" placeholder="https://..."></div>
+            <div>
+              <label class="input-label">দ্বিতীয় ইমেইল (ঐচ্ছিক)</label>
+              <input type="email" v-model="form.contact_email_secondary" class="input-field">
+              <p class="text-xs text-slate-400 mt-1">প্রয়োজনে ওয়েবসাইটে দেখানোর জন্য একটি বাড়তি ইমেইল ঠিকানা।</p>
+            </div>
           </div>
         </div>
 
@@ -54,9 +60,15 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div><label class="input-label">তথ্যসেবা কেন্দ্র</label><input type="text" v-model="form.dshe_info_center" class="input-field"></div>
             <div><label class="input-label">তথ্যসেবা মোবাইল</label><input type="text" v-model="form.dshe_info_mobile" class="input-field"></div>
-            <div><label class="input-label">অভিযোগ প্রতিকার কর্মকর্তার (GRO) নাম</label><input type="text" v-model="form.gro_name" class="input-field"></div>
-            <div><label class="input-label">GRO এর পদবী</label><input type="text" v-model="form.gro_designation" class="input-field"></div>
-            <div><label class="input-label">GRO মোবাইল</label><input type="text" v-model="form.gro_mobile" class="input-field"></div>
+            <div>
+              <label class="input-label">অভিযোগ প্রতিকার কর্মকর্তার (GRO) নাম</label>
+              <select ref="groSelect" v-model="form.gro_teacher_id" class="form-control select2-gro">
+                <option value="">-- শিক্ষক নির্বাচন করুন --</option>
+                <option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name }}</option>
+              </select>
+            </div>
+            <div><label class="input-label">GRO এর পদবী</label><input type="text" v-model="form.gro_designation" class="input-field" readonly></div>
+            <div><label class="input-label">GRO মোবাইল</label><input type="text" v-model="form.gro_mobile" class="input-field" readonly></div>
             <div><label class="input-label">অফিস সময়</label><input type="text" v-model="form.office_hours" class="input-field" placeholder="সকাল ৯টা - বিকাল ৫টা"></div>
           </div>
         </div>
@@ -131,15 +143,22 @@ export default {
       saving: false,
       messages: [],
       unreadCount: 0,
+      teachers: [],
       form: {
-        contact_address: '', contact_email: '', contact_phone: '', contact_mobile: '', contact_website: '',
-        dshe_info_center: '', dshe_info_mobile: '', gro_name: '', gro_designation: '', gro_mobile: '',
+        contact_address: '', contact_phone: '', contact_mobile: '', contact_email: '', contact_website: '', contact_email_secondary: '',
+        dshe_info_center: '', dshe_info_mobile: '', gro_teacher_id: '', gro_name: '', gro_designation: '', gro_mobile: '',
         office_hours: '', map_embed_url: ''
       }
     };
   },
+  watch: {
+    activeTab(val) {
+      if (val === 'settings') this.$nextTick(this.initSelect2);
+    },
+  },
   async mounted() {
     await this.fetchData();
+    this.$nextTick(this.initSelect2);
   },
   methods: {
     async fetchData() {
@@ -147,14 +166,57 @@ export default {
       try {
         const res = await axios.get(`/principal/institute/${this.schoolId}/frontend/contact-settings/data`);
         const settings = res.data.settings || {};
-        Object.keys(this.form).forEach(k => { this.form[k] = settings[k] || ''; });
+        this.form.contact_address = settings.contact_address || '';
+        this.form.contact_phone = settings.contact_phone || '';
+        this.form.contact_mobile = settings.contact_mobile || '';
+        this.form.contact_email = settings.contact_email || '';
+        this.form.contact_website = settings.contact_website || '';
+        this.form.contact_email_secondary = settings.contact_email_secondary || '';
+        this.form.dshe_info_center = settings.dshe_info_center || '';
+        this.form.dshe_info_mobile = settings.dshe_info_mobile || '';
+        this.form.gro_teacher_id = settings.gro_teacher_id || '';
+        this.form.gro_name = settings.gro_name || '';
+        this.form.gro_designation = settings.gro_designation || '';
+        this.form.gro_mobile = settings.gro_mobile || '';
+        this.form.office_hours = settings.office_hours || '';
+        this.form.map_embed_url = settings.map_embed_url || '';
+        this.teachers = res.data.teachers || [];
         this.messages = res.data.messages || [];
         this.unreadCount = res.data.unread_count || 0;
       } catch (e) {
         toastr.error('তথ্য লোড করতে সমস্যা হয়েছে');
       } finally {
         this.loading = false;
+        this.$nextTick(this.initSelect2);
       }
+    },
+    initSelect2() {
+      if (!window.$ || !window.$.fn || !window.$.fn.select2) return;
+      const vm = this;
+      const $el = window.$(this.$refs.groSelect);
+      if (!$el.length) return;
+      if ($el.data('select2')) $el.select2('destroy');
+      $el.select2({
+        width: '100%',
+        theme: 'bootstrap4',
+        placeholder: '-- শিক্ষক নির্বাচন করুন --',
+        allowClear: true,
+        dropdownCssClass: 'gro-select2-dropdown',
+      });
+      $el.val(this.form.gro_teacher_id || '').trigger('change.select2');
+
+      $el.off('change.groSync').on('change.groSync', function () {
+        const val = window.$(this).val();
+        vm.form.gro_teacher_id = val || '';
+        const teacher = vm.teachers.find(t => String(t.id) === String(val));
+        if (teacher) {
+          vm.form.gro_designation = teacher.designation || '';
+          vm.form.gro_mobile = teacher.phone || '';
+        } else {
+          vm.form.gro_designation = '';
+          vm.form.gro_mobile = '';
+        }
+      });
     },
     async saveSettings() {
       this.saving = true;
@@ -202,8 +264,20 @@ export default {
 .input-label { display: block; font-size: 0.8rem; font-weight: 800; color: #475569; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .input-field { width: 100%; padding: 1rem 1.5rem; border-radius: 1.5rem; background: #f8fafc; border: 1px solid #e2e8f0; outline: none; transition: 0.3s; }
 .input-field:focus { background: white; border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
+.input-field[readonly] { color: #64748b; cursor: not-allowed; }
 .section-footer { padding: 1.5rem 2.5rem; border-top: 1px solid #f1f5f9; background: #f8fafc; display: flex; justify-content: flex-end; }
 .save-btn { padding: 1rem 3rem; background: #4f46e5; color: white; border-radius: 1.5rem; font-weight: 800; transition: 0.3s; box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4); }
 .save-btn:hover { background: #4338ca; transform: translateY(-2px); box-shadow: 0 15px 25px -5px rgba(79, 70, 229, 0.5); }
 .save-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+:deep(.select2-container) { display: block; }
+</style>
+
+<style>
+/* select2 appends its dropdown to <body>, outside this component's scoped
+   tree, so this rule must be global; dropdownCssClass scopes it to just
+   the GRO select so it doesn't affect other select2 dropdowns on the page. */
+.gro-select2-dropdown .select2-results__options {
+  max-height: 190px;
+  overflow-y: auto;
+}
 </style>
