@@ -169,6 +169,22 @@ class FrontendWebController extends Controller
         ]));
     }
 
+    public function galleryAlbum(Request $request, \App\Models\GalleryAlbum $album): View
+    {
+        $school = $this->resolveSchoolOrAbort();
+
+        abort_unless($album->school_id === $school->id, 404);
+
+        $data = app(DynamicPageContentService::class)->resolveAlbum($school, $album);
+
+        return view('frontend.dynamic.gallery-album', $this->cmsViewData($school, [
+            'albumData' => $data,
+            'seoTitle' => $data['album']['name'],
+            'seoDescription' => $data['album']['description'] ?: (($school->name_bn ?: $school->name).' — ফটো এলবাম'),
+            'ogType' => 'article',
+        ]));
+    }
+
     protected function resolveSchoolOrAbort(): School
     {
         $schoolId = config('school.id');

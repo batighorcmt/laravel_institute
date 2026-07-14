@@ -33,9 +33,11 @@
                 </span>
             </div>
 
-            <h1 class="text-3xl sm:text-4xl lg:text-[2.75rem] font-black text-[#1e1b4b] leading-[1.15] tracking-tight">
-                {{ $post->title }}
-            </h1>
+            @unless(str_contains($cmsLayout ?? '', 'theme2'))
+                <h1 class="text-3xl sm:text-4xl lg:text-[2.75rem] font-black text-[#1e1b4b] leading-[1.15] tracking-tight">
+                    {{ $post->title }}
+                </h1>
+            @endunless
         </div>
 
         @if($post->featured_image)

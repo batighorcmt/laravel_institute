@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\GalleryAlbum;
+use App\Models\GalleryImage;
 use App\Models\School;
 use App\Models\SchoolFrontendSetting;
+use Illuminate\Support\Carbon;
 
 class DynamicPageContentService
 {
@@ -45,14 +48,82 @@ class DynamicPageContentService
     }
 
     /**
-     * @return list<string>
+     * @return array<string, mixed>
      */
     protected function resolveGallery(School $school, ?SchoolFrontendSetting $settings): array
     {
-        $content = $this->homepageContent->resolve($settings);
-        $gallery = $content['gallery'] ?? [];
+        $latestImages = GalleryImage::where('school_id', $school->id)
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get();
 
-        return $gallery !== [] ? $gallery : $this->homepageContent->placeholderGallery($school, $settings);
+        if ($latestImages->isEmpty()) {
+            $fallback = $this->homepageContent->placeholderGallery($school, $settings);
+
+            return [
+                'latest' => collect($fallback)->map(fn ($url, $i) => ['id' => 'placeholder-'.$i, 'url' => $url])->values()->all(),
+                'albums' => [],
+                'last_updated' => null,
+            ];
+        }
+
+        $albums = GalleryAlbum::where('school_id', $school->id)
+            ->withCount('images')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (GalleryAlbum $album) => $this->presentAlbum($album))
+            ->values()
+            ->all();
+
+        $lastUpdated = GalleryImage::where('school_id', $school->id)->max('created_at');
+
+        return [
+            'latest' => $latestImages->map(fn (GalleryImage $img) => ['id' => $img->id, 'url' => storage_asset($img->path)])->values()->all(),
+            'albums' => $albums,
+            'last_updated' => $lastUpdated ? Carbon::parse($lastUpdated)->translatedFormat('d F Y, h:i A') : null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function resolveAlbum(School $school, GalleryAlbum $album): array
+    {
+        $images = $album->images()
+            ->where('school_id', $school->id)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (GalleryImage $img) => ['id' => $img->id, 'url' => storage_asset($img->path)])
+            ->values()
+            ->all();
+
+        return [
+            'album' => $this->presentAlbum($album),
+            'images' => $images,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function presentAlbum(GalleryAlbum $album): array
+    {
+        $thumbs = $album->images()
+            ->orderByDesc('created_at')
+            ->limit(4)
+            ->get()
+            ->map(fn (GalleryImage $img) => storage_asset($img->path))
+            ->values()
+            ->all();
+
+        return [
+            'id' => $album->id,
+            'name' => $album->name,
+            'description' => $album->description,
+            'images_count' => $album->images_count ?? $album->images()->count(),
+            'thumbnails' => $thumbs,
+            'created_at' => $album->created_at?->translatedFormat('d F Y'),
+        ];
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CmsPost;
+use App\Models\GalleryImage;
 use App\Models\School;
 use App\Models\SchoolFrontendSetting;
 use App\Models\Teacher;
@@ -64,11 +65,15 @@ class FrontendHomepageContentService
 
         $content = array_replace_recursive($defaults, $stored);
 
-        $content['gallery'] = collect($content['gallery'] ?? [])
-            ->filter()
-            ->map(fn ($path) => is_string($path) ? storage_asset($path) : $path)
-            ->values()
-            ->all();
+        if ($settings?->school_id) {
+            $content['gallery'] = GalleryImage::where('school_id', $settings->school_id)
+                ->orderByDesc('created_at')
+                ->limit(12)
+                ->get()
+                ->map(fn (GalleryImage $img) => storage_asset($img->path))
+                ->values()
+                ->all();
+        }
 
         return $content;
     }

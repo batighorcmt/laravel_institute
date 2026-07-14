@@ -30,6 +30,7 @@ Route::get('/', [App\Http\Controllers\FrontendWebController::class, 'index'])->n
 Route::get('/notices/{notice}/download', [App\Http\Controllers\FrontendWebController::class, 'downloadNotice'])->name('frontend.notices.download');
 Route::get('/blog', [App\Http\Controllers\FrontendWebController::class, 'blogIndex'])->name('frontend.blog.index');
 Route::get('/blog/{slug}', [App\Http\Controllers\FrontendWebController::class, 'blogShow'])->name('frontend.blog.show');
+Route::get('/gallery/album/{album}', [App\Http\Controllers\FrontendWebController::class, 'galleryAlbum'])->name('frontend.gallery.album');
 
 // Public admission flow
 Route::prefix('admission/{schoolCode}')->group(function () {
@@ -822,7 +823,15 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/front-page-elements', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'index'])->name('front-page-elements');
                 Route::get('/front-page-elements/data', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'getData'])->name('front-page-elements.data');
                 Route::post('/front-page-elements/data', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'updateData'])->name('front-page-elements.update');
-                Route::delete('/front-page-elements/gallery', [\App\Http\Controllers\Principal\FrontPageElementsController::class, 'deleteGalleryImage'])->name('front-page-elements.gallery.delete');
+
+                Route::get('/gallery', [\App\Http\Controllers\Principal\GalleryManagerController::class, 'index'])->name('gallery');
+                Route::get('/gallery/data', [\App\Http\Controllers\Principal\GalleryManagerController::class, 'data'])->name('gallery.data');
+                Route::get('/gallery/albums/{album}/images', [\App\Http\Controllers\Principal\GalleryManagerController::class, 'albumImages'])->name('gallery.albums.images');
+                Route::post('/gallery/upload', [\App\Http\Controllers\Principal\GalleryManagerController::class, 'upload'])->name('gallery.upload');
+                Route::delete('/gallery/images/{image}', [\App\Http\Controllers\Principal\GalleryManagerController::class, 'destroyImage'])->name('gallery.images.delete');
+                Route::post('/gallery/albums', [\App\Http\Controllers\Principal\GalleryManagerController::class, 'storeAlbum'])->name('gallery.albums.store');
+                Route::put('/gallery/albums/{album}', [\App\Http\Controllers\Principal\GalleryManagerController::class, 'updateAlbum'])->name('gallery.albums.update');
+                Route::delete('/gallery/albums/{album}', [\App\Http\Controllers\Principal\GalleryManagerController::class, 'destroyAlbum'])->name('gallery.albums.delete');
 
                 Route::get('/menus', [\App\Http\Controllers\Principal\FrontendMenuController::class, 'index'])->name('menus');
                 Route::get('/menus/data', [\App\Http\Controllers\Principal\FrontendMenuController::class, 'getData'])->name('menus.data');

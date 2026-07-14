@@ -22,6 +22,7 @@
         <front-page-elements-manager
             :school-id="{{ $school->id }}"
             blog-posts-url="{{ route('principal.institute.frontend.posts.index', $school) }}"
+            gallery-url="{{ route('principal.institute.frontend.gallery', $school) }}"
         ></front-page-elements-manager>
 
         <div class="mt-4">

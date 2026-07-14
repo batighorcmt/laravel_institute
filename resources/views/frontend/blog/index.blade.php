@@ -1,7 +1,9 @@
 @extends($cmsLayout ?? 'frontend.cms-layout')
 
 @section('cms_body')
-    <h1 class="text-3xl font-black text-indigo-950 mb-8">ব্লগ ও সংবাদ</h1>
+    @unless(str_contains($cmsLayout ?? '', 'theme2'))
+        <h1 class="text-3xl font-black text-indigo-950 mb-8">ব্লগ ও সংবাদ</h1>
+    @endunless
 
     @if($posts->isEmpty())
         <p class="text-slate-500">এখনও কোনো প্রকাশিত পোস্ট নেই।</p>

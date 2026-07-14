@@ -2,7 +2,9 @@
 
 @section('cms_body')
     <article>
-        <h1 class="text-3xl font-black text-indigo-950 mb-6">{{ $page->title }}</h1>
+        @unless(str_contains($cmsLayout ?? '', 'theme2'))
+            <h1 class="text-3xl font-black text-indigo-950 mb-6">{{ $page->title }}</h1>
+        @endunless
 
         @if($page->content_mode === 'dynamic' && $page->data_source)
             @includeFirst(['frontend.dynamic.'.$page->data_source, 'frontend.dynamic.fallback'], ['dynamicData' => $dynamicData ?? []])

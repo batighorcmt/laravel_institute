@@ -627,6 +627,12 @@
                                         </a>
                                     </li>
                                     <li class="nav-item">
+                                        <a href="{{ route('principal.institute.frontend.gallery', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.gallery*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Gallery</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
                                         <a href="{{ route('principal.institute.frontend.menus', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.frontend.menus*') ? 'active' : '' }}">
                                             <i class="far fa-circle nav-icon"></i>
                                             <p>Menus</p>
