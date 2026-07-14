@@ -529,6 +529,33 @@ blockquote.hm-quote{
 .tm-row i{color:var(--maroon-700); width:16px; text-align:center;}
 
 /* ============================================================
+   HEAD TEACHER / CHAIRMAN FULL MESSAGE MODAL
+   ============================================================ */
+.hm-quote-clamp{display:-webkit-box; -webkit-line-clamp:5; line-clamp:5; -webkit-box-orient:vertical; overflow:hidden;}
+.hm-read-more{
+  display:inline-flex; align-items:center; gap:8px; margin-top:20px; padding:12px 26px;
+  background:var(--pine-900); color:var(--white); border-radius:30px; font-weight:700; font-size:.88rem;
+  transition:background .2s, gap .2s;
+}
+.hm-read-more:hover{background:var(--maroon-700); gap:12px;}
+.message-modal-card{
+  background:var(--white); border-radius:12px; max-width:680px; width:100%; max-height:82vh;
+  display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3); overflow:hidden;
+}
+.message-modal-head{
+  background:var(--pine-900); color:var(--white); padding:22px 28px; display:flex; align-items:center; gap:16px; flex-shrink:0;
+}
+.message-modal-head img{width:56px; height:56px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,.3); flex-shrink:0;}
+.message-modal-head .mm-icon-fallback{
+  width:56px; height:56px; border-radius:50%; background:rgba(255,255,255,.12); display:flex; align-items:center; justify-content:center;
+  font-size:1.3rem; flex-shrink:0;
+}
+.message-modal-head h3{font-family:var(--display); font-size:1.15rem;}
+.message-modal-head span{font-size:.8rem; color:var(--gold-400); display:block; margin-top:2px;}
+.message-modal-body{padding:28px; overflow-y:auto; color:var(--ink-700); line-height:1.9; font-size:1.02rem;}
+.message-modal-body p{margin-bottom:14px;}
+
+/* ============================================================
    BLOG / NEWS
    ============================================================ */
 .news-grid{display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:26px;}

@@ -334,8 +334,16 @@
                 <div class="md:w-3/5 relative">
                    <i class="fas fa-quote-left text-7xl text-indigo-500/10 absolute -top-8 -left-8"></i>
                    <div class="px-6 py-2 bg-[var(--theme-primary)] text-white rounded-full text-[10px] font-black uppercase tracking-widest inline-block mb-6">{{ person.label }}</div>
-                   <div v-if="person.message" class="text-xl md:text-2xl text-slate-700 font-bold leading-relaxed prose max-w-none" v-html="person.message"></div>
+                   <div v-if="person.message" class="text-xl md:text-2xl text-slate-700 font-bold leading-relaxed prose max-w-none message-clamp" v-html="person.message"></div>
                    <p v-else-if="person.fallbackQuote" class="text-lg text-slate-500 italic leading-relaxed">{{ person.fallbackQuote }}</p>
+                   <button
+                     v-if="person.message"
+                     type="button"
+                     @click="openMessageModal(person)"
+                     class="mt-8 inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#1e1b4b] text-white font-black text-sm hover:bg-indigo-900 hover:gap-3 transition-all duration-300 shadow-lg shadow-indigo-900/20"
+                   >
+                     সম্পূর্ণ বাণী পড়ুন <i class="fas fa-arrow-right text-xs"></i>
+                   </button>
                    <div class="mt-10 h-1 w-20 bg-indigo-600 rounded-full"></div>
                 </div>
              </div>
@@ -348,6 +356,34 @@
       :settings="settings"
       :menu-items="footerMenuItems"
     />
+
+    <!-- Full Message Modal (Principal / Chairman) -->
+    <Teleport to="body">
+      <div
+        v-if="activeMessagePerson"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm"
+        @click.self="closeMessageModal"
+      >
+        <div class="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-100">
+          <div class="bg-[#1e1b4b] text-white px-6 py-5 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-4 min-w-0">
+              <div class="w-14 h-14 rounded-full overflow-hidden bg-white/10 shrink-0 border-2 border-white/20">
+                <img v-if="personImageUrl(activeMessagePerson)" :src="personImageUrl(activeMessagePerson)" class="w-full h-full object-cover" alt="">
+                <div v-else class="w-full h-full flex items-center justify-center text-xl"><i :class="activeMessagePerson.icon"></i></div>
+              </div>
+              <div class="min-w-0">
+                <h3 class="text-lg font-black truncate">{{ activeMessagePerson.name || activeMessagePerson.fallbackName }}</h3>
+                <p class="text-indigo-200 text-xs mt-0.5">{{ activeMessagePerson.label }}</p>
+              </div>
+            </div>
+            <button type="button" @click="closeMessageModal" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors shrink-0">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="p-8 overflow-y-auto prose max-w-none text-slate-700 text-lg leading-relaxed" v-html="activeMessagePerson.message"></div>
+        </div>
+      </div>
+    </Teleport>
 
     <!-- All Notices Modal -->
     <Teleport to="body">
@@ -591,6 +627,7 @@ export default {
       showNoticesModal: false,
       selectedNotice: null,
       selectedTeacher: null,
+      activeMessagePerson: null,
       showAllTeachers: false,
       noticeTitleFilter: '',
       noticePage: 1,
@@ -831,7 +868,17 @@ export default {
     },
     closeNoticesModal() {
        this.showNoticesModal = false;
-       if (!this.selectedNotice && !this.selectedTeacher) {
+       if (!this.selectedNotice && !this.selectedTeacher && !this.activeMessagePerson) {
+          document.body.style.overflow = '';
+       }
+    },
+    openMessageModal(person) {
+       this.activeMessagePerson = person;
+       document.body.style.overflow = 'hidden';
+    },
+    closeMessageModal() {
+       this.activeMessagePerson = null;
+       if (!this.showNoticesModal && !this.selectedNotice && !this.selectedTeacher) {
           document.body.style.overflow = '';
        }
     },
@@ -898,6 +945,13 @@ export default {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.message-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

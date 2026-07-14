@@ -95,7 +95,9 @@
       </div>
       <div class="notice-list">
         @forelse(($boardNotices ?? []) as $notice)
-          @php($publishAt = $notice['publish_at'] ? \Illuminate\Support\Carbon::parse($notice['publish_at']) : null)
+          @php
+            $publishAt = $notice['publish_at'] ? \Illuminate\Support\Carbon::parse($notice['publish_at']) : null;
+          @endphp
           <div class="notice-item">
             <div class="notice-date">
                 <span class="d">{{ $publishAt?->format('d') ?? '--' }}</span>
@@ -156,10 +158,12 @@
 
 @if($settings?->principal_message || $settings?->chairman_message)
 <!-- ============ HEAD TEACHER'S & CHAIRMAN'S MESSAGE ============ -->
-@php($principalFeatureImage = $settings->principal_feature_image ? storage_asset($settings->principal_feature_image) : null)
-@php($chairmanFeatureImage = $settings->chairman_feature_image ? storage_asset($settings->chairman_feature_image) : null)
-@php($principalDesignation = $settings->principal_designation ?: 'প্রধান শিক্ষক')
-@php($chairmanDesignation = $settings->chairman_designation ?: 'সভাপতি')
+@php
+    $principalFeatureImage = $settings->principal_feature_image ? storage_asset($settings->principal_feature_image) : null;
+    $chairmanFeatureImage = $settings->chairman_feature_image ? storage_asset($settings->chairman_feature_image) : null;
+    $principalDesignation = $settings->principal_designation ?: 'প্রধান শিক্ষক';
+    $chairmanDesignation = $settings->chairman_designation ?: 'সভাপতি';
+@endphp
 <section id="hm-message" class="bg-alt">
   <div class="container">
     @if($settings?->principal_message)
@@ -174,7 +178,8 @@
       <div class="text-col">
         <span class="eyebrow">নেতৃত্বের বার্তা</span>
         <h2 style="font-family:var(--display); font-size:clamp(1.6rem,3vw,2.3rem); color:var(--pine-900); margin:12px 0 18px;">{{ $settings->principal_title ?: 'প্রধান শিক্ষকের বাণী' }}</h2>
-        <blockquote class="hm-quote">{{ \Illuminate\Support\Str::limit(strip_tags($settings->principal_message), 200) }}</blockquote>
+        <blockquote class="hm-quote hm-quote-clamp">{{ \Illuminate\Support\Str::limit(strip_tags($settings->principal_message), 400) }}</blockquote>
+        <button type="button" class="hm-read-more" data-message-index="0">সম্পূর্ণ বাণী পড়ুন <i class="fa-solid fa-arrow-right"></i></button>
         <div class="signature-line">
           @if($settings->principal_image)
             <img src="{{ storage_asset($settings->principal_image) }}" alt="{{ $settings->principal_name }}">
@@ -200,7 +205,8 @@
       <div class="text-col">
         <span class="eyebrow">সভাপতির বার্তা</span>
         <h2 style="font-family:var(--display); font-size:clamp(1.6rem,3vw,2.3rem); color:var(--pine-900); margin:12px 0 18px;">{{ $settings->chairman_title ?: 'সভাপতির বাণী' }}</h2>
-        <blockquote class="hm-quote">{{ \Illuminate\Support\Str::limit(strip_tags($settings->chairman_message), 200) }}</blockquote>
+        <blockquote class="hm-quote hm-quote-clamp">{{ \Illuminate\Support\Str::limit(strip_tags($settings->chairman_message), 400) }}</blockquote>
+        <button type="button" class="hm-read-more" data-message-index="1">সম্পূর্ণ বাণী পড়ুন <i class="fa-solid fa-arrow-right"></i></button>
         <div class="signature-line">
           @if($settings->chairman_image)
             <img src="{{ storage_asset($settings->chairman_image) }}" alt="{{ $settings->chairman_name }}">
@@ -215,6 +221,38 @@
     @endif
   </div>
 </section>
+
+@php
+    $hmMessages = [
+        [
+            'name' => $settings->principal_name,
+            'label' => $principalDesignation.', '.($school->name_bn ?: $school->name),
+            'photo' => $settings->principal_image ? storage_asset($settings->principal_image) : null,
+            'message' => $settings->principal_message,
+        ],
+        [
+            'name' => $settings->chairman_name,
+            'label' => $chairmanDesignation.', '.($school->name_bn ?: $school->name),
+            'photo' => $settings->chairman_image ? storage_asset($settings->chairman_image) : null,
+            'message' => $settings->chairman_message,
+        ],
+    ];
+@endphp
+<div class="lightbox" id="hmMessageModal">
+  <button class="lb-close" id="hmMessageModalClose" aria-label="বন্ধ করুন"><i class="fa-solid fa-xmark"></i></button>
+  <div class="message-modal-card" role="dialog" aria-modal="true">
+    <div class="message-modal-head">
+      <img id="hmModalPhoto" src="" alt="" style="display:none;">
+      <div id="hmModalIconFallback" class="mm-icon-fallback"><i class="fa-solid fa-user-tie"></i></div>
+      <div>
+        <h3 id="hmModalName"></h3>
+        <span id="hmModalLabel"></span>
+      </div>
+    </div>
+    <div class="message-modal-body" id="hmModalBody"></div>
+  </div>
+</div>
+<script>window.__hmMessages = @json($hmMessages);</script>
 @endif
 
 @if(!empty($homepageContent['mission']) || !empty($homepageContent['vision']))

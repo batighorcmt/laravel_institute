@@ -180,6 +180,49 @@
     });
   }
 
+  /* ===== Head teacher / chairman full message modal ===== */
+  const hmMessageModal = document.getElementById('hmMessageModal');
+  if (hmMessageModal && window.__hmMessages) {
+    const hmClose = document.getElementById('hmMessageModalClose');
+    const hmPhoto = document.getElementById('hmModalPhoto');
+    const hmIconFallback = document.getElementById('hmModalIconFallback');
+    const hmName = document.getElementById('hmModalName');
+    const hmLabel = document.getElementById('hmModalLabel');
+    const hmBody = document.getElementById('hmModalBody');
+
+    function openHmMessageModal(index) {
+      const person = window.__hmMessages[index];
+      if (!person) return;
+      if (person.photo) {
+        hmPhoto.src = person.photo;
+        hmPhoto.alt = person.name || '';
+        hmPhoto.style.display = 'block';
+        hmIconFallback.style.display = 'none';
+      } else {
+        hmPhoto.style.display = 'none';
+        hmIconFallback.style.display = 'flex';
+      }
+      hmName.textContent = person.name || '';
+      hmLabel.textContent = person.label || '';
+      hmBody.innerHTML = person.message || '';
+      hmMessageModal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeHmMessageModal() {
+      hmMessageModal.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.hm-read-more').forEach(btn => {
+      btn.addEventListener('click', () => openHmMessageModal(parseInt(btn.dataset.messageIndex, 10)));
+    });
+    hmClose.addEventListener('click', closeHmMessageModal);
+    hmMessageModal.addEventListener('click', (e) => { if (e.target === hmMessageModal) closeHmMessageModal(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && hmMessageModal.classList.contains('show')) closeHmMessageModal();
+    });
+  }
+
   /* ===== Ticker marquee: keep a consistent scroll speed no matter how much notice text there is ===== */
   const tickerTrack = document.getElementById('tickerTrack');
   if (tickerTrack) {
