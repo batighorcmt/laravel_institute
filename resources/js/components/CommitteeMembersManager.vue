@@ -35,7 +35,7 @@
             <td><input v-model="m.serial" type="text" class="form-control form-control-sm" placeholder="১"></td>
             <td><input v-model="m.name" type="text" class="form-control form-control-sm" placeholder="নাম"></td>
             <td>
-              <select v-model="m.designation" class="form-control form-control-sm select2-designation">
+              <select v-model="m.designation" :data-index="idx" class="form-control form-control-sm select2-designation">
                 <option value="">-- পদবী নির্বাচন করুন --</option>
                 <option v-for="d in designations" :key="d.id" :value="d.id">{{ d.text }}</option>
               </select>
@@ -96,6 +96,7 @@ export default {
     },
     initSelect2() {
       if (!window.$ || !window.$.fn || !window.$.fn.select2) return;
+      const vm = this;
       const $els = window.$(this.$el).find('.select2-designation');
       $els.each(function () {
         const $el = window.$(this);
@@ -106,6 +107,16 @@ export default {
           placeholder: '-- পদবী নির্বাচন করুন --',
           allowClear: true,
           dropdownParent: $el.closest('.table-responsive').length ? $el.closest('.table-responsive') : window.$('body'),
+        });
+
+        // select2 manipulates the underlying <select> directly; Vue's v-model
+        // does not reliably pick up that change, so sync it back explicitly.
+        $el.off('change.committeeSync').on('change.committeeSync', function () {
+          const idx = Number($el.data('index'));
+          const member = vm.members[idx];
+          if (member) {
+            member.designation = $el.val() || '';
+          }
         });
       });
     },
