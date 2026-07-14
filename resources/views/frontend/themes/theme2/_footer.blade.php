@@ -127,6 +127,19 @@
     a.addEventListener('click', () => { if(window.innerWidth <= 960 && !a.nextElementSibling){ closeNav(); }});
   });
 
+  /* ===== Ticker marquee: keep a consistent scroll speed no matter how much notice text there is ===== */
+  const tickerTrack = document.getElementById('tickerTrack');
+  if (tickerTrack) {
+    const pxPerSecond = 90;
+    const setTickerSpeed = () => {
+      const setWidth = tickerTrack.scrollWidth / 2; // track content is duplicated once for a seamless loop
+      const duration = Math.max(setWidth / pxPerSecond, 6);
+      tickerTrack.style.animationDuration = duration + 's';
+    };
+    setTickerSpeed();
+    window.addEventListener('resize', setTickerSpeed);
+  }
+
   /* ===== Reveal on scroll ===== */
   const revealObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {

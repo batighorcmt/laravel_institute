@@ -57,7 +57,7 @@
             --theme-accent: {{ $themeColors['accent'] ?? '#f59e0b' }};
             --theme-bg: {{ $themeColors['bg'] ?? '#fefcf5' }};
             --theme-text: {{ $themeColors['text'] ?? '#1f2937' }};
-            --theme-font: {{ $themeColors['font'] ?? "'Hind Siliguri', sans-serif" }};
+            --theme-font: {!! $themeColors['font'] ?? "'Hind Siliguri', sans-serif" !!};
         }
     </style>
 </head>

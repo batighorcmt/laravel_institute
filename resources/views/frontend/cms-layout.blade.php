@@ -49,7 +49,7 @@
             --theme-accent: {{ $themeColors['accent'] ?? '#f59e0b' }};
             --theme-bg: {{ $themeColors['bg'] ?? '#fefcf5' }};
             --theme-text: {{ $themeColors['text'] ?? '#1f2937' }};
-            --theme-font: {{ $themeColors['font'] ?? "'Hind Siliguri', sans-serif" }};
+            --theme-font: {!! $themeColors['font'] ?? "'Hind Siliguri', sans-serif" !!};
         }
         .cms-content h1,.cms-content h2,.cms-content h3 { font-weight: 700; margin-top: 1.25em; margin-bottom: .5em; }
         .cms-content p { margin-bottom: 1em; line-height: 1.75; }

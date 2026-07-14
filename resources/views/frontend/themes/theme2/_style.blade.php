@@ -23,7 +23,7 @@
   --white:#fffdf8;
 
   --display: "Tiro Bangla", serif;
-  --body: {{ $themeColors['font'] ?? "'Hind Siliguri', sans-serif" }};
+  --body: {!! $themeColors['font'] ?? "'Hind Siliguri', sans-serif" !!};
   --mono: "Inter", sans-serif;
   --numeral: "Noto Sans Bengali", "Hind Siliguri", sans-serif;
 
@@ -212,7 +212,7 @@ nav.mainnav{max-width:1240px; margin:0 auto; display:flex; align-items:center; j
 .ticker-track-wrap{flex:1; overflow:hidden; position:relative;}
 .ticker-track{
   display:flex; gap:60px; white-space:nowrap; padding:10px 0;
-  animation:ticker 20s linear infinite;
+  animation:ticker 12s linear infinite;
   width:max-content;
 }
 .ticker-track:hover{animation-play-state:paused;}
