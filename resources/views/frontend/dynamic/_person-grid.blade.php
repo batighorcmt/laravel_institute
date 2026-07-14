@@ -4,26 +4,23 @@
     $gridId = $gridId ?? 'person-grid-'.uniqid();
 @endphp
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="{{ $gridId }}">
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5" id="{{ $gridId }}">
     @forelse($people as $i => $person)
         <div
-            class="person-card group relative rounded-3xl overflow-hidden shadow-md hover:shadow-xl border border-slate-100 cursor-pointer transition-all duration-300 hover:-translate-y-1"
+            class="person-card group bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-lg cursor-pointer transition-all duration-300 hover:-translate-y-1 p-4 sm:p-5 text-center"
             data-person-index="{{ $i }}"
         >
-            <div class="relative aspect-[4/5] bg-gradient-to-br from-indigo-100 to-slate-200 overflow-hidden">
+            <div class="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full overflow-hidden bg-gradient-to-br from-indigo-100 to-slate-200 ring-4 ring-slate-50 group-hover:ring-indigo-100 transition-all duration-300">
                 @if(!empty($person['photo']))
-                    <img src="{{ $person['photo'] }}" alt="{{ $person['name'] }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy">
+                    <img src="{{ $person['photo'] }}" alt="{{ $person['name'] }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy">
                 @else
-                    <div class="w-full h-full flex items-center justify-center text-6xl text-indigo-300">
+                    <div class="w-full h-full flex items-center justify-center text-2xl sm:text-3xl text-indigo-300">
                         <i class="fas {{ $placeholderIcon }}"></i>
                     </div>
                 @endif
-                <div class="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
             </div>
-            <div class="p-4 text-center bg-white">
-                <h3 class="font-black text-slate-800 group-hover:text-indigo-600 transition-colors">{{ $person['name'] }}</h3>
-                <p class="text-xs font-bold text-indigo-500 uppercase tracking-wide mt-1">{{ $person['designation'] ?? '' }}</p>
-            </div>
+            <h3 class="mt-3 text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight">{{ $person['name'] }}</h3>
+            <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-wide mt-1 leading-tight">{{ $person['designation'] ?? '' }}</p>
         </div>
     @empty
         <p class="text-slate-500 col-span-full text-center py-10">কোনো তথ্য পাওয়া যায়নি।</p>
