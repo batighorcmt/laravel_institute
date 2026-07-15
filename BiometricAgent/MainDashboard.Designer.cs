@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using MaterialSkin.Controls;
 
 namespace BiometricAgent
 {
@@ -13,6 +14,7 @@ namespace BiometricAgent
         private Label lblTitle = null!;
         private Label lblVersion = null!;
         private Label lblSchool = null!;
+        private Label lblServerStatus = null!;
 
         // Stats
         private Label lblOnlineLabel = null!, lblOfflineLabel = null!;
@@ -26,83 +28,95 @@ namespace BiometricAgent
         private RichTextBox rtfLog = null!;
 
         // Buttons
-        private Button btnSyncNow;
-        private Button btnRefreshDevices;
-        private Button btnSettings;
-        private Button btnSyncManager;
-        private Button btnUsers;
+        private MaterialButton btnSyncNow;
+        private MaterialButton btnRefreshDevices;
+        private MaterialButton btnSettings;
+        private MaterialButton btnDevices;
+        private MaterialButton btnBackupRestore;
+        private MaterialButton btnSyncManager;
+        private MaterialButton btnUsers;
 
         private void InitializeComponent()
         {
-            this.Text            = "🔏 Biometric Sync Agent";
-            this.Size            = new Size(900, 620);
-            this.MinimumSize     = new Size(900, 620);
+            this.Text            = "🔏 Biometric Sync Agent — Batighor EIMS";
+            this.Size            = new Size(1080, 640);
+            this.MinimumSize     = new Size(1080, 640);
             this.StartPosition   = FormStartPosition.CenterScreen;
             this.Font            = new Font("Segoe UI", 9f);
+            this.BackColor       = AppTheme.Background;
             this.Load           += MainDashboard_Load;
 
             // ── Header ───────────────────────────────────────────────────────
             var pHeader = new Panel
             {
                 Dock      = DockStyle.Top,
-                Height    = 70,
-                BackColor = Color.FromArgb(30, 30, 46)
+                Height    = 72,
+                BackColor = AppTheme.Surface
             };
 
             lblTitle = new Label
             {
                 Text      = "Biometric Sync Agent",
-                Location  = new Point(16, 6),
-                Font      = new Font("Segoe UI", 14, FontStyle.Bold),
-                ForeColor = Color.FromArgb(125, 211, 252),
+                Location  = new Point(20, 8),
+                Font      = new Font("Segoe UI", 15, FontStyle.Bold),
+                ForeColor = AppTheme.TextPrimary,
                 AutoSize  = true
             };
 
             var lblCompany = new Label
             {
                 Text      = CompanyName,
-                Location  = new Point(16, 34),
+                Location  = new Point(20, 36),
                 Font      = new Font("Segoe UI", 7.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(100, 116, 139),
+                ForeColor = AppTheme.TextSecondary,
                 AutoSize  = true
             };
 
             lblVersion = new Label
             {
                 Text      = $"Version {AppVersion}",
-                Location  = new Point(16, 48),
+                Location  = new Point(20, 50),
                 Font      = new Font("Segoe UI", 7.5f),
-                ForeColor = Color.Gray,
+                ForeColor = AppTheme.TextSecondary,
                 AutoSize  = true
             };
 
             lblSchool = new Label
             {
                 Text      = "School: —",
-                Location  = new Point(280, 26),
+                Location  = new Point(300, 20),
                 Font      = new Font("Segoe UI", 11),
-                ForeColor = Color.White,
+                ForeColor = AppTheme.TextPrimary,
                 AutoSize  = true
             };
 
-            pHeader.Controls.AddRange(new Control[] { lblTitle, lblCompany, lblVersion, lblSchool });
+            lblServerStatus = new Label
+            {
+                Text      = "🟡 Server: Connecting…",
+                Location  = new Point(300, 44),
+                Font      = new Font("Segoe UI", 9, FontStyle.Bold),
+                ForeColor = AppTheme.Warning,
+                AutoSize  = true
+            };
+
+            pHeader.Controls.AddRange(new Control[] { lblTitle, lblCompany, lblVersion, lblSchool, lblServerStatus });
             this.Controls.Add(pHeader);
 
             // ── Stats strip ──────────────────────────────────────────────────
             var pStats = new Panel
             {
                 Dock      = DockStyle.Top,
-                Height    = 50,
-                BackColor = Color.FromArgb(24, 24, 37)
+                Height    = 52,
+                BackColor = AppTheme.SurfaceAlt
             };
 
-            int sx = 16;
+            int sx = 20;
             lblOnlineLabel  = MakeStatLabel("Online:", sx,         pStats);
-            lblOnline       = MakeStatValue("0", sx + 55,          pStats, Color.FromArgb(52, 211, 153));
+            lblOnline       = MakeStatValue("0", sx + 55,          pStats, AppTheme.Success);
             lblOfflineLabel = MakeStatLabel("Offline:", sx + 120,  pStats);
-            lblOffline      = MakeStatValue("0", sx + 185,         pStats, Color.FromArgb(248, 113, 113));
-            lblPending      = MakeStatValue("Offline Queue: 0", sx + 260, pStats, Color.FromArgb(52, 211, 153));
-            lblLastSync     = MakeStatValue("Last sync: —", sx + 460, pStats, Color.Gray);
+            lblOffline      = MakeStatValue("0", sx + 185,         pStats, AppTheme.Danger);
+            lblPending      = MakeStatValue("Offline Queue: 0", sx + 260, pStats, AppTheme.Success);
+            lblLastSync     = MakeStatValue("Last sync: —", sx + 460, pStats, AppTheme.TextSecondary);
 
             this.Controls.Add(pStats);
 
@@ -110,25 +124,36 @@ namespace BiometricAgent
             var pButtons = new Panel
             {
                 Dock      = DockStyle.Top,
-                Height    = 40,
-                BackColor = Color.FromArgb(17, 17, 27)
+                Height    = 44,
+                BackColor = AppTheme.Background
             };
 
-            btnSyncNow = MakeButton("⟳ Sync Now", 10, pButtons, Color.FromArgb(99, 102, 241));
+            int bx = 12, bgap = 8;
+            btnSyncNow = MakeButton("Sync Now", bx, pButtons);
             btnSyncNow.Click += btnSyncNow_Click;
+            bx += btnSyncNow.Width + bgap;
 
-            btnRefreshDevices = MakeButton("⟳ Refresh Devices", 130, pButtons, Color.FromArgb(59, 130, 246));
+            btnRefreshDevices = MakeButton("Refresh Devices", bx, pButtons);
             btnRefreshDevices.Click += btnRefreshDevices_Click;
+            bx += btnRefreshDevices.Width + bgap;
 
-            btnSettings = MakeButton("⚙ Settings", 250, pButtons, Color.FromArgb(75, 85, 99));
+            btnSettings = MakeButton("Settings", bx, pButtons);
             btnSettings.Click += btnSettings_Click;
+            bx += btnSettings.Width + bgap;
 
-            btnSyncManager = MakeButton("🔄 Sync Manager", 370, pButtons, Color.FromArgb(16, 185, 129));
-            btnSyncManager.Width = 140;
+            btnDevices = MakeButton("Devices", bx, pButtons);
+            btnDevices.Click += btnDevices_Click;
+            bx += btnDevices.Width + bgap;
+
+            btnBackupRestore = MakeButton("Backup and Restore", bx, pButtons);
+            btnBackupRestore.Click += btnBackupRestore_Click;
+            bx += btnBackupRestore.Width + bgap;
+
+            btnSyncManager = MakeButton("Sync Manager", bx, pButtons);
             btnSyncManager.Click += btnSyncManager_Click;
+            bx += btnSyncManager.Width + bgap;
 
-            btnUsers = MakeButton("👥 ব্যবহারকারী", 515, pButtons, Color.FromArgb(168, 85, 247));
-            btnUsers.Width = 130;
+            btnUsers = MakeButton("ব্যবহারকারী", bx, pButtons);
             btnUsers.Click += btnUsers_Click;
 
             this.Controls.Add(pButtons);
@@ -139,8 +164,8 @@ namespace BiometricAgent
                 Text      = "  Connected Devices",
                 Dock      = DockStyle.Top,
                 Height    = 28,
-                BackColor = Color.FromArgb(30, 30, 46),
-                ForeColor = Color.FromArgb(125, 211, 252),
+                BackColor = AppTheme.Surface,
+                ForeColor = AppTheme.TextPrimary,
                 Font      = new Font("Segoe UI", 9, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleLeft
             };
@@ -150,7 +175,7 @@ namespace BiometricAgent
             {
                 Dock      = DockStyle.Top,
                 Height    = 110,
-                BackColor = Color.FromArgb(17, 17, 27),
+                BackColor = AppTheme.Background,
                 AutoScroll = true,
                 Padding   = new Padding(4)
             };
@@ -162,8 +187,8 @@ namespace BiometricAgent
                 Text      = "  Activity Log",
                 Dock      = DockStyle.Top,
                 Height    = 28,
-                BackColor = Color.FromArgb(30, 30, 46),
-                ForeColor = Color.FromArgb(125, 211, 252),
+                BackColor = AppTheme.Surface,
+                ForeColor = AppTheme.TextPrimary,
                 Font      = new Font("Segoe UI", 9, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleLeft
             };
@@ -172,8 +197,8 @@ namespace BiometricAgent
             rtfLog = new RichTextBox
             {
                 Dock        = DockStyle.Fill,
-                BackColor   = Color.FromArgb(17, 17, 27),
-                ForeColor   = Color.FromArgb(200, 200, 220),
+                BackColor   = AppTheme.Background,
+                ForeColor   = AppTheme.TextSecondary,
                 Font        = new Font("Consolas", 8.5f),
                 BorderStyle = BorderStyle.None,
                 ReadOnly    = true,
@@ -197,8 +222,8 @@ namespace BiometricAgent
             var lbl = new Label
             {
                 Text      = text,
-                Location  = new Point(x, 14),
-                ForeColor = Color.Gray,
+                Location  = new Point(x, 16),
+                ForeColor = AppTheme.TextSecondary,
                 AutoSize  = true
             };
             parent.Controls.Add(lbl);
@@ -210,7 +235,7 @@ namespace BiometricAgent
             var lbl = new Label
             {
                 Text      = text,
-                Location  = new Point(x, 14),
+                Location  = new Point(x, 16),
                 ForeColor = color,
                 Font      = new Font("Segoe UI", 9, FontStyle.Bold),
                 AutoSize  = true
@@ -219,19 +244,19 @@ namespace BiometricAgent
             return lbl;
         }
 
-        private Button MakeButton(string text, int x, Control parent, Color backColor)
+        private MaterialButton MakeButton(string text, int x, Control parent)
         {
-            var btn = new Button
+            var btn = new MaterialButton
             {
-                Text      = text,
-                Location  = new Point(x, 6),
-                Size      = new Size(115, 28),
-                BackColor = backColor,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font      = new Font("Segoe UI", 8.5f)
+                Text = text,
+                Location = new Point(x, 6),
+                AutoSize = true,
+                Height = 32,
+                Type = MaterialButton.MaterialButtonType.Contained,
+                UseAccentColor = false,
+                HighEmphasis = true,
+                Density = MaterialButton.MaterialButtonDensity.Default
             };
-            btn.FlatAppearance.BorderSize = 0;
             parent.Controls.Add(btn);
             return btn;
         }
@@ -239,6 +264,13 @@ namespace BiometricAgent
         protected override void Dispose(bool disposing)
         {
             if (disposing && components != null) components.Dispose();
+            if (disposing)
+            {
+                _notifyIcon?.Dispose();
+                _trayIconConnected?.Dispose();
+                _trayIconDisconnected?.Dispose();
+                _appIcon?.Dispose();
+            }
             base.Dispose(disposing);
         }
     }

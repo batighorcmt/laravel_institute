@@ -12,8 +12,8 @@ class BiometricProfile extends Model
     use HasFactory;
 
     protected $fillable = [
-        'school_id', 'user_type', 'student_id', 'teacher_id', 
-        'biometric_id', 'finger_count', 'status'
+        'school_id', 'user_type', 'student_id', 'teacher_id',
+        'biometric_id', 'card_number', 'finger_count', 'status'
     ];
 
     public function school(): BelongsTo
@@ -34,5 +34,10 @@ class BiometricProfile extends Model
     public function templates(): HasMany
     {
         return $this->hasMany(FingerprintTemplate::class, 'biometric_profile_id');
+    }
+
+    public function faceTemplates(): HasMany
+    {
+        return $this->hasMany(FaceTemplate::class, 'biometric_profile_id');
     }
 }

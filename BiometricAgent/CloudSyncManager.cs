@@ -239,6 +239,72 @@ namespace BiometricAgent
             return new List<BiometricTemplate>();
         }
 
+        /// <summary>Uploads a full disaster-recovery backup batch (fingers + card + face per
+        /// user, including zero-fingerprint users) to the cloud. Deliberately hits separate
+        /// /biometric/backup/* endpoints rather than /biometric/templates/* - the existing
+        /// template endpoints are used by the currently-deployed production agent for routine
+        /// "replace with latest" sync and have a different, incompatible payload shape.</summary>
+        public async Task<bool> UploadBackupAsync(int schoolId, string deviceSerial, List<UserBackupRecord> records)
+        {
+            try
+            {
+                var body = JsonConvert.SerializeObject(new
+                {
+                    school_id = schoolId,
+                    device_serial = deviceSerial,
+                    records = records
+                });
+                var resp = await _http.PostAsync(
+                    $"{_config.SaasApiUrl}/biometric/backup/upload",
+                    new StringContent(body, Encoding.UTF8, "application/json"));
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    var bodyText = await resp.Content.ReadAsStringAsync();
+                    _logger?.Invoke($"Backup upload failed ({(int)resp.StatusCode}): {bodyText}");
+                }
+
+                return resp.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Invoke($"Backup upload exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>Downloads the most recent full backup batch for a device from the cloud.</summary>
+        public async Task<List<UserBackupRecord>> DownloadBackupAsync(int schoolId, string deviceSerial)
+        {
+            try
+            {
+                var body = JsonConvert.SerializeObject(new
+                {
+                    school_id = schoolId,
+                    device_serial = deviceSerial
+                });
+                var resp = await _http.PostAsync(
+                    $"{_config.SaasApiUrl}/biometric/backup/download",
+                    new StringContent(body, Encoding.UTF8, "application/json"));
+
+                if (resp.IsSuccessStatusCode)
+                {
+                    var json = await resp.Content.ReadAsStringAsync();
+                    var result = JsonConvert.DeserializeObject<dynamic>(json);
+                    var list = JsonConvert.DeserializeObject<List<UserBackupRecord>>(Convert.ToString(result?.records));
+                    return list ?? new List<UserBackupRecord>();
+                }
+
+                var failBody = await resp.Content.ReadAsStringAsync();
+                _logger?.Invoke($"Backup download failed ({(int)resp.StatusCode}): {failBody}");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Invoke($"Backup download exception: {ex.Message}");
+            }
+            return new List<UserBackupRecord>();
+        }
+
         /// <summary>Fetch all users (students & teachers) from the SaaS.</summary>
         public async Task<List<UserRecord>> GetUsersAsync(int schoolId)
         {

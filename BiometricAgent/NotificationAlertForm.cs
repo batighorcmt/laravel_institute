@@ -18,14 +18,14 @@ namespace BiometricAgent
             this.FormBorderStyle = FormBorderStyle.None;
             this.TopMost = true;
             this.ShowInTaskbar = false;
-            this.BackColor = Color.FromArgb(30, 32, 48);
+            this.BackColor = AppTheme.Surface;
 
             // ── Top bar ────────────────────────────────
             pTop = new Panel
             {
                 Dock = DockStyle.Top,
                 Height = 32,
-                BackColor = Color.FromArgb(220, 38, 38)  // Red header
+                BackColor = AppTheme.Danger  // Red header
             };
 
             lblTitle = new Label
@@ -49,7 +49,7 @@ namespace BiometricAgent
                 Font = new Font("Segoe UI", 9, FontStyle.Bold)
             };
             btnClose.FlatAppearance.BorderSize = 0;
-            btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(185, 28, 28);
+            btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(200, 90, 90);
             btnClose.Click += (s, e) => this.Close();
 
             pTop.Controls.Add(lblTitle);
@@ -60,7 +60,7 @@ namespace BiometricAgent
             {
                 Text = message,
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
-                ForeColor = Color.FromArgb(230, 230, 250),
+                ForeColor = AppTheme.TextPrimary,
                 Padding = new Padding(12, 10, 12, 10),
                 AutoSize = false,
                 TextAlign = ContentAlignment.TopLeft
@@ -90,7 +90,7 @@ namespace BiometricAgent
             // Subtle border via Paint
             this.Paint += (s, e) =>
             {
-                using var pen = new Pen(Color.FromArgb(220, 38, 38), 1);
+                using var pen = new Pen(AppTheme.Danger, 1);
                 e.Graphics.DrawRectangle(pen, 0, 0, this.Width - 1, this.Height - 1);
             };
         }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MaterialSkin.Controls;
 
 namespace BiometricAgent
 {
@@ -17,13 +18,13 @@ namespace BiometricAgent
         private readonly OfflineQueue _offlineQueue;
 
         private ComboBox cmbDevices;
-        private Button btnStep1;
-        private Button btnStep2;
-        private Button btnStep3;
+        private MaterialButton btnStep1;
+        private MaterialButton btnStep2;
+        private MaterialButton btnStep3;
         private ProgressBar prgProgress;
         private Label lblProgress;
         private RichTextBox rtfLog;
-        private Button btnClose;
+        private MaterialButton btnClose;
 
         public SyncManagerForm(AgentConfig config, CloudSyncManager cloud, Dictionary<string, IBiometricAdapter> adapters, int schoolId)
         {
@@ -33,6 +34,7 @@ namespace BiometricAgent
             _schoolId = schoolId;
             _offlineQueue = new OfflineQueue();
 
+            AppTheme.Apply();
             InitializeUI();
             PopulateDevices();
         }
@@ -42,8 +44,8 @@ namespace BiometricAgent
             this.Text = "Biometric Sync Manager";
             this.Size = new Size(600, 500);
             this.StartPosition = FormStartPosition.CenterParent;
-            this.BackColor = Color.FromArgb(30, 30, 46);
-            this.ForeColor = Color.White;
+            this.BackColor = AppTheme.Background;
+            this.ForeColor = AppTheme.TextPrimary;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
@@ -52,6 +54,7 @@ namespace BiometricAgent
             {
                 Text = "Biometric Template Workflow",
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                ForeColor = AppTheme.TextPrimary,
                 Location = new Point(20, 20),
                 AutoSize = true
             };
@@ -61,6 +64,7 @@ namespace BiometricAgent
             {
                 Text = "Device:",
                 Location = new Point(20, 70),
+                ForeColor = AppTheme.TextPrimary,
                 AutoSize = true
             };
             Controls.Add(lblSelect);
@@ -73,15 +77,15 @@ namespace BiometricAgent
             };
             Controls.Add(cmbDevices);
 
-            btnStep1 = CreateButton("Step 1: Send Users to Device", 20, 110, Color.FromArgb(59, 130, 246));
+            btnStep1 = CreateButton("Step 1: Send Users to Device", 20, 110);
             btnStep1.Click += async (s, e) => await Step1_SendUsersAsync();
             Controls.Add(btnStep1);
 
-            btnStep2 = CreateButton("Step 2: Upload Templates to Web", 20, 160, Color.FromArgb(139, 92, 246));
+            btnStep2 = CreateButton("Step 2: Upload Templates to Web", 20, 160);
             btnStep2.Click += async (s, e) => await Step2_UploadTemplatesAsync();
             Controls.Add(btnStep2);
 
-            btnStep3 = CreateButton("Step 3: Distribute to Selected Device", 20, 210, Color.FromArgb(16, 185, 129));
+            btnStep3 = CreateButton("Step 3: Distribute to Selected Device", 20, 210);
             btnStep3.Click += async (s, e) => await Step3_DistributeTemplatesAsync();
             Controls.Add(btnStep3);
 
@@ -100,7 +104,7 @@ namespace BiometricAgent
                 Text = "",
                 Location = new Point(20, 279),
                 Width = 540,
-                ForeColor = Color.LightGray,
+                ForeColor = AppTheme.TextSecondary,
                 Font = new Font("Segoe UI", 8),
                 AutoSize = false
             };
@@ -111,31 +115,38 @@ namespace BiometricAgent
                 Location = new Point(20, 300),
                 Width = 540,
                 Height = 95,
-                BackColor = Color.FromArgb(40, 42, 54),
-                ForeColor = Color.LightGray,
+                BackColor = AppTheme.Surface,
+                ForeColor = AppTheme.TextSecondary,
                 ReadOnly = true,
                 BorderStyle = BorderStyle.None
             };
             Controls.Add(rtfLog);
 
-            btnClose = CreateButton("Close", 460, 410, Color.FromArgb(107, 114, 128));
-            btnClose.Width = 100;
+            btnClose = new MaterialButton
+            {
+                Text = "Close",
+                Location = new Point(460, 410),
+                AutoSize = true,
+                Height = 34,
+                Type = MaterialButton.MaterialButtonType.Outlined,
+                UseAccentColor = false,
+                HighEmphasis = false
+            };
             btnClose.Click += (s, e) => this.Close();
             Controls.Add(btnClose);
         }
 
-        private Button CreateButton(string text, int x, int y, Color color)
+        private MaterialButton CreateButton(string text, int x, int y)
         {
-            return new Button
+            return new MaterialButton
             {
                 Text = text,
                 Location = new Point(x, y),
                 Width = 250,
                 Height = 35,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = color,
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                Type = MaterialButton.MaterialButtonType.Contained,
+                UseAccentColor = false,
+                HighEmphasis = true,
                 Cursor = Cursors.Hand
             };
         }

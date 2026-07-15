@@ -53,8 +53,140 @@ namespace BiometricAgent
                     finger_index  INTEGER NOT NULL,
                     template_hash TEXT NOT NULL,
                     PRIMARY KEY (device_serial, biometric_id, finger_index)
+                );
+                CREATE TABLE IF NOT EXISTS backup_batches (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    device_serial TEXT NOT NULL,
+                    device_name   TEXT NOT NULL DEFAULT '',
+                    user_count    INTEGER NOT NULL DEFAULT 0,
+                    captured_at   TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS backup_records (
+                    batch_id      INTEGER NOT NULL,
+                    biometric_id  TEXT NOT NULL,
+                    name          TEXT,
+                    privilege     INTEGER NOT NULL DEFAULT 0,
+                    card_number   TEXT,
+                    face_data     TEXT,
+                    fingers_json  TEXT NOT NULL DEFAULT '[]',
+                    PRIMARY KEY (batch_id, biometric_id)
                 );";
             cmd.ExecuteNonQuery();
+        }
+
+        // ── Full-device backup snapshots (disaster-recovery, independent of the
+        // routine punch/user/template sync tables above) ──────────────────────
+
+        /// <summary>Persists one full backup snapshot (a batch of per-user records) taken
+        /// from a device. This is the local, cloud-independent durability net - a snapshot
+        /// is written here every time "Download All Data From Device" runs, regardless of
+        /// whether the cloud upload that may follow succeeds.</summary>
+        public long SaveBackupBatch(string deviceSerial, string deviceName, List<UserBackupRecord> records)
+        {
+            using var conn = OpenConnection();
+            using var transaction = conn.BeginTransaction();
+
+            var insertBatch = conn.CreateCommand();
+            insertBatch.Transaction = transaction;
+            insertBatch.CommandText = @"
+                INSERT INTO backup_batches (device_serial, device_name, user_count, captured_at)
+                VALUES ($serial, $name, $count, $now);
+                SELECT last_insert_rowid();";
+            insertBatch.Parameters.AddWithValue("$serial", deviceSerial);
+            insertBatch.Parameters.AddWithValue("$name", deviceName);
+            insertBatch.Parameters.AddWithValue("$count", records.Count);
+            insertBatch.Parameters.AddWithValue("$now", DateTime.UtcNow.ToString("o"));
+            long batchId = (long)insertBatch.ExecuteScalar()!;
+
+            var insertRecord = conn.CreateCommand();
+            insertRecord.Transaction = transaction;
+            insertRecord.CommandText = @"
+                INSERT INTO backup_records (batch_id, biometric_id, name, privilege, card_number, face_data, fingers_json)
+                VALUES ($batchId, $bioId, $name, $priv, $card, $face, $fingers)";
+            var bioParam    = insertRecord.Parameters.Add("$bioId", SqliteType.Text);
+            var nameParam   = insertRecord.Parameters.Add("$name", SqliteType.Text);
+            var privParam   = insertRecord.Parameters.Add("$priv", SqliteType.Integer);
+            var cardParam   = insertRecord.Parameters.Add("$card", SqliteType.Text);
+            var faceParam   = insertRecord.Parameters.Add("$face", SqliteType.Text);
+            var fingerParam = insertRecord.Parameters.Add("$fingers", SqliteType.Text);
+            insertRecord.Parameters.AddWithValue("$batchId", batchId);
+
+            foreach (var r in records)
+            {
+                bioParam.Value    = r.BiometricId;
+                nameParam.Value   = (object?)r.Name ?? DBNull.Value;
+                privParam.Value   = r.Privilege;
+                cardParam.Value   = (object?)r.CardNumber ?? DBNull.Value;
+                faceParam.Value   = (object?)r.FaceData ?? DBNull.Value;
+                fingerParam.Value = JsonConvert.SerializeObject(r.Fingers);
+                insertRecord.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+            return batchId;
+        }
+
+        /// <summary>Lists backup batches (most recent first) for the "View Local Backups" grid.</summary>
+        public List<BackupBatchSummary> ListBackupBatches()
+        {
+            var list = new List<BackupBatchSummary>();
+            using var conn = OpenConnection();
+            var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT id, device_serial, device_name, user_count, captured_at FROM backup_batches ORDER BY id DESC";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                list.Add(new BackupBatchSummary
+                {
+                    Id = reader.GetInt64(0),
+                    DeviceSerial = reader.GetString(1),
+                    DeviceName = reader.GetString(2),
+                    UserCount = reader.GetInt32(3),
+                    CapturedAt = reader.GetString(4)
+                });
+            }
+            return list;
+        }
+
+        /// <summary>Writes a plain, human-recoverable JSON export of a backup batch under
+        /// %AppData%\BiometricAgent\backups\ - a second, cloud- and SQLite-independent
+        /// safety net so a full device backup survives even if the SQLite file itself is
+        /// ever lost or corrupted.</summary>
+        public static string ExportBackupJson(string deviceSerial, List<UserBackupRecord> records)
+        {
+            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BiometricAgent", "backups");
+            Directory.CreateDirectory(dir);
+
+            string safeSerial = string.IsNullOrWhiteSpace(deviceSerial) ? "UNKNOWN" : deviceSerial;
+            string fileName = $"{safeSerial}_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            string path = Path.Combine(dir, fileName);
+
+            File.WriteAllText(path, JsonConvert.SerializeObject(records, Formatting.Indented));
+            return path;
+        }
+
+        /// <summary>Loads all per-user records for a given backup batch (used to restore to a device or export).</summary>
+        public List<UserBackupRecord> GetBackupBatchRecords(long batchId)
+        {
+            var list = new List<UserBackupRecord>();
+            using var conn = OpenConnection();
+            var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT biometric_id, name, privilege, card_number, face_data, fingers_json FROM backup_records WHERE batch_id = $batchId";
+            cmd.Parameters.AddWithValue("$batchId", batchId);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                list.Add(new UserBackupRecord
+                {
+                    BiometricId = reader.GetString(0),
+                    Name = reader.IsDBNull(1) ? "" : reader.GetString(1),
+                    Privilege = reader.GetInt32(2),
+                    CardNumber = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                    FaceData = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                    Fingers = JsonConvert.DeserializeObject<List<FingerTemplate>>(reader.GetString(5)) ?? new()
+                });
+            }
+            return list;
         }
 
         private SqliteConnection OpenConnection()
@@ -383,5 +515,52 @@ namespace BiometricAgent
 
         [JsonProperty("name")]
         public string? Name { get; set; }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Full-device backup DTOs. Deliberately separate from BiometricTemplate/
+    // PunchRecord above - those drive the existing routine "replace with latest"
+    // sync endpoints used by the already-deployed production agent. A backup is
+    // a "preserve everything" disaster-recovery snapshot (fingers + card + face
+    // per user, including users with zero fingerprints) with different semantics,
+    // so it gets its own aggregate shape and its own API endpoints.
+    // ─────────────────────────────────────────────────────────────────────────
+    public class FingerTemplate
+    {
+        [JsonProperty("finger_index")]
+        public int FingerIndex { get; set; }
+
+        [JsonProperty("template_data")]
+        public string TemplateData { get; set; } = "";
+    }
+
+    public class UserBackupRecord
+    {
+        [JsonProperty("biometric_id")]
+        public string BiometricId { get; set; } = "";
+
+        [JsonProperty("name")]
+        public string Name { get; set; } = "";
+
+        [JsonProperty("privilege")]
+        public int Privilege { get; set; }
+
+        [JsonProperty("card_number")]
+        public string CardNumber { get; set; } = "";
+
+        [JsonProperty("face_data")]
+        public string FaceData { get; set; } = "";
+
+        [JsonProperty("fingers")]
+        public List<FingerTemplate> Fingers { get; set; } = new();
+    }
+
+    public class BackupBatchSummary
+    {
+        public long Id { get; set; }
+        public string DeviceSerial { get; set; } = "";
+        public string DeviceName { get; set; } = "";
+        public int UserCount { get; set; }
+        public string CapturedAt { get; set; } = "";
     }
 }

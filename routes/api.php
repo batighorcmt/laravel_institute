@@ -281,6 +281,13 @@ Route::prefix('biometric')->group(function () {
         Route::post('/device-command', [\App\Http\Controllers\Api\Biometric\DeviceCommandController::class, 'getPendingCommands'])
             ->name('biometric.device.command');
 
+        // Full disaster-recovery backup (fingers + card + face per user) - separate from
+        // /templates/upload,download above, which are used by the routine sync flow.
+        Route::post('/backup/upload', [\App\Http\Controllers\Api\Biometric\BackupSnapshotController::class, 'upload'])
+            ->name('biometric.backup.upload');
+        Route::post('/backup/download', [\App\Http\Controllers\Api\Biometric\BackupSnapshotController::class, 'download'])
+            ->name('biometric.backup.download');
+
         // Fetch all users with biometric_id for the agent
         Route::get('/users', [\App\Http\Controllers\Api\Biometric\BiometricSyncController::class, 'getUsers'])
             ->name('biometric.users.list');

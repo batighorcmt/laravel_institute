@@ -31,6 +31,16 @@ namespace BiometricAgent
         bool ClearAttendanceLog();
         List<BiometricTemplate> ReadAllTemplates(Action<int>? onProgress = null);
         bool UploadTemplate(BiometricTemplate template);
+
+        /// <summary>Disaster-recovery style full read: emits one record per enrolled user
+        /// (fingers + card + face), including users with zero fingerprints - unlike
+        /// ReadAllTemplates, which silently drops those. Face is probed once and skipped
+        /// for the rest of the batch if unsupported by the device/firmware.</summary>
+        List<UserBackupRecord> ReadFullBackup(Action<int>? onProgress = null);
+
+        /// <summary>Restores one user's full record (fingers + card + face) to the device.</summary>
+        bool RestoreUserBackup(UserBackupRecord record);
+
         string GetSerialNumber();
         string Brand { get; }
         string LastError { get; }
@@ -508,6 +518,174 @@ namespace BiometricAgent
             }
         }
 
+        public List<UserBackupRecord> ReadFullBackup(Action<int>? onProgress = null)
+        {
+            if (_sdk == null || !_isConnected) return new List<UserBackupRecord>();
+
+            try
+            {
+                long lastProgressTicks = Environment.TickCount64;
+                int abandoned = 0;
+
+                var task = _staQueue.Enqueue(() =>
+                {
+                    var records = new List<UserBackupRecord>();
+                    _sdk.ReadAllTemplate(_machineNumber);
+
+                    int processedUsers = 0;
+                    bool faceProbeDone = false;
+                    bool faceSupported = false; // decided by the very first user's probe below
+
+                    while (_sdk.SSR_GetAllUserInfo(_machineNumber, out string enrollNo, out string name, out string password, out int privilege, out bool enabled))
+                    {
+                        var record = new UserBackupRecord
+                        {
+                            BiometricId = enrollNo.Trim(),
+                            Name = name,
+                            Privilege = privilege
+                        };
+
+                        // Card number: read via the same two-call pattern used for fingerprint
+                        // templates below - GetStrCardNumber returns the card of the LAST record
+                        // fetched by SSR_GetAllUserInfo, so it must be called right here.
+                        try
+                        {
+                            if (_sdk.GetStrCardNumber(out string cardNumber) && !string.IsNullOrWhiteSpace(cardNumber))
+                                record.CardNumber = cardNumber.Trim();
+                        }
+                        catch { /* card read not supported/failed for this user - leave blank */ }
+
+                        for (int fingerIndex = 0; fingerIndex < 10; fingerIndex++)
+                        {
+                            if (_sdk.SSR_GetUserTmpStr(_machineNumber, enrollNo, fingerIndex, out string tmpData, out int tmpLength))
+                            {
+                                record.Fingers.Add(new FingerTemplate { FingerIndex = fingerIndex, TemplateData = tmpData });
+                            }
+                        }
+
+                        // Face: many ZKTeco models/firmwares have no camera and don't implement
+                        // this call. Bound the cost of finding that out to a single probe on the
+                        // first user - if it throws or comes back empty, commit to "unsupported"
+                        // for the rest of the batch rather than paying for a guaranteed-failing
+                        // call per user across a roster that could be 1000+ people.
+                        if (!faceProbeDone)
+                        {
+                            try
+                            {
+                                faceSupported = _sdk.GetUserFaceStr(_machineNumber, enrollNo, 0, out string faceData, out int faceLength)
+                                    && !string.IsNullOrWhiteSpace(faceData);
+                                if (faceSupported) record.FaceData = faceData;
+                            }
+                            catch
+                            {
+                                faceSupported = false;
+                            }
+                            faceProbeDone = true;
+                        }
+                        else if (faceSupported)
+                        {
+                            try
+                            {
+                                if (_sdk.GetUserFaceStr(_machineNumber, enrollNo, 0, out string faceData, out int faceLength) && !string.IsNullOrWhiteSpace(faceData))
+                                    record.FaceData = faceData;
+                            }
+                            catch { /* isolated failure for this one user - keep going */ }
+                        }
+
+                        records.Add(record);
+                        processedUsers++;
+                        Interlocked.Exchange(ref lastProgressTicks, Environment.TickCount64);
+                        onProgress?.Invoke(processedUsers);
+
+                        if (Volatile.Read(ref abandoned) != 0)
+                            return records;
+                    }
+
+                    return records;
+                });
+
+                const int pollIntervalMs = 5000;
+                const int inactivityTimeoutMs = 90_000;
+                const int hardCeilingMs = 90 * 60_000;
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+
+                while (!task.Wait(pollIntervalMs))
+                {
+                    long idleMs = Environment.TickCount64 - Interlocked.Read(ref lastProgressTicks);
+                    if (idleMs > inactivityTimeoutMs)
+                    {
+                        _lastError = $"Backup read stalled - no progress for {idleMs / 1000}s. Try again.";
+                        _isConnected = false;
+                        Volatile.Write(ref abandoned, 1);
+                        return new List<UserBackupRecord>();
+                    }
+                    if (sw.ElapsedMilliseconds > hardCeilingMs)
+                    {
+                        _lastError = "Backup read exceeded the maximum allowed time (90 minutes). Try again.";
+                        _isConnected = false;
+                        Volatile.Write(ref abandoned, 1);
+                        return new List<UserBackupRecord>();
+                    }
+                }
+
+                return task.Result;
+            }
+            catch { return new List<UserBackupRecord>(); }
+        }
+
+        public bool RestoreUserBackup(UserBackupRecord record)
+        {
+            if (_sdk == null || !_isConnected) return false;
+
+            try
+            {
+                return _staQueue.Enqueue(() =>
+                {
+                    // Card number is a "pending value" that SSR_SetUserInfo picks up - must be
+                    // set before that call, not after.
+                    if (!string.IsNullOrWhiteSpace(record.CardNumber))
+                    {
+                        try { _sdk.SetStrCardNumber(record.CardNumber); }
+                        catch { /* card write not supported on this device - continue without it */ }
+                    }
+
+                    bool userOk = _sdk.SSR_SetUserInfo(_machineNumber, record.BiometricId, record.Name ?? string.Empty, string.Empty, record.Privilege, true);
+                    if (!userOk)
+                    {
+                        _lastError = DescribeSdkFailure("SSR_SetUserInfo");
+                        return false;
+                    }
+
+                    bool anyFingerFailed = false;
+                    foreach (var finger in record.Fingers)
+                    {
+                        bool ok = _sdk.SetUserTmpStr(_machineNumber, record.BiometricId, finger.FingerIndex, finger.TemplateData);
+                        if (!ok)
+                        {
+                            anyFingerFailed = true;
+                            _lastError = DescribeSdkFailure($"SetUserTmpStr(finger {finger.FingerIndex})");
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(record.FaceData))
+                    {
+                        try
+                        {
+                            _sdk.SetUserFaceStr(_machineNumber, record.BiometricId, 0, record.FaceData, record.FaceData.Length);
+                        }
+                        catch { /* face write not supported on this device - continue without it */ }
+                    }
+
+                    return userOk && !anyFingerFailed;
+                }).Result;
+            }
+            catch (Exception ex)
+            {
+                _lastError = $"RestoreUserBackup exception: {ex.Message}";
+                return false;
+            }
+        }
+
         private string DescribeSdkFailure(string apiName)
         {
             try
@@ -547,6 +725,8 @@ namespace BiometricAgent
         public bool ClearAttendanceLog() => throw new NotImplementedException();
         public List<BiometricTemplate> ReadAllTemplates(Action<int>? onProgress = null) => throw new NotImplementedException();
         public bool UploadTemplate(BiometricTemplate template) => throw new NotImplementedException();
+        public List<UserBackupRecord> ReadFullBackup(Action<int>? onProgress = null) => throw new NotImplementedException();
+        public bool RestoreUserBackup(UserBackupRecord record) => throw new NotImplementedException();
         public string GetSerialNumber() => throw new NotImplementedException();
     }
 

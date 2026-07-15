@@ -38,9 +38,26 @@ namespace BiometricAgent
                     var port = int.Parse(args[2]);
                     var machineNumber = int.Parse(args[3]);
                     var jsonPath = args[4];
-                    returnCode:;
                     int code = RunUploader(ip, port, machineNumber, jsonPath);
                     Environment.Exit(code);
+                }
+
+                // Restore a full backup record (fingers + card + face) to a device. Same
+                // crash-isolation rationale as --upload-templates above: a native COM fault
+                // triggered by writing one bad record only kills this one child process.
+                if (args != null && args.Length > 0 && args[0] == "--restore-backup")
+                {
+                    int argc = args.Length;
+                    if (argc < 5)
+                    {
+                        Console.Error.WriteLine("Usage: --restore-backup <ip> <port> <machineNumber> <recordJsonPath>");
+                        Environment.Exit(2);
+                    }
+                    var ip = args[1];
+                    var port = int.Parse(args[2]);
+                    var machineNumber = int.Parse(args[3]);
+                    var jsonPath = args[4];
+                    Environment.Exit(RunBackupRestore(ip, port, machineNumber, jsonPath));
                 }
 
                 Application.Run(new MainDashboard());
@@ -128,6 +145,53 @@ namespace BiometricAgent
             catch (Exception ex)
             {
                 Console.Error.WriteLine("Uploader failed: " + ex.Message);
+                return 5;
+            }
+        }
+
+        private static int RunBackupRestore(string ip, int port, int machineNumber, string jsonPath)
+        {
+            try
+            {
+                if (!System.IO.File.Exists(jsonPath))
+                {
+                    Console.Error.WriteLine("Backup record file not found: " + jsonPath);
+                    return 3;
+                }
+
+                var json = System.IO.File.ReadAllText(jsonPath);
+                var record = Newtonsoft.Json.JsonConvert.DeserializeObject<UserBackupRecord>(json);
+                if (record == null)
+                {
+                    Console.WriteLine("No record to restore.");
+                    return 0;
+                }
+
+                var adapter = BiometricAdapterFactory.Create("zkteco");
+                if (!adapter.Connect(ip, port, machineNumber, registerEvents: false))
+                {
+                    Console.Error.WriteLine("Failed to connect to device at " + ip);
+                    return 4;
+                }
+
+                System.Threading.Thread.Sleep(500);
+
+                bool ok = adapter.RestoreUserBackup(record);
+                if (ok)
+                {
+                    Console.WriteLine($"Restored biometricId={record.BiometricId} ({record.Fingers.Count} finger(s), card={(string.IsNullOrWhiteSpace(record.CardNumber) ? "no" : "yes")}, face={(string.IsNullOrWhiteSpace(record.FaceData) ? "no" : "yes")}).");
+                }
+                else
+                {
+                    Console.Error.WriteLine($"FAILED biometricId={record.BiometricId}: {adapter.LastError}");
+                }
+
+                adapter.Disconnect();
+                return ok ? 0 : 1;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("Restore failed: " + ex.Message);
                 return 5;
             }
         }

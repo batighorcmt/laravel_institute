@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using MaterialSkin.Controls;
 using Newtonsoft.Json;
 
 namespace BiometricAgent
@@ -13,14 +14,18 @@ namespace BiometricAgent
     {
         public AgentConfig Config { get; private set; }
 
-        private TextBox txtApiUrl = null!, txtSchoolCode = null!, txtToken = null!;
-        private TextBox txtSyncInterval = null!;
-        private CheckBox chkAutoStart = null!;
-        private DataGridView gridDevices = null!;
+        /// <summary>True if devices were added/edited/removed via Manage Devices while
+        /// this dialog was open, so the caller knows to reconnect/refresh devices.</summary>
+        public bool DevicesChanged { get; private set; }
+
+        private MaterialTextBox2 txtApiUrl = null!, txtSchoolCode = null!, txtToken = null!;
+        private MaterialTextBox2 txtSyncInterval = null!;
+        private MaterialCheckbox chkAutoStart = null!;
 
         public SettingsForm(AgentConfig config)
         {
             Config = config;
+            AppTheme.Apply();
             BuildUI();
             LoadValues();
         }
@@ -28,76 +33,76 @@ namespace BiometricAgent
         private void BuildUI()
         {
             Text          = "Agent Settings";
-            Size          = new Size(600, 520);
+            Size          = new Size(600, 470);
             StartPosition = FormStartPosition.CenterParent;
-            BackColor     = Color.FromArgb(17, 17, 27);
-            ForeColor     = Color.White;
+            BackColor     = AppTheme.Background;
+            ForeColor     = AppTheme.TextPrimary;
             Font          = new Font("Segoe UI", 9f);
 
-            int y = 16;
-            AddLabel("SaaS API URL:", 16, y);
-            txtApiUrl = AddTextBox(150, y, 400); y += 36;
+            var lblTitle = new Label
+            {
+                Text = "⚙ Agent Settings",
+                Location = new Point(20, 16),
+                Font = new Font("Segoe UI", 13, FontStyle.Bold),
+                ForeColor = AppTheme.TextPrimary,
+                AutoSize = true
+            };
+            Controls.Add(lblTitle);
 
-            AddLabel("School Code:", 16, y);
-            txtSchoolCode = AddTextBox(150, y, 200); y += 36;
+            var lblHint = new Label
+            {
+                Text = "Server connection settings. Devices are managed separately.",
+                Location = new Point(20, 46),
+                ForeColor = AppTheme.TextSecondary,
+                AutoSize = true
+            };
+            Controls.Add(lblHint);
 
-            AddLabel("Agent Token:", 16, y);
-            txtToken = AddTextBox(150, y, 400); y += 36;
+            int y = 80;
+            txtApiUrl = AddTextField("SaaS API URL", 20, y, 540); y += 56;
+            txtSchoolCode = AddTextField("School Code", 20, y, 260); y += 56;
+            txtToken = AddTextField("Agent Token", 20, y, 540); y += 56;
+            txtSyncInterval = AddTextField("Sync Interval (seconds)", 20, y, 180);
 
-            AddLabel("Sync Interval (s):", 16, y);
-            txtSyncInterval = AddTextBox(150, y, 80); 
-            
-            chkAutoStart = new CheckBox 
-            { 
-                Text = "Auto-Start with Windows", 
-                Location = new Point(250, y + 2), 
-                ForeColor = Color.White,
+            chkAutoStart = new MaterialCheckbox
+            {
+                Text = "Auto-Start with Windows",
+                Location = new Point(230, y + 14),
                 AutoSize = true
             };
             Controls.Add(chkAutoStart);
-            y += 36;
+            y += 60;
 
-            var lblDevices = new Label
+            var btnManageDevices = new MaterialButton
             {
-                Text      = "Devices (Name | Serial | IP | Port | Location):",
-                Location  = new Point(16, y),
-                ForeColor = Color.FromArgb(125, 211, 252),
-                AutoSize  = true
+                Text = "Manage Devices",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Height = 34,
+                Type = MaterialButton.MaterialButtonType.Outlined,
+                UseAccentColor = false,
+                HighEmphasis = true
             };
-            Controls.Add(lblDevices); y += 22;
-
-            gridDevices = new DataGridView
+            btnManageDevices.Click += (s, e) =>
             {
-                Location          = new Point(16, y),
-                Size              = new Size(550, 200),
-                BackgroundColor   = Color.FromArgb(30, 30, 46),
-                ForeColor         = Color.White,
-                GridColor         = Color.FromArgb(60, 60, 80),
-                DefaultCellStyle  = { BackColor = Color.FromArgb(30, 30, 46), ForeColor = Color.White },
-                ColumnHeadersDefaultCellStyle = { BackColor = Color.FromArgb(99, 102, 241), ForeColor = Color.White },
-                BorderStyle       = BorderStyle.None,
-                AllowUserToAddRows = true
+                using var frm = new DeviceManagementForm(Config);
+                frm.ShowDialog(this);
+                if (frm.DevicesChanged) DevicesChanged = true;
             };
-            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name",          HeaderText = "Name",          Width = 100 });
-            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "SerialNumber",  HeaderText = "Serial",        Width = 90  });
-            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "MachineNumber", HeaderText = "Device #",      Width = 70  });
-            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "IpAddress",     HeaderText = "IP",            Width = 110 });
-            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "Port",          HeaderText = "Port",          Width = 60  });
-            gridDevices.Columns.Add(new DataGridViewTextBoxColumn { Name = "Location",      HeaderText = "Location",      Width = 120 });
-            Controls.Add(gridDevices);
-            y += 210;
+            Controls.Add(btnManageDevices);
+            y += 52;
 
-            var btnSave = new Button
+            var btnSave = new MaterialButton
             {
-                Text      = "💾 Save & Close",
-                Location  = new Point(16, y),
-                Size      = new Size(140, 32),
-                BackColor = Color.FromArgb(99, 102, 241),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
+                Text = "Save and Close",
+                Location = new Point(20, y),
+                AutoSize = true,
+                Height = 36,
+                Type = MaterialButton.MaterialButtonType.Contained,
+                UseAccentColor = false,
+                HighEmphasis = true,
                 DialogResult = DialogResult.OK
             };
-            btnSave.FlatAppearance.BorderSize = 0;
             btnSave.Click += BtnSave_Click;
             Controls.Add(btnSave);
         }
@@ -109,11 +114,6 @@ namespace BiometricAgent
             txtToken.Text         = Config.AgentToken;
             txtSyncInterval.Text  = Config.SyncIntervalSeconds.ToString();
             chkAutoStart.Checked  = Config.AutoStart;
-
-            foreach (var dev in Config.Devices)
-            {
-                gridDevices.Rows.Add(dev.Name, dev.SerialNumber, dev.MachineNumber.ToString(), dev.IpAddress, dev.Port.ToString(), dev.Location);
-            }
         }
 
         private void BtnSave_Click(object? sender, EventArgs e)
@@ -123,43 +123,15 @@ namespace BiometricAgent
             Config.AgentToken         = txtToken.Text.Trim();
             Config.SyncIntervalSeconds = int.TryParse(txtSyncInterval.Text.Trim(), out int iv) ? iv : 60;
             Config.AutoStart          = chkAutoStart.Checked;
-
-            Config.Devices.Clear();
-            foreach (DataGridViewRow row in gridDevices.Rows)
-            {
-                if (row.IsNewRow) continue;
-                var name   = row.Cells["Name"].Value?.ToString() ?? "";
-                var serial = row.Cells["SerialNumber"].Value?.ToString() ?? "";
-                if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(serial)) continue;
-
-                Config.Devices.Add(new DeviceConfig
-                {
-                    Name          = name,
-                    SerialNumber  = serial,
-                    MachineNumber = int.TryParse(row.Cells["MachineNumber"].Value?.ToString(), out int m) ? m : 1,
-                    IpAddress     = row.Cells["IpAddress"].Value?.ToString() ?? "",
-                    Port          = int.TryParse(row.Cells["Port"].Value?.ToString(), out int p) ? p : 4370,
-                    Location      = row.Cells["Location"].Value?.ToString() ?? ""
-                });
-            }
         }
 
-        private Label AddLabel(string text, int x, int y)
+        private MaterialTextBox2 AddTextField(string hint, int x, int y, int width)
         {
-            var lbl = new Label { Text = text, Location = new Point(x, y + 3), ForeColor = Color.Gray, AutoSize = true };
-            Controls.Add(lbl);
-            return lbl;
-        }
-
-        private TextBox AddTextBox(int x, int y, int width)
-        {
-            var tb = new TextBox
+            var tb = new MaterialTextBox2
             {
-                Location  = new Point(x, y),
-                Width     = width,
-                BackColor = Color.FromArgb(30, 30, 46),
-                ForeColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle
+                Hint = hint,
+                Location = new Point(x, y),
+                Width = width
             };
             Controls.Add(tb);
             return tb;

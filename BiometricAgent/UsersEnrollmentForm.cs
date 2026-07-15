@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MaterialSkin.Controls;
 
 namespace BiometricAgent
 {
@@ -20,9 +21,9 @@ namespace BiometricAgent
         // Controls
         private DataGridView dgvUsers = null!;
         private ComboBox cmbDevice = null!;
-        private Button btnRefreshUsers = null!;
-        private Button btnPushToDevice = null!;
-        private Button btnPushAll = null!;
+        private MaterialButton btnRefreshUsers = null!;
+        private MaterialButton btnPushToDevice = null!;
+        private MaterialButton btnPushAll = null!;
         private Label lblStatus = null!;
         private TextBox txtSearch = null!;
         private Label lblTitle = null!;
@@ -32,6 +33,7 @@ namespace BiometricAgent
         {
             _dashboard = dashboard;
             _config    = config;
+            AppTheme.Apply();
             InitForm();
         }
 
@@ -41,8 +43,8 @@ namespace BiometricAgent
             Text            = "Users & Enrollment — BATIGHOR SOFTWARE SYSTEMS LTD";
             Size            = new Size(900, 600);
             StartPosition   = FormStartPosition.CenterScreen;
-            BackColor       = Color.FromArgb(15, 15, 25);
-            ForeColor       = Color.White;
+            BackColor       = AppTheme.Background;
+            ForeColor       = AppTheme.TextPrimary;
             Font            = new Font("Segoe UI", 9.5f);
             FormBorderStyle = FormBorderStyle.Sizable;
 
@@ -51,14 +53,14 @@ namespace BiometricAgent
             {
                 Text      = "ব্যবহারকারী ও এনরোলমেন্ট",
                 Font      = new Font("Segoe UI", 16f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(125, 211, 252),
+                ForeColor = AppTheme.TextPrimary,
                 Location  = new Point(16, 16),
                 AutoSize  = true
             };
             lblSubtitle = new Label
             {
                 Text      = "ক্লাউড থেকে ব্যবহারকারী আনুন এবং ডিভাইসে পাঠান",
-                ForeColor = Color.FromArgb(148, 163, 184),
+                ForeColor = AppTheme.TextSecondary,
                 Location  = new Point(18, 50),
                 AutoSize  = true
             };
@@ -69,8 +71,8 @@ namespace BiometricAgent
                 PlaceholderText = "🔍 নাম বা Biometric ID দিয়ে খুঁজুন...",
                 Location        = new Point(16, 80),
                 Width           = 300,
-                BackColor       = Color.FromArgb(30, 30, 50),
-                ForeColor       = Color.White,
+                BackColor       = AppTheme.Surface,
+                ForeColor       = AppTheme.TextPrimary,
                 BorderStyle     = BorderStyle.FixedSingle
             };
             txtSearch.TextChanged += (s, e) => FilterGrid();
@@ -79,7 +81,7 @@ namespace BiometricAgent
             var lblDevice = new Label
             {
                 Text     = "টার্গেট ডিভাইস:",
-                ForeColor = Color.FromArgb(148, 163, 184),
+                ForeColor = AppTheme.TextSecondary,
                 Location  = new Point(330, 83),
                 AutoSize  = true
             };
@@ -88,8 +90,8 @@ namespace BiometricAgent
                 Location     = new Point(440, 80),
                 Width        = 220,
                 DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor    = Color.FromArgb(30, 30, 50),
-                ForeColor    = Color.White,
+                BackColor    = AppTheme.Surface,
+                ForeColor    = AppTheme.TextPrimary,
                 FlatStyle    = FlatStyle.Flat
             };
             // Populate devices
@@ -98,23 +100,23 @@ namespace BiometricAgent
             if (cmbDevice.Items.Count > 0) cmbDevice.SelectedIndex = 0;
 
             // Buttons
-            btnRefreshUsers = MakeButton("☁ ক্লাউড থেকে আনুন", Color.FromArgb(14, 165, 233));
-            btnRefreshUsers.Location = new Point(16, 114);
+            btnRefreshUsers = MakeButton("ক্লাউড থেকে আনুন");
+            btnRefreshUsers.Location = new Point(16, 112);
             btnRefreshUsers.Click   += async (s, e) => await LoadUsersAsync();
 
-            btnPushToDevice = MakeButton("→ ডিভাইসে পাঠান (নির্বাচিত)", Color.FromArgb(34, 197, 94));
-            btnPushToDevice.Location = new Point(170, 114);
+            btnPushToDevice = MakeButton("ডিভাইসে পাঠান (নির্বাচিত)");
+            btnPushToDevice.Location = new Point(btnRefreshUsers.Right + 8, 112);
             btnPushToDevice.Click   += BtnPushSelected_Click;
 
-            btnPushAll = MakeButton("→ সবাইকে পাঠান", Color.FromArgb(168, 85, 247));
-            btnPushAll.Location = new Point(420, 114);
+            btnPushAll = MakeButton("সবাইকে পাঠান");
+            btnPushAll.Location = new Point(btnPushToDevice.Right + 8, 112);
             btnPushAll.Click   += BtnPushAll_Click;
 
             // Status label
             lblStatus = new Label
             {
                 Text      = "ক্লাউড থেকে ব্যবহারকারী লোড করুন",
-                ForeColor = Color.FromArgb(148, 163, 184),
+                ForeColor = AppTheme.TextSecondary,
                 Location  = new Point(16, 153),
                 AutoSize  = true
             };
@@ -126,11 +128,11 @@ namespace BiometricAgent
                 Width          = this.ClientSize.Width - 32,
                 Height         = this.ClientSize.Height - 195,
                 Anchor         = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
-                BackgroundColor = Color.FromArgb(20, 20, 35),
-                GridColor      = Color.FromArgb(50, 50, 70),
-                ForeColor      = Color.White,
-                DefaultCellStyle = { BackColor = Color.FromArgb(25, 25, 40), ForeColor = Color.White, SelectionBackColor = Color.FromArgb(14, 165, 233), SelectionForeColor = Color.White },
-                ColumnHeadersDefaultCellStyle = { BackColor = Color.FromArgb(30, 30, 50), ForeColor = Color.White, Font = new Font("Segoe UI", 9f, FontStyle.Bold) },
+                BackgroundColor = AppTheme.Surface,
+                GridColor      = AppTheme.SurfaceAlt,
+                ForeColor      = AppTheme.TextPrimary,
+                DefaultCellStyle = { BackColor = AppTheme.Surface, ForeColor = AppTheme.TextPrimary, SelectionBackColor = AppTheme.Primary, SelectionForeColor = Color.White },
+                ColumnHeadersDefaultCellStyle = { BackColor = AppTheme.Primary, ForeColor = Color.White, Font = new Font("Segoe UI", 9f, FontStyle.Bold) },
                 RowHeadersVisible    = false,
                 AllowUserToAddRows   = false,
                 AllowUserToDeleteRows = false,
@@ -156,18 +158,17 @@ namespace BiometricAgent
             Resize += (s, e) => { if (dgvUsers != null) dgvUsers.Width = this.ClientSize.Width - 32; };
         }
 
-        private Button MakeButton(string text, Color backColor)
+        private MaterialButton MakeButton(string text)
         {
-            return new Button
+            return new MaterialButton
             {
                 Text      = text,
-                Width     = 148,
+                AutoSize  = true,
                 Height    = 32,
-                BackColor = backColor,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor    = Cursors.Hand,
-                Font      = new Font("Segoe UI", 8.5f)
+                Type      = MaterialButton.MaterialButtonType.Contained,
+                UseAccentColor = false,
+                HighEmphasis = true,
+                Cursor    = Cursors.Hand
             };
         }
 
@@ -175,12 +176,12 @@ namespace BiometricAgent
         {
             btnRefreshUsers.Enabled = false;
             lblStatus.Text = "⏳ ক্লাউড থেকে ব্যবহারকারী লোড হচ্ছে...";
-            lblStatus.ForeColor = Color.FromArgb(251, 191, 36);
+            lblStatus.ForeColor = AppTheme.Warning;
 
             _users = await _dashboard.LoadUsersFromCloudAsync();
 
             lblStatus.Text = $"✅ {_users.Count} জন ব্যবহারকারী লোড হয়েছে";
-            lblStatus.ForeColor = Color.FromArgb(52, 211, 153);
+            lblStatus.ForeColor = AppTheme.Success;
             btnRefreshUsers.Enabled = true;
 
             FilterGrid();
@@ -199,7 +200,7 @@ namespace BiometricAgent
             foreach (DataGridViewRow row in dgvUsers.Rows)
             {
                 row.Cells["Status"].Value = "—";
-                row.Cells["Status"].Style.ForeColor = Color.FromArgb(148, 163, 184);
+                row.Cells["Status"].Style.ForeColor = AppTheme.TextSecondary;
             }
         }
 
@@ -247,7 +248,7 @@ namespace BiometricAgent
             btnPushToDevice.Enabled = false;
             btnPushAll.Enabled = false;
             lblStatus.Text = "⏳ ডিভাইসে পাঠানো হচ্ছে...";
-            lblStatus.ForeColor = Color.FromArgb(251, 191, 36);
+            lblStatus.ForeColor = AppTheme.Warning;
 
             var device = _config.Devices[cmbDevice.SelectedIndex];
             string deviceKey = string.IsNullOrEmpty(device.SerialNumber)
@@ -269,12 +270,12 @@ namespace BiometricAgent
             foreach (var item in results)
             {
                 item.row.Cells["Status"].Value = item.success ? "✅ পাঠানো হয়েছে" : "❌ ব্যর্থ";
-                item.row.Cells["Status"].Style.ForeColor = item.success ? Color.FromArgb(52, 211, 153) : Color.FromArgb(248, 113, 113);
+                item.row.Cells["Status"].Style.ForeColor = item.success ? AppTheme.Success : AppTheme.Danger;
                 if (item.success) ok++; else fail++;
             }
 
             lblStatus.Text = $"সম্পন্ন: {ok} সফল, {fail} ব্যর্থ";
-            lblStatus.ForeColor = ok > 0 ? Color.FromArgb(52, 211, 153) : Color.FromArgb(248, 113, 113);
+            lblStatus.ForeColor = ok > 0 ? AppTheme.Success : AppTheme.Danger;
             btnPushToDevice.Enabled = true;
             btnPushAll.Enabled = true;
         }

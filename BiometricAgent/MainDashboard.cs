@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using MaterialSkin;
 
 namespace BiometricAgent
 {
@@ -36,16 +37,24 @@ namespace BiometricAgent
         // --- Added for tray & reconnect logic ---
         private NotifyIcon _notifyIcon = null!;
         private Icon _appIcon = null!;
+        private Icon? _trayIconConnected;
+        private Icon? _trayIconDisconnected;
         private bool _allowVisible = false;
         private Dictionary<string, DateTime> _lastReconnectAttempt = new();
         private int _isSyncing;
         private int _isCheckingConnectivity;
+
+        // Server (SaaS API) connection state - distinct from per-device local TCP
+        // connection state (_deviceStatus). Null = not yet determined.
+        private bool? _serverConnected = null;
+        private DateTime _lastServerReauthAttempt = DateTime.MinValue;
 
         public MainDashboard()
         {
             _config       = AgentConfig.Load();
             _offlineQueue = new OfflineQueue();
             _cloud        = new CloudSyncManager(_config, _offlineQueue, LogMessage);
+            AppTheme.Apply();
             InitializeComponent();
             ApplyDarkTheme();
 
@@ -61,13 +70,21 @@ namespace BiometricAgent
             }
             catch { }
 
+            try
+            {
+                var (connected, disconnected) = TrayIconComposer.BuildBadgedIcons(_appIcon ?? SystemIcons.Application);
+                _trayIconConnected = connected;
+                _trayIconDisconnected = disconnected;
+            }
+            catch { }
+
             _notifyIcon = new NotifyIcon
             {
-                Icon = _appIcon ?? SystemIcons.Application,
-                Text = "Batighor EIMS",
+                Icon = _trayIconDisconnected ?? _appIcon ?? SystemIcons.Application,
+                Text = "Batighor EIMS — Server: connecting…",
                 Visible = true
             };
-            
+
             _notifyIcon.DoubleClick += (s, e) => ShowDashboard();
 
             var ctxMenu = new ContextMenuStrip();
@@ -77,23 +94,31 @@ namespace BiometricAgent
                 Environment.Exit(0);
             });
             _notifyIcon.ContextMenuStrip = ctxMenu;
+
+            // Start invisible: minimized + no taskbar button, rather than intercepting
+            // SetVisibleCore. Application.Run's Show() then goes through the completely
+            // normal WinForms path (still guarantees CreateControl -> Load fires), so
+            // startup logic (API auth/connect) always runs immediately at process start
+            // instead of only once the user opens the dashboard from the tray icon.
+            this.WindowState = FormWindowState.Minimized;
+            this.ShowInTaskbar = false;
         }
 
         private void ShowDashboard()
         {
             _allowVisible = true;
+            this.ShowInTaskbar = true;
             this.Show();
             this.WindowState = FormWindowState.Normal;
+            this.Activate();
         }
 
-        protected override void SetVisibleCore(bool value)
+        protected override void OnShown(EventArgs e)
         {
-            if (!_allowVisible)
-            {
-                value = false;
-                if (!IsHandleCreated) CreateHandle();
-            }
-            base.SetVisibleCore(value);
+            base.OnShown(e);
+            // Belt-and-suspenders: Minimized+ShowInTaskbar=false already keeps this
+            // invisible on startup, this just guards against ever rendering a frame.
+            if (!_allowVisible) this.Hide();
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
@@ -102,6 +127,7 @@ namespace BiometricAgent
             {
                 e.Cancel = true;
                 this.Hide();
+                this.ShowInTaskbar = false;
                 _allowVisible = false;
             }
             base.OnFormClosing(e);
@@ -145,6 +171,7 @@ namespace BiometricAgent
             {
                 LogMessage("✅ Authenticated with SaaS server.");
                 bool hb = await _cloud.SendAgentHeartbeatAsync();
+                SetServerConnected(hb);
                 if (hb)
                     LogMessage("✅ Connect request with server successful");
                 else
@@ -152,6 +179,7 @@ namespace BiometricAgent
             }
             else
             {
+                SetServerConnected(false);
                 LogMessage("❌ Authentication failed. Check URL, School Code & Token.");
                 LogMessage($"   URL used: {_config.SaasApiUrl}");
             }
@@ -235,38 +263,43 @@ namespace BiometricAgent
 
         private void AddDeviceCard(DeviceConfig dev, string status)
         {
-            Color statusColor = status == "online" ? Color.FromArgb(52, 211, 153) : Color.FromArgb(248, 113, 113);
+            Color statusColor = status == "online" ? AppTheme.Success : AppTheme.Danger;
 
             var card = new Panel
             {
                 Width  = 220,
-                Height = 80,
+                Height = 84,
                 Margin = new Padding(8),
-                BackColor = Color.FromArgb(30, 30, 46)
+                BackColor = AppTheme.Surface
+            };
+            card.Paint += (s, e) =>
+            {
+                using var pen = new Pen(statusColor, 2);
+                e.Graphics.DrawLine(pen, 0, 0, 0, card.Height); // left accent stripe, elevation-lite
             };
 
             card.Controls.Add(new Label
             {
                 Text     = dev.Name,
-                Location = new Point(10, 10),
-                ForeColor = Color.White,
+                Location = new Point(14, 10),
+                ForeColor = AppTheme.TextPrimary,
                 Font     = new Font("Segoe UI", 10, FontStyle.Bold),
                 AutoSize = true
             });
             var lblStatus = new Label
             {
                 Text      = status.ToUpper(),
-                Location  = new Point(10, 34),
+                Location  = new Point(14, 36),
                 ForeColor = statusColor,
-                Font      = new Font("Segoe UI", 9),
+                Font      = new Font("Segoe UI", 9, FontStyle.Bold),
                 AutoSize  = true
             };
             card.Controls.Add(lblStatus);
             card.Controls.Add(new Label
             {
                 Text      = $"{dev.IpAddress}:{dev.Port}",
-                Location  = new Point(10, 56),
-                ForeColor = Color.Gray,
+                Location  = new Point(14, 58),
+                ForeColor = AppTheme.TextSecondary,
                 Font      = new Font("Segoe UI", 8),
                 AutoSize  = true
             });
@@ -295,6 +328,31 @@ namespace BiometricAgent
             _connectivityTimer.Start();
         }
 
+        /// <summary>Sends a server heartbeat and, if it fails, retries re-authentication at
+        /// most once a minute (same cadence/throttle pattern as device reconnect below) so
+        /// the agent recovers on its own from any cause of server disconnection - an expired
+        /// token, a dropped Bearer header after Settings reloads the HttpClient, a transient
+        /// server hiccup - instead of staying disconnected until the process is restarted.</summary>
+        private async Task<bool> SendHeartbeatWithReauthAsync()
+        {
+            if (await _cloud.SendAgentHeartbeatAsync())
+                return true;
+
+            bool shouldReauth = (DateTime.Now - _lastServerReauthAttempt).TotalMinutes >= 1;
+            if (!shouldReauth)
+                return false;
+
+            _lastServerReauthAttempt = DateTime.Now;
+            LogMessage("⏳ Server heartbeat failed - attempting to reconnect...");
+            if (await _cloud.AuthenticateAsync())
+            {
+                bool ok = await _cloud.SendAgentHeartbeatAsync();
+                if (ok) LogMessage("🟢 Reconnected to server.");
+                return ok;
+            }
+            return false;
+        }
+
         private async Task FastConnectivityCheckAsync()
         {
             if (Interlocked.CompareExchange(ref _isCheckingConnectivity, 1, 0) != 0)
@@ -302,6 +360,11 @@ namespace BiometricAgent
 
             try
             {
+                // Reuse this same fast tick to refresh server (SaaS API) connectivity too,
+                // so the header badge / tray icon stay on a comparably snappy cadence to
+                // device status instead of only updating once per (slower) sync cycle.
+                var serverCheckTask = SendHeartbeatWithReauthAsync();
+
                 var statuses = await CheckDeviceConnectivityAsync();
                 bool changed = false;
                 foreach (var kv in statuses)
@@ -318,6 +381,8 @@ namespace BiometricAgent
                     lblOnline.Text  = _deviceStatus.Count(x => x.Value == "online").ToString();
                     lblOffline.Text = _deviceStatus.Count(x => x.Value == "offline").ToString();
                 }
+
+                SetServerConnected(await serverCheckTask);
             }
             finally
             {
@@ -383,8 +448,10 @@ namespace BiometricAgent
 
             try
             {
-                // 0. Send Agent Heartbeat (silently to keep logs clean)
-                bool hbSuccess = await _cloud.SendAgentHeartbeatAsync();
+                // 0. Send Agent Heartbeat (silently to keep logs clean), retrying
+                // re-authentication automatically if it fails (see SendHeartbeatWithReauthAsync).
+                bool hbSuccess = await SendHeartbeatWithReauthAsync();
+                SetServerConnected(hbSuccess);
                 if (!hbSuccess) {
                     LogMessage("⚠️ Connection with server failed or offline");
                 }
@@ -483,7 +550,31 @@ namespace BiometricAgent
         {
             if (!_deviceStatusLabels.TryGetValue(ipAddress, out var lbl)) return;
             lbl.Text = status.ToUpper();
-            lbl.ForeColor = status == "online" ? Color.FromArgb(52, 211, 153) : Color.FromArgb(248, 113, 113);
+            lbl.ForeColor = status == "online" ? AppTheme.Success : AppTheme.Danger;
+        }
+
+        /// <summary>Updates server (SaaS API) connection state - distinct from per-device
+        /// local TCP status - and reflects it in the dashboard header badge and the tray
+        /// icon overlay so it's visible at a glance without opening the window.</summary>
+        private void SetServerConnected(bool connected)
+        {
+            if (this.InvokeRequired) { this.Invoke(new Action(() => SetServerConnected(connected))); return; }
+
+            bool changed = _serverConnected != connected;
+            _serverConnected = connected;
+
+            if (lblServerStatus != null)
+            {
+                lblServerStatus.Text = connected ? "🟢 Server: Connected" : "🔴 Server: Disconnected";
+                lblServerStatus.ForeColor = connected ? AppTheme.Success : AppTheme.Danger;
+            }
+
+            if (changed && _notifyIcon != null)
+            {
+                var icon = connected ? _trayIconConnected : _trayIconDisconnected;
+                if (icon != null) _notifyIcon.Icon = icon;
+                _notifyIcon.Text = connected ? "Batighor EIMS — Server: Connected" : "Batighor EIMS — Server: Disconnected";
+            }
         }
 
         private void ShowOfflineAlert(DeviceConfig dev)
@@ -531,7 +622,7 @@ namespace BiometricAgent
         {
             int pending = _offlineQueue.GetPending().Count;
             lblPending.Text = $"Offline Queue: {pending}";
-            lblPending.ForeColor = pending > 0 ? Color.FromArgb(251, 191, 36) : Color.FromArgb(52, 211, 153);
+            lblPending.ForeColor = pending > 0 ? AppTheme.Warning : AppTheme.Success;
         }
 
         // ── Auto-Update Checker ─────────────────────────────────────────────
@@ -635,8 +726,8 @@ namespace BiometricAgent
         // ── Dark Theme ───────────────────────────────────────────────────────
         private void ApplyDarkTheme()
         {
-            BackColor = Color.FromArgb(17, 17, 27);
-            ForeColor = Color.White;
+            BackColor = AppTheme.Background;
+            ForeColor = AppTheme.TextPrimary;
         }
 
         // ── UI button handlers ───────────────────────────────────────────────
@@ -647,7 +738,16 @@ namespace BiometricAgent
             {
                 _config = settingsForm.Config;
                 _config.Save();
-                _cloud = new CloudSyncManager(_config, _offlineQueue);
+
+                // Replacing _cloud creates a fresh HttpClient with no Bearer token - the
+                // old token from startup's AuthenticateAsync() is lost with it. Re-auth
+                // immediately so the agent doesn't silently stop being able to reach the
+                // server until the next full restart (this was the root cause of "saved
+                // Settings with no changes -> server heartbeat fails forever").
+                _cloud = new CloudSyncManager(_config, _offlineQueue, LogMessage);
+                bool auth = await _cloud.AuthenticateAsync();
+                SetServerConnected(auth && await _cloud.SendAgentHeartbeatAsync());
+
                 ApplyAutoStart();
                 await ConnectAllDevicesAsync();
                 lblSchool.Text  = _config.SchoolCode.Length > 0 ? _config.SchoolCode : "Not configured";
@@ -666,9 +766,26 @@ namespace BiometricAgent
             await ConnectAllDevicesAsync();
         }
 
+        private async void btnDevices_Click(object? sender, EventArgs e)
+        {
+            using var frm = new DeviceManagementForm(_config);
+            frm.ShowDialog(this);
+            if (frm.DevicesChanged)
+            {
+                _config.Save();
+                await ConnectAllDevicesAsync();
+            }
+        }
+
         private void btnSyncManager_Click(object? sender, EventArgs e)
         {
             using var frm = new SyncManagerForm(_config, _cloud, _adapters, GetSchoolId());
+            frm.ShowDialog(this);
+        }
+
+        private void btnBackupRestore_Click(object? sender, EventArgs e)
+        {
+            using var frm = new BackupRestoreForm(_config, _cloud, _adapters, _offlineQueue, GetSchoolId());
             frm.ShowDialog(this);
         }
 
