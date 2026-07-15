@@ -26,3 +26,7 @@ public/.htaccess
 public/.htaccess
 mobile_app/gradle-8.14-all.zip
 /unnessesary
+
+# BiometricAgent build output (contains agent_config.json with live tokens - never commit)
+BiometricAgent/bin/
+BiometricAgent/obj/
