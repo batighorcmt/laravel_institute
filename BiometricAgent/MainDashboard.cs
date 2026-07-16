@@ -44,6 +44,25 @@ namespace BiometricAgent
         private int _isSyncing;
         private int _isCheckingConnectivity;
 
+        // Devices currently held under an exclusive session by another workflow (e.g.
+        // BackupRestoreForm's restore, which disconnects the shared adapter and hands the
+        // device to isolated subprocesses). This device firmware only tolerates one active
+        // command connection at a time - a second one doesn't get rejected, it just makes
+        // every write on both sessions silently fail (SDK error -2). Without this, the
+        // background connectivity timer sees the deliberate disconnect as "offline" and
+        // "helpfully" reconnects it a few seconds later, racing the exclusive session.
+        private readonly HashSet<string> _devicesUnderExclusiveControl = new();
+
+        public void BeginExclusiveDeviceAccess(string ipAddress)
+        {
+            lock (_devicesUnderExclusiveControl) _devicesUnderExclusiveControl.Add(ipAddress);
+        }
+
+        public void EndExclusiveDeviceAccess(string ipAddress)
+        {
+            lock (_devicesUnderExclusiveControl) _devicesUnderExclusiveControl.Remove(ipAddress);
+        }
+
         // Server (SaaS API) connection state - distinct from per-device local TCP
         // connection state (_deviceStatus). Null = not yet determined.
         private bool? _serverConnected = null;
@@ -91,6 +110,14 @@ namespace BiometricAgent
             ctxMenu.Items.Add("Show Dashboard", null, (s, e) => ShowDashboard());
             ctxMenu.Items.Add("Exit", null, (s, e) => {
                 _notifyIcon.Visible = false;
+                // Disconnect (and unregister real-time events) before terminating - an abrupt
+                // Environment.Exit leaves the device thinking this session is still open,
+                // which can make the *next* connection attempt fail with SDK error -2 until
+                // the device eventually times it out on its own.
+                foreach (var adapter in _adapters.Values)
+                {
+                    try { adapter.Disconnect(); } catch { }
+                }
                 Environment.Exit(0);
             });
             _notifyIcon.ContextMenuStrip = ctxMenu;
@@ -404,6 +431,12 @@ namespace BiometricAgent
                 {
                     if (!_adapters.TryGetValue(dev.IpAddress, out var adapter))
                         continue;
+
+                    lock (_devicesUnderExclusiveControl)
+                    {
+                        if (_devicesUnderExclusiveControl.Contains(dev.IpAddress))
+                            continue; // another workflow owns this device's connection right now
+                    }
 
                     bool alive = adapter.CheckConnection();
                     string status = alive ? "online" : "offline";
@@ -785,7 +818,7 @@ namespace BiometricAgent
 
         private void btnBackupRestore_Click(object? sender, EventArgs e)
         {
-            using var frm = new BackupRestoreForm(_config, _cloud, _adapters, _offlineQueue, GetSchoolId());
+            using var frm = new BackupRestoreForm(_config, _cloud, _adapters, _offlineQueue, GetSchoolId(), this);
             frm.ShowDialog(this);
         }
 

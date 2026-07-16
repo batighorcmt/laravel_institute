@@ -26,10 +26,11 @@
     <style>
         .navbar-search { min-width: 220px; }
 
-        /* Sidebar Hierarchical Styling */
+        /* Sidebar Hierarchical Styling (compact density) */
         .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link {
             font-weight: 500;
-            padding: 0.7rem 1rem;
+            padding: 0.4rem 1rem;
+            line-height: 1.3;
             border-left: 3px solid transparent;
         }
 
@@ -44,7 +45,8 @@
 
         /* First level submenu (nav-treeview) */
         .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link {
-            padding-left: 2.5rem;
+            padding: 0.32rem 1rem 0.32rem 2.5rem;
+            line-height: 1.25;
             font-size: 0.9rem;
             color: rgba(255,255,255,.7);
         }
@@ -61,7 +63,8 @@
 
         /* Second level submenu (nested nav-treeview) */
         .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link {
-            padding-left: 3.5rem;
+            padding: 0.28rem 1rem 0.28rem 3.5rem;
+            line-height: 1.2;
             font-size: 0.85rem;
             color: rgba(255,255,255,.6);
         }
@@ -78,7 +81,8 @@
 
         /* Third level submenu */
         .sidebar-dark-primary .nav-treeview .nav-treeview .nav-treeview > .nav-item > .nav-link {
-            padding-left: 4.5rem;
+            padding: 0.24rem 1rem 0.24rem 4.5rem;
+            line-height: 1.2;
             font-size: 0.8rem;
             color: rgba(255,255,255,.5);
         }
@@ -99,16 +103,16 @@
             transform: rotate(90deg);
         }
 
-        /* Add spacing between major menu groups */
+        /* Minimal spacing between major menu groups */
         .nav-sidebar > .nav-item {
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.05rem;
         }
 
         /* Submenu background */
         .nav-treeview {
             background-color: rgba(0,0,0,.1);
-            padding-top: 0.3rem;
-            padding-bottom: 0.3rem;
+            padding-top: 0.1rem;
+            padding-bottom: 0.1rem;
         }
 
         /* Nested submenu darker background */
@@ -210,7 +214,7 @@
         </a>
         <div class="sidebar">
             <nav class="mt-2">
-                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="true">
                     @php($u = auth()->user())
                     @if($u && $u->isSuperAdmin())
                         <li class="nav-item">
@@ -587,6 +591,8 @@
                                 </a>
                                 <ul class="nav nav-treeview">
                                     <li class="nav-item"><a href="{{ route('principal.institute.admissions.applications', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.admissions.applications*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Applications</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.admissions.enrollment.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.admissions.enrollment.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Confirm Enrollment</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.admissions.payments', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.admissions.payments*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Payments</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.admissions.settings', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.admissions.settings*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Settings</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.admissions.exams.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.admissions.exams.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Exams</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.admissions.seat-plans.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.admissions.seat-plans.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Seat Plans</p></a></li>

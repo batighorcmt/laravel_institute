@@ -134,6 +134,7 @@ namespace BiometricAgent
         private dynamic? _sdk;
         private readonly ZKStaQueue _staQueue = new();
         private bool _isConnected;
+        private bool _eventsRegistered;
         public bool IsConnected => _isConnected;
         private int _machineNumber = 1;
         private const string ProgId = "zkemkeeper.ZKEM.1";
@@ -201,8 +202,10 @@ namespace BiometricAgent
                         // leaves a stale duplicate session behind.
                         if (_isConnected)
                         {
+                            if (_eventsRegistered) { try { _sdk.RegEvent(_machineNumber, 0); } catch { } }
                             try { _sdk.Disconnect(); } catch { }
                             _isConnected = false;
+                            _eventsRegistered = false;
                         }
 
                         bool connected = _sdk.Connect_Net(ip, port);
@@ -215,7 +218,10 @@ namespace BiometricAgent
                             // leaves the SDK trying to deliver a callback with nowhere to go,
                             // which manifests as a native access violation during later calls.
                             if (registerEvents)
+                            {
                                 _sdk.RegEvent(_machineNumber, 65535); // Register all real-time events
+                                _eventsRegistered = true;
+                            }
                             _isConnected = true;
                             _lastError = string.Empty;
                         }
@@ -266,12 +272,21 @@ namespace BiometricAgent
             {
                 _staQueue.Enqueue(() =>
                 {
+                    // Unregister real-time events BEFORE closing the socket. Skipping this
+                    // leaves the device still expecting to push events to a connection we're
+                    // about to drop - it can then keep treating that session as logically
+                    // "open" for a while (independent of the TCP socket already being gone),
+                    // which causes the very next connection attempt (ours or a subprocess's)
+                    // to be rejected as a second session (SSR_SetUserInfo SDK error -2), even
+                    // though nothing else is actually still connected.
+                    if (_eventsRegistered) { try { _sdk?.RegEvent(_machineNumber, 0); } catch { } }
                     try { _sdk?.Disconnect(); }
                     catch { }
                     _isConnected = false;
+                    _eventsRegistered = false;
                 }).Wait();
             }
-            catch { _isConnected = false; }
+            catch { _isConnected = false; _eventsRegistered = false; }
         }
 
         public string GetSerialNumber()

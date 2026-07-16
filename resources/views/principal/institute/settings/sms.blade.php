@@ -11,7 +11,7 @@
 </div>
 
 {{-- Tabs --}}
-<ul class="nav nav-tabs mb-3" id="smsTab" role="tablist">
+<ul class="nav nav-tabs nav-tabs-scroll mb-3" id="smsTab" role="tablist">
     <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#api">API Settings</a></li>
     <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#class-attendance">Class Attendance SMS</a></li>
     <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#extra-class-attendance">Extra Class Attendance SMS</a></li>
@@ -23,28 +23,30 @@
 
     {{-- API SETTINGS --}}
     <div class="tab-pane fade show active" id="api">
-        <form method="post" action="{{ route('principal.institute.sms.api.save',$school) }}" class="card p-4">
+        <form method="post" action="{{ route('principal.institute.sms.api.save',$school) }}" class="card p-3 p-md-4">
             @csrf
-            <div class="form-group">
-                <label>SMS API URL</label>
-                <input type="text" name="sms_api_url" class="form-control"
-                       value="{{ $api['sms_api_url'] ?? '' }}">
-            </div>
-            <div class="form-group">
-                <label>API Key</label>
-                <input type="text" name="sms_api_key" class="form-control"
-                       value="{{ $api['sms_api_key'] ?? '' }}">
-            </div>
-            <div class="form-group">
-                <label>Sender ID</label>
-                <input type="text" name="sms_sender_id" class="form-control"
-                       value="{{ $api['sms_sender_id'] ?? '' }}">
-            </div>
-            <div class="form-group">
-                <label>Masking</label>
-                <input type="text" name="sms_masking" class="form-control"
-                       value="{{ $api['sms_masking'] ?? '' }}">
-                <small class="text-muted">প্রোভাইডার মাস্কিং সাপোর্ট করলে এখানে দিন</small>
+            <div class="row">
+                <div class="form-group col-md-6">
+                    <label>SMS API URL</label>
+                    <input type="text" name="sms_api_url" class="form-control"
+                           value="{{ $api['sms_api_url'] ?? '' }}">
+                </div>
+                <div class="form-group col-md-6">
+                    <label>API Key</label>
+                    <input type="text" name="sms_api_key" class="form-control"
+                           value="{{ $api['sms_api_key'] ?? '' }}">
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Sender ID</label>
+                    <input type="text" name="sms_sender_id" class="form-control"
+                           value="{{ $api['sms_sender_id'] ?? '' }}">
+                </div>
+                <div class="form-group col-md-6">
+                    <label>Masking</label>
+                    <input type="text" name="sms_masking" class="form-control"
+                           value="{{ $api['sms_masking'] ?? '' }}">
+                    <small class="text-muted">প্রোভাইডার মাস্কিং সাপোর্ট করলে এখানে দিন</small>
+                </div>
             </div>
             <button class="btn btn-primary"><i class="fa fa-save mr-1"></i> সংরক্ষণ</button>
         </form>
@@ -52,25 +54,29 @@
 
     {{-- CLASS ATTENDANCE --}}
     <div class="tab-pane fade" id="class-attendance">
-        <div class="card p-4">
+        <div class="card p-3 p-md-4">
             <h5>ক্লাস হাজিরা SMS সেটিংস</h5>
             <form method="post" action="{{ route('principal.institute.sms.class-attendance.save',$school) }}">
                 @csrf
+                <div class="row">
                 @foreach([
                     'present' => 'উপস্থিত',
                     'absent' => 'অনুপস্থিত',
                     'late' => 'বিলম্ব',
                     'half_day' => 'আধা দিন'
                 ] as $k => $label)
-                <div class="custom-control custom-switch mb-2">
-                    <input type="checkbox"
-                           class="custom-control-input"
-                           id="sms_class_{{ $k }}"
-                           name="sms_class_attendance_{{ $k }}"
-                           {{ ($classAttendance['sms_class_attendance_'.$k] ?? 0) == 1 ? 'checked' : '' }}>
-                    <label class="custom-control-label" for="sms_class_{{ $k }}">{{ ucfirst($k) }} ({{ $label }})</label>
+                <div class="col-md-6">
+                    <div class="custom-control custom-switch mb-2">
+                        <input type="checkbox"
+                               class="custom-control-input"
+                               id="sms_class_{{ $k }}"
+                               name="sms_class_attendance_{{ $k }}"
+                               {{ ($classAttendance['sms_class_attendance_'.$k] ?? 0) == 1 ? 'checked' : '' }}>
+                        <label class="custom-control-label" for="sms_class_{{ $k }}">{{ ucfirst($k) }} ({{ $label }})</label>
+                    </div>
                 </div>
                 @endforeach
+                </div>
                 <button class="btn btn-primary mt-3"><i class="fa fa-save mr-1"></i> সংরক্ষণ</button>
             </form>
         </div>
@@ -78,25 +84,29 @@
 
     {{-- EXTRA CLASS ATTENDANCE --}}
     <div class="tab-pane fade" id="extra-class-attendance">
-        <div class="card p-4">
+        <div class="card p-3 p-md-4">
             <h5>এক্সট্রা ক্লাস হাজিরা SMS সেটিংস</h5>
             <form method="post" action="{{ route('principal.institute.sms.extra-class-attendance.save',$school) }}">
                 @csrf
+                <div class="row">
                 @foreach([
                     'present' => 'উপস্থিত',
                     'absent' => 'অনুপস্থিত',
                     'late' => 'বিলম্ব',
                     'half_day' => 'আধা দিন'
                 ] as $k => $label)
-                <div class="custom-control custom-switch mb-2">
-                    <input type="checkbox"
-                           class="custom-control-input"
-                           id="sms_extra_{{ $k }}"
-                           name="sms_extra_class_attendance_{{ $k }}"
-                           {{ ($extraClassAttendance['sms_extra_class_attendance_'.$k] ?? 0) == 1 ? 'checked' : '' }}>
-                    <label class="custom-control-label" for="sms_extra_{{ $k }}">{{ ucfirst($k) }} ({{ $label }})</label>
+                <div class="col-md-6">
+                    <div class="custom-control custom-switch mb-2">
+                        <input type="checkbox"
+                               class="custom-control-input"
+                               id="sms_extra_{{ $k }}"
+                               name="sms_extra_class_attendance_{{ $k }}"
+                               {{ ($extraClassAttendance['sms_extra_class_attendance_'.$k] ?? 0) == 1 ? 'checked' : '' }}>
+                        <label class="custom-control-label" for="sms_extra_{{ $k }}">{{ ucfirst($k) }} ({{ $label }})</label>
+                    </div>
                 </div>
                 @endforeach
+                </div>
                 <button class="btn btn-primary mt-3"><i class="fa fa-save mr-1"></i> সংরক্ষণ</button>
             </form>
         </div>
@@ -104,29 +114,34 @@
 
     {{-- LESSON EVALUATION --}}
     <div class="tab-pane fade" id="lesson-evaluation">
-        <div class="card p-4">
+        <div class="card p-3 p-md-4">
             <h5>লেসন ইভেলুশন SMS সেটিংস</h5>
             <form method="post" action="{{ route('principal.institute.sms.lesson-evaluation.save',$school) }}">
                 @csrf
+                <div class="row">
                 @foreach([
-                    'completed' => 'পড়া হয়েছে',
-                    'partial' => 'আংশিক হয়েছে',
-                    'not_done' => 'হয় নাই',
+                    'completed' => 'পড়া হয়েছে',
+                    'partial' => 'আংশিক হয়েছে',
+                    'not_done' => 'হয় নাই',
                     'absent' => 'অনুপস্থিত'
                 ] as $k => $label)
-                <div class="custom-control custom-switch mb-2">
-                    <input type="checkbox"
-                           class="custom-control-input"
-                           id="sms_eval_{{ $k }}"
-                           name="sms_lesson_evaluation_{{ $k }}"
-                           {{ ($lessonEvaluation['sms_lesson_evaluation_'.$k] ?? 0) == 1 ? 'checked' : '' }}>
-                    <label class="custom-control-label" for="sms_eval_{{ $k }}">{{ $label }} ({{ ucfirst(str_replace('_',' ',$k)) }})</label>
+                <div class="col-md-6">
+                    <div class="custom-control custom-switch mb-2">
+                        <input type="checkbox"
+                               class="custom-control-input"
+                               id="sms_eval_{{ $k }}"
+                               name="sms_lesson_evaluation_{{ $k }}"
+                               {{ ($lessonEvaluation['sms_lesson_evaluation_'.$k] ?? 0) == 1 ? 'checked' : '' }}>
+                        <label class="custom-control-label" for="sms_eval_{{ $k }}">{{ $label }} ({{ ucfirst(str_replace('_',' ',$k)) }})</label>
+                    </div>
                 </div>
                 @endforeach
+                </div>
                 <button class="btn btn-primary mt-3"><i class="fa fa-save mr-1"></i> সংরক্ষণ</button>
             </form>
         </div>
     </div>
+
 
     {{-- TEMPLATES --}}
     <div class="tab-pane fade" id="templates">
@@ -137,6 +152,7 @@
             </button>
         </div>
 
+        <div class="table-responsive">
         <table class="table table-bordered table-sm">
             <thead>
                 <tr>
@@ -171,7 +187,7 @@
                         </span>
                     </td>
                     <td>{{ $t->title }}</td>
-                    <td><pre class="mb-0">{{ $t->content }}</pre></td>
+                    <td><pre class="mb-0 sms-template-body">{{ $t->content }}</pre></td>
                     <td>
                         <button class="btn btn-warning btn-sm"
                             data-toggle="modal"
@@ -199,6 +215,7 @@
             @endforelse
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 
@@ -296,6 +313,16 @@
 
 @push('scripts')
 <script>
+// AdminLTE calculates the content-wrapper height once on page load and only
+// recalculates it on sidebar/pushmenu events, not on Bootstrap tab switches.
+// Since the SMS Templates tab can be much taller than the initially active
+// tab, switching to it left the footer positioned as if the page were still
+// short, so the table appeared to run underneath/over the footer. Forcing a
+// resize event makes AdminLTE re-measure the page after the tab swap.
+$('#smsTab a[data-toggle="tab"]').on('shown.bs.tab', function () {
+    $(window).trigger('resize');
+});
+
 function populateEditTemplate(btn){
     const getRaw = (name) => (btn.getAttribute('data-' + name) || btn.dataset[name] || '');
     const tryParse = (v) => { try { return JSON.parse(v); } catch (e) { return v; } };
@@ -391,5 +418,44 @@ function insertKeyword(elementId, keyword) {
 }
 .cursor-pointer {
     cursor: pointer !important;
+}
+
+/* Mobile-responsive tabs: scroll horizontally instead of wrapping/overflowing */
+.nav-tabs-scroll {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+.nav-tabs-scroll .nav-item {
+    flex-shrink: 0;
+}
+.nav-tabs-scroll .nav-link {
+    white-space: nowrap;
+}
+
+/* SMS template body: wrap long text instead of forcing horizontal scroll */
+.sms-template-body {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.85rem;
+    max-width: 320px;
+}
+
+@media (max-width: 576px) {
+    .nav-tabs-scroll .nav-link {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+    h1 {
+        font-size: 1.5rem;
+    }
+    .card {
+        border-radius: 0.5rem;
+    }
+    .sms-template-body {
+        max-width: 160px;
+        font-size: 0.78rem;
+    }
 }
 </style>

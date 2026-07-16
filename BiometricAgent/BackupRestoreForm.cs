@@ -21,6 +21,7 @@ namespace BiometricAgent
         private readonly Dictionary<string, IBiometricAdapter> _adapters;
         private readonly OfflineQueue _store;
         private readonly int _schoolId;
+        private readonly MainDashboard _dashboard;
 
         private ComboBox cmbSourceDevice = null!;
         private ComboBox cmbTargetDevice = null!;
@@ -34,13 +35,14 @@ namespace BiometricAgent
         private Label lblProgress = null!;
         private RichTextBox rtfLog = null!;
 
-        public BackupRestoreForm(AgentConfig config, CloudSyncManager cloud, Dictionary<string, IBiometricAdapter> adapters, OfflineQueue store, int schoolId)
+        public BackupRestoreForm(AgentConfig config, CloudSyncManager cloud, Dictionary<string, IBiometricAdapter> adapters, OfflineQueue store, int schoolId, MainDashboard dashboard)
         {
             _config = config;
             _cloud = cloud;
             _adapters = adapters;
             _store = store;
             _schoolId = schoolId;
+            _dashboard = dashboard;
 
             AppTheme.Apply();
             BuildUI();
@@ -273,6 +275,9 @@ namespace BiometricAgent
             Log($"⏳ Reading all data from {dev.Name}...");
             SetProgress(0, 0, $"Reading {dev.Name}...");
 
+            // Keep the main dashboard's background connectivity timer from probing/reconnecting
+            // this device while the read is in progress - same rationale as the restore path below.
+            _dashboard.BeginExclusiveDeviceAccess(dev.IpAddress);
             try
             {
                 int lastLogged = 0;
@@ -312,6 +317,7 @@ namespace BiometricAgent
             }
             finally
             {
+                _dashboard.EndExclusiveDeviceAccess(dev.IpAddress);
                 btnDownload.Enabled = true;
                 SetProgress(0, 0, "");
             }
@@ -401,6 +407,11 @@ namespace BiometricAgent
             // Release the main dashboard's own connection first, same rationale as
             // SyncManagerForm's distribute step - this device only tolerates one active
             // command connection, and the restore subprocesses below open their own.
+            // Also tell the dashboard's background connectivity timer to leave this device
+            // alone for now - otherwise it sees the disconnect as "went offline" and
+            // reconnects it a few seconds later, creating a second competing session that
+            // makes every write on both sessions fail with SDK error -2.
+            _dashboard.BeginExclusiveDeviceAccess(target.IpAddress);
             IBiometricAdapter? liveAdapter = _adapters.TryGetValue(target.IpAddress, out var a) ? a : null;
             liveAdapter?.Disconnect();
 
@@ -440,6 +451,10 @@ namespace BiometricAgent
             {
                 if (liveAdapter != null && !liveAdapter.IsConnected)
                     liveAdapter.Connect(target.IpAddress, target.Port, target.MachineNumber);
+
+                // Only now hand the device back to the background connectivity timer -
+                // releasing this before our own reconnect above would let the timer race us.
+                _dashboard.EndExclusiveDeviceAccess(target.IpAddress);
 
                 btnRestore.Enabled = true;
                 SetProgress(0, 0, "");
