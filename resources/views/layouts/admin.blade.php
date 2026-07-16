@@ -26,102 +26,187 @@
     <style>
         .navbar-search { min-width: 220px; }
 
-        /* Sidebar Hierarchical Styling (compact density) */
-        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link {
-            font-weight: 500;
-            padding: 0.4rem 1rem;
-            line-height: 1.3;
-            border-left: 3px solid transparent;
+        /* ============================================================
+           MODERN SIDEBAR UI
+           Applies to every role block (superadmin / principal / teacher)
+           since they all share the same nav-sidebar / nav-item / nav-link /
+           nav-icon / has-treeview markup — one shared stylesheet, one look.
+           ============================================================ */
+
+        .main-sidebar.sidebar-dark-primary {
+            background: linear-gradient(180deg, #1e1b4b 0%, #171433 55%, #12101f 100%);
         }
 
-        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
-            background-color: rgba(255,255,255,.1) !important;
-            border-left-color: #007bff;
+        .main-sidebar .brand-link {
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            background: rgba(255,255,255,.02);
+        }
+
+        .main-sidebar .brand-image {
+            box-shadow: 0 0 0 3px rgba(99,102,241,.4);
+        }
+
+        /* Thin, theme-matched scrollbar for long menus */
+        .sidebar { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 10px; }
+        .sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.28); }
+
+        /* Top-level menu items: rounded, glowing gradient when active */
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link {
+            font-weight: 500;
+            padding: 0.5rem 0.85rem;
+            margin: 0.05rem 0.6rem;
+            line-height: 1.3;
+            border-radius: 0.7rem;
+            border-left: none;
+            color: rgba(255,255,255,.75);
+            transition: background .25s ease, transform .18s ease, box-shadow .25s ease, color .2s ease;
         }
 
         .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover {
-            background-color: rgba(255,255,255,.05);
+            background: rgba(255,255,255,.08);
+            color: #fff;
+            transform: translateX(2px);
+        }
+
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
+            background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+            color: #fff !important;
+            box-shadow: 0 6px 16px -4px rgba(79,70,229,.55);
+        }
+
+        /* Icon "chip" for top-level items */
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link > .nav-icon {
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(255,255,255,.07);
+            margin-right: .65rem;
+            font-size: .85rem;
+            transition: background .25s ease, transform .25s ease;
+        }
+
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover > .nav-icon {
+            background: rgba(255,255,255,.16);
+            transform: scale(1.08) rotate(-4deg);
+        }
+
+        .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active > .nav-icon {
+            background: rgba(255,255,255,.22);
+        }
+
+        /* Parent (has-treeview) row while its submenu is open */
+        .sidebar-dark-primary .nav-item.has-treeview.menu-open > .nav-link {
+            background: rgba(255,255,255,.06);
+            color: #fff;
+        }
+
+        .sidebar-dark-primary .nav-item.has-treeview > .nav-link .right {
+            transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+            opacity: .6;
+        }
+
+        .sidebar-dark-primary .nav-item.has-treeview.menu-open > .nav-link .right {
+            transform: rotate(90deg);
+            opacity: 1;
         }
 
         /* First level submenu (nav-treeview) */
         .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link {
-            padding: 0.32rem 1rem 0.32rem 2.5rem;
+            padding: 0.32rem 1rem 0.32rem 2.4rem;
+            margin: 0.05rem 0.6rem 0.05rem 0.4rem;
+            border-radius: 0.55rem;
             line-height: 1.25;
-            font-size: 0.9rem;
-            color: rgba(255,255,255,.7);
+            font-size: 0.86rem;
+            color: rgba(255,255,255,.62);
+            transition: background .2s ease, color .2s ease, padding-left .2s ease;
         }
 
         .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link:hover {
-            background-color: rgba(255,255,255,.05);
+            background: rgba(255,255,255,.06);
             color: #fff;
+            padding-left: 2.6rem;
         }
 
         .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link.active {
-            background-color: rgba(255,255,255,.08);
+            background: rgba(99,102,241,.2);
             color: #fff;
         }
 
         /* Second level submenu (nested nav-treeview) */
         .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link {
-            padding: 0.28rem 1rem 0.28rem 3.5rem;
+            padding: 0.28rem 1rem 0.28rem 3.4rem;
+            margin: 0.05rem 0.6rem 0.05rem 0.4rem;
+            border-radius: 0.5rem;
             line-height: 1.2;
-            font-size: 0.85rem;
-            color: rgba(255,255,255,.6);
+            font-size: 0.82rem;
+            color: rgba(255,255,255,.52);
+            transition: background .2s ease, color .2s ease;
         }
 
         .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link:hover {
-            background-color: rgba(255,255,255,.04);
+            background: rgba(255,255,255,.05);
             color: #fff;
         }
 
         .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link.active {
-            background-color: rgba(255,255,255,.06);
+            background: rgba(99,102,241,.16);
             color: #fff;
         }
 
         /* Third level submenu */
         .sidebar-dark-primary .nav-treeview .nav-treeview .nav-treeview > .nav-item > .nav-link {
-            padding: 0.24rem 1rem 0.24rem 4.5rem;
+            padding: 0.24rem 1rem 0.24rem 4.3rem;
+            margin: 0.05rem 0.6rem 0.05rem 0.4rem;
+            border-radius: 0.5rem;
             line-height: 1.2;
-            font-size: 0.8rem;
-            color: rgba(255,255,255,.5);
+            font-size: 0.78rem;
+            color: rgba(255,255,255,.42);
         }
 
-        /* Icons for submenu items */
+        /* Submenu dot icons: recolor + glow instead of a plain grey dot */
         .nav-treeview .nav-icon {
-            font-size: 0.7rem;
-            margin-left: 0.25rem;
-            margin-right: 0.5rem;
+            font-size: 0.55rem;
+            margin-right: 0.55rem;
+            color: rgba(255,255,255,.35);
+            transition: color .2s ease, text-shadow .2s ease;
         }
 
-        /* Parent menu item with treeview */
-        .sidebar-dark-primary .nav-item.has-treeview > .nav-link .right {
-            transition: transform 0.3s ease;
+        .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link:hover .nav-icon,
+        .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link:hover .nav-icon {
+            color: rgba(255,255,255,.75);
         }
 
-        .sidebar-dark-primary .nav-item.has-treeview.menu-open > .nav-link .right {
-            transform: rotate(90deg);
+        .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link.active .nav-icon,
+        .sidebar-dark-primary .nav-treeview .nav-treeview > .nav-item > .nav-link.active .nav-icon {
+            color: #a5b4fc;
+            text-shadow: 0 0 6px rgba(165,180,252,.85);
         }
 
-        /* Minimal spacing between major menu groups */
+        /* Spacing between top-level groups */
         .nav-sidebar > .nav-item {
             margin-bottom: 0.05rem;
         }
 
-        /* Submenu background */
+        /* Submenu container: soft rounded "card" feel instead of a flat strip */
         .nav-treeview {
-            background-color: rgba(0,0,0,.1);
-            padding-top: 0.1rem;
-            padding-bottom: 0.1rem;
+            background: rgba(0,0,0,.14);
+            border-radius: 0.6rem;
+            margin: 0.15rem 0.4rem 0.35rem 0.4rem;
+            padding: 0.25rem 0;
         }
 
-        /* Nested submenu darker background */
         .nav-treeview .nav-treeview {
-            background-color: rgba(0,0,0,.15);
+            background: rgba(0,0,0,.16);
+            margin: 0.1rem 0;
         }
 
         .nav-treeview .nav-treeview .nav-treeview {
-            background-color: rgba(0,0,0,.2);
+            background: rgba(0,0,0,.22);
         }
     </style>
     @stack('styles')
