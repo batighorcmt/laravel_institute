@@ -40,9 +40,11 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage>
   Widget build(BuildContext context) {
     final ref = this.ref; // Ensure ref is available in build
     final cs = Theme.of(context).colorScheme;
-    final childrenAsync = ref.watch(parentChildrenProvider);
+    // Keep this widget subscribed so it rebuilds when these providers change,
+    // even though the values themselves aren't read directly here.
+    ref.watch(parentChildrenProvider);
     final homeworkAsync = ref.watch(parentHomeworkProvider);
-    final selectedStudentId = ref.watch(selectedStudentIdProvider);
+    ref.watch(selectedStudentIdProvider);
 
     return RefreshIndicator(
       onRefresh: () async {

@@ -274,19 +274,6 @@ class _ExamRoomAttendancePageState extends State<ExamRoomAttendancePage> {
     );
   }
 
-  Widget _subStat(String text, IconData icon, Color color) {
-    return Row(
-      children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-        ),
-      ],
-    );
-  }
-
   Widget _buildBulkToggle() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),

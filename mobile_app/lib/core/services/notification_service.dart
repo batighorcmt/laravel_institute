@@ -119,10 +119,12 @@ class NotificationService {
         final id = data['id'] ?? data['notice_id'] ?? data['noticeId'];
         if (type == 'notice' && id != null) {
           final ctx = rootNavigatorKey.currentContext;
-          if (ctx != null) GoRouter.of(ctx).push('/notices/${id.toString()}');
+          if (ctx != null && ctx.mounted) {
+            GoRouter.of(ctx).push('/notices/${id.toString()}');
+          }
         } else if (type == 'invigilation_duty') {
           final ctx = rootNavigatorKey.currentContext;
-          if (ctx != null) {
+          if (ctx != null && ctx.mounted) {
             Navigator.of(ctx).push(MaterialPageRoute(
               builder: (_) => const ExamDutyPage(),
             ));
@@ -164,7 +166,6 @@ class NotificationService {
 
   void _handleForegroundMessage(RemoteMessage message) {
     RemoteNotification? notification = message.notification;
-    AndroidNotification? android = message.notification?.android;
 
     if (notification != null) {
       final soundName = message.data['sound'] ?? 'notice_sound';

@@ -79,10 +79,6 @@ class ClassRoutinePage extends ConsumerWidget {
                   final subject = rt['subject']?['name'] ?? 'N/A';
                   final teacher =
                       rt['teacher']?['name'] ?? 'শিক্ষক নির্ধারিত নয়';
-                  final period = rt['period_number'] != null
-                      ? '${rt['period_number']}ম পিরিয়ড'
-                      : '';
-
                   // Only show time if strictly provided and not just "12:00 AM" or similar defaults if that's the case
                   // But the resource formats it. If DB is null, Carbon::parse(null) is the issue.
                   // For now, let's assume if it exists in JSON, we show it, but the user says it shows even when "not in database".

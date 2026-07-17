@@ -530,7 +530,7 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
           ],
         ],
       ),
@@ -573,7 +573,7 @@ class _ExamAttendanceReportPageState extends State<ExamAttendanceReportPage> {
                   ? Image.network(
                       photoUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.person, color: Colors.grey, size: 30),
+                      errorBuilder: (_, _, _) => const Icon(Icons.person, color: Colors.grey, size: 30),
                     )
                   : const Icon(Icons.person, color: Colors.grey, size: 30),
             ),

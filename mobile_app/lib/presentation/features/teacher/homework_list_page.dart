@@ -246,7 +246,7 @@ class _TeacherHomeworkListPageState extends State<TeacherHomeworkListPage> {
                                       mode: LaunchMode.externalApplication,
                                     );
                                   } else {
-                                    if (mounted) {
+                                    if (context.mounted) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(

@@ -244,14 +244,16 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
   }
 
   Widget _buildList() {
-    if (_isLoading && _deposits.isEmpty)
+    if (_isLoading && _deposits.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFF00BF6D)),
       );
-    if (_error.isNotEmpty && _deposits.isEmpty)
+    }
+    if (_error.isNotEmpty && _deposits.isEmpty) {
       return Center(
         child: Text(_error, style: const TextStyle(color: Colors.red)),
       );
+    }
 
     return RefreshIndicator(
       onRefresh: () => _fetchHistory(reset: true),

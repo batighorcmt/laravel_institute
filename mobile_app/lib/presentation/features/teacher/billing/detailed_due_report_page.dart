@@ -320,6 +320,7 @@ class _DetailedDueReportPageState extends State<DetailedDueReportPage> {
         // Automatically open the downloaded PDF
         await OpenFilex.open(filePath);
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('পিডিএফ ডাউনলোড সফল হয়েছে এবং ওপেন হচ্ছে...'),

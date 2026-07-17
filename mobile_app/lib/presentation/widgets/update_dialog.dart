@@ -47,14 +47,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
   @override
   Widget build(BuildContext context) {
     // User requested that any update should be mandatory ('অবশ্যই আপডেট করতে হবে')
-    bool isMandatory = true;
 
     return PopScope(
       canPop: false,
 
       child: AlertDialog(
         title: Text(
-          isMandatory ? 'নতুন আপডেট আবশ্যক' : 'নতুন আপডেট পাওয়া গেছে',
+          'নতুন আপডেট আবশ্যক',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.indigo,
@@ -100,14 +99,6 @@ class _UpdateDialogState extends State<UpdateDialog> {
           ],
         ),
         actions: [
-          if (!isMandatory && !_isDownloading)
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'পরে করুন',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
           ElevatedButton(
             onPressed: _isDownloading ? null : _startDownload,
             style: ElevatedButton.styleFrom(

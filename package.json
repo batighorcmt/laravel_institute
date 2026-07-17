@@ -38,5 +38,13 @@
         "select2-bootstrap4-theme": "^1.0.0",
         "vue": "^3.5.29",
         "vuedraggable": "^4.1.0"
+    },
+    "allowScripts": {
+        "@fortawesome/fontawesome-free@6.7.2": true,
+        "@fortawesome/fontawesome-free@5.15.4": true,
+        "admin-lte@3.2.0": true,
+        "esbuild@0.27.7": true,
+        "rollup@4.53.0": true,
+        "summernote@0.8.20": true
     }
 }

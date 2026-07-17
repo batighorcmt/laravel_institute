@@ -224,6 +224,7 @@ class _TeacherMarkEntryDetailPageState
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
+      if (!mounted) return;
       showAppSnack(context, message: 'লিঙ্কটি ওপেন করা সম্ভব হচ্ছে না');
     }
   }
@@ -280,23 +281,6 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
   FocusNode? _fn(int i) =>
       i < widget.focusNodes.length ? widget.focusNodes[i] : null;
 
-  /// Ordered list of (focusNode, nextFocusNode) for the active fields.
-  List<(FocusNode?, FocusNode?)> get _fieldFocusPairs {
-    final nodes = <FocusNode?>[];
-    if (_hasCreative) nodes.add(_fn(0));
-    if (_hasMcq) nodes.add(_fn(nodes.length));
-    if (_hasPractical) nodes.add(_fn(nodes.length));
-
-    return List.generate(nodes.length, (i) {
-      final current = nodes[i];
-      // next = next field within this student, OR first field of next student
-      final next = (i + 1 < nodes.length)
-          ? nodes[i + 1]
-          : widget.nextStudentFirstFocus;
-      return (current, next);
-    });
-  }
-
   // Focus nodes resolved per field
   FocusNode? get _creativeFocus => _fn(0);
   FocusNode? get _mcqFocus {
@@ -322,12 +306,6 @@ class _StudentMarkRowState extends State<_StudentMarkRow> {
   FocusNode? get _afterPractical => widget.nextStudentFirstFocus;
 
   // ─── digit-count auto-advance ─────────────────────────────────────────────
-
-  int _digitCount(dynamic value) {
-    final n = (value ?? 0).toInt();
-    if (n <= 0) return 1;
-    return n.toString().length;
-  }
 
   void _autoAdvanceIfNeeded(String value, dynamic maxMark, FocusNode? next) {
     if (next == null) return;

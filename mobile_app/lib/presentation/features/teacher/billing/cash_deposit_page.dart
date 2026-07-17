@@ -299,14 +299,16 @@ class _CashDepositPageState extends State<CashDepositPage> {
   }
 
   Widget _buildBody() {
-    if (_isLoading)
+    if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFF00BF6D)),
       );
-    if (_error.isNotEmpty)
+    }
+    if (_error.isNotEmpty) {
       return Center(
         child: Text(_error, style: const TextStyle(color: Colors.red)),
       );
+    }
 
     return RefreshIndicator(
       onRefresh: _fetchTransferStats,

@@ -106,11 +106,6 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
     }
   }
 
-  Future<Map<String, dynamic>> _fetchJson(String path) async {
-    final resp = await _dio.get(path);
-    return resp.data as Map<String, dynamic>;
-  }
-
   Future<void> _ensureOverrideSchoolFromProfile(dynamic profile) async {
     try {
       if (profile == null) return;
@@ -129,6 +124,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
       if (current != sid) {
         await prefs.setInt('override_school_id', sid);
         // optional: quick notify
+        if (!mounted) return;
         showAppSnack(
           context,
           message: 'Using school id $sid for teacher flows',
@@ -240,11 +236,11 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                       if (t is Map) {
                         final tp = t['photo_url'] ?? t['photo'];
                         final td = t['designation'];
-                        if ((photo == null || (photo.isEmpty ?? true)) &&
+                        if ((photo == null || photo.isEmpty) &&
                             (tp?.toString().isNotEmpty == true)) {
                           setState(() => _overridePhoto = tp.toString());
                         }
-                        if (((designation.isEmpty ?? true)) &&
+                        if (designation.isEmpty &&
                             (td?.toString().isNotEmpty == true)) {
                           setState(() => _overrideDesignation = td.toString());
                         }
@@ -405,7 +401,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                   onTap: () async {
                     final profile = ref.read(authProvider).asData?.value;
                     await _ensureOverrideSchoolFromProfile(profile);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     if (!hasTeachingRole(profile)) {
                       showAppSnack(
                         context,
@@ -425,7 +421,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                   onTap: () async {
                     final profile = ref.read(authProvider).asData?.value;
                     await _ensureOverrideSchoolFromProfile(profile);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     if (!hasTeachingRole(profile)) {
                       showAppSnack(
                         context,
@@ -445,7 +441,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                   onTap: () async {
                     final profile = ref.read(authProvider).asData?.value;
                     await _ensureOverrideSchoolFromProfile(profile);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     if (!hasTeachingRole(profile)) {
                       showAppSnack(
                         context,
@@ -469,7 +465,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                   onTap: () async {
                     final profile = ref.read(authProvider).asData?.value;
                     await _ensureOverrideSchoolFromProfile(profile);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     if (!hasTeachingRole(profile)) {
                       showAppSnack(
                         context,
@@ -508,7 +504,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                   onTap: () async {
                     final profile = ref.read(authProvider).asData?.value;
                     await _ensureOverrideSchoolFromProfile(profile);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     if (!hasTeachingRole(profile)) {
                       showAppSnack(
                         context,
@@ -532,7 +528,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                   onTap: () async {
                     final profile = ref.read(authProvider).asData?.value;
                     await _ensureOverrideSchoolFromProfile(profile);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     if (!hasTeachingRole(profile)) {
                       showAppSnack(
                         context,
@@ -556,7 +552,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                   onTap: () async {
                     final profile = ref.read(authProvider).asData?.value;
                     await _ensureOverrideSchoolFromProfile(profile);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     if (!hasTeachingRole(profile)) {
                       showAppSnack(
                         context,
@@ -581,7 +577,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                   onTap: () async {
                     final profile = ref.read(authProvider).asData?.value;
                     await _ensureOverrideSchoolFromProfile(profile);
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     if (!hasTeachingRole(profile)) {
                       showAppSnack(
                         context,
@@ -845,23 +841,6 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
     );
   }
 
-  Widget _statRow(String label, dynamic data) {
-    if (data == null) return const SizedBox();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 13)),
-          Text(
-            '${data['present']}/${data['total']} (${data['percentage']}%)',
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _statInfo(String label, String value, {Color? color}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -882,20 +861,4 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
     );
   }
 
-  Widget _buildKeyValueList(Map<String, dynamic> data) {
-    if (data.isEmpty) {
-      return const Text('No data');
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: data.entries
-          .map(
-            (e) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text('${e.key}: ${e.value}'),
-            ),
-          )
-          .toList(),
-    );
-  }
 }

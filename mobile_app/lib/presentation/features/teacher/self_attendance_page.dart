@@ -526,7 +526,7 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
           int? schoolId;
           if (profile != null) {
             for (final r in profile.roles) {
-              final roleStr = (r.role ?? '').toString().toLowerCase();
+              final roleStr = r.role.toString().toLowerCase();
               if ((roleStr.contains('teacher') ||
                       roleStr.contains('principal') ||
                       roleStr.contains('head')) &&
@@ -585,7 +585,7 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
     int? schoolId;
     if (profile != null) {
       for (final r in profile.roles) {
-        final roleStr = (r.role ?? '').toString().toLowerCase();
+        final roleStr = r.role.toString().toLowerCase();
         if ((roleStr.contains('teacher') ||
                 roleStr.contains('principal') ||
                 roleStr.contains('head')) &&
@@ -664,7 +664,7 @@ class _SelfAttendancePageState extends ConsumerState<SelfAttendancePage> {
       if (override != null) sid = override;
       if (profile != null) {
         for (final r in profile.roles) {
-          final roleStr = (r.role ?? '').toString().toLowerCase();
+          final roleStr = r.role.toString().toLowerCase();
           if ((roleStr.contains('teacher') ||
                   roleStr.contains('principal') ||
                   roleStr.contains('head')) &&

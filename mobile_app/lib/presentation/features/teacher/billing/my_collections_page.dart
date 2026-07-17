@@ -192,6 +192,7 @@ class _MyCollectionsPageState extends State<MyCollectionsPage> {
         throw 'আপনার লগইন মেয়াদ শেষ হতে পারে অথবা রিসিট টি পাওয়া যায়নি।';
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('ডাউনলোড ব্যর্থ হয়েছে: $e'),
@@ -229,14 +230,16 @@ class _MyCollectionsPageState extends State<MyCollectionsPage> {
   }
 
   Widget _buildBody() {
-    if (_isLoading)
+    if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: Color(0xFF00BF6D)),
       );
-    if (_error.isNotEmpty)
+    }
+    if (_error.isNotEmpty) {
       return Center(
         child: Text(_error, style: const TextStyle(color: Colors.red)),
       );
+    }
     if (_data == null) return const Center(child: Text('No data found'));
 
     final summary = _data!['summary'] as List? ?? [];

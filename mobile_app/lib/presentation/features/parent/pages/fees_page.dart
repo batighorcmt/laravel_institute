@@ -58,6 +58,7 @@ class _FeesPageState extends ConsumerState<FeesPage>
           );
 
       if (result['gateway_url'] != null) {
+        if (!mounted) return;
         final success = await Navigator.push<bool>(
           context,
           MaterialPageRoute(
@@ -67,6 +68,7 @@ class _FeesPageState extends ConsumerState<FeesPage>
 
         if (success == true) {
           ref.invalidate(parentFeesProvider);
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('পেমেন্ট সফলভাবে গ্রহণ করা হয়েছে।'),
@@ -78,6 +80,7 @@ class _FeesPageState extends ConsumerState<FeesPage>
         throw result['message'] ?? 'পেমেন্ট লিংক পাওয়া যায়নি';
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('পেমেন্ট শুরু করতে সমস্যা হয়েছে: $e')),
       );

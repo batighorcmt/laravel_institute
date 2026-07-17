@@ -26,7 +26,6 @@ class _ClassSectionMarkAttendancePageState
   bool _isToday = true;
   int _statTotal = 0, _statPresent = 0, _statAbsent = 0, _statLate = 0;
   int _statMale = 0, _statFemale = 0;
-  bool _isUpdate = false;
   bool _submitting = false;
 
   AttendanceStatus? _filter;
@@ -129,9 +128,6 @@ class _ClassSectionMarkAttendancePageState
         if (_statMale < 0) _statMale = male;
         if (_statFemale < 0) _statFemale = female;
       }
-      // Determine whether this is an update (existing DB records) or a first-time submit
-      _isUpdate = _statTotal > 0 || _students.any((s) => s.status != null);
-
       // recompute counts for male/female if provided
       // (these will be passed to the counts bar)
     } catch (e) {

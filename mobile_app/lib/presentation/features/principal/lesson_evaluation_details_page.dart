@@ -121,14 +121,16 @@ class _LessonEvaluationDetailsPageState
       // try a few common names/locations for routine entry id
       if (it['routine_entry_id'] != null) {
         tp['routine_entry_id'] = it['routine_entry_id'];
-      } else if (it['routine_id'] != null)
+      } else if (it['routine_id'] != null) {
         tp['routine_entry_id'] = it['routine_id'];
-      else if (it['routine'] is Map && it['routine']['id'] != null)
+      } else if (it['routine'] is Map && it['routine']['id'] != null) {
         tp['routine_entry_id'] = it['routine']['id'];
-      else if (it['routine_entry'] is Map && it['routine_entry']['id'] != null)
+      } else if (it['routine_entry'] is Map &&
+          it['routine_entry']['id'] != null) {
         tp['routine_entry_id'] = it['routine_entry']['id'];
-      else if (it['routineEntryId'] != null)
+      } else if (it['routineEntryId'] != null) {
         tp['routine_entry_id'] = it['routineEntryId'];
+      }
 
       if (tp.isNotEmpty) {
         try {
@@ -174,14 +176,6 @@ class _LessonEvaluationDetailsPageState
           .toString();
     }
     return s.toString();
-  }
-
-  String _getStatus(dynamic s) {
-    if (s is Map) {
-      return (s['status'] ?? s['attendance_status'] ?? s['status_name'] ?? '')
-          .toString();
-    }
-    return '';
   }
 
   String _getRoll(dynamic s) {
@@ -233,11 +227,13 @@ class _LessonEvaluationDetailsPageState
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Cannot place call')));
       }
     } catch (_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Call failed')));
@@ -478,12 +474,13 @@ class _LessonEvaluationDetailsPageState
         var status = '';
         if (s['status'] != null) {
           status = s['status'].toString();
-        } else if (s['record_status'] != null)
+        } else if (s['record_status'] != null) {
           status = s['record_status'].toString();
-        else if (person['status'] != null)
+        } else if (person['status'] != null) {
           status = person['status'].toString();
-        else if (s['evaluation_status'] != null)
+        } else if (s['evaluation_status'] != null) {
           status = s['evaluation_status'].toString();
+        }
 
         // fallback to report-level status map
         if ((status.toString().isEmpty) && statusMap.isNotEmpty) {
@@ -499,7 +496,7 @@ class _LessonEvaluationDetailsPageState
             }
           }
         }
-        status = status.toLowerCase() ?? '';
+        status = status.toLowerCase();
         final photo = _getPhotoUrl(person);
         out.add({
           'id': id,
@@ -534,24 +531,27 @@ class _LessonEvaluationDetailsPageState
           String? id;
           if (e['id'] != null) {
             id = e['id'].toString();
-          } else if (e['student_id'] != null)
+          } else if (e['student_id'] != null) {
             id = e['student_id'].toString();
+          }
           String? roll;
           if (e['roll_no'] != null) {
             roll = e['roll_no'].toString();
-          } else if (e['roll'] != null)
+          } else if (e['roll'] != null) {
             roll = e['roll'].toString();
+          }
           final name = (e['name'] ?? e['student_name'] ?? '').toString();
           String? status;
           if (e['status'] != null) {
             status = e['status'].toString();
-          } else if (e['evaluation_status'] != null)
+          } else if (e['evaluation_status'] != null) {
             status = e['evaluation_status'].toString();
-          else if (e['attendance_status'] != null)
+          } else if (e['attendance_status'] != null) {
             status = e['attendance_status'].toString();
-          // also accept record-style fields
-          else if (e['record_status'] != null)
+            // also accept record-style fields
+          } else if (e['record_status'] != null) {
             status = e['record_status'].toString();
+          }
           if (status != null) {
             status = status.toLowerCase();
             if (id != null) map[id] = status;

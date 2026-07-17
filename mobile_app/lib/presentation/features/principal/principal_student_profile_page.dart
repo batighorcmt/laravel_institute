@@ -24,7 +24,6 @@ class _PrincipalStudentProfilePageState
   bool _loading = false;
   bool _hasMore = true;
   List<dynamic> _items = [];
-  String? _error;
 
   String? _classId;
   String? _sectionId;
@@ -92,7 +91,6 @@ class _PrincipalStudentProfilePageState
         setState(() {
           _page = page;
           _hasMore = nextPage;
-          _error = null;
           if (reset) {
             _items = data;
           } else {
@@ -100,19 +98,14 @@ class _PrincipalStudentProfilePageState
           }
         });
       }
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+    } catch (_) {
+      // ignore: errors are silently ignored here (no error UI wired up)
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   void _onSearch() => _load(reset: true);
-
-  Future<void> _call(String phone) async {
-    final uri = Uri(scheme: 'tel', path: phone);
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
-  }
 
   @override
   Widget build(BuildContext context) {

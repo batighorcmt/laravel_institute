@@ -44,6 +44,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
       if (ok && mounted) {
         await showAppSnack(context, message: 'Login successful', success: true);
+        if (!mounted) return;
         final profile = ref.read(authProvider).asData?.value;
         final roles =
             profile?.roles.map((r) => r.role.toLowerCase()).toList() ?? [];

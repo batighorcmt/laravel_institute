@@ -11,7 +11,6 @@ class AppTheme {
       primary: primary,
       secondary: secondary,
       surface: const Color(0xFFFFFFFF),
-      background: const Color(0xFFF5F7F9),
     );
     // Ensure readable dark foreground on light surfaces.
     colorScheme = colorScheme.copyWith(
@@ -91,7 +90,6 @@ class AppTheme {
       primary: primary,
       secondary: secondary,
       surface: const Color(0xFF1F2422),
-      background: const Color(0xFF121614),
     );
     final textTheme = GoogleFonts.interTextTheme(base.textTheme).copyWith(
       headlineSmall: GoogleFonts.inter(

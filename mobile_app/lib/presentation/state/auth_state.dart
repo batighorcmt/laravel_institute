@@ -27,7 +27,7 @@ class AuthNotifier extends AsyncNotifier<UserProfile?> {
   Future<bool> login(String username, String password) async {
     state = const AsyncLoading();
     try {
-      final loginData = await AuthRepository().login(
+      await AuthRepository().login(
         username: username,
         password: password,
         deviceName: 'flutter-app',

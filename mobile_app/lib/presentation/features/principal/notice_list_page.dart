@@ -121,6 +121,7 @@ class NoticeListPage extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               await ref.read(noticeRepositoryProvider).deleteNotice(notice['id']);
+              if (!context.mounted) return;
               Navigator.pop(context);
               ref.invalidate(noticesListProvider);
             },

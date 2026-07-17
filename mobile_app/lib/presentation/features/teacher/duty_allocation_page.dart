@@ -135,10 +135,14 @@ class _DutyAllocationPageState extends State<DutyAllocationPage> {
         date: _selectedDate!,
         allocations: allocations,
       );
-      showAppSnack(context, message: 'সকল ডিউটি সংরক্ষণ করা হয়েছে', success: true);
+      if (mounted) {
+        showAppSnack(context, message: 'সকল ডিউটি সংরক্ষণ করা হয়েছে', success: true);
+      }
       _loadRooms();
     } catch (e) {
-      showAppSnack(context, message: 'সংরক্ষণ ব্যর্থ হয়েছে');
+      if (mounted) {
+        showAppSnack(context, message: 'সংরক্ষণ ব্যর্থ হয়েছে');
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

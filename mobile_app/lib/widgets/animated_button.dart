@@ -59,8 +59,9 @@ class _AnimatedButtonState extends State<AnimatedButton> {
     } finally {
       await Future.delayed(const Duration(milliseconds: 400));
       _isPressed?.value = false;
-      if (!mounted) return;
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 

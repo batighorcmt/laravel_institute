@@ -14,6 +14,23 @@
 		"intelephense.diagnostics.undefinedProperties": false,
 		"intelephense.diagnostics.undefinedVariables": false,
 		"intelephense.diagnostics.unusedSymbols": false,
-		"intelephense.diagnostics.typeErrors": false
+		"intelephense.diagnostics.typeErrors": false,
+		"sqltools.connections": [
+			{
+				"mysqlOptions": {
+					"authProtocol": "default",
+					"enableSsl": "Disabled"
+				},
+				"ssh": "Disabled",
+				"previewLimit": 50,
+				"server": "localhost",
+				"port": 3306,
+				"driver": "MySQL",
+				"name": "ins",
+				"database": "ins",
+				"username": "ins",
+				"password": "123456"
+			}
+		]
 	}
 }

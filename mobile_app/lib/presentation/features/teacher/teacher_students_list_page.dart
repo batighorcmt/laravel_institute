@@ -30,7 +30,6 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   String? _selectedSectionId;
   List<Map<String, dynamic>> _groups = [];
   String? _selectedGroupId;
-  final List<String> _genders = [];
   String? _selectedGender;
   List<Map<String, dynamic>> _years = [];
   String? _selectedYearId;
@@ -40,7 +39,6 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
   final String _selectedStatus = 'active';
 
   final TextEditingController _searchCtrl = TextEditingController();
-  final bool _classesLoading = false;
   bool _sectionsLoading = false;
   bool _metaLoading = false;
 
@@ -177,11 +175,6 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
-  }
-
-  String _capitalize(String s) {
-    if (s.isEmpty) return s;
-    return s[0].toUpperCase() + s.substring(1);
   }
 
   @override
@@ -492,40 +485,6 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       onChanged: onChanged,
     );
   }
-
-  Widget _filterDropdown(
-    String label,
-    String? value,
-    List<DropdownMenuItem<String>> items,
-    ValueChanged<String?> onChanged,
-  ) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 80, maxWidth: 120),
-      child: DropdownButtonFormField<String>(
-        initialValue: value,
-        isExpanded: true,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(fontSize: 11),
-          border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 6,
-            vertical: 4,
-          ),
-          isDense: true,
-        ),
-        items: [
-          DropdownMenuItem<String>(
-            value: null,
-            child: Text('All $label', style: const TextStyle(fontSize: 11)),
-          ),
-          ...items,
-        ],
-        onChanged: onChanged,
-        style: const TextStyle(fontSize: 11, color: Colors.black87),
-      ),
-    );
-  }
 }
 
 class TeacherStudentProfilePage extends StatefulWidget {
@@ -543,6 +502,18 @@ class TeacherStudentProfilePage extends StatefulWidget {
 }
 
 class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
+  static const Color _brand = Color(0xFF00BF6D);
+  static const Color _brandDark = Color(0xFF049655);
+  static const Color _bg = Color(0xFFF5F7F9);
+  static const Color _ink = Color(0xFF1A1D1F);
+  static const Color _muted = Color(0xFF6B7280);
+
+  static const Color _hueAcademic = Color(0xFF00BF6D);
+  static const Color _huePersonal = Color(0xFF4F46E5);
+  static const Color _hueFamily = Color(0xFF2962FF);
+  static const Color _hueAddress = Color(0xFF0FA3A3);
+  static const Color _hueHistory = Color(0xFF8B5CF6);
+
   late final Dio _dio;
   late final TeacherStudentsRepository _repo;
   Map<String, dynamic>? _data;
@@ -674,17 +645,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     return '';
   }
 
-  Widget _infoTile(String label, String value, IconData icon) {
-    final show = value.trim().isNotEmpty ? value : 'N/A';
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(label),
-      subtitle: Text(show),
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12.0),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final d = _data ?? {};
@@ -756,44 +716,7 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       _pick(d, const ['religion', 'religion_name', 'religionName']),
     );
 
-    final phone = _pick(d, const [
-      'phone',
-      'mobile',
-      'contact_no',
-      'contact_number',
-      'phone_number',
-    ]);
     final email = _pick(d, const ['email']);
-    final presentAddressComposed = _composeAddress(d, 'present');
-    final presentAddressFallback = _combine(
-      _pick(d, const [
-        'present_address',
-        'current_address',
-        'address',
-        'addresses_present',
-        'present',
-      ]),
-      _pick(d, const [
-        'present_address_bn',
-        'current_address_bn',
-        'address_bn',
-        'addresses_present_bn',
-      ]),
-      joinWithNewline: true,
-    );
-    final presentAddress = presentAddressComposed.isNotEmpty
-        ? presentAddressComposed
-        : presentAddressFallback;
-
-    final permanentAddressComposed = _composeAddress(d, 'permanent');
-    final permanentAddressFallback = _combine(
-      _pick(d, const ['permanent_address', 'addresses_permanent', 'permanent']),
-      _pick(d, const ['permanent_address_bn', 'addresses_permanent_bn']),
-      joinWithNewline: true,
-    );
-    final permanentAddress = permanentAddressComposed.isNotEmpty
-        ? permanentAddressComposed
-        : permanentAddressFallback;
 
     final fatherName = _combine(
       _tc(
@@ -886,997 +809,804 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       'guardian_contact_no',
     ]);
 
+    final hasToday =
+        d.containsKey('today_attendance') ||
+        (d['today_evaluations'] as List? ?? []).isNotEmpty;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Student Profile'),
-        actions: [
-          if (_data != null)
-            IconButton(
-              tooltip: 'Raw',
-              icon: const Icon(Icons.data_object),
-              onPressed: () {
-                final pretty = const JsonEncoder.withIndent(
-                  '  ',
-                ).convert(_data);
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  builder: (ctx) => DraggableScrollableSheet(
-                    expand: false,
-                    initialChildSize: 0.75,
-                    maxChildSize: 0.95,
-                    builder: (_, controller) => Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: SingleChildScrollView(
-                        controller: controller,
-                        child: SelectableText(pretty),
+      backgroundColor: _bg,
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: _brand))
+          : _error != null
+          ? _buildErrorState()
+          : DefaultTabController(
+              length: 4,
+              child: NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                  _buildSliverHeader(
+                    context: context,
+                    photoUrl: photoUrl,
+                    name: name,
+                    cls: cls,
+                    section: section,
+                    roll: roll,
+                    studentCode: studentCode,
+                    gender: gender,
+                    group: group,
+                    phone: guardianPhone.isNotEmpty
+                        ? guardianPhone
+                        : fatherPhone,
+                    email: email,
+                  ),
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _StickyTabBarDelegate(
+                      TabBar(
+                        labelColor: _brand,
+                        unselectedLabelColor: _muted,
+                        indicatorColor: _brand,
+                        indicatorWeight: 3,
+                        labelStyle: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                        unselectedLabelStyle: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                        tabs: const [
+                          Tab(text: 'তথ্য'),
+                          Tab(text: 'পরিবার'),
+                          Tab(text: 'ঠিকানা'),
+                          Tab(text: 'ইতিহাস'),
+                        ],
                       ),
                     ),
                   ),
-                );
-              },
-            ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                ],
+                body: TabBarView(
                   children: [
-                    Text(_error!),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: _load,
-                      child: const Text('Retry'),
+                    _buildInfoTab(
+                      d: d,
+                      studentCode: studentCode,
+                      dob: dob,
+                      religion: religion,
+                      cls: cls,
+                      section: section,
+                      roll: roll,
+                      group: group,
+                      shift: shift,
+                      medium: medium,
+                      session: session,
+                      year: year,
+                      optionalSubject: optionalSubject,
+                      schoolName: schoolName,
+                      gender: gender,
+                      bloodGroup: bloodGroup,
+                      att: att,
+                    ),
+                    _buildFamilyTab(
+                      classTeacher: classTeacher,
+                      classTeacherPhone: classTeacherPhone,
+                      fatherName: fatherName,
+                      motherName: motherName,
+                      fatherPhone: fatherPhone,
+                      motherPhone: motherPhone,
+                      guardianName: guardianName,
+                      guardianPhone: guardianPhone,
+                      guardianRelation: guardianRelation,
+                    ),
+                    _buildAddressTab(d),
+                    _buildHistoryTab(
+                      d: d,
+                      history: history,
+                      memberships: memberships,
+                      hasToday: hasToday,
                     ),
                   ],
                 ),
               ),
-            )
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Stylish gradient header with avatar and chips
-                  _buildHeader(
-                    context,
-                    photoUrl,
-                    name,
-                    cls,
-                    section,
-                    roll,
-                    studentCode,
-                    gender,
-                    group,
+            ),
+    );
+  }
+
+  // ───────────────────────────── Error state ─────────────────────────────
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.wifi_off_rounded,
+                color: Colors.redAccent,
+                size: 36,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _error ?? 'কিছু একটা সমস্যা হয়েছে',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _muted),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _load,
+              icon: const Icon(Icons.refresh),
+              label: const Text('আবার চেষ্টা করুন'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _brand,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ───────────────────────────── Header ─────────────────────────────
+
+  Widget _buildSliverHeader({
+    required BuildContext context,
+    required String photoUrl,
+    required String name,
+    required String cls,
+    required String section,
+    required String roll,
+    required String studentCode,
+    required String gender,
+    required String group,
+    required String phone,
+    required String email,
+  }) {
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: 320,
+      backgroundColor: _brand,
+      foregroundColor: Colors.white,
+      elevation: 0,
+      actions: [
+        if (_data != null)
+          IconButton(
+            tooltip: 'Raw data',
+            icon: const Icon(Icons.data_object),
+            onPressed: () {
+              final pretty = const JsonEncoder.withIndent('  ').convert(_data);
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                builder: (ctx) => DraggableScrollableSheet(
+                  expand: false,
+                  initialChildSize: 0.75,
+                  maxChildSize: 0.95,
+                  builder: (_, controller) => Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: SingleChildScrollView(
+                      controller: controller,
+                      child: SelectableText(pretty),
+                    ),
                   ),
-
-                  const SizedBox(height: 12),
-
-                  // Quick actions row
-                  _buildQuickActions(
-                    context,
-                    phone: guardianPhone,
-                    email: email,
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Class Teacher Card
-                  if (classTeacher.isNotEmpty)
-                    _sectionCard(
-                      title: 'Class Teacher',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF6a11cb), Color(0xFF2575fc)],
+                ),
+              );
+            },
+          ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.pin,
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [_brand, _brandDark],
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 48, 20, 12),
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          width: 2,
+                        ),
                       ),
+                      child: CircleAvatar(
+                        radius: 42,
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        backgroundImage: photoUrl.isNotEmpty
+                            ? CachedNetworkImageProvider(photoUrl)
+                            : null,
+                        child: photoUrl.isEmpty
+                            ? const Icon(
+                                Icons.person,
+                                size: 42,
+                                color: Colors.white,
+                              )
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      name.isNotEmpty ? name : 'শিক্ষার্থী',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      [
+                        if (cls.isNotEmpty || section.isNotEmpty)
+                          '$cls - $section',
+                        if (roll.isNotEmpty) 'Roll: $roll',
+                      ].where((e) => e.isNotEmpty).join('  •  '),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
                       children: [
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.blue.shade100,
-                            child: const Icon(
-                              Icons.person_pin,
-                              color: Colors.blue,
-                            ),
+                        if (studentCode.isNotEmpty)
+                          _headerChip(
+                            icon: Icons.badge_outlined,
+                            label: studentCode,
                           ),
-                          title: Text(
-                            classTeacher,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                        if (group.isNotEmpty)
+                          _headerChip(
+                            icon: Icons.workspaces_outlined,
+                            label: group,
                           ),
-                          subtitle: Text(
-                            classTeacherPhone.isNotEmpty
-                                ? classTeacherPhone
-                                : 'No phone',
+                        if (gender.isNotEmpty)
+                          _headerChip(icon: Icons.wc_outlined, label: gender),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _quickActionButton(
+                            icon: Icons.call_rounded,
+                            label: phone.isNotEmpty ? 'কল করুন' : 'নম্বর নেই',
+                            onPressed: phone.isEmpty
+                                ? null
+                                : () async {
+                                    final uri = Uri(scheme: 'tel', path: phone);
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri);
+                                    }
+                                  },
                           ),
-                          trailing: classTeacherPhone.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(
-                                    Icons.call,
-                                    color: Colors.green,
-                                  ),
-                                  onPressed: () async {
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _quickActionButton(
+                            icon: Icons.mail_outline_rounded,
+                            label: email.isNotEmpty ? 'ইমেইল' : 'ইমেইল নেই',
+                            filled: false,
+                            onPressed: email.isEmpty
+                                ? null
+                                : () async {
                                     final uri = Uri(
-                                      scheme: 'tel',
-                                      path: classTeacherPhone,
+                                      scheme: 'mailto',
+                                      path: email,
                                     );
                                     if (await canLaunchUrl(uri)) {
                                       await launchUrl(uri);
                                     }
                                   },
-                                )
-                              : null,
-                        ),
-                      ],
-                    ),
-
-                  const SizedBox(height: 12),
-
-                  // Info grid pills (colorful mini-cards)
-                  _buildInfoPills(context, {
-                    'Student ID': studentCode,
-                    'Date of Birth': dob,
-                    'Religion': religion,
-                    'Class': cls,
-                    'Section': section,
-                    'Roll': roll,
-                    'Group': group,
-                    'Shift': shift,
-                    'Medium': medium,
-                    'Session': session,
-                    'Year': year,
-                    'Optional Subject': optionalSubject,
-                    'School': schoolName,
-                  }),
-
-                  const SizedBox(height: 12),
-
-                  // Personal Information - colorful card
-                  _sectionCard(
-                    title: 'Personal Information',
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFff9966), Color(0xFFff5e62)],
-                    ),
-                    children: [
-                      _infoRow(
-                        icon: Icons.transgender,
-                        label: 'Gender',
-                        value: gender,
-                      ),
-                      _infoRow(
-                        icon: Icons.bloodtype,
-                        label: 'Blood Group',
-                        value: bloodGroup,
-                      ),
-                      _infoRow(
-                        icon: Icons.cake,
-                        label: 'Date of Birth',
-                        value: dob,
-                      ),
-                      _infoRow(
-                        icon: Icons.self_improvement,
-                        label: 'Religion',
-                        value: religion,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Family Information
-                  _sectionCard(
-                    title: 'Family Information',
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF56ab2f), Color(0xFFa8e063)],
-                    ),
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _miniCard(
-                              context,
-                              icon: Icons.man,
-                              title: 'Father',
-                              subtitle: fatherName,
-                              color: const Color(0xFF81c784),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _miniCard(
-                              context,
-                              icon: Icons.woman,
-                              title: 'Mother',
-                              subtitle: motherName,
-                              color: const Color(0xFF64b5f6),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      _infoRow(
-                        icon: Icons.call,
-                        label: 'Father\'s Phone',
-                        value: fatherPhone,
-                        onTap: fatherPhone.trim().isEmpty
-                            ? null
-                            : () async {
-                                final uri = Uri(
-                                  scheme: 'tel',
-                                  path: fatherPhone,
-                                );
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri);
-                                }
-                              },
-                      ),
-                      _infoRow(
-                        icon: Icons.call,
-                        label: 'Mother\'s Phone',
-                        value: motherPhone,
-                        onTap: motherPhone.trim().isEmpty
-                            ? null
-                            : () async {
-                                final uri = Uri(
-                                  scheme: 'tel',
-                                  path: motherPhone,
-                                );
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri);
-                                }
-                              },
-                      ),
-                      _infoRow(
-                        icon: Icons.family_restroom,
-                        label: 'Guardian',
-                        value: guardianName,
-                      ),
-                      _infoRow(
-                        icon: Icons.call,
-                        label: 'Guardian Phone',
-                        value: guardianPhone,
-                        onTap: guardianPhone.trim().isEmpty
-                            ? null
-                            : () async {
-                                final uri = Uri(
-                                  scheme: 'tel',
-                                  path: guardianPhone,
-                                );
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(uri);
-                                }
-                              },
-                      ),
-                      _infoRow(
-                        icon: Icons.group,
-                        label: 'Relation',
-                        value: guardianRelation,
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Address Information - New detailed card
-                  _sectionCard(
-                    title: 'Address Information',
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF36d1dc), Color(0xFF5b86e5)],
-                    ),
-                    children: [
-                      // Present Address
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.place,
-                              size: 20,
-                              color: Colors.blue.shade700,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'বর্তমান ঠিকানা',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _infoRow(
-                        icon: Icons.location_city,
-                        label: 'গ্রাম',
-                        value: _pick(d, const [
-                          'present_village',
-                          'village',
-                          'gram',
-                          'present_gram',
-                        ]),
-                      ),
-                      _infoRow(
-                        icon: Icons.home_work,
-                        label: 'পাড়া/মহল্লা',
-                        value: _pick(d, const [
-                          'present_para_moholla',
-                          'para_moholla',
-                          'para',
-                          'moholla',
-                        ]),
-                      ),
-                      _infoRow(
-                        icon: Icons.local_post_office,
-                        label: 'ডাকঘর',
-                        value: _pick(d, const [
-                          'present_post_office',
-                          'post_office',
-                          'po',
-                          'post',
-                        ]),
-                      ),
-                      _infoRow(
-                        icon: Icons.map,
-                        label: 'উপজেলা',
-                        value: _pick(d, const [
-                          'present_upazilla',
-                          'present_upazila',
-                          'upazila',
-                          'upazilla',
-                          'thana',
-                        ]),
-                      ),
-                      _infoRow(
-                        icon: Icons.location_on,
-                        label: 'জেলা',
-                        value: _pick(d, const [
-                          'present_district',
-                          'district',
-                          'zilla',
-                          'zila',
-                        ]),
-                      ),
-
-                      const Divider(height: 24),
-
-                      // Permanent Address
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.home,
-                              size: 20,
-                              color: Colors.green.shade700,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'স্থায়ী ঠিকানা',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 15,
-                                color: Colors.green.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _infoRow(
-                        icon: Icons.location_city,
-                        label: 'গ্রাম',
-                        value: _pick(d, const [
-                          'permanent_village',
-                          'perm_village',
-                          'permanent_gram',
-                          'permanent_gram_bn',
-                          'perm_gram',
-                        ]),
-                      ),
-                      _infoRow(
-                        icon: Icons.home_work,
-                        label: 'পাড়া/মহল্লা',
-                        value: _pick(d, const [
-                          'permanent_para_moholla',
-                          'perm_para_moholla',
-                          'perm_para',
-                          'perm_moholla',
-                          'permanent_para',
-                        ]),
-                      ),
-                      _infoRow(
-                        icon: Icons.local_post_office,
-                        label: 'ডাকঘর',
-                        value: _pick(d, const [
-                          'permanent_post_office',
-                          'perm_post_office',
-                          'perm_po',
-                          'perm_post',
-                          'permanent_po',
-                        ]),
-                      ),
-                      _infoRow(
-                        icon: Icons.map,
-                        label: 'উপজেলা',
-                        value: _pick(d, const [
-                          'permanent_upazilla',
-                          'perm_upazilla',
-                          'perm_upazila',
-                          'permanent_upazila',
-                          'perm_thana',
-                          'permanent_thana',
-                        ]),
-                      ),
-                      _infoRow(
-                        icon: Icons.location_on,
-                        label: 'জেলা',
-                        value: _pick(d, const [
-                          'permanent_district',
-                          'perm_district',
-                          'perm_zilla',
-                          'perm_zila',
-                          'permanent_zilla',
-                          'permanent_zila',
-                        ]),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Admission & Previous Information
-                  _sectionCard(
-                    title: 'Admission & Previous Information',
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF8e44ad), Color(0xFFc39bd3)],
-                    ),
-                    children: [
-                      _infoRow(
-                        icon: Icons.school,
-                        label: 'Previous School',
-                        value: _pick(d, const [
-                          'previous_school',
-                          'last_school',
-                          'prev_school',
-                          'previousSchool',
-                          'lastSchool',
-                        ]),
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _infoRow(
-                              icon: Icons.history_edu,
-                              label: 'Pass Year',
-                              value: _pick(d, const [
-                                'pass_year',
-                                'passing_year',
-                                'passYear',
-                                'passingYear',
-                              ]),
-                            ),
-                          ),
-                          Expanded(
-                            child: _infoRow(
-                              icon: Icons.assignment_turned_in,
-                              label: 'Result',
-                              value: _pick(d, const [
-                                'previous_result',
-                                'last_result',
-                                'previousResult',
-                                'result',
-                                'grade',
-                              ]),
-                            ),
-                          ),
-                        ],
-                      ),
-                      _infoRow(
-                        icon: Icons.notes,
-                        label: 'Previous Remarks',
-                        value: _pick(d, const [
-                          'previous_remarks',
-                          'remarks',
-                          'achievement',
-                          'previousRemarks',
-                          'notes',
-                        ]),
-                      ),
-                      _infoRow(
-                        icon: Icons.date_range,
-                        label: 'Admission Date',
-                        value: _pick(d, const [
-                          'admission_date',
-                          'admissionDate',
-                          'admit_date',
-                          'date_admitted',
-                        ]),
-                      ),
-                      _infoRow(
-                        icon: Icons.verified_user,
-                        label: 'Status',
-                        value: _tc(
-                          _pick(d, const [
-                            'status',
-                            'student_status',
-                            'active_status',
-                            'studentStatus',
-                            'enrollment_status',
-                          ]),
-                        ),
-                      ),
-                      _infoRow(
-                        icon: Icons.account_balance,
-                        label: 'School',
-                        value: schoolName.isNotEmpty
-                            ? schoolName
-                            : _pick(d, const [
-                                'school_name',
-                                'schoolName',
-                                'institute_name',
-                              ]),
-                      ),
-                      if (optionalSubject.isNotEmpty)
-                        _infoRow(
-                          icon: Icons.subject,
-                          label: 'Optional Subject',
-                          value: optionalSubject,
-                        ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Attendance Summary
-                  if (att != null || d.containsKey('working_days'))
-                    _sectionCard(
-                      title: 'Attendance Summary',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00b09b), Color(0xFF96c93d)],
-                      ),
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _attendanceMiniCard(
-                              'Present',
-                              (att?['present'] ?? '0').toString(),
-                              Colors.green,
-                            ),
-                            _attendanceMiniCard(
-                              'Absent',
-                              (att?['absent'] ?? '0').toString(),
-                              Colors.red,
-                            ),
-                            _attendanceMiniCard(
-                              'Late',
-                              (att?['late'] ?? '0').toString(),
-                              Colors.orange,
-                            ),
-                            _attendanceMiniCard(
-                              'Leave',
-                              (att?['leave'] ?? '0').toString(),
-                              Colors.blue,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Center(
-                          child: Text(
-                            'Total Working Days: ${_pick(d, const ['working_days']).isEmpty ? '0' : _pick(d, const ['working_days'])}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
                           ),
                         ),
                       ],
                     ),
-
-                  const SizedBox(height: 12),
-
-                  // Enrollment History
-                  if (history.isNotEmpty)
-                    _sectionCard(
-                      title: 'Enrollment History',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF4e54c8), Color(0xFF8f94fb)],
-                      ),
-                      children: [
-                        Theme(
-                          data: Theme.of(
-                            context,
-                          ).copyWith(dividerColor: Colors.transparent),
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              columnSpacing: 24,
-                              horizontalMargin: 0,
-                              headingTextStyle: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                              columns: const [
-                                DataColumn(label: Text('Year')),
-                                DataColumn(label: Text('Class')),
-                                DataColumn(label: Text('Section')),
-                                DataColumn(label: Text('Roll')),
-                              ],
-                              rows: history.map((en) {
-                                final Map<String, dynamic> row = en is Map
-                                    ? Map<String, dynamic>.from(en)
-                                    : {};
-                                return DataRow(
-                                  cells: [
-                                    DataCell(
-                                      Text(
-                                        _pick(row, const [
-                                          'academic_year',
-                                          'year',
-                                          'session',
-                                        ]),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      Text(
-                                        _pick(row, const [
-                                          'class',
-                                          'class_name',
-                                        ]),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      Text(
-                                        _pick(row, const [
-                                          'section',
-                                          'section_name',
-                                        ]),
-                                      ),
-                                    ),
-                                    DataCell(
-                                      Text(
-                                        _pick(row, const ['roll', 'roll_no']),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                  const SizedBox(height: 12),
-
-                  // Teams & Activities
-                  if (memberships.isNotEmpty)
-                    _sectionCard(
-                      title: 'Teams & Activities',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFf857a6), Color(0xFFff5858)],
-                      ),
-                      children: memberships.map((tm) {
-                        final Map<String, dynamic> row = tm is Map
-                            ? Map<String, dynamic>.from(tm)
-                            : {};
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.pink.withValues(alpha: 0.1),
-                            child: const Icon(Icons.group, color: Colors.pink),
-                          ),
-                          title: Text(
-                            _pick(row, const ['name', 'team_name']),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text(
-                            'Status: ${_pick(row, const ['status'])}',
-                          ),
-                          trailing: _pick(row, const ['joined_at']).isNotEmpty
-                              ? Text(
-                                  _pick(row, const [
-                                    'joined_at',
-                                  ]).split(' ').first,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                )
-                              : null,
-                        );
-                      }).toList(),
-                    ),
-
-                  const SizedBox(height: 12),
-
-                  // Today's Status
-                  if (d.containsKey('today_attendance') ||
-                      (d['today_evaluations'] as List? ?? []).isNotEmpty)
-                    _sectionCard(
-                      title: 'Today\'s Status',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2193b0), Color(0xFF6dd5ed)],
-                      ),
-                      children: [
-                        if (d['today_attendance'] != null &&
-                            d['today_attendance']['class'] != null)
-                          _infoRow(
-                            icon: Icons.check_circle_outline,
-                            label: 'Today\'s Class Attendance',
-                            value: _tc(
-                              (d['today_attendance']['class']['status'] ??
-                                      'N/A')
-                                  .toString(),
-                            ),
-                          ),
-                        if ((d['today_evaluations'] as List? ?? []).isNotEmpty)
-                          ...(d['today_evaluations'] as List).map((ev) {
-                            final Map<String, dynamic> row = ev is Map
-                                ? Map<String, dynamic>.from(ev)
-                                : {};
-                            return ListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(Icons.book, size: 20),
-                              title: Text(
-                                '${row['subject'] ?? 'Subject'} (Period ${row['period'] ?? ''})',
-                              ),
-                              subtitle: Text(
-                                'Status: ${row['status'] ?? 'Pending'}',
-                              ),
-                            );
-                          }),
-                      ],
-                    ),
-
-                  const SizedBox(height: 24),
-                ],
+                  ],
+                ),
               ),
             ),
-    );
-  }
-
-  Widget _buildHeader(
-    BuildContext context,
-    String photoUrl,
-    String name,
-    String cls,
-    String section,
-    String roll,
-    String studentCode,
-    String gender,
-    String group,
-  ) {
-    final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+          ),
         ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 48,
-            backgroundImage: photoUrl.isNotEmpty
-                ? CachedNetworkImageProvider(photoUrl)
-                : null,
-            backgroundColor: Colors.white.withValues(alpha: 0.2),
-            child: photoUrl.isEmpty
-                ? const Icon(Icons.person, size: 48, color: Colors.white)
-                : null,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            name.isNotEmpty ? name : 'Student',
-            style: theme.textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            [
-              if (cls.isNotEmpty || section.isNotEmpty) '$cls - $section',
-              if (roll.isNotEmpty) 'Roll: $roll',
-            ].where((e) => e.isNotEmpty).join('  •  '),
-            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: [
-              if (studentCode.isNotEmpty)
-                _chip(
-                  icon: Icons.badge,
-                  label: studentCode,
-                  color: const Color(0xFFffd54f),
-                ),
-              if (group.isNotEmpty)
-                _chip(
-                  icon: Icons.group_work,
-                  label: group,
-                  color: const Color(0xFF80cbc4),
-                ),
-              if (gender.isNotEmpty)
-                _chip(
-                  icon: Icons.transgender,
-                  label: gender,
-                  color: const Color(0xFFf48fb1),
-                ),
-            ],
-          ),
-        ],
       ),
     );
   }
 
-  Widget _chip({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
+  Widget _headerChip({required IconData icon, required String label}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.18),
+        color: Colors.white.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.white),
+          Icon(icon, size: 14, color: Colors.white),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(color: Colors.white)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildQuickActions(
-    BuildContext context, {
-    required String phone,
-    required String email,
+  Widget _quickActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback? onPressed,
+    bool filled = true,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00c853),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: phone.isEmpty
-                  ? null
-                  : () async {
-                      final uri = Uri(scheme: 'tel', path: phone);
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri);
-                      }
-                    },
-              icon: const Icon(Icons.call),
-              label: Text(phone.isNotEmpty ? 'Call $phone' : 'No phone'),
-            ),
+    if (filled) {
+      return ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18),
+        label: Text(
+          label,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: _brandDark,
+          disabledBackgroundColor: Colors.white.withValues(alpha: 0.3),
+          disabledForegroundColor: Colors.white70,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2962ff),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: email.isEmpty
-                  ? null
-                  : () async {
-                      final uri = Uri(scheme: 'mailto', path: email);
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri);
-                      }
-                    },
-              icon: const Icon(Icons.email),
-              label: Text(email.isNotEmpty ? 'Email $email' : 'No email'),
-            ),
-          ),
-        ],
+        ),
+      );
+    }
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(
+        label,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+      ),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.white,
+        disabledForegroundColor: Colors.white54,
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.6)),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
     );
   }
 
-  Widget _buildInfoPills(BuildContext context, Map<String, String> data) {
-    final colors = [
-      const Color(0xFF7F00FF),
-      const Color(0xFF00BFA6),
-      const Color(0xFFFF6F00),
-      const Color(0xFFAA00FF),
-      const Color(0xFF2962FF),
-      const Color(0xFFD50000),
-      const Color(0xFF00C853),
-      const Color(0xFFFF4081),
-      const Color(0xFF5D4037),
-    ];
-    int i = 0;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: data.entries.map((e) {
-          final value = e.value.trim();
-          if (value.isEmpty) return const SizedBox.shrink();
-          final color = colors[i++ % colors.length];
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  color.withValues(alpha: 0.85),
-                  color.withValues(alpha: 0.65),
+  // ───────────────────────────── Tab: তথ্য (Info) ─────────────────────────────
+
+  Widget _buildInfoTab({
+    required Map<String, dynamic> d,
+    required String studentCode,
+    required String dob,
+    required String religion,
+    required String cls,
+    required String section,
+    required String roll,
+    required String group,
+    required String shift,
+    required String medium,
+    required String session,
+    required String year,
+    required String optionalSubject,
+    required String schoolName,
+    required String gender,
+    required String bloodGroup,
+    required Map<String, dynamic>? att,
+  }) {
+    final statEntries = <MapEntry<String, String>>[
+      MapEntry('স্টুডেন্ট আইডি', studentCode),
+      MapEntry('জন্ম তারিখ', dob),
+      MapEntry('ধর্ম', religion),
+      MapEntry('শ্রেণি', cls),
+      MapEntry('শাখা', section),
+      MapEntry('রোল', roll),
+      MapEntry('গ্রুপ', group),
+      MapEntry('শিফট', shift),
+      MapEntry('মাধ্যম', medium),
+      MapEntry('সেশন', session),
+      MapEntry('বছর', year),
+      MapEntry('ঐচ্ছিক বিষয়', optionalSubject),
+      MapEntry('স্কুল', schoolName),
+    ].where((e) => e.value.trim().isNotEmpty).toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        if (statEntries.isNotEmpty)
+          _sectionCard(
+            icon: Icons.grid_view_rounded,
+            iconColor: _hueAcademic,
+            title: 'একাডেমিক তথ্য',
+            child: _statGrid(statEntries, _hueAcademic),
+          ),
+        if (statEntries.isNotEmpty) const SizedBox(height: 14),
+
+        _sectionCard(
+          icon: Icons.badge_outlined,
+          iconColor: _huePersonal,
+          title: 'ব্যক্তিগত তথ্য',
+          child: Column(
+            children: [
+              _infoRow(icon: Icons.wc, label: 'লিঙ্গ', value: gender),
+              _infoRow(
+                icon: Icons.bloodtype_outlined,
+                label: 'রক্তের গ্রুপ',
+                value: bloodGroup,
+              ),
+              _infoRow(
+                icon: Icons.cake_outlined,
+                label: 'জন্ম তারিখ',
+                value: dob,
+              ),
+              _infoRow(
+                icon: Icons.self_improvement,
+                label: 'ধর্ম',
+                value: religion,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        _sectionCard(
+          icon: Icons.school_outlined,
+          iconColor: _hueAcademic,
+          title: 'ভর্তি ও পূর্ববর্তী তথ্য',
+          child: Column(
+            children: [
+              _infoRow(
+                icon: Icons.account_balance_outlined,
+                label: 'পূর্ববর্তী স্কুল',
+                value: _pick(d, const [
+                  'previous_school',
+                  'last_school',
+                  'prev_school',
+                  'previousSchool',
+                  'lastSchool',
+                ]),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _infoRow(
+                      icon: Icons.history_edu_outlined,
+                      label: 'পাস বছর',
+                      value: _pick(d, const [
+                        'pass_year',
+                        'passing_year',
+                        'passYear',
+                        'passingYear',
+                      ]),
+                    ),
+                  ),
+                  Expanded(
+                    child: _infoRow(
+                      icon: Icons.assignment_turned_in_outlined,
+                      label: 'ফলাফল',
+                      value: _pick(d, const [
+                        'previous_result',
+                        'last_result',
+                        'previousResult',
+                        'result',
+                        'grade',
+                      ]),
+                    ),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
+              _infoRow(
+                icon: Icons.notes_outlined,
+                label: 'মন্তব্য',
+                value: _pick(d, const [
+                  'previous_remarks',
+                  'remarks',
+                  'achievement',
+                  'previousRemarks',
+                  'notes',
+                ]),
+              ),
+              _infoRow(
+                icon: Icons.date_range_outlined,
+                label: 'ভর্তির তারিখ',
+                value: _pick(d, const [
+                  'admission_date',
+                  'admissionDate',
+                  'admit_date',
+                  'date_admitted',
+                ]),
+              ),
+              _infoRow(
+                icon: Icons.verified_user_outlined,
+                label: 'অবস্থা',
+                value: _tc(
+                  _pick(d, const [
+                    'status',
+                    'student_status',
+                    'active_status',
+                    'studentStatus',
+                    'enrollment_status',
+                  ]),
                 ),
-              ],
-            ),
+              ),
+              _infoRow(
+                icon: Icons.account_balance_outlined,
+                label: 'স্কুল',
+                value: schoolName.isNotEmpty
+                    ? schoolName
+                    : _pick(d, const [
+                        'school_name',
+                        'schoolName',
+                        'institute_name',
+                      ]),
+              ),
+              if (optionalSubject.isNotEmpty)
+                _infoRow(
+                  icon: Icons.subject_outlined,
+                  label: 'ঐচ্ছিক বিষয়',
+                  value: optionalSubject,
+                ),
+            ],
+          ),
+        ),
+
+        if (att != null || d.containsKey('working_days')) ...[
+          const SizedBox(height: 14),
+          _sectionCard(
+            icon: Icons.fact_check_outlined,
+            iconColor: _hueAcademic,
+            title: 'হাজিরার সারসংক্ষেপ',
             child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  e.key,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _attendanceStat(
+                      'উপস্থিত',
+                      (att?['present'] ?? '0').toString(),
+                      const Color(0xFF16A34A),
+                    ),
+                    _attendanceStat(
+                      'অনুপস্থিত',
+                      (att?['absent'] ?? '0').toString(),
+                      const Color(0xFFDC2626),
+                    ),
+                    _attendanceStat(
+                      'বিলম্ব',
+                      (att?['late'] ?? '0').toString(),
+                      const Color(0xFFD97706),
+                    ),
+                    _attendanceStat(
+                      'ছুটি',
+                      (att?['leave'] ?? '0').toString(),
+                      const Color(0xFF2563EB),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
+                const Divider(height: 28),
                 Text(
-                  value,
+                  'মোট কর্মদিবস: ${_pick(d, const ['working_days']).isEmpty ? '0' : _pick(d, const ['working_days'])}',
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
                     fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: _ink,
                   ),
                 ),
               ],
             ),
-          );
-        }).toList(),
-      ),
+          ),
+        ],
+      ],
     );
   }
 
-  Widget _miniCard(
-    BuildContext context, {
+  // ───────────────────────────── Tab: পরিবার (Family) ─────────────────────────────
+
+  Widget _buildFamilyTab({
+    required String classTeacher,
+    required String classTeacherPhone,
+    required String fatherName,
+    required String motherName,
+    required String fatherPhone,
+    required String motherPhone,
+    required String guardianName,
+    required String guardianPhone,
+    required String guardianRelation,
+  }) {
+    final hasAny =
+        classTeacher.isNotEmpty ||
+        fatherName.isNotEmpty ||
+        motherName.isNotEmpty ||
+        guardianName.isNotEmpty;
+
+    if (!hasAny) return _emptyTab('পরিবার সংক্রান্ত কোনো তথ্য পাওয়া যায়নি');
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        if (classTeacher.isNotEmpty) ...[
+          _sectionCard(
+            icon: Icons.person_pin_outlined,
+            iconColor: _hueFamily,
+            title: 'শ্রেণি শিক্ষক',
+            child: _personTile(
+              icon: Icons.person_pin,
+              color: _hueFamily,
+              name: classTeacher,
+              phone: classTeacherPhone,
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        _sectionCard(
+          icon: Icons.family_restroom_outlined,
+          iconColor: _hueFamily,
+          title: 'অভিভাবকের তথ্য',
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _miniPersonCard(
+                      icon: Icons.man,
+                      title: 'বাবা',
+                      subtitle: fatherName,
+                      color: const Color(0xFF2563EB),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _miniPersonCard(
+                      icon: Icons.woman,
+                      title: 'মা',
+                      subtitle: motherName,
+                      color: const Color(0xFFDB2777),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              _infoRow(
+                icon: Icons.call_outlined,
+                label: 'বাবার ফোন',
+                value: fatherPhone,
+                onTap: fatherPhone.trim().isEmpty
+                    ? null
+                    : () async {
+                        final uri = Uri(scheme: 'tel', path: fatherPhone);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri);
+                        }
+                      },
+              ),
+              _infoRow(
+                icon: Icons.call_outlined,
+                label: 'মায়ের ফোন',
+                value: motherPhone,
+                onTap: motherPhone.trim().isEmpty
+                    ? null
+                    : () async {
+                        final uri = Uri(scheme: 'tel', path: motherPhone);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri);
+                        }
+                      },
+              ),
+              _infoRow(
+                icon: Icons.group_outlined,
+                label: 'অভিভাবক',
+                value: guardianName,
+              ),
+              _infoRow(
+                icon: Icons.call_outlined,
+                label: 'অভিভাবকের ফোন',
+                value: guardianPhone,
+                onTap: guardianPhone.trim().isEmpty
+                    ? null
+                    : () async {
+                        final uri = Uri(scheme: 'tel', path: guardianPhone);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri);
+                        }
+                      },
+              ),
+              _infoRow(
+                icon: Icons.diversity_3_outlined,
+                label: 'সম্পর্ক',
+                value: guardianRelation,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _personTile({
+    required IconData icon,
+    required Color color,
+    required String name,
+    required String phone,
+  }) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 22,
+          backgroundColor: color.withValues(alpha: 0.12),
+          child: Icon(icon, color: color),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: _ink,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                phone.isNotEmpty ? phone : 'ফোন নম্বর নেই',
+                style: const TextStyle(color: _muted, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+        if (phone.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.call_rounded, color: _brand),
+            onPressed: () async {
+              final uri = Uri(scheme: 'tel', path: phone);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri);
+              }
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _miniPersonCard({
     required IconData icon,
     required String title,
     required String subtitle,
@@ -1885,35 +1615,36 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            radius: 18,
-            backgroundColor: color.withValues(alpha: 0.25),
-            child: Icon(icon, color: _darken(color, 0.1), size: 18),
+            radius: 16,
+            backgroundColor: color.withValues(alpha: 0.15),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: _darken(color, 0.1),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle.isNotEmpty ? subtitle : 'N/A',
-                  style: TextStyle(color: _darken(color, 0.2)),
-                ),
-              ],
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle.isNotEmpty ? subtitle : 'N/A',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: _ink,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
             ),
           ),
         ],
@@ -1921,66 +1652,412 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     );
   }
 
-  // Local color helper to avoid extension usage
-  Color _darken(Color c, double amount) {
-    assert(amount >= 0 && amount <= 1);
-    final f = 1 - amount;
-    return Color.fromARGB(
-      c.alpha,
-      (c.red * f).round(),
-      (c.green * f).round(),
-      (c.blue * f).round(),
+  // ───────────────────────────── Tab: ঠিকানা (Address) ─────────────────────────────
+
+  Widget _buildAddressTab(Map<String, dynamic> d) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        _sectionCard(
+          icon: Icons.place_outlined,
+          iconColor: _hueAddress,
+          title: 'বর্তমান ঠিকানা',
+          child: Column(
+            children: [
+              _infoRow(
+                icon: Icons.location_city_outlined,
+                label: 'গ্রাম',
+                value: _pick(d, const [
+                  'present_village',
+                  'village',
+                  'gram',
+                  'present_gram',
+                ]),
+              ),
+              _infoRow(
+                icon: Icons.home_work_outlined,
+                label: 'পাড়া/মহল্লা',
+                value: _pick(d, const [
+                  'present_para_moholla',
+                  'para_moholla',
+                  'para',
+                  'moholla',
+                ]),
+              ),
+              _infoRow(
+                icon: Icons.local_post_office_outlined,
+                label: 'ডাকঘর',
+                value: _pick(d, const [
+                  'present_post_office',
+                  'post_office',
+                  'po',
+                  'post',
+                ]),
+              ),
+              _infoRow(
+                icon: Icons.map_outlined,
+                label: 'উপজেলা',
+                value: _pick(d, const [
+                  'present_upazilla',
+                  'present_upazila',
+                  'upazila',
+                  'upazilla',
+                  'thana',
+                ]),
+              ),
+              _infoRow(
+                icon: Icons.location_on_outlined,
+                label: 'জেলা',
+                value: _pick(d, const [
+                  'present_district',
+                  'district',
+                  'zilla',
+                  'zila',
+                ]),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        _sectionCard(
+          icon: Icons.home_outlined,
+          iconColor: _hueAddress,
+          title: 'স্থায়ী ঠিকানা',
+          child: Column(
+            children: [
+              _infoRow(
+                icon: Icons.location_city_outlined,
+                label: 'গ্রাম',
+                value: _pick(d, const [
+                  'permanent_village',
+                  'perm_village',
+                  'permanent_gram',
+                  'permanent_gram_bn',
+                  'perm_gram',
+                ]),
+              ),
+              _infoRow(
+                icon: Icons.home_work_outlined,
+                label: 'পাড়া/মহল্লা',
+                value: _pick(d, const [
+                  'permanent_para_moholla',
+                  'perm_para_moholla',
+                  'perm_para',
+                  'perm_moholla',
+                  'permanent_para',
+                ]),
+              ),
+              _infoRow(
+                icon: Icons.local_post_office_outlined,
+                label: 'ডাকঘর',
+                value: _pick(d, const [
+                  'permanent_post_office',
+                  'perm_post_office',
+                  'perm_po',
+                  'perm_post',
+                  'permanent_po',
+                ]),
+              ),
+              _infoRow(
+                icon: Icons.map_outlined,
+                label: 'উপজেলা',
+                value: _pick(d, const [
+                  'permanent_upazilla',
+                  'perm_upazilla',
+                  'perm_upazila',
+                  'permanent_upazila',
+                  'perm_thana',
+                  'permanent_thana',
+                ]),
+              ),
+              _infoRow(
+                icon: Icons.location_on_outlined,
+                label: 'জেলা',
+                value: _pick(d, const [
+                  'permanent_district',
+                  'perm_district',
+                  'perm_zilla',
+                  'perm_zila',
+                  'permanent_zilla',
+                  'permanent_zila',
+                ]),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _sectionCard({
-    required String title,
-    required LinearGradient gradient,
-    required List<Widget> children,
+  // ───────────────────────────── Tab: ইতিহাস (History) ─────────────────────────────
+
+  Widget _buildHistoryTab({
+    required Map<String, dynamic> d,
+    required List history,
+    required List memberships,
+    required bool hasToday,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x11000000),
-              blurRadius: 12,
-              offset: Offset(0, 6),
+    if (history.isEmpty && memberships.isEmpty && !hasToday) {
+      return _emptyTab('ইতিহাস সংক্রান্ত কোনো তথ্য পাওয়া যায়নি');
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        if (hasToday) ...[
+          _sectionCard(
+            icon: Icons.today_outlined,
+            iconColor: _hueHistory,
+            title: 'আজকের অবস্থা',
+            child: Column(
+              children: [
+                if (d['today_attendance'] != null &&
+                    d['today_attendance']['class'] != null)
+                  _infoRow(
+                    icon: Icons.check_circle_outline,
+                    label: 'আজকের হাজিরা',
+                    value: _tc(
+                      (d['today_attendance']['class']['status'] ?? 'N/A')
+                          .toString(),
+                    ),
+                  ),
+                if ((d['today_evaluations'] as List? ?? []).isNotEmpty)
+                  ...(d['today_evaluations'] as List).map((ev) {
+                    final Map<String, dynamic> row = ev is Map
+                        ? Map<String, dynamic>.from(ev)
+                        : {};
+                    return ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.menu_book_outlined,
+                        color: _hueHistory,
+                        size: 20,
+                      ),
+                      title: Text(
+                        '${row['subject'] ?? 'Subject'} (Period ${row['period'] ?? ''})',
+                      ),
+                      subtitle: Text('Status: ${row['status'] ?? 'Pending'}'),
+                    );
+                  }),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        if (memberships.isNotEmpty) ...[
+          _sectionCard(
+            icon: Icons.groups_outlined,
+            iconColor: _hueHistory,
+            title: 'টিম ও কার্যক্রম',
+            child: Column(
+              children: memberships.map((tm) {
+                final Map<String, dynamic> row = tm is Map
+                    ? Map<String, dynamic>.from(tm)
+                    : {};
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: _hueHistory.withValues(alpha: 0.12),
+                    child: Icon(Icons.groups, color: _hueHistory),
+                  ),
+                  title: Text(
+                    _pick(row, const ['name', 'team_name']),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text('অবস্থা: ${_pick(row, const ['status'])}'),
+                  trailing: _pick(row, const ['joined_at']).isNotEmpty
+                      ? Text(
+                          _pick(row, const ['joined_at']).split(' ').first,
+                          style: const TextStyle(fontSize: 12, color: _muted),
+                        )
+                      : null,
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        if (history.isNotEmpty)
+          _sectionCard(
+            icon: Icons.history_outlined,
+            iconColor: _hueHistory,
+            title: 'ভর্তির ইতিহাস',
+            child: Theme(
+              data: Theme.of(
+                context,
+              ).copyWith(dividerColor: Colors.transparent),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 24,
+                  horizontalMargin: 0,
+                  headingTextStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _ink,
+                  ),
+                  columns: const [
+                    DataColumn(label: Text('বছর')),
+                    DataColumn(label: Text('শ্রেণি')),
+                    DataColumn(label: Text('শাখা')),
+                    DataColumn(label: Text('রোল')),
+                  ],
+                  rows: history.map((en) {
+                    final Map<String, dynamic> row = en is Map
+                        ? Map<String, dynamic>.from(en)
+                        : {};
+                    return DataRow(
+                      cells: [
+                        DataCell(
+                          Text(
+                            _pick(row, const [
+                              'academic_year',
+                              'year',
+                              'session',
+                            ]),
+                          ),
+                        ),
+                        DataCell(
+                          Text(_pick(row, const ['class', 'class_name'])),
+                        ),
+                        DataCell(
+                          Text(_pick(row, const ['section', 'section_name'])),
+                        ),
+                        DataCell(Text(_pick(row, const ['roll', 'roll_no']))),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _emptyTab(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                gradient: gradient,
+                color: _brand.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
               ),
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              child: const Icon(Icons.inbox_outlined, color: _brand, size: 32),
             ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-              child: Column(children: children),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _muted),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // ───────────────────────────── Shared building blocks ─────────────────────────────
+
+  Widget _sectionCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: _ink,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _statGrid(List<MapEntry<String, String>> entries, Color tint) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: entries.map((e) {
+        return Container(
+          width: (MediaQuery.of(context).size.width - 32 - 32 - 10) / 2,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: tint.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: tint.withValues(alpha: 0.15)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                e.key,
+                style: const TextStyle(
+                  color: _muted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                e.value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _ink,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -1991,42 +2068,91 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     VoidCallback? onTap,
   }) {
     final display = value.trim().isNotEmpty ? value : 'N/A';
+    final active = onTap != null;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: InkWell(
+        borderRadius: BorderRadius.circular(10),
         onTap: onTap,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Icon(
-                icon,
-                color: onTap != null ? Colors.blue : Colors.black54,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: active
+                      ? _brand.withValues(alpha: 0.1)
+                      : const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(icon, size: 16, color: active ? _brand : _muted),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    display,
-                    style: TextStyle(
-                      color: onTap != null ? Colors.blue : Colors.black87,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: _muted,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    Text(
+                      display,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: active ? _brandDark : _ink,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              if (active)
+                const Icon(Icons.call_rounded, size: 18, color: _brand),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _attendanceStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 52,
+          height: 52,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: _muted,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 
@@ -2053,147 +2179,28 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     if (b.isEmpty) return a;
     return joinWithNewline ? '$a\n$b' : '$a ($b)';
   }
+}
 
-  // Compose address in the format: Village, Post Office, Upazila, District
-  String _composeAddress(Map<String, dynamic> src, String scope) {
-    String pv = _tc(
-      _pick(src, [
-        '${scope}_village',
-        'village_$scope',
-        'addresses_${scope}_village',
-        '${scope}_address_village',
-        'village',
-        'gram',
-        '${scope}_para_moholla',
-        'para_moholla_$scope',
-        'para_moholla',
-      ]),
-    );
-    String pvBn = _pick(src, [
-      '${scope}_village_bn',
-      'village_${scope}_bn',
-      'addresses_${scope}_village_bn',
-      '${scope}_address_village_bn',
-      'village_bn',
-      'gram_bn',
-    ]);
-    final village = _combine(pv, pvBn);
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+  _StickyTabBarDelegate(this.tabBar);
 
-    String po = _tc(
-      _pick(src, [
-        '${scope}_post_office',
-        'post_office_$scope',
-        'addresses_${scope}_post_office',
-        '${scope}_post',
-        'post_$scope',
-        '${scope}_po',
-        'dakghor',
-        'post_office',
-        'post',
-        'po',
-      ]),
-    );
-    String poBn = _pick(src, [
-      '${scope}_post_office_bn',
-      'post_office_${scope}_bn',
-      'addresses_${scope}_post_office_bn',
-      '${scope}_post_bn',
-      'post_${scope}_bn',
-      '${scope}_po_bn',
-      'dakghor_bn',
-      'post_office_bn',
-      'post_bn',
-      'po_bn',
-    ]);
-    final post = _combine(po, poBn);
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
 
-    String upa = _tc(
-      _pick(src, [
-        '${scope}_upazila',
-        'upazila_$scope',
-        'addresses_${scope}_upazila',
-        '${scope}_thana',
-        'thana_$scope',
-        '${scope}_subdistrict',
-        'subdistrict_$scope',
-        '${scope}_sub_district',
-        '${scope}_upazilla',
-        'upazilla_$scope',
-        'upazila',
-        'thana',
-        'subdistrict',
-        'sub_district',
-        'upazilla',
-      ]),
-    );
-    String upaBn = _pick(src, [
-      '${scope}_upazila_bn',
-      'upazila_${scope}_bn',
-      'addresses_${scope}_upazila_bn',
-      '${scope}_thana_bn',
-      'thana_${scope}_bn',
-      '${scope}_subdistrict_bn',
-      'subdistrict_${scope}_bn',
-      '${scope}_sub_district_bn',
-      'upazila_bn',
-      'thana_bn',
-      'subdistrict_bn',
-      'sub_district_bn',
-    ]);
-    final upazila = _combine(upa, upaBn);
-
-    String dist = _tc(
-      _pick(src, [
-        '${scope}_district',
-        'district_$scope',
-        'addresses_${scope}_district',
-        '${scope}_zilla',
-        'zilla_$scope',
-        'district',
-        'zilla',
-      ]),
-    );
-    String distBn = _pick(src, [
-      '${scope}_district_bn',
-      'district_${scope}_bn',
-      'addresses_${scope}_district_bn',
-      '${scope}_zilla_bn',
-      'zilla_${scope}_bn',
-      'district_bn',
-      'zilla_bn',
-    ]);
-    final district = _combine(dist, distBn);
-
-    final parts = [
-      village,
-      post,
-      upazila,
-      district,
-    ].where((e) => e.trim().isNotEmpty).toList();
-    return parts.join(', ');
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(color: Colors.white, child: tabBar);
   }
 
-  Widget _attendanceMiniCard(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.black54,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
+  @override
+  bool shouldRebuild(covariant _StickyTabBarDelegate oldDelegate) {
+    return tabBar != oldDelegate.tabBar;
   }
 }

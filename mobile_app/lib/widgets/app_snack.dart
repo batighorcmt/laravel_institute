@@ -37,6 +37,7 @@ Future<void> showAppSnack(
     ],
   );
 
+  if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       backgroundColor: success
