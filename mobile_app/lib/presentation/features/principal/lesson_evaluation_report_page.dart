@@ -4,7 +4,6 @@ import 'package:dropdown_search/dropdown_search.dart';
 import '../../../core/network/dio_client.dart';
 import '../../state/auth_state.dart';
 import 'lesson_evaluation_details_page.dart';
-import 'dart:async';
 
 class LessonEvaluationReportPage extends ConsumerStatefulWidget {
   const LessonEvaluationReportPage({super.key});
@@ -16,30 +15,57 @@ class LessonEvaluationReportPage extends ConsumerStatefulWidget {
 
 class _LessonEvaluationReportPageState
     extends ConsumerState<LessonEvaluationReportPage> {
-  DateTime? _selectedDate;
+  static const Color _brand = Color(0xFF00BF6D);
+  static const Color _brandDark = Color(0xFF049655);
+  static const Color _bg = Color(0xFFF5F7F9);
+  static const Color _ink = Color(0xFF1A1D1F);
+  static const Color _muted = Color(0xFF6B7280);
+
+  static const List<String> _bnWeekday = [
+    'সোমবার',
+    'মঙ্গলবার',
+    'বুধবার',
+    'বৃহস্পতিবার',
+    'শুক্রবার',
+    'শনিবার',
+    'রবিবার',
+  ];
+  static const List<String> _bnMonth = [
+    'জানুয়ারি',
+    'ফেব্রুয়ারি',
+    'মার্চ',
+    'এপ্রিল',
+    'মে',
+    'জুন',
+    'জুলাই',
+    'আগস্ট',
+    'সেপ্টেম্বর',
+    'অক্টোবর',
+    'নভেম্বর',
+    'ডিসেম্বর',
+  ];
+
+  DateTime _selectedDate = DateTime.now();
   int? _selectedClassId;
   int? _selectedSectionId;
   int? _selectedSubjectId;
   Map<String, dynamic>? _selectedTeacherObj;
+
   List<Map<String, dynamic>> _teachers = [];
-  String? _statusFilter;
   List<Map<String, dynamic>> _classes = [];
   List<Map<String, dynamic>> _sections = [];
   List<Map<String, dynamic>> _subjects = [];
 
-  void _addLog(String s) {
-    // no-op: logging removed in production
-  }
+  bool _loading = false;
+  String? _error;
+  List<dynamic> _items = [];
 
   int? _getSchoolId() {
     final userState = ref.read(authProvider);
     if (userState is AsyncData && userState.value != null) {
       final user = userState.value!;
-      // Try to find school_id from roles
       for (final role in user.roles) {
-        if (role.schoolId != null) {
-          return role.schoolId;
-        }
+        if (role.schoolId != null) return role.schoolId;
       }
     }
     return null;
@@ -49,12 +75,10 @@ class _LessonEvaluationReportPageState
     if (respData == null) return [];
     if (respData is List) return respData;
     if (respData is Map) {
-      // common API shape: { status: true, data: [...] } or { data: [...] }
       if (respData.containsKey('data')) {
         final d = respData['data'];
         if (d is List) return d;
       }
-      // sometimes payload is wrapped under a key like 'classes'
       final firstList = respData.values.firstWhere(
         (v) => v is List,
         orElse: () => null,
@@ -64,440 +88,92 @@ class _LessonEvaluationReportPageState
     return [];
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Lesson Evaluation Report')),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Compact Row 1: Date and Status
-            Row(
-              children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () async {
-                      final d = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                      );
-                      if (d != null) setState(() => _selectedDate = d);
-                    },
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Date',
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        border: OutlineInputBorder(),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _selectedDate == null
-                                ? 'Select Date'
-                                : _selectedDate!.toLocal().toString().split(
-                                    ' ',
-                                  )[0],
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                          const Icon(Icons.calendar_today, size: 16),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'Status',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                      border: OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: '',
-                        child: Text('Any', style: TextStyle(fontSize: 13)),
-                      ),
-                      DropdownMenuItem(
-                        value: 'completed',
-                        child: Text(
-                          'Completed',
-                          style: TextStyle(fontSize: 13),
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: 'partial',
-                        child: Text('Partial', style: TextStyle(fontSize: 13)),
-                      ),
-                      DropdownMenuItem(
-                        value: 'not_done',
-                        child: Text('Not done', style: TextStyle(fontSize: 13)),
-                      ),
-                      DropdownMenuItem(
-                        value: 'absent',
-                        child: Text('Absent', style: TextStyle(fontSize: 13)),
-                      ),
-                    ],
-                    initialValue: _statusFilter ?? '',
-                    style: const TextStyle(fontSize: 13, color: Colors.black),
-                    onChanged: (v) => setState(
-                      () => _statusFilter = (v == null || v.isEmpty) ? null : v,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
+  String _isoDate(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-            // Compact Row 2: Class and Section
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(
-                      labelText: 'Class',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                      border: OutlineInputBorder(),
-                    ),
-                    dropdownColor: Colors.white,
-                    items:
-                        (<Map<String, dynamic>>[
-                                  {'id': -1, 'name': 'All'},
-                                ] +
-                                _classes)
-                            .map(
-                              (c) => DropdownMenuItem<int>(
-                                value: c['id'] is int
-                                    ? c['id'] as int
-                                    : int.tryParse(c['id']?.toString() ?? ''),
-                                child: Text(
-                                  (c['name'] ?? '').toString(),
-                                  style: const TextStyle(fontSize: 13),
-                                ),
-                              ),
-                            )
-                            .where((it) => it.value != null)
-                            .toList(),
-                    initialValue:
-                        _selectedClassId ??
-                        (_classes.isEmpty
-                            ? null
-                            : (_classes.any((c) => c['id'] == -1) ? -1 : null)),
-                    onChanged: (v) async {
-                      final selectedIsAll = v != null && v == -1;
-                      setState(() {
-                        _selectedClassId = selectedIsAll ? null : v;
-                        _selectedSectionId = null;
-                        _selectedSubjectId = null;
-                        _sections = [];
-                        _subjects = [];
-                      });
-                      if (!selectedIsAll && v != null) await _fetchSections(v);
-                      if (!selectedIsAll) await _fetchSubjects();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(
-                      labelText: 'Section',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                      border: OutlineInputBorder(),
-                    ),
-                    dropdownColor: Colors.white,
-                    items: _sections
-                        .map(
-                          (s) => DropdownMenuItem<int>(
-                            value: s['id'] is int
-                                ? s['id'] as int
-                                : int.tryParse(s['id']?.toString() ?? ''),
-                            child: Text(
-                              (s['name'] ?? '').toString(),
-                              style: const TextStyle(fontSize: 13),
-                            ),
-                          ),
-                        )
-                        .where((it) => it.value != null)
-                        .toList(),
-                    initialValue: _selectedSectionId,
-                    onChanged: (v) async {
-                      setState(() {
-                        _selectedSectionId = v;
-                        _selectedSubjectId = null;
-                        _subjects = [];
-                      });
-                      await _fetchSubjects();
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Row 3: Teacher
-            DropdownSearch<Map<String, dynamic>>(
-              popupProps: PopupProps.menu(
-                showSearchBox: true,
-                searchFieldProps: TextFieldProps(
-                  decoration: const InputDecoration(
-                    labelText: 'Search teacher',
-                    isDense: true,
-                  ),
-                  style: const TextStyle(fontSize: 13, color: Colors.black),
-                ),
-                itemBuilder: (context, item, isSelected) => ListTile(
-                  dense: true,
-                  title: Text(
-                    (item['name'] ?? '').toString(),
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  subtitle: item['designation'] != null
-                      ? Text(
-                          item['designation'].toString(),
-                          style: const TextStyle(fontSize: 11),
-                        )
-                      : null,
-                ),
-              ),
-              items: _teachers,
-              itemAsString: (Map<String, dynamic>? m) =>
-                  m == null ? '' : (m['name'] ?? '').toString(),
-              dropdownDecoratorProps: DropDownDecoratorProps(
-                dropdownSearchDecoration: const InputDecoration(
-                  labelText: 'Teacher',
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              dropdownBuilder: (context, selectedItem) => Text(
-                selectedItem == null
-                    ? 'Select Teacher'
-                    : (selectedItem['name'] ?? '').toString(),
-                style: const TextStyle(fontSize: 13),
-              ),
-              selectedItem: _selectedTeacherObj,
-              onChanged: (m) {
-                setState(() {
-                  if (m == null || m['id'] == -1) {
-                    _selectedTeacherObj = null;
-                  } else {
-                    _selectedTeacherObj = m;
-                  }
-                });
-              },
-            ),
-            const SizedBox(height: 8),
-
-            // Row 4: Subject
-            DropdownSearch<Map<String, dynamic>>(
-              popupProps: PopupProps.menu(
-                showSearchBox: true,
-                searchFieldProps: TextFieldProps(
-                  decoration: const InputDecoration(
-                    labelText: 'Search subject',
-                    isDense: true,
-                  ),
-                  style: const TextStyle(fontSize: 13, color: Colors.black),
-                ),
-                itemBuilder: (context, item, isSelected) => ListTile(
-                  dense: true,
-                  title: Text(
-                    (item['name'] ?? '').toString(),
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ),
-              ),
-              items: _subjects,
-              itemAsString: (Map<String, dynamic>? m) =>
-                  m == null ? '' : (m['name'] ?? '').toString(),
-              dropdownDecoratorProps: DropDownDecoratorProps(
-                dropdownSearchDecoration: const InputDecoration(
-                  labelText: 'Subject',
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              dropdownBuilder: (context, selectedItem) => Text(
-                selectedItem == null
-                    ? 'Select Subject'
-                    : (selectedItem['name'] ?? '').toString(),
-                style: const TextStyle(fontSize: 13),
-              ),
-              selectedItem: _subjects.firstWhere(
-                (s) =>
-                    (s['id'] is int
-                        ? s['id'] as int
-                        : int.tryParse(s['id']?.toString() ?? '')) ==
-                    _selectedSubjectId,
-                orElse: () => _selectedClassId == null
-                    ? {'id': -1, 'name': 'All Subjects'}
-                    : {'id': -1, 'name': 'Any Subject'},
-              ),
-              onChanged: (m) => setState(() {
-                if (m == null || m.isEmpty || m['id'] == -1) {
-                  _selectedSubjectId = null;
-                } else {
-                  _selectedSubjectId = m['id'] is int
-                      ? m['id'] as int
-                      : int.tryParse(m['id']?.toString() ?? '');
-                }
-              }),
-            ),
-            const SizedBox(height: 12),
-
-            // Row 5: Actions
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                    onPressed: _loading
-                        ? null
-                        : () async => await _fetchReport(),
-                    child: _loading
-                        ? const SizedBox(
-                            height: 16,
-                            width: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text(
-                            'Generate Report',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _selectedDate = null;
-                      _selectedClassId = null;
-                      _selectedSectionId = null;
-                      _selectedSubjectId = null;
-                      _selectedTeacherObj = null;
-                      _statusFilter = null;
-                      _sections = [];
-                      _subjects = [];
-                      _items = [];
-                      _error = null;
-                    });
-                  },
-                  child: const Text('Reset', style: TextStyle(fontSize: 13)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const SizedBox(height: 8),
-            Expanded(child: _buildOutput()),
-          ],
-        ),
-      ),
-    );
+  bool get _isToday {
+    final now = DateTime.now();
+    return _selectedDate.year == now.year &&
+        _selectedDate.month == now.month &&
+        _selectedDate.day == now.day;
   }
 
-  bool _loading = false;
-  String? _error;
-  List<dynamic> _items = [];
-
-  Future<void> _fetchReport() async {
-    final schoolId = _getSchoolId();
-    setState(() {
-      _loading = true;
-      _error = null;
-      _items = [];
-    });
-    try {
-      final dio = DioClient().dio;
-      final params = <String, dynamic>{};
-
-      if (schoolId != null) params['school_id'] = schoolId;
-
-      if (_selectedDate != null) {
-        params['date'] = _selectedDate!.toIso8601String().split('T')[0];
-      }
-      if (_selectedClassId != null) params['class_id'] = _selectedClassId;
-      if (_selectedSectionId != null) params['section_id'] = _selectedSectionId;
-      if (_selectedSubjectId != null) params['subject_id'] = _selectedSubjectId;
-      if (_statusFilter != null) params['status'] = _statusFilter;
-      if (_selectedTeacherObj != null) {
-        params['teacher'] =
-            _selectedTeacherObj!['id'] ?? _selectedTeacherObj!['name'];
-      }
-
-      final resp = await dio.get(
-        'principal/reports/lesson-evaluations',
-        queryParameters: params,
-      );
-      _addLog('GET principal/reports/lesson-evaluations -> ${resp.statusCode}');
-      _addLog(
-        'Resp: ${resp.data is Map || resp.data is List ? resp.data.toString() : resp.data}',
-      );
-      if (resp.statusCode == 200) {
-        final data = _extractList(resp.data);
-        setState(() {
-          _items = data;
-        });
-      } else {
-        setState(() {
-          _error = 'Server error: ${resp.statusCode}';
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+  String get _formattedSelectedDate {
+    final wd = _bnWeekday[_selectedDate.weekday - 1];
+    final mo = _bnMonth[_selectedDate.month - 1];
+    return '$wd, ${_selectedDate.day} $mo ${_selectedDate.year}';
   }
 
   @override
   void initState() {
     super.initState();
-    // Use addPostFrameCallback to ensure provider is ready
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitialFilters();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _fetchClasses();
+      await _fetchTeachers();
+      await _fetchPeriods();
     });
   }
 
-  Future<void> _loadInitialFilters() async {
-    await _fetchClasses();
-    await _fetchTeachers();
+  Future<void> _changeDate(DateTime newDate) async {
+    if (newDate.isAfter(DateTime.now())) return;
+    setState(() => _selectedDate = newDate);
+    await _fetchPeriods();
+  }
+
+  Future<void> _pickDate() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: Theme.of(
+            context,
+          ).colorScheme.copyWith(primary: _brand),
+        ),
+        child: child!,
+      ),
+    );
+    if (d != null) await _changeDate(d);
+  }
+
+  Future<void> _fetchPeriods() async {
+    final schoolId = _getSchoolId();
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final dio = DioClient().dio;
+      final params = <String, dynamic>{'date': _isoDate(_selectedDate)};
+      if (schoolId != null) params['school_id'] = schoolId;
+      if (_selectedClassId != null) params['class_id'] = _selectedClassId;
+      if (_selectedSectionId != null) {
+        params['section_id'] = _selectedSectionId;
+      }
+      if (_selectedSubjectId != null) {
+        params['subject_id'] = _selectedSubjectId;
+      }
+      if (_selectedTeacherObj != null) {
+        params['teacher_id'] = _selectedTeacherObj!['id'];
+      }
+
+      final resp = await dio.get(
+        'principal/reports/lesson-evaluations/periods',
+        queryParameters: params,
+      );
+      if (resp.statusCode == 200) {
+        final data = _extractList(resp.data['items']);
+        setState(() => _items = data);
+      } else {
+        setState(() => _error = 'সার্ভার ত্রুটি: ${resp.statusCode}');
+      }
+    } catch (e) {
+      setState(() => _error = 'তথ্য লোড করা যায়নি। আবার চেষ্টা করুন।');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _fetchClasses() async {
@@ -505,13 +181,10 @@ class _LessonEvaluationReportPageState
     try {
       final params = <String, dynamic>{};
       if (schoolId != null) params['school_id'] = schoolId;
-
       final resp = await DioClient().dio.get(
         'principal/students/filters/classes',
         queryParameters: params,
       );
-      _addLog('GET principal/students/filters/classes -> ${resp.statusCode}');
-      _addLog('Resp: ${resp.data}');
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
         final rawData = data
@@ -523,70 +196,33 @@ class _LessonEvaluationReportPageState
               },
             )
             .toList();
-
-        // Numerical sort for classes
         rawData.sort((a, b) {
           final an = int.tryParse(a['numeric_value']?.toString() ?? '');
           final bn = int.tryParse(b['numeric_value']?.toString() ?? '');
           if (an != null && bn != null && an != bn) return an.compareTo(bn);
           return a['name'].toString().compareTo(b['name'].toString());
         });
-
-        setState(() {
-          _classes = rawData.cast<Map<String, dynamic>>();
-        });
-      } else {
-        _addLog('Classes endpoint returned status ${resp.statusCode}');
-      }
-
-      if (_classes.isEmpty && schoolId != null) {
-        try {
-          final dbg = await DioClient().dio.get(
-            'debug/classes',
-            queryParameters: {'school_id': schoolId},
-          );
-          _addLog('GET debug/classes?school_id=$schoolId -> ${dbg.statusCode}');
-          _addLog('Debug Resp: ${dbg.data}');
-          if (dbg.statusCode == 200) {
-            final ddata = _extractList(dbg.data);
-            setState(() {
-              _classes = ddata
-                  .map((e) => {'id': e['id'], 'name': e['name']})
-                  .toList()
-                  .cast<Map<String, dynamic>>();
-            });
-          }
-        } catch (e) {
-          _addLog('Exception fetching debug classes: $e');
+        if (mounted) {
+          setState(() => _classes = rawData.cast<Map<String, dynamic>>());
         }
       }
-    } catch (e, st) {
-      _addLog('Exception fetching classes: $e');
-      _addLog(st.toString());
-    }
+    } catch (_) {}
   }
 
   Future<void> _fetchSections(int classId) async {
     final schoolId = _getSchoolId();
     try {
-      final params = {'class_id': classId};
+      final params = <String, dynamic>{'class_id': classId};
       if (schoolId != null) params['school_id'] = schoolId;
-
       final resp = await DioClient().dio.get(
         'principal/students/filters/sections',
         queryParameters: params,
       );
-      _addLog(
-        'GET principal/students/filters/sections?class_id=$classId -> ${resp.statusCode}',
-      );
-      _addLog('Resp: ${resp.data}');
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
         final rawData = data
             .map((e) => {'id': e['id'], 'name': e['name']})
             .toList();
-
-        // Natural sort for sections
         rawData.sort((a, b) {
           final s1 = a['name'].toString();
           final s2 = b['name'].toString();
@@ -595,156 +231,42 @@ class _LessonEvaluationReportPageState
           if (n1 != null && n2 != null) return n1.compareTo(n2);
           return s1.compareTo(s2);
         });
-
-        setState(() {
-          _sections = rawData.cast<Map<String, dynamic>>();
-        });
-      } else {
-        _addLog('Sections endpoint returned status ${resp.statusCode}');
-      }
-      // Fallback to meta endpoint if empty
-      if (_sections.isEmpty) {
-        try {
-          final meta = await DioClient().dio.get(
-            'meta/sections',
-            // meta/sections often filters by class_id globally but passing school_id is safer
-            queryParameters: params,
-          );
-          _addLog('GET meta/sections?class_id=$classId -> ${meta.statusCode}');
-          if (meta.statusCode == 200) {
-            final mdata = _extractList(meta.data);
-            setState(() {
-              _sections = mdata
-                  .map((e) => {'id': e['id'], 'name': e['name']})
-                  .toList()
-                  .cast<Map<String, dynamic>>();
-            });
-          }
-        } catch (e) {
-          _addLog('Exception fetching meta sections: $e');
+        if (mounted) {
+          setState(() => _sections = rawData.cast<Map<String, dynamic>>());
         }
       }
-
-      if (_sections.isEmpty && schoolId != null) {
-        try {
-          final dbg2 = await DioClient().dio.get(
-            'debug/sections',
-            queryParameters: {'school_id': schoolId},
-          );
-          _addLog(
-            'GET debug/sections?school_id=$schoolId -> ${dbg2.statusCode}',
-          );
-          if (dbg2.statusCode == 200) {
-            final ddata2 = _extractList(dbg2.data);
-            setState(() {
-              _sections = ddata2
-                  .map((e) => {'id': e['id'], 'name': e['name']})
-                  .toList()
-                  .cast<Map<String, dynamic>>();
-            });
-          }
-        } catch (e) {
-          _addLog('Exception fetching debug sections (no class): $e');
-        }
-      }
-    } catch (e, st) {
-      _addLog('Exception fetching sections: $e');
-      _addLog(st.toString());
-    }
+    } catch (_) {}
   }
 
   Future<void> _fetchSubjects() async {
+    if (_selectedClassId == null) {
+      setState(() => _subjects = []);
+      return;
+    }
     final schoolId = _getSchoolId();
     try {
-      // Only fetch subjects when a specific class is selected. If no class is
-      // selected (or All Classes chosen), keep the subjects list empty so the
-      // dropdown shows "No subjects available".
-      if (_selectedClassId == null) {
-        setState(() {
-          _subjects = [];
-        });
-        return;
+      final params = <String, dynamic>{'class_id': _selectedClassId};
+      if (_selectedSectionId != null) {
+        params['section_id'] = _selectedSectionId;
       }
-      final params = <String, dynamic>{};
-      if (_selectedClassId != null) params['class_id'] = _selectedClassId;
-      if (_selectedSectionId != null) params['section_id'] = _selectedSectionId;
       if (schoolId != null) params['school_id'] = schoolId;
-
       final resp = await DioClient().dio.get(
         'principal/students/filters/subjects',
         queryParameters: params,
       );
-      _addLog(
-        'GET principal/students/filters/subjects?params=$params -> ${resp.statusCode}',
-      );
-      _addLog('Resp: ${resp.data}');
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
-        setState(() {
-          _subjects =
-              <Map<String, dynamic>>[
-                {
-                  'id': -1,
-                  'name': _selectedClassId == null
-                      ? 'All Subjects'
-                      : 'Any Subject',
-                },
-              ] +
-              data
-                  .map(
-                    (e) => <String, dynamic>{'id': e['id'], 'name': e['name']},
-                  )
-                  .toList();
-        });
-      } else {
-        _addLog('Subjects endpoint returned status ${resp.statusCode}');
-      }
-      // Fallback to meta endpoint
-      if (_subjects.isEmpty) {
-        try {
-          final meta = await DioClient().dio.get(
-            'meta/subjects',
-            queryParameters: params,
-          );
-          _addLog('GET meta/sections?params=$params -> ${meta.statusCode}');
-          if (meta.statusCode == 200) {
-            final mdata = _extractList(meta.data);
-            setState(() {
-              _subjects = mdata
-                  .map((e) => {'id': e['id'], 'name': e['name']})
-                  .toList()
-                  .cast<Map<String, dynamic>>();
-            });
-          }
-        } catch (e) {
-          _addLog('Exception fetching meta subjects: $e');
+        if (mounted) {
+          setState(() {
+            _subjects = data
+                .map(
+                  (e) => <String, dynamic>{'id': e['id'], 'name': e['name']},
+                )
+                .toList();
+          });
         }
       }
-      // Fallback to debug endpoint
-      if (_subjects.isEmpty && schoolId != null) {
-        try {
-          final dbg = await DioClient().dio.get(
-            'debug/subjects',
-            queryParameters: params..['school_id'] = schoolId,
-          );
-          _addLog('GET debug/subjects?params=$params -> ${dbg.statusCode}');
-          if (dbg.statusCode == 200) {
-            final ddata = _extractList(dbg.data);
-            setState(() {
-              _subjects = ddata
-                  .map((e) => {'id': e['id'], 'name': e['name']})
-                  .toList()
-                  .cast<Map<String, dynamic>>();
-            });
-          }
-        } catch (e) {
-          _addLog('Exception fetching debug subjects: $e');
-        }
-      }
-    } catch (e, st) {
-      _addLog('Exception fetching subjects: $e');
-      _addLog(st.toString());
-    }
+    } catch (_) {}
   }
 
   Future<void> _fetchTeachers() async {
@@ -752,114 +274,746 @@ class _LessonEvaluationReportPageState
     try {
       final params = <String, dynamic>{};
       if (schoolId != null) params['school_id'] = schoolId;
-
       final resp = await DioClient().dio.get(
         'meta/teachers',
         queryParameters: params,
       );
-      _addLog('GET meta/teachers -> ${resp.statusCode}');
-      _addLog('Resp: ${resp.data}');
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
-        setState(() {
-          _teachers =
-              <Map<String, dynamic>>[
-                {'id': -1, 'name': 'All Teachers', 'designation': ''},
-              ] +
-              data
-                  .map(
-                    (e) => <String, dynamic>{
-                      'id': e['id'],
-                      'name': e['name'],
-                      'designation': e['designation'],
-                    },
-                  )
-                  .toList();
-        });
-      } else {
-        _addLog('Teachers endpoint returned status ${resp.statusCode}');
-      }
-
-      if (_teachers.isEmpty && schoolId != null) {
-        try {
-          final dbg = await DioClient().dio.get(
-            'debug/teachers',
-            queryParameters: {'school_id': schoolId},
-          );
-          _addLog(
-            'GET debug/teachers?school_id=$schoolId -> ${dbg.statusCode}',
-          );
-          if (dbg.statusCode == 200) {
-            final ddata = _extractList(dbg.data);
-            setState(() {
-              _teachers = ddata
-                  .map(
-                    (e) => {
-                      'id': e['id'],
-                      'name': e['name'],
-                      'designation': e['designation'] ?? 'Teacher',
-                    },
-                  )
-                  .toList()
-                  .cast<Map<String, dynamic>>();
-            });
-          }
-        } catch (e) {
-          _addLog('Exception fetching debug teachers: $e');
+        if (mounted) {
+          setState(() {
+            _teachers = data
+                .map(
+                  (e) => <String, dynamic>{
+                    'id': e['id'],
+                    'name': e['name'],
+                    'designation': e['designation'],
+                  },
+                )
+                .toList();
+          });
         }
       }
-    } catch (e, st) {
-      _addLog('Exception fetching teachers: $e');
-      _addLog(st.toString());
-    }
+    } catch (_) {}
   }
 
-  Widget _buildOutput() {
-    if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_error != null) return Center(child: Text('Error: $_error'));
-    if (_items.isEmpty) return const Center(child: Text('No results'));
-    return ListView.separated(
-      padding: const EdgeInsets.only(bottom: 24),
-      itemCount: _items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, i) {
-        final it = _items[i] as Map<String, dynamic>;
-        final stats = it['stats'] as Map<String, dynamic>?;
-        return Card(
-          child: ListTile(
-            title: Text(
-              '${it['evaluation_date'] ?? ''} • ${it['teacher_name'] ?? ''}',
+  int get _activeFilterCount {
+    var n = 0;
+    if (_selectedClassId != null) n++;
+    if (_selectedSectionId != null) n++;
+    if (_selectedSubjectId != null) n++;
+    if (_selectedTeacherObj != null) n++;
+    return n;
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _selectedClassId = null;
+      _selectedSectionId = null;
+      _selectedSubjectId = null;
+      _selectedTeacherObj = null;
+      _sections = [];
+      _subjects = [];
+    });
+    _fetchPeriods();
+  }
+
+  void _openFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _FilterSheet(
+        brand: _brand,
+        classes: _classes,
+        sections: _sections,
+        subjects: _subjects,
+        teachers: _teachers,
+        selectedClassId: _selectedClassId,
+        selectedSectionId: _selectedSectionId,
+        selectedSubjectId: _selectedSubjectId,
+        selectedTeacher: _selectedTeacherObj,
+        onClassChanged: (v) async {
+          setState(() {
+            _selectedClassId = v;
+            _selectedSectionId = null;
+            _selectedSubjectId = null;
+            _sections = [];
+            _subjects = [];
+          });
+          if (v != null) await _fetchSections(v);
+          await _fetchSubjects();
+        },
+        onSectionChanged: (v) async {
+          setState(() {
+            _selectedSectionId = v;
+            _selectedSubjectId = null;
+          });
+          await _fetchSubjects();
+        },
+        onSubjectChanged: (v) => setState(() => _selectedSubjectId = v),
+        onTeacherChanged: (m) => setState(() => _selectedTeacherObj = m),
+        onApply: () {
+          Navigator.of(ctx).pop();
+          _fetchPeriods();
+        },
+        onClear: () {
+          Navigator.of(ctx).pop();
+          _clearFilters();
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final doneCount = _items.where((e) => e['evaluated'] == true).length;
+    final total = _items.length;
+
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        title: const Text('লেসন ইভ্যালুয়েশন রিপোর্ট'),
+        backgroundColor: _brand,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            tooltip: 'ফিল্টার',
+            onPressed: _openFilterSheet,
+            icon: Badge(
+              isLabelVisible: _activeFilterCount > 0,
+              label: Text('$_activeFilterCount'),
+              backgroundColor: Colors.white,
+              textColor: _brandDark,
+              child: const Icon(Icons.tune_rounded),
             ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 6),
-                Text(
-                  '${it['class_name'] ?? ''}${it['section_name'] != null ? ' - ${it['section_name']}' : ''} • ${it['subject_name'] ?? ''}',
-                ),
-                const SizedBox(height: 6),
-                if (stats != null)
-                  Text(
-                    'Total: ${stats['total'] ?? 0}  Completed: ${stats['completed'] ?? 0}  Partial: ${stats['partial'] ?? 0}  Not done: ${stats['not_done'] ?? 0}  Absent: ${stats['absent'] ?? 0}',
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        color: _brand,
+        onRefresh: _fetchPeriods,
+        child: Column(
+          children: [
+            _buildDateBar(),
+            if (total > 0) _buildSummaryStrip(doneCount, total),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateBar() {
+    return Container(
+      color: _brand,
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x22000000),
+              blurRadius: 12,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left_rounded, color: _muted),
+              onPressed: () => _changeDate(
+                _selectedDate.subtract(const Duration(days: 1)),
+              ),
+            ),
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _pickDate,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.calendar_today_rounded,
+                            size: 14,
+                            color: _brand,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _isToday ? 'আজ' : _formattedSelectedDate,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: _ink,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_isToday) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          _formattedSelectedDate,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: _muted,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                if (it['notes'] != null &&
-                    (it['notes'] as String).isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(it['notes'] ?? ''),
-                ],
+                ),
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.chevron_right_rounded,
+                color: _isToday ? Colors.grey.shade300 : _muted,
+              ),
+              onPressed: _isToday
+                  ? null
+                  : () => _changeDate(
+                      _selectedDate.add(const Duration(days: 1)),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryStrip(int done, int total) {
+    final pct = total == 0 ? 0.0 : done / total;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: pct,
+                  strokeWidth: 4,
+                  backgroundColor: const Color(0xFFE5E7EB),
+                  valueColor: const AlwaysStoppedAnimation<Color>(_brand),
+                ),
+                Text(
+                  '${(pct * 100).round()}%',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: _ink,
+                  ),
+                ),
               ],
             ),
-            onTap: () {
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                style: const TextStyle(fontSize: 13, color: _muted),
+                children: [
+                  TextSpan(
+                    text: '$done',
+                    style: const TextStyle(
+                      color: _brandDark,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  TextSpan(text: ' / $total পিরিয়ডে ইভ্যালুয়েশন সম্পন্ন'),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: _brand));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.wifi_off_rounded, color: Colors.redAccent, size: 32),
+              const SizedBox(height: 12),
+              Text(_error!, textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _fetchPeriods,
+                style: ElevatedButton.styleFrom(backgroundColor: _brand, foregroundColor: Colors.white),
+                child: const Text('আবার চেষ্টা করুন'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_items.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 80),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: _brand.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.event_busy_outlined,
+                    color: _brand,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'এই তারিখে কোনো ক্লাস পিরিয়ড নেই',
+                  style: TextStyle(color: _muted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      itemCount: _items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, i) {
+        final it = _items[i] as Map<String, dynamic>;
+        return _PeriodCard(
+          item: it,
+          brand: _brand,
+          brandDark: _brandDark,
+          ink: _ink,
+          muted: _muted,
+          onTap: () {
+            if (it['evaluated'] == true) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => LessonEvaluationDetailsPage(report: it),
                 ),
               );
-            },
-          ),
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('এই পিরিয়ডে এখনো লেসন ইভ্যালুয়েশন জমা দেওয়া হয়নি'),
+                ),
+              );
+            }
+          },
         );
       },
+    );
+  }
+}
+
+class _PeriodCard extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final Color brand;
+  final Color brandDark;
+  final Color ink;
+  final Color muted;
+  final VoidCallback onTap;
+
+  const _PeriodCard({
+    required this.item,
+    required this.brand,
+    required this.brandDark,
+    required this.ink,
+    required this.muted,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final evaluated = item['evaluated'] == true;
+    final period = item['period_number']?.toString() ?? '-';
+    final start = item['start_time']?.toString() ?? '';
+    final end = item['end_time']?.toString() ?? '';
+    final timeLabel = (start.isNotEmpty && end.isNotEmpty)
+        ? '$start - $end'
+        : (start.isNotEmpty ? start : '');
+    final className = item['class_name']?.toString() ?? '';
+    final sectionName = item['section_name']?.toString() ?? '';
+    final subjectName = item['subject_name']?.toString() ?? '';
+    final teacherName = item['teacher_name']?.toString() ?? '';
+    final stats = item['stats'] as Map<String, dynamic>?;
+    final total = stats?['total'] ?? 0;
+    final completed = stats?['completed'] ?? 0;
+
+    final statusColor = evaluated ? brand : const Color(0xFFE11D48);
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border(left: BorderSide(color: statusColor, width: 4)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: brand.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      period,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        color: brandDark,
+                      ),
+                    ),
+                    Text(
+                      'পিরিয়ড',
+                      style: TextStyle(fontSize: 8, color: muted),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$className${sectionName.isNotEmpty ? ' - $sectionName' : ''} • $subjectName',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: ink,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        if (timeLabel.isNotEmpty) ...[
+                          Icon(Icons.schedule, size: 12, color: muted),
+                          const SizedBox(width: 3),
+                          Text(
+                            timeLabel,
+                            style: TextStyle(fontSize: 12, color: muted),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        if (teacherName.isNotEmpty) ...[
+                          Icon(Icons.person_outline, size: 12, color: muted),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              teacherName,
+                              style: TextStyle(fontSize: 12, color: muted),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      evaluated ? Icons.check_rounded : Icons.close_rounded,
+                      color: statusColor,
+                      size: 18,
+                    ),
+                  ),
+                  if (evaluated && total is int && total > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '$completed/$total',
+                      style: TextStyle(fontSize: 10, color: muted),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterSheet extends StatefulWidget {
+  final Color brand;
+  final List<Map<String, dynamic>> classes;
+  final List<Map<String, dynamic>> sections;
+  final List<Map<String, dynamic>> subjects;
+  final List<Map<String, dynamic>> teachers;
+  final int? selectedClassId;
+  final int? selectedSectionId;
+  final int? selectedSubjectId;
+  final Map<String, dynamic>? selectedTeacher;
+  final ValueChanged<int?> onClassChanged;
+  final ValueChanged<int?> onSectionChanged;
+  final ValueChanged<int?> onSubjectChanged;
+  final ValueChanged<Map<String, dynamic>?> onTeacherChanged;
+  final VoidCallback onApply;
+  final VoidCallback onClear;
+
+  const _FilterSheet({
+    required this.brand,
+    required this.classes,
+    required this.sections,
+    required this.subjects,
+    required this.teachers,
+    required this.selectedClassId,
+    required this.selectedSectionId,
+    required this.selectedSubjectId,
+    required this.selectedTeacher,
+    required this.onClassChanged,
+    required this.onSectionChanged,
+    required this.onSubjectChanged,
+    required this.onTeacherChanged,
+    required this.onApply,
+    required this.onClear,
+  });
+
+  @override
+  State<_FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends State<_FilterSheet> {
+  int? _classId;
+  int? _sectionId;
+  int? _subjectId;
+  Map<String, dynamic>? _teacher;
+
+  @override
+  void initState() {
+    super.initState();
+    _classId = widget.selectedClassId;
+    _sectionId = widget.selectedSectionId;
+    _subjectId = widget.selectedSubjectId;
+    _teacher = widget.selectedTeacher;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'ফিল্টার করুন',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<int>(
+            initialValue: _classId,
+            decoration: const InputDecoration(
+              labelText: 'শ্রেণি',
+              isDense: true,
+              border: OutlineInputBorder(),
+            ),
+            items: widget.classes
+                .map(
+                  (c) => DropdownMenuItem<int>(
+                    value: c['id'] is int
+                        ? c['id'] as int
+                        : int.tryParse(c['id']?.toString() ?? ''),
+                    child: Text((c['name'] ?? '').toString()),
+                  ),
+                )
+                .where((it) => it.value != null)
+                .toList(),
+            onChanged: (v) {
+              setState(() {
+                _classId = v;
+                _sectionId = null;
+                _subjectId = null;
+              });
+              widget.onClassChanged(v);
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int>(
+            initialValue: _sectionId,
+            decoration: const InputDecoration(
+              labelText: 'শাখা',
+              isDense: true,
+              border: OutlineInputBorder(),
+            ),
+            items: widget.sections
+                .map(
+                  (s) => DropdownMenuItem<int>(
+                    value: s['id'] is int
+                        ? s['id'] as int
+                        : int.tryParse(s['id']?.toString() ?? ''),
+                    child: Text((s['name'] ?? '').toString()),
+                  ),
+                )
+                .where((it) => it.value != null)
+                .toList(),
+            onChanged: (v) {
+              setState(() => _sectionId = v);
+              widget.onSectionChanged(v);
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int>(
+            initialValue: _subjectId,
+            decoration: const InputDecoration(
+              labelText: 'বিষয়',
+              isDense: true,
+              border: OutlineInputBorder(),
+            ),
+            items: widget.subjects
+                .map(
+                  (s) => DropdownMenuItem<int>(
+                    value: s['id'] is int
+                        ? s['id'] as int
+                        : int.tryParse(s['id']?.toString() ?? ''),
+                    child: Text((s['name'] ?? '').toString()),
+                  ),
+                )
+                .where((it) => it.value != null)
+                .toList(),
+            onChanged: (v) {
+              setState(() => _subjectId = v);
+              widget.onSubjectChanged(v);
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownSearch<Map<String, dynamic>>(
+            popupProps: const PopupProps.menu(showSearchBox: true),
+            items: widget.teachers,
+            itemAsString: (m) => (m['name'] ?? '').toString(),
+            selectedItem: _teacher,
+            dropdownDecoratorProps: const DropDownDecoratorProps(
+              dropdownSearchDecoration: InputDecoration(
+                labelText: 'শিক্ষক',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+            onChanged: (m) {
+              setState(() => _teacher = m);
+              widget.onTeacherChanged(m);
+            },
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: widget.onClear,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('মুছে ফেলুন'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: widget.onApply,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.brand,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text('প্রয়োগ করুন'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

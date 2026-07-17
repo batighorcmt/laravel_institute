@@ -673,11 +673,23 @@ class _LessonEvaluationDetailsPageState
     return groups;
   }
 
+  static const Color _brand = Color(0xFF00BF6D);
+  static const Color _brandDark = Color(0xFF049655);
+  static const Color _bg = Color(0xFFF5F7F9);
+  static const Color _ink = Color(0xFF1A1D1F);
+  static const Color _muted = Color(0xFF6B7280);
+
+  static const List<Map<String, String>> _statusOptions = [
+    {'value': '', 'label': 'সকল'},
+    {'value': 'complete', 'label': 'সম্পন্ন'},
+    {'value': 'partial', 'label': 'আংশিক'},
+    {'value': 'not', 'label': 'হয়নি'},
+    {'value': 'absent', 'label': 'অনুপস্থিত'},
+  ];
+
   @override
   Widget build(BuildContext context) {
     final remote = _remoteEval;
-    final title =
-        '${remote?['evaluation_date'] ?? widget.report['evaluation_date'] ?? ''} • Details';
     final stats =
         (remote?['stats'] ?? widget.report['stats']) as Map<String, dynamic>?;
     final className =
@@ -694,346 +706,330 @@ class _LessonEvaluationDetailsPageState
             : remote?['teacher_name']) ??
         widget.report['teacher_name'] ??
         '';
+    final periodNumber =
+        (remote?['period_number'] ?? widget.report['period_number'])
+            ?.toString();
+    final startTime = (remote?['start_time'] ?? widget.report['start_time'])
+        ?.toString();
+    final endTime = (remote?['end_time'] ?? widget.report['end_time'])
+        ?.toString();
+    final timeLabel = (startTime != null && startTime.isNotEmpty)
+        ? (endTime != null && endTime.isNotEmpty
+              ? '$startTime - $endTime'
+              : startTime)
+        : null;
+    final submittedAt =
+        (remote?['submitted_at'] ?? widget.report['submitted_at'])?.toString();
+
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            // Top compact metadata: class / section / subject / teacher
-            Card(
-              color: Colors.grey.shade50,
-              elevation: 0,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
+      backgroundColor: _bg,
+      appBar: AppBar(
+        title: Text(
+          '$className${sectionName.isNotEmpty ? ' - $sectionName' : ''}',
+        ),
+        backgroundColor: _brand,
+        foregroundColor: Colors.white,
+      ),
+      body: _loading && _students.isEmpty
+          ? const Center(child: CircularProgressIndicator(color: _brand))
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              children: [
+                _buildInfoCard(
+                  subjectName: subjectName,
+                  teacherName: teacherName.toString(),
+                  periodNumber: periodNumber,
+                  timeLabel: timeLabel,
+                  submittedAt: submittedAt,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 6,
-                      children: [
-                        if (className.isNotEmpty)
-                          Text(
-                            className,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        if (sectionName.isNotEmpty)
-                          Text(sectionName, style: TextStyle(fontSize: 13)),
-                        if (subjectName.isNotEmpty)
-                          Text(subjectName, style: TextStyle(fontSize: 13)),
-                        if (teacherName.toString().trim().isNotEmpty)
-                          Text(
-                            teacherName.toString(),
-                            style: TextStyle(fontSize: 13),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (stats != null)
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                          horizontal: 8,
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: const [
-                                Expanded(child: Center(child: Text('Total'))),
-                                Expanded(child: Center(child: Text('Done'))),
-                                Expanded(child: Center(child: Text('Partial'))),
-                                Expanded(
-                                  child: Center(child: Text('Not Done')),
-                                ),
-                                Expanded(child: Center(child: Text('Absent'))),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Center(
-                                    child: Text(
-                                      '${stats['total'] ?? 0}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Center(
-                                    child: Text(
-                                      '${stats['completed'] ?? 0}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Center(
-                                    child: Text(
-                                      '${stats['partial'] ?? 0}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Center(
-                                    child: Text(
-                                      '${stats['not_done'] ?? 0}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Center(
-                                    child: Text(
-                                      '${stats['absent'] ?? 0}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
+                const SizedBox(height: 14),
+                if (stats != null) _buildStatsGrid(stats),
+                const SizedBox(height: 14),
+                _buildStatusFilter(),
+                const SizedBox(height: 10),
+                _buildStudentsSection(),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildInfoCard({
+    required String subjectName,
+    required String teacherName,
+    String? periodNumber,
+    String? timeLabel,
+    String? submittedAt,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [_brand, _brandDark],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (subjectName.isNotEmpty)
+            Text(
+              subjectName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 17,
               ),
             ),
-            const SizedBox(height: 8),
-            // Status filter
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: DropdownButtonFormField<String>(
-                initialValue: _statusFilter ?? '',
-                decoration: InputDecoration(
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                items: const [
-                  DropdownMenuItem(value: '', child: Text('সকল স্ট্যাটাস')),
-                  DropdownMenuItem(
-                    value: 'complete',
-                    child: Text('পড়া হয়েছে'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'partial',
-                    child: Text('আংশিক হয়েছে'),
-                  ),
-                  DropdownMenuItem(value: 'not', child: Text('পড়া হয়নি')),
-                  DropdownMenuItem(value: 'absent', child: Text('অনুপস্থিত')),
-                ],
-                onChanged: (v) =>
-                    setState(() => _statusFilter = (v ?? '').toString()),
-              ),
-            ),
-            Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _error != null
-                  ? Center(child: Text('Error: $_error'))
-                  : _students.isEmpty
-                  ? (() {
-                      final groups = _extractGroups();
-                      if (groups.isNotEmpty) {
-                        return ListView.separated(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: groups.length,
-                          separatorBuilder: (_, _) => const SizedBox(height: 8),
-                          itemBuilder: (ctx, idx) {
-                            final g = groups[idx];
-                            final title =
-                                '${g['class_name'] ?? ''} ${g['section_name'] ?? ''}'
-                                    .trim();
-                            return Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (title.isNotEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 8.0,
-                                        ),
-                                        child: Text(
-                                          title,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    _buildStudentsTableForList(
-                                      g['students'] as List<dynamic>,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    })()
-                  : _buildStudentsTable(),
+          const SizedBox(height: 12),
+          _infoLine(
+            icon: Icons.person_outline,
+            text: teacherName.isNotEmpty ? teacherName : 'শিক্ষক অজানা',
+          ),
+          if (periodNumber != null || timeLabel != null) ...[
+            const SizedBox(height: 6),
+            _infoLine(
+              icon: Icons.schedule,
+              text: [
+                if (periodNumber != null) 'পিরিয়ড $periodNumber',
+                if (timeLabel != null) timeLabel,
+              ].join(' • '),
             ),
           ],
-        ),
+          if (submittedAt != null && submittedAt.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _infoLine(
+              icon: Icons.check_circle_outline,
+              text: 'জমা দেওয়া হয়েছে: $submittedAt',
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildStudentsTable() {
-    final normalized = _normalizedStudents();
-    if (normalized.isEmpty) {
-      return const Center(child: Text('No students to show'));
-    }
-
-    return ListView.separated(
-      padding: EdgeInsets.zero,
-      itemCount: normalized.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (ctx, i) {
-        final s = normalized[i];
-        final st = (s['status'] ?? '').toString();
-        if (_statusFilter != null &&
-            _statusFilter!.isNotEmpty &&
-            !st.contains(_statusFilter!)) {
-          return const SizedBox.shrink();
-        }
-        final roll = (s['roll'] ?? '').toString();
-        final photo = (s['photo'] ?? '') as String?;
-
-        Widget leading;
-        if (photo != null && photo.isNotEmpty) {
-          leading = ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: CachedNetworkImage(
-              imageUrl: photo,
-              width: 44,
-              height: 44,
-              fit: BoxFit.cover,
-              placeholder: (c, u) => Container(
-                width: 44,
-                height: 44,
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.person, color: Colors.grey, size: 20),
-              ),
-              errorWidget: (c, u, e) => Container(
-                width: 44,
-                height: 44,
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.person, color: Colors.grey, size: 20),
-              ),
-            ),
-          );
-        } else {
-          leading = Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.person, color: Colors.grey, size: 20),
-          );
-        }
-
-        final statusLabel = _statusLabelLocalized(st);
-        final statusColor = _statusColorFromRaw(st, context);
-
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 6,
-          ),
-          leading: leading,
-          title: InkWell(
-            onTap: () => _showStudentModal(s),
-            child: Text(
-              (s['name'] ?? '').toString(),
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+  Widget _infoLine({required IconData icon, required String text}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 15, color: Colors.white.withValues(alpha: 0.9)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.95),
+              fontSize: 13,
             ),
           ),
-          subtitle: Text(
-            roll.isEmpty ? '' : 'রোল: $roll',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          trailing: Chip(
-            label: Text(
-              statusLabel,
-              style: TextStyle(
-                color: statusColor,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-            ),
-            backgroundColor: statusColor.withValues(alpha: 0.12),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          ),
-        );
-      },
+        ),
+      ],
     );
   }
 
-  Widget _buildStudentsTableForList(List<dynamic> list) {
-    final normalized = _normalizeList(list);
-    if (normalized.isEmpty) {
-      return const Center(child: Text('No students to show'));
+  Widget _buildStatsGrid(Map<String, dynamic> stats) {
+    final entries = [
+      ('মোট', stats['total'], _ink),
+      ('সম্পন্ন', stats['completed'], const Color(0xFF16A34A)),
+      ('আংশিক', stats['partial'], const Color(0xFFD97706)),
+      ('হয়নি', stats['not_done'], const Color(0xFFDC2626)),
+      ('অনুপস্থিত', stats['absent'], const Color(0xFF64748B)),
+    ];
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: entries.map((e) {
+          final (label, value, color) = e;
+          return Expanded(
+            child: Column(
+              children: [
+                Text(
+                  '${value ?? 0}',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 11, color: _muted),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildStatusFilter() {
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _statusOptions.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final opt = _statusOptions[i];
+          final selected = (_statusFilter ?? '') == opt['value'];
+          return ChoiceChip(
+            label: Text(opt['label']!),
+            selected: selected,
+            onSelected: (_) => setState(() => _statusFilter = opt['value']),
+            selectedColor: _brand,
+            backgroundColor: Colors.white,
+            labelStyle: TextStyle(
+              color: selected ? Colors.white : _ink,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: selected ? _brand : Colors.grey.shade300),
+            ),
+            showCheckmark: false,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStudentsSection() {
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 40),
+          child: Text('ত্রুটি: $_error'),
+        ),
+      );
+    }
+    if (_students.isEmpty) {
+      final groups = _extractGroups();
+      if (groups.isNotEmpty) {
+        return Column(
+          children: groups.map((g) {
+            final title = '${g['class_name'] ?? ''} ${g['section_name'] ?? ''}'
+                .trim();
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0F000000),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (title.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0, left: 4),
+                      child: Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  _buildStudentsList(
+                    _normalizeList(g['students'] as List<dynamic>),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      }
+      return const Padding(
+        padding: EdgeInsets.only(top: 40),
+        child: Center(child: Text('কোনো শিক্ষার্থী পাওয়া যায়নি')),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: _buildStudentsList(_normalizedStudents()),
+    );
+  }
+
+  Widget _buildStudentsList(List<Map<String, dynamic>> normalized) {
+    final filtered = normalized.where((s) {
+      final st = (s['status'] ?? '').toString();
+      if (_statusFilter != null &&
+          _statusFilter!.isNotEmpty &&
+          !st.contains(_statusFilter!)) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    if (filtered.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Center(
+          child: Text(
+            'এই ফিল্টারে কোনো শিক্ষার্থী নেই',
+            style: TextStyle(color: _muted),
+          ),
+        ),
+      );
     }
 
     return ListView.separated(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
-      itemCount: normalized.length,
-      separatorBuilder: (_, _) => const Divider(height: 1),
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      itemCount: filtered.length,
+      separatorBuilder: (_, _) => const Divider(height: 1, indent: 68),
       itemBuilder: (ctx, i) {
-        final s = normalized[i];
+        final s = filtered[i];
         final st = (s['status'] ?? '').toString();
-        if (_statusFilter != null &&
-            _statusFilter!.isNotEmpty &&
-            !st.contains(_statusFilter!)) {
-          return const SizedBox.shrink();
-        }
         final roll = (s['roll'] ?? '').toString();
         final photo = (s['photo'] ?? '') as String?;
+        final statusLabel = _statusLabelLocalized(st);
+        final statusColor = _statusColorFromRaw(st, context);
 
         Widget leading;
         if (photo != null && photo.isNotEmpty) {
           leading = ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
             child: CachedNetworkImage(
               imageUrl: photo,
               width: 44,
@@ -1059,45 +1055,45 @@ class _LessonEvaluationDetailsPageState
             height: 44,
             decoration: BoxDecoration(
               color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.person, color: Colors.grey, size: 20),
           );
         }
 
-        final statusLabel = _statusLabelLocalized(st);
-        final statusColor = _statusColorFromRaw(st, context);
-
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
-            vertical: 6,
+            vertical: 4,
           ),
           leading: leading,
           title: InkWell(
             onTap: () => _showStudentModal(s),
             child: Text(
               (s['name'] ?? '').toString(),
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+              style: const TextStyle(fontWeight: FontWeight.w600, color: _ink),
             ),
           ),
-          subtitle: Text(
-            roll.isEmpty ? '' : 'রোল: $roll',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          trailing: Chip(
-            label: Text(
+          subtitle: roll.isEmpty
+              ? null
+              : Text(
+                  'রোল: $roll',
+                  style: const TextStyle(fontSize: 12, color: _muted),
+                ),
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
               statusLabel,
               style: TextStyle(
                 color: statusColor,
                 fontWeight: FontWeight.w700,
-                fontSize: 12,
+                fontSize: 11,
               ),
             ),
-            backgroundColor: statusColor.withValues(alpha: 0.12),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           ),
         );
       },

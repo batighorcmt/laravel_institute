@@ -41,6 +41,7 @@ Route::prefix('v1')->group(function () {
             Route::get('principal/reports/attendance-details', [\App\Http\Controllers\Api\PrincipalReportController::class , 'attendanceDetails'])->middleware('role:principal');
             Route::get('principal/reports/extra-class-attendance-details', [\App\Http\Controllers\Api\PrincipalReportController::class , 'extraClassAttendanceDetails'])->middleware('role:principal');
             Route::get('principal/reports/lesson-evaluations', [\App\Http\Controllers\Api\PrincipalReportController::class , 'lessonEvaluations'])->middleware('role:principal');
+            Route::get('principal/reports/lesson-evaluations/periods', [\App\Http\Controllers\Api\PrincipalReportController::class , 'lessonEvaluationPeriods'])->middleware('role:principal');
             Route::get('principal/reports/lesson-evaluations/{id}', [\App\Http\Controllers\Api\PrincipalReportController::class , 'lessonEvaluationDetail'])->middleware('role:principal');
             Route::get('principal/reports/exam-results-summary', [\App\Http\Controllers\Api\PrincipalReportController::class , 'examResultsSummary'])->middleware('role:principal');
             Route::get('principal/reports/homework-summary', [\App\Http\Controllers\Api\PrincipalReportController::class , 'homeworkSummary'])->middleware('role:principal');

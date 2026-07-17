@@ -12,6 +12,7 @@ use App\Models\Section;
 use App\Models\RoutineEntry;
 use App\Models\LessonEvaluation;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class PrincipalReportController extends Controller
 {
@@ -378,9 +379,149 @@ class PrincipalReportController extends Controller
     }
 
     /**
-     * Return lesson evaluation reports for the principal's school.
-     * Optional filters: date (YYYY-MM-DD), class_id, section_id, subject_id
+     * For a given date, list every routine period scheduled that day
+     * (school-wide, optionally filtered) and mark whether a lesson
+     * evaluation has been submitted for it. Used by the mobile app's
+     * "Lesson Evaluation Report" screen to show a tick/cross per period.
      */
+    public function lessonEvaluationPeriods(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id')
+            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
+            ?? ($user->primarySchool()?->id ?? null);
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+
+        $dateParam = $request->query('date');
+        $date = $dateParam ? Carbon::parse($dateParam)->startOfDay() : Carbon::today();
+        $dayName = strtolower($date->format('l'));
+
+        $entriesQuery = RoutineEntry::with(['class', 'section', 'subject', 'teacher.user'])
+            ->where('school_id', $schoolId)
+            ->where('day_of_week', $dayName);
+
+        if ($request->filled('class_id')) {
+            $entriesQuery->where('class_id', $request->get('class_id'));
+        }
+        if ($request->filled('section_id')) {
+            $entriesQuery->where('section_id', $request->get('section_id'));
+        }
+        if ($request->filled('subject_id')) {
+            $entriesQuery->where('subject_id', $request->get('subject_id'));
+        }
+        if ($request->filled('teacher_id')) {
+            $entriesQuery->where('teacher_id', $request->get('teacher_id'));
+        } elseif ($request->filled('teacher')) {
+            $teacher = $request->get('teacher');
+            if (is_numeric($teacher)) {
+                $entriesQuery->where('teacher_id', $teacher);
+            } else {
+                $entriesQuery->whereHas('teacher.user', function ($q) use ($teacher) {
+                    $q->where('name', 'like', "%{$teacher}%");
+                });
+            }
+        }
+
+        $entries = $entriesQuery->orderBy('period_number')->get();
+
+        // Bulk-fetch all of this school's evaluations for the date (not just
+        // those linking to today's entries) so we can match both by
+        // routine_entry_id (normal case) and, for older records predating
+        // that column, by teacher/class/section/subject as a fallback.
+        $dayEvaluations = LessonEvaluation::forSchool($schoolId)
+            ->forDate($date->toDateString())
+            ->get();
+        $byRoutineEntry = $dayEvaluations->whereNotNull('routine_entry_id')->keyBy('routine_entry_id');
+        $byCompositeKey = $dayEvaluations->whereNull('routine_entry_id')->keyBy(
+            fn($ev) => $ev->teacher_id . ':' . $ev->class_id . ':' . $ev->section_id . ':' . $ev->subject_id
+        );
+
+        $evaluationFor = function ($entry) use ($byRoutineEntry, $byCompositeKey) {
+            if ($byRoutineEntry->has($entry->id)) {
+                return $byRoutineEntry->get($entry->id);
+            }
+            $key = $entry->teacher_id . ':' . $entry->class_id . ':' . $entry->section_id . ':' . $entry->subject_id;
+            return $byCompositeKey->get($key);
+        };
+
+        // For un-evaluated periods, batch-count enrolled students per
+        // class/section pair so we can still show "total students".
+        $academicYearId = AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
+        $unevaluatedPairs = $entries
+            ->reject(fn($e) => $evaluationFor($e) !== null)
+            ->map(fn($e) => $e->class_id . ':' . $e->section_id)
+            ->unique();
+        $enrollmentCounts = [];
+        foreach ($unevaluatedPairs as $pair) {
+            [$classId, $sectionId] = explode(':', $pair);
+            $enrollmentCounts[$pair] = StudentEnrollment::where('school_id', $schoolId)
+                ->where('class_id', $classId)
+                ->where('section_id', $sectionId)
+                ->where('status', 'active')
+                ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+                ->whereHas('student', fn($q) => $q->where('status', 'active'))
+                ->count();
+        }
+
+        $items = $entries->map(function ($entry) use ($evaluationFor, $enrollmentCounts) {
+            $evaluation = $evaluationFor($entry);
+            $teacherName = null;
+            try {
+                $teacherName = $entry->teacher?->user?->name ?? $entry->teacher?->name ?? null;
+            } catch (\Throwable $_) {}
+
+            $base = [
+                'routine_entry_id' => $entry->id,
+                'period_number' => $entry->period_number,
+                'start_time' => $entry->start_time ? substr($entry->start_time, 0, 5) : null,
+                'end_time' => $entry->end_time ? substr($entry->end_time, 0, 5) : null,
+                'class_id' => $entry->class_id,
+                'section_id' => $entry->section_id,
+                'subject_id' => $entry->subject_id,
+                'class_name' => $entry->class?->name,
+                'section_name' => $entry->section?->name,
+                'subject_name' => $entry->subject?->name,
+                'teacher_id' => $entry->teacher_id,
+                'teacher_name' => $teacherName,
+            ];
+
+            if ($evaluation) {
+                return array_merge($base, [
+                    'evaluated' => true,
+                    'id' => $evaluation->id,
+                    'evaluation_date' => $evaluation->evaluation_date?->toDateString(),
+                    'evaluation_time' => $evaluation->evaluation_time?->format('H:i'),
+                    'submitted_at' => $evaluation->created_at?->format('Y-m-d H:i'),
+                    'notes' => $evaluation->notes,
+                    'status' => $evaluation->status,
+                    'stats' => $evaluation->getCompletionStats(),
+                ]);
+            }
+
+            $pairKey = $entry->class_id . ':' . $entry->section_id;
+            return array_merge($base, [
+                'evaluated' => false,
+                'id' => null,
+                'stats' => [
+                    'total' => $enrollmentCounts[$pairKey] ?? 0,
+                    'completed' => 0,
+                    'partial' => 0,
+                    'not_done' => 0,
+                    'absent' => 0,
+                    'completion_rate' => 0,
+                ],
+            ]);
+        })->values();
+
+        return response()->json([
+            'date' => $date->toDateString(),
+            'day_of_week' => $dayName,
+            'items' => $items,
+        ]);
+    }
+
     public function lessonEvaluations(Request $request)
     {
         $user = $request->user();
@@ -481,6 +622,7 @@ class PrincipalReportController extends Controller
             'class',
             'section',
             'subject',
+            'routineEntry',
             'records' => function($q) {
                 $q->whereHas('student', function($s) {
                     $s->where('status', 'active');
@@ -521,6 +663,14 @@ class PrincipalReportController extends Controller
                 'id' => $evaluation->id,
                 'evaluation_date' => $evaluation->evaluation_date?->toDateString(),
                 'evaluation_time' => $evaluation->evaluation_time?->format('H:i'),
+                'submitted_at' => $evaluation->created_at?->format('Y-m-d H:i'),
+                'period_number' => $evaluation->routineEntry?->period_number,
+                'start_time' => $evaluation->routineEntry?->start_time
+                    ? substr($evaluation->routineEntry->start_time, 0, 5)
+                    : null,
+                'end_time' => $evaluation->routineEntry?->end_time
+                    ? substr($evaluation->routineEntry->end_time, 0, 5)
+                    : null,
                 'teacher_name' => $teacherName,
                 'class_name' => $evaluation->class?->name,
                 'section_name' => $evaluation->section?->name,
