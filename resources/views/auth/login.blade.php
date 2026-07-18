@@ -298,6 +298,13 @@
                     <p class="brand-tagline">Educational Institute Management System</p>
                 </div>
 
+                @if (session('status'))
+                <div class="error-box">
+                    <i class="fas fa-info-circle mt-1"></i>
+                    <div>{{ session('status') }}</div>
+                </div>
+                @endif
+
                 @if ($errors->any())
                 <div class="error-box">
                     <i class="fas fa-exclamation-circle mt-1"></i>
