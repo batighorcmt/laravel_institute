@@ -136,6 +136,7 @@
                                             <div class="custom-dropdown-menu">
                                                 <a href="{{ route('principal.institute.marks.show', [$school, $exam]) }}"><i class="fas fa-pen text-primary"></i> মার্ক এন্ট্রি</a>
                                                 <a href="{{ route('principal.institute.results.exams.result-sheet.print', [$school, $exam]) }}" target="_blank"><i class="fas fa-print text-success"></i> রেজাল্ট শীট</a>
+                                                <a href="{{ route('principal.institute.results.exams.roll-position-update', [$school, $exam]) }}"><i class="fas fa-sort-numeric-down text-warning"></i> রোল ও পজিশন আপডেট</a>
                                                 <a href="{{ route('principal.institute.results.marksheet', $school) }}?exam_id={{ $exam->id }}&class_id={{ $exam->class_id }}&academic_year_id={{ $exam->academic_year_id }}"><i class="fas fa-file-alt text-info"></i> মার্কশীট</a>
                                                 <a href="{{ route('principal.institute.results.tabulation', $school) }}?exam_id={{ $exam->id }}&class_id={{ $exam->class_id }}&academic_year_id={{ $exam->academic_year_id }}"><i class="fas fa-table text-warning"></i> টেবুলেশন শীট</a>
                                                 <a href="{{ route('principal.institute.results.statistics', $school) }}?exam_id={{ $exam->id }}&class_id={{ $exam->class_id }}"><i class="fas fa-chart-pie text-secondary"></i> সারাংশ</a>
