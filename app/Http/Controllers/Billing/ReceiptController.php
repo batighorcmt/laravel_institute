@@ -12,11 +12,37 @@ use Mpdf\Config\FontVariables;
 class ReceiptController extends Controller
 {
     /**
+     * Restrict receipt access to the payment's own school: principal/cashier
+     * of that school, the user who collected the payment, or a super admin.
+     * Without this, any authenticated user could read/download any other
+     * school's payment receipts by guessing a numeric id.
+     */
+    private function authorizeReceipt(Request $request, Payment $payment): void
+    {
+        $user = $request->user();
+        if (! $user) {
+            abort(403);
+        }
+        if ($user->isSuperAdmin()) {
+            return;
+        }
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->primarySchool()?->id;
+        if ($payment->school_id !== $schoolId) {
+            abort(404);
+        }
+        if ($user->isPrincipal($schoolId) || $user->isCashier($schoolId) || $payment->collected_by_user_id === $user->id) {
+            return;
+        }
+        abort(403, 'অননুমোদিত');
+    }
+
+    /**
      * API Response
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $payment = Payment::with(['student', 'paymentItems.studentFee.feeStructure.category'])->findOrFail($id);
+        $this->authorizeReceipt($request, $payment);
         return response()->json(['receipt' => $payment]);
     }
 
@@ -32,6 +58,7 @@ class ReceiptController extends Controller
             'school',
             'collectedBy'
         ])->findOrFail($id);
+        $this->authorizeReceipt($request, $payment);
 
         return view('billing.receipt', compact('payment'));
     }
@@ -39,17 +66,21 @@ class ReceiptController extends Controller
     /**
      * PDF Download — uses mPDF with full Kalpurush Bengali font support
      */
-    public function downloadPdf($id)
+    public function downloadPdf(Request $request, $id)
     {
-        try {
-            $payment = Payment::with([
-                'student.currentEnrollment.class',
-                'student.currentEnrollment.section',
-                'paymentItems.studentFee.feeStructure.category',
-                'school',
-                'collectedBy'
-            ])->findOrFail($id);
+        // Checked outside the try/catch below: that block treats every
+        // \Throwable as a PDF-generation failure and returns 500, which would
+        // otherwise swallow a 403/404 authorization abort.
+        $payment = Payment::with([
+            'student.currentEnrollment.class',
+            'student.currentEnrollment.section',
+            'paymentItems.studentFee.feeStructure.category',
+            'school',
+            'collectedBy'
+        ])->findOrFail($id);
+        $this->authorizeReceipt($request, $payment);
 
+        try {
             $html = view('billing.receipt_pdf', compact('payment'))->render();
 
             // mPDF font configuration

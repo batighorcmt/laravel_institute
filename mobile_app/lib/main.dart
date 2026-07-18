@@ -54,7 +54,12 @@ Future<void> main() async {
     'App starting with API_BASE_URL=${Env.apiBaseUrl}',
     name: 'Main',
   );
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    UncontrolledProviderScope(
+      container: appProviderContainer,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends ConsumerWidget {

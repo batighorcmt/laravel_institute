@@ -68,6 +68,7 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
       for (final endpoint in metaEndpoints) {
         try {
           final res = await _dio.get(endpoint);
+          if (!mounted) break;
           final data = res.data;
           if (data is Map<String, dynamic>) {
             bool updated = false;
@@ -150,6 +151,7 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
         nextPage = data.isNotEmpty && data.length >= fallbackPerPage;
       }
 
+      if (!mounted) return;
       setState(() {
         _page = page;
         _hasMore = nextPage;
@@ -161,6 +163,7 @@ class _TeacherStudentsListPageState extends State<TeacherStudentsListPage> {
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _hasMore = false;
@@ -568,11 +571,13 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       final Map<String, dynamic> normalized = inner is Map<String, dynamic>
           ? inner
           : res;
+      if (!mounted) return;
       setState(() {
         _data = normalized;
         _error = null;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = 'Failed to load profile: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _loading = false);

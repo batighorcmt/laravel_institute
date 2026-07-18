@@ -26,7 +26,12 @@ class AppUpdateController extends Controller
         $data = $request->validate([
             'version_code' => 'required|integer|unique:app_updates,version_code',
             'version_name' => 'required|string|max:20',
-            'apk_file' => 'required|file|max:204800', // max 200MB
+            // extensions: rely on the client-reported filename extension
+            // rather than the `mimes:` rule's MIME-sniffed extension
+            // guessing, which is unreliable for .apk (an APK is a ZIP
+            // container, so MIME-sniffing alone can't tell it apart from a
+            // plain .zip — this previously let a misnamed file through).
+            'apk_file' => 'required|file|extensions:apk|max:204800', // max 200MB
             'release_notes' => 'nullable|string',
             'is_mandatory' => 'boolean',
             'is_active' => 'boolean',
@@ -55,7 +60,7 @@ class AppUpdateController extends Controller
         $data = $request->validate([
             'version_code' => ['required', 'integer', Rule::unique('app_updates', 'version_code')->ignore($appUpdate->id)],
             'version_name' => 'required|string|max:20',
-            'apk_file' => 'nullable|file|max:204800',
+            'apk_file' => 'nullable|file|extensions:apk|max:204800',
             'release_notes' => 'nullable|string',
             'is_mandatory' => 'boolean',
             'is_active' => 'boolean',

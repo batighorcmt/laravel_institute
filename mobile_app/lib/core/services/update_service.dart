@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../config/env.dart';
 import 'dart:developer' as developer;
 
@@ -39,16 +40,28 @@ class UpdateService {
     required Function(String error) onError,
   }) async {
     try {
-      // 1. Request Storage Permissions
+      // 1. Request the "install unknown apps" permission before downloading —
+      // no point pulling a multi-MB APK if the user is going to deny this.
+      // On Android this is a per-app special permission (Settings-gated on
+      // Android 8+); permission_handler surfaces it as a normal
+      // request()/status check and opens the system settings screen itself
+      // when needed.
       if (Platform.isAndroid) {
-        // On Android 13+ (SDK 33+), WRITE_EXTERNAL_STORAGE is deprecated.
-        // We use getExternalStorageDirectory() which doesn't need it.
-        // However, REQUEST_INSTALL_PACKAGES is needed for opening the APK.
+        var status = await Permission.requestInstallPackages.status;
+        if (!status.isGranted) {
+          status = await Permission.requestInstallPackages.request();
+        }
+        if (!status.isGranted) {
+          onError(
+            'অ্যাপ ইনস্টল করার অনুমতি প্রয়োজন। সেটিংস থেকে "Install unknown apps" অনুমতি দিয়ে আবার চেষ্টা করুন।',
+          );
+          return;
+        }
       }
 
       final directory = await getExternalStorageDirectory();
       if (directory == null) {
-        onError('Storage directory not found');
+        onError('ডিভাইসে স্টোরেজ পাওয়া যায়নি।');
         return;
       }
 
@@ -71,14 +84,22 @@ class UpdateService {
         },
       );
 
-      // 3. Install APK
+      // 3. Install APK — this hands off to the Android system package
+      // installer UI. A single confirmation tap there is unavoidable on
+      // stock Android (no app can silently install another APK without
+      // device-owner/system privileges); everything up to that point is
+      // now fully automatic.
       final result = await OpenFilex.open(filePath);
-      if (result.type != ResultType.done) {
-        onError('Could not open APK: ${result.message}');
+      if (result.type == ResultType.permissionDenied) {
+        onError(
+          'অ্যাপ ইনস্টল করার অনুমতি প্রয়োজন। সেটিংস থেকে "Install unknown apps" অনুমতি দিয়ে আবার চেষ্টা করুন।',
+        );
+      } else if (result.type != ResultType.done) {
+        onError('আপডেট ইনস্টল করা যায়নি: ${result.message}');
       }
     } catch (e) {
       developer.log('Download and install error: $e');
-      onError(e.toString());
+      onError('ডাউনলোড ব্যর্থ হয়েছে: $e');
     }
   }
 }

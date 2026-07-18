@@ -88,6 +88,16 @@ class SSLCommerzCallbackController extends Controller
     private function settlePayment(Payment $payment, array $gatewayData)
     {
         DB::transaction(function () use ($payment, $gatewayData) {
+            // Re-fetch under a row lock and re-check status inside the transaction:
+            // the browser-redirect callback and the server IPN callback can both
+            // reach here concurrently for the same payment, and the caller's
+            // status check happened before this lock was acquired.
+            $locked = Payment::where('id', $payment->id)->lockForUpdate()->first();
+            if (! $locked || $locked->status === 'settled') {
+                return;
+            }
+            $payment = $locked;
+
             // Update payment record
             $payment->update([
                 'status' => 'settled',

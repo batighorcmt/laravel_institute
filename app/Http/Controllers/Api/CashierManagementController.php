@@ -222,7 +222,19 @@ class CashierManagementController extends Controller
                 return response()->json(['error' => 'You are not the active cashier'], 403);
             }
 
-            $deposit = DB::table('teacher_deposits')->where('id', $id)->first();
+            // Scope the deposit to teachers who actually belong to this cashier's
+            // school — without this, a valid cashier at School A could accept a
+            // deposit that belongs to a teacher at School B by guessing its id.
+            $deposit = DB::table('teacher_deposits')
+                ->where('teacher_deposits.id', $id)
+                ->whereExists(function ($query) use ($schoolId) {
+                    $query->select(DB::raw(1))
+                          ->from('users')
+                          ->join('user_school_roles', 'users.id', '=', 'user_school_roles.user_id')
+                          ->whereColumn('teacher_deposits.teacher_id', 'users.id')
+                          ->where('user_school_roles.school_id', $schoolId);
+                })
+                ->first();
             if (!$deposit) {
                 return response()->json(['error' => 'Deposit not found'], 404);
             }

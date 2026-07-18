@@ -98,7 +98,11 @@ class ParentRepository {
 
   Future<Map<String, dynamic>> getProfile({int? studentId}) async {
     final resp = await _dio.get('parent/profile', queryParameters: studentId != null ? {'student_id': studentId} : {});
-    return resp.data['data'] as Map<String, dynamic>;
+    final body = resp.data;
+    if (body is Map && body['data'] is Map) {
+      return Map<String, dynamic>.from(body['data'] as Map);
+    }
+    throw Exception('Profile load failed: unexpected response format');
   }
 
   Future<void> updatePhoto(String filePath) async {
@@ -120,7 +124,11 @@ class ParentRepository {
     final params = <String, dynamic>{};
     if (studentId != null) params['student_id'] = studentId;
     final resp = await _dio.get('parent/fees', queryParameters: params);
-    return resp.data as Map<String, dynamic>;
+    final body = resp.data;
+    if (body is Map) {
+      return Map<String, dynamic>.from(body);
+    }
+    throw Exception('Fees load failed: unexpected response format');
   }
 
   Future<Map<String, dynamic>> initiateSslPayment({

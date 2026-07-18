@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/config/env.dart';
 
@@ -34,8 +34,9 @@ class _ParentExamResultDetailPageState
     setState(() => _isDownloading = true);
 
     try {
-      final sp = await SharedPreferences.getInstance();
-      final token = sp.getString('auth_token');
+      final token = await const FlutterSecureStorage().read(
+        key: 'auth_token',
+      );
       if (token == null) throw 'লগইন তথ্য পাওয়া যায়নি';
 
       final baseUrl = Env.apiBaseUrl.endsWith('/')

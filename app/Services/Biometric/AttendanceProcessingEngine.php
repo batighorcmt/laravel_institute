@@ -9,6 +9,8 @@ use App\Models\Attendance;
 use App\Models\TeacherAttendance;
 use App\Models\SchoolAttendanceSetting;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -174,58 +176,99 @@ class AttendanceProcessingEngine
                 $status = 'absent';
             }
 
-            $attendance = Attendance::create([
-                'student_id'  => $student->id,
-                'class_id'    => $enrollment->class_id ?? $student->class_id,
-                'section_id'  => $enrollment->section_id,
-                'date'        => $date,
-                'status'      => $status,
-                'entry_time'  => $isExitWindow ? null : $timeOnly, // Entry only if in entry window
-                'exit_time'   => $isExitWindow ? $timeOnly : null,  // Exit only if in exit window
-                'medium'      => 'biometric',
-                'recorded_by' => null,
-            ]);
+            try {
+                $attendance = DB::transaction(function () use ($student, $enrollment, $date, $status, $isExitWindow, $timeOnly) {
+                    return Attendance::create([
+                        'student_id'  => $student->id,
+                        'class_id'    => $enrollment->class_id ?? $student->class_id,
+                        'section_id'  => $enrollment->section_id,
+                        'date'        => $date,
+                        'status'      => $status,
+                        'entry_time'  => $isExitWindow ? null : $timeOnly, // Entry only if in entry window
+                        'exit_time'   => $isExitWindow ? $timeOnly : null,  // Exit only if in exit window
+                        'medium'      => 'biometric',
+                        'recorded_by' => null,
+                    ]);
+                });
 
-            // ── Send entry notification ───────────────────────────────────
-            if (!$isExitWindow) {
-                \App\Jobs\SendAttendanceNotificationJob::dispatch($student, $attendance, 'entry');
+                // ── Send entry notification ───────────────────────────────────
+                if (!$isExitWindow) {
+                    \App\Jobs\SendAttendanceNotificationJob::dispatch($student, $attendance, 'entry');
+                }
+            } catch (QueryException $e) {
+                if (!$this->isUniqueConstraintViolation($e)) {
+                    throw $e;
+                }
+
+                // Another concurrent punch already created today's attendance row
+                // between our SELECT and INSERT. Treat as already processed and
+                // fall through to the normal "update existing" path instead of failing.
+                $attendance = Attendance::where('student_id', $student->id)
+                    ->where('date', $date)
+                    ->first();
+
+                if (!$attendance) {
+                    Log::error("[Biometric] Unique violation on attendance insert but row not found for student_id={$student->id} date={$date}: " . $e->getMessage());
+                    $log->update(['sync_status' => 'failed']);
+                    return;
+                }
+
+                $this->updateStudentAttendancePunch($attendance, $student, $isExitWindow, $timeOnly);
             }
 
         } else {
-            // ── Subsequent punches → Update entry/exit ─────────────────────
-            $changed = false;
-
-            if (!$isExitWindow) {
-                // Update entry time if earlier than current
-                if (!$attendance->entry_time || $timeOnly < $attendance->entry_time) {
-                    $attendance->entry_time = $timeOnly;
-                    $changed = true;
-                }
-            } else {
-                // Update exit time if later than current
-                $isNewExit = !$attendance->exit_time || $timeOnly > $attendance->exit_time;
-
-                if ($isNewExit) {
-                    $attendance->exit_time = $timeOnly;
-                    $changed = true;
-
-                    // Send exit notification
-                    \App\Jobs\SendAttendanceNotificationJob::dispatch($student, $attendance, 'exit');
-                }
-            }
-
-            // Upgrade medium to biometric if it was web/mobile
-            if ($attendance->medium !== 'biometric') {
-                $attendance->medium = 'biometric';
-                $changed = true;
-            }
-
-            if ($changed) {
-                $attendance->save();
-            }
+            $this->updateStudentAttendancePunch($attendance, $student, $isExitWindow, $timeOnly);
         }
 
         $log->update(['sync_status' => 'processed']);
+    }
+
+    /**
+     * Apply a subsequent punch (entry/exit update) to an already-existing
+     * attendance row for a student.
+     */
+    private function updateStudentAttendancePunch(Attendance $attendance, Student $student, bool $isExitWindow, string $timeOnly): void
+    {
+        $changed = false;
+
+        if (!$isExitWindow) {
+            // Update entry time if earlier than current
+            if (!$attendance->entry_time || $timeOnly < $attendance->entry_time) {
+                $attendance->entry_time = $timeOnly;
+                $changed = true;
+            }
+        } else {
+            // Update exit time if later than current
+            $isNewExit = !$attendance->exit_time || $timeOnly > $attendance->exit_time;
+
+            if ($isNewExit) {
+                $attendance->exit_time = $timeOnly;
+                $changed = true;
+
+                // Send exit notification
+                \App\Jobs\SendAttendanceNotificationJob::dispatch($student, $attendance, 'exit');
+            }
+        }
+
+        // Upgrade medium to biometric if it was web/mobile
+        if ($attendance->medium !== 'biometric') {
+            $attendance->medium = 'biometric';
+            $changed = true;
+        }
+
+        if ($changed) {
+            $attendance->save();
+        }
+    }
+
+    /**
+     * Determine whether a QueryException is caused by a unique-constraint
+     * violation (MySQL error code 1062 / SQLSTATE 23000), as opposed to
+     * some other database error that should not be swallowed.
+     */
+    private function isUniqueConstraintViolation(QueryException $e): bool
+    {
+        return $e->getCode() === '23000' || (isset($e->errorInfo[1]) && (int) $e->errorInfo[1] === 1062);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -253,33 +296,64 @@ class AttendanceProcessingEngine
                 $status = 'present'; // Still record the punch even if late
             }
 
-            TeacherAttendance::create([
-                'user_id'        => $teacher->user_id,
-                'school_id'      => $teacher->school_id,
-                'date'           => $date,
-                'check_in_time'  => $isExitWindow ? null : $timeOnly,
-                'check_out_time' => $isExitWindow ? $timeOnly : null,
-                'status'         => $status,
-                'medium'         => 'biometric',
-            ]);
+            try {
+                DB::transaction(function () use ($teacher, $date, $isExitWindow, $timeOnly, $status) {
+                    TeacherAttendance::create([
+                        'user_id'        => $teacher->user_id,
+                        'school_id'      => $teacher->school_id,
+                        'date'           => $date,
+                        'check_in_time'  => $isExitWindow ? null : $timeOnly,
+                        'check_out_time' => $isExitWindow ? $timeOnly : null,
+                        'status'         => $status,
+                        'medium'         => 'biometric',
+                    ]);
+                });
+            } catch (QueryException $e) {
+                if (!$this->isUniqueConstraintViolation($e)) {
+                    throw $e;
+                }
+
+                // Another concurrent punch already created today's row.
+                $attendance = TeacherAttendance::where('user_id', $teacher->user_id)
+                    ->where('school_id', $teacher->school_id)
+                    ->where('date', $date)
+                    ->first();
+
+                if (!$attendance) {
+                    Log::error("[Biometric] Unique violation on teacher attendance insert but row not found for user_id={$teacher->user_id} date={$date}: " . $e->getMessage());
+                    $log->update(['sync_status' => 'failed']);
+                    return;
+                }
+
+                $this->updateTeacherAttendancePunch($attendance, $isExitWindow, $timeOnly);
+            }
         } else {
-            if ($isExitWindow) {
-                // Update check-out if this punch is later
-                if (!$attendance->check_out_time || $timeOnly > $attendance->check_out_time) {
-                    $attendance->check_out_time = $timeOnly;
-                }
-            } else {
-                // Update check-in if this punch is earlier
-                if (!$attendance->check_in_time || $timeOnly < $attendance->check_in_time) {
-                    $attendance->check_in_time = $timeOnly;
-                }
-            }
-            if ($attendance->medium !== 'biometric') {
-                $attendance->medium = 'biometric';
-            }
-            $attendance->save();
+            $this->updateTeacherAttendancePunch($attendance, $isExitWindow, $timeOnly);
         }
 
         $log->update(['sync_status' => 'processed']);
+    }
+
+    /**
+     * Apply a subsequent punch (check-in/check-out update) to an
+     * already-existing attendance row for a teacher.
+     */
+    private function updateTeacherAttendancePunch(TeacherAttendance $attendance, bool $isExitWindow, string $timeOnly): void
+    {
+        if ($isExitWindow) {
+            // Update check-out if this punch is later
+            if (!$attendance->check_out_time || $timeOnly > $attendance->check_out_time) {
+                $attendance->check_out_time = $timeOnly;
+            }
+        } else {
+            // Update check-in if this punch is earlier
+            if (!$attendance->check_in_time || $timeOnly < $attendance->check_in_time) {
+                $attendance->check_in_time = $timeOnly;
+            }
+        }
+        if ($attendance->medium !== 'biometric') {
+            $attendance->medium = 'biometric';
+        }
+        $attendance->save();
     }
 }

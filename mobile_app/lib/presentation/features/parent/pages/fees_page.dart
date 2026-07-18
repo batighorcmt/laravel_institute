@@ -4,7 +4,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../state/parent_state.dart';
 import '../../../../core/config/env.dart';
@@ -104,8 +104,9 @@ class _FeesPageState extends ConsumerState<FeesPage>
       // relativeUrl is like billing/fees/receipt/59/download
       final fullUrl = '$baseUrl$relativeUrl';
 
-      final sp = await SharedPreferences.getInstance();
-      final token = sp.getString('auth_token');
+      final token = await const FlutterSecureStorage().read(
+        key: 'auth_token',
+      );
       if (token == null) throw 'লগইন তথ্য পাওয়া যায়নি';
 
       final dir = await getApplicationDocumentsDirectory();

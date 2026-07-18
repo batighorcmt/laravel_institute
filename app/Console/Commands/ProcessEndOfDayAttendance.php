@@ -9,6 +9,9 @@ use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\TeacherAttendance;
 use App\Models\Teacher;
+use App\Models\Holiday;
+use App\Models\WeeklyHoliday;
+use App\Models\NotificationLog;
 use App\Services\PushNotificationService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -73,6 +76,12 @@ class ProcessEndOfDayAttendance extends Command
      */
     private function markAbsentStudents(School $school, string $today, PushNotificationService $pushService): void
     {
+        // Skip marking absences on declared holidays or this school's weekly off-days
+        if ($this->isHolidayForSchool($school, $today)) {
+            Log::info("[EndOfDay] Skipped marking absent students: {$today} is a holiday for school_id={$school->id}");
+            return;
+        }
+
         // Get all active enrolled students who don't have attendance today
         $enrolledStudentIds = StudentEnrollment::where('school_id', $school->id)
             ->where('status', 'active')
@@ -113,6 +122,30 @@ class ProcessEndOfDayAttendance extends Command
     }
 
     /**
+     * Determine whether the given date is a declared holiday or falls on the
+     * school's configured weekly off-day (same pattern used in ResultCalculationTrait).
+     */
+    private function isHolidayForSchool(School $school, string $date): bool
+    {
+        $carbonDate = Carbon::parse($date);
+        $dayNum = ($carbonDate->dayOfWeek == 0) ? 7 : $carbonDate->dayOfWeek;
+
+        $isWeeklyHoliday = WeeklyHoliday::where('school_id', $school->id)
+            ->active()
+            ->where('day_number', $dayNum)
+            ->exists();
+
+        if ($isWeeklyHoliday) {
+            return true;
+        }
+
+        return Holiday::where('school_id', $school->id)
+            ->active()
+            ->where('date', $date)
+            ->exists();
+    }
+
+    /**
      * Send high-priority end-of-day push notifications to guardians.
      */
     private function sendEndOfDayNotifications(School $school, string $today, PushNotificationService $pushService): void
@@ -131,6 +164,22 @@ class ProcessEndOfDayAttendance extends Command
         foreach ($attendances as $att) {
             $student = $att->student;
             if (!$student) continue;
+
+            // Skip if this student's guardian was already notified today — either via the
+            // live push sent at submission time in
+            // TeacherStudentAttendanceController::classSectionSubmit() (generic title), or via
+            // a biometric entry/exit push from SendAttendanceNotificationJob (specific titles) —
+            // to avoid a duplicate push for the same attendance status on the same day.
+            if ($student->user_id && NotificationLog::where('user_id', $student->user_id)
+                    ->whereIn('title', [
+                        'হাজিরা নোটিফিকেশন',
+                        '📍 বায়োমেট্রিক হাজিরা',
+                        '🏫 স্কুল থেকে প্রস্থান',
+                    ])
+                    ->whereDate('created_at', $today)
+                    ->exists()) {
+                continue;
+            }
 
             try {
                 $pushService->sendAttendanceNotification($student->id, $att->status, $today, 'class');

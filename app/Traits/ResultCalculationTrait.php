@@ -258,7 +258,7 @@ trait ResultCalculationTrait
         foreach ($resultsCollection as $res) {
             $sid = $res->student_id;
             $studentMarks = $marks->where('student_id', $sid);
-            $grandTotal = 0; $totalGpa = 0; $subjectCount = 0; $failedSubjectCount = 0; $hasAbsent = false;
+            $grandTotal = 0; $totalGpa = 0; $subjectCount = 0; $failedSubjectCount = 0; $hasAbsent = false; $ungradedSubjectCount = 0;
             $res->subject_results = collect();
             $assignedSubIds = $res->assigned_subject_ids ?? [];
             $currentStudentOptionalId = $res->fourth_subject_id;
@@ -366,11 +366,17 @@ trait ResultCalculationTrait
                 ]);
 
                 $grandTotal += $subTotal;
-                if ($isOptional) {
+                if ($subGrade === 'N/R') {
+                    // No mark record yet for this subject: exclude it entirely from the
+                    // GPA/pass-fail average instead of counting it as a failure. Otherwise
+                    // a partially-graded result (e.g. 1 of 5 subjects entered) computes as
+                    // GPA≈0 / letter 'F' ("failing") when it is really just incomplete.
+                    $ungradedSubjectCount++;
+                } elseif ($isOptional) {
                     if ($subGP > 2.00) { $totalGpa += ($subGP - 2.00); }
                 } else {
                     $totalGpa += $subGP; $subjectCount++;
-                    if ($subGrade == 'F' || $subGrade == 'N/R') $failedSubjectCount++;
+                    if ($subGrade == 'F') $failedSubjectCount++;
                 }
             }
 
@@ -392,6 +398,7 @@ trait ResultCalculationTrait
             $res->computed_letter = $finalLetter;
             $res->computed_status = ($finalLetter == 'F') ? 'অকৃতকার্য' : 'উত্তীর্ণ';
             $res->fail_count = $failedSubjectCount;
+            $res->is_complete = ($ungradedSubjectCount === 0);
             $res->section_id = optional(optional($stu->currentEnrollment)->section)->id;
 
             // Attendance Summary

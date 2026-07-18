@@ -290,7 +290,7 @@ class TeacherStudentsRepository {
       } catch (_) {}
     }
 
-    final sections = ((_classScopedCache![classId]['sections']) as List? ?? [])
+    final sections = ((_classScopedCache![classId]?['sections']) as List? ?? [])
         .cast<Map<String, dynamic>>()
         .map((e) => {'id': e['id']?.toString(), 'name': e['name']?.toString()})
         .toList();

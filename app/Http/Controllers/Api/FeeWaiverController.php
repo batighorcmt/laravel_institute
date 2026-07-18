@@ -200,8 +200,17 @@ class FeeWaiverController extends Controller
 
             $sf->amount = $final;
             $sf->waiver_id = $waiver->id;
-            if ($final <= 0) {
+            // Re-derive status from the waived amount vs. what's already been
+            // paid — a partial waiver can drop the due below the paid amount
+            // without the due itself reaching zero, which previously left
+            // status stuck at its pre-waiver value (e.g. still 'partial').
+            $paidAmount = (float) ($sf->paid_amount ?? 0);
+            if ($final <= 0 || $paidAmount >= $final) {
                 $sf->status = 'paid';
+            } elseif ($paidAmount > 0) {
+                $sf->status = 'partial';
+            } else {
+                $sf->status = 'unpaid';
             }
             $sf->save();
         }

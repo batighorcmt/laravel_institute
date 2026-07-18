@@ -66,7 +66,9 @@ class SendAttendanceNotificationJob implements ShouldQueue
                 $student->id,
                 $attendance->status,
                 $attendance->date,
-                'biometric'
+                'biometric',
+                $title,
+                $body
             );
 
         } catch (\Throwable $e) {

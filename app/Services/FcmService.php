@@ -60,7 +60,7 @@ class FcmService
             ->post($url, $payload);
 
         $success = $resp->successful();
-        
+
         // Log to database
         try {
             \App\Models\NotificationLog::create([
@@ -77,10 +77,51 @@ class FcmService
             \Illuminate\Support\Facades\Log::error('FCM Log Error: ' . $e->getMessage());
         }
 
+        // If FCM says the token is unregistered/invalid (not a transient error), remove it so
+        // future notifications stop retrying against a dead token.
+        if (! $success && $this->isUnregisteredTokenError($resp)) {
+            try {
+                \App\Models\DeviceToken::where('token', $token)->delete();
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('FCM DeviceToken cleanup error: ' . $e->getMessage());
+            }
+        }
+
         return [
             'success' => $success,
             'status' => $resp->status(),
             'body' => $resp->json(),
         ];
+    }
+
+    /**
+     * Determine whether an FCM v1 error response indicates the token is
+     * definitively dead (unregistered/invalid), as opposed to a transient
+     * failure (network issue, quota, internal error, etc.).
+     */
+    protected function isUnregisteredTokenError($resp): bool
+    {
+        // FCM v1 "unregistered" errors surface as HTTP 404 with a FcmError
+        // detail whose errorCode is UNREGISTERED.
+        $errorCode = null;
+        $details = $resp->json('error.details') ?? [];
+        foreach ($details as $detail) {
+            if (isset($detail['errorCode'])) {
+                $errorCode = $detail['errorCode'];
+                break;
+            }
+        }
+
+        if ($errorCode === 'UNREGISTERED') {
+            return true;
+        }
+
+        // Fallback: HTTP 404 "Requested entity was not found" also means the
+        // token/registration no longer exists.
+        if ($resp->status() === 404) {
+            return true;
+        }
+
+        return false;
     }
 }

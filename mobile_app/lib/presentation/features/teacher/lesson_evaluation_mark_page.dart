@@ -24,7 +24,6 @@ class LessonEvaluationMarkPage extends StatefulWidget {
 
 class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
   late final Dio _dio;
-  late final TextEditingController _notesController;
   bool _loading = true;
   String? _error;
   String? _warningMessage;
@@ -32,6 +31,12 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
   EvalStatus? _filterStatus;
   List<_Row> _rows = const [];
   bool _readOnly = false;
+  // "পূর্বের হোমওয়ার্ক/পাঠ্য বিষয়" (what was taught today) — stored as the
+  // lesson evaluation's `notes`.
+  String _previousTopic = '';
+  // "আগামী ক্লাসের হোমওয়ার্ক/পাঠ্য বিষয়" — becomes the paired homework entry.
+  String _nextTopic = '';
+  bool _submitting = false;
   Map<String, int> _stats = const {
     'total': 0,
     'completed': 0,
@@ -44,14 +49,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
   void initState() {
     super.initState();
     _dio = DioClient().dio;
-    _notesController = TextEditingController();
     _load();
-  }
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
   }
 
   Future<void> _pickDate() async {
@@ -90,7 +88,8 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
       );
       final data = (r.data as Map<String, dynamic>?) ?? {};
       _date = (data['date'] as String?) ?? '';
-      _notesController.text = (data['notes'] as String?) ?? '';
+      _previousTopic = (data['notes'] as String?) ?? '';
+      _nextTopic = (data['next_topic'] as String?) ?? '';
       final list = (data['students'] as List? ?? []).cast<Map>();
       _rows = list
           .map(
@@ -99,6 +98,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
               name: (m['name'] ?? '') as String,
               roll: (m['roll'] ?? 0) as int,
               status: _parse(m['status'] as String?),
+              attendanceAbsent: (m['attendance_absent'] as bool?) ?? false,
             ),
           )
           .toList();
@@ -143,12 +143,90 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
   void _markAll(EvalStatus st) {
     if (_readOnly) return;
     setState(() {
-      _rows = _rows.map((e) => e.copyWith(status: st)).toList();
+      // Rows locked by class-attendance absence always stay 'absent'.
+      _rows = _rows
+          .map((e) => e.attendanceAbsent ? e : e.copyWith(status: st))
+          .toList();
     });
   }
 
-  Future<void> _submit() async {
-    if (!_isComplete) return;
+  Future<void> _openSubmitDialog() async {
+    if (!_isComplete || _submitting) return;
+    final previousCtrl = TextEditingController(text: _previousTopic);
+    final nextCtrl = TextEditingController(text: _nextTopic);
+    final formKey = GlobalKey<FormState>();
+
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text('পাঠ ও হোমওয়ার্কের বিষয়'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: previousCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'পূর্বের হোমওয়ার্ক/পাঠ্য বিষয়',
+                      hintText: 'আজ যে বিষয়টি পড়ানো হয়েছে',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 2,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'এই ফিল্ডটি আবশ্যক'
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: nextCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'আগামী ক্লাসের হোমওয়ার্ক/পাঠ্য বিষয়',
+                      hintText: 'আগামী ক্লাসের জন্য যা পড়তে/করতে হবে',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 2,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'এই ফিল্ডটি আবশ্যক'
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('বাতিল'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  Navigator.of(ctx).pop(true);
+                }
+              },
+              child: const Text('সাবমিট করুন'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        await _submit(previousCtrl.text.trim(), nextCtrl.text.trim());
+      }
+    } finally {
+      previousCtrl.dispose();
+      nextCtrl.dispose();
+    }
+  }
+
+  Future<void> _submit(String previousTopic, String nextTopic) async {
+    setState(() => _submitting = true);
     try {
       final now = DateTime.now();
       final hh = now.hour.toString().padLeft(2, '0');
@@ -162,7 +240,8 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
         'subject_id': widget.subjectId,
         'evaluation_date': _date,
         'evaluation_time': time,
-        'notes': _notesController.text,
+        'notes': previousTopic,
+        'next_topic': nextTopic,
         // Some backends may expect 'time' or 'date' keys as well
         'time': time,
         // Some APIs may expect 'date' instead of 'evaluation_date'; include both.
@@ -201,6 +280,8 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -279,7 +360,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                         row: s,
                         readOnly: _readOnly,
                         onChanged: (st) {
-                          if (_readOnly) return;
+                          if (_readOnly || s.attendanceAbsent) return;
                           setState(() {
                             final idx = _rows.indexWhere((r) => r.id == s.id);
                             if (idx != -1) {
@@ -295,31 +376,24 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                   SafeArea(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: TextField(
-                              controller: _notesController,
-                              decoration: const InputDecoration(
-                                labelText: 'নোট / পাঠ বিষয়',
-                                hintText: 'আজকের পাঠের সংক্ষিপ্ত বিবরণ লিখুন',
-                                border: OutlineInputBorder(),
-                                alignLabelWithHint: true,
-                              ),
-                              maxLines: 2,
-                            ),
-                          ),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: _isComplete ? _submit : null,
-                              icon: const Icon(Icons.save),
-                              label: const Text('সাবমিট করুন'),
-                            ),
-                          ),
-                        ],
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isComplete && !_submitting
+                              ? _openSubmitDialog
+                              : null,
+                          icon: _submitting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.save),
+                          label: const Text('সাবমিট করুন'),
+                        ),
                       ),
                     ),
                   )
@@ -340,7 +414,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Text(
-                              'নোট / পাঠ বিষয়:',
+                              'পূর্বের হোমওয়ার্ক/পাঠ্য বিষয়:',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
@@ -348,18 +422,30 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _notesController.text.isNotEmpty
-                                  ? _notesController.text
-                                  : 'কোনো নোট দেওয়া হয়নি',
+                              _previousTopic.isNotEmpty
+                                  ? _previousTopic
+                                  : 'কোনো তথ্য নেই',
                               style: TextStyle(
-                                color: _notesController.text.isNotEmpty
+                                color: _previousTopic.isNotEmpty
                                     ? null
                                     : Colors.grey.shade600,
-                                fontStyle: _notesController.text.isNotEmpty
+                                fontStyle: _previousTopic.isNotEmpty
                                     ? FontStyle.normal
                                     : FontStyle.italic,
                               ),
                             ),
+                            if (_nextTopic.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              const Text(
+                                'আগামী ক্লাসের হোমওয়ার্ক/পাঠ্য বিষয়:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(_nextTopic),
+                            ],
                           ],
                         ),
                       ),
@@ -462,7 +548,7 @@ class _TopBar extends StatelessWidget {
                 _Chip(
                   icon: Icons.close,
                   color: Colors.red,
-                  label: readOnly ? 'হয়নি' : 'সব হয়নি',
+                  label: readOnly ? 'হয়নি' : 'সব হয়নি',
                   isSelected: filterStatus == EvalStatus.notDone,
                   onTap: readOnly
                       ? () => onSetFilter(
@@ -556,14 +642,23 @@ class _Row {
   final String name;
   final int roll;
   final EvalStatus? status;
+  // True when this student was marked absent in class attendance for the
+  // date being evaluated — their evaluation status is locked to 'absent'.
+  final bool attendanceAbsent;
   const _Row({
     required this.id,
     required this.name,
     required this.roll,
     required this.status,
+    this.attendanceAbsent = false,
   });
-  _Row copyWith({EvalStatus? status}) =>
-      _Row(id: id, name: name, roll: roll, status: status);
+  _Row copyWith({EvalStatus? status}) => _Row(
+    id: id,
+    name: name,
+    roll: roll,
+    status: status,
+    attendanceAbsent: attendanceAbsent,
+  );
 }
 
 class _RowWidget extends StatelessWidget {
@@ -577,6 +672,65 @@ class _RowWidget extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    if (row.attendanceAbsent) {
+      return Card(
+        elevation: 0,
+        color: Colors.grey.withValues(alpha: 0.08),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 36,
+                child: Text(
+                  '${row.roll}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  row.name,
+                  style: TextStyle(color: Colors.grey.shade600),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.person_off_outlined,
+                      size: 14,
+                      color: Colors.grey.shade700,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'স্কুলে আসেনি',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Card(
       elevation: 0,
       child: Padding(
@@ -652,7 +806,7 @@ class _StatsRow extends StatelessWidget {
           item('মোট', 'total', Colors.blue),
           item('সম্পন্ন', 'completed', Colors.green),
           item('আংশিক', 'partial', Colors.orange),
-          item('হয়নি', 'not_done', Colors.red),
+          item('হয়নি', 'not_done', Colors.red),
           item('অনুপস্থিত', 'absent', Colors.grey),
         ],
       ),

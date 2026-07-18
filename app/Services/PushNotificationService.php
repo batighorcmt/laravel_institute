@@ -157,9 +157,58 @@ class PushNotificationService
     }
 
     /**
+     * Send push notification to every enrolled student of a class/section
+     * announcing a new (or updated) homework entry.
+     *
+     * @param  \App\Models\Homework  $homework
+     * @param  \Illuminate\Support\Collection<int>  $studentIds  Student IDs (not user IDs) to notify
+     * @param  bool  $isUpdate  Whether this is an update to existing homework (changes wording only)
+     */
+    public function sendHomeworkNotification($homework, $studentIds, bool $isUpdate = false): void
+    {
+        if ($studentIds->isEmpty()) {
+            return;
+        }
+
+        $userIds = \App\Models\Student::whereIn('id', $studentIds)
+            ->whereNotNull('user_id')
+            ->pluck('user_id', 'id');
+
+        if ($userIds->isEmpty()) {
+            return;
+        }
+
+        $tokensData = DeviceToken::whereIn('user_id', $userIds->values())
+            ->whereNotNull('token')
+            ->select('token', 'user_id')
+            ->get();
+
+        if ($tokensData->isEmpty()) {
+            return;
+        }
+
+        $subjectName = $homework->subject?->name ?? '';
+        $title = $isUpdate ? 'হোমওয়ার্ক আপডেট হয়েছে' : 'নতুন হোমওয়ার্ক দেওয়া হয়েছে';
+        $body = trim($subjectName.': '.mb_substr($homework->description ?? '', 0, 100));
+        if (mb_strlen($homework->description ?? '') > 100) {
+            $body .= '...';
+        }
+
+        foreach ($tokensData->unique('token') as $item) {
+            SendPushNotificationJob::dispatch(
+                [$item->token],
+                $title,
+                $body,
+                ['id' => (string) $homework->id, 'type' => 'homework'],
+                $item->user_id
+            );
+        }
+    }
+
+    /**
      * Send push notification for attendance status update
      */
-    public function sendAttendanceNotification($studentId, $status, $date, $type = 'class')
+    public function sendAttendanceNotification($studentId, $status, $date, $type = 'class', ?string $titleOverride = null, ?string $bodyOverride = null)
     {
         $student = \App\Models\Student::with('class')->find($studentId);
         if (! $student || ! $student->user_id) {
@@ -173,23 +222,30 @@ class PushNotificationService
             return;
         }
 
-        $statusBn = [
-            'present' => 'উপস্থিত',
-            'absent' => 'অনুপস্থিত',
-            'late' => 'বিলম্বিত',
-            'excused' => 'ছুটি',
-        ];
-
-        $statusText = $statusBn[$status] ?? $status;
-        $dateStr = \Carbon\Carbon::parse($date)->format('d-m-Y');
-        $className = $student->class ? $student->class->name : '';
-
-        $title = 'হাজিরা নোটিফিকেশন';
-
-        if ($type === 'extra_class') {
-            $body = "এক্সট্রা ক্লাস হাজিরা: {$student->full_name} ($className) আজকের ক্লাসে \"$statusText\"। তারিখ: $dateStr";
+        if ($titleOverride !== null && $bodyOverride !== null) {
+            // Caller (e.g. biometric entry/exit job) already built a specific,
+            // punch-time-aware message — use it as-is instead of the generic one below.
+            $title = $titleOverride;
+            $body = $bodyOverride;
         } else {
-            $body = "ক্লাস হাজিরা: {$student->full_name} ($className) আজকের ক্লাসে \"$statusText\"। তারিখ: $dateStr";
+            $statusBn = [
+                'present' => 'উপস্থিত',
+                'absent' => 'অনুপস্থিত',
+                'late' => 'বিলম্বিত',
+                'excused' => 'ছুটি',
+            ];
+
+            $statusText = $statusBn[$status] ?? $status;
+            $dateStr = \Carbon\Carbon::parse($date)->format('d-m-Y');
+            $className = $student->class ? $student->class->name : '';
+
+            $title = 'হাজিরা নোটিফিকেশন';
+
+            if ($type === 'extra_class') {
+                $body = "এক্সট্রা ক্লাস হাজিরা: {$student->full_name} ($className) আজকের ক্লাসে \"$statusText\"। তারিখ: $dateStr";
+            } else {
+                $body = "ক্লাস হাজিরা: {$student->full_name} ($className) আজকের ক্লাসে \"$statusText\"। তারিখ: $dateStr";
+            }
         }
 
         SendPushNotificationJob::dispatch(

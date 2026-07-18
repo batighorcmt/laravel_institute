@@ -530,23 +530,32 @@ class TeacherExamController extends Controller
         $user = $request->user();
         $schoolId = $this->resolveSchoolId($request, $user);
 
-        $validated = $request->validate([
+        $request->validate([
             'exam_id' => 'required|exists:exams,id',
             'exam_subject_id' => 'required|exists:exam_subjects,id',
             'student_id' => 'required|exists:students,id',
-            'creative_marks' => 'nullable|numeric',
-            'mcq_marks' => 'nullable|numeric',
-            'practical_marks' => 'nullable|numeric',
-            'is_absent' => 'nullable|boolean',
-            'remarks' => 'nullable|string',
         ]);
 
-        $exam = Exam::findOrFail($validated['exam_id']);
-        $examSubject = ExamSubject::findOrFail($validated['exam_subject_id']);
+        $exam = Exam::findOrFail($request->input('exam_id'));
+        $examSubject = ExamSubject::findOrFail($request->input('exam_subject_id'));
 
         if ($examSubject->teacher_id != $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
+
+        // Cap submitted marks to the subject's configured full marks, same as
+        // Principal\MarkEntryController::saveMark(), so a teacher cannot submit
+        // e.g. 999 marks for a 30-mark subject.
+        $validated = $request->validate([
+            'exam_id' => 'required|exists:exams,id',
+            'exam_subject_id' => 'required|exists:exam_subjects,id',
+            'student_id' => 'required|exists:students,id',
+            'creative_marks' => 'nullable|numeric|min:0|max:'.$examSubject->creative_full_mark,
+            'mcq_marks' => 'nullable|numeric|min:0|max:'.$examSubject->mcq_full_mark,
+            'practical_marks' => 'nullable|numeric|min:0|max:'.$examSubject->practical_full_mark,
+            'is_absent' => 'nullable|boolean',
+            'remarks' => 'nullable|string',
+        ]);
 
         if ($exam->status !== 'active') {
             return response()->json(['message' => 'Exam is not active'], 422);

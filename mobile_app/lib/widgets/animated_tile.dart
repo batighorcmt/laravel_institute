@@ -51,8 +51,10 @@ class _AnimatedTileState extends State<AnimatedTile> {
         _hoverInput = controller.findInput<bool>('hover');
         _pressInput = controller.findInput<bool>('pressed');
       }
+      if (!mounted) return;
       setState(() => _artboard = board);
     } catch (_) {
+      if (!mounted) return;
       setState(() => _artboard = null);
     }
   }

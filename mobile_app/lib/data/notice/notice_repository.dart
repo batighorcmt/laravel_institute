@@ -14,7 +14,11 @@ class NoticeRepository {
 
   Future<Map<String, dynamic>> getNoticeDetails(int id) async {
     final resp = await _dio.get('notices/$id');
-    return resp.data['data'] as Map<String, dynamic>;
+    final body = resp.data;
+    if (body is Map && body['data'] is Map) {
+      return Map<String, dynamic>.from(body['data'] as Map);
+    }
+    throw Exception('Notice details load failed: unexpected response format');
   }
 
   Future<Map<String, dynamic>> createNotice(Map<String, dynamic> data) async {
@@ -62,7 +66,7 @@ class NoticeRepository {
     });
     debugPrint('[NoticeRepo] FormData created, posting to notices/$id/reply ...');
     final resp = await _dio.post('notices/$id/reply', data: formData);
-    debugPrint('[NoticeRepo] Response: ${resp.statusCode} | ${resp.data}');
+    debugPrint('[NoticeRepo] Response: ${resp.statusCode}');
   }
 
   // Meta data for targeting

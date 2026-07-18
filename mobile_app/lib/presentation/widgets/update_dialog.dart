@@ -36,11 +36,27 @@ class _UpdateDialogState extends State<UpdateDialog> {
           });
         },
       );
+      // downloadAndInstall() only throws on an unexpected error and calls
+      // onError() on a known one — on the success path (APK handed off to
+      // Android's package installer) it just returns normally, without
+      // either of those firing. Without this, _isDownloading stayed true
+      // forever and the dialog was stuck showing "downloading..." even
+      // after the system install prompt had already appeared — including
+      // if the user then cancels that system prompt, since open_filex
+      // reports the handoff itself as successful regardless of what the
+      // user does in the installer afterwards.
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isDownloading = false;
-        _error = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _isDownloading = false;
+          _error = e.toString();
+        });
+      }
     }
   }
 

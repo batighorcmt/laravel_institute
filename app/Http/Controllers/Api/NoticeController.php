@@ -12,17 +12,56 @@ class NoticeController extends Controller
 {
     public function index(Request $request)
     {
-        $schoolId = $request->attributes->get('current_school_id');
         $user = $request->user();
         $filter = $request->get('filter');
 
-        $query = Notice::query();
+        $query = $this->visibleNoticesQuery($request);
+        if ($query instanceof \Illuminate\Http\JsonResponse) {
+            return $query;
+        }
 
         if ($filter === 'unread') {
             $query->whereDoesntHave('reads', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
         }
+
+        $notices = $query->paginate(20);
+
+        return NoticeResource::collection($notices);
+    }
+
+    public function show(Request $request, Notice $notice)
+    {
+        // Re-run the same authorization/visibility scoping used by index() so a
+        // notice ID cannot be used to bypass school, role, publish-state, or
+        // audience-targeting restrictions.
+        $scoped = $this->visibleNoticesQuery($request);
+        if ($scoped instanceof \Illuminate\Http\JsonResponse) {
+            return $scoped;
+        }
+
+        $visible = $scoped->whereKey($notice->id)->first();
+
+        if (! $visible) {
+            abort(404);
+        }
+
+        return new NoticeResource($visible);
+    }
+
+    /**
+     * Base query for notices the current user is allowed to see: same-school
+     * (or global) notices, restricted by role, publish state, and audience
+     * targeting. Shared by index() and show() so a direct-by-ID lookup can't
+     * bypass the list-view's authorization rules.
+     */
+    protected function visibleNoticesQuery(Request $request)
+    {
+        $schoolId = $request->attributes->get('current_school_id');
+        $user = $request->user();
+
+        $query = Notice::query();
 
         // Security: If not super admin, strictly limit to schools where the user is a principal|teacher|parent
         if (! $user->isSuperAdmin()) {
@@ -112,14 +151,7 @@ class NoticeController extends Controller
             });
         }
 
-        $notices = $query->paginate(20);
-
-        return NoticeResource::collection($notices);
-    }
-
-    public function show(Notice $notice)
-    {
-        return new NoticeResource($notice);
+        return $query;
     }
 
     public function store(Request $request)

@@ -26,39 +26,23 @@ class FeeCollectionController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $student = Student::find((int)$studentId);
+        // findOrFail (rather than the previous find()+fallback) closes an IDOR:
+        // the old fallback path served fees for ANY raw student_id — including
+        // ids with no matching Student row — with zero school/ownership check.
+        $student = Student::findOrFail((int)$studentId);
+        $schoolId = $request->attributes->get('current_school_id') ?? $student->school_id;
 
-        if ($student) {
-            $schoolId = $request->attributes->get('current_school_id') ?? $student->school_id;
-            if ($user->isTeacher($schoolId) && !$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
-                $enrollment = $student->currentEnrollment()->with('section')->first();
-                $teacher = \App\Models\Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
-                $teacherId = $teacher ? $teacher->id : null;
-
-                if (!$enrollment || !$teacherId || !$enrollment->section || $enrollment->section->class_teacher_id !== $teacherId) {
-                    return response()->json(['message' => 'দুঃখিত, আপনি শুধুমাত্র আপনার নিজের শ্রেণির শিক্ষার্থীদের বকেয়া দেখতে পারবেন।'], 403);
-                }
+        if (! $user->isSuperAdmin() && ! $user->isPrincipal($schoolId) && ! $user->isCashier($schoolId)) {
+            if (! $user->isTeacher($schoolId)) {
+                return response()->json(['message' => 'অননুমোদিত'], 403);
             }
-        }
+            $enrollment = $student->currentEnrollment()->with('section')->first();
+            $teacher = \App\Models\Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
+            $teacherId = $teacher ? $teacher->id : null;
 
-        if (!$student) {
-            $fees = StudentFee::with(['feeStructure.category'])
-                ->where('student_id', (int)$studentId)
-                ->whereIn('status', ['unpaid', 'partial'])
-                ->orderBy('due_date', 'asc')
-                ->get()
-                ->map(function ($fee) {
-                    $fine = (float)$fee->calculateFine();
-                    $fee->calculated_fine = $fine;
-                    return $fee;
-                });
-
-            return response()->json([
-                'student'  => ['id' => (int)$studentId, 'student_id' => null, 'name' => 'Unknown'],
-                'due_fees' => $fees,
-                'is_fine_enabled' => true, // default when unknown
-                '_debug'   => ['warning' => 'Student model not found, fees fetched by raw id', 'fees_count' => $fees->count()]
-            ]);
+            if (!$enrollment || !$teacherId || !$enrollment->section || $enrollment->section->class_teacher_id !== $teacherId) {
+                return response()->json(['message' => 'দুঃখিত, আপনি শুধুমাত্র আপনার নিজের শ্রেণির শিক্ষার্থীদের বকেয়া দেখতে পারবেন।'], 403);
+            }
         }
 
         $fees = StudentFee::with(['feeStructure.category'])
@@ -81,9 +65,6 @@ class FeeCollectionController extends Controller
                 return $fee;
             })->filter()->values();
 
-        $allFees = StudentFee::where('student_id', $student->id)
-            ->get(['id', 'school_id', 'status', 'amount', 'paid_amount', 'fee_structure_id']);
-
         $school = \App\Models\School::find($student->school_id);
 
         return response()->json([
@@ -95,11 +76,6 @@ class FeeCollectionController extends Controller
             ],
             'due_fees' => $fees,
             'is_fine_enabled' => $school ? (bool)$school->fine_enabled : false,
-            '_debug'   => [
-                'all_fees'  => $allFees,
-                'due_count' => $fees->count(),
-                'all_count' => $allFees->count(),
-            ]
         ]);
     }
 
@@ -127,12 +103,18 @@ class FeeCollectionController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Enforce teacher restriction: Only class teachers can collect fees for their students
-        if ($user->isTeacher($schoolId) && !$user->isPrincipal($schoolId) && !$user->isSuperAdmin()) {
+        // Only these roles may collect fees at all. Previously any other
+        // authenticated role (parent, student, ...) fell through this check
+        // untouched and could pay for/mark paid an arbitrary student's fee.
+        if (! $user->isSuperAdmin() && ! $user->isPrincipal($schoolId) && ! $user->isCashier($schoolId)) {
+            if (! $user->isTeacher($schoolId)) {
+                return response()->json(['message' => 'অননুমোদিত'], 403);
+            }
+            // Enforce teacher restriction: only the class teacher may collect for their own students
             $enrollment = $student->currentEnrollment()->with('section')->first();
             $teacher = \App\Models\Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
             $teacherId = $teacher ? $teacher->id : null;
-            
+
             if (!$enrollment || !$teacherId || !$enrollment->section || $enrollment->section->class_teacher_id !== $teacherId) {
                 return response()->json(['message' => 'দুঃখিত, আপনি এই শিক্ষার্থীর ফি আদায় করার জন্য নির্ধারিত শ্রেণি শিক্ষক নন।'], 403);
             }
@@ -142,7 +124,34 @@ class FeeCollectionController extends Controller
             return response()->json(['message' => 'স্কুল আইডি পাওয়া যায়নি'], 400);
         }
 
-        return DB::transaction(function () use ($validated, $student, $totalAmount, $request, $schoolId) {
+        // Idempotency: replay the original response for a retried request
+        // (double-tap / client timeout retry) instead of creating a second
+        // Payment. The header was previously stored on the Payment row but
+        // never actually checked before insert.
+        $idempotencyKey = $request->header('X-Idempotency-Key');
+        $idempotencyLock = null;
+        if ($idempotencyKey) {
+            $idempotencyLock = \Illuminate\Support\Facades\Cache::lock("fee_collect_idem_{$schoolId}_{$idempotencyKey}", 15);
+            if (! $idempotencyLock->get()) {
+                return response()->json(['message' => 'অনুরোধটি ইতিমধ্যে প্রসেস হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন'], 429);
+            }
+            $existing = Payment::where('school_id', $schoolId)->where('idempotency_key', $idempotencyKey)->first();
+            if ($existing) {
+                $idempotencyLock->release();
+                return response()->json([
+                    'success' => true,
+                    'message' => 'পেমেন্ট সফলভাবে সম্পন্ন হয়েছে।',
+                    'data'    => [
+                        'payment_id'     => $existing->id,
+                        'payment_number' => $existing->payment_number,
+                        'receipt_url'    => url("/billing/receipts/{$existing->id}"),
+                    ]
+                ]);
+            }
+        }
+
+        try {
+            return DB::transaction(function () use ($validated, $student, $totalAmount, $request, $schoolId, $idempotencyKey) {
             $payment = Payment::create([
                 'school_id'            => $schoolId,
                 'student_id'           => $student->id,
@@ -154,20 +163,37 @@ class FeeCollectionController extends Controller
                 'collected_by_user_id' => Auth::id(),
                 'role'                 => $this->getCollectorRole(Auth::user(), $schoolId),
                 'status'               => $validated['payment_method'] === 'cash' ? 'settled' : 'pending',
-                'received_at'          => $validated['received_at'] 
-                    ? (\Carbon\Carbon::parse($validated['received_at'])->isToday() 
-                        ? \Carbon\Carbon::parse($validated['received_at'])->setTimeFrom(now()) 
+                'received_at'          => $validated['received_at']
+                    ? (\Carbon\Carbon::parse($validated['received_at'])->isToday()
+                        ? \Carbon\Carbon::parse($validated['received_at'])->setTimeFrom(now())
                         : \Carbon\Carbon::parse($validated['received_at']))
                     : now(),
-                'idempotency_key'      => $request->header('X-Idempotency-Key'),
+                'idempotency_key'      => $idempotencyKey,
             ]);
 
             foreach ($validated['fees'] as $feeData) {
                 $studentFee = StudentFee::lockForUpdate()->findOrFail($feeData['student_fee_id']);
-                
+
+                // The `exists:student_fees,id` validation rule only checks the
+                // row exists somewhere — never that it belongs to this student
+                // (or school). Without this, a payment could be applied to a
+                // completely different student's/school's fee record.
+                if ($studentFee->student_id !== $student->id || $studentFee->school_id !== $schoolId) {
+                    throw new \RuntimeException('অবৈধ ফি রেকর্ড: এই শিক্ষার্থীর নয়।');
+                }
+
                 // Track fine payment separately from base fee payment
                 $finePayment = (float)($feeData['fine_amount'] ?? 0);
                 $basePayment = (float)$feeData['amount'] - $finePayment;
+
+                // Cap against what's actually still owed — previously any
+                // amount was accepted and merged straight into paid_amount,
+                // silently absorbing overpayment with no credit/refund trail.
+                $remainingBasicDue = max(0, (float)$studentFee->amount - (float)$studentFee->paid_amount);
+                $remainingFineDue = (float)$studentFee->calculateFine();
+                if ($basePayment > $remainingBasicDue + 0.01 || $finePayment > $remainingFineDue + 0.01) {
+                    throw new \RuntimeException('পরিশোধের পরিমাণ বকেয়ার চেয়ে বেশি।');
+                }
 
                 PaymentItem::create([
                     'school_id'      => $schoolId,
@@ -178,11 +204,11 @@ class FeeCollectionController extends Controller
 
                 $studentFee->paid_amount += $basePayment;
                 $studentFee->fine_amount += $finePayment;
-                
+
                 // Status check: fully paid if base and fine are zero
                 $remainingBasic = max(0, (float)$studentFee->amount - (float)$studentFee->paid_amount);
                 $remainingFine = (float)$studentFee->calculateFine();
-                
+
                 $studentFee->status = ($remainingBasic + $remainingFine <= 0.01) ? 'paid' : 'partial';
                 $studentFee->save();
             }
@@ -235,7 +261,12 @@ class FeeCollectionController extends Controller
                     'receipt_url'    => url("/billing/receipts/{$payment->id}"),
                 ]
             ]);
-        });
+            });
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } finally {
+            $idempotencyLock?->release();
+        }
     }
 
     /**

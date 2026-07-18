@@ -74,7 +74,10 @@ class LessonEvaluationController extends Controller
             'subject_id' => ['required','integer'],
             'evaluation_date' => ['required','date'],
             'evaluation_time' => ['nullable','date_format:H:i'],
-            'notes' => ['nullable','string'],
+            // "পূর্বের হোমওয়ার্ক/পাঠ্য বিষয়" — what was actually covered today.
+            'notes' => ['required','string'],
+            // "আগামী ক্লাসের হোমওয়ার্ক/পাঠ্য বিষয়" — becomes the homework description.
+            'next_topic' => ['required','string'],
             // Per-student evaluation payload
             'student_ids' => ['required','array'],
             'student_ids.*' => ['integer','exists:students,id'],
@@ -151,13 +154,65 @@ class LessonEvaluationController extends Controller
                 ]);
             }
 
+            // Safety net: a student marked 'absent' in class attendance for this
+            // date/class/section can only ever be recorded as 'absent' here,
+            // regardless of what the client submitted for that row.
+            $attendanceAbsentIds = Attendance::where('date', $validated['evaluation_date'])
+                ->where('class_id', $validated['class_id'])
+                ->where('section_id', $validated['section_id'] ?? null)
+                ->where('status', 'absent')
+                ->pluck('student_id')
+                ->flip();
+
             $evaluationRecords = [];
             foreach ($validated['student_ids'] as $i => $studentId) {
+                $studentId = (int) $studentId;
+                $status = $attendanceAbsentIds->has($studentId)
+                    ? 'absent'
+                    : ($validated['statuses'][$i] ?? 'not_done');
                 $evaluationRecords[] = LessonEvaluationRecord::create([
                     'lesson_evaluation_id' => $evaluation->id,
-                    'student_id' => (int)$studentId,
-                    'status' => $validated['statuses'][$i] ?? 'not_done',
+                    'student_id' => $studentId,
+                    'status' => $status,
                 ]);
+            }
+
+            // Create/update the paired homework entry (next class's homework/topic)
+            // from the same submission, instead of a separate homework form.
+            $homework = null;
+            $homeworkIsNew = false;
+            $homeworkChanged = false;
+            if (! empty($validated['section_id'])) {
+                $homework = \App\Models\Homework::where('teacher_id', $teacher->id)
+                    ->where('class_id', $validated['class_id'])
+                    ->where('section_id', $validated['section_id'])
+                    ->where('subject_id', $validated['subject_id'])
+                    ->whereDate('homework_date', $validated['evaluation_date'])
+                    ->first();
+
+                $subjectName = \App\Models\Subject::find($validated['subject_id'])?->name ?? '';
+                $title = trim(($subjectName !== '' ? $subjectName.' - ' : '').'হোমওয়ার্ক');
+
+                if ($homework) {
+                    $homeworkChanged = $homework->description !== $validated['next_topic'];
+                    $homework->update([
+                        'title' => $title,
+                        'description' => $validated['next_topic'],
+                    ]);
+                } else {
+                    $homeworkIsNew = true;
+                    $homework = \App\Models\Homework::create([
+                        'school_id' => $schoolId,
+                        'class_id' => $validated['class_id'],
+                        'section_id' => $validated['section_id'],
+                        'subject_id' => $validated['subject_id'],
+                        'teacher_id' => $teacher->id,
+                        'homework_date' => $validated['evaluation_date'],
+                        'submission_date' => Carbon::parse($validated['evaluation_date'])->addDay(),
+                        'title' => $title,
+                        'description' => $validated['next_topic'],
+                    ]);
+                }
             }
 
             DB::commit();
@@ -170,9 +225,30 @@ class LessonEvaluationController extends Controller
                 \Log::error("Lesson Evaluation SMS Error: " . $smsEx->getMessage());
             }
 
+            // Notify all enrolled students of the class/section about the homework,
+            // but only when it's brand new or its content actually changed.
+            if ($homework && ($homeworkIsNew || $homeworkChanged)) {
+                try {
+                    $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
+                    $studentIds = StudentEnrollment::where('school_id', $schoolId)
+                        ->where('class_id', $validated['class_id'])
+                        ->where('section_id', $validated['section_id'])
+                        ->where('status', 'active')
+                        ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+                        ->whereHas('student', fn($q) => $q->where('status', 'active'))
+                        ->pluck('student_id');
+
+                    app(\App\Services\PushNotificationService::class)
+                        ->sendHomeworkNotification($homework, $studentIds, ! $homeworkIsNew);
+                } catch (\Throwable $pushEx) {
+                    \Log::error('Homework Push Notification Error: '.$pushEx->getMessage());
+                }
+            }
+
             return response()->json([
-                'message' => 'লেসন ইভ্যালুয়েশন সংরক্ষণ হয়েছে',
+                'message' => 'লেসন ইভ্যালুয়েশন ও হোমওয়ার্ক সংরক্ষণ হয়েছে',
                 'evaluation_id' => $evaluation->id,
+                'homework_id' => $homework?->id,
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -308,22 +384,25 @@ class LessonEvaluationController extends Controller
         $existing = $evaluation ? $evaluation->records->pluck('status','student_id') : collect();
 
         // Build enrollment query (optionally filter by subject assignments when exists)
-        // Only include enrollments whose student record is active
-        // NEW: Filter out students marked as 'absent' in the attendance table for this date
+        // Only include enrollments whose student record is active.
+        // Students who were marked 'absent' in class attendance for this date are
+        // still included (so the teacher can see the full roll), but their row is
+        // locked to the 'absent' lesson-evaluation status and labeled accordingly.
         $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
+        $attendanceAbsentIds = Attendance::where('date', $date->toDateString())
+            ->where('class_id', $entry->class_id)
+            ->where('section_id', $entry->section_id)
+            ->where('status', 'absent')
+            ->pluck('student_id')
+            ->flip();
+
         $query = StudentEnrollment::with(['student' => fn($q)=>$q->where('status','active')])
             ->where('school_id', $schoolId)
             ->where('class_id', $entry->class_id)
             ->where('section_id', $entry->section_id)
             ->where('status', 'active')
             ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
-            ->whereHas('student', fn($q)=>$q->where('status','active'))
-            ->whereDoesntHave('student.attendances', function($q) use ($date, $entry) {
-                $q->where('date', $date->toDateString())
-                  ->where('class_id', $entry->class_id)
-                  ->where('section_id', $entry->section_id)
-                  ->where('status', 'absent');
-            });
+            ->whereHas('student', fn($q)=>$q->where('status','active'));
 
         $hasSubjectAssignments = DB::table('student_subjects')
             ->whereIn('student_enrollment_id', function($q) use ($schoolId, $entry) {
@@ -337,14 +416,16 @@ class LessonEvaluationController extends Controller
                 $q->where('subject_id', $entry->subject_id)->where('status','active');
             });
         }
-        $students = $query->orderBy('roll_no')->get()->map(function($en) use ($existing) {
+        $students = $query->orderBy('roll_no')->get()->map(function($en) use ($existing, $attendanceAbsentIds) {
             $st = $en->student;
+            $isAttendanceAbsent = $st && $attendanceAbsentIds->has($st->id);
             return [
                 'id' => $st?->id,
                 'name' => $st?->full_name,
                 'roll' => $en->roll_no,
                 'photo_url' => $st?->photo_url,
-                'status' => $existing[$st?->id] ?? null,
+                'status' => $isAttendanceAbsent ? 'absent' : ($existing[$st?->id] ?? null),
+                'attendance_absent' => $isAttendanceAbsent,
             ];
         })->values();
 
@@ -356,6 +437,15 @@ class LessonEvaluationController extends Controller
             'not_done' => $evaluation ? $evaluation->records->where('status','not_done')->count() : 0,
             'absent' => $evaluation ? $evaluation->records->where('status','absent')->count() : 0,
         ];
+
+        // Existing homework paired with this class/section/subject/date, if any
+        // (so the client can pre-fill the "next class topic" field when editing).
+        $existingHomework = \App\Models\Homework::where('teacher_id', $teacherId)
+            ->where('class_id', $entry->class_id)
+            ->where('section_id', $entry->section_id)
+            ->where('subject_id', $entry->subject_id)
+            ->whereDate('homework_date', $date->toDateString())
+            ->first();
 
         return response()->json([
             'date' => $date->toDateString(),
@@ -373,6 +463,7 @@ class LessonEvaluationController extends Controller
             'allowed_statuses' => ['completed','partial','not_done','absent'],
             'stats' => $stats,
             'notes' => $evaluation?->notes,
+            'next_topic' => $existingHomework?->description,
             'read_only' => ! $isToday,
         ]);
     }

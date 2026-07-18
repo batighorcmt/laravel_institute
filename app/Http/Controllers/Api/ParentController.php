@@ -469,6 +469,19 @@ class ParentController extends Controller
         }
 
         $result = $calc['results']->first();
+
+        // Only expose computed grades/GPA once a principal has explicitly published
+        // this student's result via Principal\ResultController::publishResults()
+        // (which flips Result.is_published). Exam.status alone (published/completed)
+        // is not sufficient — a principal may mark an exam completed before marks
+        // are finalized, or may unpublish results after the fact.
+        if (empty($result->is_published)) {
+            return response()->json([
+                'published' => false,
+                'message'   => 'ফলাফল এখনো প্রকাশ করা হয়নি।',
+            ], 403);
+        }
+
         $finalSubjects = $calc['finalSubjects'] ?? collect();
 
         // Build subjects list from precomputed subject_results on the result object
@@ -889,19 +902,29 @@ class ParentController extends Controller
         }
 
         // ২. অভিভাবক হিসেবে যুক্ত শিক্ষার্থী
+        // Scope to schools where this user actually holds an active parent role,
+        // so a reused/shared guardian_phone at another school does not leak that
+        // school's student record to this parent (see UserSchoolRole created in
+        // Student::ensureUserAccount()).
+        $parentSchoolIds = $user->getSchoolsForRole(\App\Models\Role::PARENT)->pluck('id');
+        if ($parentSchoolIds->isEmpty()) {
+            return collect();
+        }
+
         $query = Student::query()->active()->with(['currentEnrollment', 'class', 'school']);
-        
+
         $phone = $user->username;
         $cleanPhone = ltrim(str_replace(['+', '88'], '', $phone), '0');
-        
-        $query->where(function($q) use ($user, $phone, $cleanPhone) {
+
+        $query->whereIn('school_id', $parentSchoolIds)
+            ->where(function($q) use ($user, $phone, $cleanPhone) {
             $q->where('guardian_phone', $phone)
               ->orWhere('guardian_phone', '0' . $cleanPhone)
               ->orWhere('guardian_phone', '880' . $cleanPhone)
               ->orWhere('guardian_phone', '+880' . $cleanPhone)
               ->orWhere('guardian_phone', $user->email);
         });
-        
+
         return $query->get();
     }
 }

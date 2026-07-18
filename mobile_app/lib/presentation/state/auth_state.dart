@@ -4,6 +4,7 @@ import '../../domain/auth/user_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../core/services/notification_service.dart';
+import 'parent_state.dart';
 
 class AuthNotifier extends AsyncNotifier<UserProfile?> {
   @override
@@ -54,6 +55,35 @@ class AuthNotifier extends AsyncNotifier<UserProfile?> {
     state = const AsyncData(null);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_cacheKey);
+    _invalidateParentProviders();
+  }
+
+  /// Used when a session is invalidated by the server (e.g. a 401 response)
+  /// rather than by an explicit user-initiated logout. Skips the network
+  /// logout call since the session is already gone server-side.
+  Future<void> forceLogout() async {
+    state = const AsyncData(null);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_cacheKey);
+    _invalidateParentProviders();
+  }
+
+  // Mirrors the manual "Reload" invalidation in ParentShellPage so cached
+  // account-scoped data doesn't leak across sessions after logout.
+  void _invalidateParentProviders() {
+    ref.invalidate(parentChildrenProvider);
+    ref.invalidate(parentHomeworkProvider);
+    ref.invalidate(parentRoutineProvider);
+    ref.invalidate(parentAttendanceProvider);
+    ref.invalidate(parentEvaluationsProvider);
+    ref.invalidate(parentLeavesProvider);
+    ref.invalidate(parentNoticesProvider);
+    ref.invalidate(parentTeachersProvider);
+    ref.invalidate(parentSubjectsProvider);
+    ref.invalidate(parentFeedbackProvider);
+    ref.invalidate(parentEvaluationStatsProvider);
+    ref.invalidate(parentStudentProfileProvider);
+    ref.invalidate(parentFeesProvider);
   }
 
   Future<void> refresh() async {

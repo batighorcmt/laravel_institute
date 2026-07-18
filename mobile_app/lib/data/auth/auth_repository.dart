@@ -3,11 +3,13 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../core/network/dio_client.dart';
+import 'auth_exception.dart';
 
 class AuthRepository {
   final Dio _dio = DioClient().dio;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   Future<Map<String, dynamic>> login({
     required String username,
@@ -27,15 +29,6 @@ class AuthRepository {
           "password": password,
           "device_name": deviceName,
         },
-      );
-
-      developer.log(
-        "RAW RESPONSE TYPE = ${response.data.runtimeType}",
-        name: "AuthRepository",
-      );
-      developer.log(
-        "RAW RESPONSE DATA = ${response.data}",
-        name: "AuthRepository",
       );
 
       // 🔥 MAIN FIX --- Safe parsing for all cases
@@ -68,21 +61,61 @@ class AuthRepository {
 
       // Token Save
       if (data["token"] != null) {
-        final sp = await SharedPreferences.getInstance();
-        await sp.setString("auth_token", data["token"]);
+        await _secureStorage.write(key: "auth_token", value: data["token"]);
       }
 
       return data;
     }
     // ⛔ Error Handler
     on DioException catch (e) {
+      // No response ever came back — connection timeout / DNS failure / no
+      // network at all, as opposed to the server actively rejecting the
+      // request. Dio reports these as connectionError/connectionTimeout/
+      // send/receiveTimeout, or occasionally 'unknown' with no response.
+      final isConnectivityIssue =
+          e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          (e.type == DioExceptionType.unknown && e.response == null);
+
+      if (isConnectivityIssue) {
+        developer.log(
+          "LOGIN ERROR: connectivity issue (${e.type})",
+          name: "AuthRepository",
+        );
+        throw const AuthException(
+          AuthErrorType.noInternet,
+          'ইন্টারনেট সংযোগ পাওয়া যাচ্ছে না। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।',
+        );
+      }
+
+      final statusCode = e.response?.statusCode;
       final serverMsg = (e.response?.data is Map<String, dynamic>)
-          ? e.response?.data["message"]
-          : e.response?.data.toString();
+          ? e.response?.data["message"] as String?
+          : null;
 
-      developer.log("LOGIN ERROR: $serverMsg", name: "AuthRepository");
+      developer.log(
+        "LOGIN ERROR: status=$statusCode message=$serverMsg",
+        name: "AuthRepository",
+      );
 
-      throw Exception(serverMsg ?? "Network Error");
+      if (statusCode == 401 || statusCode == 422) {
+        throw const AuthException(
+          AuthErrorType.invalidCredentials,
+          'ইউজারনেম অথবা পাসওয়ার্ড ভুল।',
+        );
+      }
+      if (statusCode == 403) {
+        throw AuthException(
+          AuthErrorType.inactiveAccount,
+          serverMsg ?? 'আপনার অ্যাকাউন্ট বর্তমানে নিষ্ক্রিয় আছে।',
+        );
+      }
+      throw AuthException(
+        AuthErrorType.server,
+        serverMsg ?? 'সার্ভারে সমস্যা হয়েছে। পরে আবার চেষ্টা করুন।',
+      );
     }
   }
 
@@ -91,8 +124,7 @@ class AuthRepository {
       await _dio.post("auth/logout");
     } catch (_) {
     } finally {
-      final sp = await SharedPreferences.getInstance();
-      sp.remove("auth_token");
+      await _secureStorage.delete(key: "auth_token");
     }
   }
 

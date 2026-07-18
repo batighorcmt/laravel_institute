@@ -2,8 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../data/auth/auth_repository.dart';
+import '../../../data/auth/auth_exception.dart';
 import '../../state/auth_state.dart';
 import '../../../core/config/env.dart';
+
+/// Turns a caught login error into a message a user can act on, instead of
+/// the raw exception text (e.g. "DioException [bad response]: ...").
+String _friendlyLoginError(Object? error) {
+  if (error is AuthException) return error.message;
+  return 'একটি সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।';
+}
 
 final authRepoProvider = Provider<AuthRepository>((ref) => AuthRepository());
 
@@ -121,18 +129,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       } else if (!ok && mounted) {
         final authValue = ref.read(authProvider);
         final msg = authValue.hasError
-            ? authValue.error.toString()
-            : 'Login failed. Please check your credentials or network.';
+            ? _friendlyLoginError(authValue.error)
+            : 'লগইন ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।';
         setState(() => _error = msg);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e, st) {
-      final msg = e.toString();
+      final msg = _friendlyLoginError(e);
       setState(() => _error = msg);
       // ignore: avoid_print
-      print('LOGIN EXCEPTION: $msg\n$st');
+      print('LOGIN EXCEPTION: $e\n$st');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
