@@ -102,8 +102,8 @@
                             <div class="mt-3">
                                 <small class="text-muted">
                                     <i class="fas fa-clock"></i> 
-                                    Check-in window: {{ \Carbon\Carbon::parse($settings->check_in_start)->format('h:i A') }} - {{ \Carbon\Carbon::parse($settings->check_in_end)->format('h:i A') }} 
-                                    (Late after {{ \Carbon\Carbon::parse($settings->late_threshold)->format('h:i A') }})
+                                    Check-in window: {{ \Carbon\Carbon::parse($settings->teacher_check_in_start)->format('h:i A') }} - {{ \Carbon\Carbon::parse($settings->teacher_check_in_end)->format('h:i A') }}
+                                    (Late after {{ \Carbon\Carbon::parse($settings->teacher_late_threshold)->format('h:i A') }})
                                 </small>
                             </div>
                         @endif

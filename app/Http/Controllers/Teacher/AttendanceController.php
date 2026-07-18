@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
 use App\Models\TeacherAttendance;
-use App\Models\TeacherAttendanceSetting;
+use App\Models\SchoolAttendanceSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
@@ -33,7 +33,7 @@ class AttendanceController extends Controller
             ->first();
         
         // Get attendance settings
-        $settings = TeacherAttendanceSetting::where('school_id', $schoolId)->first();
+        $settings = SchoolAttendanceSetting::where('school_id', $schoolId)->first();
         
         return view('teacher.attendance.index', compact('attendance', 'settings'));
     }
@@ -58,7 +58,7 @@ class AttendanceController extends Controller
         }
         
         // Get settings to determine requirements
-        $settings = TeacherAttendanceSetting::where('school_id', $schoolId)->first();
+        $settings = SchoolAttendanceSetting::where('school_id', $schoolId)->first();
         
         // Validate request based on settings
         $rules = [];
@@ -92,12 +92,12 @@ class AttendanceController extends Controller
         }
         
         // Get settings to determine status
-        $settings = TeacherAttendanceSetting::where('school_id', $schoolId)->first();
+        $settings = SchoolAttendanceSetting::where('school_id', $schoolId)->first();
         $status = 'present';
         
         if ($settings) {
             $checkInTime = $now->format('H:i:s');
-            if ($checkInTime > $settings->late_threshold) {
+            if ($checkInTime > $settings->teacher_late_threshold) {
                 $status = 'late';
             }
         }
@@ -155,7 +155,7 @@ class AttendanceController extends Controller
         }
         
         // Get settings to determine requirements
-        $settings = TeacherAttendanceSetting::where('school_id', $schoolId)->first();
+        $settings = SchoolAttendanceSetting::where('school_id', $schoolId)->first();
         
         // Validate request based on settings
         $rules = [];

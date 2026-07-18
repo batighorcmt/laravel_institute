@@ -124,6 +124,33 @@
                         <small class="text-muted">এই সময়ের পরে চেক-আউট হাজিরা নেওয়া বন্ধ।</small>
                         @error('teacher_check_out_end')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
+
+                    <hr>
+
+                    {{-- Additional Settings: applies to mobile app + web self check-in.
+                         Biometric machine punches have no photo/location concept, so
+                         these two toggles don't affect that channel. --}}
+                    <h6 class="mb-3"><i class="fas fa-cog mr-1"></i> Additional Settings</h6>
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="require_photo" name="require_photo" value="1"
+                                   {{ old('require_photo', $settings->require_photo ?? true) ? 'checked' : '' }}>
+                            <label class="custom-control-label" for="require_photo">
+                                Require Photo Capture
+                                <small class="text-muted d-block">Teachers must take a photo when checking in/out</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="require_location" name="require_location" value="1"
+                                   {{ old('require_location', $settings->require_location ?? true) ? 'checked' : '' }}>
+                            <label class="custom-control-label" for="require_location">
+                                Require Location Capture
+                                <small class="text-muted d-block">Teachers' location will be recorded when checking in/out</small>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -133,7 +160,7 @@
     <div class="callout callout-info">
         <h5><i class="fas fa-info-circle"></i> গুরুত্বপূর্ণ তথ্য</h5>
         <p class="mb-1">এই সেটিংস অনুযায়ী বায়োমেট্রিক মেশিন থেকে আসা হাজিরা স্বয়ংক্রিয়ভাবে প্রক্রিয়া করা হবে।</p>
-        <p class="mb-1">মোবাইল অ্যাপ থেকে দেওয়া হাজিরার ক্ষেত্রেও একই নিয়ম প্রযোজ্য হবে।</p>
+        <p class="mb-1">মোবাইল অ্যাপ ও ওয়েব থেকে দেওয়া হাজিরার ক্ষেত্রেও একই নিয়ম প্রযোজ্য হবে (ছবি/লোকেশন সেটিংস শুধু অ্যাপ ও ওয়েবের জন্য প্রযোজ্য — মেশিন পাঞ্চে প্রযোজ্য নয়)।</p>
         <p class="mb-0">যদি কোনো শিক্ষার্থী মেশিনে পাঞ্চ করে থাকে, মোবাইল অ্যাপ থেকে তার হাজিরা পরিবর্তন করা যাবে না।</p>
     </div>
 

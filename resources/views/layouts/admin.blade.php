@@ -458,7 +458,6 @@
                                     <li class="nav-item"><a href="{{ route('principal.institute.teacher-attendance.reports.daily', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teacher-attendance.reports.daily') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Daily Report</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.teacher-attendance.reports.monthly', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teacher-attendance.reports.monthly') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Monthly Report</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.teacher-leaves.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teacher-leaves.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Teacher Leaves</p></a></li>
-                                    <li class="nav-item"><a href="{{ route('principal.institute.teacher-attendance.settings.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teacher-attendance.settings.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Settings</p></a></li>
                                 </ul>
                             </li>
 
@@ -686,8 +685,8 @@
                             @endif
 
                             {{-- Settings Group --}}
-                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.background_settings.*') || request()->routeIs('principal.institute.public_exams.*') ? 'menu-open' : '' }}">
-                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.background_settings.*') || request()->routeIs('principal.institute.public_exams.*') ? 'active' : '' }}">
+                            <li class="nav-item has-treeview {{ request()->routeIs('principal.institute.background_settings.*') || request()->routeIs('principal.institute.public_exams.*') || request()->routeIs('principal.institute.attendance.settings*') ? 'menu-open' : '' }}">
+                                <a href="#" class="nav-link {{ request()->routeIs('principal.institute.background_settings.*') || request()->routeIs('principal.institute.public_exams.*') || request()->routeIs('principal.institute.attendance.settings*') ? 'active' : '' }}">
                                     <i class="nav-icon fas fa-cog"></i>
                                     <p>Settings <i class="right fas fa-angle-left"></i></p>
                                 </a>
@@ -702,6 +701,12 @@
                                         <a href="{{ route('principal.institute.public_exams.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.public_exams.*') ? 'active' : '' }}">
                                             <i class="far fa-circle nav-icon"></i>
                                             <p>Public Exams</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('principal.institute.attendance.settings', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.attendance.settings*') ? 'active' : '' }}">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Attendance Settings</p>
                                         </a>
                                     </li>
                                 </ul>

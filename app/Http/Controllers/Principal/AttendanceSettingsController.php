@@ -28,13 +28,20 @@ class AttendanceSettingsController extends Controller
             'teacher_late_threshold'  => 'required|date_format:H:i',
             'teacher_check_out_start' => 'required|date_format:H:i',
             'teacher_check_out_end'   => 'required|date_format:H:i',
+            'require_photo'           => 'boolean',
+            'require_location'        => 'boolean',
         ]);
 
         // Append seconds for time columns
         $timeFields = array_keys($validated);
         foreach ($timeFields as $field) {
+            if (in_array($field, ['require_photo', 'require_location'], true)) {
+                continue;
+            }
             $validated[$field] = $validated[$field] . ':00';
         }
+        $validated['require_photo'] = $request->has('require_photo');
+        $validated['require_location'] = $request->has('require_location');
 
         SchoolAttendanceSetting::updateOrCreate(
             ['school_id' => $school->id],

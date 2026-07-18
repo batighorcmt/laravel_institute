@@ -53,13 +53,18 @@
                     <form method="POST" action="{{ route('principal.institute.holidays.store', $school) }}" class="mb-3 no-print">
                         @csrf
                         <div class="form-row">
-                            <div class="form-group col-md-6">
+                            <div class="form-group col-md-12">
                                 <label>শিরোনাম *</label>
                                 <input type="text" name="title" value="{{ old('title') }}" class="form-control" required>
                             </div>
                             <div class="form-group col-md-6">
-                                <label>তারিখ *</label>
+                                <label>শুরুর তারিখ *</label>
                                 <input type="date" name="date" value="{{ old('date') }}" class="form-control" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>শেষের তারিখ</label>
+                                <input type="date" name="date_end" value="{{ old('date_end') }}" class="form-control">
+                                <small class="text-muted">একাধিক দিনের ছুটি (যেমন ৪ দিনের ঈদের ছুটি) একসাথে যোগ করতে শেষের তারিখ দিন। একদিনের ছুটির জন্য খালি রাখুন।</small>
                             </div>
                         </div>
                         <div class="form-group">

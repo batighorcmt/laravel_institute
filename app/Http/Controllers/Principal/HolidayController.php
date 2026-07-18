@@ -7,6 +7,7 @@ use App\Models\School;
 use App\Models\Holiday;
 use App\Models\WeeklyHoliday;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class HolidayController extends Controller
 {
@@ -32,14 +33,55 @@ class HolidayController extends Controller
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'date' => 'required|date',
+            // Optional range end — when provided, a Holiday row is created for
+            // every date from `date` through `date_end` (inclusive) instead of
+            // just the one day, so e.g. a 4-day Eid break can be added in one go.
+            'date_end' => 'nullable|date|after_or_equal:date',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
         ]);
-    $exists = Holiday::where('school_id',$school->id)->where('date',$data['date'])->exists();
-        if ($exists) { return back()->with('error','এই তারিখের জন্য ইতিমধ্যেই একটি ছুটি রয়েছে')->withInput(); }
-        $data['school_id'] = $school->id;
-        Holiday::create($data);
-        return back()->with('success','ছুটির দিন সফলভাবে যোগ করা হয়েছে');
+
+        $start = Carbon::parse($data['date']);
+        $end = isset($data['date_end']) ? Carbon::parse($data['date_end']) : $start->copy();
+
+        if ($start->diffInDays($end) > 366) {
+            return back()->with('error', 'একসাথে সর্বোচ্চ ৩৬৬ দিনের ছুটি যোগ করা যাবে। তারিখের পরিসর ছোট করুন।')->withInput();
+        }
+
+        $existingDates = Holiday::where('school_id', $school->id)
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->pluck('date')
+            ->map(fn ($d) => $d->toDateString())
+            ->all();
+
+        $created = 0;
+        for ($cursor = $start->copy(); $cursor->lte($end); $cursor->addDay()) {
+            if (in_array($cursor->toDateString(), $existingDates, true)) {
+                continue;
+            }
+            Holiday::create([
+                'school_id' => $school->id,
+                'title' => $data['title'],
+                'date' => $cursor->toDateString(),
+                'description' => $data['description'] ?? null,
+                'status' => $data['status'],
+            ]);
+            $created++;
+        }
+
+        $skipped = count($existingDates);
+        if ($created === 0) {
+            return back()->with('error', 'নির্বাচিত তারিখগুলোতে ইতিমধ্যেই ছুটি রয়েছে, নতুন কিছু যোগ করা হয়নি।')->withInput();
+        }
+
+        $message = $created === 1
+            ? 'ছুটির দিন সফলভাবে যোগ করা হয়েছে'
+            : "{$created} দিনের ছুটি সফলভাবে যোগ করা হয়েছে";
+        if ($skipped > 0) {
+            $message .= " ({$skipped}টি তারিখ আগে থেকেই ছুটি থাকায় বাদ দেওয়া হয়েছে)";
+        }
+
+        return back()->with('success', $message);
     }
 
     public function update(School $school, Holiday $holiday, Request $request)

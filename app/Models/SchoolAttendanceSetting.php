@@ -21,6 +21,13 @@ class SchoolAttendanceSetting extends Model
         'teacher_late_threshold',
         'teacher_check_out_start',
         'teacher_check_out_end',
+        'require_photo',
+        'require_location',
+    ];
+
+    protected $casts = [
+        'require_photo' => 'boolean',
+        'require_location' => 'boolean',
     ];
 
     public function school()
