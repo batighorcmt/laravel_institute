@@ -130,6 +130,7 @@ class TestimonialController extends Controller
         $regNo    = $peData->reg_no ?? $student->board_registration_no ?? '';
         $examYear = $peData->exam_year ?? '';
         $center   = $peData->center_name ?? '';
+        $group    = $this->resolveGroupName($student, $peData);
 
         // Memo generation
         $memoNo = DocumentMemoService::generate($school, 'testimonial', null, $academicYearName, null, $student, 'en');
@@ -151,6 +152,7 @@ class TestimonialController extends Controller
                 'roll'         => $roll,
                 'registration' => $regNo,
                 'center'       => $center,
+                'group'        => $group,
             ],
         ]);
 
@@ -189,6 +191,10 @@ class TestimonialController extends Controller
         $academicYear = \App\Models\AcademicYear::find($validated['academic_year']);
         $academicYearName = $academicYear ? $academicYear->name : (string)$validated['academic_year'];
 
+        $peData = StudentPublicExam::where('student_id', $student->id)
+            ->where('exam_name', $validated['exam_name'])
+            ->first();
+
         $memoNo = DocumentMemoService::generate($school, 'testimonial', null, $academicYearName, null, $student, 'en');
 
         $record = DocumentRecord::create([
@@ -208,6 +214,7 @@ class TestimonialController extends Controller
                 'roll' => $validated['roll'] ?? null,
                 'registration' => $validated['registration'] ?? null,
                 'center' => $validated['center'] ?? null,
+                'group' => $this->resolveGroupName($student, $peData),
             ],
         ]);
 
@@ -230,7 +237,19 @@ class TestimonialController extends Controller
     {
         abort_unless($document->school_id === $school->id && $document->type === 'testimonial', 404);
         $academicYears = \App\Models\AcademicYear::forSchool($school->id)->orderBy('start_date', 'desc')->get();
-        return view('principal.documents.testimonial.edit', compact('school','document','academicYears'));
+
+        // Academic year / board / class / section / student / exam name are now
+        // fixed (display-only) on this form — class/section are derived live
+        // from the student's current enrollment purely for that display, since
+        // they were never actually persisted on the document. Groups offered
+        // for selection are scoped to the student's current class.
+        $student = $document->student;
+        $enrollment = $student?->currentEnrollment;
+        $groups = $enrollment
+            ? \App\Models\Group::forSchool($school->id)->where('class_id', $enrollment->class_id)->where('status', 'active')->get(['id', 'name', 'bangla_name'])
+            : collect();
+
+        return view('principal.documents.testimonial.edit', compact('school', 'document', 'academicYears', 'enrollment', 'groups'));
     }
 
     public function update(Request $request, School $school, DocumentRecord $document)
@@ -247,6 +266,7 @@ class TestimonialController extends Controller
             'roll' => 'nullable|string',
             'registration' => 'nullable|string',
             'center' => 'nullable|string',
+            'group' => 'nullable|string|max:255',
         ]);
         $student = Student::forSchool($school->id)->findOrFail($validated['student_id']);
         $document->update([
@@ -261,9 +281,25 @@ class TestimonialController extends Controller
                 'roll' => $validated['roll'] ?? null,
                 'registration' => $validated['registration'] ?? null,
                 'center' => $validated['center'] ?? null,
+                'group' => $validated['group'] ?? null,
             ],
         ]);
         return redirect()->route('principal.institute.documents.testimonial.print', [$school, $document->id])
             ->with('success','Testimonial updated');
+    }
+
+    /**
+     * Resolve a display-ready group name for testimonial generation: prefer
+     * the group saved against this exam on the public-exam-info page, falling
+     * back to the student's current class enrollment's group.
+     */
+    protected function resolveGroupName(Student $student, ?StudentPublicExam $peData): ?string
+    {
+        $groupId = ($peData && $peData->group_id) ? $peData->group_id : $student->currentEnrollment?->group_id;
+        if (! $groupId) {
+            return null;
+        }
+        $group = \App\Models\Group::find($groupId);
+        return $group ? ($group->bangla_name ?: $group->name) : null;
     }
 }

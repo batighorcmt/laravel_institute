@@ -1394,6 +1394,12 @@ class StudentController extends Controller
             $enrollment = $student->enrollments->first();
             $peData = $student->publicExams->where('exam_name', $publicExamName)->first();
 
+            // Group defaults to the student's current class enrollment's group
+            // until explicitly saved here, per the "shows the student's
+            // existing group by default" requirement — once saved, the value
+            // in student_public_exams takes over.
+            $groupId = ($peData && $peData->group_id) ? $peData->group_id : ($enrollment ? $enrollment->group_id : null);
+
             return [
                 'id'             => $student->id,
                 'name'           => $student->student_name_en ?: $student->student_name_bn,
@@ -1403,6 +1409,7 @@ class StudentController extends Controller
                 'student_id'     => $student->student_id,
                 'public_exam_id' => $peData ? $peData->id : null,
                 'exam_name'      => $peData ? $peData->exam_name : $publicExamName,
+                'group_id'       => $groupId,
                 'board'          => $peData ? $peData->board : '',
                 'roll_no_pub'    => $peData ? $peData->roll_no : '',
                 'reg_no'         => $peData ? ($peData->reg_no ?: $student->board_registration_no) : ($student->board_registration_no ?: ''),
@@ -1414,7 +1421,12 @@ class StudentController extends Controller
             ];
         });
 
-        return response()->json(['students' => $result]);
+        $groups = \App\Models\Group::forSchool($school->id)
+            ->where('class_id', $classId)
+            ->where('status', 'active')
+            ->get(['id', 'name', 'bangla_name']);
+
+        return response()->json(['students' => $result, 'groups' => $groups]);
     }
 
     /**
@@ -1427,6 +1439,7 @@ class StudentController extends Controller
 
         $validated = $request->validate([
             'exam_name'      => 'required|string|max:255',
+            'group_id'       => 'nullable|exists:groups,id',
             'board'          => 'nullable|string|max:255',
             'roll_no'        => 'nullable|string|max:255',
             'reg_no'         => 'nullable|string|max:255',

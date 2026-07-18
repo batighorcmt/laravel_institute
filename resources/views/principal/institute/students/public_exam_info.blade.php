@@ -209,6 +209,7 @@
                             <th class="text-center" style="width:34px;">#</th>
                             <th style="min-width:150px;">নাম / পিতার নাম</th>
                             <th class="text-center" style="width:55px;">রোল</th>
+                            <th style="min-width:110px;">গ্রুপ</th>
                             <th style="min-width:105px;">Board</th>
                             <th style="min-width:95px;">Roll No.</th>
                             <th style="min-width:115px;">Reg. No.</th>
@@ -231,6 +232,12 @@
                                 <div class="small text-muted text-uppercase">@{{ student.father_name }}</div>
                             </td>
                             <td class="text-center align-middle">@{{ student.roll_no }}</td>
+                            <td>
+                                <select v-model="student.group_id" class="form-control form-control-sm">
+                                    <option :value="null">-- --</option>
+                                    <option v-for="g in groups" :key="g.id" :value="g.id">@{{ g.bangla_name || g.name }}</option>
+                                </select>
+                            </td>
                             <td>
                                 <select v-model="student.board" class="form-control form-control-sm">
                                     <option value="">-- --</option>
@@ -480,6 +487,7 @@ new Vue({
             result: '',
         },
         students: [],
+        groups: [],
         selectedIds: [],
         loading: false,
         searched: false,
@@ -742,6 +750,7 @@ new Vue({
                 if (data.students) {
                     this.students = data.students.map(s => ({ ...s, saving: false }));
                 }
+                this.groups = data.groups || [];
                 this.showToast(this.students.length + ' জন শিক্ষার্থী লোড হয়েছে।', 'success');
             } catch (e) {
                 this.showToast('শিক্ষার্থী লোড করতে সমস্যা হয়েছে।', 'danger');
@@ -797,6 +806,7 @@ new Vue({
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json' },
                     body: JSON.stringify({
                         exam_name:      student.exam_name,
+                        group_id:       student.group_id,
                         board:          student.board,
                         roll_no:        student.roll_no_pub,
                         reg_no:         student.reg_no,

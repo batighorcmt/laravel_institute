@@ -11,59 +11,41 @@
     <form method="POST" action="{{ route('principal.institute.documents.testimonial.update', [$school, $document->id]) }}">
       @csrf
       @method('PUT')
+      @php
+        $academicYearName = optional($academicYears->firstWhere('id', $document->data['academic_year'] ?? null))->name
+            ?? ($document->data['academic_year'] ?? '-');
+      @endphp
+      {{-- These six fields are fixed once a testimonial is generated — shown
+           as plain text only, not editable, to keep the certificate matching
+           what was originally issued. --}}
       <div class="form-row">
         <div class="form-group col-md-4">
           <label>শিক্ষাবর্ষ</label>
-          <select class="form-control" name="academic_year" id="tstAcademicYear" required>
-            <option value="">-- নির্বাচন করুন --</option>
-            @foreach($academicYears as $year)
-              <option value="{{ $year->id }}" {{ ($document->data['academic_year'] ?? '') == $year->id ? 'selected' : '' }}>{{ $year->name }}</option>
-            @endforeach
-          </select>
+          <input type="text" class="form-control-plaintext font-weight-bold" value="{{ $academicYearName }}" readonly>
+          <input type="hidden" name="academic_year" value="{{ $document->data['academic_year'] ?? '' }}">
         </div>
         <div class="form-group col-md-4">
           <label>বোর্ড</label>
-          <select class="form-control" name="board" required>
-            <option value="">-- নির্বাচন করুন --</option>
-            <option value="Dhaka" {{ ($document->data['board'] ?? '') === 'Dhaka' ? 'selected' : '' }}>Dhaka</option>
-            <option value="Rajshahi" {{ ($document->data['board'] ?? '') === 'Rajshahi' ? 'selected' : '' }}>Rajshahi</option>
-            <option value="Comilla" {{ ($document->data['board'] ?? '') === 'Comilla' ? 'selected' : '' }}>Comilla</option>
-            <option value="Jashore" {{ ($document->data['board'] ?? '') === 'Jashore' || ($document->data['board'] ?? '') === 'Jessore' ? 'selected' : '' }}>Jashore</option>
-            <option value="Chittagong" {{ ($document->data['board'] ?? '') === 'Chittagong' ? 'selected' : '' }}>Chittagong</option>
-            <option value="Barisal" {{ ($document->data['board'] ?? '') === 'Barisal' ? 'selected' : '' }}>Barisal</option>
-            <option value="Sylhet" {{ ($document->data['board'] ?? '') === 'Sylhet' ? 'selected' : '' }}>Sylhet</option>
-            <option value="Dinajpur" {{ ($document->data['board'] ?? '') === 'Dinajpur' ? 'selected' : '' }}>Dinajpur</option>
-            <option value="Madrasah" {{ ($document->data['board'] ?? '') === 'Madrasah' ? 'selected' : '' }}>Madrasah</option>
-            <option value="Technical" {{ ($document->data['board'] ?? '') === 'Technical' ? 'selected' : '' }}>Technical</option>
-          </select>
+          <input type="text" class="form-control-plaintext font-weight-bold" value="{{ $document->data['board'] ?? '-' }}" readonly>
+          <input type="hidden" name="board" value="{{ $document->data['board'] ?? '' }}">
         </div>
         <div class="form-group col-md-4">
           <label>শ্রেণি</label>
-          <select class="form-control" name="class_id" id="tstClass" required>
-            <option value="">-- নির্বাচন করুন --</option>
-            @foreach(\App\Models\SchoolClass::where('school_id',$school->id)->orderBy('numeric_value')->get() as $c)
-              <option value="{{ $c->id }}">{{ $c->name ?? ('Class '.$c->numeric_value) }}</option>
-            @endforeach
-          </select>
+          <input type="text" class="form-control-plaintext font-weight-bold" value="{{ $enrollment?->class?->name ?? '-' }}" readonly>
         </div>
         <div class="form-group col-md-4">
           <label>শাখা</label>
-          <select class="form-control" name="section_id" id="tstSection">
-            <option value="">-- (ঐচ্ছিক) --</option>
-          </select>
+          <input type="text" class="form-control-plaintext font-weight-bold" value="{{ $enrollment?->section?->name ?? '-' }}" readonly>
         </div>
         <div class="form-group col-md-4">
           <label>শিক্ষার্থী</label>
-          <select class="form-control" name="student_id" id="tstStudent" required>
-            <option value="{{ $document->student_id }}">{{ $document->student?->full_name }}</option>
-          </select>
+          <input type="text" class="form-control-plaintext font-weight-bold" value="{{ $document->student?->full_name }}" readonly>
+          <input type="hidden" name="student_id" value="{{ $document->student_id }}">
         </div>
         <div class="form-group col-md-4">
           <label>পরীক্ষার নাম</label>
-          <select class="form-control" name="exam_name" required>
-            <option value="SSC" {{ ($document->data['exam_name'] ?? '')==='SSC' ? 'selected' : '' }}>SSC</option>
-            <option value="HSC" {{ ($document->data['exam_name'] ?? '')==='HSC' ? 'selected' : '' }}>HSC</option>
-          </select>
+          <input type="text" class="form-control-plaintext font-weight-bold" value="{{ $document->data['exam_name'] ?? '-' }}" readonly>
+          <input type="hidden" name="exam_name" value="{{ $document->data['exam_name'] ?? '' }}">
         </div>
         <div class="form-group col-md-4">
           <label>সেশন</label>
@@ -83,32 +65,24 @@
         <div class="form-group col-md-4"><label>Registration</label><input type="text" class="form-control" name="registration" value="{{ $document->data['registration'] ?? '' }}"></div>
         <div class="form-group col-md-4"><label>Center</label><input type="text" class="form-control" name="center" value="{{ $document->data['center'] ?? '' }}"></div>
       </div>
+      <div class="form-row">
+        <div class="form-group col-md-4">
+          <label>গ্রুপ</label>
+          <select class="form-control" name="group">
+            <option value="">-- নির্বাচন করুন --</option>
+            @php($currentGroup = $document->data['group'] ?? '')
+            @foreach($groups as $g)
+              <option value="{{ $g->bangla_name ?: $g->name }}" {{ $currentGroup === ($g->bangla_name ?: $g->name) ? 'selected' : '' }}>{{ $g->bangla_name ?: $g->name }}</option>
+            @endforeach
+            @if($currentGroup && ! $groups->contains(fn($g) => ($g->bangla_name ?: $g->name) === $currentGroup))
+              <option value="{{ $currentGroup }}" selected>{{ $currentGroup }}</option>
+            @endif
+          </select>
+        </div>
+      </div>
       <button class="btn btn-primary">সংরক্ষণ করুন</button>
       <a target="_blank" href="{{ route('principal.institute.documents.testimonial.print', [$school,$document->id]) }}" class="btn btn-outline-secondary">Print</a>
     </form>
   </div>
 </div>
 @endsection
-
-@push('scripts')
-<script>
-  (function(){
-    const sectionsUrl = @json(route('principal.institute.meta.sections', $school));
-    const studentsUrl = @json(route('principal.institute.meta.students', $school));
-    const classSel = document.getElementById('tstClass');
-    const sectionSel = document.getElementById('tstSection');
-    const studentSel = document.getElementById('tstStudent');
-    function clearOptions(sel, placeholder){ if(!sel) return; sel.innerHTML=''; const opt=document.createElement('option'); opt.value=''; opt.textContent=placeholder; sel.appendChild(opt);}    
-    classSel && classSel.addEventListener('change', function(){
-      const classId=this.value; clearOptions(sectionSel,'-- (ঐচ্ছিক) --'); clearOptions(studentSel,'-- নির্বাচন করুন --'); if(!classId) return;
-      fetch(sectionsUrl+'?class_id='+encodeURIComponent(classId)).then(r=>r.json()).then(rows=>{ rows.forEach(r=>{ const o=document.createElement('option'); o.value=r.id; o.textContent=r.name; sectionSel.appendChild(o); }); });
-      fetch(studentsUrl+'?class_id='+encodeURIComponent(classId)).then(r=>r.json()).then(rows=>{ clearOptions(studentSel,'-- নির্বাচন করুন --'); rows.forEach(r=>{ const o=document.createElement('option'); o.value=r.record_id; o.textContent=r.name+' ('+(r.roll_no||'-')+')'; studentSel.appendChild(o); }); });
-    });
-    sectionSel && sectionSel.addEventListener('change', function(){
-      const classId=classSel?classSel.value:''; const sectionId=this.value; clearOptions(studentSel,'-- নির্বাচন করুন --'); if(!classId) return;
-      let url=studentsUrl+'?class_id='+encodeURIComponent(classId); if(sectionId) url+='&section_id='+encodeURIComponent(sectionId);
-      fetch(url).then(r=>r.json()).then(rows=>{ rows.forEach(r=>{ const o=document.createElement('option'); o.value=r.record_id; o.textContent=r.name+' ('+(r.roll_no||'-')+')'; studentSel.appendChild(o); }); });
-    });
-  })();
-</script>
-@endpush

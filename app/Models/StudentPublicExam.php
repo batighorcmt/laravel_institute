@@ -10,6 +10,7 @@ class StudentPublicExam extends Model
     protected $fillable = [
         'student_id',
         'school_id',
+        'group_id',
         'exam_name',
         'board',
         'roll_no',
@@ -29,5 +30,10 @@ class StudentPublicExam extends Model
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class);
     }
 }
