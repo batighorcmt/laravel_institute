@@ -593,15 +593,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         try {
-          const response = await axios.get(window.location.pathname, {
-            params: params,
-            headers: { 'Accept': 'application/json' }
+          const response = await axios.get(`/principal/institute/${this.school.id}/students-data`, {
+            params: params
           });
-          
+
           if (response.data && response.data.students) {
             this.studentsData = response.data.students;
-            
-            const url = new URL(window.location);
+
+            const url = new URL(window.location.pathname, window.location.origin);
             url.search = new URLSearchParams(params).toString();
             window.history.pushState({}, '', url);
             

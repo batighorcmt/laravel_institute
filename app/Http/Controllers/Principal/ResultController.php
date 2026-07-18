@@ -1950,4 +1950,128 @@ class ResultController extends Controller
 
         return Teacher::where('user_id', $principalPivot->user_id)->first();
     }
+
+    // Shared: fetch this exam's results ranked by merit (fail_count ASC, total_marks DESC, roll_no ASC)
+    // and assign a sequential new_position to each result.
+    private function getRankedResultsForRollUpdate(School $school, Exam $exam)
+    {
+        $classId = $exam->class_id;
+        if (! $classId) {
+            abort(404, 'Class not found for exam');
+        }
+
+        $calcData = $this->getCalculatedResults($school, $exam->id, $classId);
+        if (! $calcData || $calcData['results']->isEmpty()) {
+            return null;
+        }
+
+        $results = $calcData['results']->sort(function ($a, $b) {
+            $failA = (int) ($a->fail_count ?? 0);
+            $failB = (int) ($b->fail_count ?? 0);
+            if ($failA !== $failB) {
+                return $failA <=> $failB;
+            }
+
+            $marksA = (float) ($a->computed_total_marks ?? 0);
+            $marksB = (float) ($b->computed_total_marks ?? 0);
+            if ($marksA !== $marksB) {
+                return $marksB <=> $marksA;
+            }
+
+            $rollA = optional($a->student->currentEnrollment)->roll_no ?? PHP_INT_MAX;
+            $rollB = optional($b->student->currentEnrollment)->roll_no ?? PHP_INT_MAX;
+            return strnatcasecmp((string) $rollA, (string) $rollB);
+        })->values();
+
+        $position = 1;
+        foreach ($results as $result) {
+            $result->new_position = $position++;
+        }
+
+        return $results;
+    }
+
+    // Roll No & Position Update page — same result data as the print result sheet,
+    // but used to bulk-renumber roll numbers/sections and send per-student messages instead of printing.
+    public function rollPositionUpdate(School $school, Exam $exam)
+    {
+        $results = $this->getRankedResultsForRollUpdate($school, $exam);
+        if (! $results) {
+            return back()->with('error', 'কোন ফলাফল পাওয়া যায়নি।');
+        }
+
+        $class = SchoolClass::find($exam->class_id);
+        $sections = Section::forSchool($school->id)->where('class_id', $exam->class_id)->orderBy('name')->get();
+
+        return view('principal.results.roll-position-update', compact('school', 'exam', 'class', 'results', 'sections'));
+    }
+
+    // Update one student's class roll number (and, if chosen, section). Called sequentially via AJAX,
+    // one student at a time, so each row can show its own loading/success/failure state.
+    public function applyRollPositionUpdateSingle(Request $request, School $school, Exam $exam)
+    {
+        $request->validate([
+            'enrollment_id' => 'required|integer',
+            'roll_no' => 'required|integer|min:1',
+            'section_id' => 'nullable|integer',
+        ]);
+
+        $enrollment = StudentEnrollment::where('school_id', $school->id)->find($request->input('enrollment_id'));
+        if (! $enrollment) {
+            return response()->json(['ok' => false, 'error' => 'ভর্তি তথ্য পাওয়া যায়নি'], 422);
+        }
+
+        $sectionId = $enrollment->section_id;
+        $requestedSectionId = $request->input('section_id');
+        if ($requestedSectionId !== null) {
+            $validSectionIds = Section::forSchool($school->id)->where('class_id', $exam->class_id)->pluck('id')->all();
+            if (in_array((int) $requestedSectionId, $validSectionIds, true)) {
+                $sectionId = (int) $requestedSectionId;
+            }
+        }
+
+        $enrollment->update([
+            'roll_no' => (int) $request->input('roll_no'),
+            'section_id' => $sectionId,
+        ]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    // Send one personalized message (called sequentially via AJAX, one student at a time, with live per-row status)
+    public function sendSinglePositionResultSms(Request $request, School $school, Exam $exam)
+    {
+        $request->validate([
+            'student_id' => 'required|integer',
+            'message' => 'required|string|max:1000',
+        ]);
+
+        $student = Student::where('school_id', $school->id)->find($request->input('student_id'));
+        if (! $student || ! $student->guardian_phone) {
+            return response()->json(['ok' => false, 'error' => 'অভিভাবকের মোবাইল নম্বর পাওয়া যায়নি'], 422);
+        }
+
+        $mobile = preg_replace('/[^0-9]/', '', (string) $student->guardian_phone);
+        if (strlen($mobile) === 13 && strpos($mobile, '880') === 0) {
+            $mobile = '0'.substr($mobile, 3);
+        }
+        if (strlen($mobile) !== 11) {
+            return response()->json(['ok' => false, 'error' => 'অবৈধ মোবাইল নম্বর'], 422);
+        }
+
+        $message = trim(preg_replace('/\n{3,}/', "\n\n", (string) $request->input('message')));
+        $studentName = $student->student_name_bn ?: $student->student_name_en;
+
+        $sent = (new \App\Services\SmsService($school))->sendSms($mobile, $message, 'exam_result', [
+            'sent_by_user_id' => auth()->id(),
+            'recipient_type' => 'student',
+            'recipient_category' => 'exam_result',
+            'recipient_id' => $student->id,
+            'recipient_name' => $studentName,
+            'recipient_role' => 'guardian',
+            'roll_number' => optional($student->currentEnrollment)->roll_no,
+        ]);
+
+        return response()->json(['ok' => (bool) $sent]);
+    }
 }

@@ -537,6 +537,11 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/exams', [App\Http\Controllers\Principal\ResultController::class, 'examList'])->name('exams');
                 Route::get('/exams/{exam}/result-sheet/print', [App\Http\Controllers\Principal\ResultController::class, 'printResultSheet'])->name('exams.result-sheet.print');
 
+                // Roll No & Position Update + Result SMS
+                Route::get('/exams/{exam}/roll-position-update', [App\Http\Controllers\Principal\ResultController::class, 'rollPositionUpdate'])->name('exams.roll-position-update');
+                Route::post('/exams/{exam}/roll-position-update/apply-single', [App\Http\Controllers\Principal\ResultController::class, 'applyRollPositionUpdateSingle'])->name('exams.roll-position-update.apply-single');
+                Route::post('/exams/{exam}/roll-position-update/send-sms-single', [App\Http\Controllers\Principal\ResultController::class, 'sendSinglePositionResultSms'])->name('exams.roll-position-update.send-sms-single');
+
                 // Marksheet
                 Route::get('/marksheet', [App\Http\Controllers\Principal\ResultController::class, 'marksheet'])->name('marksheet');
                 Route::get('/marksheet/{exam}/{student}/print', [App\Http\Controllers\Principal\ResultController::class, 'printMarksheet'])->name('marksheet.print');
@@ -679,6 +684,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             Route::post('students/public-exam-info/load', [PrincipalStudentController::class, 'publicExamInfoLoad'])->name('students.public-exam-info.load');
             Route::post('students/{student}/public-exam-info/save', [PrincipalStudentController::class, 'publicExamInfoSave'])->name('students.public-exam-info.save');
             Route::post('students/{student}/reset-password', [PrincipalStudentController::class, 'resetPassword'])->name('students.reset-password');
+            Route::get('/students-data', [PrincipalStudentController::class, 'data'])->name('students.data');
             Route::resource('students', PrincipalStudentController::class);
             Route::patch('students/{student}/status', [PrincipalStudentController::class, 'toggleStatus'])->name('students.toggle-status');
             Route::post('students/{student}/enrollments', [PrincipalStudentController::class, 'addEnrollment'])->name('students.enrollments.add');
