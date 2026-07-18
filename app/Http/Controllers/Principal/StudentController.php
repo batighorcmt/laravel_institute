@@ -54,13 +54,7 @@ class StudentController extends Controller
         $school->load(['classes', 'sections', 'groups']);
         // Get filter parameters
         $classId = $request->get('class_id');
-        $sectionId = $request->get('section_id');
-        $groupId = $request->get('group_id');
         $status = $request->get('status', 'active');
-        $gender = $request->get('gender');
-        $religion = $request->get('religion');
-        $village = $request->get('village');
-        $rollNo = $request->get('roll_no');
 
         // Also fetch lists explicitly to avoid reliance on eager loading in views
         $classes = SchoolClass::forSchool($school->id)->ordered()->get();
@@ -71,7 +65,57 @@ class StudentController extends Controller
             ? Group::where('school_id', $school->id)->where('class_id', $classId)->orderBy('name')->get()
             : collect();
 
-        $students = Student::select('students.*')
+        $students = $this->queryStudents($school, $request, $selectedYearId)
+            ->paginate($request->get('per_page', 10))->withQueryString();
+
+        return view('principal.institute.students.index',[
+            'school'=>$school,
+            'students'=>$students,
+            'q'=>$q,
+            'status' => $status,
+            'years'=>$years,
+            'currentYear'=>$currentYear,
+            'selectedYear'=>$selectedYear,
+            'selectedYearId'=>$selectedYearId,
+            // filter source lists
+            'classes' => $classes,
+            'sections' => $sections,
+            'groups' => $groups,
+        ]);
+    }
+
+    /**
+     * JSON data endpoint used by the index page's filter/pagination UI.
+     * Kept on a separate route from index() so the page URL never
+     * conditionally serves raw JSON (which previously leaked full student
+     * PII whenever that URL was reloaded, bookmarked, or shared).
+     */
+    public function data(School $school, Request $request)
+    {
+        $this->authorizePrincipal($school);
+        $currentYear = AcademicYear::forSchool($school->id)->current()->first();
+        $selectedYearId = (int)($request->query('year_id') ?: ($currentYear->id ?? 0));
+
+        $students = $this->queryStudents($school, $request, $selectedYearId)
+            ->paginate($request->get('per_page', 10))->withQueryString();
+
+        return response()->json(['students' => $students])
+            ->header('Cache-Control', 'no-store, private');
+    }
+
+    protected function queryStudents(School $school, Request $request, int $selectedYearId)
+    {
+        $q = $request->get('q');
+        $classId = $request->get('class_id');
+        $sectionId = $request->get('section_id');
+        $groupId = $request->get('group_id');
+        $status = $request->get('status', 'active');
+        $gender = $request->get('gender');
+        $religion = $request->get('religion');
+        $village = $request->get('village');
+        $rollNo = $request->get('roll_no');
+
+        return Student::select('students.*')
             ->join('student_enrollments', 'student_enrollments.student_id', '=', 'students.id')
             ->join('classes', 'classes.id', '=', 'student_enrollments.class_id')
             ->leftJoin('sections', 'sections.id', '=', 'student_enrollments.section_id')
@@ -117,29 +161,7 @@ class StudentController extends Controller
             }])
             ->orderBy('classes.numeric_value')
             ->orderBy('sections.name')
-            ->orderBy('student_enrollments.roll_no')
-            ->paginate($request->get('per_page', 10))->withQueryString();
-
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'students' => $students
-            ]);
-        }
-
-        return view('principal.institute.students.index',[
-            'school'=>$school,
-            'students'=>$students,
-            'q'=>$q,
-            'status' => $status,
-            'years'=>$years,
-            'currentYear'=>$currentYear,
-            'selectedYear'=>$selectedYear,
-            'selectedYearId'=>$selectedYearId,
-            // filter source lists
-            'classes' => $classes,
-            'sections' => $sections,
-            'groups' => $groups,
-        ]);
+            ->orderBy('student_enrollments.roll_no');
     }
 
     public function create(School $school)

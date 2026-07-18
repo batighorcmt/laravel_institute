@@ -679,6 +679,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             Route::post('students/public-exam-info/load', [PrincipalStudentController::class, 'publicExamInfoLoad'])->name('students.public-exam-info.load');
             Route::post('students/{student}/public-exam-info/save', [PrincipalStudentController::class, 'publicExamInfoSave'])->name('students.public-exam-info.save');
             Route::post('students/{student}/reset-password', [PrincipalStudentController::class, 'resetPassword'])->name('students.reset-password');
+            Route::get('/students-data', [PrincipalStudentController::class, 'data'])->name('students.data');
             Route::resource('students', PrincipalStudentController::class);
             Route::patch('students/{student}/status', [PrincipalStudentController::class, 'toggleStatus'])->name('students.toggle-status');
             Route::post('students/{student}/enrollments', [PrincipalStudentController::class, 'addEnrollment'])->name('students.enrollments.add');
