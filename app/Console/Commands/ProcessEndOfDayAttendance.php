@@ -36,7 +36,7 @@ class ProcessEndOfDayAttendance extends Command
         $today = Carbon::today()->toDateString();
         $now   = Carbon::now()->format('H:i:s');
 
-        $schoolQuery = School::query();
+        $schoolQuery = School::query()->where('status', 'active');
         if ($this->option('school')) {
             $schoolQuery->where('id', $this->option('school'));
         }
@@ -45,6 +45,12 @@ class ProcessEndOfDayAttendance extends Command
 
         foreach ($schools as $school) {
             $settings = SchoolAttendanceSetting::where('school_id', $school->id)->first();
+
+            // Per-school opt-out: skip the whole cron cycle if this school disabled it
+            if ($settings && ! $settings->auto_attendance_enabled) {
+                $this->info("[{$school->name}] Skipped - auto attendance cron disabled in settings.");
+                continue;
+            }
 
             // Use defaults if not configured
             $studentLateThreshold = $settings->student_late_threshold ?? '09:30:00';
@@ -82,9 +88,12 @@ class ProcessEndOfDayAttendance extends Command
             return;
         }
 
-        // Get all active enrolled students who don't have attendance today
+        // Get all active enrolled students who don't have attendance today.
+        // Enrollment status alone isn't enough - the student record itself must
+        // also be active (excludes inactive/graduated/transferred students).
         $enrolledStudentIds = StudentEnrollment::where('school_id', $school->id)
             ->where('status', 'active')
+            ->whereHas('student', fn ($q) => $q->where('status', 'active'))
             ->pluck('student_id');
 
         $presentStudentIds = Attendance::where('date', $today)
@@ -106,6 +115,7 @@ class ProcessEndOfDayAttendance extends Command
             try {
                 Attendance::create([
                     'student_id'  => $studentId,
+                    'school_id'   => $school->id,
                     'class_id'    => $enrollment->class_id,
                     'section_id'  => $enrollment->section_id,
                     'date'        => $today,
@@ -158,7 +168,7 @@ class ProcessEndOfDayAttendance extends Command
 
         $attendances = Attendance::with(['student'])
             ->where('date', $today)
-            ->whereHas('student', fn($q) => $q->where('school_id', $school->id))
+            ->where('school_id', $school->id)
             ->get();
 
         foreach ($attendances as $att) {

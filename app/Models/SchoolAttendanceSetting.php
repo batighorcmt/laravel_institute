@@ -11,6 +11,7 @@ class SchoolAttendanceSetting extends Model
 
     protected $fillable = [
         'school_id',
+        'auto_attendance_enabled',
         'student_entry_start',
         'student_entry_end',
         'student_late_threshold',
@@ -28,6 +29,7 @@ class SchoolAttendanceSetting extends Model
     protected $casts = [
         'require_photo' => 'boolean',
         'require_location' => 'boolean',
+        'auto_attendance_enabled' => 'boolean',
     ];
 
     public function school()

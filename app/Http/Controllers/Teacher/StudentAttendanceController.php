@@ -165,6 +165,7 @@ class StudentAttendanceController extends Controller
                     'class_id' => $classId,
                     'section_id' => $sectionId,
                     'student_id' => $studentId,
+                    'school_id' => $school->id,
                     'date' => $date,
                     'status' => $data['status'],
                     'remarks' => $data['remarks'] ?? null,

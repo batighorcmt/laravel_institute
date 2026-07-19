@@ -180,6 +180,7 @@ class AttendanceProcessingEngine
                 $attendance = DB::transaction(function () use ($student, $enrollment, $date, $status, $isExitWindow, $timeOnly) {
                     return Attendance::create([
                         'student_id'  => $student->id,
+                        'school_id'   => $student->school_id,
                         'class_id'    => $enrollment->class_id ?? $student->class_id,
                         'section_id'  => $enrollment->section_id,
                         'date'        => $date,

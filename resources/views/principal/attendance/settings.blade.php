@@ -156,6 +156,29 @@
         </div>
     </div>
 
+    {{-- Automation Settings --}}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-warning card-outline">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-robot mr-1"></i> স্বয়ংক্রিয় ক্রন সেটিংস</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-0">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="auto_attendance_enabled" name="auto_attendance_enabled" value="1"
+                                   {{ old('auto_attendance_enabled', $settings->auto_attendance_enabled ?? true) ? 'checked' : '' }}>
+                            <label class="custom-control-label" for="auto_attendance_enabled">
+                                স্বয়ংক্রিয় হাজিরা ক্রন চালু রাখুন
+                                <small class="text-muted d-block">বন্ধ রাখলে এই স্কুলের জন্য অনুপস্থিত মার্কিং, নোটিফিকেশন এবং সংশ্লিষ্ট স্বয়ংক্রিয় প্রসেসিং চলবে না। শিক্ষক/শিক্ষার্থীরা তখনও ম্যানুয়ালি হাজিরা দিতে/নিতে পারবেন।</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Info Box --}}
     <div class="callout callout-info">
         <h5><i class="fas fa-info-circle"></i> গুরুত্বপূর্ণ তথ্য</h5>

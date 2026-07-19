@@ -37,6 +37,7 @@ class SubmitAttendance extends Command
                 'section_id' => $sectionId,
                 'date' => $date,
             ],[
+                'school_id' => $schoolId,
                 'status' => $status,
                 'recorded_by' => null,
             ]);

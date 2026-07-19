@@ -194,20 +194,20 @@ class AttendanceController extends Controller
         // Assumption: 'present' and 'late' are considered as present for overall percentage
         $presentToday = Attendance::join('students', 'students.id', '=', 'attendance.student_id')
             ->where('attendance.date', $date)
-            ->where('students.school_id', $school->id)
+            ->where('attendance.school_id', $school->id)
             ->where('students.status', 'active')
             ->whereIn('attendance.status', ['present', 'late'])
             ->count();
         $absentToday = Attendance::join('students', 'students.id', '=', 'attendance.student_id')
             ->where('attendance.date', $date)
-            ->where('students.school_id', $school->id)
+            ->where('attendance.school_id', $school->id)
             ->where('students.status', 'active')
             ->where('attendance.status', 'absent')
             ->count();
         // Attendance percent: show null when there are no attendance entries today for this school
         $anyAttendanceToday = Attendance::join('students', 'students.id', '=', 'attendance.student_id')
             ->where('attendance.date', $date)
-            ->where('students.school_id', $school->id)
+            ->where('attendance.school_id', $school->id)
             ->where('students.status', 'active')
             ->exists();
         $attendancePercent = ($totalStudents > 0 && $anyAttendanceToday)
@@ -352,7 +352,7 @@ class AttendanceController extends Controller
         $genderCounts = Attendance::select('students.gender', DB::raw('COUNT(DISTINCT attendance.student_id) as cnt'))
             ->join('students', 'students.id', '=', 'attendance.student_id')
             ->where('attendance.date', $date)
-            ->where('students.school_id', $school->id)
+            ->where('attendance.school_id', $school->id)
             ->where('students.status', 'active')
             ->whereIn('attendance.status', ['present', 'late'])
             ->groupBy('students.gender')
@@ -553,6 +553,7 @@ class AttendanceController extends Controller
                             'date' => $date,
                         ],
                         [
+                            'school_id' => $school->id,
                             'status' => $data['status'],
                             'remarks' => $data['remarks'] ?? null,
                             'recorded_by' => Auth::id(),
@@ -566,6 +567,7 @@ class AttendanceController extends Controller
                 foreach ($request->attendance as $studentId => $data) {
                     $attendanceData[] = [
                         'student_id' => $studentId,
+                        'school_id' => $school->id,
                         'class_id' => $classId,
                         'section_id' => $sectionId,
                         'date' => $date,
@@ -923,7 +925,7 @@ class AttendanceController extends Controller
         $query = Attendance::with(['student', 'student.currentEnrollment'])
             ->where('attendance.date', $date)
             ->join('students', 'attendance.student_id', '=', 'students.id')
-            ->where('students.school_id', $school->id)
+            ->where('attendance.school_id', $school->id)
             ->where('students.status', 'active')
             ->select('attendance.*');
 
@@ -958,7 +960,7 @@ class AttendanceController extends Controller
         $query = Attendance::with(['student'])
             ->where('attendance.date', $date)
             ->join('students', 'attendance.student_id', '=', 'students.id')
-            ->where('students.school_id', $school->id)
+            ->where('attendance.school_id', $school->id)
             ->where('students.status', 'active')
             ->select('attendance.*');
 

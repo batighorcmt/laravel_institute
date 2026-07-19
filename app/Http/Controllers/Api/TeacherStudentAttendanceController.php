@@ -307,6 +307,7 @@ class TeacherStudentAttendanceController extends Controller
                         'section_id' => $section->id,
                     ],
                     [
+                        'school_id' => $section->school_id,
                         'status' => $it['status'],
                         'recorded_by' => $user->id,
                         'medium' => 'mobile_app',
