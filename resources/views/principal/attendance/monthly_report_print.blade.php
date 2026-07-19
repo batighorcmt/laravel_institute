@@ -300,7 +300,8 @@
             }
             foreach (($students ?? []) as $stRow) {
                 foreach (($dates ?? []) as $d) {
-                    $status = $attendanceMatrix[$stRow->student_id][$d] ?? null;
+                    $rec = $attendanceMatrix[$stRow->student_id][$d] ?? null;
+                    $status = is_array($rec) ? ($rec['status'] ?? null) : $rec;
                     $wdnTmp = (int) date('N', strtotime($d));
                     $isHoliday = in_array($d, $holidayDates ?? []) || in_array($wdnTmp, $weeklyHolidayNums ?? []);
                     if ($isHoliday)
@@ -492,7 +493,8 @@
                         <td class="name-col">{{ $st->student_name_bn ?? $st->student_name_en }}</td>
                         @foreach($dates as $d)
                             @php
-                                $status = $attendanceMatrix[$st->student_id][$d] ?? null;
+                                $rec = $attendanceMatrix[$st->student_id][$d] ?? null;
+                                $status = is_array($rec) ? ($rec['status'] ?? null) : $rec;
                                 $wdnLoop = (int) date('N', strtotime($d));
                                 $isHolidayDate = in_array($d, $holidayDates ?? []);
                                 $isWeeklyHoliday = in_array($wdnLoop, $weeklyHolidayNums ?? []);
