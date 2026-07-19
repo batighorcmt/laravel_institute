@@ -16,12 +16,13 @@ class SuperAdminSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create Super Admin user
-        $superAdmin = User::updateOrCreate(
+        // Create Super Admin user only if it doesn't already exist.
+        // Uses firstOrCreate (not updateOrCreate) so re-running this seeder never
+        // resets a real admin's password/email back to these defaults.
+        $superAdmin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
             [
                 'name' => 'Super Admin',
-                'email' => 'admin@example.com',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
             ]
@@ -30,8 +31,10 @@ class SuperAdminSeeder extends Seeder
         // Get Super Admin role
         $superAdminRole = Role::where('name', 'super_admin')->first();
 
-        // Assign Super Admin role (no school required for super admin)
-        UserSchoolRole::updateOrCreate(
+        // Assign Super Admin role (no school required for super admin).
+        // firstOrCreate here too, so an intentionally deactivated assignment
+        // isn't silently re-activated by a re-run.
+        UserSchoolRole::firstOrCreate(
             [
                 'user_id' => $superAdmin->id,
                 'role_id' => $superAdminRole->id,
@@ -42,8 +45,8 @@ class SuperAdminSeeder extends Seeder
             ]
         );
 
-        $this->command->info('Super Admin created successfully!');
+        $this->command->info('Super Admin ensured (existing credentials left untouched if already present).');
         $this->command->info('Email: admin@example.com');
-        $this->command->info('Password: password');
+        $this->command->info('Password: password (applies only on first creation)');
     }
 }
