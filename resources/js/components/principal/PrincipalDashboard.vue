@@ -67,8 +67,11 @@
                 <div class="kpi-card cursor-pointer" @click="goTo('attendanceDashboard')">
                     <div class="kpi-icon bg-sky-50 text-sky-600"><i class="fas fa-calendar-check"></i></div>
                     <div class="kpi-label">আজকের শিক্ষার্থী উপস্থিতি</div>
-                    <div class="kpi-value">{{ bn(attSummary?.class_attendance?.percentage ?? 0) }}%</div>
-                    <div class="kpi-meta">উপস্থিত {{ bn(attSummary?.class_attendance?.present ?? 0) }}/{{ bn(attSummary?.class_attendance?.total ?? 0) }}</div>
+                    <div class="kpi-value">{{ attSummaryFailed ? '—' : bn(attSummary?.class_attendance?.percentage ?? 0) + '%' }}</div>
+                    <div class="kpi-meta">
+                        <template v-if="attSummaryFailed">লোড করা যায়নি</template>
+                        <template v-else>উপস্থিত {{ bn(attSummary?.class_attendance?.present ?? 0) }}/{{ bn(attSummary?.class_attendance?.total ?? 0) }}</template>
+                    </div>
                 </div>
                 <div class="kpi-card cursor-pointer" @click="goTo('teacherAttendance')">
                     <div class="kpi-icon bg-violet-50 text-violet-600"><i class="fas fa-user-clock"></i></div>
@@ -79,8 +82,11 @@
                 <div v-if="modules.lesson_evaluation" class="kpi-card cursor-pointer" @click="goTo('lessonEvaluations')">
                     <div class="kpi-icon bg-fuchsia-50 text-fuchsia-600"><i class="fas fa-clipboard-check"></i></div>
                     <div class="kpi-label">পাঠ মূল্যায়ন</div>
-                    <div class="kpi-value">{{ bn(lessonEvalRate) }}%</div>
-                    <div class="kpi-meta">সম্পন্ন {{ bn(attSummary?.lesson_evaluation?.completed ?? 0) }}/{{ bn(attSummary?.lesson_evaluation?.total_expected ?? 0) }}</div>
+                    <div class="kpi-value">{{ lessonEvalRate === null ? '—' : bn(lessonEvalRate) + '%' }}</div>
+                    <div class="kpi-meta">
+                        <template v-if="attSummaryFailed">লোড করা যায়নি</template>
+                        <template v-else>সম্পন্ন {{ bn(attSummary?.lesson_evaluation?.completed ?? 0) }}/{{ bn(attSummary?.lesson_evaluation?.total_expected ?? 0) }}</template>
+                    </div>
                 </div>
                 <div v-if="modules.accounts" class="kpi-card">
                     <div class="kpi-icon bg-rose-50 text-rose-600"><i class="fas fa-money-bill-wave"></i></div>
@@ -91,8 +97,11 @@
                 <div v-else class="kpi-card">
                     <div class="kpi-icon bg-teal-50 text-teal-600"><i class="fas fa-child"></i></div>
                     <div class="kpi-label">এক্সট্রা ক্লাস উপস্থিতি</div>
-                    <div class="kpi-value">{{ bn(attSummary?.extra_class_attendance?.percentage ?? 0) }}%</div>
-                    <div class="kpi-meta">{{ bn(attSummary?.extra_class_attendance?.present ?? 0) }}/{{ bn(attSummary?.extra_class_attendance?.total ?? 0) }}</div>
+                    <div class="kpi-value">{{ attSummaryFailed ? '—' : bn(attSummary?.extra_class_attendance?.percentage ?? 0) + '%' }}</div>
+                    <div class="kpi-meta">
+                        <template v-if="attSummaryFailed">লোড করা যায়নি</template>
+                        <template v-else>{{ bn(attSummary?.extra_class_attendance?.present ?? 0) }}/{{ bn(attSummary?.extra_class_attendance?.total ?? 0) }}</template>
+                    </div>
                 </div>
             </div>
 
@@ -135,7 +144,9 @@
                                 </table>
                             </div>
                         </div>
-                        <div v-else class="empty-state">আজকের কোনো উপস্থিতি ডেটা পাওয়া যায়নি</div>
+                        <div v-else class="empty-state">
+                            {{ attDetailsFailed ? 'উপস্থিতি তথ্য এই মুহূর্তে লোড করা যায়নি' : 'আজকের কোনো উপস্থিতি ডেটা পাওয়া যায়নি' }}
+                        </div>
                     </div>
 
                     <!-- Lesson evaluation today -->
@@ -168,7 +179,9 @@
                                 </span>
                             </div>
                         </div>
-                        <div v-else class="empty-state">আজ কোনো রুটিন পিরিয়ড পাওয়া যায়নি</div>
+                        <div v-else class="empty-state">
+                            {{ lessonEvalFailed ? 'পাঠ মূল্যায়ন তথ্য এই মুহূর্তে লোড করা যায়নি' : 'আজ কোনো রুটিন পিরিয়ড পাওয়া যায়নি' }}
+                        </div>
                     </div>
 
                     <!-- Recent lesson evaluations -->
@@ -291,6 +304,9 @@ const attSummary = ref(null);
 const attDetails = ref(null);
 const periods = ref([]);
 const recentEvaluations = ref([]);
+const attSummaryFailed = ref(false);
+const attDetailsFailed = ref(false);
+const lessonEvalFailed = ref(false);
 
 const attendanceChartEl = ref(null);
 const genderChartEl = ref(null);
@@ -305,6 +321,7 @@ const teacherAttendance = computed(() => overview.value?.teacher_attendance || {
 const modules = computed(() => overview.value?.modules || {});
 const classWise = computed(() => attDetails.value?.class_wise || []);
 const lessonEvalRate = computed(() => {
+    if (attSummaryFailed.value) return null;
     const s = attSummary.value?.lesson_evaluation;
     if (!s || !s.total_expected) return 0;
     return Math.round((s.completed / s.total_expected) * 1000) / 10;
@@ -382,37 +399,66 @@ const renderCharts = () => {
     }
 };
 
+const fetchAttendanceSummary = async () => {
+    try {
+        const res = await axios.get('/api/v1/principal/reports/attendance-summary');
+        attSummary.value = res.data.data;
+        attSummaryFailed.value = false;
+    } catch (e) {
+        attSummary.value = null;
+        attSummaryFailed.value = true;
+    }
+};
+
+const fetchAttendanceDetails = async () => {
+    try {
+        const res = await axios.get('/api/v1/principal/reports/attendance-details');
+        attDetails.value = res.data.data;
+        attDetailsFailed.value = false;
+    } catch (e) {
+        attDetails.value = null;
+        attDetailsFailed.value = true;
+    }
+};
+
+const fetchLessonEvaluationData = async () => {
+    try {
+        const [periodsRes, listRes] = await Promise.all([
+            axios.get('/api/v1/principal/reports/lesson-evaluations/periods'),
+            axios.get('/api/v1/principal/reports/lesson-evaluations', { params: { per_page: 6 } }),
+        ]);
+        periods.value = periodsRes.data.items || [];
+        recentEvaluations.value = (listRes.data.data || []).slice(0, 6);
+        lessonEvalFailed.value = false;
+    } catch (e) {
+        periods.value = [];
+        recentEvaluations.value = [];
+        lessonEvalFailed.value = true;
+    }
+};
+
 const loadAll = async () => {
     loading.value = true;
     loadError.value = '';
+
     try {
         const overviewRes = await axios.get('/api/v1/principal/reports/dashboard-overview');
         overview.value = overviewRes.data.data;
-
-        const calls = [
-            axios.get('/api/v1/principal/reports/attendance-summary'),
-            axios.get('/api/v1/principal/reports/attendance-details'),
-        ];
-        if (overview.value.modules?.lesson_evaluation) {
-            calls.push(axios.get('/api/v1/principal/reports/lesson-evaluations/periods'));
-            calls.push(axios.get('/api/v1/principal/reports/lesson-evaluations', { params: { per_page: 6 } }));
-        }
-
-        const results = await Promise.all(calls);
-        attSummary.value = results[0].data.data;
-        attDetails.value = results[1].data.data;
-        if (overview.value.modules?.lesson_evaluation) {
-            periods.value = results[2].data.items || [];
-            recentEvaluations.value = (results[3].data.data || []).slice(0, 6);
-        }
-
-        await nextTick();
-        renderCharts();
     } catch (e) {
         loadError.value = e?.response?.data?.message || 'ড্যাশবোর্ড ডেটা লোড করা যায়নি।';
-    } finally {
         loading.value = false;
+        return;
     }
+
+    const tasks = [fetchAttendanceSummary(), fetchAttendanceDetails()];
+    if (overview.value.modules?.lesson_evaluation) {
+        tasks.push(fetchLessonEvaluationData());
+    }
+    await Promise.allSettled(tasks);
+
+    await nextTick();
+    renderCharts();
+    loading.value = false;
 };
 
 onMounted(loadAll);
