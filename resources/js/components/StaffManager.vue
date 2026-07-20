@@ -69,7 +69,14 @@
                 </span>
               </td>
               <td class="text-center">
-                <span v-if="s.has_login" class="badge badge-success" :title="s.username">{{ s.username }}</span>
+                <template v-if="s.has_login">
+                  <div class="small"><span class="badge badge-success">{{ s.username }}</span></div>
+                  <div class="small text-muted mt-1">পাস: <code>{{ s.plain_password || '—' }}</code></div>
+                  <button class="btn btn-sm btn-outline-warning mt-1" :disabled="resettingFor === s.id" @click="resetPassword(s)">
+                    <span v-if="resettingFor === s.id" class="spinner-border spinner-border-sm"></span>
+                    <template v-else><i class="fas fa-sync-alt mr-1"></i>রিসেট</template>
+                  </button>
+                </template>
                 <button v-else class="btn btn-sm btn-outline-primary" :disabled="creatingLoginFor === s.id" @click="createLogin(s)">
                   <span v-if="creatingLoginFor === s.id" class="spinner-border spinner-border-sm"></span>
                   <template v-else><i class="fas fa-key mr-1"></i>লগইন তৈরি করুন</template>
@@ -247,6 +254,7 @@ export default {
       form: this.emptyForm(),
       serverErrors: [],
       creatingLoginFor: null,
+      resettingFor: null,
       printOptions: {
         designation_id: '',
         status: '',
@@ -377,6 +385,19 @@ export default {
         if (window.toastr) window.toastr.error(e.response?.data?.message || 'লগইন তৈরি করতে সমস্যা হয়েছে');
       } finally {
         this.creatingLoginFor = null;
+      }
+    },
+    async resetPassword(s) {
+      if (!confirm(`"${s.full_name_bn || s.full_name}"-এর পাসওয়ার্ড রিসেট করবেন? পুরনো পাসওয়ার্ড আর কাজ করবে না।`)) return;
+      this.resettingFor = s.id;
+      try {
+        const resp = await axios.post(`/principal/institute/${this.schoolId}/staff/${s.id}/reset-password`);
+        alert(resp.data.message);
+        await this.fetchData();
+      } catch (e) {
+        if (window.toastr) window.toastr.error(e.response?.data?.message || 'রিসেট করতে সমস্যা হয়েছে');
+      } finally {
+        this.resettingFor = null;
       }
     },
     async remove(s) {

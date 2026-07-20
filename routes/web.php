@@ -269,6 +269,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::post('/{staffMember}', [\App\Http\Controllers\Principal\StaffController::class, 'update'])->name('update');
                 Route::delete('/{staffMember}', [\App\Http\Controllers\Principal\StaffController::class, 'destroy'])->name('destroy');
                 Route::post('/{staffMember}/create-login', [\App\Http\Controllers\Principal\StaffController::class, 'createLogin'])->name('create-login');
+                Route::post('/{staffMember}/reset-password', [\App\Http\Controllers\Principal\StaffController::class, 'resetPassword'])->name('reset-password');
             }
             );
             // Attendance routes

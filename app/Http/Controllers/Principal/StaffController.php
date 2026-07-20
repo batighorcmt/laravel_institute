@@ -252,6 +252,34 @@ class StaffController extends Controller
             'show_on_website' => $staff->show_on_website,
             'has_login' => (bool) $staff->user_id,
             'username' => $staff->user?->username,
+            'plain_password' => $staff->plain_password,
         ];
+    }
+
+    public function resetPassword(School $school, StaffMember $staffMember)
+    {
+        abort_unless($staffMember->school_id === $school->id, 404);
+
+        if (! $staffMember->user_id) {
+            return response()->json(['message' => 'এই কর্মচারীর কোনো লগইন একাউন্ট নেই।'], 422);
+        }
+
+        try {
+            $plainPassword = str_pad((string) rand(0, 999999), 6, '0', STR_PAD_LEFT);
+
+            $staffMember->user->password = bcrypt($plainPassword);
+            $staffMember->user->password_changed_at = now();
+            $staffMember->user->save();
+
+            $staffMember->plain_password = $plainPassword;
+            $staffMember->save();
+
+            return response()->json([
+                'message' => 'পাসওয়ার্ড রিসেট হয়েছে। নতুন পাসওয়ার্ড: '.$plainPassword,
+                'staff' => $this->transform($staffMember->fresh()->load(['designationRef', 'user'])),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'রিসেট ব্যর্থ: '.$e->getMessage()], 500);
+        }
     }
 }
