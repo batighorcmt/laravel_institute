@@ -416,8 +416,18 @@ class TeacherExamController extends Controller
             'exam_id' => 'required|integer',
         ]);
 
+        // A principal/super-admin can enter marks for every subject, not
+        // just the ones they personally teach — mirrors the web
+        // Principal\MarkEntryController and the same bypass already used
+        // below in getStudents()/saveMark(). Exam controllers are excluded
+        // from mark entry by design — that role only covers exam logistics
+        // (seating, duty, room attendance), not entering marks.
+        $canSeeAllSubjects = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+
         $subjects = ExamSubject::where('exam_id', $request->exam_id)
-            ->where('teacher_id', $user->id)
+            ->when(! $canSeeAllSubjects, function ($q) use ($user) {
+                $q->where('teacher_id', $user->id);
+            })
             ->with('subject')
             ->get()
             ->unique('subject_id')
@@ -444,9 +454,12 @@ class TeacherExamController extends Controller
 
         $user = $request->user();
         $exam = Exam::findOrFail($request->exam_id);
+        // Mark entry is limited to principal/super-admin (plus the subject's
+        // own assigned teacher) — exam controllers manage exam logistics
+        // (seating, duty, room attendance), not marks.
         $examSubject = ExamSubject::where('exam_id', $request->exam_id)
             ->where('subject_id', $request->subject_id)
-            ->when(! ($user->isPrincipal($schoolId) || $user->isSuperAdmin() || $user->isExamController($schoolId)), function ($q) use ($user) {
+            ->when(! ($user->isPrincipal($schoolId) || $user->isSuperAdmin()), function ($q) use ($user) {
                 $q->where('teacher_id', $user->id);
             })
             ->firstOrFail();
@@ -539,7 +552,12 @@ class TeacherExamController extends Controller
         $exam = Exam::findOrFail($request->input('exam_id'));
         $examSubject = ExamSubject::findOrFail($request->input('exam_subject_id'));
 
-        if ($examSubject->teacher_id != $user->id) {
+        // Same bypass as getSubjects()/getStudents(): a principal/super-admin
+        // can save marks for any subject, not just ones they're personally
+        // assigned to teach. Exam controllers are excluded — they manage
+        // exam logistics, not mark entry.
+        $canEnterAnySubject = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        if (! $canEnterAnySubject && $examSubject->teacher_id != $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 

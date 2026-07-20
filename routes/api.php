@@ -101,7 +101,10 @@ Route::prefix('v1')->group(function () {
             Route::get('teacher/lesson-evaluations', [\App\Http\Controllers\Api\LessonEvaluationController::class , 'index'])->middleware('role:teacher');
             Route::post('teacher/lesson-evaluations', [\App\Http\Controllers\Api\LessonEvaluationController::class , 'store'])->middleware('role:teacher');
             Route::get('teacher/lesson-evaluations/today-routine', [\App\Http\Controllers\Api\LessonEvaluationController::class , 'todayRoutine'])->middleware('role:teacher');
+            Route::get('teacher/lesson-evaluations/routine-for-date', [\App\Http\Controllers\Api\LessonEvaluationController::class , 'routineForDate'])->middleware('role:teacher');
+            Route::get('teacher/lesson-evaluations/report', [\App\Http\Controllers\Api\LessonEvaluationController::class , 'report'])->middleware('role:teacher');
             Route::get('teacher/lesson-evaluations/form', [\App\Http\Controllers\Api\LessonEvaluationController::class , 'form'])->middleware('role:teacher');
+            Route::get('teacher/lesson-evaluations/student-history', [\App\Http\Controllers\Api\LessonEvaluationController::class , 'studentHistory'])->middleware('role:teacher');
 
             // Teacher → Exams
             Route::prefix('teacher/exams')->middleware('role:teacher,principal')->group(function () {

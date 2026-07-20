@@ -80,6 +80,16 @@ class DioClient {
             try {
               final ctx = rootNavigatorKey.currentContext;
               if (ctx != null && ctx.mounted) {
+                // Close any dialog/bottom-sheet still open on the root
+                // navigator (showDialog pushes there by default) before
+                // replacing the whole stack. Forcing GoRouter.go() while
+                // such a route is still active leaves its elements
+                // depending on InheritedWidgets that get torn down in the
+                // same frame, which trips the framework's
+                // "_dependents.isEmpty" assertion and crashes the app.
+                rootNavigatorKey.currentState?.popUntil(
+                  (route) => route.isFirst,
+                );
                 GoRouter.of(ctx).go('/login');
               }
             } catch (_) {}

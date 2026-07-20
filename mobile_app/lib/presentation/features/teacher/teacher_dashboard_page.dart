@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/services/module_access.dart';
 import '../../../widgets/animated_tile.dart';
 import 'lesson_evaluation_list_page.dart';
 import 'homework_list_page.dart';
@@ -32,6 +33,15 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage>
   Map<String, dynamic>? _todayRecord;
   List<dynamic> _unreadNotices = [];
   bool _noticesLoading = false;
+  // Which feature modules the super admin has enabled for this school — a
+  // disabled module must disappear from the teacher's menu the same way it
+  // already does on the principal's dashboard (ModuleAccess mirrors
+  // School::hasModule() on the web). Null means "unknown yet", which
+  // ModuleAccess.isOn() treats as "don't hide" so a slow/failed fetch never
+  // hides a feature the school actually has.
+  Set<String>? _enabledModules;
+
+  bool _moduleOn(String slug) => ModuleAccess.isOn(_enabledModules, slug);
 
   @override
   void didChangeDependencies() {
@@ -57,7 +67,21 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage>
   }
 
   Future<void> _refreshData() async {
-    await Future.wait([_fetchTodayAttendance(), _fetchUnreadNotices()]);
+    await Future.wait([
+      _fetchTodayAttendance(),
+      _fetchUnreadNotices(),
+      // Force a real server check every time this runs (initial load,
+      // returning to the page, and pull-to-refresh) — ModuleAccess caches
+      // for the process lifetime, so without forceRefresh a pull-to-refresh
+      // would just hand back the stale cached set and a just-toggled module
+      // would never disappear until the app was fully restarted.
+      _fetchModules(forceRefresh: true),
+    ]);
+  }
+
+  Future<void> _fetchModules({bool forceRefresh = false}) async {
+    final modules = await ModuleAccess.fetch(forceRefresh: forceRefresh);
+    if (mounted) setState(() => _enabledModules = modules);
   }
 
   Future<void> _fetchUnreadNotices() async {
@@ -196,7 +220,7 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage>
               ],
 
               const SizedBox(height: 16),
-              _OperationsGrid(onTap: _onOperationTap),
+              _OperationsGrid(onTap: _onOperationTap, isModuleOn: _moduleOn),
               const SizedBox(height: 24),
             ],
           ),
@@ -358,9 +382,19 @@ class _HeaderCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '$designation${(phone != null && phone!.isNotEmpty) ? " $phone" : ""}',
+                          designation,
                           style: const TextStyle(color: Color(0xFF4B5563)),
                         ),
+                        if (phone != null && phone!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            phone!,
+                            style: const TextStyle(
+                              color: Color(0xFF4B5563),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                         if (schoolName != null) ...[
                           const SizedBox(height: 2),
                           Text(
@@ -451,12 +485,24 @@ class _OpItem {
   final String title;
   final IconData icon;
   final Color background;
-  const _OpItem(this.key, this.title, this.icon, this.background);
+  // Module slug gating this tile (see School::hasModule() on the web /
+  // ModuleAccess on mobile). Null means always shown — mirrors which tiles
+  // carry a `_moduleOn(...)` check in the principal dashboard's equivalent
+  // grid (e.g. "Manage Leave"/"Teachers"/"Students" are ungated there too).
+  final String? moduleSlug;
+  const _OpItem(
+    this.key,
+    this.title,
+    this.icon,
+    this.background, {
+    this.moduleSlug,
+  });
 }
 
 class _OperationsGrid extends StatelessWidget {
   final void Function(String key) onTap;
-  const _OperationsGrid({required this.onTap});
+  final bool Function(String slug) isModuleOn;
+  const _OperationsGrid({required this.onTap, required this.isModuleOn});
 
   @override
   Widget build(BuildContext context) {
@@ -466,30 +512,35 @@ class _OperationsGrid extends StatelessWidget {
         'Self Attendance',
         Icons.how_to_reg_outlined,
         Color(0xFFF0F9FF),
+        moduleSlug: 'attendance',
       ),
       const _OpItem(
         'students_attendance',
         'Students Attendance',
         Icons.fact_check_outlined,
         Color(0xFFFFF7ED),
+        moduleSlug: 'attendance',
       ),
       const _OpItem(
         'lesson_evaluation',
         'Lesson Evaluation',
         Icons.rate_review_outlined,
         Color(0xFFF5F3FF),
+        moduleSlug: 'lesson_evaluation',
       ),
       const _OpItem(
         'homework',
         'Homework',
         Icons.assignment_outlined,
         Color(0xFFF0FDF4),
+        moduleSlug: 'homework',
       ),
       const _OpItem(
         'exams',
         'Exams',
         Icons.description_outlined,
         Color(0xFFEFF6FF),
+        moduleSlug: 'exams',
       ),
       const _OpItem(
         'manage_leave',
@@ -514,14 +565,20 @@ class _OperationsGrid extends StatelessWidget {
         'Notices',
         Icons.campaign_outlined,
         Color(0xFFFFF3E0),
+        moduleSlug: 'notices',
       ),
       const _OpItem(
         'billing',
         'Billing',
         Icons.account_balance_wallet_outlined,
         Color(0xFFE0F7FA),
+        // Matches Teacher\Billing\CollectController's own module check.
+        moduleSlug: 'accounts',
       ),
     ];
+    final visibleItems = items
+        .where((i) => i.moduleSlug == null || isModuleOn(i.moduleSlug!))
+        .toList();
     return GridView.count(
       crossAxisCount: 3,
       shrinkWrap: true,
@@ -530,7 +587,7 @@ class _OperationsGrid extends StatelessWidget {
       mainAxisSpacing: 12,
       childAspectRatio: 1.0,
       children: [
-        for (final item in items)
+        for (final item in visibleItems)
           AnimatedTile(
             title: item.title,
             icon: item.icon,

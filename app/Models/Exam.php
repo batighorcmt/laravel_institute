@@ -26,12 +26,14 @@ class Exam extends Model
         'start_date',
         'end_date',
         'status',
+        'result_publish_date',
         'description',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'result_publish_date' => 'date',
         'section_ids' => 'array',
         'group_ids' => 'array',
     ];

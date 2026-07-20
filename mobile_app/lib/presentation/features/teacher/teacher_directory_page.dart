@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../data/teacher/teacher_directory_repository.dart';
+import 'lesson_evaluation_theme.dart';
 
 class TeacherDirectoryPage extends StatefulWidget {
   const TeacherDirectoryPage({super.key});
@@ -68,7 +69,7 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Load error: $e')));
+        ).showSnackBar(SnackBar(content: Text('তথ্য লোড করতে ব্যর্থ: $e')));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -84,215 +85,354 @@ class _TeacherDirectoryPageState extends State<TeacherDirectoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Teachers')),
+      backgroundColor: LeColors.bg,
+      appBar: AppBar(
+        title: const Text(
+          'শিক্ষকবৃন্দ',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: false,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(gradient: LeColors.brandGradient),
+        ),
+        foregroundColor: Colors.white,
+      ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
+          Container(
+            decoration: const BoxDecoration(gradient: LeColors.brandGradient),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+            child: Column(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchCtl,
-                    decoration: InputDecoration(
-                      hintText: 'Search name or phone',
-                      prefixIcon: const Icon(Icons.search),
-                      isDense: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => _loadPage(reset: true),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  tooltip: 'Clear',
-                  onPressed: () {
-                    _searchCtl.clear();
-                    _loadPage(reset: true);
-                  },
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-          ),
-          if (_designations.isNotEmpty)
-            SizedBox(
-              height: 48,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                children: [
-                  _DesignationChip(
-                    label: 'All',
-                    selected: _designation == null,
-                    onTap: () {
-                      _designation = null;
-                      _loadPage(reset: true);
-                    },
-                  ),
-                  for (final d in _designations)
-                    _DesignationChip(
-                      label: d,
-                      selected: _designation == d,
-                      onTap: () {
-                        _designation = d;
-                        _loadPage(reset: true);
-                      },
-                    ),
-                ],
-              ),
-            ),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _refresh,
-              child: ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: _items.length + (_hasMore ? 1 : 0),
-                separatorBuilder: (_, _) => const Divider(height: 0),
-                itemBuilder: (context, index) {
-                  if (index == _items.length) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: _loading
-                          ? const Center(child: CircularProgressIndicator())
-                          : ElevatedButton.icon(
-                              onPressed: _loading
-                                  ? null
-                                  : () {
-                                      _currentPage += 1;
-                                      _loadPage();
-                                    },
-                              icon: const Icon(Icons.expand_more),
-                              label: const Text('Load More'),
+                  child: Row(
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(left: 12),
+                        child: Icon(Icons.search, color: LeColors.muted),
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchCtl,
+                          decoration: const InputDecoration(
+                            hintText: 'নাম বা মোবাইল নম্বর দিয়ে খুঁজুন',
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              vertical: 14,
+                              horizontal: 10,
                             ),
-                    );
-                  }
-                  final t = _items[index];
-                  final name = (t['name'] ?? '').toString();
-                  final initials = (t['initials'] ?? '').toString();
-                  final desig = (t['designation'] ?? '').toString();
-                  final phone = (t['phone'] ?? '').toString();
-                  final email = (t['email'] ?? '').toString();
-                  final photoUrl = (t['photo_url'] ?? '').toString();
-
-                  final displayName = initials.isNotEmpty
-                      ? '$name ($initials)'
-                      : name;
-
-                  return ListTile(
-                    leading: _TeacherAvatar(name: name, photoUrl: photoUrl),
-                    title: Text(displayName),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                          ),
+                          textInputAction: TextInputAction.search,
+                          onSubmitted: (_) => _loadPage(reset: true),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'মুছুন',
+                        onPressed: () {
+                          _searchCtl.clear();
+                          _loadPage(reset: true);
+                        },
+                        icon: const Icon(Icons.close, color: LeColors.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_designations.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 38,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
                       children: [
-                        if (desig.isNotEmpty)
-                          Text(
-                            desig,
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        if (phone.isNotEmpty)
-                          Row(
-                            children: [
-                              const Text(
-                                'Call: ',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                              Flexible(
-                                child: Text(
-                                  phone,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                tooltip: 'Call',
-                                icon: const Icon(
-                                  Icons.call,
-                                  color: Colors.green,
-                                  size: 20,
-                                ),
-                                onPressed: () => _callNumber(phone),
-                              ),
-                            ],
-                          ),
-                        if (email.isNotEmpty)
-                          Row(
-                            children: [
-                              const Text(
-                                'Email: ',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                              Flexible(
-                                child: Text(
-                                  email,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                tooltip: 'Email',
-                                icon: const Icon(
-                                  Icons.email,
-                                  color: Colors.orange,
-                                  size: 20,
-                                ),
-                                onPressed: () => _emailTeacher(email),
-                              ),
-                            ],
+                        _DesignationChip(
+                          label: 'সকল',
+                          selected: _designation == null,
+                          onTap: () {
+                            _designation = null;
+                            _loadPage(reset: true);
+                          },
+                        ),
+                        for (final d in _designations)
+                          _DesignationChip(
+                            label: d,
+                            selected: _designation == d,
+                            onTap: () {
+                              _designation = d;
+                              _loadPage(reset: true);
+                            },
                           ),
                       ],
                     ),
-                  );
-                },
-              ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              color: LeColors.brand,
+              onRefresh: _refresh,
+              child: _items.isEmpty && !_loading
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 100),
+                        Icon(
+                          Icons.people_outline,
+                          size: 56,
+                          color: LeColors.muted,
+                        ),
+                        SizedBox(height: 12),
+                        Center(
+                          child: Text(
+                            'কোনো শিক্ষক পাওয়া যায়নি',
+                            style: TextStyle(color: LeColors.muted),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                      itemCount: _items.length + (_hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == _items.length) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: _loading
+                                  ? const CircularProgressIndicator(
+                                      color: LeColors.brand,
+                                    )
+                                  : OutlinedButton.icon(
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: LeColors.brandDark,
+                                        side: const BorderSide(
+                                          color: LeColors.brand,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        _currentPage += 1;
+                                        _loadPage();
+                                      },
+                                      icon: const Icon(Icons.expand_more),
+                                      label: const Text('আরও দেখুন'),
+                                    ),
+                            ),
+                          );
+                        }
+                        return _TeacherCard(data: _items[index]);
+                      },
+                    ),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Future<void> _callNumber(String phone) async {
-    if (phone.isEmpty) return;
+class _TeacherCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  const _TeacherCard({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (data['name'] ?? '').toString();
+    final initials = (data['initials'] ?? '').toString();
+    final desig = (data['designation'] ?? '').toString();
+    final phone = (data['phone'] ?? '').toString();
+    final email = (data['email'] ?? '').toString();
+    final photoUrl = (data['photo_url'] ?? '').toString();
+    final address = (data['permanent_address'] ?? '').toString();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _TeacherAvatar(name: name, photoUrl: photoUrl),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        initials.isNotEmpty ? '$name ($initials)' : name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: LeColors.ink,
+                        ),
+                      ),
+                      if (desig.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: LeColors.brandSoft,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            desig,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: LeColors.brandDark,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (phone.isNotEmpty || email.isNotEmpty || address.isNotEmpty) ...[
+              const Divider(height: 20),
+            ],
+            if (phone.isNotEmpty)
+              _InfoRow(
+                icon: Icons.call,
+                iconColor: LeColors.completed,
+                text: phone,
+                trailing: IconButton(
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'কল করুন',
+                  icon: const Icon(
+                    Icons.phone_forwarded,
+                    color: LeColors.completed,
+                    size: 20,
+                  ),
+                  onPressed: () => _callNumber(context, phone),
+                ),
+              ),
+            if (email.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: _InfoRow(
+                  icon: Icons.email_outlined,
+                  iconColor: LeColors.accent,
+                  text: email,
+                  trailing: IconButton(
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'ইমেইল করুন',
+                    icon: const Icon(
+                      Icons.send_outlined,
+                      color: LeColors.accent,
+                      size: 20,
+                    ),
+                    onPressed: () => _emailTeacher(context, email),
+                  ),
+                ),
+              ),
+            if (address.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: _InfoRow(
+                  icon: Icons.location_on_outlined,
+                  iconColor: LeColors.total,
+                  text: address,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _callNumber(BuildContext context, String phone) async {
     final uri = Uri(scheme: 'tel', path: phone);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-      if (!mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Cannot call $phone')));
+      ).showSnackBar(SnackBar(content: Text('$phone নম্বরে কল করা যাচ্ছে না')));
     }
   }
 
-  Future<void> _emailTeacher(String email) async {
-    if (email.isEmpty) return;
+  Future<void> _emailTeacher(BuildContext context, String email) async {
     final uri = Uri(scheme: 'mailto', path: email);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Cannot email $email')));
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$email ঠিকানায় ইমেইল করা যাচ্ছে না')),
+      );
     }
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String text;
+  final Widget? trailing;
+  const _InfoRow({
+    required this.icon,
+    required this.iconColor,
+    required this.text,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: iconColor),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 13, color: LeColors.ink),
+          ),
+        ),
+        if (trailing != null) trailing!,
+      ],
+    );
   }
 }
 
@@ -303,37 +443,46 @@ class _TeacherAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = (photoUrl.isNotEmpty) ? photoUrl : null;
+    final imageUrl = photoUrl.isNotEmpty ? photoUrl : null;
     if (imageUrl == null) {
       return CircleAvatar(
-        radius: 24,
+        radius: 28,
+        backgroundColor: LeColors.brandSoft,
         child: Text(
           name.isNotEmpty ? name[0].toUpperCase() : '?',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: LeColors.brandDark,
+          ),
         ),
       );
     }
     return CircleAvatar(
-      radius: 24,
-      backgroundColor: Colors.grey[200],
+      radius: 28,
+      backgroundColor: LeColors.brandSoft,
       child: ClipOval(
         child: CachedNetworkImage(
           imageUrl: imageUrl,
-          width: 48,
-          height: 48,
+          width: 56,
+          height: 56,
           fit: BoxFit.cover,
           placeholder: (context, url) => const Center(
             child: SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: LeColors.brand,
+              ),
             ),
           ),
-          errorWidget: (context, url, error) => CircleAvatar(
-            radius: 24,
-            child: Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '?',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          errorWidget: (context, url, error) => Text(
+            name.isNotEmpty ? name[0].toUpperCase() : '?',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: LeColors.brandDark,
             ),
           ),
         ),
@@ -360,6 +509,16 @@ class _DesignationChip extends StatelessWidget {
         label: Text(label),
         selected: selected,
         onSelected: (_) => onTap(),
+        showCheckmark: false,
+        selectedColor: Colors.white,
+        backgroundColor: LeColors.brandDark.withValues(alpha: 0.35),
+        labelStyle: TextStyle(
+          color: selected ? LeColors.brandDark : Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.6)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }

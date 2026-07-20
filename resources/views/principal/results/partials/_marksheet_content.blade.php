@@ -297,7 +297,7 @@
     </div>
     
     <div class="date-publication">
-        {{ t('Date of Publication of Result', 'ফলাফল প্রকাশের তারিখ') }} : {{ bnNum($result->published_at ? \Carbon\Carbon::parse($result->published_at)->format('d F, Y') : date('d F, Y')) }}
+        {{ t('Date of Publication of Result', 'ফলাফল প্রকাশের তারিখ') }} : {{ bnNum(($exam->result_publish_date ?? null) ? $exam->result_publish_date->format('d F, Y') : ($result->published_at ? \Carbon\Carbon::parse($result->published_at)->format('d F, Y') : date('d F, Y'))) }}
     </div>
 
 </div>

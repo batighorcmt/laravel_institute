@@ -55,7 +55,11 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
   @override
   void didPopNext() {
     // Refresh for principal
-    Future.wait([_fetchSummary(), _fetchSelfAttendance()]);
+    Future.wait([
+      _fetchSummary(),
+      _fetchSelfAttendance(),
+      _fetchModules(forceRefresh: true),
+    ]);
   }
 
   @override
@@ -67,8 +71,8 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
     _fetchModules();
   }
 
-  Future<void> _fetchModules() async {
-    final modules = await ModuleAccess.fetch();
+  Future<void> _fetchModules({bool forceRefresh = false}) async {
+    final modules = await ModuleAccess.fetch(forceRefresh: forceRefresh);
     if (mounted) setState(() => _enabledModules = modules);
   }
 
@@ -246,7 +250,10 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
           await Future.wait([
             _fetchSummary(),
             _fetchSelfAttendance(),
-            _fetchModules(),
+            // forceRefresh: ModuleAccess caches for the process lifetime,
+            // so without this a pull-to-refresh would just hand back the
+            // stale cached set instead of actually checking the server.
+            _fetchModules(forceRefresh: true),
           ]);
         },
         child: ListView(

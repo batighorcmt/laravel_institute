@@ -83,20 +83,16 @@ class AuthController extends Controller
         if ($schoolId) {
             $teacher = \App\Models\Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->first();
             if ($teacher) {
-                $photoUrl = null;
-                if ($teacher->photo) {
-                    if (str_starts_with($teacher->photo, 'http')) {
-                        $photoUrl = $teacher->photo;
-                    } else {
-                        $storageUrl = \Illuminate\Support\Facades\Storage::url($teacher->photo);
-                        $photoUrl = rtrim(config('app.url'), '/') . '/' . ltrim($storageUrl, '/');
-                    }
-                }
+                // Use the model accessor (same one the teacher list screen relies
+                // on) instead of hand-building the URL from config('app.url') —
+                // that config value is a stale local dev URL in this deployment,
+                // so the manually-built link 404s while the accessor (built from
+                // the actual request host via asset()) resolves correctly.
                 $payload['teacher'] = [
                     'id' => $teacher->id,
                     'designation' => $teacher->designation,
                     'phone' => $teacher->phone,
-                    'photo_url' => $photoUrl,
+                    'photo_url' => $teacher->photo_url,
                 ];
             }
         }

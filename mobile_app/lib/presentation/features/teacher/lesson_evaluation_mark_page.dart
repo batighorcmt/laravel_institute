@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/dio_client.dart';
+import 'lesson_evaluation_student_history_page.dart';
+import 'lesson_evaluation_theme.dart';
 
 class LessonEvaluationMarkPage extends StatefulWidget {
   final int routineEntryId;
@@ -8,6 +10,9 @@ class LessonEvaluationMarkPage extends StatefulWidget {
   final int classId;
   final int sectionId;
   final int subjectId;
+  // When set (e.g. opened from "বিগত ক্লাস সমূহ"), the page loads directly
+  // into this date instead of today. Format: yyyy-MM-dd.
+  final String? initialDate;
   const LessonEvaluationMarkPage({
     super.key,
     required this.routineEntryId,
@@ -15,6 +20,7 @@ class LessonEvaluationMarkPage extends StatefulWidget {
     required this.classId,
     required this.sectionId,
     required this.subjectId,
+    this.initialDate,
   });
 
   @override
@@ -27,6 +33,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
   bool _loading = true;
   String? _error;
   String? _warningMessage;
+  bool _attendanceMissing = false;
   String _date = '';
   EvalStatus? _filterStatus;
   List<_Row> _rows = const [];
@@ -49,6 +56,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
   void initState() {
     super.initState();
     _dio = DioClient().dio;
+    _date = widget.initialDate ?? '';
     _load();
   }
 
@@ -104,6 +112,7 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
           .toList();
       _readOnly = (data['read_only'] as bool?) ?? false;
       _warningMessage = data['message'] as String?;
+      _attendanceMissing = (data['attendance_missing'] as bool?) ?? false;
       final stats = (data['stats'] as Map?) ?? {};
       _stats = {
         'total': (stats['total'] as num?)?.toInt() ?? 0,
@@ -318,28 +327,42 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                       horizontal: 16.0,
                       vertical: 8.0,
                     ),
-                    child: Container(
-                      padding: const EdgeInsets.all(12.0),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.warning, color: Colors.red),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _warningMessage!,
-                              style: const TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                    child: Builder(
+                      builder: (context) {
+                        // Attendance missing is a hard blocker (red); "no
+                        // evaluation entered yet" for a past date is just
+                        // informational (amber) — different problems, so
+                        // they shouldn't look like the same error.
+                        final color = _attendanceMissing
+                            ? Colors.red
+                            : LeColors.accent;
+                        final icon = _attendanceMissing
+                            ? Icons.warning
+                            : Icons.info_outline;
+                        return Container(
+                          padding: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: color),
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            children: [
+                              Icon(icon, color: color),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _warningMessage!,
+                                  style: TextStyle(
+                                    color: color,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
                 Expanded(
@@ -368,6 +391,22 @@ class _LessonEvaluationMarkPageState extends State<LessonEvaluationMarkPage> {
                             }
                           });
                         },
+                        onTapName: !_readOnly
+                            ? null
+                            : () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        LessonEvaluationStudentHistoryPage(
+                                          studentId: s.id,
+                                          studentName: s.name,
+                                          classId: widget.classId,
+                                          sectionId: widget.sectionId,
+                                          subjectId: widget.subjectId,
+                                        ),
+                                  ),
+                                );
+                              },
                       );
                     },
                   ),
@@ -665,10 +704,14 @@ class _RowWidget extends StatelessWidget {
   final _Row row;
   final ValueChanged<EvalStatus> onChanged;
   final bool readOnly;
+  // Set only in read-only mode — tapping the name opens the student's
+  // subject evaluation history.
+  final VoidCallback? onTapName;
   const _RowWidget({
     required this.row,
     required this.onChanged,
     required this.readOnly,
+    this.onTapName,
   });
   @override
   Widget build(BuildContext context) {
@@ -692,10 +735,23 @@ class _RowWidget extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  row.name,
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
+                child: onTapName == null
+                    ? Text(
+                        row.name,
+                        style: TextStyle(color: Colors.grey.shade600),
+                      )
+                    : InkWell(
+                        onTap: onTapName,
+                        child: Text(
+                          row.name,
+                          style: const TextStyle(
+                            color: LeColors.brandDark,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                            decorationColor: LeColors.brand,
+                          ),
+                        ),
+                      ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -745,7 +801,29 @@ class _RowWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(child: Text(row.name)),
+            Expanded(
+              child: onTapName == null
+                  ? Text(row.name)
+                  : InkWell(
+                      onTap: onTapName,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              row.name,
+                              style: const TextStyle(
+                                color: LeColors.brandDark,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                                decorationColor: LeColors.brand,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
             _StatusBtn(
               icon: Icons.check,
               color: Colors.green,

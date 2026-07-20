@@ -207,6 +207,19 @@
                         </div>
                     </div>
 
+                    <div class="row" id="result_publish_date_wrapper" style="display:none;">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="result_publish_date">ফলাফল প্রকাশের তারিখ <span class="text-danger">*</span></label>
+                                <input type="date" name="result_publish_date" id="result_publish_date" class="form-control @error('result_publish_date') is-invalid @enderror" value="{{ old('result_publish_date') }}">
+                                <small class="text-muted">এই তারিখ প্রত্যেক মার্কশিটে প্রদর্শিত হবে</small>
+                                @error('result_publish_date')
+                                    <span class="invalid-feedback">{{ $message }}</span>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label for="description">বিবরণ</label>
                         <textarea name="description" id="description" class="form-control @error('description') is-invalid @enderror" rows="3">{{ old('description') }}</textarea>
@@ -260,6 +273,16 @@ $(document).ready(function() {
     }
     initSelect2('#section_ids', '-- সকল শাখা --');
     initSelect2('#group_ids',   '-- সকল গ্রুপ --');
+
+    // "সম্পন্ন" (completed) status requires a result-publish date, shown on
+    // every marksheet — toggle the field's visibility/required-ness live.
+    function toggleResultPublishDate() {
+        const isCompleted = $('#status').val() === 'completed';
+        $('#result_publish_date_wrapper').toggle(isCompleted);
+        $('#result_publish_date').prop('required', isCompleted);
+    }
+    $('#status').on('change', toggleResultPublishDate);
+    toggleResultPublishDate();
 
     classSelect.on('change', function() {
         const classId = $(this).val();

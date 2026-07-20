@@ -103,6 +103,7 @@ class ExamController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'status' => 'required|in:draft,active,completed,cancelled',
+            'result_publish_date' => 'nullable|date|required_if:status,completed',
             'description' => 'nullable|string',
             // Subjects array (optional - can create exam first, then add subjects)
             'subject_id' => 'nullable|array',
@@ -165,6 +166,7 @@ class ExamController extends Controller
                 'start_date' => $validated['start_date'] ?? null,
                 'end_date' => $validated['end_date'] ?? null,
                 'status' => $validated['status'],
+                'result_publish_date' => $validated['result_publish_date'] ?? null,
                 'description' => $validated['description'] ?? null,
             ]);
 
@@ -295,6 +297,7 @@ class ExamController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'status' => 'required|in:draft,active,completed,cancelled',
+            'result_publish_date' => 'nullable|date|required_if:status,completed',
             'description' => 'nullable|string',
         ]);
 

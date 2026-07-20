@@ -3,6 +3,6 @@ class Env {
   // switch back to the production URL before shipping a release build.
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost/laravel_institute/public/api/v1/',
+    defaultValue: 'https://institute.batighorbd.com/api/v1/',
   );
 }

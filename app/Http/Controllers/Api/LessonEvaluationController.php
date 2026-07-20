@@ -258,6 +258,34 @@ class LessonEvaluationController extends Controller
         }
     }
 
+    // A routine entry can exist for a weekday/date that is actually a
+    // holiday (weekly off-day or a specifically listed Holiday) — no class
+    // really happens then, so evaluation isn't possible. Returns
+    // [isHoliday, label] so callers can exclude that date from lists/stats.
+    // Note: WeeklyHoliday.day_number is ISO-8601 (1=Monday..7=Sunday, see
+    // Principal\HolidayController::index), which matches Carbon's
+    // dayOfWeekIso — NOT dayOfWeek (0=Sunday..6=Saturday).
+    private function holidayInfo(int $schoolId, Carbon $date): array
+    {
+        $isWeeklyOff = \App\Models\WeeklyHoliday::forSchool($schoolId)
+            ->active()
+            ->where('day_number', $date->dayOfWeekIso)
+            ->exists();
+        if ($isWeeklyOff) {
+            return [true, 'সাপ্তাহিক ছুটি'];
+        }
+
+        $holiday = \App\Models\Holiday::forSchool($schoolId)
+            ->active()
+            ->whereDate('date', $date->toDateString())
+            ->first();
+        if ($holiday) {
+            return [true, $holiday->title];
+        }
+
+        return [false, null];
+    }
+
     // Returns today's routine entries for the logged-in teacher with evaluated flags
     public function todayRoutine(Request $request)
     {
@@ -277,6 +305,19 @@ class LessonEvaluationController extends Controller
         $teacherId = $teacher->id;
         $today = Carbon::today();
         $dayName = strtolower($today->format('l'));
+
+        // A routine can list periods for today's weekday, but if today is
+        // actually a holiday no class really happens — don't offer them for
+        // evaluation at all.
+        [$isHoliday, $holidayLabel] = $this->holidayInfo($schoolId, $today);
+        if ($isHoliday) {
+            return response()->json([
+                'date' => $today->toDateString(),
+                'items' => [],
+                'is_holiday' => true,
+                'holiday_label' => $holidayLabel,
+            ]);
+        }
 
         $entries = RoutineEntry::with(['class','section','subject'])
             ->where('school_id', $schoolId)
@@ -308,6 +349,191 @@ class LessonEvaluationController extends Controller
         return response()->json([
             'date' => $today->toDateString(),
             'items' => $data,
+        ]);
+    }
+
+    // Returns routine entries + evaluated flag for a past (non-future) date,
+    // for the "বিগত ক্লাস সমূহ" segment of the lesson evaluation list. Defaults
+    // to yesterday when no date is given.
+    public function routineForDate(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->primarySchool()?->id;
+        if (! $schoolId) {
+            $schoolId = $user->firstTeacherSchoolId();
+        }
+        if (! $schoolId || ! $user->isTeacher($schoolId)) {
+            return response()->json(['message' => 'শুধুমাত্র শিক্ষক'], 403);
+        }
+
+        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
+        if (! $teacher) {
+            return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
+        }
+        $teacherId = $teacher->id;
+        $today = Carbon::today();
+        $dateParam = $request->query('date');
+        $date = $dateParam ? Carbon::parse($dateParam)->startOfDay() : $today->copy()->subDay();
+        if ($date->greaterThan($today)) {
+            return response()->json(['message' => 'ভবিষ্যৎ তারিখ নির্বাচন করা যাবে না'], 422);
+        }
+
+        [$isHoliday, $holidayLabel] = $this->holidayInfo($schoolId, $date);
+        if ($isHoliday) {
+            return response()->json([
+                'date' => $date->toDateString(),
+                'day_of_week' => strtolower($date->format('l')),
+                'items' => [],
+                'is_holiday' => true,
+                'holiday_label' => $holidayLabel,
+            ]);
+        }
+
+        $dayName = strtolower($date->format('l'));
+
+        $entries = RoutineEntry::with(['class','section','subject'])
+            ->where('school_id', $schoolId)
+            ->where('teacher_id', $teacherId)
+            ->where('day_of_week', $dayName)
+            ->orderBy('period_number')
+            ->get();
+
+        // Match evaluations the same way form() does: exact routine_entry_id
+        // first, falling back to class/section/subject for that date — a
+        // class/section/subject can sit under a different routine_entry_id
+        // on different weekdays.
+        $dayEvaluations = LessonEvaluation::forSchool($schoolId)
+            ->forTeacher($teacherId)
+            ->forDate($date->toDateString())
+            ->get();
+        $byRoutineEntry = $dayEvaluations->whereNotNull('routine_entry_id')->keyBy('routine_entry_id');
+        $byCompositeKey = $dayEvaluations->keyBy(
+            fn($ev) => $ev->class_id.':'.$ev->section_id.':'.$ev->subject_id
+        );
+
+        $data = $entries->map(function($e) use ($byRoutineEntry, $byCompositeKey) {
+            $evaluation = $byRoutineEntry->get($e->id)
+                ?? $byCompositeKey->get($e->class_id.':'.$e->section_id.':'.$e->subject_id);
+            return [
+                'routine_entry_id' => $e->id,
+                'period_number' => $e->period_number,
+                'class_name' => $e->class?->name,
+                'section_name' => $e->section?->name,
+                'subject_name' => $e->subject?->name,
+                'evaluated' => $evaluation !== null,
+                'evaluation_id' => $evaluation?->id,
+                'class_id' => $e->class_id,
+                'section_id' => $e->section_id,
+                'subject_id' => $e->subject_id,
+            ];
+        })->values();
+
+        return response()->json([
+            'date' => $date->toDateString(),
+            'day_of_week' => $dayName,
+            'items' => $data,
+        ]);
+    }
+
+    // Daily + monthly lesson-evaluation completion stats for the logged-in
+    // teacher, used by the "লেসন ইভ্যালুয়েশন এন্ট্রি রিপোর্ট" screen.
+    public function report(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->primarySchool()?->id;
+        if (! $schoolId) {
+            $schoolId = $user->firstTeacherSchoolId();
+        }
+        if (! $schoolId || ! $user->isTeacher($schoolId)) {
+            return response()->json(['message' => 'শুধুমাত্র শিক্ষক'], 403);
+        }
+        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
+        if (! $teacher) {
+            return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
+        }
+        $teacherId = $teacher->id;
+        $today = Carbon::today();
+
+        // Weekly schedule pattern: number of periods this teacher has on
+        // each weekday, keyed by lowercase day name (e.g. 'monday').
+        $expectedByDay = RoutineEntry::where('school_id', $schoolId)
+            ->where('teacher_id', $teacherId)
+            ->select('day_of_week', DB::raw('count(*) as cnt'))
+            ->groupBy('day_of_week')
+            ->pluck('cnt', 'day_of_week');
+
+        $year = (int) $request->query('year', $today->year);
+        $month = (int) $request->query('month', $today->month);
+        $start = Carbon::create($year, $month, 1)->startOfMonth();
+        $monthEnd = $start->copy()->endOfMonth();
+        $end = $monthEnd->greaterThan($today) ? $today->copy() : $monthEnd;
+
+        $doneByDate = DB::table('lesson_evaluations')
+            ->where('school_id', $schoolId)
+            ->where('teacher_id', $teacherId)
+            ->whereBetween('evaluation_date', [$start->toDateString(), $monthEnd->toDateString()])
+            ->select('evaluation_date', DB::raw('count(*) as cnt'))
+            ->groupBy('evaluation_date')
+            ->pluck('cnt', 'evaluation_date');
+
+        // Weekly off-days (recurring) and specifically listed holidays in
+        // this range — a routine period landing on either is excluded from
+        // every stage of this report, since no class actually happens then
+        // (see holidayInfo() above for the day_number/dayOfWeekIso convention).
+        $isoDayNames = [1=>'monday',2=>'tuesday',3=>'wednesday',4=>'thursday',5=>'friday',6=>'saturday',7=>'sunday'];
+        $weeklyOffDayNames = \App\Models\WeeklyHoliday::forSchool($schoolId)->active()
+            ->pluck('day_number')
+            ->map(fn ($n) => $isoDayNames[(int) $n] ?? null)
+            ->filter()
+            ->all();
+        $holidayDates = \App\Models\Holiday::forSchool($schoolId)->active()
+            ->whereBetween('date', [$start->toDateString(), $monthEnd->toDateString()])
+            ->pluck('date')
+            ->map(fn ($d) => $d->toDateString())
+            ->all();
+
+        $dayStats = function (Carbon $date) use ($expectedByDay, $doneByDate, $weeklyOffDayNames, $holidayDates) {
+            $dayName = strtolower($date->format('l'));
+            $dateStr = $date->toDateString();
+            $isHoliday = in_array($dayName, $weeklyOffDayNames, true)
+                || in_array($dateStr, $holidayDates, true);
+            $expected = $isHoliday ? 0 : (int) ($expectedByDay[$dayName] ?? 0);
+            $done = $isHoliday ? 0 : (int) ($doneByDate[$dateStr] ?? 0);
+            return [
+                'date' => $dateStr,
+                'day_of_week' => $dayName,
+                'expected' => $expected,
+                'done' => $done,
+                'not_done' => max(0, $expected - $done),
+            ];
+        };
+
+        $days = [];
+        $expectedTotal = 0;
+        $doneTotal = 0;
+        if ($end->greaterThanOrEqualTo($start)) {
+            for ($cursor = $start->copy(); $cursor->lte($end); $cursor->addDay()) {
+                $row = $dayStats($cursor->copy());
+                $days[] = $row;
+                $expectedTotal += $row['expected'];
+                $doneTotal += $row['done'];
+            }
+        }
+
+        $todayStr = $today->toDateString();
+        $todayRow = collect($days)->firstWhere('date', $todayStr) ?? $dayStats($today);
+
+        return response()->json([
+            'year' => $year,
+            'month' => $month,
+            'today' => $todayRow,
+            'monthly' => [
+                'expected_total' => $expectedTotal,
+                'done_total' => $doneTotal,
+                'not_done_total' => max(0, $expectedTotal - $doneTotal),
+                'completion_rate' => $expectedTotal > 0 ? round(($doneTotal / $expectedTotal) * 100, 1) : 0,
+            ],
+            'days' => $days,
         ]);
     }
 
@@ -375,12 +601,29 @@ class LessonEvaluationController extends Controller
             ], 200);
         }
 
+        // A class/section/subject can be taught in different routine slots on
+        // different weekdays (e.g. Saturday period 2 vs Monday period 1), so an
+        // evaluation saved under one weekday's routine_entry_id won't match when
+        // the same class is viewed via another weekday's entry id. Try the exact
+        // routine entry first (disambiguates same-day multi-period cases), then
+        // fall back to matching by class/section/subject for that date.
         $evaluation = LessonEvaluation::forSchool($schoolId)
             ->forTeacher($teacherId)
             ->where('evaluation_date', $date->toDateString())
             ->where('routine_entry_id', $entry->id)
             ->with('records')
             ->first();
+
+        if (! $evaluation) {
+            $evaluation = LessonEvaluation::forSchool($schoolId)
+                ->forTeacher($teacherId)
+                ->where('evaluation_date', $date->toDateString())
+                ->where('class_id', $entry->class_id)
+                ->where('section_id', $entry->section_id)
+                ->where('subject_id', $entry->subject_id)
+                ->with('records')
+                ->first();
+        }
         $existing = $evaluation ? $evaluation->records->pluck('status','student_id') : collect();
 
         // Build enrollment query (optionally filter by subject assignments when exists)
@@ -447,6 +690,28 @@ class LessonEvaluationController extends Controller
             ->whereDate('homework_date', $date->toDateString())
             ->first();
 
+        // For a brand-new entry (no evaluation saved yet for this date), default
+        // the "পূর্বের হোমওয়ার্ক/পাঠ্য বিষয়" field to the homework/topic that was
+        // assigned in this class/section/subject's most recent prior session, so
+        // the teacher can see/confirm what was supposed to be covered today.
+        $notesValue = $evaluation?->notes;
+        if (! $evaluation && $isToday) {
+            $lastHomework = \App\Models\Homework::where('teacher_id', $teacherId)
+                ->where('class_id', $entry->class_id)
+                ->where('section_id', $entry->section_id)
+                ->where('subject_id', $entry->subject_id)
+                ->whereDate('homework_date', '<', $date->toDateString())
+                ->orderByDesc('homework_date')
+                ->first();
+            $notesValue = $lastHomework?->description;
+        }
+
+        // Attendance was taken but this specific date simply has no lesson
+        // evaluation submitted — distinct from the "attendance missing"
+        // early-return above, so the teacher isn't told to go take attendance
+        // when the real issue is that nobody filled the evaluation in.
+        $noEvaluation = ! $isToday && ! $evaluation;
+
         return response()->json([
             'date' => $date->toDateString(),
             'routine_entry' => [
@@ -462,9 +727,124 @@ class LessonEvaluationController extends Controller
             'students' => $students,
             'allowed_statuses' => ['completed','partial','not_done','absent'],
             'stats' => $stats,
-            'notes' => $evaluation?->notes,
+            'notes' => $notesValue,
             'next_topic' => $existingHomework?->description,
             'read_only' => ! $isToday,
+            'no_evaluation' => $noEvaluation,
+            'message' => $noEvaluation ? 'এই দিনে লেসন ইভ্যালুয়েশন এন্ট্রি করা হয়নি।' : null,
+        ]);
+    }
+
+    // A single student's lesson-evaluation history for one subject, scoped to
+    // the current academic year. Used by the student detail page reached by
+    // tapping a name in a completed (read-only) evaluation. Paginated so the
+    // client can infinite-scroll further back in time.
+    public function studentHistory(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id') ?? $user->primarySchool()?->id;
+        if (! $schoolId) {
+            $schoolId = $user->firstTeacherSchoolId();
+        }
+        if (! $schoolId || ! $user->isTeacher($schoolId)) {
+            return response()->json(['message' => 'শুধুমাত্র শিক্ষক'], 403);
+        }
+        $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
+        if (! $teacher) {
+            return response()->json(['message' => 'শিক্ষক প্রোফাইল পাওয়া যায়নি'], 422);
+        }
+
+        $validated = $request->validate([
+            'student_id' => ['required','integer','exists:students,id'],
+            'class_id' => ['required','integer'],
+            'section_id' => ['required','integer'],
+            'subject_id' => ['required','integer'],
+            'page' => ['nullable','integer','min:1'],
+            'per_page' => ['nullable','integer','min:1','max:50'],
+        ]);
+        $page = (int) ($validated['page'] ?? 1);
+        $perPage = (int) ($validated['per_page'] ?? 10);
+
+        $student = \App\Models\Student::forSchool($schoolId)->find($validated['student_id']);
+        if (! $student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        $academicYear = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->first();
+
+        $enrollment = StudentEnrollment::where('school_id', $schoolId)
+            ->where('student_id', $student->id)
+            ->where('class_id', $validated['class_id'])
+            ->where('section_id', $validated['section_id'])
+            ->when($academicYear, fn($q) => $q->where('academic_year_id', $academicYear->id))
+            ->first();
+
+        $subject = \App\Models\Subject::find($validated['subject_id']);
+        $class = \App\Models\SchoolClass::find($validated['class_id']);
+        $section = \App\Models\Section::find($validated['section_id']);
+
+        $scopeEvaluations = function ($q) use ($schoolId, $teacher, $validated, $academicYear) {
+            $q->where('school_id', $schoolId)
+                ->where('teacher_id', $teacher->id)
+                ->where('class_id', $validated['class_id'])
+                ->where('section_id', $validated['section_id'])
+                ->where('subject_id', $validated['subject_id']);
+            if ($academicYear) {
+                $q->whereBetween('evaluation_date', [
+                    $academicYear->start_date->toDateString(),
+                    $academicYear->end_date->toDateString(),
+                ]);
+            }
+        };
+
+        $summaryCounts = LessonEvaluationRecord::where('student_id', $student->id)
+            ->whereHas('lessonEvaluation', $scopeEvaluations)
+            ->select('status', DB::raw('count(*) as cnt'))
+            ->groupBy('status')
+            ->pluck('cnt', 'status');
+
+        $summary = [
+            'total' => (int) $summaryCounts->sum(),
+            'completed' => (int) ($summaryCounts['completed'] ?? 0),
+            'partial' => (int) ($summaryCounts['partial'] ?? 0),
+            'not_done' => (int) ($summaryCounts['not_done'] ?? 0),
+            'absent' => (int) ($summaryCounts['absent'] ?? 0),
+        ];
+
+        $evaluationsQuery = LessonEvaluation::where($scopeEvaluations)
+            ->whereHas('records', fn($q) => $q->where('student_id', $student->id))
+            ->with(['records' => fn($q) => $q->where('student_id', $student->id)])
+            ->orderByDesc('evaluation_date');
+
+        $total = (clone $evaluationsQuery)->count();
+        $evaluations = $evaluationsQuery->forPage($page, $perPage)->get();
+
+        $entries = $evaluations->map(function ($ev) {
+            $record = $ev->records->first();
+            return [
+                'date' => $ev->evaluation_date?->toDateString(),
+                'status' => $record?->status,
+                'notes' => $ev->notes,
+            ];
+        })->values();
+
+        return response()->json([
+            'student' => [
+                'id' => $student->id,
+                'name' => $student->full_name,
+                'roll' => $enrollment?->roll_no,
+                'photo_url' => $student->photo_url,
+                'guardian_phone' => $student->guardian_phone,
+            ],
+            'class_name' => $class?->name,
+            'section_name' => $section?->name,
+            'subject_name' => $subject?->name,
+            'academic_year' => $academicYear ? ['id' => $academicYear->id, 'name' => $academicYear->name] : null,
+            'summary' => $summary,
+            'entries' => $entries,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_more' => ($page * $perPage) < $total,
         ]);
     }
 }
