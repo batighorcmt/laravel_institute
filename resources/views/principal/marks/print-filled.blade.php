@@ -115,6 +115,91 @@
         </tbody>
     </table>
 
+    @php
+        $totalStudents = $students->count();
+        $absentCount = 0;
+        $passCount = 0;
+        $failCount = 0;
+        $gradeCounts = [];
+
+        foreach ($students as $student) {
+            $mark = $marks->get($student->id);
+            if (!$mark) {
+                continue;
+            }
+
+            if ($mark->is_absent) {
+                $absentCount++;
+                $gradeCounts['F'] = ($gradeCounts['F'] ?? 0) + 1;
+                continue;
+            }
+
+            $grade = $mark->letter_grade ?? '-';
+            $gradeCounts[$grade] = ($gradeCounts[$grade] ?? 0) + 1;
+
+            if ($grade === 'F') {
+                $failCount++;
+            } else {
+                $passCount++;
+            }
+        }
+
+        ksort($gradeCounts);
+    @endphp
+
+    <div class="print-summary" style="margin-top: 25px;">
+        <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+            {{ $lang==='bn' ? 'ফলাফলের সারাংশ' : 'Result Summary' }}
+        </div>
+        <table class="print-table summary-table" style="width: auto; min-width: 60%;">
+            <tbody>
+                <tr>
+                    <th>{{ $lang==='bn' ? 'মোট শিক্ষার্থী' : 'Total Students' }}</th>
+                    <td>{{ $lang==='bn' ? toBengaliNumber($totalStudents) : $totalStudents }}</td>
+                    <th>{{ $lang==='bn' ? 'উপস্থিত' : 'Present' }}</th>
+                    <td>{{ $lang==='bn' ? toBengaliNumber($totalStudents - $absentCount) : $totalStudents - $absentCount }}</td>
+                    <th>{{ $lang==='bn' ? 'অনুপস্থিত' : 'Absent' }}</th>
+                    <td>{{ $lang==='bn' ? toBengaliNumber($absentCount) : $absentCount }}</td>
+                </tr>
+                <tr>
+                    <th>{{ $lang==='bn' ? 'পাস' : 'Pass' }}</th>
+                    <td>{{ $lang==='bn' ? toBengaliNumber($passCount) : $passCount }}</td>
+                    <th>{{ $lang==='bn' ? 'ফেল' : 'Fail' }}</th>
+                    <td>{{ $lang==='bn' ? toBengaliNumber($failCount) : $failCount }}</td>
+                    <th>{{ $lang==='bn' ? 'পাসের হার' : 'Pass Rate' }}</th>
+                    <td>
+                        @php
+                            $passRate = $totalStudents > 0 ? round(($passCount / $totalStudents) * 100, 2) : 0;
+                        @endphp
+                        {{ $lang==='bn' ? toBengaliNumber($passRate) : $passRate }}%
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        @if(count($gradeCounts) > 0)
+            <div style="font-weight: bold; margin: 12px 0 6px; font-size: 14px;">
+                {{ $lang==='bn' ? 'গ্রেডভিত্তিক সংখ্যা' : 'Grade-wise Count' }}
+            </div>
+            <table class="print-table summary-table" style="width: auto; min-width: 60%;">
+                <thead>
+                    <tr>
+                        @foreach($gradeCounts as $grade => $count)
+                            <th style="text-align: center;">{{ $grade }}</th>
+                        @endforeach
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        @foreach($gradeCounts as $grade => $count)
+                            <td style="text-align: center;">{{ $lang==='bn' ? toBengaliNumber($count) : $count }}</td>
+                        @endforeach
+                    </tr>
+                </tbody>
+            </table>
+        @endif
+    </div>
+
     <div style="margin-top: 20px; font-size: 12px; text-align: right;">
         <strong>{{ $lang==='bn' ? 'পরীক্ষকের স্বাক্ষর:' : 'Examiner\'s Signature:' }}</strong> ___________________________
     </div>
@@ -155,6 +240,19 @@
     .print-table tbody td {
         min-height: 25px;
         font-size: 14px;
+    }
+
+    .print-summary {
+        page-break-inside: avoid;
+    }
+
+    .summary-table th {
+        background: #f0f0f0;
+        text-align: center;
+    }
+
+    .summary-table td {
+        text-align: center;
     }
 
     @media print {
