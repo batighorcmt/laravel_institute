@@ -144,7 +144,14 @@
             }
         }
 
-        ksort($gradeCounts);
+        $gradeOrder = ['A+', 'A', 'A-', 'B', 'C', 'D', 'F'];
+        uksort($gradeCounts, function ($a, $b) use ($gradeOrder) {
+            $posA = array_search($a, $gradeOrder);
+            $posB = array_search($b, $gradeOrder);
+            $posA = $posA === false ? count($gradeOrder) : $posA;
+            $posB = $posB === false ? count($gradeOrder) : $posB;
+            return $posA <=> $posB ?: strcmp($a, $b);
+        });
     @endphp
 
     <div class="print-summary" style="margin-top: 25px;">
