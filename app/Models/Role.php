@@ -19,6 +19,7 @@ class Role extends Model
     const SUPER_ADMIN = 'super_admin';
     const PRINCIPAL = 'principal';
     const TEACHER = 'teacher';
+    const STAFF = 'staff';
     const PARENT = 'parent';
     const APPLICANT = 'applicant';
 

@@ -101,6 +101,21 @@ class AuthController extends Controller
             }
         }
 
+        // If the user is a staff member for a school, include their
+        // designation and photo (mirrors the 'teacher' block above).
+        $staffSchoolId = $user->firstStaffSchoolId();
+        if ($staffSchoolId) {
+            $staffMember = \App\Models\StaffMember::where('user_id', $user->id)->where('school_id', $staffSchoolId)->first();
+            if ($staffMember) {
+                $payload['staff'] = [
+                    'id' => $staffMember->id,
+                    'designation' => $staffMember->designationRef ? ($staffMember->designationRef->name_bn ?: $staffMember->designationRef->name_en) : null,
+                    'phone' => $staffMember->phone,
+                    'photo_url' => $staffMember->photo_url,
+                ];
+            }
+        }
+
         $payload['username'] = $user->username;
 
         return response()->json($payload);

@@ -10,6 +10,7 @@ import '../teacher/teacher_students_list_page.dart';
 import '../teacher/teacher_profile_page.dart';
 import '../teacher/teacher_exams_page.dart';
 import '../../../core/network/dio_client.dart';
+import '../../../core/services/module_access.dart';
 import '../../../data/auth/auth_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../widgets/app_snack.dart';
@@ -37,6 +38,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
   Map<String, dynamic>? _summaryData;
   bool _summaryLoading = false;
   Map<String, dynamic>? _selfRecord;
+  Set<String>? _enabledModules;
 
   @override
   void didChangeDependencies() {
@@ -62,6 +64,55 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
     _dio = DioClient().dio;
     _fetchSummary();
     _fetchSelfAttendance();
+    _fetchModules();
+  }
+
+  Future<void> _fetchModules() async {
+    final modules = await ModuleAccess.fetch();
+    if (mounted) setState(() => _enabledModules = modules);
+  }
+
+  bool _moduleOn(String slug) => ModuleAccess.isOn(_enabledModules, slug);
+
+  /// Attendance Overview rows, skipping any whose module is disabled and
+  /// interleaving dividers only between the rows that remain.
+  List<Widget> _attendanceOverviewItems() {
+    final rows = <Widget>[
+      if (_moduleOn('attendance'))
+        _statRowCustom(
+          'Class Attendance',
+          'শাখা ${_sd('class_attendance', 'sections_with_attendance')}/${_sd('class_attendance', 'total_sections')}',
+          'শিক্ষার্থী ${_sd('class_attendance', 'present')}/${_sd('class_attendance', 'total')}',
+          Colors.teal,
+        ),
+      if (_moduleOn('extra_class'))
+        _statRowCustom(
+          'Extra Class Attendance',
+          'ক্লাস ${_sd('extra_class_attendance', 'classes_with_attendance')}/${_sd('extra_class_attendance', 'total_classes')}',
+          'শিক্ষার্থী ${_sd('extra_class_attendance', 'present')}/${_sd('extra_class_attendance', 'total')}',
+          Colors.orange,
+        ),
+      if (_moduleOn('attendance'))
+        _statRowCustom(
+          'Teacher Attendance',
+          '${_sd('teacher_attendance', 'percentage')}%',
+          'উপস্থিত ${_sd('teacher_attendance', 'present')}/${_sd('teacher_attendance', 'total')}',
+          Colors.indigo,
+        ),
+      if (_moduleOn('attendance'))
+        _statRowCustom(
+          'Staff Attendance',
+          '${_sd('staff_attendance', 'percentage')}%',
+          'উপস্থিত ${_sd('staff_attendance', 'present')}/${_sd('staff_attendance', 'total')}',
+          Colors.teal,
+        ),
+    ];
+    final withDividers = <Widget>[];
+    for (var i = 0; i < rows.length; i++) {
+      if (i > 0) withDividers.add(const Divider(height: 10));
+      withDividers.add(rows[i]);
+    }
+    return withDividers;
   }
 
   Future<void> _fetchSelfAttendance() async {
@@ -171,7 +222,13 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
               // Force-refresh auth profile from server (picks up profile changes)
               await ref.read(authProvider.notifier).refresh();
               // Then refresh local page data
-              await Future.wait([_fetchSummary(), _fetchSelfAttendance()]);
+              await Future.wait([
+                _fetchSummary(),
+                _fetchSelfAttendance(),
+                ModuleAccess.fetch(forceRefresh: true).then((m) {
+                  if (mounted) setState(() => _enabledModules = m);
+                }),
+              ]);
             },
           ),
           IconButton(
@@ -186,7 +243,11 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          await Future.wait([_fetchSummary(), _fetchSelfAttendance()]);
+          await Future.wait([
+            _fetchSummary(),
+            _fetchSelfAttendance(),
+            _fetchModules(),
+          ]);
         },
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -393,6 +454,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
               mainAxisSpacing: 4,
               childAspectRatio: 1.15,
               children: [
+                if (_moduleOn('attendance'))
                 AnimatedTile(
                   title: 'Self Attendance',
                   titleFontSize: 9,
@@ -413,6 +475,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                     context.push('/teacher/self-attendance');
                   },
                 ),
+                if (_moduleOn('attendance'))
                 AnimatedTile(
                   title: 'Students Attendance',
                   titleFontSize: 9,
@@ -433,6 +496,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                     context.push('/teacher/students-attendance');
                   },
                 ),
+                if (_moduleOn('lesson_evaluation'))
                 AnimatedTile(
                   title: 'Lesson Evaluation',
                   titleFontSize: 9,
@@ -457,6 +521,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                     );
                   },
                 ),
+                if (_moduleOn('homework'))
                 AnimatedTile(
                   title: 'Homework',
                   titleFontSize: 9,
@@ -482,6 +547,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                   },
                 ),
                 // Attendance Report tile removed from grid (kept at page bottom)
+                if (_moduleOn('exams'))
                 AnimatedTile(
                   title: 'Exams',
                   titleFontSize: 9,
@@ -569,6 +635,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                   },
                 ),
                 // Notice tile inserted after Students
+                if (_moduleOn('notices'))
                 AnimatedTile(
                   title: 'Notice',
                   titleFontSize: 9,
@@ -597,49 +664,39 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
             const SizedBox(height: 12),
 
             // Attendance & Lesson Summary Sections (Always show placeholders)
-            _statSection(
-              title: 'Attendance Overview',
-              icon: Icons.pie_chart_outline,
-              color: Colors.blue,
-              items: [
-                _statRowCustom(
-                  'Class Attendance',
-                  'শাখা ${_sd('class_attendance', 'sections_with_attendance')}/${_sd('class_attendance', 'total_sections')}',
-                  'শিক্ষার্থী ${_sd('class_attendance', 'present')}/${_sd('class_attendance', 'total')}',
-                  Colors.teal,
-                ),
-                const Divider(height: 10),
-                _statRowCustom(
-                  'Extra Class Attendance',
-                  'ক্লাস ${_sd('extra_class_attendance', 'classes_with_attendance')}/${_sd('extra_class_attendance', 'total_classes')}',
-                  'শিক্ষার্থী ${_sd('extra_class_attendance', 'present')}/${_sd('extra_class_attendance', 'total')}',
-                  Colors.orange,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _statSection(
-              title: 'Lesson Evaluation',
-              icon: Icons.menu_book_outlined,
-              color: Colors.purple,
-              items: [
-                _statInfo(
-                  'Total Routine Classes',
-                  _sd('lesson_evaluation', 'total_expected'),
-                ),
-                _statInfo(
-                  'Evaluations Completed',
-                  _sd('lesson_evaluation', 'completed'),
-                  color: Colors.green,
-                ),
-                _statInfo(
-                  'Evaluations Pending',
-                  _sd('lesson_evaluation', 'not_done'),
-                  color: Colors.orange,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+            if (_attendanceOverviewItems().isNotEmpty) ...[
+              _statSection(
+                title: 'Attendance Overview',
+                icon: Icons.pie_chart_outline,
+                color: Colors.blue,
+                items: _attendanceOverviewItems(),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (_moduleOn('lesson_evaluation')) ...[
+              _statSection(
+                title: 'Lesson Evaluation',
+                icon: Icons.menu_book_outlined,
+                color: Colors.purple,
+                items: [
+                  _statInfo(
+                    'Total Routine Classes',
+                    _sd('lesson_evaluation', 'total_expected'),
+                  ),
+                  _statInfo(
+                    'Evaluations Completed',
+                    _sd('lesson_evaluation', 'completed'),
+                    color: Colors.green,
+                  ),
+                  _statInfo(
+                    'Evaluations Pending',
+                    _sd('lesson_evaluation', 'not_done'),
+                    color: Colors.orange,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
 
             // Reports card
             Card(
@@ -675,44 +732,6 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                             ),
                             SizedBox(height: 6),
                             Text('View attendance and evaluation reports'),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Push Notification Logs card
-            Card(
-              elevation: 1,
-              child: InkWell(
-                onTap: () => context.push('/principal/notification-logs'),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.notifications_active_outlined,
-                        size: 28,
-                        color: Colors.orange,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Push Diagnostics',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 6),
-                            Text('View notification delivery status and logs'),
                           ],
                         ),
                       ),
@@ -860,5 +879,4 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
       ),
     );
   }
-
 }

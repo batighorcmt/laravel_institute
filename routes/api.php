@@ -52,12 +52,24 @@ Route::prefix('v1')->group(function () {
             Route::get('principal/reports/students-attendance', [\App\Http\Controllers\Api\PrincipalReportController::class , 'studentsAttendance'])->middleware('role:principal');
             Route::get('principal/reports/students-attendance/details', [\App\Http\Controllers\Api\PrincipalReportController::class , 'studentsAttendanceDetails'])->middleware('role:principal');
             Route::get('principal/reports/students-attendance/summary', [\App\Http\Controllers\Api\PrincipalReportController::class , 'studentsAttendanceSummary'])->middleware('role:principal');
+            Route::get('principal/reports/teacher-attendance-details', [\App\Http\Controllers\Api\PrincipalReportController::class , 'teacherAttendanceDetails'])->middleware('role:principal');
+            Route::get('principal/reports/teacher-attendance-monthly', [\App\Http\Controllers\Api\PrincipalReportController::class , 'teacherAttendanceMonthly'])->middleware('role:principal');
+            Route::get('principal/reports/attendance-monthly', [\App\Http\Controllers\Api\PrincipalReportController::class , 'attendanceMonthly'])->middleware('role:principal');
+            Route::get('principal/reports/extra-class-attendance-monthly', [\App\Http\Controllers\Api\PrincipalReportController::class , 'extraClassAttendanceMonthly'])->middleware('role:principal');
+            Route::get('principal/reports/staff-attendance-details', [\App\Http\Controllers\Api\PrincipalReportController::class , 'staffAttendanceDetails'])->middleware('role:principal');
+            Route::get('principal/reports/staff-attendance-monthly', [\App\Http\Controllers\Api\PrincipalReportController::class , 'staffAttendanceMonthly'])->middleware('role:principal');
 
             // Teacher attendance & academic actions
             Route::post('teacher/attendance', [\App\Http\Controllers\Api\TeacherAttendanceController::class , 'store'])->middleware('role:teacher');
             Route::post('teacher/attendance/checkout', [\App\Http\Controllers\Api\TeacherAttendanceController::class , 'checkout'])->middleware('role:teacher');
             Route::get('teacher/attendance', [\App\Http\Controllers\Api\TeacherAttendanceController::class , 'index'])->middleware('role:teacher');
             Route::get('teacher/attendance/settings', [\App\Http\Controllers\Api\TeacherAttendanceSettingController::class , 'show'])->middleware('role:teacher');
+
+            // Staff self-attendance (mirrors teacher attendance above)
+            Route::post('staff/attendance', [\App\Http\Controllers\Api\StaffAttendanceController::class , 'store'])->middleware('role:staff');
+            Route::post('staff/attendance/checkout', [\App\Http\Controllers\Api\StaffAttendanceController::class , 'checkout'])->middleware('role:staff');
+            Route::get('staff/attendance', [\App\Http\Controllers\Api\StaffAttendanceController::class , 'index'])->middleware('role:staff');
+            Route::get('staff/attendance/settings', [\App\Http\Controllers\Api\StaffAttendanceSettingController::class , 'show'])->middleware('role:staff');
             // Teacher → Students Attendance (meta + lists)
             Route::get('teacher/students-attendance/modules', [\App\Http\Controllers\Api\TeacherStudentAttendanceController::class , 'modules'])->middleware('role:teacher,principal');
             Route::get('teacher/students-attendance/class/meta', [\App\Http\Controllers\Api\TeacherStudentAttendanceController::class , 'classMeta'])->middleware('role:teacher,principal');

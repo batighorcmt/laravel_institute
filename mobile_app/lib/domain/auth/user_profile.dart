@@ -12,6 +12,9 @@ class UserProfile {
   final String? teacherDesignation;
   final int? teacherId;
   final String? teacherPhone;
+  final String? staffDesignation;
+  final int? staffId;
+  final String? staffPhone;
   final String? username;
 
   UserProfile({
@@ -24,6 +27,9 @@ class UserProfile {
     this.teacherDesignation,
     this.teacherId,
     this.teacherPhone,
+    this.staffDesignation,
+    this.staffId,
+    this.staffPhone,
     this.username,
   });
 
@@ -66,6 +72,9 @@ class UserProfile {
     String? teacherDesignation;
     int? teacherId;
     String? teacherPhone;
+    String? staffDesignation;
+    int? staffId;
+    String? staffPhone;
 
     for (final key in const [
       'photo',
@@ -102,6 +111,24 @@ class UserProfile {
       teacherPhone = t['phone']?.toString();
     }
 
+    // Prefer staff nested payload if present (mirrors teacher above)
+    final st = json['staff'];
+    if (st is Map) {
+      final sp = st['photo_url'] ?? st['photo'];
+      if (sp != null && sp.toString().trim().isNotEmpty) {
+        photo = sp.toString();
+      }
+      final sd = st['designation'];
+      if (sd != null && sd.toString().trim().isNotEmpty) {
+        staffDesignation = sd.toString();
+      }
+      final sid = st['id'];
+      if (sid != null) {
+        staffId = (sid as num).toInt();
+      }
+      staffPhone = st['phone']?.toString();
+    }
+
     return UserProfile(
       id: (json['id'] as num).toInt(),
       name: (json['name'] ?? '').toString(),
@@ -112,6 +139,9 @@ class UserProfile {
       teacherDesignation: teacherDesignation,
       teacherId: teacherId,
       teacherPhone: teacherPhone,
+      staffDesignation: staffDesignation,
+      staffId: staffId,
+      staffPhone: staffPhone,
       username: json['username']?.toString(),
     );
   }
@@ -144,6 +174,9 @@ class UserProfile {
     'teacher_designation': teacherDesignation,
     'teacher_id': teacherId,
     'teacher_phone': teacherPhone,
+    'staff_designation': staffDesignation,
+    'staff_id': staffId,
+    'staff_phone': staffPhone,
     'username': username,
   };
 }

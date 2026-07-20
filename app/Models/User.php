@@ -104,6 +104,11 @@ class User extends Authenticatable
         return $this->hasRole(Role::TEACHER, $schoolId);
     }
 
+    public function isStaff($schoolId = null): bool
+    {
+        return $this->hasRole(Role::STAFF, $schoolId);
+    }
+
     public function isParent($schoolId = null): bool
     {
         return $this->hasRole(Role::PARENT, $schoolId);
@@ -177,6 +182,13 @@ class User extends Authenticatable
     {
         return $this->activeSchoolRoles()
             ->whereHas('role', function ($q) { $q->where('name','teacher'); })
+            ->value('school_id');
+    }
+
+    public function firstStaffSchoolId(): ?int
+    {
+        return $this->activeSchoolRoles()
+            ->whereHas('role', function ($q) { $q->where('name', Role::STAFF); })
             ->value('school_id');
     }
 

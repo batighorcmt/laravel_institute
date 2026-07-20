@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import '../config/env.dart';
 import '../navigation.dart';
+import '../services/bootstrap_service.dart';
 import '../../presentation/state/auth_state.dart';
 import 'dart:developer' as developer;
 
@@ -12,10 +13,6 @@ class DioClient {
   DioClient._internal();
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-
-  // Ensure baseUrl always ends with a trailing slash for safe concatenation
-  String get _normalizedBaseUrl =>
-      Env.apiBaseUrl.endsWith('/') ? Env.apiBaseUrl : '${Env.apiBaseUrl}/';
 
   final Dio dio = Dio(
     BaseOptions(
@@ -27,8 +24,13 @@ class DioClient {
   );
 
   Future<void> init() async {
-    // Update dio's baseUrl in case the dart-define or default lacked a slash
-    dio.options.baseUrl = _normalizedBaseUrl;
+    // Resolve the actual API server via BootstrapService (falls back to
+    // Env.apiBaseUrl if the server hasn't overridden it, or on failure) —
+    // this is what lets a super admin redirect installed apps to a new
+    // backend without an app-store update. Ensure a trailing slash either
+    // way for safe path concatenation.
+    final resolved = await BootstrapService().resolveApiBaseUrl();
+    dio.options.baseUrl = resolved.endsWith('/') ? resolved : '$resolved/';
     developer.log(
       'Initializing Dio | baseUrl=${dio.options.baseUrl}',
       name: 'DioClient',

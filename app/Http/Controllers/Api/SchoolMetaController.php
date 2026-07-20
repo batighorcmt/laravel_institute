@@ -176,10 +176,19 @@ class SchoolMetaController extends Controller
 
         $current = $years->firstWhere('is_current', true);
 
+        // Slugs of modules currently enabled for this school — the mobile
+        // app uses this to hide dashboard tiles/report cards for features a
+        // super admin has switched off, matching the web sidebar's
+        // hasModule() gating (resources/views/layouts/admin.blade.php).
+        $enabledModules = $school
+            ? $school->modules()->where('school_modules.is_enabled', true)->pluck('slug')->values()
+            : collect();
+
         $payload = $school ? $school->toArray() : null;
         $payload = array_merge($payload ?? [], [
             'academic_years' => $outYears,
-            'current_academic_year' => $current ? [ 'id'=>$current->id, 'name'=>$current->name, 'name_bn'=>$current->name_bn ] : null
+            'current_academic_year' => $current ? [ 'id'=>$current->id, 'name'=>$current->name, 'name_bn'=>$current->name_bn ] : null,
+            'enabled_modules' => $enabledModules,
         ]);
 
         return response()->json($payload);

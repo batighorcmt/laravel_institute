@@ -53,6 +53,14 @@ class RoleSeeder extends Seeder
                 ]
             ],
             [
+                'name' => 'staff',
+                'display_name' => 'Staff',
+                'description' => 'Non-teaching staff member with self-service access (e.g. attendance)',
+                'permissions' => [
+                    'manage_own_attendance',
+                ]
+            ],
+            [
                 'name' => 'parent',
                 'display_name' => 'Parent/Guardian',
                 'description' => 'Parent or guardian with limited access',

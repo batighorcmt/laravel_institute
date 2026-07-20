@@ -338,6 +338,12 @@
                                         <p>Designations</p>
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('superadmin.mobile-settings.edit') }}" class="nav-link {{ request()->routeIs('superadmin.mobile-settings.*') ? 'active' : '' }}">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>Mobile App</p>
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                         <li class="nav-item has-treeview {{ request()->routeIs('superadmin.website.*') ? 'menu-open' : '' }}">

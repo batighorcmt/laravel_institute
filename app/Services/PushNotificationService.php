@@ -210,7 +210,7 @@ class PushNotificationService
      */
     public function sendAttendanceNotification($studentId, $status, $date, $type = 'class', ?string $titleOverride = null, ?string $bodyOverride = null)
     {
-        $student = \App\Models\Student::with('class')->find($studentId);
+        $student = \App\Models\Student::with(['currentEnrollment.class', 'currentEnrollment.section'])->find($studentId);
         if (! $student || ! $student->user_id) {
             return;
         }
@@ -237,7 +237,19 @@ class PushNotificationService
 
             $statusText = $statusBn[$status] ?? $status;
             $dateStr = \Carbon\Carbon::parse($date)->format('d-m-Y');
-            $className = $student->class ? $student->class->name : '';
+
+            // Source class/section from the student's active enrollment —
+            // the same source of truth every report uses — instead of the
+            // stale, often-unset students.class_id column, which left this
+            // blank for students whose homeroom class was never backfilled.
+            $enrollment = $student->currentEnrollment;
+            $classPart = $enrollment?->class
+                ? ($enrollment->class->bangla_name ?: $enrollment->class->name)
+                : '';
+            $sectionPart = $enrollment?->section
+                ? ($enrollment->section->bangla_name ?: $enrollment->section->name)
+                : '';
+            $className = trim("$classPart $sectionPart");
 
             $title = 'হাজিরা নোটিফিকেশন';
 

@@ -43,6 +43,7 @@
               <th>পদবী</th>
               <th>যোগাযোগ</th>
               <th class="text-center">অবস্থা</th>
+              <th class="text-center">লগইন</th>
               <th class="text-center" width="150">অ্যাকশন</th>
             </tr>
           </thead>
@@ -68,12 +69,19 @@
                 </span>
               </td>
               <td class="text-center">
+                <span v-if="s.has_login" class="badge badge-success" :title="s.username">{{ s.username }}</span>
+                <button v-else class="btn btn-sm btn-outline-primary" :disabled="creatingLoginFor === s.id" @click="createLogin(s)">
+                  <span v-if="creatingLoginFor === s.id" class="spinner-border spinner-border-sm"></span>
+                  <template v-else><i class="fas fa-key mr-1"></i>লগইন তৈরি করুন</template>
+                </button>
+              </td>
+              <td class="text-center">
                 <button class="btn btn-sm btn-light text-primary border shadow-sm mr-2" @click="openModal(s)"><i class="fas fa-edit"></i></button>
                 <button class="btn btn-sm btn-light text-danger border shadow-sm" @click="remove(s)"><i class="fas fa-trash-alt"></i></button>
               </td>
             </tr>
             <tr v-if="!filteredStaff.length">
-              <td colspan="7" class="text-center text-muted py-5">কোনো কর্মচারী পাওয়া যায়নি। "নতুন কর্মচারী" থেকে যুক্ত করুন।</td>
+              <td colspan="8" class="text-center text-muted py-5">কোনো কর্মচারী পাওয়া যায়নি। "নতুন কর্মচারী" থেকে যুক্ত করুন।</td>
             </tr>
           </tbody>
         </table>
@@ -238,6 +246,7 @@ export default {
       photoFile: null,
       form: this.emptyForm(),
       serverErrors: [],
+      creatingLoginFor: null,
       printOptions: {
         designation_id: '',
         status: '',
@@ -338,7 +347,14 @@ export default {
           ? `/principal/institute/${this.schoolId}/staff/${this.currentId}`
           : `/principal/institute/${this.schoolId}/staff`;
         const resp = await axios.post(url, fd);
-        if (window.toastr) window.toastr.success(resp.data.message);
+        if (!this.isEditing) {
+          // New staff get a login created automatically — the message
+          // carries the one-time username/password, so make sure it's
+          // actually seen (toastr auto-dismisses too fast for this).
+          alert(resp.data.message);
+        } else if (window.toastr) {
+          window.toastr.success(resp.data.message);
+        }
         $(this.$refs.modal).modal('hide');
         await this.fetchData();
       } catch (e) {
@@ -349,6 +365,18 @@ export default {
         }
       } finally {
         this.saving = false;
+      }
+    },
+    async createLogin(s) {
+      this.creatingLoginFor = s.id;
+      try {
+        const resp = await axios.post(`/principal/institute/${this.schoolId}/staff/${s.id}/create-login`);
+        alert(resp.data.message);
+        await this.fetchData();
+      } catch (e) {
+        if (window.toastr) window.toastr.error(e.response?.data?.message || 'লগইন তৈরি করতে সমস্যা হয়েছে');
+      } finally {
+        this.creatingLoginFor = null;
       }
     },
     async remove(s) {

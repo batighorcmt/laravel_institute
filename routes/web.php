@@ -177,6 +177,10 @@ Route::middleware(['auth', 'active_school'])->group(function () {
         // Designations management
         Route::resource('designations', \App\Http\Controllers\SuperAdmin\DesignationController::class)->except(['create', 'show', 'edit']);
 
+        // Mobile app settings (configurable API server URL)
+        Route::get('mobile-settings', [\App\Http\Controllers\SuperAdmin\MobileSettingsController::class, 'edit'])->name('mobile-settings.edit');
+        Route::post('mobile-settings', [\App\Http\Controllers\SuperAdmin\MobileSettingsController::class, 'update'])->name('mobile-settings.update');
+
         // Website Templates: Themes, Menu Templates, Page Templates
         Route::prefix('website')->name('website.')->group(function () {
             Route::get('themes', [\App\Http\Controllers\SuperAdmin\WebsiteThemeController::class, 'index'])->name('themes.index');
@@ -264,6 +268,7 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::post('/', [\App\Http\Controllers\Principal\StaffController::class, 'store'])->name('store');
                 Route::post('/{staffMember}', [\App\Http\Controllers\Principal\StaffController::class, 'update'])->name('update');
                 Route::delete('/{staffMember}', [\App\Http\Controllers\Principal\StaffController::class, 'destroy'])->name('destroy');
+                Route::post('/{staffMember}/create-login', [\App\Http\Controllers\Principal\StaffController::class, 'createLogin'])->name('create-login');
             }
             );
             // Attendance routes

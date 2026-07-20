@@ -8,6 +8,8 @@ import '../features/home/home_page.dart';
 import '../state/auth_state.dart';
 import '../features/principal/principal_dashboard_page.dart';
 import '../features/teacher/teacher_dashboard_page.dart';
+import '../features/staff/staff_dashboard_page.dart';
+import '../features/staff/staff_self_attendance_page.dart';
 import '../features/teacher/self_attendance_page.dart';
 import '../features/teacher/students_attendance_menu_page.dart';
 import '../features/teacher/class_sections_list_page.dart';
@@ -121,6 +123,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/teacher',
         builder: (context, state) => const TeacherDashboardPage(),
+      ),
+      GoRoute(
+        path: '/staff',
+        builder: (context, state) => const StaffDashboardPage(),
+      ),
+      GoRoute(
+        path: '/staff/self-attendance',
+        builder: (context, state) => const StaffSelfAttendancePage(),
       ),
       GoRoute(
         path: '/notifications',
@@ -296,7 +306,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // If not logged in: allow splash/login and teacher flows to continue (camera intents may transiently reset state)
       if (!loggedIn) {
         final onTeacherFlow = state.matchedLocation.startsWith('/teacher');
-        if (loggingIn || onSplash || onTeacherFlow) return null;
+        final onStaffFlow = state.matchedLocation.startsWith('/staff');
+        if (loggingIn || onSplash || onTeacherFlow || onStaffFlow) return null;
         return '/login';
       }
 
@@ -308,6 +319,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         // Prefer principal dashboard when user has both principal and teacher roles
         if (roles.contains('principal')) return '/principal';
         if (roles.contains('teacher')) return '/teacher';
+        if (roles.contains('staff')) return '/staff';
         if (roles.contains('parent')) return '/parent/dashboard';
         return '/'; // Fallback to home
       }

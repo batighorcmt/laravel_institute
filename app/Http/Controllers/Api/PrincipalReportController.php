@@ -15,7 +15,10 @@ use App\Models\School;
 use App\Models\Teacher;
 use App\Models\TeacherAttendance;
 use App\Models\StaffMember;
+use App\Models\StaffAttendance;
 use App\Models\Payment;
+use App\Models\Holiday;
+use App\Models\WeeklyHoliday;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -125,6 +128,69 @@ class PrincipalReportController extends Controller
                 'modules' => $modules,
             ],
         ]);
+    }
+
+    /**
+     * Resolve the principal's school id the same way every method here does.
+     */
+    private function resolveSchoolId(Request $request): ?int
+    {
+        $user = $request->user();
+        return $request->attributes->get('current_school_id')
+            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
+            ?? ($user->primarySchool()?->id ?? null);
+    }
+
+    /**
+     * Working-day count for a school+month: calendar days minus the
+     * school's weekly off-days (WeeklyHoliday) and explicit holidays
+     * (Holiday). Shared denominator for every monthly attendance report.
+     * Mirrors the same algorithm used by the web print report
+     * (resources/views/principal/attendance/monthly_report_print.blade.php)
+     * so mobile and web always agree.
+     */
+    private function workingDaysBreakdown(int $schoolId, int $year, int $month): array
+    {
+        $start = Carbon::create($year, $month, 1)->startOfMonth();
+        $end = $start->copy()->endOfMonth();
+        $totalDays = $start->daysInMonth;
+
+        $weeklyOffDays = WeeklyHoliday::forSchool($schoolId)->active()
+            ->pluck('day_number')->map(fn ($d) => (int) $d)->all();
+
+        $holidayDates = Holiday::forSchool($schoolId)->active()
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->pluck('date')->map(fn ($d) => $d->toDateString())->all();
+
+        $workingDays = 0;
+        $workingDayDates = [];
+        for ($cursor = $start->copy(); $cursor->lte($end); $cursor->addDay()) {
+            if (in_array($cursor->dayOfWeek, $weeklyOffDays, true)) continue;
+            if (in_array($cursor->toDateString(), $holidayDates, true)) continue;
+            $workingDays++;
+            $workingDayDates[] = $cursor->toDateString();
+        }
+
+        return ['total_days' => $totalDays, 'working_days' => $workingDays, 'working_day_dates' => $workingDayDates];
+    }
+
+    /**
+     * Sort a collection of rows (each an array with a 'percentage' and a
+     * tie-break count key) descending by percentage — nulls (no attendance
+     * taken at all) sink to the bottom — and stamp a 1-based 'rank'.
+     */
+    private function rankByPercentage($rows, string $tieBreakKey)
+    {
+        return $rows->sort(function ($a, $b) use ($tieBreakKey) {
+            if ($a['percentage'] === null && $b['percentage'] === null) return 0;
+            if ($a['percentage'] === null) return 1;
+            if ($b['percentage'] === null) return -1;
+            if ($a['percentage'] == $b['percentage']) return $b[$tieBreakKey] <=> $a[$tieBreakKey];
+            return $b['percentage'] <=> $a['percentage'];
+        })->values()->map(function ($row, $idx) {
+            $row['rank'] = $idx + 1;
+            return $row;
+        })->values();
     }
 
     public function attendanceSummary(Request $request)
@@ -240,6 +306,23 @@ class PrincipalReportController extends Controller
             })
             ->count();
 
+        // 4. Teacher Attendance (today)
+        $totalTeachers = Teacher::forSchool($schoolId)->active()->count();
+        $teacherAttToday = TeacherAttendance::where('school_id', $schoolId)
+            ->where('date', $date)
+            ->get(['status']);
+        $teacherPresentToday = $teacherAttToday->whereIn('status', ['present', 'late'])->count();
+        $teacherMarkedToday = $teacherAttToday->count();
+
+        // 5. Staff Attendance (today) — only staff with a login account can
+        // ever check in, so that's the denominator (not every roster row).
+        $totalStaff = StaffMember::where('school_id', $schoolId)->active()->whereNotNull('user_id')->count();
+        $staffAttToday = StaffAttendance::where('school_id', $schoolId)
+            ->where('date', $date)
+            ->get(['status']);
+        $staffPresentToday = $staffAttToday->whereIn('status', ['present', 'late'])->count();
+        $staffMarkedToday = $staffAttToday->count();
+
         return response()->json([
             'data' => [
                 'date' => $date,
@@ -256,6 +339,18 @@ class PrincipalReportController extends Controller
                     'percentage' => $extraClassTotal > 0 ? round(($extraClassPresent / $extraClassTotal) * 100, 1) : 0,
                     'total_classes' => $totalExtraClasses,
                     'classes_with_attendance' => $extraClassesWithAtt,
+                ],
+                'teacher_attendance' => [
+                    'total' => $totalTeachers,
+                    'present' => $teacherPresentToday,
+                    'marked' => $teacherMarkedToday,
+                    'percentage' => $totalTeachers > 0 ? round(($teacherPresentToday / $totalTeachers) * 100, 1) : 0,
+                ],
+                'staff_attendance' => [
+                    'total' => $totalStaff,
+                    'present' => $staffPresentToday,
+                    'marked' => $staffMarkedToday,
+                    'percentage' => $totalStaff > 0 ? round(($staffPresentToday / $totalStaff) * 100, 1) : 0,
                 ],
                 'lesson_evaluation' => [
                     'total_expected' => $routineExpected,
@@ -328,8 +423,8 @@ class PrincipalReportController extends Controller
 
         // Section totals
         $sectionTotals = StudentEnrollment::select(
-                'classes.id as class_id','classes.name as class_name','classes.numeric_value',
-                'sections.id as section_id','sections.name as section_name',
+                'classes.id as class_id','classes.name as class_name','classes.bangla_name as class_name_bn','classes.numeric_value',
+                'sections.id as section_id','sections.name as section_name','sections.bangla_name as section_name_bn',
                 'sections.class_teacher_name',
                 'teachers.initials as class_teacher_initials',
                 DB::raw('COUNT(DISTINCT student_enrollments.student_id) as total'),
@@ -345,7 +440,7 @@ class PrincipalReportController extends Controller
             ->where('students.status', 'active')
             ->where('sections.status','active')
             ->when($yearVal, fn($q)=>$q->where('student_enrollments.academic_year_id', $yearVal))
-            ->groupBy('classes.id','classes.name','classes.numeric_value','sections.id','sections.name','sections.class_teacher_name','teachers.initials')
+            ->groupBy('classes.id','classes.name','classes.bangla_name','classes.numeric_value','sections.id','sections.name','sections.bangla_name','sections.class_teacher_name','teachers.initials')
             ->get();
 
         $sectionTotals = $sectionTotals->sortBy(function($r){
@@ -398,6 +493,7 @@ class PrincipalReportController extends Controller
                 $classBreakdown[$key] = [
                     'class_id' => $row->class_id,
                     'class_name' => $row->class_name,
+                    'class_name_bn' => $row->class_name_bn,
                     'numeric_value' => $row->numeric_value,
                     'sections' => [],
                     'total' => 0,
@@ -414,6 +510,7 @@ class PrincipalReportController extends Controller
             $classBreakdown[$key]['sections'][] = [
                 'section_id' => $row->section_id,
                 'section_name' => $row->section_name,
+                'section_name_bn' => $row->section_name_bn,
                 'class_teacher_name' => $row->class_teacher_name ?? null,
                 'class_teacher_initials' => $row->class_teacher_initials ?? null,
                 'total' => (int)$row->total,
@@ -925,6 +1022,516 @@ class PrincipalReportController extends Controller
                 'date' => $date,
                 'class_wise' => $classWise,
             ]
+        ]);
+    }
+
+    /**
+     * Every active teacher's attendance status for a single date, plus a
+     * summary. Used by the mobile "Teacher Attendance Report" Daily tab.
+     */
+    public function teacherAttendanceDetails(Request $request)
+    {
+        $schoolId = $this->resolveSchoolId($request);
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+        $date = $request->query('date', now()->toDateString());
+
+        $teachers = Teacher::forSchool($schoolId)->active()->with('user')->get();
+        $attendances = TeacherAttendance::where('school_id', $schoolId)
+            ->where('date', $date)
+            ->get()
+            ->keyBy('user_id');
+
+        $present = 0; $late = 0; $absent = 0; $notMarked = 0;
+
+        $list = $teachers->map(function ($t) use ($attendances, &$present, &$late, &$absent, &$notMarked) {
+            $att = $attendances->get($t->user_id);
+            $status = $att->status ?? 'not_marked';
+            if ($status === 'present') $present++;
+            elseif ($status === 'late') $late++;
+            elseif ($status === 'absent') $absent++;
+            else $notMarked++;
+
+            $name = trim($t->first_name.' '.$t->last_name);
+
+            return [
+                'teacher_id' => $t->id,
+                'user_id' => $t->user_id,
+                'name' => $name !== '' ? $name : ($t->user->name ?? null),
+                'name_bn' => trim(($t->first_name_bn ?? '').' '.($t->last_name_bn ?? '')) ?: null,
+                'initials' => $t->initials,
+                'designation' => $t->designation,
+                'photo_url' => $t->photo_url,
+                'status' => $status,
+                'check_in_time' => $att->check_in_time ?? null,
+                'check_out_time' => $att->check_out_time ?? null,
+                'remarks' => $att->remarks ?? null,
+            ];
+        })->sortBy('name')->values();
+
+        $total = $teachers->count();
+        $percentage = $total > 0 ? round((($present + $late) / $total) * 100, 1) : null;
+
+        return response()->json([
+            'data' => [
+                'date' => $date,
+                'summary' => [
+                    'total' => $total,
+                    'present' => $present,
+                    'late' => $late,
+                    'absent' => $absent,
+                    'not_marked' => $notMarked,
+                    'percentage' => $percentage,
+                ],
+                'teachers' => $list,
+            ],
+        ]);
+    }
+
+    /**
+     * Monthly teacher attendance: working days, days attendance was taken,
+     * overall %, and a per-teacher leaderboard ranked by attendance %.
+     */
+    public function teacherAttendanceMonthly(Request $request)
+    {
+        $schoolId = $this->resolveSchoolId($request);
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+        $year = (int) $request->query('year', now()->year);
+        $month = (int) $request->query('month', now()->month);
+        $wd = $this->workingDaysBreakdown($schoolId, $year, $month);
+
+        $start = Carbon::create($year, $month, 1)->startOfMonth()->toDateString();
+        $end = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
+
+        $teachers = Teacher::forSchool($schoolId)->active()->with('user')->get();
+
+        // Only count attendance recorded on an actual working day — matches
+        // the web report's methodology and prevents days_attendance_taken
+        // from ever exceeding working_days (e.g. a holiday punch shouldn't
+        // inflate the count).
+        $records = TeacherAttendance::where('school_id', $schoolId)
+            ->whereBetween('date', [$start, $end])
+            ->whereIn('date', $wd['working_day_dates'])
+            ->get();
+
+        $daysAttendanceTaken = $records->pluck('date')->map(fn ($d) => $d->toDateString())->unique()->count();
+        $byTeacher = $records->groupBy('user_id');
+
+        $totalPresent = 0; $totalLate = 0;
+
+        $rows = $teachers->map(function ($t) use ($byTeacher, $daysAttendanceTaken, &$totalPresent, &$totalLate) {
+            $recs = $byTeacher->get($t->user_id, collect());
+            $present = $recs->where('status', 'present')->count();
+            $late = $recs->where('status', 'late')->count();
+            $explicitAbsent = $recs->where('status', 'absent')->count();
+            $marked = $recs->count();
+            $absentDays = max(0, $daysAttendanceTaken - $marked) + $explicitAbsent;
+            $totalPresent += $present;
+            $totalLate += $late;
+            $pct = $daysAttendanceTaken > 0 ? round((($present + $late) / $daysAttendanceTaken) * 100, 1) : null;
+
+            $name = trim($t->first_name.' '.$t->last_name);
+
+            return [
+                'teacher_id' => $t->id,
+                'user_id' => $t->user_id,
+                'name' => $name !== '' ? $name : ($t->user->name ?? null),
+                'initials' => $t->initials,
+                'designation' => $t->designation,
+                'photo_url' => $t->photo_url,
+                'present_days' => $present,
+                'late_days' => $late,
+                'absent_days' => $absentDays,
+                'marked_days' => $marked,
+                'percentage' => $pct,
+            ];
+        });
+
+        $ranked = $this->rankByPercentage($rows, 'present_days');
+
+        $totalTeachers = $teachers->count();
+        $expected = $totalTeachers * $daysAttendanceTaken;
+        $overallPercentage = $expected > 0 ? round((($totalPresent + $totalLate) / $expected) * 100, 1) : null;
+
+        return response()->json([
+            'data' => [
+                'year' => $year,
+                'month' => $month,
+                'working_days' => $wd['working_days'],
+                'total_days_in_month' => $wd['total_days'],
+                'days_attendance_taken' => $daysAttendanceTaken,
+                'total_teachers' => $totalTeachers,
+                'overall' => [
+                    'present' => $totalPresent,
+                    'late' => $totalLate,
+                    'percentage' => $overallPercentage,
+                ],
+                'teachers' => $ranked,
+            ],
+        ]);
+    }
+
+    /**
+     * Monthly class (student) attendance per section: working days, days
+     * taken, % attendance, and each section's rank among all of the
+     * school's sections (শাখা) that month.
+     */
+    public function attendanceMonthly(Request $request)
+    {
+        $schoolId = $this->resolveSchoolId($request);
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+        $year = (int) $request->query('year', now()->year);
+        $month = (int) $request->query('month', now()->month);
+        $wd = $this->workingDaysBreakdown($schoolId, $year, $month);
+
+        $currentYear = AcademicYear::forSchool($schoolId)->current()->first();
+        $yearId = $currentYear?->id;
+        $start = Carbon::create($year, $month, 1)->startOfMonth()->toDateString();
+        $end = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
+
+        $sectionTotals = StudentEnrollment::select(
+                'classes.id as class_id', 'classes.name as class_name', 'classes.bangla_name as class_name_bn', 'classes.numeric_value',
+                'sections.id as section_id', 'sections.name as section_name', 'sections.bangla_name as section_name_bn',
+                DB::raw('COUNT(DISTINCT student_enrollments.student_id) as total')
+            )
+            ->join('classes', 'student_enrollments.class_id', '=', 'classes.id')
+            ->join('sections', 'student_enrollments.section_id', '=', 'sections.id')
+            ->join('students', 'students.id', '=', 'student_enrollments.student_id')
+            ->where('student_enrollments.school_id', $schoolId)
+            ->where('student_enrollments.status', 'active')
+            ->where('students.status', 'active')
+            ->where('sections.status', 'active')
+            ->when($yearId, fn ($q) => $q->where('student_enrollments.academic_year_id', $yearId))
+            ->groupBy('classes.id', 'classes.name', 'classes.bangla_name', 'classes.numeric_value', 'sections.id', 'sections.name', 'sections.bangla_name')
+            ->get();
+
+        // whereIn(working_day_dates) keeps days_taken from ever exceeding
+        // working_days (e.g. attendance recorded on a holiday shouldn't
+        // inflate the count) — mirrors the web report's methodology.
+        $attAgg = Attendance::select(
+                'section_id',
+                DB::raw('COUNT(DISTINCT date) as days_taken'),
+                DB::raw("SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END) as present_total")
+            )
+            ->where('school_id', $schoolId)
+            ->whereBetween('date', [$start, $end])
+            ->whereIn('date', $wd['working_day_dates'])
+            ->groupBy('section_id')
+            ->get()
+            ->keyBy('section_id');
+
+        $rows = $sectionTotals->map(function ($row) use ($attAgg) {
+            $agg = $attAgg->get($row->section_id);
+            $daysTaken = $agg ? (int) $agg->days_taken : 0;
+            $present = $agg ? (int) $agg->present_total : 0;
+            $expected = $row->total * $daysTaken;
+            $pct = $expected > 0 ? round(($present / $expected) * 100, 1) : null;
+            return [
+                'class_id' => $row->class_id,
+                'class_name' => $row->class_name,
+                'class_name_bn' => $row->class_name_bn,
+                'numeric_value' => $row->numeric_value,
+                'section_id' => $row->section_id,
+                'section_name' => $row->section_name,
+                'section_name_bn' => $row->section_name_bn,
+                'total_students' => (int) $row->total,
+                'days_attendance_taken' => $daysTaken,
+                'present_total' => $present,
+                'percentage' => $pct,
+            ];
+        });
+
+        $ranked = $this->rankByPercentage($rows, 'present_total');
+
+        $byClass = $ranked->groupBy('class_id')->map(function ($sections) {
+            $first = $sections->first();
+            return [
+                'class_id' => $first['class_id'],
+                'class_name' => $first['class_name'],
+                'class_name_bn' => $first['class_name_bn'],
+                'numeric_value' => $first['numeric_value'],
+                'sections' => $sections->sortBy('section_name')->values(),
+            ];
+        })->sortBy('numeric_value')->values();
+
+        $totalStudentsAll = (int) $sectionTotals->sum('total');
+        $daysAttendanceTakenSchool = Attendance::where('school_id', $schoolId)
+            ->whereBetween('date', [$start, $end])
+            ->whereIn('date', $wd['working_day_dates'])
+            ->distinct('date')->count('date');
+        $totalPresentAll = (int) $attAgg->sum('present_total');
+        $expectedAll = $totalStudentsAll * $daysAttendanceTakenSchool;
+
+        return response()->json([
+            'data' => [
+                'year' => $year,
+                'month' => $month,
+                'working_days' => $wd['working_days'],
+                'total_days_in_month' => $wd['total_days'],
+                'days_attendance_taken' => $daysAttendanceTakenSchool,
+                'overall' => [
+                    'total_students' => $totalStudentsAll,
+                    'present_total' => $totalPresentAll,
+                    'percentage' => $expectedAll > 0 ? round(($totalPresentAll / $expectedAll) * 100, 1) : null,
+                ],
+                'class_wise' => $byClass,
+            ],
+        ]);
+    }
+
+    /**
+     * Monthly extra-class attendance, ranked the same way as
+     * attendanceMonthly() but with each extra class treated as a branch.
+     */
+    public function extraClassAttendanceMonthly(Request $request)
+    {
+        $schoolId = $this->resolveSchoolId($request);
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+        $year = (int) $request->query('year', now()->year);
+        $month = (int) $request->query('month', now()->month);
+        $wd = $this->workingDaysBreakdown($schoolId, $year, $month);
+
+        $currentYear = AcademicYear::forSchool($schoolId)->current()->first();
+        $yearId = $currentYear?->id;
+        $start = Carbon::create($year, $month, 1)->startOfMonth()->toDateString();
+        $end = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
+
+        $extraClasses = DB::table('extra_classes')
+            ->join('users', 'extra_classes.teacher_id', '=', 'users.id')
+            ->leftJoin('teachers', 'users.id', '=', 'teachers.user_id')
+            ->join('extra_class_enrollments', function ($join) {
+                $join->on('extra_classes.id', '=', 'extra_class_enrollments.extra_class_id')
+                     ->where('extra_class_enrollments.status', 'active');
+            })
+            ->join('students', function ($join) {
+                $join->on('extra_class_enrollments.student_id', '=', 'students.id')
+                     ->where('students.status', 'active');
+            })
+            ->where('extra_classes.school_id', $schoolId)
+            ->where('extra_classes.status', 'active')
+            ->when($yearId, fn ($q) => $q->where('extra_classes.academic_year_id', $yearId))
+            ->groupBy('extra_classes.id', 'extra_classes.name', 'users.name', 'teachers.initials')
+            ->select(
+                'extra_classes.id as extra_class_id',
+                'extra_classes.name as extra_class_name',
+                'users.name as teacher_name',
+                'teachers.initials as teacher_initials',
+                DB::raw('COUNT(DISTINCT students.id) as total')
+            )
+            ->having('total', '>', 0)
+            ->get();
+
+        $extraClassIds = $extraClasses->pluck('extra_class_id');
+
+        $attAgg = DB::table('extra_class_attendances')
+            ->whereBetween('date', [$start, $end])
+            ->whereIn('date', $wd['working_day_dates'])
+            ->whereIn('extra_class_id', $extraClassIds)
+            ->groupBy('extra_class_id')
+            ->select(
+                'extra_class_id',
+                DB::raw('COUNT(DISTINCT date) as days_taken'),
+                DB::raw("SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END) as present_total")
+            )
+            ->get()
+            ->keyBy('extra_class_id');
+
+        $rows = $extraClasses->map(function ($cls) use ($attAgg) {
+            $agg = $attAgg->get($cls->extra_class_id);
+            $daysTaken = $agg ? (int) $agg->days_taken : 0;
+            $present = $agg ? (int) $agg->present_total : 0;
+            $expected = $cls->total * $daysTaken;
+            $pct = $expected > 0 ? round(($present / $expected) * 100, 1) : null;
+            return [
+                'extra_class_id' => $cls->extra_class_id,
+                'extra_class_name' => $cls->extra_class_name,
+                'teacher_name' => $cls->teacher_name,
+                'teacher_initials' => $cls->teacher_initials,
+                'total_students' => (int) $cls->total,
+                'days_attendance_taken' => $daysTaken,
+                'present_total' => $present,
+                'percentage' => $pct,
+            ];
+        });
+
+        $ranked = $this->rankByPercentage($rows, 'present_total');
+
+        $totalStudentsAll = (int) $extraClasses->sum('total');
+        $daysAttendanceTakenSchool = DB::table('extra_class_attendances')
+            ->whereIn('extra_class_id', $extraClassIds)
+            ->whereBetween('date', [$start, $end])
+            ->whereIn('date', $wd['working_day_dates'])
+            ->distinct('date')->count('date');
+        $totalPresentAll = (int) $attAgg->sum('present_total');
+        $expectedAll = $totalStudentsAll * $daysAttendanceTakenSchool;
+
+        return response()->json([
+            'data' => [
+                'year' => $year,
+                'month' => $month,
+                'working_days' => $wd['working_days'],
+                'total_days_in_month' => $wd['total_days'],
+                'days_attendance_taken' => $daysAttendanceTakenSchool,
+                'overall' => [
+                    'total_students' => $totalStudentsAll,
+                    'present_total' => $totalPresentAll,
+                    'percentage' => $expectedAll > 0 ? round(($totalPresentAll / $expectedAll) * 100, 1) : null,
+                ],
+                'extra_classes' => $ranked,
+            ],
+        ]);
+    }
+
+    /**
+     * Every active staff member's attendance status for a single date, plus
+     * a summary. Mirrors teacherAttendanceDetails() — used by the mobile
+     * "Staff Attendance Report" Daily tab. Staff without a login account
+     * yet (user_id null) are excluded since they can never check in.
+     */
+    public function staffAttendanceDetails(Request $request)
+    {
+        $schoolId = $this->resolveSchoolId($request);
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+        $date = $request->query('date', now()->toDateString());
+
+        $staff = StaffMember::where('school_id', $schoolId)->active()->whereNotNull('user_id')->with(['user', 'designationRef'])->get();
+        $attendances = StaffAttendance::where('school_id', $schoolId)
+            ->where('date', $date)
+            ->get()
+            ->keyBy('user_id');
+
+        $present = 0; $late = 0; $absent = 0; $notMarked = 0;
+
+        $list = $staff->map(function ($s) use ($attendances, &$present, &$late, &$absent, &$notMarked) {
+            $att = $attendances->get($s->user_id);
+            $status = $att->status ?? 'not_marked';
+            if ($status === 'present') $present++;
+            elseif ($status === 'late') $late++;
+            elseif ($status === 'absent') $absent++;
+            else $notMarked++;
+
+            $name = trim($s->first_name.' '.$s->last_name);
+
+            return [
+                'staff_id' => $s->id,
+                'user_id' => $s->user_id,
+                'name' => $name !== '' ? $name : ($s->user->name ?? null),
+                'name_bn' => $s->full_name_bn ?: null,
+                'designation' => $s->designationRef ? ($s->designationRef->name_bn ?: $s->designationRef->name_en) : null,
+                'photo_url' => $s->photo_url,
+                'status' => $status,
+                'check_in_time' => $att->check_in_time ?? null,
+                'check_out_time' => $att->check_out_time ?? null,
+                'remarks' => $att->remarks ?? null,
+            ];
+        })->sortBy('name')->values();
+
+        $total = $staff->count();
+        $percentage = $total > 0 ? round((($present + $late) / $total) * 100, 1) : null;
+
+        return response()->json([
+            'data' => [
+                'date' => $date,
+                'summary' => [
+                    'total' => $total,
+                    'present' => $present,
+                    'late' => $late,
+                    'absent' => $absent,
+                    'not_marked' => $notMarked,
+                    'percentage' => $percentage,
+                ],
+                'staff' => $list,
+            ],
+        ]);
+    }
+
+    /**
+     * Monthly staff attendance: working days, days attendance was taken,
+     * overall %, and a per-staff leaderboard ranked by attendance %.
+     * Mirrors teacherAttendanceMonthly().
+     */
+    public function staffAttendanceMonthly(Request $request)
+    {
+        $schoolId = $this->resolveSchoolId($request);
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+        $year = (int) $request->query('year', now()->year);
+        $month = (int) $request->query('month', now()->month);
+        $wd = $this->workingDaysBreakdown($schoolId, $year, $month);
+
+        $start = Carbon::create($year, $month, 1)->startOfMonth()->toDateString();
+        $end = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
+
+        $staff = StaffMember::where('school_id', $schoolId)->active()->whereNotNull('user_id')->with(['user', 'designationRef'])->get();
+
+        $records = StaffAttendance::where('school_id', $schoolId)
+            ->whereBetween('date', [$start, $end])
+            ->whereIn('date', $wd['working_day_dates'])
+            ->get();
+
+        $daysAttendanceTaken = $records->pluck('date')->map(fn ($d) => $d->toDateString())->unique()->count();
+        $byStaff = $records->groupBy('user_id');
+
+        $totalPresent = 0; $totalLate = 0;
+
+        $rows = $staff->map(function ($s) use ($byStaff, $daysAttendanceTaken, &$totalPresent, &$totalLate) {
+            $recs = $byStaff->get($s->user_id, collect());
+            $present = $recs->where('status', 'present')->count();
+            $late = $recs->where('status', 'late')->count();
+            $explicitAbsent = $recs->where('status', 'absent')->count();
+            $marked = $recs->count();
+            $absentDays = max(0, $daysAttendanceTaken - $marked) + $explicitAbsent;
+            $totalPresent += $present;
+            $totalLate += $late;
+            $pct = $daysAttendanceTaken > 0 ? round((($present + $late) / $daysAttendanceTaken) * 100, 1) : null;
+
+            $name = trim($s->first_name.' '.$s->last_name);
+
+            return [
+                'staff_id' => $s->id,
+                'user_id' => $s->user_id,
+                'name' => $name !== '' ? $name : ($s->user->name ?? null),
+                'designation' => $s->designationRef ? ($s->designationRef->name_bn ?: $s->designationRef->name_en) : null,
+                'photo_url' => $s->photo_url,
+                'present_days' => $present,
+                'late_days' => $late,
+                'absent_days' => $absentDays,
+                'marked_days' => $marked,
+                'percentage' => $pct,
+            ];
+        });
+
+        $ranked = $this->rankByPercentage($rows, 'present_days');
+
+        $totalStaff = $staff->count();
+        $expected = $totalStaff * $daysAttendanceTaken;
+        $overallPercentage = $expected > 0 ? round((($totalPresent + $totalLate) / $expected) * 100, 1) : null;
+
+        return response()->json([
+            'data' => [
+                'year' => $year,
+                'month' => $month,
+                'working_days' => $wd['working_days'],
+                'total_days_in_month' => $wd['total_days'],
+                'days_attendance_taken' => $daysAttendanceTaken,
+                'total_staff' => $totalStaff,
+                'overall' => [
+                    'present' => $totalPresent,
+                    'late' => $totalLate,
+                    'percentage' => $overallPercentage,
+                ],
+                'staff' => $ranked,
+            ],
         ]);
     }
 }

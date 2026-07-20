@@ -13,6 +13,8 @@ class StaffMember extends Model
 
     protected $fillable = [
         'school_id',
+        'user_id',
+        'plain_password',
         'first_name',
         'last_name',
         'first_name_bn',
@@ -39,6 +41,16 @@ class StaffMember extends Model
     public function designationRef(): BelongsTo
     {
         return $this->belongsTo(Designation::class, 'designation_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function staffAttendances()
+    {
+        return $this->hasMany(StaffAttendance::class, 'user_id', 'user_id');
     }
 
     public function getFullNameAttribute(): string
