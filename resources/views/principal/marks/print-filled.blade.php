@@ -16,7 +16,7 @@
   {{ $examInfo }}
 </div>
 @endsection
-
+ 
 @section('content')
 <div class="subject-info" style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9;">
   <div style="display: flex; justify-content: space-between; align-items: center;">
