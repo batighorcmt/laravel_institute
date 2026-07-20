@@ -11,11 +11,122 @@ use App\Models\SchoolClass;
 use App\Models\Section;
 use App\Models\RoutineEntry;
 use App\Models\LessonEvaluation;
+use App\Models\School;
+use App\Models\Teacher;
+use App\Models\TeacherAttendance;
+use App\Models\StaffMember;
+use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class PrincipalReportController extends Controller
 {
+    /**
+     * High-level overview data (school info, counts, module flags, fees)
+     * for the principal web dashboard.
+     */
+    public function dashboardOverview(Request $request)
+    {
+        $user = $request->user();
+        $schoolId = $request->attributes->get('current_school_id')
+            ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
+            ?? ($user->primarySchool()?->id ?? null);
+
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+
+        $school = School::find($schoolId);
+        if (!$school) {
+            return response()->json(['message' => 'School not found'], 404);
+        }
+
+        $currentYear = AcademicYear::forSchool($schoolId)->current()->first();
+        $yearId = $currentYear?->id;
+
+        $activeEnrollments = StudentEnrollment::join('students', 'students.id', '=', 'student_enrollments.student_id')
+            ->where('student_enrollments.school_id', $schoolId)
+            ->where('student_enrollments.status', 'active')
+            ->where('students.status', 'active')
+            ->when($yearId, fn($q) => $q->where('student_enrollments.academic_year_id', $yearId));
+
+        $studentsTotal = (clone $activeEnrollments)->count('students.id');
+        $studentsMale = (clone $activeEnrollments)->where('students.gender', 'male')->count('students.id');
+        $studentsFemale = (clone $activeEnrollments)->where('students.gender', 'female')->count('students.id');
+
+        $activeTeachers = Teacher::where('school_id', $schoolId)->where('status', 'active');
+        $teachersActive = (clone $activeTeachers)->count();
+        $staffActive = StaffMember::where('school_id', $schoolId)->where('status', 'active')->count();
+        $classesTotal = SchoolClass::where('school_id', $schoolId)->where('status', 'active')->count();
+        $sectionsTotal = Section::where('school_id', $schoolId)->where('status', 'active')->count();
+
+        $activeTeacherUserIds = (clone $activeTeachers)->pluck('user_id')->filter()->values();
+        $teacherAttendanceTotal = $activeTeacherUserIds->count();
+        $teacherAttendancePresent = 0;
+        $teacherAttendanceAbsent = 0;
+        if ($teacherAttendanceTotal > 0) {
+            $teacherAttendancePresent = TeacherAttendance::where('school_id', $schoolId)
+                ->whereIn('user_id', $activeTeacherUserIds)
+                ->whereDate('date', now()->toDateString())
+                ->whereIn('status', ['present', 'late'])
+                ->count();
+            $teacherAttendanceAbsent = TeacherAttendance::where('school_id', $schoolId)
+                ->whereIn('user_id', $activeTeacherUserIds)
+                ->whereDate('date', now()->toDateString())
+                ->where('status', 'absent')
+                ->count();
+        }
+
+        $moduleSlugs = ['attendance', 'lesson_evaluation', 'exams', 'results', 'routine', 'accounts', 'extra_class', 'notices', 'admission', 'sms', 'documents'];
+        $modules = collect($moduleSlugs)->mapWithKeys(fn($slug) => [$slug => $school->hasModule($slug)]);
+
+        $feesToday = null;
+        $feesMonth = null;
+        if ($modules['accounts']) {
+            $feesToday = (float) Payment::where('school_id', $schoolId)
+                ->where('status', 'settled')
+                ->whereDate('received_at', now()->toDateString())
+                ->sum('amount_paid');
+            $feesMonth = (float) Payment::where('school_id', $schoolId)
+                ->where('status', 'settled')
+                ->whereMonth('received_at', now()->month)
+                ->whereYear('received_at', now()->year)
+                ->sum('amount_paid');
+        }
+
+        return response()->json([
+            'data' => [
+                'school' => [
+                    'id' => $school->id,
+                    'name' => $school->name,
+                    'name_bn' => $school->name_bn,
+                    'logo' => $school->logo ? asset('storage/' . $school->logo) : null,
+                ],
+                'academic_year' => $currentYear ? ['id' => $currentYear->id, 'name' => $currentYear->name] : null,
+                'counts' => [
+                    'students_total' => $studentsTotal,
+                    'students_male' => $studentsMale,
+                    'students_female' => $studentsFemale,
+                    'teachers_active' => $teachersActive,
+                    'staff_active' => $staffActive,
+                    'classes_total' => $classesTotal,
+                    'sections_total' => $sectionsTotal,
+                ],
+                'teacher_attendance' => [
+                    'total' => $teacherAttendanceTotal,
+                    'present' => $teacherAttendancePresent,
+                    'absent' => $teacherAttendanceAbsent,
+                    'percentage' => $teacherAttendanceTotal > 0 ? round(($teacherAttendancePresent / $teacherAttendanceTotal) * 100, 1) : null,
+                ],
+                'fees' => [
+                    'today' => $feesToday,
+                    'month' => $feesMonth,
+                ],
+                'modules' => $modules,
+            ],
+        ]);
+    }
+
     public function attendanceSummary(Request $request)
     {
         $user = $request->user();

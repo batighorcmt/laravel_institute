@@ -37,6 +37,7 @@ Route::prefix('v1')->group(function () {
             Route::post('notices/{notice}/reply', [\App\Http\Controllers\Api\NoticeInteractionController::class , 'storeReply'])->middleware('role:parent,teacher,principal');
 
             // Principal reports
+            Route::get('principal/reports/dashboard-overview', [\App\Http\Controllers\Api\PrincipalReportController::class , 'dashboardOverview'])->middleware('role:principal');
             Route::get('principal/reports/attendance-summary', [\App\Http\Controllers\Api\PrincipalReportController::class , 'attendanceSummary'])->middleware('role:principal');
             Route::get('principal/reports/attendance-details', [\App\Http\Controllers\Api\PrincipalReportController::class , 'attendanceDetails'])->middleware('role:principal');
             Route::get('principal/reports/extra-class-attendance-details', [\App\Http\Controllers\Api\PrincipalReportController::class , 'extraClassAttendanceDetails'])->middleware('role:principal');
