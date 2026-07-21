@@ -309,6 +309,20 @@ class AttendanceProcessingEngine
                         'medium'         => 'biometric',
                     ]);
                 });
+
+                if ($teacher->user_id) {
+                    try {
+                        app(\App\Services\PushNotificationService::class)->sendTeacherAttendanceNotification(
+                            $teacher->user_id,
+                            $isExitWindow ? 'check_out' : 'check_in',
+                            $status,
+                            $date,
+                            $timeOnly
+                        );
+                    } catch (\Throwable $pushEx) {
+                        Log::error('Teacher attendance push (biometric) failed: '.$pushEx->getMessage());
+                    }
+                }
             } catch (QueryException $e) {
                 if (!$this->isUniqueConstraintViolation($e)) {
                     throw $e;
@@ -341,20 +355,38 @@ class AttendanceProcessingEngine
      */
     private function updateTeacherAttendancePunch(TeacherAttendance $attendance, bool $isExitWindow, string $timeOnly): void
     {
+        $changed = false;
+
         if ($isExitWindow) {
             // Update check-out if this punch is later
             if (!$attendance->check_out_time || $timeOnly > $attendance->check_out_time) {
                 $attendance->check_out_time = $timeOnly;
+                $changed = true;
             }
         } else {
             // Update check-in if this punch is earlier
             if (!$attendance->check_in_time || $timeOnly < $attendance->check_in_time) {
                 $attendance->check_in_time = $timeOnly;
+                $changed = true;
             }
         }
         if ($attendance->medium !== 'biometric') {
             $attendance->medium = 'biometric';
         }
         $attendance->save();
+
+        if ($changed && $attendance->user_id) {
+            try {
+                app(\App\Services\PushNotificationService::class)->sendTeacherAttendanceNotification(
+                    $attendance->user_id,
+                    $isExitWindow ? 'check_out' : 'check_in',
+                    $attendance->status,
+                    $attendance->date instanceof Carbon ? $attendance->date->toDateString() : (string) $attendance->date,
+                    $timeOnly
+                );
+            } catch (\Throwable $pushEx) {
+                Log::error('Teacher attendance push (biometric update) failed: '.$pushEx->getMessage());
+            }
+        }
     }
 }

@@ -266,6 +266,58 @@ class PushNotificationService
     }
 
     /**
+     * Notify a teacher's own device about their own attendance — fired from
+     * every path that can settle a day's teacher attendance: self check-in/out
+     * (app or web), a biometric machine punch, or the end-of-day cron marking
+     * them absent for not punching in at all.
+     *
+     * @param  int  $teacherUserId
+     * @param  string  $event  'check_in' | 'check_out' | 'absent'
+     */
+    public function sendTeacherAttendanceNotification(
+        int $teacherUserId,
+        string $event,
+        ?string $status = null,
+        ?string $date = null,
+        ?string $time = null
+    ): void {
+        $tokens = DeviceToken::where('user_id', $teacherUserId)->whereNotNull('token')->pluck('token')->unique();
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        $dateStr = $date ? \Carbon\Carbon::parse($date)->format('d-m-Y') : now()->format('d-m-Y');
+        $statusMap = ['present' => 'উপস্থিত', 'late' => 'বিলম্বিত', 'absent' => 'অনুপস্থিত'];
+        $statusBn = $statusMap[$status] ?? $status;
+
+        $title = 'শিক্ষক হাজিরা';
+        switch ($event) {
+            case 'check_in':
+                $timeStr = $time ? \Carbon\Carbon::parse($time)->format('h:i A') : now()->format('h:i A');
+                $body = "আপনার হাজিরা সম্পন্ন হয়েছে। স্ট্যাটাস: {$statusBn} | তারিখ: {$dateStr}, সময়: {$timeStr}";
+                break;
+            case 'check_out':
+                $timeStr = $time ? \Carbon\Carbon::parse($time)->format('h:i A') : now()->format('h:i A');
+                $body = "আপনার চেক-আউট সম্পন্ন হয়েছে। তারিখ: {$dateStr}, সময়: {$timeStr}";
+                break;
+            case 'absent':
+            default:
+                $body = "নির্ধারিত সময়ের মধ্যে হাজিরা প্রদান না করায় আপনাকে আজ ({$dateStr}) অনুপস্থিত হিসেবে চিহ্নিত করা হয়েছে।";
+                break;
+        }
+
+        foreach ($tokens as $token) {
+            SendPushNotificationJob::dispatch(
+                [$token],
+                $title,
+                $body,
+                ['type' => 'teacher_attendance', 'event' => $event],
+                $teacherUserId
+            );
+        }
+    }
+
+    /**
      * Send push notification for attendance status update
      */
     public function sendAttendanceNotification($studentId, $status, $date, $type = 'class', ?string $titleOverride = null, ?string $bodyOverride = null)

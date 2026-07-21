@@ -70,7 +70,7 @@ class ProcessEndOfDayAttendance extends Command
 
             // ── Mark absent teachers ──────────────────────────────────────────
             if ($now >= $teacherLateThreshold) {
-                $this->markAbsentTeachers($school, $today);
+                $this->markAbsentTeachers($school, $today, $pushService);
             }
 
             $this->info("[{$school->name}] Processed for {$today}");
@@ -102,6 +102,11 @@ class ProcessEndOfDayAttendance extends Command
 
         $absentStudentIds = $enrolledStudentIds->diff($presentStudentIds);
 
+        // Group newly-created absences by class/section so the SMS batch below
+        // can reuse AttendanceSmsService's per-class-section messaging/settings
+        // lookup exactly like the manual "take attendance" flow does.
+        $createdByClassSection = [];
+
         foreach ($absentStudentIds as $studentId) {
             $enrollment = StudentEnrollment::where('student_id', $studentId)
                 ->where('status', 'active')
@@ -124,9 +129,31 @@ class ProcessEndOfDayAttendance extends Command
                     'recorded_by' => null,
                 ]);
 
+                $createdByClassSection[$enrollment->class_id][$enrollment->section_id][] = $studentId;
+
                 Log::info("[EndOfDay] Auto-marked absent: student_id={$studentId} school={$school->id}");
+
+                try {
+                    $pushService->sendAttendanceNotification($studentId, 'absent', $today, 'class');
+                } catch (\Throwable $pushEx) {
+                    Log::error("[EndOfDay] Push notification failed for student_id={$studentId}: " . $pushEx->getMessage());
+                }
             } catch (\Throwable $e) {
                 Log::error("[EndOfDay] Failed to mark absent for student_id={$studentId}: " . $e->getMessage());
+            }
+        }
+
+        if (! empty($createdByClassSection)) {
+            $smsService = app(\App\Services\AttendanceSmsService::class);
+            foreach ($createdByClassSection as $classId => $bySection) {
+                foreach ($bySection as $sectionId => $studentIds) {
+                    $attendanceData = collect($studentIds)->mapWithKeys(fn ($sid) => [$sid => ['status' => 'absent']])->toArray();
+                    try {
+                        $smsService->enqueueAttendanceSms($school, $attendanceData, $classId, $sectionId, $today, false);
+                    } catch (\Throwable $smsEx) {
+                        Log::error("[EndOfDay] SMS enqueue failed for class={$classId} section={$sectionId}: " . $smsEx->getMessage());
+                    }
+                }
             }
         }
     }
@@ -206,7 +233,7 @@ class ProcessEndOfDayAttendance extends Command
     /**
      * Auto-create absent records for teachers without any attendance today.
      */
-    private function markAbsentTeachers(School $school, string $today): void
+    private function markAbsentTeachers(School $school, string $today, PushNotificationService $pushService): void
     {
         $activeTeachers = Teacher::where('school_id', $school->id)
             ->where('status', 'active')
@@ -229,6 +256,12 @@ class ProcessEndOfDayAttendance extends Command
                         'status'    => 'absent',
                         'medium'    => 'system',
                     ]);
+
+                    try {
+                        $pushService->sendTeacherAttendanceNotification($teacher->user_id, 'absent', 'absent', $today);
+                    } catch (\Throwable $pushEx) {
+                        Log::error("[EndOfDay] Teacher absent push failed user_id={$teacher->user_id}: " . $pushEx->getMessage());
+                    }
                 } catch (\Throwable $e) {
                     Log::error("[EndOfDay] Failed to mark teacher absent user_id={$teacher->user_id}: " . $e->getMessage());
                 }

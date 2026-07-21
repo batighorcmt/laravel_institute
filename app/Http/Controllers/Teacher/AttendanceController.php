@@ -126,7 +126,14 @@ class AttendanceController extends Controller
         $attendance->check_in_longitude = $request->longitude;
         $attendance->status = $status;
         $attendance->save();
-        
+
+        try {
+            app(\App\Services\PushNotificationService::class)
+                ->sendTeacherAttendanceNotification($user->id, 'check_in', $status, $today->toDateString(), $attendance->check_in_time);
+        } catch (\Throwable $e) {
+            \Log::error('Teacher attendance push (check-in, web) failed: '.$e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'চেক-ইন সফল হয়েছে! আপনার উপস্থিতি রেকর্ড করা হয়েছে।',
@@ -211,7 +218,14 @@ class AttendanceController extends Controller
         $attendance->check_out_latitude = $request->latitude;
         $attendance->check_out_longitude = $request->longitude;
         $attendance->save();
-        
+
+        try {
+            app(\App\Services\PushNotificationService::class)
+                ->sendTeacherAttendanceNotification($user->id, 'check_out', $attendance->status, $today->toDateString(), $attendance->check_out_time);
+        } catch (\Throwable $e) {
+            \Log::error('Teacher attendance push (check-out, web) failed: '.$e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'চেক-আউট সফল হয়েছে! আজকের দিন শেষ করার জন্য ধন্যবাদ।',

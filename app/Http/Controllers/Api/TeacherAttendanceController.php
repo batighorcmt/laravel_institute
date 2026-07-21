@@ -97,6 +97,13 @@ class TeacherAttendanceController extends Controller
             'remarks' => $validated['remarks'] ?? null,
         ]);
 
+        try {
+            app(\App\Services\PushNotificationService::class)
+                ->sendTeacherAttendanceNotification($user->id, 'check_in', $status, $today, $attendance->check_in_time);
+        } catch (\Throwable $e) {
+            \Log::error('Teacher attendance push (check-in, app) failed: '.$e->getMessage());
+        }
+
         return (new TeacherAttendanceResource($attendance))
             ->additional(['message' => 'Check-in saved']);
     }
@@ -145,6 +152,14 @@ class TeacherAttendanceController extends Controller
             'check_out_longitude' => $validated['lng'] ?? null,
             'remarks' => $validated['remarks'] ?? $attendance->remarks,
         ]);
+
+        try {
+            app(\App\Services\PushNotificationService::class)
+                ->sendTeacherAttendanceNotification($user->id, 'check_out', $attendance->status, $today, $attendance->check_out_time);
+        } catch (\Throwable $e) {
+            \Log::error('Teacher attendance push (check-out, app) failed: '.$e->getMessage());
+        }
+
         return (new TeacherAttendanceResource($attendance))
             ->additional(['message' => 'Check-out saved']);
     }
