@@ -189,7 +189,11 @@ class PrincipalReportController extends Controller
         $workingDays = 0;
         $workingDayDates = [];
         for ($cursor = $start->copy(); $cursor->lte($end); $cursor->addDay()) {
-            if (in_array($cursor->dayOfWeek, $weeklyOffDays, true)) continue;
+            // WeeklyHoliday.day_number is ISO-8601 (1=Monday..7=Sunday) — use
+            // dayOfWeekIso, not dayOfWeek (0=Sunday..6=Saturday), or a Sunday
+            // weekly off-day would never match (see the same distinction
+            // documented in LessonEvaluationController::holidayInfo()).
+            if (in_array($cursor->dayOfWeekIso, $weeklyOffDays, true)) continue;
             if (in_array($cursor->toDateString(), $holidayDates, true)) continue;
             $workingDays++;
             $workingDayDates[] = $cursor->toDateString();
@@ -1213,10 +1217,22 @@ class PrincipalReportController extends Controller
         $month = (int) $request->query('month', now()->month);
         $wd = $this->workingDaysBreakdown($schoolId, $year, $month);
 
-        $currentYear = AcademicYear::forSchool($schoolId)->current()->first();
-        $yearId = $currentYear?->id;
-        $start = Carbon::create($year, $month, 1)->startOfMonth()->toDateString();
-        $end = Carbon::create($year, $month, 1)->endOfMonth()->toDateString();
+        // Resolve whichever academic year's date range actually contains the
+        // requested report month, instead of always using whatever is
+        // flagged is_current — "current" reflects today, not the month being
+        // reported on, so a report for a month that belongs to an already-
+        // finished academic year (e.g. right after the new year rolled over)
+        // would otherwise pull the wrong year's roster and disagree with the
+        // web report, where the principal explicitly picks academic_year_id.
+        $monthStart = Carbon::create($year, $month, 1)->startOfMonth();
+        $monthEnd = $monthStart->copy()->endOfMonth();
+        $yearId = AcademicYear::forSchool($schoolId)
+            ->where('start_date', '<=', $monthEnd->toDateString())
+            ->where('end_date', '>=', $monthStart->toDateString())
+            ->value('id')
+            ?? AcademicYear::forSchool($schoolId)->current()->value('id');
+        $start = $monthStart->toDateString();
+        $end = $monthEnd->toDateString();
 
         $sectionTotals = StudentEnrollment::select(
                 'classes.id as class_id', 'classes.name as class_name', 'classes.bangla_name as class_name_bn', 'classes.numeric_value',
@@ -1237,15 +1253,27 @@ class PrincipalReportController extends Controller
         // whereIn(working_day_dates) keeps days_taken from ever exceeding
         // working_days (e.g. attendance recorded on a holiday shouldn't
         // inflate the count) — mirrors the web report's methodology.
+        // 'half_day' counts as present, matching the web print report.
+        //
+        // Must join students and require students.status='active', same as
+        // $sectionTotals above — otherwise a student whose account was later
+        // deactivated (but whose enrollment row was never closed out) still
+        // has their attendance rows summed into present_total here, while
+        // $sectionTotals (the denominator) already excludes them. That
+        // mismatch alone can make a section's own numerator/denominator
+        // disagree, and made this diverge from the web report, which scopes
+        // both sides to the same active-student roster.
         $attAgg = Attendance::select(
-                'section_id',
-                DB::raw('COUNT(DISTINCT date) as days_taken'),
-                DB::raw("SUM(CASE WHEN status IN ('present','late') THEN 1 ELSE 0 END) as present_total")
+                'attendance.section_id',
+                DB::raw('COUNT(DISTINCT attendance.date) as days_taken'),
+                DB::raw("SUM(CASE WHEN attendance.status IN ('present','late','half_day') THEN 1 ELSE 0 END) as present_total")
             )
-            ->where('school_id', $schoolId)
-            ->whereBetween('date', [$start, $end])
-            ->whereIn('date', $wd['working_day_dates'])
-            ->groupBy('section_id')
+            ->join('students', 'students.id', '=', 'attendance.student_id')
+            ->where('attendance.school_id', $schoolId)
+            ->where('students.status', 'active')
+            ->whereBetween('attendance.date', [$start, $end])
+            ->whereIn('attendance.date', $wd['working_day_dates'])
+            ->groupBy('attendance.section_id')
             ->get()
             ->keyBy('section_id');
 

@@ -123,48 +123,40 @@ class _ParentExamResultDetailPageState
       parentExamResultDetailProvider(widget.examId),
     );
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
-      appBar: AppBar(
-        title: const Text('পরীক্ষার ফলাফল'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 0.5,
-        actions: [
-          if (resultAsync.hasValue)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextButton.icon(
-                onPressed: _isDownloading
-                    ? null
-                    : () => _downloadMarksheet(
-                        resultAsync.value!['marksheet_url'] ?? '',
-                      ),
-                icon: _isDownloading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.picture_as_pdf, size: 18),
-                label: Text(_isDownloading ? 'ডাউনলোড...' : 'মার্কশিট'),
-              ),
-            ),
-        ],
-      ),
-      body: Stack(
+    // No own Scaffold/AppBar — this page renders inside ParentShellPage,
+    // which already supplies the app bar; a second one here rendered the
+    // title twice. The marksheet download action moved into the body.
+    return ColoredBox(
+      color: const Color(0xFFF5F6FA),
+      child: Stack(
         children: [
           resultAsync.when(
             data: (data) {
-              final summary = data['summary'] as Map<String, dynamic>;
-              final subjects = data['subjects'] as List<dynamic>;
-              final exam = data['exam'] as Map<String, dynamic>;
+              final summary = (data['summary'] as Map?)?.cast<String, dynamic>() ?? {};
+              final subjects = (data['subjects'] as List?) ?? [];
+              final exam = (data['exam'] as Map?)?.cast<String, dynamic>() ?? {};
               final grade = summary['total_grade']?.toString() ?? 'F';
               final isFailed = grade == 'F';
 
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: _isDownloading
+                          ? null
+                          : () => _downloadMarksheet(data['marksheet_url'] ?? ''),
+                      icon: _isDownloading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.picture_as_pdf, size: 18),
+                      label: Text(_isDownloading ? 'ডাউনলোড...' : 'মার্কশিট ডাউনলোড'),
+                    ),
+                  ),
                   _buildSummaryCard(exam, summary, grade, isFailed),
                   const SizedBox(height: 16),
                   const Padding(

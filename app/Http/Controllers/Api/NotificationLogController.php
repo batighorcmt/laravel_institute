@@ -81,6 +81,24 @@ class NotificationLogController extends Controller
     }
 
     /**
+     * Unread notification count for authenticated user — powers the red dot
+     * on the notification bell, so it only shows when unread items exist.
+     */
+    public function unreadCount(Request $request)
+    {
+        $user = $request->user();
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        $count = \App\Models\NotificationLog::where('user_id', $user->id)
+            ->whereNull('read_at')
+            ->count();
+
+        return response()->json(['unread_count' => $count]);
+    }
+
+    /**
      * Mark given notification(s) as read for authenticated user.
      * Accepts POST body: { ids: [1,2,3] } or { all: true } or URL param id
      */

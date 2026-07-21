@@ -8,6 +8,7 @@ import '../../../widgets/animated_tile.dart';
 import 'lesson_evaluation_list_page.dart';
 import 'homework_list_page.dart';
 import 'teacher_leave_list_page.dart';
+import 'student_leave_list_page.dart';
 import 'teacher_directory_page.dart';
 import 'teacher_students_list_page.dart';
 import 'teacher_exams_page.dart';
@@ -264,6 +265,11 @@ class _TeacherDashboardPageState extends ConsumerState<TeacherDashboardPage>
         Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const TeacherLeaveListPage()));
+        break;
+      case 'student_leaves':
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const StudentLeaveListPage()));
         break;
       case 'teachers':
         Navigator.of(
@@ -547,6 +553,12 @@ class _OperationsGrid extends StatelessWidget {
         'Manage Leave',
         Icons.event_busy_outlined,
         Color(0xFFFFF1F2),
+      ),
+      const _OpItem(
+        'student_leaves',
+        'ছুটির আবেদন',
+        Icons.assignment_ind_outlined,
+        Color(0xFFFFF7ED),
       ),
       const _OpItem(
         'teachers',

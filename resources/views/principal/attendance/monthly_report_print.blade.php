@@ -231,14 +231,15 @@
             $totalWorkingDaysCount = 0;
             $attendanceTakenDays = 0;
             $attendanceNotTakenDays = 0;
+            $takenDates = [];
 
             foreach($dates ?? [] as $d) {
                 $wdnLoop = (int) date('N', strtotime($d));
                 $isHoliday = in_array($d, $holidayDates ?? []) || in_array($wdnLoop, $weeklyHolidayNums ?? []);
-                
+
                 if (!$isHoliday) {
                     $totalWorkingDaysCount++;
-                    
+
                     $taken = false;
                     foreach($students ?? [] as $st) {
                         if (isset($attendanceMatrix[$st->student_id][$d])) {
@@ -246,9 +247,10 @@
                             break;
                         }
                     }
-                    
+
                     if ($taken) {
                         $attendanceTakenDays++;
+                        $takenDates[$d] = true;
                     } else {
                         $attendanceNotTakenDays++;
                     }
@@ -286,26 +288,24 @@
 
     <div style="margin-top:6px;">
         @php
-            // compute daily totals
+            // compute daily totals — only over days attendance was actually
+            // taken ($takenDates, computed above), not every calendar working
+            // day. A working day nobody entered attendance for isn't the same
+            // as "everyone absent"; counting it that way inflated the absent
+            // rate and understated the present rate versus the mobile
+            // dashboard's per-section aggregate, which only ever divides by
+            // days attendance was actually recorded.
             $dailyPresent = [];
             $dailyAbsent = [];
-            $workingDays = 0;
             foreach (($dates ?? []) as $d) {
+                if (!isset($takenDates[$d])) {
+                    continue;
+                }
                 $dailyPresent[$d] = 0;
                 $dailyAbsent[$d] = 0;
-                $wdnTmp = (int) date('N', strtotime($d));
-                if (!in_array($d, $holidayDates ?? []) && !in_array($wdnTmp, $weeklyHolidayNums ?? [])) {
-                    $workingDays++;
-                }
-            }
-            foreach (($students ?? []) as $stRow) {
-                foreach (($dates ?? []) as $d) {
+                foreach (($students ?? []) as $stRow) {
                     $rec = $attendanceMatrix[$stRow->student_id][$d] ?? null;
                     $status = is_array($rec) ? ($rec['status'] ?? null) : $rec;
-                    $wdnTmp = (int) date('N', strtotime($d));
-                    $isHoliday = in_array($d, $holidayDates ?? []) || in_array($wdnTmp, $weeklyHolidayNums ?? []);
-                    if ($isHoliday)
-                        continue;
                     if (in_array($status, ['present', 'late', 'half_day'])) {
                         $dailyPresent[$d]++;
                     } else {
@@ -315,9 +315,9 @@
             }
             $sumPresent = array_sum($dailyPresent);
             $sumAbsent = array_sum($dailyAbsent);
-            
+
             $totalStudents = count($students);
-            $totalPossible = $totalStudents * $workingDays;
+            $totalPossible = $totalStudents * $attendanceTakenDays;
             $currentRate = $totalPossible > 0 ? ($sumPresent / $totalPossible) * 100 : 0;
             $currentAbsentRate = $totalPossible > 0 ? ($sumAbsent / $totalPossible) * 100 : 0;
 

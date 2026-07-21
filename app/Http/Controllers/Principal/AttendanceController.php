@@ -117,9 +117,19 @@ class AttendanceController extends Controller
         $studentIds = $students->pluck('student_id')->all();
         $attendanceMatrix = [];
         if (! empty($studentIds)) {
+            // Scope to this section's own attendance rows (not just "any
+            // attendance this student_id has this month") — a student who
+            // switched sections mid-year still has attendance rows tagged
+            // with their OLD section_id, and those shouldn't count toward
+            // the NEW section's report just because they're now enrolled
+            // there. This also keeps the summary totals below consistent
+            // with the mobile dashboard's per-section aggregation, which
+            // groups strictly by attendance.section_id.
             $attRows = Attendance::select('student_id', 'date', 'status', 'medium', 'entry_time', 'exit_time')
                 ->whereIn('student_id', $studentIds)
                 ->whereBetween('date', [$startDate, $endDate])
+                ->when($sectionId, fn ($q) => $q->where('section_id', $sectionId))
+                ->when(! $sectionId && $classId, fn ($q) => $q->where('class_id', $classId))
                 ->get();
             foreach ($attRows as $r) {
                 $dateKey = is_string($r->date) ? $r->date : (\Carbon\Carbon::parse($r->date)->toDateString());

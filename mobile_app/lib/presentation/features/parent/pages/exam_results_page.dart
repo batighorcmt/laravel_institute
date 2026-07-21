@@ -19,10 +19,12 @@ class ParentExamResultsPage extends ConsumerWidget {
     final examsAsync = ref.watch(parentExamsProvider);
     final cs = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(title: const Text('পরীক্ষার ফলাফল')),
-      body: examsAsync.when(
+    // No own Scaffold/AppBar here — this page renders inside ParentShellPage,
+    // which already supplies the app bar (using the route's nav label). An
+    // extra Scaffold+AppBar here rendered the title twice.
+    return ColoredBox(
+      color: Colors.white,
+      child: examsAsync.when(
         data: (exams) {
           if (exams.isEmpty) {
             return const Center(child: Text('কোনো পরীক্ষার ফলাফল পাওয়া যায়নি।'));
@@ -48,12 +50,12 @@ class ParentExamResultsPage extends ConsumerWidget {
                       child: const Icon(Icons.leaderboard),
                     ),
                     title: Text(
-                      exam['name'],
+                      (exam['name'] ?? '').toString(),
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 8.0),
-                      child: Text('তারিখ: ${exam['start_date']} হতে ${exam['end_date']}'),
+                      child: Text('তারিখ: ${exam['start_date'] ?? '-'} হতে ${exam['end_date'] ?? '-'}'),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {

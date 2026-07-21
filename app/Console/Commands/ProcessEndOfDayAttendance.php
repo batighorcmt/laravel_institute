@@ -96,6 +96,16 @@ class ProcessEndOfDayAttendance extends Command
             ->whereHas('student', fn ($q) => $q->where('status', 'active'))
             ->pluck('student_id');
 
+        // Approved leave for today shouldn't be auto-marked absent — the
+        // leave itself is the record of that day, surfaced separately in
+        // daily/monthly reports.
+        $onApprovedLeaveIds = \App\Models\StudentLeave::where('school_id', $school->id)
+            ->where('status', 'approved')
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->pluck('student_id');
+        $enrolledStudentIds = $enrolledStudentIds->diff($onApprovedLeaveIds);
+
         $presentStudentIds = Attendance::where('date', $today)
             ->whereIn('student_id', $enrolledStudentIds)
             ->pluck('student_id');

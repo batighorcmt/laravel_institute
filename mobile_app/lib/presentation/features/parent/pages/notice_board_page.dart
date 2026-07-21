@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../state/notice_state.dart';
 import '../../../widgets/notice_reply_section.dart';
@@ -11,7 +12,17 @@ class NoticeBoardPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final noticesAsync = ref.watch(noticesListProvider);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        } else {
+          context.go('/parent/dashboard');
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('নোটিশ বোর্ড'),
         actions: [
@@ -107,6 +118,7 @@ class NoticeBoardPage extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('ত্রুটি: $err')),
+      ),
       ),
     );
   }

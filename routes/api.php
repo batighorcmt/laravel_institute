@@ -88,6 +88,10 @@ Route::prefix('v1')->group(function () {
             // Teacher leaves
             Route::get('teacher/leaves', [\App\Http\Controllers\Api\TeacherLeaveController::class , 'index'])->middleware('role:teacher');
             Route::post('teacher/leaves', [\App\Http\Controllers\Api\TeacherLeaveController::class , 'store'])->middleware('role:teacher');
+            // Class teacher reviewing STUDENT leave applications (distinct from the teacher's own leaves above)
+            Route::get('teacher/student-leaves', [\App\Http\Controllers\Api\ClassTeacherStudentLeaveController::class , 'index'])->middleware('role:teacher');
+            Route::get('teacher/student-leaves/{leave}', [\App\Http\Controllers\Api\ClassTeacherStudentLeaveController::class , 'show'])->middleware('role:teacher');
+            Route::post('teacher/student-leaves/{leave}/review', [\App\Http\Controllers\Api\ClassTeacherStudentLeaveController::class , 'review'])->middleware('role:teacher');
             // Teacher directory (teacher + principal access)
             Route::get('teachers', [\App\Http\Controllers\Api\TeacherDirectoryController::class , 'index'])->middleware('role:teacher,principal');
             // Teacher → Students directory and profile
@@ -160,6 +164,7 @@ Route::prefix('v1')->group(function () {
 
                 // User notifications (for authenticated users)
                 Route::get('notifications', [\App\Http\Controllers\Api\NotificationLogController::class , 'userIndex']);
+                Route::get('notifications/unread-count', [\App\Http\Controllers\Api\NotificationLogController::class , 'unreadCount']);
                 Route::post('notifications/mark-read', [\App\Http\Controllers\Api\NotificationLogController::class , 'markAsRead']);
                 Route::post('notifications/{id}/mark-read', [\App\Http\Controllers\Api\NotificationLogController::class , 'markAsRead']);
 

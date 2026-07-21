@@ -183,6 +183,7 @@ class ParentController extends Controller
 
         $validated = $request->validate([
             'student_id' => ['required','integer', function($attr,$value,$fail) use ($allowedIds){ if (!in_array((int)$value, $allowedIds, true)) { $fail('অবৈধ শিক্ষার্থী'); } }],
+            'title' => ['nullable','string','max:150'],
             'reason' => ['required','string','max:255'],
             'start_date' => ['required','date'],
             'end_date' => ['required','date','after_or_equal:start_date'],
@@ -192,16 +193,33 @@ class ParentController extends Controller
         $student_id = (int)$validated['student_id'];
         $student = $children->firstWhere('id', $student_id);
         $finalSchoolId = $schoolId ?: ($student ? $student->school_id : null);
+        $enrollment = $student?->currentEnrollment;
 
         $leave = StudentLeave::create([
             'school_id' => $finalSchoolId,
             'student_id' => $student_id,
+            'class_id' => $enrollment?->class_id,
+            'section_id' => $enrollment?->section_id,
+            'title' => $validated['title'] ?? null,
             'type' => $validated['type'] ?? null,
             'reason' => $validated['reason'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'status' => 'pending',
         ]);
+
+        if ($enrollment?->section_id) {
+            $section = \App\Models\Section::find($enrollment->section_id);
+            $classTeacher = $section?->class_teacher_id ? Teacher::find($section->class_teacher_id) : null;
+            if ($classTeacher?->user_id) {
+                try {
+                    app(\App\Services\PushNotificationService::class)
+                        ->sendStudentLeaveNotification($classTeacher->user_id, $leave);
+                } catch (\Throwable $e) {
+                    \Log::error('Student leave push notification failed: '.$e->getMessage());
+                }
+            }
+        }
 
         return (new \App\Http\Resources\StudentLeaveResource($leave))->additional([
             'message' => 'ছুটি আবেদন জমা হয়েছে',
@@ -708,6 +726,17 @@ class ParentController extends Controller
             'message' => $validated['message'],
             'status' => 'pending',
         ]);
+
+        $school = \App\Models\School::find($schoolId);
+        $principalTeacher = $school ? $this->getPrincipalTeacher($school) : null;
+        if ($principalTeacher?->user_id) {
+            try {
+                app(\App\Services\PushNotificationService::class)
+                    ->sendFeedbackSubmittedNotification($principalTeacher->user_id, $feedback);
+            } catch (\Throwable $e) {
+                \Log::error('Feedback submitted push failed: '.$e->getMessage());
+            }
+        }
 
         return new ParentFeedbackResource($feedback);
     }

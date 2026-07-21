@@ -160,14 +160,38 @@ class StudentProfileResource extends JsonResource
                 'joined_at' => $tm->pivot?->joined_at,
             ]) : [],
             
+            // Approved leave calendar — every date across all approved leave
+            // applications, so the app can render a leave calendar and treat
+            // these dates as leave (not absent) in attendance stats.
+            'leave_calendar' => ($leaves = \App\Models\StudentLeave::where('student_id', $st?->id)
+                ->where('status', 'approved')
+                ->orderByDesc('start_date')
+                ->get())->flatMap(fn ($l) => $l->dateRange())->values(),
+            'leave_summary' => [
+                'total_days' => $leaves->sum(fn ($l) => $l->start_date->diffInDays($l->end_date) + 1),
+                'applications' => $leaves->map(fn ($l) => [
+                    'id' => $l->id,
+                    'title' => $l->title,
+                    'start_date' => $l->start_date->toDateString(),
+                    'end_date' => $l->end_date->toDateString(),
+                ])->values(),
+            ],
+
             'today_attendance' => [
-                'class' => ($ca = \App\Models\Attendance::where('student_id', $st?->id)
+                'class' => (\App\Models\StudentLeave::where('student_id', $st?->id)
+                    ->where('status', 'approved')
+                    ->whereDate('start_date', '<=', now())
+                    ->whereDate('end_date', '>=', now())
+                    ->exists()) ? [
+                        'status' => 'leave',
+                        'updated_at' => null,
+                    ] : (($ca = \App\Models\Attendance::where('student_id', $st?->id)
                     ->whereDate('date', now())
                     ->select('status', 'updated_at')
                     ->first()) ? [
                         'status' => $ca->status,
                         'updated_at' => optional($ca->updated_at)->toIso8601String()
-                    ] : null,
+                    ] : null),
                 'extra_classes' => \App\Models\ExtraClassEnrollment::where('student_id', $st?->id)
                     ->where('status', 'active')
                     ->with(['extraClass'])

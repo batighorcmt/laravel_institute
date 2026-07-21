@@ -355,6 +355,14 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             }
             );
 
+            // Parent/student feedback & complaints
+            Route::prefix('parent-feedback')->name('parent-feedback.')->middleware(['strict_role:principal,school'])->group(function () {
+                Route::get('/', [App\Http\Controllers\Principal\Institute\ParentFeedbackController::class, 'index'])->name('index');
+                Route::get('/{feedback}', [App\Http\Controllers\Principal\Institute\ParentFeedbackController::class, 'show'])->name('show');
+                Route::post('/{feedback}/reply', [App\Http\Controllers\Principal\Institute\ParentFeedbackController::class, 'reply'])->name('reply');
+            }
+            );
+
             Route::prefix('lesson-evaluations')->name('lesson-evaluations.')->middleware('module:lesson_evaluation')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class, 'index'])->name('index');
                 Route::get('/entry-report', [\App\Http\Controllers\Principal\LessonEvaluationReportController::class, 'entryReport'])->name('entry-report');

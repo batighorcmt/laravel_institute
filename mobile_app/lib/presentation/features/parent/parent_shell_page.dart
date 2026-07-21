@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../state/auth_state.dart';
 import '../../state/parent_state.dart';
 import '../../routes/app_router.dart';
+import '../../../core/network/dio_client.dart';
+
+// Unread notification count — drives the bell's red dot. Only truthy when
+// there's actually something unread; previously the dot was hardcoded on.
+final unreadNotificationCountProvider = FutureProvider.autoDispose<int>((
+  ref,
+) async {
+  final resp = await DioClient().dio.get('notifications/unread-count');
+  return (resp.data['unread_count'] as num?)?.toInt() ?? 0;
+});
 
 /// Sidebar items for parent navigation.
 class _NavItem {
@@ -101,9 +112,16 @@ class ParentShellPage extends ConsumerWidget {
         'অভিভাবক';
     final cs = Theme.of(context).colorScheme;
 
+    // Exact match first, then fall back to whichever nav item's path is a
+    // prefix of the current one (e.g. '/parent/exams/123/results' inherits
+    // the '/parent/exams' label) — otherwise a nested detail route falls
+    // through to _navItems.first and shows the wrong title.
     final currentItem = _navItems.firstWhere(
       (item) => currentPath == item.path,
-      orElse: () => _navItems.first,
+      orElse: () => _navItems.firstWhere(
+        (item) => item.path != '/parent/dashboard' && currentPath.startsWith('${item.path}/'),
+        orElse: () => _navItems.first,
+      ),
     );
 
     return PopScope(
@@ -137,15 +155,7 @@ class ParentShellPage extends ConsumerWidget {
         );
 
         if (shouldExit == true) {
-          if (context.mounted) {
-            // Since we can't 'pop' the root, we can use SystemNavigator to exit
-            // but in most Flutter apps, letting it pop when canPop is true works.
-            // For now, we manually exit if they said yes.
-            // Using a hack to allow pop next time or just exit.
-            Navigator.of(
-              context,
-            ).pop(); // This might exit if it's the only page
-          }
+          SystemNavigator.pop();
         }
       },
       child: Scaffold(
@@ -155,29 +165,34 @@ class ParentShellPage extends ConsumerWidget {
               : Text(currentItem.label),
           elevation: 1,
           actions: [
-            // Notification
+            // Notification — red dot only when there's an actual unread item
             IconButton(
               tooltip: 'নোটিফিকেশন',
               icon: Stack(
                 children: [
                   const Icon(Icons.notifications_outlined, size: 26),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                  if ((ref.watch(unreadNotificationCountProvider).value ?? 0) >
+                      0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
-              onPressed: () {
-                context.push('/notifications');
+              onPressed: () async {
+                await context.push('/notifications');
+                // Notifications page marks everything read on open — refresh
+                // the dot once the user comes back.
+                ref.invalidate(unreadNotificationCountProvider);
               },
             ),
             // Reload

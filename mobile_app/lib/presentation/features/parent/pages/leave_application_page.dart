@@ -12,6 +12,7 @@ class LeaveApplicationPage extends ConsumerStatefulWidget {
 }
 
 class _LeaveApplicationPageState extends ConsumerState<LeaveApplicationPage> {
+  late TextEditingController _titleController;
   late TextEditingController _reasonController;
   late TextEditingController _remarksController;
   DateTime? _startDate;
@@ -22,12 +23,14 @@ class _LeaveApplicationPageState extends ConsumerState<LeaveApplicationPage> {
   @override
   void initState() {
     super.initState();
+    _titleController = TextEditingController();
     _reasonController = TextEditingController();
     _remarksController = TextEditingController();
   }
 
   @override
   void dispose() {
+    _titleController.dispose();
     _reasonController.dispose();
     _remarksController.dispose();
     super.dispose();
@@ -141,8 +144,25 @@ class _LeaveApplicationPageState extends ConsumerState<LeaveApplicationPage> {
             ),
           const SizedBox(height: 24),
 
+          // Title
+          const Text(
+            'আবেদনের শিরোনাম',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _titleController,
+            decoration: InputDecoration(
+              hintText: 'যেমন: জ্বর জনিত ছুটি',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
           // Reason
-          const Text('कारण', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text('কারণ', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           TextField(
             controller: _reasonController,
@@ -200,6 +220,10 @@ class _LeaveApplicationPageState extends ConsumerState<LeaveApplicationPage> {
                   color = Colors.red;
                   stText = 'প্রত্যাখ্যাত';
                 }
+                if (status == 'on_hold') {
+                  color = Colors.blueGrey;
+                  stText = 'স্থগিত';
+                }
 
                 return _buildApplicationCard(
                   leave['type']?.toString() ?? 'N/A',
@@ -254,6 +278,7 @@ class _LeaveApplicationPageState extends ConsumerState<LeaveApplicationPage> {
 
       await repo.submitLeave({
         'student_id': studentId,
+        'title': _titleController.text,
         'type': _leaveType,
         'reason': _reasonController.text,
         'start_date': DateFormat('yyyy-MM-dd').format(_startDate!),
@@ -264,6 +289,7 @@ class _LeaveApplicationPageState extends ConsumerState<LeaveApplicationPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('আবেদনটি সফলভাবে জমা দেওয়া হয়েছে')),
         );
+        _titleController.clear();
         _reasonController.clear();
         _remarksController.clear();
         setState(() {

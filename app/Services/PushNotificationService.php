@@ -380,4 +380,109 @@ class PushNotificationService
             $userId
         );
     }
+
+    /**
+     * Notify the parent/student device once the principal replies to their
+     * feedback/complaint.
+     */
+    public function sendFeedbackReplyNotification(\App\Models\ParentFeedback $feedback): void
+    {
+        $tokens = DeviceToken::where('user_id', $feedback->user_id)->whereNotNull('token')->pluck('token')->unique();
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        $title = 'আপনার মতামতের উত্তর এসেছে';
+        $body = mb_substr($feedback->subject ?? '', 0, 80);
+
+        SendPushNotificationJob::dispatch(
+            $tokens->toArray(),
+            $title,
+            $body,
+            ['type' => 'feedback_reply', 'id' => (string) $feedback->id],
+            $feedback->user_id
+        );
+    }
+
+    /**
+     * Notify the principal the moment a parent/student submits new
+     * feedback/complaint.
+     */
+    public function sendFeedbackSubmittedNotification(int $principalUserId, \App\Models\ParentFeedback $feedback): void
+    {
+        $tokens = DeviceToken::where('user_id', $principalUserId)->whereNotNull('token')->pluck('token')->unique();
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        $title = 'নতুন মতামত/অভিযোগ';
+        $body = mb_substr($feedback->subject ?? '', 0, 80);
+
+        SendPushNotificationJob::dispatch(
+            $tokens->toArray(),
+            $title,
+            $body,
+            ['type' => 'feedback_submitted', 'id' => (string) $feedback->id],
+            $principalUserId
+        );
+    }
+
+    /**
+     * Notify a section's class teacher the moment a student in their
+     * section submits a leave application.
+     */
+    public function sendStudentLeaveNotification(int $teacherUserId, \App\Models\StudentLeave $leave): void
+    {
+        $tokens = DeviceToken::where('user_id', $teacherUserId)->whereNotNull('token')->pluck('token')->unique();
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        $studentName = $leave->student?->full_name ?? $leave->student?->name ?? 'শিক্ষার্থী';
+        $startStr = $leave->start_date?->format('d-m-Y');
+        $endStr = $leave->end_date?->format('d-m-Y');
+        $dateRange = ($startStr === $endStr) ? $startStr : "{$startStr} - {$endStr}";
+
+        $title = 'নতুন ছুটির আবেদন';
+        $body = "{$studentName} {$dateRange} তারিখের জন্য ছুটির আবেদন করেছে। রিভিউ করুন।";
+
+        SendPushNotificationJob::dispatch(
+            $tokens->toArray(),
+            $title,
+            $body,
+            ['type' => 'student_leave', 'id' => (string) $leave->id],
+            $teacherUserId
+        );
+    }
+
+    /**
+     * Notify the student's own device once their class teacher approves,
+     * rejects, or holds their leave application.
+     */
+    public function sendStudentLeaveDecisionNotification(\App\Models\StudentLeave $leave): void
+    {
+        $student = $leave->student;
+        if (! $student || ! $student->user_id) {
+            return;
+        }
+
+        $tokens = DeviceToken::where('user_id', $student->user_id)->whereNotNull('token')->pluck('token')->unique();
+        if ($tokens->isEmpty()) {
+            return;
+        }
+
+        $labels = ['approved' => 'অনুমোদিত', 'rejected' => 'বাতিল', 'on_hold' => 'স্থগিত'];
+        $label = $labels[$leave->status] ?? $leave->status;
+
+        $title = 'ছুটির আবেদনের সিদ্ধান্ত';
+        $body = "আপনার ছুটির আবেদনটি {$label} করা হয়েছে।";
+
+        SendPushNotificationJob::dispatch(
+            $tokens->toArray(),
+            $title,
+            $body,
+            ['type' => 'student_leave_decision', 'id' => (string) $leave->id],
+            $student->user_id
+        );
+    }
 }

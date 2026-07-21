@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../network/dio_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../presentation/features/teacher/exam_duty_page.dart';
+import '../../presentation/features/teacher/student_leave_list_page.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -74,6 +75,13 @@ class NotificationService {
                   builder: (_) => const ExamDutyPage(),
                 ));
               }
+            } else if (type == 'student_leave') {
+              final ctx = rootNavigatorKey.currentContext;
+              if (ctx != null) {
+                Navigator.of(ctx).push(MaterialPageRoute(
+                  builder: (_) => const StudentLeaveListPage(),
+                ));
+              }
             }
           }
         } catch (e) {
@@ -131,6 +139,13 @@ class NotificationService {
           if (ctx != null && ctx.mounted) {
             Navigator.of(ctx).push(MaterialPageRoute(
               builder: (_) => const ExamDutyPage(),
+            ));
+          }
+        } else if (type == 'student_leave') {
+          final ctx = rootNavigatorKey.currentContext;
+          if (ctx != null && ctx.mounted) {
+            Navigator.of(ctx).push(MaterialPageRoute(
+              builder: (_) => const StudentLeaveListPage(),
             ));
           }
         }

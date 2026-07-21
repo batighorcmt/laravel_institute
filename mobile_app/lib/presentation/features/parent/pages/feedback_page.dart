@@ -32,6 +32,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
 
   @override
   Widget build(BuildContext context) {
+    final feedbackAsync = ref.watch(parentFeedbackProvider);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -141,6 +142,95 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
                   ),
                 ),
               ),
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              'আগের মতামত/অভিযোগ',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            feedbackAsync.when(
+              data: (items) {
+                if (items.isEmpty) {
+                  return const Text(
+                    'এখনো কোনো মতামত জমা দেওয়া হয়নি',
+                    style: TextStyle(color: Colors.grey),
+                  );
+                }
+                return Column(
+                  children: items.map((raw) {
+                    final f = raw as Map<String, dynamic>;
+                    final status = (f['status'] ?? 'pending').toString();
+                    final reply = (f['reply'] ?? '').toString();
+                    Color color = Colors.orange;
+                    String label = 'জমা হয়েছে';
+                    if (status == 'read') {
+                      color = Colors.blue;
+                      label = 'দেখা হয়েছে';
+                    } else if (status == 'replied') {
+                      color = Colors.green;
+                      label = 'উত্তর দেওয়া হয়েছে';
+                    }
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    (f['subject'] ?? '').toString(),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: color.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    label,
+                                    style: TextStyle(
+                                      color: color,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text((f['message'] ?? '').toString()),
+                            if (reply.isNotEmpty) ...[
+                              const Divider(height: 16),
+                              const Text(
+                                'প্রতিষ্ঠান কর্তৃপক্ষের উত্তর:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green,
+                                ),
+                              ),
+                              Text(reply),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Text('ত্রুটি: $err'),
             ),
           ],
         ),
