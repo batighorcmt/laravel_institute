@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../data/teacher/student_leave_repository.dart';
 
 class StudentLeaveDetailPage extends StatefulWidget {
@@ -94,7 +95,7 @@ class _StudentLeaveDetailPageState extends State<StudentLeaveDetailPage> {
               _row('রোল', m['roll_no']),
               _row('শ্রেণি', m['class_name']),
               _row('শাখা', m['section_name']),
-              _row('অভিভাবকের মোবাইল', m['guardian_phone']),
+              _phoneRow('অভিভাবকের মোবাইল', m['guardian_phone']),
               const Divider(height: 32),
               _row('শিরোনাম', m['title']),
               _row('ধরন', m['type']),
@@ -172,6 +173,52 @@ class _StudentLeaveDetailPageState extends State<StudentLeaveDetailPage> {
       default:
         return 'অপেক্ষমান';
     }
+  }
+
+  Widget _phoneRow(String label, dynamic value) {
+    final phone = (value ?? '').toString().trim();
+    if (phone.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          Expanded(
+            child: InkWell(
+              onTap: () async {
+                final uri = Uri(scheme: 'tel', path: phone);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                }
+              },
+              child: Row(
+                children: [
+                  Text(
+                    phone,
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.call, size: 16, color: Colors.blue),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _row(String label, dynamic value) {
