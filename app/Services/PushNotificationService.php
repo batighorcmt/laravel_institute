@@ -206,6 +206,66 @@ class PushNotificationService
     }
 
     /**
+     * Notify each evaluated student's own device right after a lesson
+     * evaluation entry is saved — one push per student showing the subject,
+     * their individual status, and the evaluation date/time.
+     *
+     * @param  \App\Models\LessonEvaluation  $evaluation
+     * @param  iterable<\App\Models\LessonEvaluationRecord>  $records
+     */
+    public function sendLessonEvaluationNotification($evaluation, $records): void
+    {
+        $records = collect($records);
+        if ($records->isEmpty()) {
+            return;
+        }
+
+        $studentIds = $records->pluck('student_id')->unique();
+        $userIdByStudent = \App\Models\Student::whereIn('id', $studentIds)
+            ->whereNotNull('user_id')
+            ->pluck('user_id', 'id');
+
+        if ($userIdByStudent->isEmpty()) {
+            return;
+        }
+
+        $subjectName = $evaluation->subject?->name ?? '';
+        $dateStr = $evaluation->evaluation_date
+            ? $evaluation->evaluation_date->format('d-m-Y')
+            : now()->format('d-m-Y');
+        $timeStr = $evaluation->evaluation_time
+            ? $evaluation->evaluation_time->format('h:i A')
+            : now()->format('h:i A');
+
+        foreach ($records as $record) {
+            $userId = $userIdByStudent->get($record->student_id);
+            if (! $userId) {
+                continue;
+            }
+
+            $tokens = DeviceToken::where('user_id', $userId)->whereNotNull('token')->pluck('token')->unique();
+            if ($tokens->isEmpty()) {
+                continue;
+            }
+
+            $title = 'লেসন ইভ্যালুয়েশন';
+            $body = "বিষয়: {$subjectName} | অবস্থা: {$record->status_label} | তারিখ: {$dateStr}, সময়: {$timeStr}";
+
+            SendPushNotificationJob::dispatch(
+                $tokens->toArray(),
+                $title,
+                $body,
+                [
+                    'type' => 'lesson_evaluation',
+                    'id' => (string) $evaluation->id,
+                    'student_id' => (string) $record->student_id,
+                ],
+                $userId
+            );
+        }
+    }
+
+    /**
      * Send push notification for attendance status update
      */
     public function sendAttendanceNotification($studentId, $status, $date, $type = 'class', ?string $titleOverride = null, ?string $bodyOverride = null)

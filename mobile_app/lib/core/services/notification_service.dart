@@ -84,7 +84,11 @@ class NotificationService {
 
     // Android notification channel with sound support (place raw/notice_sound.mp3)
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'notice_channel_v1', // Updated ID to force sound settings refresh
+      'notice_channel_v2', // Bumped again: channels are immutable once created on-device,
+      // so any device that already auto-vivified 'notice_channel_v1' as silent
+      // (e.g. a push arrived before this channel was ever explicitly created)
+      // would stay silent forever on that ID. A new ID forces a fresh,
+      // correctly-configured channel on every install/update.
       'Notice Notifications',
       description: 'Notifications for new notices',
       importance: Importance.max,
@@ -170,7 +174,7 @@ class NotificationService {
     if (notification != null) {
       final soundName = message.data['sound'] ?? 'notice_sound';
       final androidDetails = AndroidNotificationDetails(
-        'notice_channel_v1',
+        'notice_channel_v2',
         'Notice Notifications',
         channelDescription: 'Notifications for new notices',
         importance: Importance.max,

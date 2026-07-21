@@ -222,6 +222,15 @@ class LessonEvaluationController extends Controller
                 \Log::error("Lesson Evaluation SMS Error (Teacher Web): " . $smsEx->getMessage());
             }
 
+            // Push notification to each evaluated student's own device
+            // (subject + status + date/time), independent of the SMS above.
+            try {
+                app(\App\Services\PushNotificationService::class)
+                    ->sendLessonEvaluationNotification($evaluation, $evaluationRecords);
+            } catch (\Throwable $pushEx) {
+                \Log::error('Lesson Evaluation Push Notification Error (Teacher Web): '.$pushEx->getMessage());
+            }
+
             return redirect()
                 ->route('teacher.institute.lesson-evaluation.index', $school)
                 ->with('success', $evaluation->wasRecentlyCreated ? 'লেসন মূল্যায়ন সফলভাবে সংরক্ষণ করা হয়েছে' : 'লেসন মূল্যায়ন সফলভাবে আপডেট করা হয়েছে');

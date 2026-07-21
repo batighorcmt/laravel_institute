@@ -41,12 +41,16 @@ class FcmService
                 ],
                 'data' => array_map('strval', $data),
                 'android' => [
+                    'priority' => 'high',
                     'notification' => [
                         'sound' => 'notice_sound',
-                        'channel_id' => 'notice_channel_v1',
+                        'channel_id' => 'notice_channel_v2',
                     ],
                 ],
                 'apns' => [
+                    'headers' => [
+                        'apns-priority' => '10',
+                    ],
                     'payload' => [
                         'aps' => [
                             'sound' => 'notice_sound.mp3',

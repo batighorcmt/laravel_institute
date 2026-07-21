@@ -225,6 +225,15 @@ class LessonEvaluationController extends Controller
                 \Log::error("Lesson Evaluation SMS Error: " . $smsEx->getMessage());
             }
 
+            // Push notification to each evaluated student's own device
+            // (subject + status + date/time), independent of the SMS above.
+            try {
+                app(\App\Services\PushNotificationService::class)
+                    ->sendLessonEvaluationNotification($evaluation, $evaluationRecords);
+            } catch (\Throwable $pushEx) {
+                \Log::error('Lesson Evaluation Push Notification Error: '.$pushEx->getMessage());
+            }
+
             // Notify all enrolled students of the class/section about the homework,
             // but only when it's brand new or its content actually changed.
             if ($homework && ($homeworkIsNew || $homeworkChanged)) {
