@@ -708,10 +708,16 @@ class ParentController extends Controller
     public function feedbackStore(Request $request)
     {
         $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id');
-        
+
         $children = $this->resolveChildren($request);
-        $studentId = $request->get('student_id', $children->first()?->id);
+        $allowedIds = $children->pluck('id')->toArray();
+        $requestedStudentId = $request->filled('student_id') ? (int) $request->input('student_id') : null;
+        $studentId = ($requestedStudentId && in_array($requestedStudentId, $allowedIds, true))
+            ? $requestedStudentId
+            : $children->first()?->id;
+
+        $student = $studentId ? $children->firstWhere('id', $studentId) : null;
+        $schoolId = $request->attributes->get('current_school_id') ?: $student?->school_id;
 
         $validated = $request->validate([
             'subject' => 'required|string|max:255',

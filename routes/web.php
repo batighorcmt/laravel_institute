@@ -355,6 +355,14 @@ Route::middleware(['auth', 'active_school'])->group(function () {
             }
             );
 
+            // Student Leaves (review by principal — sees every application, all sections)
+            Route::prefix('student-leaves')->name('student-leaves.')->middleware(['strict_role:principal,school'])->group(function () {
+                Route::get('/', [App\Http\Controllers\Principal\Institute\StudentLeaveController::class, 'index'])->name('index');
+                Route::get('/{leave}', [App\Http\Controllers\Principal\Institute\StudentLeaveController::class, 'show'])->name('show');
+                Route::post('/{leave}/review', [App\Http\Controllers\Principal\Institute\StudentLeaveController::class, 'review'])->name('review');
+            }
+            );
+
             // Parent/student feedback & complaints
             Route::prefix('parent-feedback')->name('parent-feedback.')->middleware(['strict_role:principal,school'])->group(function () {
                 Route::get('/', [App\Http\Controllers\Principal\Institute\ParentFeedbackController::class, 'index'])->name('index');

@@ -346,7 +346,7 @@
 
             $sectionRates = [];
             foreach($sectionEnrollments as $secId => $stCount) {
-                $possible = $stCount * $workingDays;
+                $possible = $stCount * $attendanceTakenDays;
                 $present = $sectionPresents[$secId] ?? 0;
                 $rate = $possible > 0 ? ($present / $possible) * 100 : 0;
                 $sectionRates[$secId] = round($rate, 4);

@@ -176,7 +176,20 @@ class _ParentExamResultDetailPageState
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(
+            error: (err, _) {
+              // Show the server's actual reason (e.g. "ফলাফল এখনো প্রকাশ করা
+              // হয়নি" when the principal hasn't published it yet) instead of
+              // a generic failure message that reads like a bug.
+              String message = 'ফলাফল লোড করা যায়নি।';
+              if (err is DioException) {
+                final serverMsg = err.response?.data is Map
+                    ? err.response?.data['message']?.toString()
+                    : null;
+                if (serverMsg != null && serverMsg.isNotEmpty) {
+                  message = serverMsg;
+                }
+              }
+              return Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Column(
@@ -188,9 +201,10 @@ class _ParentExamResultDetailPageState
                       color: Colors.red.shade300,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'ফলাফল লোড করা যায়নি।',
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
@@ -202,7 +216,8 @@ class _ParentExamResultDetailPageState
                   ],
                 ),
               ),
-            ),
+              );
+            },
           ),
 
           // Download overlay

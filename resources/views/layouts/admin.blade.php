@@ -464,6 +464,7 @@
                                     <li class="nav-item"><a href="{{ route('principal.institute.teacher-attendance.reports.daily', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teacher-attendance.reports.daily') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Daily Report</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.teacher-attendance.reports.monthly', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teacher-attendance.reports.monthly') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Monthly Report</p></a></li>
                                     <li class="nav-item"><a href="{{ route('principal.institute.teacher-leaves.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.teacher-leaves.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Teacher Leaves</p></a></li>
+                                    <li class="nav-item"><a href="{{ route('principal.institute.student-leaves.index', $u->primarySchool()) }}" class="nav-link {{ request()->routeIs('principal.institute.student-leaves.*') ? 'active' : '' }}"><i class="far fa-circle nav-icon"></i><p>Student Leaves</p></a></li>
                                 </ul>
                             </li>
 
