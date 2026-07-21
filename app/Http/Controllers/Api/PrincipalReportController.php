@@ -80,6 +80,24 @@ class PrincipalReportController extends Controller
                 ->count();
         }
 
+        $activeStaffUserIds = StaffMember::where('school_id', $schoolId)->where('status', 'active')
+            ->pluck('user_id')->filter()->values();
+        $staffAttendanceTotal = $activeStaffUserIds->count();
+        $staffAttendancePresent = 0;
+        $staffAttendanceAbsent = 0;
+        if ($staffAttendanceTotal > 0) {
+            $staffAttendancePresent = StaffAttendance::where('school_id', $schoolId)
+                ->whereIn('user_id', $activeStaffUserIds)
+                ->whereDate('date', now()->toDateString())
+                ->whereIn('status', ['present', 'late'])
+                ->count();
+            $staffAttendanceAbsent = StaffAttendance::where('school_id', $schoolId)
+                ->whereIn('user_id', $activeStaffUserIds)
+                ->whereDate('date', now()->toDateString())
+                ->where('status', 'absent')
+                ->count();
+        }
+
         $moduleSlugs = ['attendance', 'lesson_evaluation', 'exams', 'results', 'routine', 'accounts', 'extra_class', 'notices', 'admission', 'sms', 'documents'];
         $modules = collect($moduleSlugs)->mapWithKeys(fn($slug) => [$slug => $school->hasModule($slug)]);
 
@@ -120,6 +138,12 @@ class PrincipalReportController extends Controller
                     'present' => $teacherAttendancePresent,
                     'absent' => $teacherAttendanceAbsent,
                     'percentage' => $teacherAttendanceTotal > 0 ? round(($teacherAttendancePresent / $teacherAttendanceTotal) * 100, 1) : null,
+                ],
+                'staff_attendance' => [
+                    'total' => $staffAttendanceTotal,
+                    'present' => $staffAttendancePresent,
+                    'absent' => $staffAttendanceAbsent,
+                    'percentage' => $staffAttendanceTotal > 0 ? round(($staffAttendancePresent / $staffAttendanceTotal) * 100, 1) : null,
                 ],
                 'fees' => [
                     'today' => $feesToday,

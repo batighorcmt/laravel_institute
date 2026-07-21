@@ -241,9 +241,14 @@
                                 <div class="text-2xl font-black text-rose-500">{{ bn(teacherAttendance?.absent ?? 0) }}</div>
                                 <div class="text-xs font-bold text-slate-500 mt-0.5">শিক্ষক অনুপস্থিত (আজ)</div>
                             </div>
-                        </div>
-                        <div class="px-5 pb-4 text-xs text-slate-400 font-medium">
-                            <i class="fas fa-circle-info mr-1"></i>কর্মচারীর দৈনিক উপস্থিতি এই মুহূর্তে সিস্টেমে ট্র্যাক করা হয় না।
+                            <div class="text-center">
+                                <div class="text-2xl font-black text-emerald-600">{{ bn(staffAttendance?.present ?? 0) }}</div>
+                                <div class="text-xs font-bold text-slate-500 mt-0.5">কর্মচারী উপস্থিত (আজ)</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-black text-rose-500">{{ bn(staffAttendance?.absent ?? 0) }}</div>
+                                <div class="text-xs font-bold text-slate-500 mt-0.5">কর্মচারী অনুপস্থিত (আজ)</div>
+                            </div>
                         </div>
                     </div>
 
@@ -318,6 +323,7 @@ const counts = computed(() => overview.value?.counts || {
     teachers_active: 0, staff_active: 0, classes_total: 0, sections_total: 0,
 });
 const teacherAttendance = computed(() => overview.value?.teacher_attendance || { total: 0, present: 0, absent: 0, percentage: null });
+const staffAttendance = computed(() => overview.value?.staff_attendance || { total: 0, present: 0, absent: 0, percentage: null });
 const modules = computed(() => overview.value?.modules || {});
 const classWise = computed(() => attDetails.value?.class_wise || []);
 const lessonEvalRate = computed(() => {
