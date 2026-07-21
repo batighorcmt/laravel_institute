@@ -3,7 +3,12 @@ import '../../../data/teacher/student_leave_repository.dart';
 
 class StudentLeaveDetailPage extends StatefulWidget {
   final int leaveId;
-  const StudentLeaveDetailPage({super.key, required this.leaveId});
+  final String basePath;
+  const StudentLeaveDetailPage({
+    super.key,
+    required this.leaveId,
+    this.basePath = 'teacher/student-leaves',
+  });
 
   @override
   State<StudentLeaveDetailPage> createState() =>
@@ -11,7 +16,7 @@ class StudentLeaveDetailPage extends StatefulWidget {
 }
 
 class _StudentLeaveDetailPageState extends State<StudentLeaveDetailPage> {
-  final _repo = StudentLeaveRepository();
+  late final _repo = StudentLeaveRepository(basePath: widget.basePath);
   late Future<Map<String, dynamic>> _future;
   bool _busy = false;
 

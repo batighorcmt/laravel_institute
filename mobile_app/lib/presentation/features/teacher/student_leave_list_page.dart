@@ -3,14 +3,23 @@ import '../../../data/teacher/student_leave_repository.dart';
 import 'student_leave_detail_page.dart';
 
 class StudentLeaveListPage extends StatefulWidget {
-  const StudentLeaveListPage({super.key});
+  /// Defaults to the class-teacher-scoped endpoint; pass
+  /// 'principal/student-leaves' for the principal's school-wide view.
+  final String basePath;
+  final String title;
+
+  const StudentLeaveListPage({
+    super.key,
+    this.basePath = 'teacher/student-leaves',
+    this.title = 'শিক্ষার্থীদের ছুটির আবেদন',
+  });
 
   @override
   State<StudentLeaveListPage> createState() => _StudentLeaveListPageState();
 }
 
 class _StudentLeaveListPageState extends State<StudentLeaveListPage> {
-  final _repo = StudentLeaveRepository();
+  late final _repo = StudentLeaveRepository(basePath: widget.basePath);
   late Future<List<Map<String, dynamic>>> _future;
   String? _statusFilter;
 
@@ -30,7 +39,7 @@ class _StudentLeaveListPageState extends State<StudentLeaveListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('শিক্ষার্থীদের ছুটির আবেদন'),
+        title: Text(widget.title),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.filter_list),
@@ -92,6 +101,7 @@ class _StudentLeaveListPageState extends State<StudentLeaveListPage> {
                       MaterialPageRoute(
                         builder: (_) => StudentLeaveDetailPage(
                           leaveId: (m['id'] as num).toInt(),
+                          basePath: widget.basePath,
                         ),
                       ),
                     );

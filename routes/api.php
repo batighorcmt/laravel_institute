@@ -59,6 +59,12 @@ Route::prefix('v1')->group(function () {
             Route::get('principal/reports/staff-attendance-details', [\App\Http\Controllers\Api\PrincipalReportController::class , 'staffAttendanceDetails'])->middleware('role:principal');
             Route::get('principal/reports/staff-attendance-monthly', [\App\Http\Controllers\Api\PrincipalReportController::class , 'staffAttendanceMonthly'])->middleware('role:principal');
 
+            // Student leave management (principal — all sections, unlike the class-teacher scoped endpoints below)
+            Route::get('principal/student-leaves', [\App\Http\Controllers\Api\PrincipalStudentLeaveController::class , 'index'])->middleware('role:principal');
+            Route::get('principal/student-leaves/stats', [\App\Http\Controllers\Api\PrincipalStudentLeaveController::class , 'stats'])->middleware('role:principal');
+            Route::get('principal/student-leaves/{leave}', [\App\Http\Controllers\Api\PrincipalStudentLeaveController::class , 'show'])->middleware('role:principal');
+            Route::post('principal/student-leaves/{leave}/review', [\App\Http\Controllers\Api\PrincipalStudentLeaveController::class , 'review'])->middleware('role:principal');
+
             // Teacher attendance & academic actions
             Route::post('teacher/attendance', [\App\Http\Controllers\Api\TeacherAttendanceController::class , 'store'])->middleware('role:teacher');
             Route::post('teacher/attendance/checkout', [\App\Http\Controllers\Api\TeacherAttendanceController::class , 'checkout'])->middleware('role:teacher');

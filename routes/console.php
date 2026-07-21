@@ -15,6 +15,14 @@ Schedule::command('app:process-end-of-day-attendance')
     ->withoutOverlapping()
     ->runInBackground();
 
+// Auto-publish exam results once status=completed and result_publish_date
+// has arrived — previously that date was collected on the exam form but
+// nothing ever read it, so results stayed unpublished indefinitely.
+Schedule::command('app:auto-publish-exam-results')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->runInBackground();
+
 // Process queued SMS/push-notification jobs (lesson evaluation, homework,
 // attendance, etc.) in the background so HTTP requests that dispatch them
 // (e.g. submitting a lesson evaluation) return immediately instead of

@@ -9,6 +9,7 @@ import '../teacher/teacher_directory_page.dart';
 import '../teacher/teacher_students_list_page.dart';
 import '../teacher/teacher_profile_page.dart';
 import '../teacher/teacher_exams_page.dart';
+import '../teacher/student_leave_list_page.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/services/module_access.dart';
 import '../../../data/auth/auth_repository.dart';
@@ -589,6 +590,22 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const TeacherLeaveListPage(),
+                      ),
+                    );
+                  },
+                ),
+                AnimatedTile(
+                  title: 'Student Leaves',
+                  titleFontSize: 9,
+                  icon: Icons.event_available_outlined,
+                  background: const Color(0xFFF0FDFA),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const StudentLeaveListPage(
+                          basePath: 'principal/student-leaves',
+                          title: 'শিক্ষার্থীদের ছুটির আবেদন',
+                        ),
                       ),
                     );
                   },
