@@ -154,11 +154,15 @@ class TeacherAttendanceController extends Controller
      */
     protected function resolveSchoolId(Request $request, $user, $explicit = null): ?int
     {
-        if ($explicit) return (int) $explicit;
+        // Resolve the same way regardless of caller (store/checkout/index) so a
+        // check-in can never be written under a different school than the one
+        // index()/settings() will read back — client-sent school_id is only a
+        // last-resort fallback, never an override of the server-side context.
         $attr = $request->attributes->get('current_school_id');
         if ($attr) return (int) $attr;
         $firstActive = $user->firstTeacherSchoolId();
         if ($firstActive) return (int) $firstActive;
+        if ($explicit) return (int) $explicit;
         // fallback to any teacher role (inactive?)
         $any = $user->schoolRoles()->whereHas('role', fn($q)=>$q->where('name','teacher'))->value('school_id');
         return $any ? (int) $any : null;
