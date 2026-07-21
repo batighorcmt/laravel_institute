@@ -15,15 +15,14 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">ভার্সন নাম</label>
-                        <input type="text" name="version_name" value="{{ old('version_name', $appUpdate->version_name) }}" class="form-control @error('version_name') is-invalid @enderror">
-                        @error('version_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <input type="text" value="{{ $appUpdate->version_name }}" class="form-control" readonly disabled>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">ভার্সন কোড</label>
-                        <input type="number" name="version_code" value="{{ old('version_code', $appUpdate->version_code) }}" class="form-control @error('version_code') is-invalid @enderror">
-                        @error('version_code') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <input type="text" value="{{ $appUpdate->version_code }}" class="form-control" readonly disabled>
                     </div>
                 </div>
+                <div class="small mb-3 text-muted">ভার্সন নাম ও কোড সবসময় আসল APK ফাইল থেকে স্বয়ংক্রিয়ভাবে সনাক্ত হয় — এখানে হাতে বদলানো যায় না। বদলাতে হলে নিচে নতুন APK আপলোড করুন।</div>
 
                 <div class="mb-3">
                     <label class="form-label">নতুন APK ফাইল (সর্বোচ্চ ২০০ এমবি)</label>
