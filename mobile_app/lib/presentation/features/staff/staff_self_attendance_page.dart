@@ -267,9 +267,11 @@ class _StaffSelfAttendancePageState
         }
       }
 
-      await _submitCheckIn();
+      final ok = await _submitCheckIn();
       await _fetchTodayRecord();
-      await _showSuccessModal('চেক ইন সফল (অভিনন্দন)');
+      if (ok) {
+        await _showSuccessModal('চেক ইন সফল (অভিনন্দন)');
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -302,9 +304,11 @@ class _StaffSelfAttendancePageState
         }
       }
 
-      await _submitCheckout();
+      final ok = await _submitCheckout();
       await _fetchTodayRecord();
-      await _showSuccessModal('চেক আউট সফল (অভিনন্দন)');
+      if (ok) {
+        await _showSuccessModal('চেক আউট সফল (অভিনন্দন)');
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -334,15 +338,15 @@ class _StaffSelfAttendancePageState
     );
   }
 
-  Future<void> _submitCheckIn() async {
+  Future<bool> _submitCheckIn() async {
     final schoolId = _schoolId;
-    if (schoolId == null) return;
+    if (schoolId == null) return false;
 
     final requirePhoto = _settings?['require_photo'] ?? true;
     final requireLocation = _settings?['require_location'] ?? true;
 
-    if (requirePhoto && _photo == null) return;
-    if (requireLocation && _position == null) return;
+    if (requirePhoto && _photo == null) return false;
+    if (requireLocation && _position == null) return false;
 
     final Map<String, dynamic> data = {'school_id': schoolId};
 
@@ -380,23 +384,25 @@ class _StaffSelfAttendancePageState
           ? payload['message']
           : 'Check-in saved';
       _successSnack(msg);
+      return true;
     } on DioException catch (e) {
       _handleDioError(e);
       if (e.type == DioExceptionType.connectionError || e.response == null) {
         await _queueOffline('checkin');
       }
+      return false;
     }
   }
 
-  Future<void> _submitCheckout() async {
+  Future<bool> _submitCheckout() async {
     final schoolId = _schoolId;
-    if (schoolId == null) return;
+    if (schoolId == null) return false;
 
     final requirePhoto = _settings?['require_photo'] ?? true;
     final requireLocation = _settings?['require_location'] ?? true;
 
-    if (requirePhoto && _photo == null) return;
-    if (requireLocation && _position == null) return;
+    if (requirePhoto && _photo == null) return false;
+    if (requireLocation && _position == null) return false;
 
     final Map<String, dynamic> data = {'school_id': schoolId};
 
@@ -434,11 +440,13 @@ class _StaffSelfAttendancePageState
           ? payload['message']
           : 'Check-out saved';
       _successSnack(msg);
+      return true;
     } on DioException catch (e) {
       _handleDioError(e);
       if (e.type == DioExceptionType.connectionError || e.response == null) {
         await _queueOffline('checkout');
       }
+      return false;
     }
   }
 
