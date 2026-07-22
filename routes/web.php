@@ -232,6 +232,9 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/grid', [PrincipalRoutineController::class, 'grid'])->name('grid');
                 Route::get('/period-count', [PrincipalRoutineController::class, 'periodCount'])->name('period-count');
                 Route::post('/period-count', [PrincipalRoutineController::class, 'setPeriodCount'])->name('period-count.set');
+                Route::get('/period-times', [PrincipalRoutineController::class, 'periodTimes'])->name('period-times');
+                Route::post('/period-times', [PrincipalRoutineController::class, 'setPeriodTimes'])->name('period-times.set');
+                Route::post('/copy-day', [PrincipalRoutineController::class, 'copyDay'])->name('copy-day');
                 Route::post('/entry', [PrincipalRoutineController::class, 'saveEntry'])->name('entry.save');
                 Route::delete('/entry', [PrincipalRoutineController::class, 'deleteEntry'])->name('entry.delete');
             }
@@ -782,6 +785,11 @@ Route::middleware(['auth', 'active_school'])->group(function () {
                 Route::get('/guardian-pledge', [\App\Http\Controllers\Principal\Documents\GuardianPledgeController::class, 'index'])->name('guardian_pledge.index');
                 Route::get('/guardian-pledge/load-students', [\App\Http\Controllers\Principal\Documents\GuardianPledgeController::class, 'loadStudents'])->name('guardian_pledge.load-students');
                 Route::get('/guardian-pledge/print', [\App\Http\Controllers\Principal\Documents\GuardianPledgeController::class, 'print'])->name('guardian_pledge.print');
+
+                // Interview Token (অভিভাবক সাক্ষাৎকার টোকেন)
+                Route::get('/interview-token', [\App\Http\Controllers\Principal\Documents\InterviewTokenController::class, 'index'])->name('interview_token.index');
+                Route::get('/interview-token/load-students', [\App\Http\Controllers\Principal\Documents\InterviewTokenController::class, 'loadStudents'])->name('interview_token.load-students');
+                Route::get('/interview-token/print', [\App\Http\Controllers\Principal\Documents\InterviewTokenController::class, 'print'])->name('interview_token.print');
 
 
                 // Settings (backgrounds, colors for print pages)

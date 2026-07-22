@@ -209,7 +209,12 @@ class _LessonEvaluationReportPageState
     } catch (_) {}
   }
 
-  Future<void> _fetchSections(int classId) async {
+  // Returns the fetched list (in addition to updating parent state) so the
+  // filter bottom sheet — a separate widget subtree that showModalBottomSheet
+  // builds once and does not rebuild on the parent's setState — can keep its
+  // own local copy and reflect it immediately instead of only after the
+  // sheet is closed and reopened.
+  Future<List<Map<String, dynamic>>> _fetchSections(int classId) async {
     final schoolId = _getSchoolId();
     try {
       final params = <String, dynamic>{'class_id': classId};
@@ -231,24 +236,26 @@ class _LessonEvaluationReportPageState
           if (n1 != null && n2 != null) return n1.compareTo(n2);
           return s1.compareTo(s2);
         });
-        if (mounted) {
-          setState(() => _sections = rawData.cast<Map<String, dynamic>>());
-        }
+        final list = rawData.cast<Map<String, dynamic>>();
+        if (mounted) setState(() => _sections = list);
+        return list;
       }
     } catch (_) {}
+    return [];
   }
 
-  Future<void> _fetchSubjects() async {
-    if (_selectedClassId == null) {
-      setState(() => _subjects = []);
-      return;
+  Future<List<Map<String, dynamic>>> _fetchSubjectsFor({
+    required int? classId,
+    int? sectionId,
+  }) async {
+    if (classId == null) {
+      if (mounted) setState(() => _subjects = []);
+      return [];
     }
     final schoolId = _getSchoolId();
     try {
-      final params = <String, dynamic>{'class_id': _selectedClassId};
-      if (_selectedSectionId != null) {
-        params['section_id'] = _selectedSectionId;
-      }
+      final params = <String, dynamic>{'class_id': classId};
+      if (sectionId != null) params['section_id'] = sectionId;
       if (schoolId != null) params['school_id'] = schoolId;
       final resp = await DioClient().dio.get(
         'principal/students/filters/subjects',
@@ -256,17 +263,14 @@ class _LessonEvaluationReportPageState
       );
       if (resp.statusCode == 200) {
         final data = _extractList(resp.data);
-        if (mounted) {
-          setState(() {
-            _subjects = data
-                .map(
-                  (e) => <String, dynamic>{'id': e['id'], 'name': e['name']},
-                )
-                .toList();
-          });
-        }
+        final list = data
+            .map((e) => <String, dynamic>{'id': e['id'], 'name': e['name']})
+            .toList();
+        if (mounted) setState(() => _subjects = list);
+        return list;
       }
     } catch (_) {}
+    return [];
   }
 
   Future<void> _fetchTeachers() async {
@@ -333,7 +337,9 @@ class _LessonEvaluationReportPageState
         selectedSectionId: _selectedSectionId,
         selectedSubjectId: _selectedSubjectId,
         selectedTeacher: _selectedTeacherObj,
-        onClassChanged: (v) async {
+        fetchSections: _fetchSections,
+        fetchSubjects: _fetchSubjectsFor,
+        onClassChanged: (v) {
           setState(() {
             _selectedClassId = v;
             _selectedSectionId = null;
@@ -341,15 +347,12 @@ class _LessonEvaluationReportPageState
             _sections = [];
             _subjects = [];
           });
-          if (v != null) await _fetchSections(v);
-          await _fetchSubjects();
         },
-        onSectionChanged: (v) async {
+        onSectionChanged: (v) {
           setState(() {
             _selectedSectionId = v;
             _selectedSubjectId = null;
           });
-          await _fetchSubjects();
         },
         onSubjectChanged: (v) => setState(() => _selectedSubjectId = v),
         onTeacherChanged: (m) => setState(() => _selectedTeacherObj = m),
@@ -822,6 +825,15 @@ class _FilterSheet extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>?> onTeacherChanged;
   final VoidCallback onApply;
   final VoidCallback onClear;
+  // Fetched directly by the sheet itself (into its own local state) instead
+  // of relying on the parent's setState, since showModalBottomSheet builds
+  // this widget once and won't rebuild it when the parent rebuilds.
+  final Future<List<Map<String, dynamic>>> Function(int classId) fetchSections;
+  final Future<List<Map<String, dynamic>>> Function({
+    required int? classId,
+    int? sectionId,
+  })
+  fetchSubjects;
 
   const _FilterSheet({
     required this.brand,
@@ -839,6 +851,8 @@ class _FilterSheet extends StatefulWidget {
     required this.onTeacherChanged,
     required this.onApply,
     required this.onClear,
+    required this.fetchSections,
+    required this.fetchSubjects,
   });
 
   @override
@@ -850,6 +864,10 @@ class _FilterSheetState extends State<_FilterSheet> {
   int? _sectionId;
   int? _subjectId;
   Map<String, dynamic>? _teacher;
+  late List<Map<String, dynamic>> _sectionsLocal = widget.sections;
+  late List<Map<String, dynamic>> _subjectsLocal = widget.subjects;
+  bool _loadingSections = false;
+  bool _loadingSubjects = false;
 
   @override
   void initState() {
@@ -858,6 +876,44 @@ class _FilterSheetState extends State<_FilterSheet> {
     _sectionId = widget.selectedSectionId;
     _subjectId = widget.selectedSubjectId;
     _teacher = widget.selectedTeacher;
+  }
+
+  Future<void> _onClassChanged(int? v) async {
+    setState(() {
+      _classId = v;
+      _sectionId = null;
+      _subjectId = null;
+      _sectionsLocal = [];
+      _subjectsLocal = [];
+      _loadingSections = v != null;
+      _loadingSubjects = v != null;
+    });
+    widget.onClassChanged(v);
+    if (v == null) return;
+    final sections = await widget.fetchSections(v);
+    final subjects = await widget.fetchSubjects(classId: v);
+    if (!mounted) return;
+    setState(() {
+      _sectionsLocal = sections;
+      _subjectsLocal = subjects;
+      _loadingSections = false;
+      _loadingSubjects = false;
+    });
+  }
+
+  Future<void> _onSectionChanged(int? v) async {
+    setState(() {
+      _sectionId = v;
+      _subjectId = null;
+      _loadingSubjects = true;
+    });
+    widget.onSectionChanged(v);
+    final subjects = await widget.fetchSubjects(classId: _classId, sectionId: v);
+    if (!mounted) return;
+    setState(() {
+      _subjectsLocal = subjects;
+      _loadingSubjects = false;
+    });
   }
 
   @override
@@ -911,24 +967,27 @@ class _FilterSheetState extends State<_FilterSheet> {
                 )
                 .where((it) => it.value != null)
                 .toList(),
-            onChanged: (v) {
-              setState(() {
-                _classId = v;
-                _sectionId = null;
-                _subjectId = null;
-              });
-              widget.onClassChanged(v);
-            },
+            onChanged: _onClassChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<int>(
             initialValue: _sectionId,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'শাখা',
               isDense: true,
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              suffixIcon: _loadingSections
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : null,
             ),
-            items: widget.sections
+            items: _sectionsLocal
                 .map(
                   (s) => DropdownMenuItem<int>(
                     value: s['id'] is int
@@ -939,20 +998,27 @@ class _FilterSheetState extends State<_FilterSheet> {
                 )
                 .where((it) => it.value != null)
                 .toList(),
-            onChanged: (v) {
-              setState(() => _sectionId = v);
-              widget.onSectionChanged(v);
-            },
+            onChanged: _onSectionChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<int>(
             initialValue: _subjectId,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'বিষয়',
               isDense: true,
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              suffixIcon: _loadingSubjects
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : null,
             ),
-            items: widget.subjects
+            items: _subjectsLocal
                 .map(
                   (s) => DropdownMenuItem<int>(
                     value: s['id'] is int

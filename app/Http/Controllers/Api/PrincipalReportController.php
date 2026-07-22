@@ -11,6 +11,10 @@ use App\Models\SchoolClass;
 use App\Models\Section;
 use App\Models\RoutineEntry;
 use App\Models\LessonEvaluation;
+use App\Models\LessonEvaluationRecord;
+use App\Models\Student;
+use App\Models\Subject;
+use App\Models\Homework;
 use App\Models\School;
 use App\Models\Teacher;
 use App\Models\TeacherAttendance;
@@ -163,6 +167,25 @@ class PrincipalReportController extends Controller
         return $request->attributes->get('current_school_id')
             ?? (method_exists($user, 'firstTeacherSchoolId') ? $user->firstTeacherSchoolId() : null)
             ?? ($user->primarySchool()?->id ?? null);
+    }
+
+    /**
+     * Backfill serial_number for any active teacher/staff row that doesn't
+     * have one yet, so the attendance-report ordering (by serial) is always
+     * well-defined instead of silently falling back to id order forever.
+     * Assigns the next number after the current max, in id order.
+     */
+    private function assignMissingSerialNumbers($query): void
+    {
+        $missing = (clone $query)->whereNull('serial_number')->orderBy('id')->get();
+        if ($missing->isEmpty()) {
+            return;
+        }
+        $next = ((clone $query)->max('serial_number') ?? 0) + 1;
+        foreach ($missing as $row) {
+            $row->update(['serial_number' => $next]);
+            $next++;
+        }
     }
 
     /**
@@ -879,6 +902,19 @@ class PrincipalReportController extends Controller
             $teacherName = $evaluation->teacher?->user?->name ?? $evaluation->teacher?->name ?? null;
         } catch (\Throwable $_) {}
 
+        // "আগামীর পাঠ্য বিষয়" (next lesson's topic) isn't stored on the
+        // evaluation itself — the submission form saves it as the paired
+        // Homework record's description, keyed the same way it was created.
+        $nextTopic = null;
+        if ($evaluation->section_id) {
+            $nextTopic = Homework::where('teacher_id', $evaluation->teacher_id)
+                ->where('class_id', $evaluation->class_id)
+                ->where('section_id', $evaluation->section_id)
+                ->where('subject_id', $evaluation->subject_id)
+                ->whereDate('homework_date', $evaluation->evaluation_date)
+                ->value('description');
+        }
+
         $records = $evaluation->records->map(function($record) {
             $student = $record->student;
             return [
@@ -898,8 +934,8 @@ class PrincipalReportController extends Controller
             'evaluation' => [
                 'id' => $evaluation->id,
                 'evaluation_date' => $evaluation->evaluation_date?->toDateString(),
-                'evaluation_time' => $evaluation->evaluation_time?->format('H:i'),
-                'submitted_at' => $evaluation->created_at?->format('Y-m-d H:i'),
+                'evaluation_time' => $evaluation->evaluation_time?->format('h:i A'),
+                'submitted_at' => $evaluation->created_at?->format('Y-m-d h:i A'),
                 'period_number' => $evaluation->routineEntry?->period_number,
                 'start_time' => $evaluation->routineEntry?->start_time
                     ? substr($evaluation->routineEntry->start_time, 0, 5)
@@ -912,10 +948,138 @@ class PrincipalReportController extends Controller
                 'section_name' => $evaluation->section?->name,
                 'subject_name' => $evaluation->subject?->name,
                 'notes' => $evaluation->notes,
+                'next_topic' => $nextTopic,
                 'status' => $evaluation->status,
                 'stats' => $evaluation->getCompletionStats(),
                 'records' => $records,
             ]
+        ]);
+    }
+
+    /**
+     * A student's lesson-evaluation profile for the principal — unlike the
+     * teacher's per-subject studentHistory(), this spans every subject/every
+     * teacher for the current academic year: subject-wise stat breakdown
+     * plus a date-wise list optionally filtered to one subject.
+     */
+    public function lessonEvaluationStudentProfile(Request $request, $studentId)
+    {
+        $schoolId = $this->resolveSchoolId($request);
+        if (empty($schoolId)) {
+            return response()->json(['message' => 'No school context'], 400);
+        }
+
+        $student = Student::where('school_id', $schoolId)->find($studentId);
+        if (!$student) {
+            return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+        }
+
+        $academicYear = AcademicYear::where('school_id', $schoolId)->where('is_current', true)->first();
+
+        $enrollment = StudentEnrollment::where('school_id', $schoolId)
+            ->where('student_id', $student->id)
+            ->when($academicYear, fn($q) => $q->where('academic_year_id', $academicYear->id))
+            ->with(['class', 'section', 'group'])
+            ->orderByDesc('id')
+            ->first();
+
+        $subjectId = $request->query('subject_id') ? (int) $request->query('subject_id') : null;
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = min(50, max(1, (int) $request->query('per_page', 15)));
+
+        $scopeEvaluations = function ($q) use ($schoolId, $academicYear, $subjectId) {
+            $q->where('school_id', $schoolId);
+            if ($academicYear) {
+                $q->whereBetween('evaluation_date', [
+                    $academicYear->start_date->toDateString(),
+                    $academicYear->end_date->toDateString(),
+                ]);
+            }
+            if ($subjectId) {
+                $q->where('subject_id', $subjectId);
+            }
+        };
+
+        // Subject-wise stat breakdown (always across ALL subjects, regardless
+        // of the subject_id filter — that filter only narrows the entry list).
+        $subjectStatsRaw = LessonEvaluationRecord::where('student_id', $student->id)
+            ->whereHas('lessonEvaluation', function ($q) use ($schoolId, $academicYear) {
+                $q->where('school_id', $schoolId);
+                if ($academicYear) {
+                    $q->whereBetween('evaluation_date', [
+                        $academicYear->start_date->toDateString(),
+                        $academicYear->end_date->toDateString(),
+                    ]);
+                }
+            })
+            ->join('lesson_evaluations', 'lesson_evaluations.id', '=', 'lesson_evaluation_records.lesson_evaluation_id')
+            ->select('lesson_evaluations.subject_id', 'lesson_evaluation_records.status', DB::raw('count(*) as cnt'))
+            ->groupBy('lesson_evaluations.subject_id', 'lesson_evaluation_records.status')
+            ->get();
+
+        $subjectNames = Subject::whereIn('id', $subjectStatsRaw->pluck('subject_id')->unique())->pluck('name', 'id');
+
+        $subjectStats = [];
+        foreach ($subjectStatsRaw->groupBy('subject_id') as $sid => $rows) {
+            $counts = $rows->pluck('cnt', 'status');
+            $subjectStats[] = [
+                'subject_id' => $sid,
+                'subject_name' => $subjectNames[$sid] ?? null,
+                'total' => (int) $counts->sum(),
+                'completed' => (int) ($counts['completed'] ?? 0),
+                'partial' => (int) ($counts['partial'] ?? 0),
+                'not_done' => (int) ($counts['not_done'] ?? 0),
+                'absent' => (int) ($counts['absent'] ?? 0),
+            ];
+        }
+        usort($subjectStats, fn ($a, $b) => strcmp((string) $a['subject_name'], (string) $b['subject_name']));
+
+        $overall = [
+            'total' => array_sum(array_column($subjectStats, 'total')),
+            'completed' => array_sum(array_column($subjectStats, 'completed')),
+            'partial' => array_sum(array_column($subjectStats, 'partial')),
+            'not_done' => array_sum(array_column($subjectStats, 'not_done')),
+            'absent' => array_sum(array_column($subjectStats, 'absent')),
+        ];
+
+        $evaluationsQuery = LessonEvaluation::where($scopeEvaluations)
+            ->whereHas('records', fn ($q) => $q->where('student_id', $student->id))
+            ->with(['records' => fn ($q) => $q->where('student_id', $student->id), 'subject', 'teacher.user'])
+            ->orderByDesc('evaluation_date');
+
+        $total = (clone $evaluationsQuery)->count();
+        $evaluations = $evaluationsQuery->forPage($page, $perPage)->get();
+
+        $entries = $evaluations->map(function ($ev) {
+            $record = $ev->records->first();
+            return [
+                'date' => $ev->evaluation_date?->toDateString(),
+                'subject_name' => $ev->subject?->name,
+                'teacher_name' => $ev->teacher?->user?->name,
+                'status' => $record?->status,
+                'notes' => $ev->notes,
+            ];
+        })->values();
+
+        return response()->json([
+            'student' => [
+                'id' => $student->id,
+                'name' => $student->full_name,
+                'roll' => $enrollment?->roll_no,
+                'photo_url' => $student->photo_url,
+                'guardian_phone' => $student->guardian_phone,
+                'class_name' => $enrollment?->class?->name,
+                'section_name' => $enrollment?->section?->name,
+                'group_name' => $enrollment?->group?->name,
+            ],
+            'academic_year' => $academicYear ? ['id' => $academicYear->id, 'name' => $academicYear->name] : null,
+            'subjects' => Subject::where('school_id', $schoolId)->orderBy('name')->get(['id', 'name']),
+            'subject_stats' => $subjectStats,
+            'overall_summary' => $overall,
+            'entries' => $entries,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_more' => ($page * $perPage) < $total,
         ]);
     }
 
@@ -1065,7 +1229,12 @@ class PrincipalReportController extends Controller
         }
         $date = $request->query('date', now()->toDateString());
 
-        $teachers = Teacher::forSchool($schoolId)->active()->with('user')->get();
+        $this->assignMissingSerialNumbers(Teacher::forSchool($schoolId)->active());
+
+        $teachers = Teacher::forSchool($schoolId)->active()->with('user')
+            ->orderByRaw('COALESCE(serial_number, 999999) asc')
+            ->orderBy('id')
+            ->get();
         $attendances = TeacherAttendance::where('school_id', $schoolId)
             ->where('date', $date)
             ->get()
@@ -1091,12 +1260,13 @@ class PrincipalReportController extends Controller
                 'initials' => $t->initials,
                 'designation' => $t->designation,
                 'photo_url' => $t->photo_url,
+                'serial_number' => $t->serial_number,
                 'status' => $status,
                 'check_in_time' => $att->check_in_time ?? null,
                 'check_out_time' => $att->check_out_time ?? null,
                 'remarks' => $att->remarks ?? null,
             ];
-        })->sortBy('name')->values();
+        })->values();
 
         $total = $teachers->count();
         $percentage = $total > 0 ? round((($present + $late) / $total) * 100, 1) : null;
@@ -1455,7 +1625,12 @@ class PrincipalReportController extends Controller
         }
         $date = $request->query('date', now()->toDateString());
 
-        $staff = StaffMember::where('school_id', $schoolId)->active()->whereNotNull('user_id')->with(['user', 'designationRef'])->get();
+        $this->assignMissingSerialNumbers(StaffMember::where('school_id', $schoolId)->active()->whereNotNull('user_id'));
+
+        $staff = StaffMember::where('school_id', $schoolId)->active()->whereNotNull('user_id')->with(['user', 'designationRef'])
+            ->orderByRaw('COALESCE(serial_number, 999999) asc')
+            ->orderBy('id')
+            ->get();
         $attendances = StaffAttendance::where('school_id', $schoolId)
             ->where('date', $date)
             ->get()
@@ -1480,12 +1655,13 @@ class PrincipalReportController extends Controller
                 'name_bn' => $s->full_name_bn ?: null,
                 'designation' => $s->designationRef ? ($s->designationRef->name_bn ?: $s->designationRef->name_en) : null,
                 'photo_url' => $s->photo_url,
+                'serial_number' => $s->serial_number,
                 'status' => $status,
                 'check_in_time' => $att->check_in_time ?? null,
                 'check_out_time' => $att->check_out_time ?? null,
                 'remarks' => $att->remarks ?? null,
             ];
-        })->sortBy('name')->values();
+        })->values();
 
         $total = $staff->count();
         $percentage = $total > 0 ? round((($present + $late) / $total) * 100, 1) : null;

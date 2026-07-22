@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'principal_student_profile_page.dart';
+import 'lesson_evaluation_student_profile_page.dart';
 
 class LessonEvaluationDetailsPage extends StatefulWidget {
   final Map<String, dynamic> report;
@@ -720,6 +721,9 @@ class _LessonEvaluationDetailsPageState
         : null;
     final submittedAt =
         (remote?['submitted_at'] ?? widget.report['submitted_at'])?.toString();
+    final todayTopic = (remote?['notes'] ?? widget.report['notes'])?.toString();
+    final nextTopic =
+        (remote?['next_topic'] ?? widget.report['next_topic'])?.toString();
 
     return Scaffold(
       backgroundColor: _bg,
@@ -741,6 +745,8 @@ class _LessonEvaluationDetailsPageState
                   periodNumber: periodNumber,
                   timeLabel: timeLabel,
                   submittedAt: submittedAt,
+                  todayTopic: todayTopic,
+                  nextTopic: nextTopic,
                 ),
                 const SizedBox(height: 14),
                 if (stats != null) _buildStatsGrid(stats),
@@ -759,6 +765,8 @@ class _LessonEvaluationDetailsPageState
     String? periodNumber,
     String? timeLabel,
     String? submittedAt,
+    String? todayTopic,
+    String? nextTopic,
   }) {
     return Container(
       width: double.infinity,
@@ -810,6 +818,20 @@ class _LessonEvaluationDetailsPageState
             _infoLine(
               icon: Icons.check_circle_outline,
               text: 'জমা দেওয়া হয়েছে: $submittedAt',
+            ),
+          ],
+          if (todayTopic != null && todayTopic.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _infoLine(
+              icon: Icons.menu_book_outlined,
+              text: 'আজকের পাঠ্য বিষয়: $todayTopic',
+            ),
+          ],
+          if (nextTopic != null && nextTopic.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            _infoLine(
+              icon: Icons.arrow_forward_outlined,
+              text: 'আগামীর পাঠ্য বিষয়: $nextTopic',
             ),
           ],
         ],
@@ -1066,9 +1088,27 @@ class _LessonEvaluationDetailsPageState
             horizontal: 12,
             vertical: 4,
           ),
-          leading: leading,
-          title: InkWell(
+          leading: InkWell(
             onTap: () => _showStudentModal(s),
+            child: leading,
+          ),
+          title: InkWell(
+            onTap: () {
+              final id = s['id'];
+              if (id is int) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LessonEvaluationStudentProfilePage(
+                      studentId: id,
+                      studentName: (s['name'] ?? '').toString(),
+                    ),
+                  ),
+                );
+              } else {
+                _showStudentModal(s);
+              }
+            },
             child: Text(
               (s['name'] ?? '').toString(),
               style: const TextStyle(fontWeight: FontWeight.w600, color: _ink),

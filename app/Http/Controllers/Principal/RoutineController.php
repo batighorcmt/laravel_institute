@@ -9,6 +9,7 @@ use App\Models\Section;
 use App\Models\Subject;
 use App\Models\RoutineEntry;
 use App\Models\ClassPeriod;
+use App\Models\ClassPeriodTime;
 use App\Models\ClassSubject;
 use App\Models\Role;
 use App\Models\Teacher;
@@ -137,23 +138,23 @@ class RoutineController extends Controller
             // First try via Eloquent to avoid SQL mode GROUP BY issues
             $mappings = ClassSubject::where('school_id',$school->id)
                 ->where('class_id',$classId)
-                ->with('subject:id,name')
+                ->with('subject:id,name,bangla_name')
                 ->get();
             $subjects = $mappings->pluck('subject')->filter()->unique('id')->values();
             if ($subjects->isNotEmpty()) {
-                $sorted = $subjects->sortBy('name')->values()->map(fn($s)=>['subject_id'=>$s->id,'name'=>$s->name]);
+                $sorted = $subjects->sortBy('name')->values()->map(fn($s)=>['subject_id'=>$s->id,'name'=>$s->name,'bangla_name'=>$s->bangla_name]);
                 return response()->json($sorted);
             }
             // Fallback to join only if above empty (unlikely)
             $q = ClassSubject::where('class_id',$classId)
                 ->join('subjects','subjects.id','=','class_subjects.subject_id')
-                ->select(['subjects.id as subject_id','subjects.name'])
-                ->groupBy('subjects.id','subjects.name')
+                ->select(['subjects.id as subject_id','subjects.name','subjects.bangla_name'])
+                ->groupBy('subjects.id','subjects.name','subjects.bangla_name')
                 ->orderBy('subjects.name');
             $rows = $q->get();
             if ($rows->isNotEmpty()) return response()->json($rows);
             // Final fallback: all subjects of the school
-            $fallback = Subject::where('school_id',$school->id)->orderBy('name')->get(['id as subject_id','name']);
+            $fallback = Subject::where('school_id',$school->id)->orderBy('name')->get(['id as subject_id','name','bangla_name']);
             return response()->json($fallback);
         } catch (\Throwable $e) {
             return response()->json([], 200);
@@ -190,6 +191,106 @@ class RoutineController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['success'=>false,'error'=>'server']);
         }
+    }
+
+    /**
+     * Start/end time per period_number for a class+section — set once,
+     * reused across all seven days so the principal doesn't retype the same
+     * time in every day×period cell.
+     */
+    public function periodTimes(Request $request, School $school)
+    {
+        try {
+            $classId = (int)$request->get('class_id');
+            $sectionId = (int)$request->get('section_id');
+            if (!$classId || !$sectionId) return response()->json([]);
+            $times = ClassPeriodTime::forSchool($school->id)->forClassSection($classId,$sectionId)->get();
+            $map = [];
+            foreach ($times as $t) {
+                $map[$t->period_number] = ['start_time'=>$t->start_time, 'end_time'=>$t->end_time];
+            }
+            return response()->json($map);
+        } catch (\Throwable $e) {
+            return response()->json([], 200);
+        }
+    }
+
+    public function setPeriodTimes(Request $request, School $school)
+    {
+        $data = $request->validate([
+            'class_id' => 'required|integer',
+            'section_id' => 'required|integer',
+            'times' => 'required|array',
+            'times.*.period_number' => 'required|integer|min:1|max:32',
+            'times.*.start_time' => 'nullable|string',
+            'times.*.end_time' => 'nullable|string',
+        ]);
+        try {
+            foreach ($data['times'] as $row) {
+                ClassPeriodTime::updateOrCreate([
+                    'school_id' => $school->id,
+                    'class_id' => $data['class_id'],
+                    'section_id' => $data['section_id'],
+                    'period_number' => $row['period_number'],
+                ], [
+                    'start_time' => $row['start_time'] ?: null,
+                    'end_time' => $row['end_time'] ?: null,
+                ]);
+            }
+            return response()->json(['success'=>true]);
+        } catch (\Throwable $e) {
+            return response()->json(['success'=>false,'error'=>'server']);
+        }
+    }
+
+    /**
+     * Duplicate every entry from one day onto one or more other days for the
+     * same class+section — replaces whatever was already on the target days.
+     */
+    public function copyDay(Request $request, School $school)
+    {
+        $data = $request->validate([
+            'class_id' => 'required|integer',
+            'section_id' => 'required|integer',
+            'source_day' => 'required|string|max:16',
+            'target_days' => 'required|array|min:1',
+            'target_days.*' => 'string|max:16',
+        ]);
+
+        $sourceEntries = RoutineEntry::forSchool($school->id)
+            ->forClassSection($data['class_id'], $data['section_id'])
+            ->where('day_of_week', $data['source_day'])
+            ->get();
+
+        if ($sourceEntries->isEmpty()) {
+            return response()->json(['success'=>false,'error'=>'উৎস দিনে কোনো এন্ট্রি নেই']);
+        }
+
+        $targetDays = array_diff($data['target_days'], [$data['source_day']]);
+        foreach ($targetDays as $day) {
+            RoutineEntry::forSchool($school->id)
+                ->forClassSection($data['class_id'], $data['section_id'])
+                ->where('day_of_week', $day)
+                ->delete();
+
+            foreach ($sourceEntries as $e) {
+                RoutineEntry::create([
+                    'school_id' => $school->id,
+                    'class_id' => $data['class_id'],
+                    'section_id' => $data['section_id'],
+                    'day_of_week' => $day,
+                    'period_number' => $e->period_number,
+                    'subject_id' => $e->subject_id,
+                    'teacher_id' => $e->teacher_id,
+                    'start_time' => $e->start_time,
+                    'end_time' => $e->end_time,
+                    'room' => $e->room,
+                    'remarks' => $e->remarks,
+                ]);
+            }
+        }
+
+        return response()->json(['success'=>true, 'copied_days'=>array_values($targetDays)]);
     }
 
     public function grid(Request $request, School $school)
@@ -251,6 +352,21 @@ class RoutineController extends Controller
             ->first();
         if(!$teacher) return response()->json(['success'=>false,'error'=>'Teacher record not found']);
         
+        // Fall back to the class+section's saved period-time template when the
+        // client didn't send an explicit time, so times don't need retyping.
+        $startTime = $data['start_time'] ?? null;
+        $endTime = $data['end_time'] ?? null;
+        if (!$startTime && !$endTime) {
+            $template = ClassPeriodTime::forSchool($school->id)
+                ->forClassSection($data['class_id'], $data['section_id'])
+                ->where('period_number', $data['period_number'])
+                ->first();
+            if ($template) {
+                $startTime = $startTime ?: $template->start_time;
+                $endTime = $endTime ?: $template->end_time;
+            }
+        }
+
         $payload = [
             'school_id'=>$school->id,
             'class_id'=>$data['class_id'],
@@ -259,8 +375,8 @@ class RoutineController extends Controller
             'period_number'=>$data['period_number'],
             'subject_id'=>$data['subject_id'],
             'teacher_id'=>$teacher->id,
-            'start_time'=>$data['start_time'] ?? null,
-            'end_time'=>$data['end_time'] ?? null,
+            'start_time'=>$startTime,
+            'end_time'=>$endTime,
             'room'=>$data['room'] ?? null,
             'remarks'=>$data['remarks'] ?? null,
         ];
@@ -296,11 +412,16 @@ class RoutineController extends Controller
         }
         $periodCount = ClassPeriod::forSchool($school->id)->forClassSection($classId,$sectionId)->value('period_count') ?? 0;
         $entries = RoutineEntry::forSchool($school->id)->forClassSection($classId,$sectionId)
-            ->with(['subject:id,name','teacher.user:id,name'])
+            ->with(['subject:id,name,bangla_name','teacher.user:id,name'])
             ->get()
             ->groupBy(fn($e)=>$e->day_of_week.'#'.$e->period_number);
-        $days = ['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'];
-        return view('principal.routines.print', compact('school','class','section','periodCount','entries','days'));
+
+        $lang = $request->get('lang') === 'en' ? 'en' : 'bn';
+        $days = $lang === 'en'
+            ? ['saturday'=>'Saturday','sunday'=>'Sunday','monday'=>'Monday','tuesday'=>'Tuesday','wednesday'=>'Wednesday','thursday'=>'Thursday','friday'=>'Friday']
+            : ['saturday'=>'শনিবার','sunday'=>'রবিবার','monday'=>'সোমবার','tuesday'=>'মঙ্গলবার','wednesday'=>'বুধবার','thursday'=>'বৃহস্পতিবার','friday'=>'শুক্রবার'];
+
+        return view('principal.routines.print', compact('school','class','section','periodCount','entries','days','lang'));
     }
 
     public function teacherPrintView(Request $request, School $school)

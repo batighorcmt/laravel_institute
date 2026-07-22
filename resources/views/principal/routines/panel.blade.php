@@ -40,6 +40,8 @@
           <span class="mr-2">পিরিয়ড: <b id="periodCountDisplay">0</b></span>
           <button class="btn btn-sm btn-outline-primary" id="addPeriodBtn">+ যোগ</button>
           <button class="btn btn-sm btn-outline-danger" id="removePeriodBtn">- কমান</button>
+          <button class="btn btn-sm btn-outline-info ml-2" id="periodTimesBtn"><i class="fas fa-clock mr-1"></i> সময়সূচী</button>
+          <button class="btn btn-sm btn-outline-warning ml-1" id="copyDayBtn"><i class="fas fa-copy mr-1"></i> দিন কপি</button>
           <a id="printRoutineLink" href="#" target="_blank" class="btn btn-sm btn-outline-secondary ml-2" style="display:none"><i class="fas fa-print"></i> প্রিন্ট</a>
         </div>
       </div>
@@ -87,6 +89,49 @@
   </div>
 </div>
 
+<!-- Modal: period times template (start/end time per period, once for the class+section) -->
+<div class="modal fade" id="periodTimesModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">পিরিয়ড সময়সূচী নির্ধারণ করুন</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+      <div class="modal-body">
+        <p class="text-muted small">এখানে একবার সময় নির্ধারণ করলে সকল দিনের এন্ট্রিতে (সব দিনে একই পিরিয়ড নম্বরে) সেই সময় স্বয়ংক্রিয়ভাবে বসে যাবে।</p>
+        <table class="table table-sm">
+          <thead><tr><th style="width:100px">পিরিয়ড</th><th>শুরু</th><th>শেষ</th></tr></thead>
+          <tbody id="periodTimesBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="savePeriodTimes">সংরক্ষণ</button>
+        <button class="btn btn-secondary" data-dismiss="modal">বন্ধ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: copy one day's routine onto other days -->
+<div class="modal fade" id="copyDayModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">একদিনের রুটিন কপি করুন</h5><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>উৎস দিন (যেখান থেকে কপি হবে)</label>
+          <select id="copySourceDay" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label>গন্তব্য দিন(সমূহ) (যেখানে বসবে — বিদ্যমান এন্ট্রি প্রতিস্থাপিত হবে)</label>
+          <div id="copyTargetDays"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-warning" id="saveCopyDay">কপি করুন</button>
+        <button class="btn btn-secondary" data-dismiss="modal">বন্ধ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @push('scripts')
 <!-- Select2 JS is bundled via Vite (resources/js/app.js) in production -->
 <script>
@@ -95,6 +140,18 @@
   var teachers = @json($teachers);
   var dayLabels = @json($days);
   var days = Object.keys(dayLabels);
+  var periodTimesCache = {}; // period_number -> {start_time, end_time}, loaded per class+section
+
+  // "08:30" / "08:30:00" -> "8:30 AM" — request #5 (AM/PM everywhere)
+  function formatAmPm(t){
+    if(!t) return '';
+    var parts = t.split(':');
+    var h = parseInt(parts[0], 10);
+    var m = parts[1] || '00';
+    var suffix = h >= 12 ? 'PM' : 'AM';
+    var h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ':' + m + ' ' + suffix;
+  }
 
   // Helper: fetch JSON with CSRF + credentials
   function fetchJSON(url, opts){
@@ -155,8 +212,9 @@
     var list = cell.querySelector('.cell-list'); list.innerHTML='';
     (entries||[]).forEach(function(e){
       var div=document.createElement('div'); div.className='cell-entry';
+      var timeStr = e.start_time ? formatAmPm(e.start_time)+(e.end_time?(' - '+formatAmPm(e.end_time)):'') : '';
       div.innerHTML='<div class="small"><b>'+(e.subject_name||'')+'</b> — '+(e.teacher_name||'')+'</div>'+
-                    '<div class="small text-muted">'+(e.start_time||'')+(e.end_time?(' - '+e.end_time):'')+'</div>'+
+                    '<div class="small text-muted">'+timeStr+'</div>'+
                     '<button class="btn btn-xs btn-outline-danger mt-1 del-entry" data-id="'+e.id+'">মুছুন</button>';
       list.appendChild(div);
     });
@@ -178,6 +236,9 @@
         var c = (typeof pc.period_count==='number') ? pc.period_count : 0;
         document.getElementById('periodCountDisplay').textContent=c;
         buildGrid(c);
+        return fetchJSON('{{ route('principal.institute.routine.period-times',$school) }}?class_id='+cls+'&section_id='+sec);
+      }).then(pt=>{
+        periodTimesCache = pt || {};
         return fetchJSON('{{ route('principal.institute.routine.grid',$school) }}?class_id='+cls+'&section_id='+sec)
       }).then(grid=>{
         var maxP = parseInt(document.getElementById('periodCountDisplay').textContent)||0;
@@ -250,7 +311,7 @@
     if(cls){
       fetchJSON('{{ route('principal.institute.routine.subjects',$school) }}?class_id='+cls)
         .then(function(list){
-          sel.innerHTML='<option value="">— বিষয় —</option>'+(list||[]).map(function(s){ return '<option value="'+s.subject_id+'">'+s.name+'</option>'; }).join('');
+          sel.innerHTML='<option value="">— বিষয় —</option>'+(list||[]).map(function(s){ return '<option value="'+s.subject_id+'">'+(s.bangla_name?(s.bangla_name+' ('+s.name+')'):s.name)+'</option>'; }).join('');
           if(defaults && defaults.subject_id) sel.value = String(defaults.subject_id);
         })
         .catch(function(){ sel.innerHTML='<option value="">লোড ব্যর্থ</option>'; });
@@ -259,13 +320,25 @@
     }
     var teacherSel = tr.querySelector('.teacher-input');
     populateTeacherSelect(teacherSel, defaults ? defaults.teacher_id : '');
-    if(defaults){
-      tr.querySelector('.period-input').value = defaults.period_number || document.getElementById('cellModal').dataset.period;
-      tr.querySelector('.start-input').value = defaults.start_time || '';
-      tr.querySelector('.end-input').value = defaults.end_time || '';
-    } else {
-      tr.querySelector('.period-input').value = document.getElementById('cellModal').dataset.period;
+    var periodInput = tr.querySelector('.period-input');
+    var startInput = tr.querySelector('.start-input');
+    var endInput = tr.querySelector('.end-input');
+
+    function autoFillTimeFromTemplate(){
+      if (startInput.value || endInput.value) return;
+      var tmpl = periodTimesCache[periodInput.value];
+      if (tmpl){ startInput.value = (tmpl.start_time||'').substring(0,5); endInput.value = (tmpl.end_time||'').substring(0,5); }
     }
+    periodInput.addEventListener('change', autoFillTimeFromTemplate);
+
+    if(defaults){
+      periodInput.value = defaults.period_number || document.getElementById('cellModal').dataset.period;
+      startInput.value = (defaults.start_time||'').substring(0,5);
+      endInput.value = (defaults.end_time||'').substring(0,5);
+    } else {
+      periodInput.value = document.getElementById('cellModal').dataset.period;
+    }
+    autoFillTimeFromTemplate();
     // Initialize Select2 for teacher select (attach to modal so search input receives focus)
     (function initSelect2For(el, tries){
       tries = typeof tries === 'number' ? tries : 20;
@@ -388,6 +461,70 @@
         .then(()=> loadGrid())
         .catch(function(err){ alert('মুছতে ব্যর্থ: '+err.message); });
     }
+  });
+
+  // ---- Period time template modal (request #1/#2: set once, reuse everywhere) ----
+  document.getElementById('periodTimesBtn').addEventListener('click', function(){
+    var cls=document.getElementById('class_id').value, sec=document.getElementById('section_id').value;
+    if(!cls||!sec) return;
+    var count = parseInt(document.getElementById('periodCountDisplay').textContent)||0;
+    var body = document.getElementById('periodTimesBody');
+    body.innerHTML = '';
+    for (var p=1; p<=count; p++){
+      var tmpl = periodTimesCache[p] || {};
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>পিরিয়ড '+p+'</td>'+
+        '<td><input type="time" class="form-control form-control-sm pt-start" data-period="'+p+'" value="'+((tmpl.start_time||'').substring(0,5))+'"></td>'+
+        '<td><input type="time" class="form-control form-control-sm pt-end" data-period="'+p+'" value="'+((tmpl.end_time||'').substring(0,5))+'"></td>';
+      body.appendChild(tr);
+    }
+    $('#periodTimesModal').modal('show');
+  });
+
+  document.getElementById('savePeriodTimes').addEventListener('click', function(){
+    var cls=document.getElementById('class_id').value, sec=document.getElementById('section_id').value;
+    var rows = Array.from(document.querySelectorAll('#periodTimesBody tr'));
+    var times = rows.map(function(tr){
+      return {
+        period_number: parseInt(tr.querySelector('.pt-start').getAttribute('data-period')),
+        start_time: tr.querySelector('.pt-start').value || null,
+        end_time: tr.querySelector('.pt-end').value || null,
+      };
+    });
+    var btn=this; btn.disabled=true;
+    fetchJSON('{{ route('principal.institute.routine.period-times.set',$school) }}', {method:'POST', body: JSON.stringify({class_id:cls, section_id:sec, times:times})})
+      .then(function(){ $('#periodTimesModal').modal('hide'); return loadGrid(); })
+      .catch(function(err){ alert('সংরক্ষণ ব্যর্থ: '+err.message); })
+      .finally(function(){ btn.disabled=false; });
+  });
+
+  // ---- Copy one day's routine onto other days (request #3) ----
+  document.getElementById('copyDayBtn').addEventListener('click', function(){
+    var cls=document.getElementById('class_id').value, sec=document.getElementById('section_id').value;
+    if(!cls||!sec) return;
+    var srcSel = document.getElementById('copySourceDay');
+    srcSel.innerHTML = days.map(function(d){ return '<option value="'+d+'">'+dayLabels[d]+'</option>'; }).join('');
+    var targetWrap = document.getElementById('copyTargetDays');
+    targetWrap.innerHTML = days.map(function(d){
+      return '<div class="form-check"><input class="form-check-input copy-target" type="checkbox" value="'+d+'" id="copyTarget_'+d+'"><label class="form-check-label" for="copyTarget_'+d+'">'+dayLabels[d]+'</label></div>';
+    }).join('');
+    $('#copyDayModal').modal('show');
+  });
+
+  document.getElementById('saveCopyDay').addEventListener('click', function(){
+    var cls=document.getElementById('class_id').value, sec=document.getElementById('section_id').value;
+    var sourceDay = document.getElementById('copySourceDay').value;
+    var targetDays = Array.from(document.querySelectorAll('.copy-target:checked')).map(function(cb){ return cb.value; });
+    if (targetDays.length===0){ alert('অন্তত একটি গন্তব্য দিন নির্বাচন করুন'); return; }
+    if (!confirm('নির্বাচিত দিন(গুলি)-তে বিদ্যমান রুটিন প্রতিস্থাপিত হবে। নিশ্চিত?')) return;
+    var btn=this; btn.disabled=true;
+    fetchJSON('{{ route('principal.institute.routine.copy-day',$school) }}', {method:'POST', body: JSON.stringify({class_id:cls, section_id:sec, source_day:sourceDay, target_days:targetDays})})
+      .then(function(resp){
+        if (resp && resp.success===false){ alert('ব্যর্থ: '+(resp.error||'অজানা ত্রুটি')); return; }
+        $('#copyDayModal').modal('hide'); loadGrid();
+      })
+      .catch(function(err){ alert('কপি ব্যর্থ: '+err.message); })
+      .finally(function(){ btn.disabled=false; });
   });
 })();
 </script>

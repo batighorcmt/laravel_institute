@@ -16,7 +16,7 @@
             <select name="subject_id" class="form-control" required>
               <option value="">-- নির্বাচন করুন --</option>
               @foreach($subjects as $sub)
-                <option value="{{ $sub->id }}">{{ $sub->name }}</option>
+                <option value="{{ $sub->id }}">{{ $sub->bangla_name ? $sub->bangla_name.' ('.$sub->name.')' : $sub->name }}</option>
               @endforeach
             </select>
           </div>
@@ -53,7 +53,7 @@
             <label>বিষয়সমূহ *</label>
             <select name="subject_ids[]" class="form-control" multiple size="8" required>
               @foreach($subjects as $sub)
-                <option value="{{ $sub->id }}">{{ $sub->name }}</option>
+                <option value="{{ $sub->id }}">{{ $sub->bangla_name ? $sub->bangla_name.' ('.$sub->name.')' : $sub->name }}</option>
               @endforeach
             </select>
             <small class="text-muted">একাধিক নির্বাচন করতে Ctrl/Command ধরে ক্লিক করুন</small>
@@ -110,7 +110,13 @@
               @forelse($mappings as $i=>$map)
                 <tr data-id="{{ $map->id }}">
                   <td class="drag-handle" style="cursor:move"><i class="fas fa-grip-vertical text-muted"></i></td>
-                  <td>{{ $map->subject->name ?? '(বিষয় মুছে ফেলা হয়েছে)' }}</td>
+                  <td>
+                    @if($map->subject)
+                      {{ $map->subject->bangla_name ? $map->subject->bangla_name.' ('.$map->subject->name.')' : $map->subject->name }}
+                    @else
+                      (বিষয় মুছে ফেলা হয়েছে)
+                    @endif
+                  </td>
                   @if($class->usesGroups())<td>{{ $map->group?->name ?? 'সাধারণ' }}</td>@endif
                   <td>
                     @if($map->offered_mode==='both')
