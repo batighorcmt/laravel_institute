@@ -2,7 +2,7 @@
 @section('title','বিষয় ম্যাপিং সম্পাদনা')
 @section('content')
 <div class="d-flex justify-content-between mb-3">
-  <h1 class="m-0">ম্যাপিং সম্পাদনা: {{ $mapping->subject->name }}</h1>
+  <h1 class="m-0">ম্যাপিং সম্পাদনা: {{ $mapping->subject->name ?? '(বিষয় মুছে ফেলা হয়েছে)' }}</h1>
   <a href="{{ route('principal.institute.classes.subjects.index',[$school,$class]) }}" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> ফিরে যান</a>
 </div>
 @if($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
@@ -11,7 +11,7 @@
     <form method="post" action="{{ route('principal.institute.classes.subjects.update',[$school,$class,$mapping]) }}">@csrf @method('PATCH')
       <div class="form-group">
         <label>বিষয়</label>
-        <input type="text" class="form-control" value="{{ $mapping->subject->name }}" disabled>
+        <input type="text" class="form-control" value="{{ $mapping->subject->name ?? '(বিষয় মুছে ফেলা হয়েছে)' }}" disabled>
       </div>
       @if($class->usesGroups())
       <div class="form-group">

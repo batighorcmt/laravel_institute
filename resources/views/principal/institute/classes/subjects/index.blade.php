@@ -110,7 +110,7 @@
               @forelse($mappings as $i=>$map)
                 <tr data-id="{{ $map->id }}">
                   <td class="drag-handle" style="cursor:move"><i class="fas fa-grip-vertical text-muted"></i></td>
-                  <td>{{ $map->subject->name }}</td>
+                  <td>{{ $map->subject->name ?? '(বিষয় মুছে ফেলা হয়েছে)' }}</td>
                   @if($class->usesGroups())<td>{{ $map->group?->name ?? 'সাধারণ' }}</td>@endif
                   <td>
                     @if($map->offered_mode==='both')
@@ -122,7 +122,7 @@
                     @endif
                   </td>
                   <td>
-                    @php $s=$map->subject; $parts=[]; if($s->has_creative) $parts[]='সৃজনশীল'; if($s->has_mcq) $parts[]='MCQ'; if($s->has_practical) $parts[]='ব্যবহারিক'; @endphp
+                    @php $s=$map->subject; $parts=[]; if($s && $s->has_creative) $parts[]='সৃজনশীল'; if($s && $s->has_mcq) $parts[]='MCQ'; if($s && $s->has_practical) $parts[]='ব্যবহারিক'; @endphp
                     <span class="badge badge-info">{{ implode('+',$parts) ?: 'Single' }}</span>
                   </td>
                   <td>
