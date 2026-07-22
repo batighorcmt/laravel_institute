@@ -12,174 +12,212 @@
 
 @section('content')
 @php
-    $enToBn = function ($str) {
-        if ($str === null || $str === '') return $str;
-        return str_replace(
-            ['0','1','2','3','4','5','6','7','8','9'],
-            ['০','১','২','৩','৪','৫','৬','৭','৮','৯'],
-            (string) $str
-        );
-    };
-    $schoolName = $school->name_bn ?: $school->name;
-    $className  = $class->bangla_name ?: $class->name;
-    $interviewDate = request('interview_date')
-        ? $enToBn(\Carbon\Carbon::parse(request('interview_date'))->format('d/m/Y'))
-        : null;
-@endphp
+$enToBn = function ($str) {
+if ($str === null || $str === '') return $str;
+return str_replace(
+['0','1','2','3','4','5','6','7','8','9'],
+['০','১','২','৩','৪','৫','৬','৭','৮','৯'],
+(string) $str
+);
+};
+$schoolName = $school->name_bn ?: $school->name;
+$className = $class->bangla_name ?: $class->name;
+$interviewDate = request('interview_date')
+? $enToBn(\Carbon\Carbon::parse(request('interview_date'))->format('d/m/Y'))
+: null;
 
-<style>
-    @page { size: A4; margin: 8mm; }
-    body { margin: 0; padding: 0; background: none !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .print-header { display: none !important; }
+$headerColor = request('header_color');
+if (!$headerColor || !preg_match('/^#[0-9a-fA-F]{6}$/', $headerColor)) {
+$headerColor = '#1f7a52';
+}
+$shade = function ($hex, $percent) {
+$hex = ltrim($hex, '#');
+$r = hexdec(substr($hex, 0, 2));
+$g = hexdec(substr($hex, 2, 2));
+$b = hexdec(substr($hex, 4, 2));
+$r = max(0, min(255, (int) ($r + ($percent < 0 ? $r : (255 - $r)) * $percent)));
+    $g=max(0, min(255, (int) ($g + ($percent < 0 ? $g : (255 - $g)) * $percent)));
+    $b=max(0, min(255, (int) ($b + ($percent < 0 ? $b : (255 - $b)) * $percent)));
+    return sprintf('#%02x%02x%02x', $r, $g, $b);
+    };
+    $headerColorDark=$shade($headerColor, -0.3);
+
+    $startTime = request('start_time');
+    $intervalMinutes = (int) request('interval_minutes', 0);
+    $hasSlotTimes = $startTime && $intervalMinutes > 0;
+    @endphp
+
+    <style>
+    @page {
+    size: A4;
+    margin: 8mm;
+    }
+
+    body {
+    margin: 0;
+    padding: 0;
+    background: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    }
+
+    .print-header {
+    display: none !important;
+    }
 
     .token-container {
-        font-family: 'Hind Siliguri', 'Kalpurush', Arial, sans-serif;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 14mm 12mm;
-        justify-content: flex-start;
-        align-content: flex-start;
+    font-family: 'Hind Siliguri', 'Kalpurush', Arial, sans-serif;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14mm 12mm;
+    justify-content: flex-start;
+    align-content: flex-start;
     }
 
     .token-card {
-        width: 58mm;
-        min-height: 42mm;
-        border: 1px solid #b9c2cb;
-        border-radius: 3mm;
-        box-sizing: border-box;
-        overflow: hidden;
-        position: relative;
-        background: #fff;
-        box-shadow: 0 1px 3px rgba(20,30,60,0.10);
-        page-break-inside: avoid;
-        break-inside: avoid;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+    width: 58mm;
+    min-height: 42mm;
+    border: 1px solid #b9c2cb;
+    border-radius: 3mm;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(20, 30, 60, 0.10);
+    page-break-inside: avoid;
+    break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
     }
 
     .token-head {
-        background: linear-gradient(135deg, #12543a, #1f7a52);
-        color: #fff;
-        padding: 2.4mm 3mm 2mm;
-        text-align: center;
+    background: linear-gradient(135deg, {{ $headerColorDark }}, {{ $headerColor }});
+    color: #fff;
+    padding: 2.4mm 3mm 2mm;
+    text-align: center;
     }
 
     .token-school-name {
-        font-size: 11.5px;
-        font-weight: 700;
-        line-height: 1.25;
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.25;
     }
 
     .token-title {
-        font-size: 9px;
-        font-weight: 500;
-        letter-spacing: 0.3px;
-        margin-top: 0.6mm;
-        opacity: 0.92;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    margin-top: 0.6mm;
+    opacity: 0.92;
     }
 
     .token-body {
-        padding: 3mm 3.5mm 2.5mm;
+    padding: 3mm 3.5mm 2.5mm;
     }
 
     .token-row {
-        font-size: 10.5px;
-        margin-bottom: 1.6mm;
-        line-height: 1.45;
-        color: #22303f;
+    font-size: 10.5px;
+    margin-bottom: 1.6mm;
+    line-height: 1.45;
+    color: #22303f;
     }
 
     .token-row .label {
-        color: #5c6b7a;
-        font-weight: 600;
-        margin-right: 0.8mm;
+    color: #5c6b7a;
+    font-weight: 600;
+    margin-right: 0.8mm;
     }
 
     .token-row .value {
-        font-weight: 700;
-        color: #12213a;
+    font-weight: 700;
+    color: #12213a;
     }
 
     .token-meta {
-        display: flex;
-        gap: 3mm;
+    display: flex;
+    gap: 3mm;
     }
 
     .token-time-box {
-        margin-top: 2mm;
-        border: 1px dashed #8a97a3;
-        border-radius: 2mm;
-        padding: 1.6mm 2mm;
-        background: #f7faf8;
+    margin-top: 2mm;
+    border: 1px dashed #8a97a3;
+    border-radius: 2mm;
+    padding: 1.6mm 2mm;
+    background: #f7faf8;
     }
 
     .token-time-box .info-line {
-        display: flex;
-        align-items: center;
+    display: flex;
+    align-items: center;
     }
 
-    .token-time-box .info-line + .info-line {
-        margin-top: 1.4mm;
+    .token-time-box .info-line+.info-line {
+    margin-top: 1.4mm;
     }
 
     .token-time-box .label {
-        font-size: 10px;
-        font-weight: 600;
-        color: #3d4a56;
-        white-space: nowrap;
+    font-size: 10px;
+    font-weight: 600;
+    color: #3d4a56;
+    white-space: nowrap;
     }
 
     .token-time-box .value {
-        margin-left: 1.5mm;
-        font-size: 10px;
-        font-weight: 700;
-        color: #12213a;
+    margin-left: 1.5mm;
+    font-size: 10px;
+    font-weight: 700;
+    color: #12213a;
     }
 
     .token-time-box .dots {
-        flex: 1;
-        margin-left: 2mm;
-        border-bottom: 1px dotted #5c6b7a;
-        min-height: 3mm;
+    flex: 1;
+    margin-left: 2mm;
+    border-bottom: 1px dotted #5c6b7a;
+    min-height: 3mm;
     }
 
     .token-footer {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 3mm;
-        padding-top: 1.5mm;
-        border-top: 1px dashed #b9c2cb;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 3mm;
+    padding-top: 1.5mm;
+    border-top: 1px dashed #b9c2cb;
     }
 
     .token-footer .sign-box {
-        min-width: 30mm;
-        text-align: center;
+    min-width: 30mm;
+    text-align: center;
     }
 
     .token-footer .sign-space {
-        height: 7mm;
+    height: 7mm;
     }
 
     .token-footer .sign-line {
-        font-size: 9.5px;
-        font-weight: 600;
-        color: #3d4a56;
-        padding-top: 1mm;
-        border-top: 1px solid #444;
+    font-size: 9.5px;
+    font-weight: 600;
+    color: #3d4a56;
+    padding-top: 1mm;
+    border-top: 1px solid #444;
     }
-</style>
+    </style>
 
-<div class="token-container">
-    @foreach($enrollments as $enrollment)
+    <div class="token-container">
+        @foreach($enrollments as $enrollment)
         @php
-            $student = $enrollment->student;
-            $studentName = $student->student_name_bn ?: $student->student_name_en;
-            $sectionName = $enrollment->section ? ($enrollment->section->bangla_name ?: $enrollment->section->name) : '-';
+        $student = $enrollment->student;
+        $studentName = $student->student_name_bn ?: $student->student_name_en;
+        $sectionName = $enrollment->section ? ($enrollment->section->bangla_name ?: $enrollment->section->name) : '-';
+        $slotTime = null;
+        if ($hasSlotTimes) {
+        $slotTime = \Carbon\Carbon::parse($startTime)->addMinutes($loop->index * $intervalMinutes)->format('h:i A');
+        $slotTime = $enToBn(str_replace(['AM','PM'], ['এএম','পিএম'], $slotTime));
+        }
         @endphp
         <div class="token-card">
             <div class="token-head">
-                <div class="token-school-name">{{ $schoolName }}</div>
-                <div class="token-title">অভিভাবক সাক্ষাৎকার টোকেন</div>
+                <div class="token-school-name"><b>{{ $schoolName }}</b></div>
+                <div class="token-title"><b>অভিভাবক সাক্ষাৎকার টোকেন</b></div>
             </div>
             <div class="token-body">
                 <div class="token-row"><span class="label">শিক্ষার্থীর নাম:</span><span class="value">{{ $studentName }}</span></div>
@@ -193,14 +231,18 @@
                     <div class="info-line">
                         <span class="label">সাক্ষাৎকারের তারিখ:</span>
                         @if($interviewDate)
-                            <span class="value">{{ $interviewDate }}</span>
+                        <span class="value">{{ $interviewDate }}</span>
                         @else
-                            <span class="dots">&nbsp;</span>
+                        <span class="dots">&nbsp;</span>
                         @endif
                     </div>
                     <div class="info-line">
-                        <span class="label">সাক্ষাৎকারের সময়:</span>
+                        <span class="label" style="color:red">সাক্ষাৎকারের সময়:</span>
+                        @if($slotTime)
+                        <span class="value">{{ $slotTime }}</span>
+                        @else
                         <span class="dots">&nbsp;</span>
+                        @endif
                     </div>
                 </div>
 
@@ -212,6 +254,6 @@
                 </div>
             </div>
         </div>
-    @endforeach
-</div>
-@endsection
+        @endforeach
+    </div>
+    @endsection

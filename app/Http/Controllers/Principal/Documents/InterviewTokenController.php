@@ -85,6 +85,9 @@ class InterviewTokenController extends Controller
             'class_id'         => 'required|exists:classes,id',
             'student_ids'      => 'required|string', // Comma separated IDs
             'interview_date'   => 'nullable|date',
+            'header_color'     => 'nullable|string|regex:/^#[0-9a-fA-F]{6}$/',
+            'start_time'       => 'nullable|date_format:H:i',
+            'interval_minutes' => 'nullable|integer|min:1',
         ]);
 
         $academicYearId = $request->academic_year_id;

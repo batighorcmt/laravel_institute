@@ -101,16 +101,34 @@
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content" style="border-radius: 10px;">
             <div class="modal-header">
-                <h5 class="modal-title font-weight-bold"><i class="fas fa-calendar-alt mr-2"></i>সাক্ষাৎকারের তারিখ নির্বাচন করুন</h5>
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-calendar-alt mr-2"></i>প্রিন্ট অপশন নির্বাচন করুন</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
+                <div class="form-group">
+                    <label class="font-weight-bold">সাক্ষাৎকারের তারিখ</label>
+                    <input type="date" class="form-control" id="interviewDateInput">
+                    <small class="text-muted">নির্বাচিত তারিখটি সকল টোকেনে বসে যাবে। ফাঁকা রাখলে টোকেনেও তারিখ ফাঁকা থাকবে, হাতে লিখে দেওয়া হবে।</small>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">সাক্ষাৎকার শুরুর সময়</label>
+                        <input type="time" class="form-control" id="startTimeInput">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">প্রতিজনের জন্য বরাদ্দ (মিনিট)</label>
+                        <input type="number" min="1" step="1" class="form-control" id="intervalMinutesInput" placeholder="যেমনঃ 5">
+                    </div>
+                </div>
+                <small class="text-muted d-block mb-3">শুরুর সময় ও বরাদ্দকৃত সময় দিলে প্রতিটি শিক্ষার্থীর জন্য ক্রমান্বয়ে সাক্ষাৎকারের সময় বসে যাবে (রোল অনুক্রমে)। ফাঁকা রাখলে সময় ফাঁকা থাকবে, হাতে লিখে দেওয়া হবে।</small>
                 <div class="form-group mb-0">
-                    <label class="font-weight-bold">সাক্ষাৎকারের তারিখ <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control" id="interviewDateInput" required>
-                    <small class="text-muted">নির্বাচিত তারিখটি সকল টোকেনে বসে যাবে। সাক্ষাৎকারের সময় খালি থাকবে, হাতে লিখে দেওয়া হবে।</small>
+                    <label class="font-weight-bold">টোকেনের হেডার রঙ</label>
+                    <div class="d-flex align-items-center">
+                        <input type="color" class="form-control form-control-color" id="headerColorInput" value="#1f7a52" title="হেডারের রঙ নির্বাচন করুন" style="width: 60px; height: 38px; padding: 3px;">
+                        <small class="text-muted ml-2">নির্বাচিত রঙটি টোকেনের উপরের অংশে (হেডারে) প্রয়োগ হবে।</small>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -138,6 +156,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnBulkPrint = document.getElementById('btnBulkPrint');
     const interviewDateModal = $('#interviewDateModal');
     const interviewDateInput = document.getElementById('interviewDateInput');
+    const startTimeInput = document.getElementById('startTimeInput');
+    const intervalMinutesInput = document.getElementById('intervalMinutesInput');
+    const headerColorInput = document.getElementById('headerColorInput');
     const btnConfirmPrint = document.getElementById('btnConfirmPrint');
     let pendingStudentIds = '';
 
@@ -220,6 +241,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         btn.addEventListener('click', function() {
                             pendingStudentIds = this.getAttribute('data-id');
                             interviewDateInput.value = '';
+                            startTimeInput.value = '';
+                            intervalMinutesInput.value = '';
                             interviewDateModal.modal('show');
                         });
                     });
@@ -271,22 +294,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
         pendingStudentIds = Array.from(checkedBoxes).map(cb => cb.value).join(',');
         interviewDateInput.value = '';
+        startTimeInput.value = '';
+        intervalMinutesInput.value = '';
         interviewDateModal.modal('show');
     });
 
     btnConfirmPrint.addEventListener('click', function() {
-        if (!interviewDateInput.value) {
-            alert('অনুগ্রহ করে সাক্ষাৎকারের তারিখ নির্বাচন করুন।');
-            return;
-        }
         if (!pendingStudentIds) {
             return;
         }
 
-        const yearId = academicYearSel.value;
-        const classId = classSel.value;
+        const startTime = startTimeInput.value;
+        const intervalMinutes = intervalMinutesInput.value;
 
-        const printUrl = `${printUrlTemplate}?academic_year_id=${yearId}&class_id=${classId}&student_ids=${pendingStudentIds}&interview_date=${interviewDateInput.value}`;
+        if ((startTime && !intervalMinutes) || (!startTime && intervalMinutes)) {
+            alert('সময়ভিত্তিক টোকেন তৈরি করতে শুরুর সময় ও প্রতিজনের জন্য বরাদ্দকৃত সময় (মিনিট) উভয়টিই দিতে হবে।');
+            return;
+        }
+        if (intervalMinutes && parseInt(intervalMinutes, 10) <= 0) {
+            alert('বরাদ্দকৃত সময় ১ মিনিট বা তার বেশি হতে হবে।');
+            return;
+        }
+
+        const params = new URLSearchParams();
+        params.set('academic_year_id', academicYearSel.value);
+        params.set('class_id', classSel.value);
+        params.set('student_ids', pendingStudentIds);
+        params.set('header_color', headerColorInput.value);
+        if (interviewDateInput.value) {
+            params.set('interview_date', interviewDateInput.value);
+        }
+        if (startTime && intervalMinutes) {
+            params.set('start_time', startTime);
+            params.set('interval_minutes', intervalMinutes);
+        }
+
+        const printUrl = `${printUrlTemplate}?${params.toString()}`;
         window.open(printUrl, '_blank');
         interviewDateModal.modal('hide');
         pendingStudentIds = '';
