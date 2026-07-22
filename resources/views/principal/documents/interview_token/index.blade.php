@@ -164,12 +164,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadStudentsUrl = @json(route('principal.institute.documents.interview_token.load-students', $school));
     const printUrlTemplate = @json(route('principal.institute.documents.interview_token.print', $school));
 
+    function whenSelect2Ready(cb) {
+        if (window.jQuery && jQuery.fn && jQuery.fn.select2) {
+            cb();
+        } else {
+            setTimeout(function () { whenSelect2Ready(cb); }, 50);
+        }
+    }
+
     function initSectionSelect2() {
-        try { $(sectionSel).select2('destroy'); } catch (e) {}
-        $(sectionSel).select2({
-            width: '100%',
-            placeholder: '-- সকল শাখা (একাধিক নির্বাচন করা যাবে) --',
-            allowClear: true
+        whenSelect2Ready(function () {
+            if ($(sectionSel).hasClass('select2-hidden-accessible')) {
+                $(sectionSel).select2('destroy');
+            }
+            $(sectionSel).select2({
+                width: '100%',
+                placeholder: '-- সকল শাখা (একাধিক নির্বাচন করা যাবে) --',
+                allowClear: true
+            });
         });
     }
     initSectionSelect2();
