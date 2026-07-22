@@ -33,10 +33,8 @@
                     </select>
                 </div>
                 <div class="form-group col-md-3">
-                    <label class="font-weight-bold">শাখা</label>
-                    <select class="form-control" id="sectionSelect">
-                        <option value="">-- সকল শাখা --</option>
-                    </select>
+                    <label class="font-weight-bold">শাখা <small class="text-muted font-weight-normal">(একাধিক নির্বাচন করা যাবে)</small></label>
+                    <select class="form-control" id="sectionSelect" multiple="multiple"></select>
                 </div>
                 <div class="form-group col-md-3 d-flex align-items-end">
                     <button type="button" class="btn btn-outline-primary btn-block" id="btnFilter" style="height: calc(1.5em + .75rem + 2px);">
@@ -166,10 +164,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadStudentsUrl = @json(route('principal.institute.documents.interview_token.load-students', $school));
     const printUrlTemplate = @json(route('principal.institute.documents.interview_token.print', $school));
 
+    function initSectionSelect2() {
+        try { $(sectionSel).select2('destroy'); } catch (e) {}
+        $(sectionSel).select2({
+            width: '100%',
+            placeholder: '-- সকল শাখা (একাধিক নির্বাচন করা যাবে) --',
+            allowClear: true
+        });
+    }
+    initSectionSelect2();
+
     // Handle Class Selection Change - Load Sections
     classSel.addEventListener('change', function() {
         const classId = this.value;
-        sectionSel.innerHTML = '<option value="">-- সকল শাখা --</option>';
+        sectionSel.innerHTML = '';
         if (classId) {
             fetch(`${sectionsUrl}?class_id=${classId}`)
                 .then(res => res.json())
@@ -180,8 +188,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         opt.textContent = sec.name;
                         sectionSel.appendChild(opt);
                     });
+                    initSectionSelect2();
                 })
                 .catch(err => console.error('Failed to load sections:', err));
+        } else {
+            initSectionSelect2();
         }
     });
 
@@ -189,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function fetchStudents() {
         const yearId = academicYearSel.value;
         const classId = classSel.value;
-        const sectionId = sectionSel.value;
+        const sectionIds = Array.from(sectionSel.selectedOptions).map(o => o.value).filter(v => v).join(',');
 
         if (!yearId || !classId) {
             alert('অনুগ্রহ করে শিক্ষাবর্ষ ও শ্রেণি নির্বাচন করুন।');
@@ -202,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadingIndicator.style.display = 'block';
         checkAll.checked = false;
 
-        const url = `${loadStudentsUrl}?academic_year_id=${yearId}&class_id=${classId}&section_id=${sectionId}`;
+        const url = `${loadStudentsUrl}?academic_year_id=${yearId}&class_id=${classId}&section_ids=${sectionIds}`;
 
         fetch(url)
             .then(res => res.json())
