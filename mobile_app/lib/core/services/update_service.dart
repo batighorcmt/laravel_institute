@@ -99,7 +99,23 @@ class UpdateService {
       }
     } catch (e) {
       developer.log('Download and install error: $e');
-      onError('ডাউনলোড ব্যর্থ হয়েছে: $e');
+      onError(_friendlyDownloadError(e));
     }
+  }
+
+  // Network drops mid-download are routine for an 80MB+ file on mobile data —
+  // surfacing the raw DioException/HttpException text (full storage URL,
+  // socket message, etc.) to the user reads as a crash report, not an error
+  // message. Show something actionable instead and keep the raw detail only
+  // in the debug log above.
+  String _friendlyDownloadError(Object e) {
+    final msg = e.toString().toLowerCase();
+    if (e is DioException ||
+        msg.contains('socket') ||
+        msg.contains('connection closed') ||
+        msg.contains('httpexception')) {
+      return 'ডাউনলোডের মাঝে ইন্টারনেট সংযোগ বিচ্ছিন্ন হয়ে গেছে। ভালো নেটওয়ার্কে আবার চেষ্টা করুন।';
+    }
+    return 'ডাউনলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।';
   }
 }

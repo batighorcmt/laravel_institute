@@ -54,7 +54,15 @@ class AppUpdateController extends Controller
             ]);
         }
 
-        $path = $request->file('apk_file')->store('apk_updates', 'public');
+        // Store with an explicit .apk name rather than the default
+        // store()/hashName() behavior, which guesses the extension from the
+        // MIME type — an APK is structurally a ZIP container, so that guess
+        // comes back "zip" and the file gets served as apk_updates/xxx.zip.
+        // That doesn't break in-app installs (the client always saves the
+        // download locally as update.apk regardless of the source URL), but
+        // it's confusing/alarming in error messages and breaks a manual
+        // browser download of the update link.
+        $path = $request->file('apk_file')->storeAs('apk_updates', \Illuminate\Support\Str::random(40) . '.apk', 'public');
         $data['apk_url'] = asset('storage/' . $path);
         $data['version_code'] = $manifest['version_code'];
         $data['version_name'] = $manifest['version_name'];
@@ -100,7 +108,7 @@ class AppUpdateController extends Controller
             $oldPath = str_replace(asset('storage/'), '', $appUpdate->apk_url);
             Storage::disk('public')->delete($oldPath);
 
-            $path = $request->file('apk_file')->store('apk_updates', 'public');
+            $path = $request->file('apk_file')->storeAs('apk_updates', \Illuminate\Support\Str::random(40) . '.apk', 'public');
             $data['apk_url'] = asset('storage/' . $path);
             $data['version_code'] = $manifest['version_code'];
             $data['version_name'] = $manifest['version_name'];

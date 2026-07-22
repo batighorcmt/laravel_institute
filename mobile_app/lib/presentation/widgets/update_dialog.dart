@@ -54,7 +54,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
       if (mounted) {
         setState(() {
           _isDownloading = false;
-          _error = e.toString();
+          _error = 'ডাউনলোড ব্যর্থ হয়েছে। আবার চেষ্টা করুন।';
         });
       }
     }
