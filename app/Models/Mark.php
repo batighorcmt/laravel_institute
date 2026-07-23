@@ -38,6 +38,37 @@ class Mark extends Model
         'entered_at' => 'datetime',
     ];
 
+    // Any mark save/edit/delete must invalidate ParentController's cached
+    // class-wide result computation (see ParentController::getCachedClassResults())
+    // — otherwise a mark entered after a result was published (a very normal
+    // workflow: publish early, then fill in a late/missing mark) stays
+    // invisible to students/parents for up to the cache's TTL. Hooking this
+    // at the model level means every mark-entry code path is covered
+    // automatically, instead of having to remember to bust the cache in each
+    // controller that writes to marks.
+    protected static function booted()
+    {
+        static::saved(function (Mark $mark) {
+            static::forgetParentResultsCache($mark);
+        });
+
+        static::deleted(function (Mark $mark) {
+            static::forgetParentResultsCache($mark);
+        });
+    }
+
+    private static function forgetParentResultsCache(Mark $mark)
+    {
+        $exam = $mark->exam ?? Exam::find($mark->exam_id);
+        if (! $exam) {
+            return;
+        }
+
+        \Illuminate\Support\Facades\Cache::forget(
+            "parent_exam_results:{$exam->school_id}:{$exam->id}:{$exam->class_id}"
+        );
+    }
+
     // Relationships
     public function exam(): BelongsTo
     {
