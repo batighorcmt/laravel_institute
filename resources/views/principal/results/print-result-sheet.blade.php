@@ -8,13 +8,24 @@
                      ' | ' . ($lang === 'bn' ? 'শ্রেণি: ' : 'Class: ') .
                      ($lang === 'bn' ? $class->name : ($class->name_en ?? $class->name));
 
+    // A result with is_complete === false has at least one subject with no
+    // Mark row at all — ResultCalculationTrait deliberately excludes those
+    // from the fail count (so a mid-entry result doesn't wrongly compute as
+    // "Fail"), which also means it can't be trusted as a real "Passed"
+    // either. Keep these students visible (the principal needs to see who
+    // still needs marks entered) but out of both the Passed and Failed
+    // buckets so they never get incorrectly labeled either way.
+    $incompleteResults = $results->filter(function($r) {
+        return empty($r->is_complete);
+    })->values();
+
     // Separate passed and failed results
     $passedResults = $results->filter(function($r) {
-        return $r->computed_status !== 'অকৃতকার্য' && $r->computed_letter !== 'F';
+        return !empty($r->is_complete) && $r->computed_status !== 'অকৃতকার্য' && $r->computed_letter !== 'F';
     })->values();
 
     $failedResults = $results->filter(function($r) {
-        return $r->computed_status === 'অকৃতকার্য' || $r->computed_letter === 'F';
+        return !empty($r->is_complete) && ($r->computed_status === 'অকৃতকার্য' || $r->computed_letter === 'F');
     })->values();
 
     // Helper to convert English digits to Bangla digits when needed
@@ -172,6 +183,11 @@
 
     .result-fail {
         color: #dc3545;
+        font-weight: 600;
+    }
+
+    .result-incomplete {
+        color: #b8860b;
         font-weight: 600;
     }
 
@@ -513,6 +529,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="class-pos">{{ $lang === 'bn' ? toBanglaNumber($passedResults->count() + $loop->iteration) : $passedResults->count() + $loop->iteration }}</span>
                 </td>
                 <td class="section-position-column hidden-column section-pos" data-section="{{ optional($failed->student->currentEnrollment)->section_id ?? '' }}">
+                    -
+                </td>
+            </tr>
+        @endforeach
+
+        {{-- Students with incomplete mark entry — kept out of both Pass and Fail so neither is shown until entry is finished --}}
+        @foreach($incompleteResults as $incomplete)
+            <tr class="row-incomplete">
+                <td>-</td>
+                <td>{{ $incomplete->student->student_id }}</td>
+                <td class="text-left">
+                    @if($lang === 'bn')
+                        {{ $incomplete->student->student_name_bn ?: $incomplete->student->student_name_en }}
+                    @else
+                        {{ $incomplete->student->student_name_en ?: $incomplete->student->student_name_bn }}
+                    @endif
+                </td>
+                <td>{{ optional($incomplete->student->currentEnrollment)->section->name ?? 'N/A' }}</td>
+                <td>{{ $lang === 'bn' && optional($incomplete->student->currentEnrollment)->roll_no ? toBanglaNumber(optional($incomplete->student->currentEnrollment)->roll_no) : (optional($incomplete->student->currentEnrollment)->roll_no ?? 'N/A') }}</td>
+                <td>-</td>
+                <td>-</td>
+                <td>
+                    <span class="result-incomplete">{{ $lang === 'bn' ? 'ফলাফল অসম্পূর্ণ' : 'Incomplete' }}</span>
+                </td>
+                <td class="class-pos-cell">-</td>
+                <td class="section-position-column hidden-column section-pos" data-section="{{ optional($incomplete->student->currentEnrollment)->section_id ?? '' }}">
                     -
                 </td>
             </tr>

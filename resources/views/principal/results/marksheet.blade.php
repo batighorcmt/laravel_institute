@@ -157,12 +157,22 @@
                                     <td class="text-center">{{ number_format($res->computed_total_marks, \App\Models\Setting::getDecimalPosition($school->id), '.', '') }}</td>
                                     <td class="text-center">{{ number_format($res->computed_gpa, 2) }}</td>
                                     <td class="text-center">
-                                        <span class="badge {{ $res->computed_letter == 'F' ? 'badge-danger' : 'badge-success' }}">
-                                            {{ $res->computed_letter }}
-                                        </span>
+                                        @if(empty($res->is_complete))
+                                            <span class="badge badge-warning">-</span>
+                                        @else
+                                            <span class="badge {{ $res->computed_letter == 'F' ? 'badge-danger' : 'badge-success' }}">
+                                                {{ $res->computed_letter }}
+                                            </span>
+                                        @endif
                                     </td>
                                     <td class="text-center">
-                                        @if($res->computed_letter == 'F')
+                                        {{-- A subject with no Mark row at all is excluded from the fail
+                                             count on purpose (see ResultCalculationTrait), so it can't be
+                                             trusted as a real "Passed" either — show that entry is still
+                                             in progress instead of a premature status. --}}
+                                        @if(empty($res->is_complete))
+                                            <span class="text-warning">ফলাফল অসম্পূর্ণ</span>
+                                        @elseif($res->computed_letter == 'F')
                                             <span class="text-danger">অকৃতকার্য</span>
                                         @else
                                             <span class="text-success">উত্তীর্ণ</span>

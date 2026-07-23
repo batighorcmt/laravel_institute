@@ -126,7 +126,9 @@
                 <tr>
                     <td class="label">{{ t('Result Status', 'ফলাফলের অবস্থা') }}</td><td class="colon">:</td>
                     <td class="value">
-                        @if($result->fail_count > 0)
+                        @if(empty($result->is_complete))
+                            <span class="result-status-red">{{ t('Result Incomplete', 'ফলাফল অসম্পূর্ণ') }}</span>
+                        @elseif($result->fail_count > 0)
                           <span class="result-status-red">{{ t('Failed', 'অকৃতকার্য') }} ({{ t('Failed in', 'ফেইল') }} {{ bnNum($result->fail_count) }} {{ t('subjects', 'বিষয়ে') }})</span>
                         @else
                             <span class="result-status-green">{{ t('Passed', 'উত্তীর্ণ') }}</span>
