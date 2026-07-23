@@ -13,7 +13,8 @@ class ReceiptController extends Controller
 {
     /**
      * Restrict receipt access to the payment's own school: principal/cashier
-     * of that school, the user who collected the payment, or a super admin.
+     * of that school, the user who collected the payment, the student the
+     * payment belongs to (parent/student panel), or a super admin.
      * Without this, any authenticated user could read/download any other
      * school's payment receipts by guessing a numeric id.
      */
@@ -24,6 +25,13 @@ class ReceiptController extends Controller
             abort(403);
         }
         if ($user->isSuperAdmin()) {
+            return;
+        }
+        // The parent/student panel authenticates as the student's own user
+        // account and has no "current school" session context (that's a
+        // web-session concept) — check this before the school-context gate
+        // below, which would otherwise 404 every student/parent request.
+        if ($payment->student && $payment->student->user_id === $user->id) {
             return;
         }
         $schoolId = $request->attributes->get('current_school_id') ?? $user->primarySchool()?->id;
