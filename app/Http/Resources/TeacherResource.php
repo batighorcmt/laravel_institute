@@ -18,6 +18,14 @@ class TeacherResource extends JsonResource
             }
         }
 
+        $addressParts = array_filter([
+            $this->present_village,
+            $this->present_post_office,
+            $this->presentThana?->bn_name,
+            $this->presentDistrict?->bn_name,
+            $this->presentDivision?->bn_name,
+        ]);
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
@@ -30,6 +38,7 @@ class TeacherResource extends JsonResource
             'photo' => $photoUrl,
             'status' => $this->status,
             'joining_date' => optional($this->joining_date)->toDateString(),
+            'present_address' => $addressParts ? implode(', ', $addressParts) : null,
         ];
     }
 }

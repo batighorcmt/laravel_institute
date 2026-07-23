@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../state/parent_state.dart';
 
 class SubjectsPage extends ConsumerWidget {
@@ -100,7 +101,7 @@ class SubjectsPage extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('ত্রুটি: $err')),
+      error: (err, stack) => Center(child: Text(friendlyErrorMessage(err))),
     );
   }
 }

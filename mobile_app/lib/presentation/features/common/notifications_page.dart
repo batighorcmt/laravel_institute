@@ -43,23 +43,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
         data: {'all': true},
       );
     } catch (e) {
-      String msg = 'Error loading notifications';
+      String msg = 'নোটিফিকেশন লোড করা যায়নি। আবার চেষ্টা করুন।';
       try {
         if (e is DioException &&
             e.response != null &&
             e.response?.data != null) {
           final d = e.response?.data;
           if (d is Map && d['message'] != null) {
-            msg = d['message'];
-          } else {
-            msg = e.toString();
+            msg = d['message'].toString();
           }
-        } else {
-          msg = e.toString();
         }
-      } catch (_) {
-        msg = e.toString();
-      }
+      } catch (_) {}
 
       if (mounted) {
         ScaffoldMessenger.of(
@@ -143,16 +137,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         ),
                       ),
                       onTap: () {
-                        final nid =
-                            it['notice_id'] ??
-                            it['notice'] ??
-                            it['noticeId'] ??
-                            it['id'];
-                        if (nid != null) {
-                          final id = int.tryParse(nid.toString()) ?? 0;
-                          if (id > 0) {
-                            GoRouter.of(context).push('/notices/$id');
-                          }
+                        int? noticeId;
+                        final rawNoticeId = it['notice_id'];
+                        final noticeObj = it['notice'];
+                        if (rawNoticeId != null) {
+                          noticeId = int.tryParse(rawNoticeId.toString());
+                        } else if (noticeObj is Map && noticeObj['id'] != null) {
+                          noticeId = int.tryParse(noticeObj['id'].toString());
+                        }
+
+                        if (noticeId != null && noticeId > 0) {
+                          GoRouter.of(context).push('/notices/$noticeId');
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'এই নোটিফিকেশনের জন্য বিস্তারিত কোনো পৃষ্ঠা নেই',
+                              ),
+                            ),
+                          );
                         }
                       },
                     ),

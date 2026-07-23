@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../state/parent_state.dart';
 
 class AttendanceReportPage extends ConsumerWidget {
@@ -99,7 +100,7 @@ class AttendanceReportPage extends ConsumerWidget {
             padding: EdgeInsets.all(32),
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (err, _) => Center(child: Text('ত্রুটি: $err')),
+          error: (err, _) => Center(child: Text(friendlyErrorMessage(err))),
         ),
 
         Expanded(
@@ -159,7 +160,7 @@ class AttendanceReportPage extends ConsumerWidget {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(child: Text('ত্রুটি: $err')),
+            error: (err, _) => Center(child: Text(friendlyErrorMessage(err))),
           ),
         ),
       ],

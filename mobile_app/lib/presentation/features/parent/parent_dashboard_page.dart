@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/utils/error_utils.dart';
 import '../../state/parent_state.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/notice_details_modal.dart';
@@ -201,7 +202,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage>
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    'লোডিং ত্রুটি: $err',
+                    friendlyErrorMessage(err),
                     style: const TextStyle(color: Colors.red),
                   ),
                 ),
@@ -622,7 +623,7 @@ class _ParentDashboardPageState extends ConsumerState<ParentDashboardPage>
               );
             },
             loading: () => const _ShimmerBlock(height: 80),
-            error: (err, _) => _ErrorWidget(message: err.toString()),
+            error: (err, _) => _ErrorWidget(message: friendlyErrorMessage(err)),
           ),
           const SizedBox(height: 32),
         ],
@@ -1001,7 +1002,7 @@ class _ErrorWidget extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Text(
-          'ত্রুটি: $message',
+          message,
           style: const TextStyle(color: Colors.red),
         ),
       ),

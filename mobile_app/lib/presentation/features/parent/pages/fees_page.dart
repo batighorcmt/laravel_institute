@@ -8,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../state/parent_state.dart';
 import '../../../../core/config/env.dart';
+import '../../../../core/utils/error_utils.dart';
 
 class FeesPage extends ConsumerStatefulWidget {
   const FeesPage({super.key});
@@ -81,8 +82,9 @@ class _FeesPageState extends ConsumerState<FeesPage>
       }
     } catch (e) {
       if (!mounted) return;
+      final msg = (e is String) ? e : friendlyErrorMessage(e);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('পেমেন্ট শুরু করতে সমস্যা হয়েছে: $e')),
+        SnackBar(content: Text('পেমেন্ট শুরু করতে সমস্যা হয়েছে: $msg')),
       );
     }
   }
@@ -129,7 +131,7 @@ class _FeesPageState extends ConsumerState<FeesPage>
         throw result.message;
       }
     } catch (e) {
-      String msg = e.toString();
+      String msg = (e is String) ? e : 'সার্ভারের সাথে সংযোগ হচ্ছে না। নেটওয়ার্ক চেক করুন।';
       if (e is DioException) {
         if (e.response?.data is Map) {
           msg = e.response?.data['error'] ?? e.response?.data['message'] ?? msg;
@@ -191,7 +193,7 @@ class _FeesPageState extends ConsumerState<FeesPage>
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(child: Text('লোডিং ত্রুটি: $err')),
+              error: (err, _) => Center(child: Text(friendlyErrorMessage(err))),
             ),
           ),
           if (_isDownloading)

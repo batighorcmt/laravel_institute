@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../../core/config/env.dart';
+import '../../../../core/config/env.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../state/parent_state.dart';
 
 class HomeworkListPage extends ConsumerWidget {
@@ -381,7 +382,7 @@ class HomeworkListPage extends ConsumerWidget {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, stack) => Center(child: Text('ত্রুটি: $err')),
+            error: (err, stack) => Center(child: Text(friendlyErrorMessage(err))),
           ),
         ),
       ],

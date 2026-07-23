@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/config/env.dart';
+import '../../../../core/utils/error_utils.dart';
 
 final parentExamResultDetailProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>, String>((ref, examId) async {
@@ -76,10 +77,7 @@ class _ParentExamResultDetailPageState
         throw 'ফাইল খুলতে পারছে না: ${result.message}';
       }
     } catch (e) {
-      String msg = e.toString();
-      if (e is DioException) {
-        msg = e.response?.data?['message'] ?? 'সার্ভারের সাথে সংযোগ হচ্ছে না।';
-      }
+      String msg = (e is String) ? e : friendlyErrorMessage(e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

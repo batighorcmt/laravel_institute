@@ -1,8 +1,23 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../state/notice_state.dart';
 import '../../widgets/notice_reply_section.dart';
+
+String _friendlyNoticeError(Object? error) {
+  if (error is DioException) {
+    final status = error.response?.statusCode;
+    if (status == 404) {
+      return 'নোটিশটি খুঁজে পাওয়া যায়নি। এটি মুছে ফেলা হয়ে থাকতে পারে।';
+    }
+    if (status == 403 || status == 401) {
+      return 'এই নোটিশটি দেখার অনুমতি নেই।';
+    }
+    return 'নোটিশ লোড করা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।';
+  }
+  return 'নোটিশ লোড করা যায়নি। আবার চেষ্টা করুন।';
+}
 
 class NoticeDetailPage extends ConsumerWidget {
   final int noticeId;
@@ -25,7 +40,29 @@ class NoticeDetailPage extends ConsumerWidget {
           if (snap.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snap.hasError) return Center(child: Text('Error: ${snap.error}'));
+          if (snap.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 40,
+                      color: Colors.grey.shade500,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _friendlyNoticeError(snap.error),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 15),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
           final notice = snap.data!;
           final publishAt =
               DateTime.tryParse(notice['publish_at'] ?? '')?.toLocal() ??

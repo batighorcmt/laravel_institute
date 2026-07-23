@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../state/auth_state.dart';
 import '../../../state/parent_state.dart';
 
@@ -148,7 +149,7 @@ class ProfilePage extends ConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('ত্রুটি: $e')));
+          ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(e))));
         }
       }
     }
@@ -222,7 +223,7 @@ class ProfilePage extends ConsumerWidget {
                 if (context.mounted) {
                   ScaffoldMessenger.of(
                     context,
-                  ).showSnackBar(SnackBar(content: Text('ত্রুটি: $e')));
+                  ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(e))));
                 }
               }
             },

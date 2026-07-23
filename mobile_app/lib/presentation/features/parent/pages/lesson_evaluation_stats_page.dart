@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../state/parent_state.dart';
 
 class LessonEvaluationStatsPage extends ConsumerWidget {
@@ -98,7 +99,7 @@ class LessonEvaluationStatsPage extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('ত্রুটি: $err')),
+        error: (err, _) => Center(child: Text(friendlyErrorMessage(err))),
       ),
     );
   }

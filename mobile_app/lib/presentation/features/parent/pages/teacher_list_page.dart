@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../state/parent_state.dart';
 
 class TeacherListPage extends ConsumerWidget {
@@ -21,11 +22,15 @@ class TeacherListPage extends ConsumerWidget {
           itemCount: teachers.length,
           itemBuilder: (context, index) {
             final teacher = teachers[index];
-            final name = teacher['name']?.toString() ?? 'N/A';
-            final designation = teacher['designation']?.toString() ?? 'Teacher';
+            final nameBn = teacher['name_bn']?.toString();
+            final name = (nameBn != null && nameBn.trim().isNotEmpty)
+                ? nameBn
+                : (teacher['name']?.toString() ?? 'শিক্ষক');
+            final designation = teacher['designation']?.toString() ?? 'শিক্ষক';
             final photo = teacher['photo']?.toString();
             final phone = teacher['phone']?.toString();
             final email = teacher['email']?.toString();
+            final address = teacher['present_address']?.toString();
 
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
@@ -78,6 +83,14 @@ class TeacherListPage extends ConsumerWidget {
                             value: email,
                             isClickable: true,
                           ),
+                        if (address != null && address.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          _buildInfoRow(
+                            icon: Icons.location_on,
+                            label: 'বর্তমান ঠিকানা',
+                            value: address,
+                          ),
+                        ],
                         const SizedBox(height: 12),
                         Row(
                           children: [
@@ -130,7 +143,9 @@ class TeacherListPage extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('ত্রুটি: $err')),
+      error: (err, stack) => Center(
+        child: Text(friendlyErrorMessage(err)),
+      ),
     );
   }
 

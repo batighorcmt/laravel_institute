@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../state/parent_state.dart';
 
 class FeedbackPage extends ConsumerStatefulWidget {
@@ -230,7 +231,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Text('ত্রুটি: $err'),
+              error: (err, _) => Text(friendlyErrorMessage(err)),
             ),
           ],
         ),
@@ -273,7 +274,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ভুল হয়েছে: $e')),
+          SnackBar(content: Text(friendlyErrorMessage(e))),
         );
       }
     } finally {

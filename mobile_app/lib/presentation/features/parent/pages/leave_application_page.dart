@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../state/parent_state.dart';
 
 class LeaveApplicationPage extends ConsumerStatefulWidget {
@@ -234,7 +235,7 @@ class _LeaveApplicationPageState extends ConsumerState<LeaveApplicationPage> {
               }).toList(),
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Text('ত্রুটি: $err'),
+            error: (err, _) => Text(friendlyErrorMessage(err)),
           ),
         ],
       ),
@@ -303,7 +304,7 @@ class _LeaveApplicationPageState extends ConsumerState<LeaveApplicationPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('ভুল হয়েছে: $e')));
+        ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(e))));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

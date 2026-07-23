@@ -670,7 +670,8 @@ class ParentController extends Controller
         $student = $children->first();
         $schoolId = $student?->school_id;
         
-        $query = Teacher::query()->active();
+        $query = Teacher::query()->active()
+            ->with(['user', 'presentThana', 'presentDistrict', 'presentDivision']);
         if ($schoolId) {
             $query->forSchool($schoolId);
         }

@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../state/auth_state.dart';
 import '../../state/parent_state.dart';
+import '../../state/notice_state.dart';
 import '../../routes/app_router.dart';
 import '../../../core/network/dio_client.dart';
+import 'pages/exam_results_page.dart' show parentExamsProvider;
 
 // Unread notification count — drives the bell's red dot. Only truthy when
 // there's actually something unread; previously the dot was hardcoded on.
@@ -205,15 +207,19 @@ class ParentShellPage extends ConsumerWidget {
                 ref.invalidate(parentHomeworkProvider);
                 ref.invalidate(parentRoutineProvider);
                 ref.invalidate(parentAttendanceProvider);
+                ref.invalidate(parentOverallAttendanceProvider);
                 ref.invalidate(parentEvaluationsProvider);
                 ref.invalidate(parentLeavesProvider);
                 ref.invalidate(parentNoticesProvider);
+                ref.invalidate(noticesListProvider);
                 ref.invalidate(parentTeachersProvider);
                 ref.invalidate(parentSubjectsProvider);
                 ref.invalidate(parentFeedbackProvider);
                 ref.invalidate(parentEvaluationStatsProvider);
                 ref.invalidate(parentStudentProfileProvider);
                 ref.invalidate(parentFeesProvider);
+                ref.invalidate(parentExamsProvider);
+                ref.invalidate(unreadNotificationCountProvider);
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('উপাত্ত রিফ্রেশ করা হচ্ছে...')),

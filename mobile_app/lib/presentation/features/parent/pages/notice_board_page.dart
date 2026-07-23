@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/utils/error_utils.dart';
 import '../../../state/notice_state.dart';
 import '../../../widgets/notice_reply_section.dart';
 
@@ -117,7 +118,7 @@ class NoticeBoardPage extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('ত্রুটি: $err')),
+        error: (err, _) => Center(child: Text(friendlyErrorMessage(err))),
       ),
       ),
     );
