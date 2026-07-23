@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -114,31 +115,37 @@ class _FeesPageState extends ConsumerState<FeesPage>
       final dir = await getApplicationDocumentsDirectory();
       final savePath = '${dir.path}/Receipt-$paymentNumber.pdf';
 
+      // Fetch as raw bytes (instead of dio.download straight to file) so a
+      // non-2xx response — a real server-side PDF generation error — can be
+      // read and reported instead of being silently written to disk as a
+      // "PDF" that then fails to open.
       final dio = Dio();
-      await dio.download(
+      final response = await dio.get<List<int>>(
         fullUrl,
-        savePath,
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
             'Accept': 'application/pdf',
           },
+          responseType: ResponseType.bytes,
+          validateStatus: (_) => true,
         ),
       );
+
+      final status = response.statusCode ?? 0;
+      if (status < 200 || status >= 300) {
+        throw parseDownloadErrorBytes(response.data);
+      }
+
+      final file = File(savePath);
+      await file.writeAsBytes(response.data!);
 
       final result = await OpenFilex.open(savePath);
       if (result.type != ResultType.done) {
         throw result.message;
       }
     } catch (e) {
-      String msg = (e is String) ? e : 'সার্ভারের সাথে সংযোগ হচ্ছে না। নেটওয়ার্ক চেক করুন।';
-      if (e is DioException) {
-        if (e.response?.data is Map) {
-          msg = e.response?.data['error'] ?? e.response?.data['message'] ?? msg;
-        } else {
-          msg = 'সার্ভারের সাথে সংযোগ হচ্ছে না। নেটওয়ার্ক চেক করুন।';
-        }
-      }
+      final msg = (e is String) ? e : friendlyErrorMessage(e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

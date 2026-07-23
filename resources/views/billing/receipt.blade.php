@@ -178,19 +178,19 @@
                 <p class="font-bold text-lg text-indigo-900 mb-1">{{ $payment->student->student_name_bn ?? $payment->student->student_name_en }}</p>
                 <p class="text-slate-600 text-sm">আইডি: <span class="font-medium text-slate-800">{{ $payment->student->student_id }}</span></p>
                 <p class="text-slate-600 text-sm mt-1">
-                    শ্রেণি: <span class="font-medium text-slate-800">{{ $payment->student->currentEnrollment->class->bangla_name ?? $payment->student->currentEnrollment->class->name ?? '...' }}</span>
+                    শ্রেণি: <span class="font-medium text-slate-800">{{ $payment->student->currentEnrollment?->class?->bangla_name ?? $payment->student->currentEnrollment?->class?->name ?? '...' }}</span>
                     @if($payment->student->currentEnrollment && $payment->student->currentEnrollment->section)
                         | শাখা: <span class="font-medium text-slate-800">{{ $payment->student->currentEnrollment->section->bangla_name ?? $payment->student->currentEnrollment->section->name }}</span>
                     @endif
                 </p>
                 <p class="text-black text-sm mt-1">
-                    রোল: <span class="font-bold text-black">{{ toBN($payment->student->currentEnrollment->roll_no ?? '...') }}</span>
+                    রোল: <span class="font-bold text-black">{{ toBN($payment->student->currentEnrollment?->roll_no ?? '...') }}</span>
                 </p>
             </div>
                 <div class="text-right">
                     <h4 class="text-xs font-semibold text-slate-400 uppercase mb-2 tracking-wider font-bold">রিসিট তথ্য</h4>
                     <p class="text-black text-sm">রিসিট নং: <span class="font-bold text-black">{{ toBN($payment->payment_number) }}</span></p>
-                    <p class="text-black text-sm mt-1">তারিখ: <span class="font-medium text-black">{{ toBN($payment->received_at->format('d/m/Y')) }}</span></p>
+                    <p class="text-black text-sm mt-1">তারিখ: <span class="font-medium text-black">{{ toBN(($payment->received_at ?? $payment->created_at)->format('d/m/Y')) }}</span></p>
                     <p class="text-black text-sm mt-1">পেমেন্ট মাধ্যম: <span class="font-bold text-black capitalize">{{ $methodsBN[strtolower($payment->payment_method)] ?? $payment->payment_method }}</span></p>
                     @if($payment->tran_id || $payment->external_txn_id)
                         <p class="text-black text-xs mt-1">ট্রানজেকশন আইডি: <span class="font-medium text-black">{{ $payment->tran_id ?? $payment->external_txn_id }}</span></p>

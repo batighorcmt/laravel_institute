@@ -1,4 +1,4 @@
-// dart:io removed (no longer needed after simplifying download logic)
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
@@ -59,18 +59,29 @@ class _ParentExamResultDetailPageState
       final savePath =
           '${dir.path}/Marksheet-${widget.examId}-${DateTime.now().millisecondsSinceEpoch}.pdf';
 
+      // Fetch as raw bytes (rather than dio.download straight to file) so a
+      // non-2xx response — e.g. "ফলাফল এখনো প্রকাশিত হয়নি" — is read and
+      // shown to the user instead of being misreported as a network error.
       final downloadDio = Dio();
-      await downloadDio.download(
+      final response = await downloadDio.get<List<int>>(
         pdfUrl,
-        savePath,
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
             'Accept': 'application/pdf',
           },
           responseType: ResponseType.bytes,
+          validateStatus: (_) => true,
         ),
       );
+
+      final status = response.statusCode ?? 0;
+      if (status < 200 || status >= 300) {
+        throw parseDownloadErrorBytes(response.data);
+      }
+
+      final file = File(savePath);
+      await file.writeAsBytes(response.data!);
 
       final result = await OpenFilex.open(savePath);
       if (result.type != ResultType.done) {

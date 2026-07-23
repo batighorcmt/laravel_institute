@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 
 /// Converts any caught error into a short, plain-Bengali message safe to
@@ -35,4 +36,23 @@ String? _extractServerMessage(dynamic data) {
     return data['message'] as String;
   }
   return null;
+}
+
+/// For file-download requests fetched as raw bytes (dio.download() doesn't
+/// decode error bodies as JSON, so callers must fetch bytes manually and
+/// use this to interpret a non-2xx response) — decodes the byte body as
+/// JSON and extracts the server's own error/message, so a genuine
+/// server-side failure (e.g. PDF generation error) isn't misreported as a
+/// network problem.
+String parseDownloadErrorBytes(List<int>? bytes) {
+  if (bytes != null) {
+    try {
+      final decoded = jsonDecode(utf8.decode(bytes));
+      if (decoded is Map) {
+        final msg = decoded['error'] ?? decoded['message'];
+        if (msg is String && msg.isNotEmpty) return msg;
+      }
+    } catch (_) {}
+  }
+  return 'ফাইল তৈরি করতে সমস্যা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।';
 }

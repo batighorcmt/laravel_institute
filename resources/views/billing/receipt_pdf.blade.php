@@ -280,17 +280,17 @@
                 <div class="student-name">{{ $payment->student->student_name_bn ?? $payment->student->student_name_en }}</div>
                 <div class="info-row">আইডি: <span>{{ $payment->student->student_id }}</span></div>
                 <div class="info-row">
-                    শ্রেণি: <span>{{ $payment->student->currentEnrollment->class->bangla_name ?? $payment->student->currentEnrollment->class->name ?? '...' }}</span>
+                    শ্রেণি: <span>{{ $payment->student->currentEnrollment?->class?->bangla_name ?? $payment->student->currentEnrollment?->class?->name ?? '...' }}</span>
                     @if($payment->student->currentEnrollment && $payment->student->currentEnrollment->section)
                         | শাখা: <span>{{ $payment->student->currentEnrollment->section->bangla_name ?? $payment->student->currentEnrollment->section->name }}</span>
                     @endif
                 </div>
-                <div class="info-row">রোল: <span>{{ toBN($payment->student->currentEnrollment->roll_no ?? '') }}</span></div>
+                <div class="info-row">রোল: <span>{{ toBN($payment->student->currentEnrollment?->roll_no ?? '') }}</span></div>
             </td>
             <td class="info-right">
                 <div class="info-title">রিসিট তথ্য</div>
                 <div class="info-row">রিসিট নং: <span>{{ toBN($payment->payment_number) }}</span></div>
-                <div class="info-row">তারিখ: <span>{{ toBN($payment->received_at->format('d/m/Y')) }}</span></div>
+                <div class="info-row">তারিখ: <span>{{ toBN(($payment->received_at ?? $payment->created_at)->format('d/m/Y')) }}</span></div>
                 <div class="info-row">পেমেন্ট মাধ্যম: <span>{{ $methodsBN[strtolower($payment->payment_method)] ?? $payment->payment_method }}</span></div>
                 @if($payment->tran_id || $payment->external_txn_id)
                     <div class="info-row">ট্রানজেকশন আইডি: <span>{{ $payment->tran_id ?? $payment->external_txn_id }}</span></div>
