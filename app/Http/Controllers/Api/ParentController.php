@@ -441,8 +441,18 @@ class ParentController extends Controller
 
         $classId = $student->currentEnrollment?->class_id ?? $student->class_id;
 
+        // A class name (e.g. "Ten") is reused every academic year, so filtering
+        // by class_id alone pulls in exams from every past year that class ever
+        // had — the student's current academic year has to be filtered too.
+        $currentAcademicYearId = \App\Models\AcademicYear::where('school_id', $student->school_id)
+            ->where('is_current', true)
+            ->value('id');
+
         $exams = \App\Models\Exam::where('school_id', $student->school_id)
             ->where('class_id', $classId)
+            ->when($currentAcademicYearId, function ($query) use ($currentAcademicYearId) {
+                $query->where('academic_year_id', $currentAcademicYearId);
+            })
             ->whereIn('status', ['published', 'completed'])
             ->orderByDesc('start_date')
             ->get()->map(function($e) {
