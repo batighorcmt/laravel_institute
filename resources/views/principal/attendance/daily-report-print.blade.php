@@ -1,9 +1,10 @@
 @php
     $printTitle = 'শিক্ষার্থী দৈনিক হাজিরা রিপোর্ট';
-    $statusLabel = $status === 'present' ? 'উপস্থিত' : ($status === 'late' ? 'দেরী' : ($status === 'absent' ? 'অনুপস্থিত' : 'সকল'));
+    $statusLabel = $status === 'present' ? 'উপস্থিত' : ($status === 'late' ? 'দেরী' : ($status === 'absent' ? 'অনুপস্থিত' : ($status === 'excused' ? 'ছুটি' : 'সকল')));
     $presentCount = $records->where('status', 'present')->count();
     $lateCount    = $records->where('status', 'late')->count();
     $absentCount  = $records->where('status', 'absent')->count();
+    $excusedCount = $records->where('status', 'excused')->count();
 @endphp
 <!DOCTYPE html>
 <html lang="bn">
@@ -21,6 +22,7 @@
         .badge-present { color: #27ae60; font-weight: bold; }
         .badge-late    { color: #e67e22; font-weight: bold; }
         .badge-absent  { color: #e74c3c; font-weight: bold; }
+        .badge-excused { color: #7f8c8d; font-weight: bold; }
         .summary { display: flex; gap: 30px; justify-content: center; margin: 8px 0 14px; }
         .summary span { font-weight: bold; }
         .medium-biometric { color: #2980b9; }
@@ -47,6 +49,7 @@
         <span class="badge-present">উপস্থিত: {{ $presentCount }}</span>
         <span class="badge-late">দেরী: {{ $lateCount }}</span>
         <span class="badge-absent">অনুপস্থিত: {{ $absentCount }}</span>
+        <span class="badge-excused">ছুটি: {{ $excusedCount }}</span>
         <span>মোট: {{ $records->count() }}</span>
     </div>
 
@@ -82,6 +85,7 @@
                     @if($rec->status === 'present') উপস্থিত
                     @elseif($rec->status === 'late') দেরী
                     @elseif($rec->status === 'absent') অনুপস্থিত
+                    @elseif($rec->status === 'excused') ছুটি
                     @else {{ $rec->status }}
                     @endif
                 </td>

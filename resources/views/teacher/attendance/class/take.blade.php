@@ -63,7 +63,12 @@
                             @foreach($enrollments as $enrollment)
                                 <tr>
                                     <td>{{ $enrollment->roll_no }}</td>
-                                    <td class="student-name">{{ $enrollment->student->student_name_en }}</td>
+                                    <td class="student-name">
+                                        {{ $enrollment->student->student_name_en }}
+                                        @if(isset($studentsOnLeave[$enrollment->student_id]))
+                                            <span class="badge badge-info ml-1">ছুটি অনুমোদিত</span>
+                                        @endif
+                                    </td>
 
                                     <!-- Present Radio -->
                                     <td class="radio-present">

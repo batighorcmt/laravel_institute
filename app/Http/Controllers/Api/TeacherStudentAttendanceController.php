@@ -164,7 +164,19 @@ class TeacherStudentAttendanceController extends Controller
             ->where('date', $date)
             ->pluck('status','student_id');
 
-        $students = $enrollments->map(function($en) use ($existing) {
+        // Approved leave covering this date — surfaced to the teacher as
+        // "ছুটি অনুমোদিত" so they know why a student is absent before
+        // marking attendance (mirrors the same badge on the web panel).
+        $onLeave = \App\Models\StudentLeave::where('school_id', $schoolId)
+            ->where('class_id', $section->class_id)
+            ->where('section_id', $section->id)
+            ->where('status', 'approved')
+            ->where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->pluck('student_id')
+            ->flip();
+
+        $students = $enrollments->map(function($en) use ($existing, $onLeave) {
             $st = $en->student;
             return [
                 'id' => $st?->id,
@@ -174,6 +186,7 @@ class TeacherStudentAttendanceController extends Controller
                 'photo_url' => $st?->photo_url,
                 'status' => $existing[$st?->id] ?? null,
                 'gender' => $st?->gender ?? null,
+                'on_leave' => $st?->id ? isset($onLeave[$st->id]) : false,
             ];
         })->values();
 

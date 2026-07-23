@@ -12,6 +12,7 @@
     .late-icon { color: #ffc107; }
     .half-day-icon { color: #17a2b8; }
     .holiday-label { font-size: 0.65rem; font-weight: 600; color:#6c757d; }
+    .excused-label { font-size: 0.65rem; font-weight: 600; color:#17a2b8; }
     .bio-time { display: block; font-size: 0.6rem; color: #555; line-height: 1.1; margin-top: 1px; white-space: nowrap; }
     /* Show only in print */
     .print-only { display: none; }
@@ -174,8 +175,9 @@
                                             $exitT  = is_array($rec) ? ($rec['exit_time']  ?? null) : null;
                                             $wdnLoop = (int)date('N', strtotime($d));
                                             $isHolidayCell = in_array($d, $holidayList) || in_array($wdnLoop, $weeklyHolidayNumsList);
-                                            if(!$isHolidayCell && $status){ $totalCount++; }
-                                            if(!$isHolidayCell){
+                                            $isExcusedCell = $status === 'excused';
+                                            if(!$isHolidayCell && !$isExcusedCell && $status){ $totalCount++; }
+                                            if(!$isHolidayCell && !$isExcusedCell){
                                                 if($status === 'present' || $status === 'late' || $status === 'half_day'){ $presentCount++; }
                                                 elseif($status === 'absent'){ $absentCount++; }
                                             }
@@ -197,6 +199,7 @@
                                                     @if($exitT)<span class="bio-time" style="color:#888">{{ \Carbon\Carbon::parse($exitT)->format('h:i') }}</span>@endif
                                                 @endif
                                             @elseif($status === 'half_day')<span class="half-day-icon" title="অর্ধদিবস"><i class="fas fa-adjust"></i></span>
+                                            @elseif($status === 'excused')<span class="excused-label" title="ছুটি">ছুটি</span>
                                             @else <span>&nbsp;</span>
                                             @endif
                                         </td>

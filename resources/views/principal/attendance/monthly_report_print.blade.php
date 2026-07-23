@@ -69,6 +69,13 @@
             letter-spacing: -0.5px;
         }
 
+        .excused-label {
+            font-size: 9px;
+            letter-spacing: -0.5px;
+            color: #17a2b8 !important;
+            font-weight: bold;
+        }
+
         /* Header centering and larger school name for print */
         .print-header {
             display: block !important;
@@ -306,6 +313,10 @@
                 foreach (($students ?? []) as $stRow) {
                     $rec = $attendanceMatrix[$stRow->student_id][$d] ?? null;
                     $status = is_array($rec) ? ($rec['status'] ?? null) : $rec;
+                    if ($status === 'excused') {
+                        // approved leave — not counted as present or absent
+                        continue;
+                    }
                     if (in_array($status, ['present', 'late', 'half_day'])) {
                         $dailyPresent[$d]++;
                     } else {
@@ -521,12 +532,16 @@
                                 @endif
                             @else
                                 @php
-                                    $total++;
-                                    if (in_array($status, ['present', 'late', 'half_day'])) {
-                                        $present++;
+                                    if ($status === 'excused') {
+                                        // approved leave — like a holiday, not counted as present or absent
                                     } else {
-                                        $absent++;
-                                        $status = 'absent';
+                                        $total++;
+                                        if (in_array($status, ['present', 'late', 'half_day'])) {
+                                            $present++;
+                                        } else {
+                                            $absent++;
+                                            $status = 'absent';
+                                        }
                                     }
                                 @endphp
                                 <td>
@@ -534,6 +549,7 @@
                                     @elseif($status === 'absent')<span class="absent-icon">&#10007;</span>
                                     @elseif($status === 'late')<span class="late-icon">&#9881;</span>
                                     @elseif($status === 'half_day')<span class="half-day-icon">&#9679;</span>
+                                    @elseif($status === 'excused')<span class="excused-label" title="ছুটি">ছুটি</span>
                                     @else &nbsp; @endif
                                 </td>
                             @endif

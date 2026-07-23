@@ -100,6 +100,18 @@ class StudentAttendanceController extends Controller
         $existingAttendance = $existingAttendances->pluck('status', 'student_id')->toArray();
         $remarks = $existingAttendances->pluck('remarks', 'student_id')->toArray();
 
+        // Approved leave covering this date — shown as a "ছুটি অনুমোদিত" badge
+        // next to the student's name so the teacher knows why they're absent
+        // before marking attendance.
+        $studentsOnLeave = \App\Models\StudentLeave::where('school_id', $school->id)
+            ->where('class_id', $classId)
+            ->where('section_id', $sectionId)
+            ->where('status', 'approved')
+            ->where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->pluck('student_id')
+            ->flip();
+
         return view('teacher.attendance.class.take', compact(
             'school',
             'teacher',
@@ -109,7 +121,8 @@ class StudentAttendanceController extends Controller
             'date',
             'isExistingRecord',
             'existingAttendance',
-            'remarks'
+            'remarks',
+            'studentsOnLeave'
         ));
     }
 

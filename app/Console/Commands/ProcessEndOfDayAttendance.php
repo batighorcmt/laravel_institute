@@ -52,6 +52,16 @@ class ProcessEndOfDayAttendance extends Command
                 continue;
             }
 
+            // Skip the entire cron cycle on a declared holiday or this
+            // school's weekly off-day — no attendance is expected on a
+            // holiday, so neither students nor teachers should be auto-marked
+            // absent, and there's nothing meaningful to notify about.
+            if ($this->isHolidayForSchool($school, $today)) {
+                Log::info("[EndOfDay] Skipped entire cron cycle: {$today} is a holiday for school_id={$school->id}");
+                $this->info("[{$school->name}] Skipped - {$today} is a holiday.");
+                continue;
+            }
+
             // Use defaults if not configured
             $studentLateThreshold = $settings->student_late_threshold ?? '09:30:00';
             $studentExitEnd       = $settings->student_exit_end       ?? '15:00:00';
@@ -82,11 +92,7 @@ class ProcessEndOfDayAttendance extends Command
      */
     private function markAbsentStudents(School $school, string $today, PushNotificationService $pushService): void
     {
-        // Skip marking absences on declared holidays or this school's weekly off-days
-        if ($this->isHolidayForSchool($school, $today)) {
-            Log::info("[EndOfDay] Skipped marking absent students: {$today} is a holiday for school_id={$school->id}");
-            return;
-        }
+        // Note: holiday check already happened in handle() before this is called.
 
         // Get all active enrolled students who don't have attendance today.
         // Enrollment status alone isn't enough - the student record itself must

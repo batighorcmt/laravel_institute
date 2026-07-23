@@ -140,6 +140,33 @@ class AttendanceController extends Controller
                     'exit_time'  => $r->exit_time,
                 ];
             }
+
+            // Overlay approved leave days as 'excused' — an approved leave is
+            // the authoritative record for that day even if a stray
+            // attendance row (e.g. an earlier biometric punch) exists for it,
+            // and this also fills in days that never got an attendance row
+            // at all (ProcessEndOfDayAttendance deliberately skips marking
+            // approved-leave students absent).
+            $leaves = \App\Models\StudentLeave::where('school_id', $school->id)
+                ->whereIn('student_id', $studentIds)
+                ->where('status', 'approved')
+                ->where('start_date', '<=', $endDate)
+                ->where('end_date', '>=', $startDate)
+                ->get(['student_id', 'start_date', 'end_date']);
+
+            foreach ($leaves as $leave) {
+                foreach ($leave->dateRange() as $dateKey) {
+                    if ($dateKey < $startDate || $dateKey > $endDate) {
+                        continue;
+                    }
+                    $attendanceMatrix[$leave->student_id][$dateKey] = [
+                        'status'     => 'excused',
+                        'medium'     => 'system',
+                        'entry_time' => null,
+                        'exit_time'  => null,
+                    ];
+                }
+            }
         }
 
         // Weekly holidays for this school (1=Mon ... 7=Sun)
@@ -951,10 +978,52 @@ class AttendanceController extends Controller
 
         $records = $query->orderBy('students.student_name_bn')->get();
 
+        if (! $status || $status === 'excused') {
+            $records = $records->concat($this->leaveRecordsForDate($school, $date, $classId, $sectionId, $records));
+        }
+
         return view('principal.attendance.daily-report', compact(
             'school', 'date', 'classes', 'sections', 'records',
             'classId', 'sectionId', 'status'
         ));
+    }
+
+    /**
+     * Builds unsaved Attendance-shaped records (status 'excused') for
+     * students on an approved leave covering $date, so they surface in the
+     * daily report even though no real attendance row exists for them —
+     * ProcessEndOfDayAttendance deliberately skips marking approved-leave
+     * students absent, so without this overlay they're simply invisible.
+     * Students who already have a real attendance row for the day (e.g. a
+     * biometric punch before the leave was approved) are skipped here to
+     * avoid duplicate rows in the report.
+     */
+    private function leaveRecordsForDate(School $school, string $date, $classId, $sectionId, $existingRecords)
+    {
+        $alreadyCoveredStudentIds = $existingRecords->pluck('student_id')->all();
+
+        $leaveQuery = \App\Models\StudentLeave::where('school_id', $school->id)
+            ->where('status', 'approved')
+            ->where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->whereNotIn('student_id', $alreadyCoveredStudentIds);
+        if ($classId) {
+            $leaveQuery->where('class_id', $classId);
+        }
+        if ($sectionId) {
+            $leaveQuery->where('section_id', $sectionId);
+        }
+
+        return $leaveQuery->get()->map(function ($leave) use ($date) {
+            return new Attendance([
+                'student_id'  => $leave->student_id,
+                'class_id'    => $leave->class_id,
+                'section_id'  => $leave->section_id,
+                'date'        => $date,
+                'status'      => 'excused',
+                'medium'      => 'system',
+            ]);
+        });
     }
 
     /**
@@ -985,6 +1054,11 @@ class AttendanceController extends Controller
         }
 
         $records   = $query->orderBy('students.student_name_bn')->get();
+
+        if (! $status || $status === 'excused') {
+            $records = $records->concat($this->leaveRecordsForDate($school, $date, $classId, $sectionId, $records));
+        }
+
         $className = $classId ? SchoolClass::find($classId)?->name : 'সকল শ্রেণি';
         $sectionName = $sectionId ? Section::find($sectionId)?->name : 'সকল শাখা';
 

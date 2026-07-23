@@ -51,6 +51,7 @@
                         <option value="present" {{ $status == 'present' ? 'selected' : '' }}>উপস্থিত</option>
                         <option value="late"    {{ $status == 'late'    ? 'selected' : '' }}>দেরী</option>
                         <option value="absent"  {{ $status == 'absent'  ? 'selected' : '' }}>অনুপস্থিত</option>
+                        <option value="excused" {{ $status == 'excused' ? 'selected' : '' }}>ছুটি</option>
                     </select>
                 </div>
                 <div class="col-md-2 d-flex gap-2">
@@ -75,6 +76,7 @@
     $presentCount = $records->where('status', 'present')->count();
     $lateCount    = $records->where('status', 'late')->count();
     $absentCount  = $records->where('status', 'absent')->count();
+    $excusedCount = $records->where('status', 'excused')->count();
     $total        = $records->count();
 @endphp
 <div class="row mb-3">
@@ -94,6 +96,12 @@
         <div class="small-box bg-danger">
             <div class="inner"><h3>{{ $absentCount }}</h3><p>অনুপস্থিত</p></div>
             <div class="icon"><i class="fas fa-times"></i></div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="small-box bg-secondary">
+            <div class="inner"><h3>{{ $excusedCount }}</h3><p>ছুটি</p></div>
+            <div class="icon"><i class="fas fa-file-medical"></i></div>
         </div>
     </div>
     <div class="col-6 col-md-3">
@@ -145,6 +153,8 @@
                                 <span class="badge badge-warning">দেরী</span>
                             @elseif($rec->status === 'absent')
                                 <span class="badge badge-danger">অনুপস্থিত</span>
+                            @elseif($rec->status === 'excused')
+                                <span class="badge badge-secondary">ছুটি</span>
                             @else
                                 <span class="badge badge-secondary">{{ $rec->status }}</span>
                             @endif

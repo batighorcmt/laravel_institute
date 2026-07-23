@@ -88,6 +88,7 @@ class _ClassSectionMarkAttendancePageState
               photoUrl: (m['photo_url'] ?? '').toString(),
               status: _parseStatus(m['status']?.toString()),
               gender: (m['gender'] ?? '').toString(),
+              onLeave: m['on_leave'] == true,
             ),
           )
           .toList();
@@ -550,6 +551,7 @@ class _StudentRow {
   final String photoUrl;
   final AttendanceStatus? status;
   final String gender;
+  final bool onLeave;
   const _StudentRow({
     required this.id,
     required this.name,
@@ -557,6 +559,7 @@ class _StudentRow {
     required this.photoUrl,
     required this.status,
     required this.gender,
+    this.onLeave = false,
   });
   _StudentRow copyWith({AttendanceStatus? status}) => _StudentRow(
     id: id,
@@ -565,6 +568,7 @@ class _StudentRow {
     photoUrl: photoUrl,
     status: status,
     gender: gender,
+    onLeave: onLeave,
   );
 }
 
@@ -613,7 +617,35 @@ class _StudentRowWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(child: Text(row.name)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(row.name),
+                  if (row.onLeave)
+                    Container(
+                      margin: const EdgeInsets.only(top: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blueGrey.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'ছুটি অনুমোদিত',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.blueGrey,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
             _StatusButton(
               icon: Icons.check,
               tooltip: 'উপস্থিত',
