@@ -21,6 +21,7 @@ use App\Models\StudentSubject;
 use App\Models\StudentEnrollment;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\StudentResource;
 use App\Http\Resources\HomeworkResource;
 use App\Http\Resources\StudentAttendanceResource;
@@ -450,6 +451,7 @@ class ParentController extends Controller
                     'name' => $e->name,
                     'start_date' => $e->start_date ? Carbon::parse($e->start_date)->format('d M, Y') : null,
                     'end_date' => $e->end_date ? Carbon::parse($e->end_date)->format('d M, Y') : null,
+                    'result_publish_date' => $e->result_publish_date ? Carbon::parse($e->result_publish_date)->format('d M, Y') : null,
 
                     'status' => $e->status
 
@@ -480,13 +482,17 @@ class ParentController extends Controller
         $schoolModel = \App\Models\School::find($student->school_id);
         $classId = $student->currentEnrollment?->class_id ?? $student->class_id;
         
-        $calc = $this->getCalculatedResults($schoolModel, $exam->id, $classId, null, $student->id);
+        $calc = $this->getCachedClassResults($schoolModel, $exam, $classId);
 
         if (!$calc || empty($calc['results']) || $calc['results']->isEmpty()) {
             return response()->json(['message' => 'এই পরীক্ষার কোনো ফলাফল পাওয়া যায়নি।'], 404);
         }
 
-        $result = $calc['results']->first();
+        $result = $calc['results']->firstWhere('student_id', $student->id);
+
+        if (!$result) {
+            return response()->json(['message' => 'এই পরীক্ষার কোনো ফলাফল পাওয়া যায়নি।'], 404);
+        }
 
         // Only expose computed grades/GPA once a principal has explicitly published
         // this student's result via Principal\ResultController::publishResults()
@@ -577,48 +583,19 @@ class ParentController extends Controller
         $school  = \App\Models\School::find($student->school_id);
         $classId = $student->currentEnrollment?->class_id ?? $student->class_id;
 
-        $calc = $this->getCalculatedResults($school, $exam->id, $classId, null, $student->id);
+        $calc = $this->getCachedClassResults($school, $exam, $classId);
 
         if (!$calc || empty($calc['results']) || $calc['results']->isEmpty()) {
             return response()->json(['message' => 'ফলাফল পাওয়া যায়নি।'], 404);
         }
 
-        $result           = $calc['results']->first();
+        $result = $calc['results']->firstWhere('student_id', $student->id);
+
+        if (!$result) {
+            return response()->json(['message' => 'ফলাফল পাওয়া যায়নি।'], 404);
+        }
         $finalSubjects    = $calc['finalSubjects'];
         $principalTeacher = $this->getPrincipalTeacher($school);
-
-        // Render the partial directly (avoid @extends layout issues with dompdf)
-        $content = view('principal.results.partials._marksheet_content', [
-            'student'          => $student,
-            'result'           => $result,
-            'school'           => $school,
-            'exam'             => $exam,
-            'finalSubjects'    => $finalSubjects,
-            'principalTeacher' => $principalTeacher,
-        ])->render();
-
-        // Wrap in standalone HTML
-        $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">
-        <style>
-            body { font-family: sans-serif; font-size: 10pt; color: #000; margin: 10mm; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #000; padding: 3px 5px; text-align: center; vertical-align: middle; font-size: 9pt; }
-            th { background-color: #f4f4f4; font-weight: bold; }
-            .text-left { text-align: left; padding-left: 5px; }
-            .sub-name { font-weight: bold; }
-            .result-status-green { color: #28a745; font-weight: bold; }
-            .result-status-red { color: #dc3545; font-weight: bold; }
-            .card-highlight { font-weight: bold; background-color: #ffff00; padding: 2px 10px; }
-            .header-section { margin-bottom: 5px; min-height: 80px; }
-            .header-text { text-align: center; }
-            h1 { font-size: 16pt; margin: 0; }
-            h2 { font-size: 11pt; margin: 3px 0; font-weight: normal; }
-            .transcript-title { text-align:center; font-size:13pt; font-weight:bold; color:#800000; border:1px solid #000; display:inline-block; padding:2px 15px; }
-            .summary-cards { margin: 8px 0; }
-            .footer-section { margin-top: 20px; }
-            .signature-line { border-top: 1px solid #000; margin-top: 5px; padding-top: 2px; font-weight: bold; }
-        </style>
-        </head><body>' . $content . '</body></html>';
 
         // Force lang=en for English font and labels as requested by user
         $request->merge(['lang' => 'en']);
@@ -631,37 +608,13 @@ class ParentController extends Controller
             'finalSubjects'    => $finalSubjects,
             'principalTeacher' => $principalTeacher,
         ])->render();
+        $styles = view('principal.results.partials._marksheet_pdf_styles')->render();
 
-        // Standard English font CSS for DomPDF
-        $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">
-        <style>
-            body { font-family: "Helvetica", "Arial", sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 10mm; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #000; padding: 3px 5px; text-align: center; vertical-align: middle; font-size: 9pt; }
-            th { background-color: #f4f4f4; font-weight: bold; }
-            .text-left { text-align: left; padding-left: 5px; }
-            .sub-name { font-weight: bold; }
-            .result-status-green { color: #28a745; font-weight: bold; }
-            .result-status-red { color: #dc3545; font-weight: bold; }
-            .card-highlight { font-weight: bold; background-color: #ffff00; padding: 2px 10px; }
-            .header-section { margin-bottom: 5px; position: relative; min-height: 100px; width: 100%; }
-            .header-logo { position: absolute; left: 0; top: 0; max-height: 80px; }
-            .header-student-photo { position: absolute; right: 0; top: 0; max-height: 100px; border: 1px solid #000; }
-            .header-text { text-align: center; width: 100%; }
-            h1 { font-size: 16pt; margin: 0; color: #1a4d2e; }
-            h2 { font-size: 10pt; margin: 3px 0; font-weight: normal; }
-            .transcript-title { text-align:center; font-size:13pt; font-weight:bold; color:#800000; border:1px solid #000; padding:2px 15px; margin: 10px auto; width: fit-content; display: block; }
-            .info-grading-container { width: 100%; margin-top: 10px; }
-            .student-info { float: left; width: 65%; }
-            .grading-table { float: right; width: 30%; font-size: 8pt; }
-            .result-table { width: 100%; margin-top: 10px; clear: both; }
-            .summary-cards { margin: 10px 0; width: 100%; display: table; }
-            .card-item { display: table-cell; border: 1px dashed #444; padding: 5px; text-align: center; width: 33%; }
-            .footer-section { margin-top: 40px; }
-            .signature-box { float: left; width: 33%; text-align: center; }
-            .signature-line { border-top: 1px solid #000; margin-top: 5px; padding-top: 2px; font-weight: bold; font-size: 9pt; }
-        </style>
-        </head><body>' . $content . '</body></html>';
+        // Same markup + styles as Principal\ResultController::printMarksheet()'s
+        // PDF-download branch — these must stay identical (share the partial
+        // above rather than re-copying it), since this only renders correctly
+        // in DomPDF's limited CSS support, not a regular browser.
+        $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'.$styles.'</head><body>' . $content . '</body></html>';
 
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
             ->setPaper('A4', 'portrait')
@@ -923,6 +876,27 @@ class ParentController extends Controller
             });
 
         return response()->json(['data' => $notices]);
+    }
+
+    // getCalculatedResults() (ResultCalculationTrait) recomputes results for
+    // every student in the class — marks, per-student attendance over the
+    // whole academic year, ranking, per-subject highest-mark — regardless of
+    // how many students actually get filtered into the response. For a
+    // parent/student checking one result that's the same expensive class-wide
+    // pass every other parent in the same class triggers independently, which
+    // is what made this endpoint painfully slow (or effectively hung) for
+    // bigger classes. Cache the unfiltered class-wide computation so the
+    // whole class shares one computation instead of recomputing it per
+    // request, then let callers filter to their one student afterward.
+    // Principal::publishResults()/unpublishResults() bust this key, so a
+    // freshly (un)published result is never stale by more than the TTL below.
+    private function getCachedClassResults($school, $exam, $classId)
+    {
+        $cacheKey = "parent_exam_results:{$school->id}:{$exam->id}:{$classId}";
+
+        return Cache::remember($cacheKey, now()->addMinutes(20), function () use ($school, $exam, $classId) {
+            return $this->getCalculatedResults($school, $exam->id, $classId);
+        });
     }
 
     /* Utility: resolve parent children set */

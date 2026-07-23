@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Models\UserSchoolRole;
 use App\Traits\ResultCalculationTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ResultController extends Controller
 {
@@ -174,39 +175,10 @@ class ResultController extends Controller
             request()->merge(['lang' => 'en']);
 
             $htmlSnippet = view('principal.results.partials._marksheet_content', compact('school', 'exam', 'student', 'result', 'finalSubjects', 'principalTeacher'))->render();
+            $styles = view('principal.results.partials._marksheet_pdf_styles')->render();
 
             // Wrap in full HTML with EXACT styles from print page, but optimized for DomPDF (using floats for columns)
-            $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">
-            <style>
-                body { font-family: "Helvetica", "Arial", sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 10mm; }
-                table { width: 100%; border-collapse: collapse; }
-                th, td { border: 1px solid #000; padding: 3px 5px; text-align: center; vertical-align: middle; font-size: 9pt; }
-                th { background-color: #f4f4f4; font-weight: bold; }
-                .text-left { text-align: left; padding-left: 5px; }
-                .sub-name { font-weight: bold; }
-                .result-status-green { color: #28a745; font-weight: bold; }
-                .result-status-red { color: #dc3545; font-weight: bold; }
-                .card-highlight { font-weight: bold; background-color: #ffff00; padding: 2px 10px; }
-                .header-section { margin-bottom: 5px; position: relative; min-height: 100px; width: 100%; }
-                .header-logo { position: absolute; left: 0; top: 0; max-height: 80px; }
-                .header-student-photo { position: absolute; right: 0; top: 0; max-height: 100px; border: 1px solid #000; }
-                .header-text { text-align: center; width: 100%; }
-                h1 { font-size: 16pt; margin: 0; color: #1a4d2e; }
-                h2 { font-size: 10pt; margin: 3px 0; font-weight: normal; }
-                .transcript-title { text-align:center; font-size:13pt; font-weight:bold; color:#800000; border:1px solid #000; padding:2px 15px; margin: 10px auto; width: 220px; display: block; }
-                .info-grading-container { width: 100%; margin-top: 10px; }
-                .student-info { float: left; width: 65%; }
-                .grading-table { float: right; width: 30%; font-size: 8pt; }
-                .result-table { width: 100%; margin-top: 10px; clear: both; }
-                .summary-cards { margin: 10px 0; width: 100%; display: table; }
-                .card-item { display: table-cell; border: 1px dashed #444; padding: 5px; text-align: center; width: 33%; }
-                .footer-section { margin-top: 40px; clear: both; }
-                .signature-box { float: left; width: 33%; text-align: center; }
-                .signature-box-center { float: left; width: 33%; text-align: center; }
-                .signature-box-right { float: right; width: 33%; text-align: center; }
-                .signature-line { border-top: 1px solid #000; margin-top: 5px; padding-top: 2px; font-weight: bold; font-size: 9pt; }
-            </style>
-            </head><body>'.$htmlSnippet.'</body></html>';
+            $html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'.$styles.'</head><body>'.$htmlSnippet.'</body></html>';
 
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html)
                 ->setPaper('A4', 'portrait')
@@ -1323,6 +1295,8 @@ class ResultController extends Controller
             'published_at' => now(),
         ]);
 
+        Cache::forget("parent_exam_results:{$school->id}:{$exam->id}:{$exam->class_id}");
+
         return back()->with('success', 'ফলাফল সফলভাবে প্রকাশ করা হয়েছে');
     }
 
@@ -1333,6 +1307,8 @@ class ResultController extends Controller
             'is_published' => false,
             'published_at' => null,
         ]);
+
+        Cache::forget("parent_exam_results:{$school->id}:{$exam->id}:{$exam->class_id}");
     }
 
     public function unpublishResult(Request $request, School $school, $examId)

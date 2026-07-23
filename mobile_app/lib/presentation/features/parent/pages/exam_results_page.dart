@@ -55,7 +55,23 @@ class ParentExamResultsPage extends ConsumerWidget {
                     ),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 8.0),
-                      child: Text('তারিখ: ${exam['start_date'] ?? '-'} হতে ${exam['end_date'] ?? '-'}'),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('তারিখ: ${exam['start_date'] ?? '-'} হতে ${exam['end_date'] ?? '-'}'),
+                          if (exam['result_publish_date'] != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                'ফলাফল প্রকাশ: ${exam['result_publish_date']}',
+                                style: TextStyle(
+                                  color: cs.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {
