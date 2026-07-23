@@ -506,6 +506,20 @@ class ParentController extends Controller
             ], 403);
         }
 
+        // A subject with no Mark row at all is deliberately excluded from the
+        // pass/fail count in ResultCalculationTrait (so an in-progress mark
+        // entry doesn't wrongly compute as "Fail") — but that also means a
+        // result computed from only 2 of 9 subjects can come out "Passed"
+        // just because the other 7 haven't been touched yet. is_complete
+        // (set in the trait) is true only once every subject has a record,
+        // so gate on it here rather than showing a misleading Pass/Fail.
+        if (empty($result->is_complete)) {
+            return response()->json([
+                'published' => false,
+                'message'   => 'ফলাফল প্রস্তুত হচ্ছে। কিছু বিষয়ের মার্ক এখনো এন্ট্রি করা হয়নি।',
+            ], 403);
+        }
+
         $finalSubjects = $calc['finalSubjects'] ?? collect();
 
         // Build subjects list from precomputed subject_results on the result object
@@ -594,6 +608,18 @@ class ParentController extends Controller
         if (!$result) {
             return response()->json(['message' => 'ফলাফল পাওয়া যায়নি।'], 404);
         }
+
+        // Same gates as examResults() — the marksheet URL is only ever
+        // surfaced there after these pass, but this endpoint is reachable
+        // directly too, so it needs its own check rather than trusting the
+        // caller went through examResults() first.
+        if (empty($result->is_published)) {
+            return response()->json(['message' => 'ফলাফল এখনো প্রকাশ করা হয়নি।'], 403);
+        }
+        if (empty($result->is_complete)) {
+            return response()->json(['message' => 'ফলাফল প্রস্তুত হচ্ছে। কিছু বিষয়ের মার্ক এখনো এন্ট্রি করা হয়নি।'], 403);
+        }
+
         $finalSubjects    = $calc['finalSubjects'];
         $principalTeacher = $this->getPrincipalTeacher($school);
 

@@ -166,6 +166,18 @@ class ResultController extends Controller
         }
 
         $result = $calcData['results']->first();
+
+        // A subject with no Mark row at all is excluded from the pass/fail
+        // count (see ResultCalculationTrait) so an in-progress mark entry
+        // doesn't wrongly compute as "Fail" — but that also lets a result
+        // built from only a couple of entered subjects come out "Passed"
+        // while most subjects are still blank. Block printing/downloading
+        // until every subject has a record (is_complete), so an
+        // official-looking transcript can't go out with a premature status.
+        if (empty($result->is_complete)) {
+            return back()->with('error', 'এই শিক্ষার্থীর সকল বিষয়ের মার্ক এন্ট্রি এখনো সম্পূর্ণ হয়নি, তাই মার্কশিট প্রস্তুত করা যাচ্ছে না।');
+        }
+
         $finalSubjects = $calcData['finalSubjects'];
         $principalTeacher = $this->getPrincipalTeacher($school);
 
