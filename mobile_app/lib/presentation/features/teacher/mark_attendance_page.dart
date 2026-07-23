@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/dio_client.dart';
+import 'widgets/student_stats_modal.dart';
 
 class ClassSectionMarkAttendancePage extends StatefulWidget {
   final int sectionId;
@@ -27,6 +28,7 @@ class _ClassSectionMarkAttendancePageState
   int _statTotal = 0, _statPresent = 0, _statAbsent = 0, _statLate = 0;
   int _statMale = 0, _statFemale = 0;
   bool _submitting = false;
+  int _classId = 0;
 
   AttendanceStatus? _filter;
 
@@ -51,6 +53,10 @@ class _ClassSectionMarkAttendancePageState
       final data = r.data as Map<String, dynamic>? ?? {};
       _date = (data['date'] as String?) ?? _date;
       _isToday = _date == _formatDate(DateTime.now());
+      if (data['section'] is Map) {
+        final sec = Map<String, dynamic>.from(data['section']);
+        _classId = (sec['class_id'] as num?)?.toInt() ?? _classId;
+      }
       // Normalize students list safely
       final rawList = data['students'];
       final list = <Map<String, dynamic>>[];
@@ -307,6 +313,14 @@ class _ClassSectionMarkAttendancePageState
                               return _StudentRowWidget(
                                 row: s,
                                 enabled: _isToday,
+                                onTapName: () => showStudentStatsModal(
+                                  context,
+                                  studentId: s.id,
+                                  classId: _classId,
+                                  sectionId: widget.sectionId,
+                                  fallbackName: s.name,
+                                  fallbackPhotoUrl: s.photoUrl,
+                                ),
                                 onChanged: (st) {
                                   if (!_isToday) return;
                                   // Find original index if we are filtering
@@ -576,10 +590,12 @@ class _StudentRowWidget extends StatelessWidget {
   final _StudentRow row;
   final ValueChanged<AttendanceStatus> onChanged;
   final bool enabled;
+  final VoidCallback? onTapName;
   const _StudentRowWidget({
     required this.row,
     required this.onChanged,
     required this.enabled,
+    this.onTapName,
   });
   @override
   Widget build(BuildContext context) {
@@ -589,23 +605,27 @@ class _StudentRowWidget extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            ClipRRect(
+            InkWell(
               borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 36,
-                height: 36,
-                color: Colors.grey.shade200,
-                child: row.photoUrl.isEmpty
-                    ? Icon(Icons.person, size: 20, color: Colors.grey[600])
-                    : Image.network(
-                        row.photoUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Icon(
-                          Icons.person,
-                          size: 20,
-                          color: Colors.grey[600],
+              onTap: onTapName,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  color: Colors.grey.shade200,
+                  child: row.photoUrl.isEmpty
+                      ? Icon(Icons.person, size: 20, color: Colors.grey[600])
+                      : Image.network(
+                          row.photoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Icon(
+                            Icons.person,
+                            size: 20,
+                            color: Colors.grey[600],
+                          ),
                         ),
-                      ),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -618,32 +638,35 @@ class _StudentRowWidget extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(row.name),
-                  if (row.onLeave)
-                    Container(
-                      margin: const EdgeInsets.only(top: 2),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.blueGrey.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'ছুটি অনুমোদিত',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.blueGrey,
-                          fontWeight: FontWeight.w600,
+              child: InkWell(
+                onTap: onTapName,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(row.name),
+                    if (row.onLeave)
+                      Container(
+                        margin: const EdgeInsets.only(top: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'ছুটি অনুমোদিত',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.blueGrey,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
             _StatusButton(

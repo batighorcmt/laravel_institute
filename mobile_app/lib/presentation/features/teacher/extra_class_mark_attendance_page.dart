@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../../core/network/dio_client.dart';
+import 'widgets/student_stats_modal.dart';
 
 class ExtraClassMarkAttendancePage extends StatefulWidget {
   final int extraClassId;
@@ -25,6 +26,8 @@ class _ExtraClassMarkAttendancePageState
   List<_StudentRow> _students = const [];
   bool _isToday = true;
   int _statTotal = 0, _statPresent = 0, _statAbsent = 0, _statLate = 0;
+  int _classId = 0;
+  int _sectionId = 0;
 
   AttendanceStatus? _filter;
 
@@ -81,6 +84,11 @@ class _ExtraClassMarkAttendancePageState
       final data = r.data as Map<String, dynamic>? ?? {};
       _date = (data['date'] as String?) ?? _date;
       _isToday = _date == _formatDate(DateTime.now());
+      if (data['extra_class'] is Map) {
+        final ec = Map<String, dynamic>.from(data['extra_class']);
+        _classId = (ec['class_id'] as num?)?.toInt() ?? _classId;
+        _sectionId = (ec['section_id'] as num?)?.toInt() ?? _sectionId;
+      }
       final list = (data['students'] as List? ?? []).cast<Map>();
       final stats = (data['stats'] as Map?) ?? const {};
       _students = list
@@ -206,6 +214,16 @@ class _ExtraClassMarkAttendancePageState
                             return _StudentRowWidget(
                               row: s,
                               enabled: _isToday,
+                              onTapName: (_classId > 0 && _sectionId > 0)
+                                  ? () => showStudentStatsModal(
+                                      context,
+                                      studentId: s.id,
+                                      classId: _classId,
+                                      sectionId: _sectionId,
+                                      fallbackName: s.name,
+                                      fallbackPhotoUrl: s.photoUrl,
+                                    )
+                                  : null,
                               onChanged: (st) {
                                 if (!_isToday) return;
                                 final originalIndex = _students.indexWhere((src) => src.id == s.id);
@@ -457,10 +475,12 @@ class _StudentRowWidget extends StatelessWidget {
   final _StudentRow row;
   final ValueChanged<AttendanceStatus> onChanged;
   final bool enabled;
+  final VoidCallback? onTapName;
   const _StudentRowWidget({
     required this.row,
     required this.onChanged,
     required this.enabled,
+    this.onTapName,
   });
   @override
   Widget build(BuildContext context) {
@@ -470,14 +490,18 @@ class _StudentRowWidget extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            SizedBox(
-              width: 40,
-              height: 60,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: row.photoUrl.isEmpty
-                    ? Container(color: Colors.grey.shade200)
-                    : Image.network(row.photoUrl, fit: BoxFit.cover),
+            InkWell(
+              borderRadius: BorderRadius.circular(6),
+              onTap: onTapName,
+              child: SizedBox(
+                width: 40,
+                height: 60,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: row.photoUrl.isEmpty
+                      ? Container(color: Colors.grey.shade200)
+                      : Image.network(row.photoUrl, fit: BoxFit.cover),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -489,7 +513,9 @@ class _StudentRowWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(child: Text(row.name)),
+            Expanded(
+              child: InkWell(onTap: onTapName, child: Text(row.name)),
+            ),
             _StatusButton(
               icon: Icons.check,
               tooltip: 'উপস্থিত',

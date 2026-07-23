@@ -91,6 +91,11 @@ Route::prefix('v1')->group(function () {
             // Teacher → Students Attendance (team students + submit)
             Route::get('teacher/students-attendance/team/teams/{team}/students', [\App\Http\Controllers\Api\TeacherStudentAttendanceController::class , 'teamStudents'])->middleware('role:teacher,principal');
             Route::post('teacher/students-attendance/team/teams/{team}/attendance', [\App\Http\Controllers\Api\TeacherStudentAttendanceController::class , 'teamSubmit'])->middleware('role:teacher,principal');
+            // Teacher → Students Attendance (per-student stats modal: working days, present/absent/late, leave, consecutive absence)
+            // NOTE: parameter is named {studentId} (not {student}) to avoid the global
+            // Route::bind('student', ...) in AppServiceProvider, which requires a sibling
+            // {school} route parameter that this route doesn't have.
+            Route::get('teacher/students-attendance/student/{studentId}/stats', [\App\Http\Controllers\Api\TeacherStudentAttendanceController::class , 'studentStats'])->middleware('role:teacher,principal');
             Route::get('teacher/homework', [\App\Http\Controllers\Api\HomeworkController::class , 'index'])->middleware('role:teacher');
             Route::post('teacher/homework', [\App\Http\Controllers\Api\HomeworkController::class , 'store'])->middleware('role:teacher');
             Route::match (['put', 'patch'], 'teacher/homework/{homework}', [\App\Http\Controllers\Api\HomeworkController::class , 'update'])->middleware('role:teacher');

@@ -14,6 +14,7 @@ use App\Models\TeamAttendance;
 use App\Models\Teacher;
 use App\Models\StudentEnrollment;
 use App\Models\Attendance;
+use App\Models\Student;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Services\AttendanceSmsService;
@@ -445,6 +446,8 @@ class TeacherStudentAttendanceController extends Controller
             'extra_class' => [
                 'id' => $extraClass->id,
                 'name' => $extraClass->name,
+                'class_id' => $extraClass->class_id,
+                'section_id' => $extraClass->section_id,
             ],
             'students' => $students,
             'stats' => $stats,
@@ -577,10 +580,22 @@ class TeacherStudentAttendanceController extends Controller
             ->where('student_enrollments.status', 'active')
             ->when($academicYearId, fn($q) => $q->where('student_enrollments.academic_year_id', $academicYearId))
             ->whereHas('student', fn($q) => $q->where('status', 'active'))
-            ->with(['student' => fn($q) => $q->where('status', 'active')])
+            ->with(['student' => fn($q) => $q->where('status', 'active'), 'class', 'section'])
             ->select('student_enrollments.*')
-            ->orderBy('student_enrollments.roll_no')
             ->get();
+
+        // Team members can come from different classes/sections, so sort by
+        // class order then roll number rather than roll alone — otherwise
+        // roll numbers from unrelated classes interleave meaninglessly.
+        $enrollmentsArr = $enrollments->all();
+        usort($enrollmentsArr, function ($a, $b) {
+            $byClass = ($a->class?->numeric_value ?? 0) <=> ($b->class?->numeric_value ?? 0);
+            if ($byClass !== 0) return $byClass;
+            $bySection = strcmp($a->section?->name ?? '', $b->section?->name ?? '');
+            if ($bySection !== 0) return $bySection;
+            return ($a->roll_no ?? 0) <=> ($b->roll_no ?? 0);
+        });
+        $enrollments = collect($enrollmentsArr);
 
         $studentIds = $enrollments->pluck('student_id');
 
@@ -609,6 +624,10 @@ class TeacherStudentAttendanceController extends Controller
                 'student_id' => $st?->student_id,
                 'name' => $st?->full_name,
                 'roll' => $en->roll_no,
+                'class_id' => $en->class_id,
+                'class_name' => $en->class?->name,
+                'section_id' => $en->section_id,
+                'section_name' => $en->section?->name,
                 'photo_url' => $st?->photo_url,
                 'gender' => $st?->gender ?? null,
                 'class_status' => $classStatus,
@@ -747,6 +766,138 @@ class TeacherStudentAttendanceController extends Controller
         return response()->json([
             'message' => $wasExisting ? 'উপস্থিতি আপডেট হয়েছে' : 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে',
             'stats' => $stats,
+        ]);
+    }
+
+    public function studentStats(Request $request, $studentId)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user);
+        if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
+
+        $student = Student::where('id', $studentId)->where('school_id', $schoolId)->first();
+        if (! $student) return response()->json(['message' => 'শিক্ষার্থী পাওয়া যায়নি'], 404);
+
+        $classId = (int) $request->query('class_id');
+        $sectionId = (int) $request->query('section_id');
+        if (! $classId || ! $sectionId) {
+            return response()->json(['message' => 'class_id ও section_id প্রয়োজন'], 422);
+        }
+
+        $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        if (! $isPrincipal) {
+            // Reachable either from the class-attendance page (must be this
+            // section's class teacher) or the extra-class page (must own an
+            // extra class for this exact class/section) — either grants view.
+            $teacher = Teacher::where('user_id', $user->id)->where('school_id', $schoolId)->where('status', 'active')->first();
+            $ownsSection = $teacher && Section::where('id', $sectionId)->where('class_id', $classId)->where('class_teacher_id', $teacher->id)->exists();
+            $ownsExtraClass = ExtraClass::where('school_id', $schoolId)->where('teacher_id', $user->id)->where('status', 'active')
+                ->where('class_id', $classId)->where('section_id', $sectionId)->exists();
+            if (! $ownsSection && ! $ownsExtraClass) {
+                return response()->json(['message' => 'আপনি এই শ্রেণির শিক্ষার্থীর তথ্য দেখার অনুমতিপ্রাপ্ত নন'], 403);
+            }
+        }
+
+        $academicYear = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->first();
+
+        $today = \Carbon\Carbon::today();
+        $startDate = $academicYear?->start_date ? \Carbon\Carbon::parse($academicYear->start_date) : $today->copy()->startOfYear();
+        if ($student->admission_date) {
+            $admission = \Carbon\Carbon::parse($student->admission_date);
+            if ($admission->gt($startDate)) $startDate = $admission->copy();
+        }
+        $endDate = $today->copy();
+
+        $weeklyHolidays = \App\Models\WeeklyHoliday::where('school_id', $schoolId)->active()->pluck('day_number')->toArray();
+        $holidaySet = \App\Models\Holiday::where('school_id', $schoolId)->active()
+            ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->pluck('date')
+            ->map(fn($d) => \Carbon\Carbon::parse($d)->toDateString())
+            ->flip();
+
+        $isHolidayDate = function (\Carbon\Carbon $date) use ($weeklyHolidays, $holidaySet) {
+            $dayNum = $date->dayOfWeek == 0 ? 7 : $date->dayOfWeek;
+            if (in_array($dayNum, $weeklyHolidays)) return true;
+            return isset($holidaySet[$date->toDateString()]);
+        };
+
+        $totalWorkingDays = 0;
+        if ($startDate->lte($endDate)) {
+            foreach (\Carbon\CarbonPeriod::create($startDate, $endDate) as $d) {
+                if (! $isHolidayDate($d)) $totalWorkingDays++;
+            }
+        }
+
+        $attendanceRecords = Attendance::where('student_id', $student->id)
+            ->where('class_id', $classId)
+            ->where('section_id', $sectionId)
+            ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get(['date', 'status']);
+        $attendanceByDate = $attendanceRecords->keyBy(fn($a) => $a->date->toDateString());
+
+        $present = $attendanceRecords->where('status', 'present')->count();
+        $absent = $attendanceRecords->where('status', 'absent')->count();
+        $late = $attendanceRecords->where('status', 'late')->count();
+
+        // Approved leave days overlapping the range — excused, so they must
+        // not inflate the absence count or break/count toward the streak.
+        $approvedLeaves = \App\Models\StudentLeave::where('school_id', $schoolId)
+            ->where('student_id', $student->id)
+            ->where('status', 'approved')
+            ->where('start_date', '<=', $endDate->toDateString())
+            ->where('end_date', '>=', $startDate->toDateString())
+            ->get(['start_date', 'end_date']);
+
+        $leaveDateSet = [];
+        foreach ($approvedLeaves as $leave) {
+            $ls = $leave->start_date->lt($startDate) ? $startDate->copy() : $leave->start_date->copy();
+            $le = $leave->end_date->gt($endDate) ? $endDate->copy() : $leave->end_date->copy();
+            for ($d = $ls->copy(); $d->lte($le); $d->addDay()) {
+                $leaveDateSet[$d->toDateString()] = true;
+            }
+        }
+        $approvedLeaveCount = count($leaveDateSet);
+
+        // Consecutive-absence streak: walk backwards from "today if its
+        // attendance is already recorded, else yesterday" until the last day
+        // the student actually attended (present/late) — holidays and
+        // approved-leave days are skipped, not counted and not stop points.
+        $streakEnd = $attendanceByDate->has($today->toDateString()) ? $today->copy() : $today->copy()->subDay();
+        $consecutiveAbsent = 0;
+        $cursor = $streakEnd->copy();
+        $iterations = 0;
+        while ($cursor->gte($startDate) && $iterations < 400) {
+            $iterations++;
+            $dateStr = $cursor->toDateString();
+            if ($isHolidayDate($cursor) || isset($leaveDateSet[$dateStr])) {
+                $cursor->subDay();
+                continue;
+            }
+            $rec = $attendanceByDate->get($dateStr);
+            if (! $rec) break; // no record for this day — boundary reached
+            if (in_array($rec->status, ['present', 'late'])) break; // last attended day
+            if ($rec->status === 'absent') {
+                $consecutiveAbsent++;
+                $cursor->subDay();
+                continue;
+            }
+            break;
+        }
+
+        return response()->json([
+            'student' => [
+                'id' => $student->id,
+                'name' => $student->full_name,
+                'photo_url' => $student->photo_url,
+            ],
+            'as_of_date' => $today->toDateString(),
+            'academic_year_start' => $startDate->toDateString(),
+            'total_working_days' => $totalWorkingDays,
+            'present' => $present,
+            'absent' => $absent,
+            'late' => $late,
+            'approved_leave' => $approvedLeaveCount,
+            'consecutive_absent' => $consecutiveAbsent,
         ]);
     }
 

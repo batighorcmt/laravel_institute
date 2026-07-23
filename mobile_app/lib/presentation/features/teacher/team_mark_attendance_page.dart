@@ -81,6 +81,8 @@ class _TeamMarkAttendancePageState extends State<TeamMarkAttendancePage> {
               roll: (m['roll'] is num)
                   ? (m['roll'] as num).toInt()
                   : (int.tryParse(m['roll']?.toString() ?? '') ?? 0),
+              className: (m['class_name'] ?? '').toString(),
+              sectionName: (m['section_name'] ?? '').toString(),
               photoUrl: (m['photo_url'] ?? '').toString(),
               classStatus: m['class_status']?.toString(),
               canMark: m['can_mark'] == true,
@@ -294,6 +296,8 @@ class _TeamStudentRow {
   final int id;
   final String name;
   final int roll;
+  final String className;
+  final String sectionName;
   final String photoUrl;
   final String? classStatus;
   final bool canMark;
@@ -302,6 +306,8 @@ class _TeamStudentRow {
     required this.id,
     required this.name,
     required this.roll,
+    required this.className,
+    required this.sectionName,
     required this.photoUrl,
     required this.classStatus,
     required this.canMark,
@@ -311,11 +317,20 @@ class _TeamStudentRow {
     id: id,
     name: name,
     roll: roll,
+    className: className,
+    sectionName: sectionName,
     photoUrl: photoUrl,
     classStatus: classStatus,
     canMark: canMark,
     status: status,
   );
+
+  String get classLabel {
+    if (className.isEmpty && sectionName.isEmpty) return '';
+    if (sectionName.isEmpty) return className;
+    if (className.isEmpty) return sectionName;
+    return '$className - $sectionName';
+  }
 }
 
 class _TeamStudentRowWidget extends StatelessWidget {
@@ -356,6 +371,11 @@ class _TeamStudentRowWidget extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(row.name),
+                    if (row.classLabel.isNotEmpty)
+                      Text(
+                        row.classLabel,
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      ),
                     const Text(
                       'শ্রেণি হাজিরা নেওয়া হয়নি',
                       style: TextStyle(fontSize: 11, color: Colors.orange),
@@ -396,6 +416,11 @@ class _TeamStudentRowWidget extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(row.name),
+                  if (row.classLabel.isNotEmpty)
+                    Text(
+                      row.classLabel,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                    ),
                   if (isForcedAbsent)
                     const Text(
                       'শ্রেণিতে অনুপস্থিত',
