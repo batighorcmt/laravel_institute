@@ -10,6 +10,7 @@ use App\Models\ExtraClass;
 use App\Models\ExtraClassEnrollment;
 use App\Models\ExtraClassAttendance;
 use App\Models\Team;
+use App\Models\TeamAttendance;
 use App\Models\Teacher;
 use App\Models\StudentEnrollment;
 use App\Models\Attendance;
@@ -29,13 +30,16 @@ class TeacherStudentAttendanceController extends Controller
         if ($isPrincipal) {
             $classEnabled = Section::where('school_id', $schoolId)->where('status', 'active')->exists();
             $extraEnabled = ExtraClass::where('school_id', $schoolId)->where('status', 'active')->exists();
+            $teamEnabled = Team::forSchool($schoolId)->active()->exists();
         } else {
             $teacher = Teacher::where('user_id',$user->id)->where('school_id',$schoolId)->where('status','active')->first();
             $classEnabled = $teacher ? Section::where('school_id',$schoolId)->where('class_teacher_id',$teacher->id)->where('status','active')->exists() : false;
             // ExtraClass model links teacher_id to users.id
             $extraEnabled = ExtraClass::where('school_id',$schoolId)->where('status','active')->where('teacher_id',$user->id)->exists();
+            // Team.teacher_id likewise links straight to users.id — a plain
+            // teacher only gets the module if assigned to one of their own teams
+            $teamEnabled = Team::forSchool($schoolId)->active()->where('teacher_id', $user->id)->exists();
         }
-        $teamEnabled = Team::forSchool($schoolId)->active()->exists();
 
         return response()->json([
             'class_attendance' => $classEnabled,
@@ -121,6 +125,9 @@ class TeacherStudentAttendanceController extends Controller
         if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
         $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
         $teamsQuery = Team::forSchool($schoolId)->active();
+        if (! ($user->isPrincipal($schoolId) || $user->isSuperAdmin())) {
+            $teamsQuery->where('teacher_id', $user->id);
+        }
         if ($academicYearId) {
             $teamsQuery->whereHas('students.enrollments', function($q) use ($academicYearId) {
                 $q->where('academic_year_id', $academicYearId)->where('status','active');
@@ -542,6 +549,203 @@ class TeacherStudentAttendanceController extends Controller
 
         return response()->json([
             'message' => $wasExisting ? 'উপস্থিতি আপডেট হয়েছে' : 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে',
+            'stats' => $stats,
+        ]);
+    }
+
+    public function teamStudents(Request $request, Team $team)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user, $team->school_id);
+        if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
+
+        $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        if (!$isPrincipal) {
+            if ((int)$team->teacher_id !== (int)$user->id || $team->status !== 'active') {
+                return response()->json(['message' => 'আপনি এই টিমের দায়িত্বপ্রাপ্ত নন'], 403);
+            }
+        }
+
+        $date = $request->query('date', now()->toDateString());
+        $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
+
+        $enrollments = StudentEnrollment::query()
+            ->join('team_student', 'team_student.student_id', '=', 'student_enrollments.student_id')
+            ->where('team_student.team_id', $team->id)
+            ->where('team_student.status', 'active')
+            ->where('student_enrollments.school_id', $schoolId)
+            ->where('student_enrollments.status', 'active')
+            ->when($academicYearId, fn($q) => $q->where('student_enrollments.academic_year_id', $academicYearId))
+            ->whereHas('student', fn($q) => $q->where('status', 'active'))
+            ->with(['student' => fn($q) => $q->where('status', 'active')])
+            ->select('student_enrollments.*')
+            ->orderBy('student_enrollments.roll_no')
+            ->get();
+
+        $studentIds = $enrollments->pluck('student_id');
+
+        // Class (section) attendance is the gate: a student can't be marked
+        // for team attendance until their class attendance for the day
+        // exists, and if class marked them absent, team attendance is forced
+        // absent too — surfaced here so the app can lock/disable those rows.
+        $classStatuses = Attendance::where('date', $date)
+            ->whereIn('student_id', $studentIds)
+            ->pluck('status', 'student_id');
+
+        $teamStatuses = TeamAttendance::where('team_id', $team->id)
+            ->where('date', $date)
+            ->pluck('status', 'student_id');
+
+        $students = $enrollments->map(function ($en) use ($classStatuses, $teamStatuses) {
+            $st = $en->student;
+            $classStatus = $classStatuses[$en->student_id] ?? null;
+            $canMark = $classStatus !== null;
+            $status = $canMark
+                ? ($classStatus === 'absent' ? 'absent' : ($teamStatuses[$en->student_id] ?? null))
+                : null;
+
+            return [
+                'id' => $st?->id,
+                'student_id' => $st?->student_id,
+                'name' => $st?->full_name,
+                'roll' => $en->roll_no,
+                'photo_url' => $st?->photo_url,
+                'gender' => $st?->gender ?? null,
+                'class_status' => $classStatus,
+                'can_mark' => $canMark,
+                'status' => $status,
+            ];
+        })->values();
+
+        $records = TeamAttendance::where('team_id', $team->id)->where('date', $date)->get();
+        $stats = [
+            'total' => $records->count(),
+            'present' => $records->where('status', 'present')->count(),
+            'absent' => $records->where('status', 'absent')->count(),
+            'late' => $records->where('status', 'late')->count(),
+        ];
+
+        return response()->json([
+            'date' => $date,
+            'team' => ['id' => $team->id, 'name' => $team->name],
+            'students' => $students,
+            'any_markable' => $students->contains(fn ($s) => $s['can_mark']),
+            'stats' => $stats,
+        ]);
+    }
+
+    public function teamSubmit(Request $request, Team $team)
+    {
+        $user = $request->user();
+        $schoolId = $this->resolveSchoolId($request, $user, $team->school_id);
+        if (! $schoolId) return response()->json(['message'=>'School context unavailable'], 422);
+
+        $isPrincipal = $user->isPrincipal($schoolId) || $user->isSuperAdmin();
+        if (!$isPrincipal) {
+            if ((int)$team->teacher_id !== (int)$user->id || $team->status !== 'active') {
+                return response()->json(['message' => 'আপনি এই টিমের দায়িত্বপ্রাপ্ত নন'], 403);
+            }
+        }
+
+        $data = $request->validate([
+            'date' => ['required', 'date_format:Y-m-d'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.student_id' => ['required', 'integer'],
+            'items.*.status' => ['required', 'in:present,absent,late'],
+        ]);
+
+        if ($data['date'] !== now()->toDateString()) {
+            return response()->json(['message' => 'শুধুমাত্র আজকের তারিখের হাজিরা জমা দেওয়া যাবে'], 422);
+        }
+
+        $academicYearId = \App\Models\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
+
+        $enrollments = StudentEnrollment::query()
+            ->join('team_student', 'team_student.student_id', '=', 'student_enrollments.student_id')
+            ->where('team_student.team_id', $team->id)
+            ->where('team_student.status', 'active')
+            ->where('student_enrollments.school_id', $schoolId)
+            ->where('student_enrollments.status', 'active')
+            ->when($academicYearId, fn($q) => $q->where('student_enrollments.academic_year_id', $academicYearId))
+            ->whereHas('student', fn($q) => $q->where('status', 'active'))
+            ->select('student_enrollments.*')
+            ->get()
+            ->keyBy('student_id');
+
+        $classStatuses = Attendance::where('date', $data['date'])
+            ->whereIn('student_id', $enrollments->keys())
+            ->pluck('status', 'student_id');
+
+        $markableIds = $classStatuses->keys();
+        $submittedByStudent = collect($data['items'])->keyBy('student_id');
+
+        // Only members whose class attendance was already taken today are
+        // required (and allowed) to be recorded — the rest simply can't have
+        // team attendance yet.
+        $missing = $enrollments->keys()->intersect($markableIds)->diff($submittedByStudent->keys());
+        if ($missing->isNotEmpty()) {
+            return response()->json([
+                'message' => 'সকল শিক্ষার্থীর স্ট্যাটাস নির্বাচন করা হয়নি',
+                'missing_count' => $missing->count(),
+            ], 422);
+        }
+
+        $previousStatuses = TeamAttendance::where('team_id', $team->id)
+            ->where('date', $data['date'])
+            ->pluck('status', 'student_id')
+            ->toArray();
+        $wasExisting = !empty($previousStatuses);
+
+        $rowsToWrite = [];
+        foreach ($enrollments as $studentId => $enrollment) {
+            if (!$markableIds->contains($studentId)) {
+                continue; // class attendance not taken yet — skip entirely
+            }
+            $classStatus = $classStatuses[$studentId];
+            $submitted = $submittedByStudent[$studentId]['status'] ?? 'absent';
+            // Class absence overrides whatever was submitted for team attendance.
+            $finalStatus = $classStatus === 'absent' ? 'absent' : $submitted;
+
+            $rowsToWrite[] = [
+                'student_id' => $studentId,
+                'class_id' => $enrollment->class_id,
+                'section_id' => $enrollment->section_id,
+                'status' => $finalStatus,
+            ];
+        }
+
+        if (empty($rowsToWrite)) {
+            return response()->json([
+                'message' => 'কোনো শিক্ষার্থীর শ্রেণি হাজিরা এখনো নেওয়া হয়নি, তাই টিম হাজিরা নেওয়া যাচ্ছে না।',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($rowsToWrite, $team, $schoolId, $data, $user) {
+            TeamAttendance::where('team_id', $team->id)->where('date', $data['date'])->delete();
+            foreach ($rowsToWrite as $row) {
+                TeamAttendance::create([
+                    'school_id' => $schoolId,
+                    'team_id' => $team->id,
+                    'student_id' => $row['student_id'],
+                    'class_id' => $row['class_id'],
+                    'section_id' => $row['section_id'],
+                    'date' => $data['date'],
+                    'status' => $row['status'],
+                    'recorded_by' => $user->id,
+                ]);
+            }
+        });
+
+        $records = TeamAttendance::where('team_id', $team->id)->where('date', $data['date'])->get();
+        $stats = [
+            'total' => $records->count(),
+            'present' => $records->where('status', 'present')->count(),
+            'absent' => $records->where('status', 'absent')->count(),
+            'late' => $records->where('status', 'late')->count(),
+        ];
+
+        return response()->json([
+            'message' => $wasExisting ? 'উপস্থিতি আপডেট হয়েছে' : 'উপস্থিতি সফলভাবে সংরক্ষিত হয়েছে',
             'stats' => $stats,
         ]);
     }

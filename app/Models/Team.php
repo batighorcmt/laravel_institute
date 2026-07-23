@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string|null $type
  * @property string|null $description
  * @property string|null $instructor_name
+ * @property int|null $teacher_id
  * @property string $status
  *
  * @method static \Illuminate\Database\Eloquent\Builder forSchool(int $schoolId)
@@ -21,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Team extends Model
 {
     protected $fillable = [
-        'school_id','name','type','description','instructor_name','status'
+        'school_id','name','type','description','instructor_name','teacher_id','status'
     ];
 
     protected $casts = [
@@ -34,6 +35,10 @@ class Team extends Model
     }
 
     public function school(): BelongsTo { return $this->belongsTo(School::class); }
+
+    // The user account (teacher) authorized to take this team's attendance —
+    // distinct from instructor_name, which is just a free-text display label.
+    public function teacher(): BelongsTo { return $this->belongsTo(User::class, 'teacher_id'); }
 
     public function students(): BelongsToMany
     {

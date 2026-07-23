@@ -20,6 +20,17 @@
     <input type="text" name="instructor_name" class="form-control" value="{{ old('instructor_name', $team->instructor_name) }}" placeholder="প্রশিক্ষকের পূর্ণ নাম লিখুন">
   </div>
   <div class="form-group">
+    <label>দায়িত্বপ্রাপ্ত শিক্ষক (মোবাইল অ্যাপে এই টিমের হাজিরা নিতে পারবেন)</label>
+    <select name="teacher_id" class="form-control">
+      <option value="">নির্বাচন করুন (ঐচ্ছিক)</option>
+      @foreach($teachers as $t)
+        <option value="{{ $t->user_id }}" {{ (string) old('teacher_id', $team->teacher_id) === (string) $t->user_id ? 'selected' : '' }}>
+          {{ trim(($t->first_name_bn ?? $t->first_name).' '.($t->last_name_bn ?? $t->last_name)) }}
+        </option>
+      @endforeach
+    </select>
+  </div>
+  <div class="form-group">
     <label>বর্ণনা</label>
     <textarea name="description" class="form-control" rows="3">{{ old('description', $team->description) }}</textarea>
   </div>

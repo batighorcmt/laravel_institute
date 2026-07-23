@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Principal;
 use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\Student;
+use App\Models\Teacher;
 use App\Models\Team;
 use Illuminate\Http\Request;
 
@@ -14,6 +15,7 @@ class TeamController extends Controller
     {
         $q = request('q');
         $teams = Team::forSchool($school->id)
+            ->with('teacher')
             ->when($q, fn($qb)=>$qb->where('name','like',"%$q%"))
             ->orderBy('name')
             ->paginate(20)
@@ -21,10 +23,20 @@ class TeamController extends Controller
         return view('principal.institute.teams.index', compact('school','teams','q'));
     }
 
+    private function activeTeachersForSchool(School $school)
+    {
+        return Teacher::where('school_id', $school->id)
+            ->where('status', 'active')
+            ->whereNotNull('user_id')
+            ->orderBy('first_name_bn')
+            ->get(['id','user_id','first_name_bn','last_name_bn','first_name','last_name']);
+    }
+
     public function create(School $school)
     {
         $team = new Team(['status'=>'active']);
-        return view('principal.institute.teams.create', compact('school','team'));
+        $teachers = $this->activeTeachersForSchool($school);
+        return view('principal.institute.teams.create', compact('school','team','teachers'));
     }
 
     public function store(Request $request, School $school)
@@ -34,6 +46,7 @@ class TeamController extends Controller
             'type'            => 'nullable|string|max:100',
             'description'     => 'nullable|string',
             'instructor_name' => 'nullable|string|max:255',
+            'teacher_id'      => 'nullable|exists:users,id',
             'status'          => 'required|in:active,inactive',
         ]);
         $data['school_id'] = $school->id;
@@ -44,7 +57,8 @@ class TeamController extends Controller
     public function edit(School $school, Team $team)
     {
         abort_unless($team->school_id === $school->id, 404);
-        return view('principal.institute.teams.edit', compact('school','team'));
+        $teachers = $this->activeTeachersForSchool($school);
+        return view('principal.institute.teams.edit', compact('school','team','teachers'));
     }
 
     public function update(Request $request, School $school, Team $team)
@@ -55,6 +69,7 @@ class TeamController extends Controller
             'type'            => 'nullable|string|max:100',
             'description'     => 'nullable|string',
             'instructor_name' => 'nullable|string|max:255',
+            'teacher_id'      => 'nullable|exists:users,id',
             'status'          => 'required|in:active,inactive',
         ]);
         $team->update($data);

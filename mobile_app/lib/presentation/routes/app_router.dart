@@ -15,6 +15,7 @@ import '../features/teacher/students_attendance_menu_page.dart';
 import '../features/teacher/class_sections_list_page.dart';
 import '../features/teacher/extra_classes_list_page.dart';
 import '../features/teacher/teams_list_page.dart';
+import '../features/teacher/team_mark_attendance_page.dart';
 import '../features/teacher/extra_class_mark_attendance_page.dart';
 import '../features/teacher/mark_attendance_page.dart';
 import '../features/parent/parent_shell_page.dart';
@@ -197,6 +198,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/teacher/students-attendance/team',
         builder: (context, state) => const TeamsListPage(),
+        routes: [
+          GoRoute(
+            path: 'teams/:teamId/mark',
+            name: 'teacher-team-mark',
+            builder: (context, state) {
+              final id = int.tryParse(state.pathParameters['teamId'] ?? '0') ?? 0;
+              final title = state.uri.queryParameters['title'] ?? 'Team Attendance';
+              return TeamMarkAttendancePage(teamId: id, title: title);
+            },
+          ),
+        ],
       ),
 
       GoRoute(

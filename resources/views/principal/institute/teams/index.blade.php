@@ -28,7 +28,12 @@
           <td>{{ $teams->firstItem()+$i }}</td>
           <td>{{ $team->name }}</td>
           <td>{{ $team->type ?: '-' }}</td>
-          <td>{{ $team->instructor_name ?: '-' }}</td>
+          <td>
+            {{ $team->instructor_name ?: '-' }}
+            @if($team->teacher)
+              <br><span class="badge badge-info" title="মোবাইল অ্যাপে হাজিরা নিতে পারবেন">{{ $team->teacher->name ?? $team->teacher->email }}</span>
+            @endif
+          </td>
           <td>{{ $team->students()->count() }}</td>
           <td>
             <span class="badge badge-{{ $team->status==='active'?'success':'secondary' }}">{{ $team->status }}</span>

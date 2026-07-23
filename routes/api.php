@@ -88,6 +88,9 @@ Route::prefix('v1')->group(function () {
             // Teacher → Students Attendance (extra class students + submit)
             Route::get('teacher/students-attendance/extra/classes/{extraClass}/students', [\App\Http\Controllers\Api\TeacherStudentAttendanceController::class , 'extraClassStudents'])->middleware('role:teacher,principal');
             Route::post('teacher/students-attendance/extra/classes/{extraClass}/attendance', [\App\Http\Controllers\Api\TeacherStudentAttendanceController::class , 'extraClassSubmit'])->middleware('role:teacher,principal');
+            // Teacher → Students Attendance (team students + submit)
+            Route::get('teacher/students-attendance/team/teams/{team}/students', [\App\Http\Controllers\Api\TeacherStudentAttendanceController::class , 'teamStudents'])->middleware('role:teacher,principal');
+            Route::post('teacher/students-attendance/team/teams/{team}/attendance', [\App\Http\Controllers\Api\TeacherStudentAttendanceController::class , 'teamSubmit'])->middleware('role:teacher,principal');
             Route::get('teacher/homework', [\App\Http\Controllers\Api\HomeworkController::class , 'index'])->middleware('role:teacher');
             Route::post('teacher/homework', [\App\Http\Controllers\Api\HomeworkController::class , 'store'])->middleware('role:teacher');
             Route::match (['put', 'patch'], 'teacher/homework/{homework}', [\App\Http\Controllers\Api\HomeworkController::class , 'update'])->middleware('role:teacher');

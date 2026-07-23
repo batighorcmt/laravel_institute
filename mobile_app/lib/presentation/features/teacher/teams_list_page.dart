@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/network/dio_client.dart';
 
 class TeamsListPage extends StatefulWidget {
@@ -53,7 +54,14 @@ class _TeamsListPageState extends State<TeamsListPage> {
                   subtitle: Text(m['type'] ?? ''),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    /* navigate later */
+                    final id = (m['id'] as num?)?.toInt() ?? 0;
+                    if (id > 0) {
+                      context.pushNamed(
+                        'teacher-team-mark',
+                        pathParameters: {'teamId': id.toString()},
+                        queryParameters: {'title': (m['name'] ?? 'Team').toString()},
+                      );
+                    }
                   },
                 );
               },
