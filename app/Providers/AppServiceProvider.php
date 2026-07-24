@@ -58,14 +58,27 @@ class AppServiceProvider extends ServiceProvider
         $router->aliasMiddleware('admission.applicant.guard', \App\Http\Middleware\AdmissionApplicantGuard::class);
         $router->aliasMiddleware('admission.applicant.exclusive', \App\Http\Middleware\AdmissionApplicantExclusive::class);
 
-        // Scoped binding: ensure the `student` route parameter belongs to the `school` parameter
+        // Scoped binding: when a route also has a `{school}` parameter (e.g.
+        // super-admin `schools/{school}/students/{student}` routes), require
+        // the student to belong to that school. No route currently in the
+        // app actually pairs {school} with {student}, so this constraint was
+        // silently always failing — school_id was always null, matching no
+        // student — and every `{student}` route (web and API alike) 404'd
+        // unconditionally. Fall back to a plain lookup when there's no
+        // sibling {school} param; per-route authorization already scopes
+        // access separately (e.g. StudentDirectoryController::resolveSchoolId).
         Route::bind('student', function ($value, $route) {
             $schoolParam = $route->parameter('school');
-            $schoolId = $schoolParam instanceof \App\Models\School ? $schoolParam->id : $schoolParam;
 
-            return \App\Models\Student::where('id', $value)
-                ->where('school_id', $schoolId)
-                ->firstOrFail();
+            if ($schoolParam !== null) {
+                $schoolId = $schoolParam instanceof \App\Models\School ? $schoolParam->id : $schoolParam;
+
+                return \App\Models\Student::where('id', $value)
+                    ->where('school_id', $schoolId)
+                    ->firstOrFail();
+            }
+
+            return \App\Models\Student::findOrFail($value);
         });
     }
 }
