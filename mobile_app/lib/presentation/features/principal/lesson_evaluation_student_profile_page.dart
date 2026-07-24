@@ -113,9 +113,23 @@ class _LessonEvaluationStudentProfilePageState
       final data = (r.data as Map<String, dynamic>?) ?? {};
       _student = (data['student'] as Map?)?.cast<String, dynamic>() ?? {};
       _academicYearName = (data['academic_year'] as Map?)?['name']?.toString();
-      _subjects = ((data['subjects'] as List?) ?? [])
-          .map((e) => (e as Map).cast<String, dynamic>())
-          .toList();
+      final rawSubjects = ((data['subjects'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => e.cast<String, dynamic>());
+      final seenSubjectIds = <int>{};
+      _subjects = [];
+      for (final s in rawSubjects) {
+        final id = s['id'] is int ? s['id'] as int : int.tryParse('${s['id']}');
+        // Drop entries with a missing/unparseable id, and de-dupe by id —
+        // either would otherwise leave two DropdownMenuItems sharing the
+        // same value (or none), which crashes DropdownButtonFormField.
+        if (id == null || !seenSubjectIds.add(id)) continue;
+        _subjects.add(s);
+      }
+      if (_subjectId != null &&
+          !_subjects.any((s) => (s['id'] as num?)?.toInt() == _subjectId)) {
+        _subjectId = null;
+      }
       _subjectStats = ((data['subject_stats'] as List?) ?? [])
           .map((e) => (e as Map).cast<String, dynamic>())
           .toList();
@@ -415,42 +429,80 @@ class _LessonEvaluationStudentProfilePageState
       ),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: Row(
-              children: const [
-                Expanded(flex: 5, child: Text('বিষয়', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: _muted))),
-                Expanded(flex: 2, child: Text('মোট', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: _muted))),
-                Expanded(flex: 2, child: Text('সম্পন্ন', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: _completed))),
-                Expanded(flex: 2, child: Text('আংশিক', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: _partial))),
-                Expanded(flex: 2, child: Text('হয়নি', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: _notDone))),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          ..._subjectStats.map((s) {
-            return Padding(
+          for (var i = 0; i < _subjectStats.length; i++) ...[
+            if (i > 0) const Divider(height: 1),
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    flex: 5,
-                    child: Text(
-                      (s['subject_name'] ?? '').toString(),
-                      style: const TextStyle(fontSize: 11.5, color: _ink),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    (_subjectStats[i]['subject_name'] ?? '').toString(),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _ink,
                     ),
                   ),
-                  Expanded(flex: 2, child: Text('${s['total'] ?? 0}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
-                  Expanded(flex: 2, child: Text('${s['completed'] ?? 0}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: _completed, fontWeight: FontWeight.w600))),
-                  Expanded(flex: 2, child: Text('${s['partial'] ?? 0}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: _partial, fontWeight: FontWeight.w600))),
-                  Expanded(flex: 2, child: Text('${s['not_done'] ?? 0}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: _notDone, fontWeight: FontWeight.w600))),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _statPill('মোট', _subjectStats[i]['total'], _muted),
+                      const SizedBox(width: 8),
+                      _statPill(
+                        'সম্পন্ন',
+                        _subjectStats[i]['completed'],
+                        _completed,
+                      ),
+                      const SizedBox(width: 8),
+                      _statPill(
+                        'আংশিক',
+                        _subjectStats[i]['partial'],
+                        _partial,
+                      ),
+                      const SizedBox(width: 8),
+                      _statPill(
+                        'হয়নি',
+                        _subjectStats[i]['not_done'],
+                        _notDone,
+                      ),
+                    ],
+                  ),
                 ],
               ),
-            );
-          }),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _statPill(String label, dynamic value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '${value ?? 0}',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(fontSize: 10, color: color),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -459,6 +511,11 @@ class _LessonEvaluationStudentProfilePageState
     return SizedBox(
       width: 150,
       child: DropdownButtonFormField<int>(
+        // Remount whenever the subject set or selection changes, so a stale
+        // initialValue can never point at an item that no longer exists.
+        key: ValueKey(
+          '${_subjects.map((s) => s['id']).join(',')}_$_subjectId',
+        ),
         initialValue: _subjectId,
         isDense: true,
         decoration: InputDecoration(
@@ -471,7 +528,7 @@ class _LessonEvaluationStudentProfilePageState
           const DropdownMenuItem<int>(value: null, child: Text('সব বিষয়')),
           ..._subjects.map(
             (s) => DropdownMenuItem<int>(
-              value: s['id'] is int ? s['id'] as int : int.tryParse(s['id'].toString()),
+              value: (s['id'] as num).toInt(),
               child: Text(
                 (s['name'] ?? '').toString(),
                 overflow: TextOverflow.ellipsis,

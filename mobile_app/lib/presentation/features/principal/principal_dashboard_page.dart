@@ -465,7 +465,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                 if (_moduleOn('attendance'))
                 AnimatedTile(
                   title: 'Self Attendance',
-                  titleFontSize: 9,
+                  titleFontSize: 12,
                   icon: Icons.how_to_reg_outlined,
                   background: const Color(0xFFF0F9FF),
                   onTap: () async {
@@ -486,7 +486,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                 if (_moduleOn('attendance'))
                 AnimatedTile(
                   title: 'Students Attendance',
-                  titleFontSize: 9,
+                  titleFontSize: 12,
                   icon: Icons.fact_check_outlined,
                   background: const Color(0xFFFFF7ED),
                   onTap: () async {
@@ -507,7 +507,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                 if (_moduleOn('lesson_evaluation'))
                 AnimatedTile(
                   title: 'Lesson Evaluation',
-                  titleFontSize: 9,
+                  titleFontSize: 12,
                   icon: Icons.rate_review_outlined,
                   background: const Color(0xFFF5F3FF),
                   onTap: () async {
@@ -532,7 +532,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                 if (_moduleOn('homework'))
                 AnimatedTile(
                   title: 'Homework',
-                  titleFontSize: 9,
+                  titleFontSize: 12,
                   icon: Icons.assignment_outlined,
                   background: const Color(0xFFF0FDF4),
                   onTap: () async {
@@ -558,7 +558,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                 if (_moduleOn('exams'))
                 AnimatedTile(
                   title: 'Exams',
-                  titleFontSize: 9,
+                  titleFontSize: 12,
                   icon: Icons.assessment_outlined,
                   background: const Color(0xFFF7FBFF),
                   onTap: () {
@@ -572,7 +572,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                 ),
                 AnimatedTile(
                   title: 'Manage Leave',
-                  titleFontSize: 9,
+                  titleFontSize: 12,
                   icon: Icons.event_busy_outlined,
                   background: const Color(0xFFFFF1F2),
                   onTap: () async {
@@ -596,7 +596,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                 ),
                 AnimatedTile(
                   title: 'Student Leaves',
-                  titleFontSize: 9,
+                  titleFontSize: 12,
                   icon: Icons.event_available_outlined,
                   background: const Color(0xFFF0FDFA),
                   onTap: () {
@@ -612,7 +612,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                 ),
                 AnimatedTile(
                   title: 'Teachers',
-                  titleFontSize: 9,
+                  titleFontSize: 12,
                   icon: Icons.people_alt_outlined,
                   background: const Color(0xFFECFEFF),
                   onTap: () async {
@@ -636,7 +636,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                 ),
                 AnimatedTile(
                   title: 'Students',
-                  titleFontSize: 9,
+                  titleFontSize: 12,
                   icon: Icons.school_outlined,
                   background: const Color(0xFFFFFBEB),
                   onTap: () async {
@@ -662,7 +662,7 @@ class _PrincipalDashboardPageState extends ConsumerState<PrincipalDashboardPage>
                 if (_moduleOn('notices'))
                 AnimatedTile(
                   title: 'Notice',
-                  titleFontSize: 9,
+                  titleFontSize: 12,
                   icon: Icons.campaign_outlined,
                   background: const Color(0xFFFFF3E0),
                   onTap: () async {
