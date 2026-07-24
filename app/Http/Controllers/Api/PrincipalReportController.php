@@ -1000,8 +1000,20 @@ class PrincipalReportController extends Controller
             }
         };
 
-        // Subject-wise stat breakdown (always across ALL subjects, regardless
-        // of the subject_id filter — that filter only narrows the entry list).
+        // Subjects mapped to the student's current class — used to scope both
+        // the subject-wise stat breakdown and the subject filter dropdown to
+        // the student's own curriculum instead of every subject in the school.
+        $classSubjectIds = $enrollment?->class_id
+            ? Subject::where('school_id', $schoolId)
+                ->whereHas('classMappings', function ($q) use ($enrollment) {
+                    $q->where('class_id', $enrollment->class_id)->where('status', 'active');
+                })
+                ->pluck('id')
+            : null;
+
+        // Subject-wise stat breakdown (always across the student's class
+        // subjects, regardless of the subject_id filter — that filter only
+        // narrows the entry list).
         $subjectStatsRaw = LessonEvaluationRecord::where('student_id', $student->id)
             ->whereHas('lessonEvaluation', function ($q) use ($schoolId, $academicYear) {
                 $q->where('school_id', $schoolId);
@@ -1013,6 +1025,7 @@ class PrincipalReportController extends Controller
                 }
             })
             ->join('lesson_evaluations', 'lesson_evaluations.id', '=', 'lesson_evaluation_records.lesson_evaluation_id')
+            ->when($classSubjectIds, fn ($q) => $q->whereIn('lesson_evaluations.subject_id', $classSubjectIds))
             ->select('lesson_evaluations.subject_id', 'lesson_evaluation_records.status', DB::raw('count(*) as cnt'))
             ->groupBy('lesson_evaluations.subject_id', 'lesson_evaluation_records.status')
             ->get();
@@ -1073,7 +1086,9 @@ class PrincipalReportController extends Controller
                 'group_name' => $enrollment?->group?->name,
             ],
             'academic_year' => $academicYear ? ['id' => $academicYear->id, 'name' => $academicYear->name] : null,
-            'subjects' => Subject::where('school_id', $schoolId)->orderBy('name')->get(['id', 'name']),
+            'subjects' => $classSubjectIds
+                ? Subject::whereIn('id', $classSubjectIds)->orderBy('name')->get(['id', 'name'])
+                : Subject::where('school_id', $schoolId)->orderBy('name')->get(['id', 'name']),
             'subject_stats' => $subjectStats,
             'overall_summary' => $overall,
             'entries' => $entries,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
@@ -687,10 +686,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       'optional_subject',
       'optionalSubject',
     ]);
-    final schoolName = _combine(
-      _pick(d, const ['school_name', 'school']),
-      _pick(d, const ['school_name_bn', 'school_bn']),
-    );
     final classTeacher = _pick(d, const ['class_teacher', 'teacher_name']);
     final classTeacherPhone = _pick(d, const [
       'class_teacher_phone',
@@ -706,11 +701,19 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     final memberships = d['memberships'] is List
         ? d['memberships'] as List
         : [];
+    final currentSubjects = d['current_subjects'] is List
+        ? d['current_subjects'] as List
+        : [];
+    final lessonEvaluationSummary = d['lesson_evaluation_summary'] is List
+        ? d['lesson_evaluation_summary'] as List
+        : [];
 
     final gender = _tc(_pick(d, const ['gender', 'gender_name', 'genderName']));
-    final bloodGroup = _tc(
-      _pick(d, const ['blood_group', 'bloodGroup', 'blood']),
-    );
+    final bloodGroup = _pick(d, const [
+      'blood_group',
+      'bloodGroup',
+      'blood',
+    ]).toUpperCase();
     final dob = _pick(d, const [
       'date_of_birth',
       'dob',
@@ -885,7 +888,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       session: session,
                       year: year,
                       optionalSubject: optionalSubject,
-                      schoolName: schoolName,
                       gender: gender,
                       bloodGroup: bloodGroup,
                       att: att,
@@ -907,6 +909,8 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       history: history,
                       memberships: memberships,
                       hasToday: hasToday,
+                      currentSubjects: currentSubjects,
+                      lessonEvaluationSummary: lessonEvaluationSummary,
                     ),
                   ],
                 ),
@@ -986,32 +990,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       backgroundColor: _brand,
       foregroundColor: Colors.white,
       elevation: 0,
-      actions: [
-        if (_data != null)
-          IconButton(
-            tooltip: 'Raw data',
-            icon: const Icon(Icons.data_object),
-            onPressed: () {
-              final pretty = const JsonEncoder.withIndent('  ').convert(_data);
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (ctx) => DraggableScrollableSheet(
-                  expand: false,
-                  initialChildSize: 0.75,
-                  maxChildSize: 0.95,
-                  builder: (_, controller) => Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: SingleChildScrollView(
-                      controller: controller,
-                      child: SelectableText(pretty),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         collapseMode: CollapseMode.pin,
         background: Container(
@@ -1230,7 +1208,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     required String session,
     required String year,
     required String optionalSubject,
-    required String schoolName,
     required String gender,
     required String bloodGroup,
     required Map<String, dynamic>? att,
@@ -1248,7 +1225,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       MapEntry('সেশন', session),
       MapEntry('বছর', year),
       MapEntry('ঐচ্ছিক বিষয়', optionalSubject),
-      MapEntry('স্কুল', schoolName),
     ].where((e) => e.value.trim().isNotEmpty).toList();
 
     return ListView(
@@ -1356,30 +1332,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                   'admit_date',
                   'date_admitted',
                 ]),
-              ),
-              _infoRow(
-                icon: Icons.verified_user_outlined,
-                label: 'অবস্থা',
-                value: _tc(
-                  _pick(d, const [
-                    'status',
-                    'student_status',
-                    'active_status',
-                    'studentStatus',
-                    'enrollment_status',
-                  ]),
-                ),
-              ),
-              _infoRow(
-                icon: Icons.account_balance_outlined,
-                label: 'স্কুল',
-                value: schoolName.isNotEmpty
-                    ? schoolName
-                    : _pick(d, const [
-                        'school_name',
-                        'schoolName',
-                        'institute_name',
-                      ]),
               ),
               if (optionalSubject.isNotEmpty)
                 _infoRow(
@@ -1801,14 +1753,144 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     required List history,
     required List memberships,
     required bool hasToday,
+    required List currentSubjects,
+    required List lessonEvaluationSummary,
   }) {
-    if (history.isEmpty && memberships.isEmpty && !hasToday) {
+    if (history.isEmpty &&
+        memberships.isEmpty &&
+        !hasToday &&
+        currentSubjects.isEmpty &&
+        lessonEvaluationSummary.isEmpty) {
       return _emptyTab('ইতিহাস সংক্রান্ত কোনো তথ্য পাওয়া যায়নি');
     }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
+        if (history.isNotEmpty)
+          _sectionCard(
+            icon: Icons.history_outlined,
+            iconColor: _hueHistory,
+            title: 'ভর্তির ইতিহাস',
+            child: Theme(
+              data: Theme.of(
+                context,
+              ).copyWith(dividerColor: Colors.transparent),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 24,
+                  horizontalMargin: 0,
+                  headingTextStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _ink,
+                  ),
+                  columns: const [
+                    DataColumn(label: Text('বছর')),
+                    DataColumn(label: Text('শ্রেণি')),
+                    DataColumn(label: Text('শাখা')),
+                    DataColumn(label: Text('রোল')),
+                  ],
+                  rows: history.map((en) {
+                    final Map<String, dynamic> row = en is Map
+                        ? Map<String, dynamic>.from(en)
+                        : {};
+                    return DataRow(
+                      cells: [
+                        DataCell(
+                          Text(
+                            _pick(row, const [
+                              'academic_year',
+                              'year',
+                              'session',
+                            ]),
+                          ),
+                        ),
+                        DataCell(
+                          Text(_pick(row, const ['class', 'class_name'])),
+                        ),
+                        DataCell(
+                          Text(_pick(row, const ['section', 'section_name'])),
+                        ),
+                        DataCell(Text(_pick(row, const ['roll', 'roll_no']))),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ),
+        if (history.isNotEmpty) const SizedBox(height: 14),
+
+        if (currentSubjects.isNotEmpty)
+          _sectionCard(
+            icon: Icons.menu_book_outlined,
+            iconColor: _hueHistory,
+            title: 'বর্তমান শিক্ষাবর্ষে পঠিত বিষয়',
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: currentSubjects.map((s) {
+                return Chip(
+                  label: Text(s.toString()),
+                  backgroundColor: _hueHistory.withValues(alpha: 0.08),
+                  labelStyle: const TextStyle(color: _ink, fontSize: 12.5),
+                  side: BorderSide.none,
+                );
+              }).toList(),
+            ),
+          ),
+        if (currentSubjects.isNotEmpty) const SizedBox(height: 14),
+
+        if (lessonEvaluationSummary.isNotEmpty)
+          _sectionCard(
+            icon: Icons.fact_check_outlined,
+            iconColor: _hueHistory,
+            title: 'লেসন ইভ্যালুয়েশন রেকর্ড',
+            child: Theme(
+              data: Theme.of(
+                context,
+              ).copyWith(dividerColor: Colors.transparent),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 20,
+                  horizontalMargin: 0,
+                  headingTextStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: _ink,
+                  ),
+                  dataTextStyle: const TextStyle(fontSize: 12.5),
+                  columns: const [
+                    DataColumn(label: Text('বিষয়')),
+                    DataColumn(label: Text('মোট')),
+                    DataColumn(label: Text('সম্পন্ন')),
+                    DataColumn(label: Text('আংশিক')),
+                    DataColumn(label: Text('হয়নি')),
+                  ],
+                  rows: lessonEvaluationSummary.map((s) {
+                    final Map<String, dynamic> row = s is Map
+                        ? Map<String, dynamic>.from(s)
+                        : {};
+                    return DataRow(
+                      cells: [
+                        DataCell(
+                          Text((row['subject_name'] ?? '').toString()),
+                        ),
+                        DataCell(Text('${row['total'] ?? 0}')),
+                        DataCell(Text('${row['completed'] ?? 0}')),
+                        DataCell(Text('${row['partial'] ?? 0}')),
+                        DataCell(Text('${row['not_done'] ?? 0}')),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ),
+        if (lessonEvaluationSummary.isNotEmpty) const SizedBox(height: 14),
+
         if (hasToday) ...[
           _sectionCard(
             icon: Icons.today_outlined,
@@ -1884,60 +1966,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
           ),
           const SizedBox(height: 14),
         ],
-
-        if (history.isNotEmpty)
-          _sectionCard(
-            icon: Icons.history_outlined,
-            iconColor: _hueHistory,
-            title: 'ভর্তির ইতিহাস',
-            child: Theme(
-              data: Theme.of(
-                context,
-              ).copyWith(dividerColor: Colors.transparent),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columnSpacing: 24,
-                  horizontalMargin: 0,
-                  headingTextStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: _ink,
-                  ),
-                  columns: const [
-                    DataColumn(label: Text('বছর')),
-                    DataColumn(label: Text('শ্রেণি')),
-                    DataColumn(label: Text('শাখা')),
-                    DataColumn(label: Text('রোল')),
-                  ],
-                  rows: history.map((en) {
-                    final Map<String, dynamic> row = en is Map
-                        ? Map<String, dynamic>.from(en)
-                        : {};
-                    return DataRow(
-                      cells: [
-                        DataCell(
-                          Text(
-                            _pick(row, const [
-                              'academic_year',
-                              'year',
-                              'session',
-                            ]),
-                          ),
-                        ),
-                        DataCell(
-                          Text(_pick(row, const ['class', 'class_name'])),
-                        ),
-                        DataCell(
-                          Text(_pick(row, const ['section', 'section_name'])),
-                        ),
-                        DataCell(Text(_pick(row, const ['roll', 'roll_no']))),
-                      ],
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-          ),
       ],
     );
   }

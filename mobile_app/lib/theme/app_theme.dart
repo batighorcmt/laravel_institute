@@ -19,7 +19,7 @@ class AppTheme {
       onSecondary: Colors.white,
     );
 
-    final baseInter = GoogleFonts.interTextTheme(base.textTheme);
+    final baseInter = GoogleFonts.hindSiliguriTextTheme(base.textTheme);
     final textTheme = baseInter
         .copyWith(
           headlineSmall: baseInter.headlineSmall?.copyWith(
@@ -48,7 +48,7 @@ class AppTheme {
         elevation: 0,
         foregroundColor: const Color(0xFF111111),
         iconTheme: const IconThemeData(color: Color(0xFF111111)),
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: GoogleFonts.hindSiliguri(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: const Color(0xFF111111),
@@ -66,7 +66,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           shape: const StadiumBorder(),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          textStyle: GoogleFonts.inter(
+          textStyle: GoogleFonts.hindSiliguri(
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -75,7 +75,7 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        contentTextStyle: GoogleFonts.inter(color: Colors.white),
+        contentTextStyle: GoogleFonts.hindSiliguri(color: Colors.white),
       ),
     );
   }
@@ -91,18 +91,18 @@ class AppTheme {
       secondary: secondary,
       surface: const Color(0xFF1F2422),
     );
-    final textTheme = GoogleFonts.interTextTheme(base.textTheme).copyWith(
-      headlineSmall: GoogleFonts.inter(
+    final textTheme = GoogleFonts.hindSiliguriTextTheme(base.textTheme).copyWith(
+      headlineSmall: GoogleFonts.hindSiliguri(
         fontWeight: FontWeight.w700,
         fontSize: 28,
         color: Colors.white,
       ),
-      titleMedium: GoogleFonts.inter(
+      titleMedium: GoogleFonts.hindSiliguri(
         fontWeight: FontWeight.w600,
         fontSize: 18,
         color: Colors.white,
       ),
-      bodyMedium: GoogleFonts.inter(fontSize: 14, color: Colors.white70),
+      bodyMedium: GoogleFonts.hindSiliguri(fontSize: 14, color: Colors.white70),
     );
     return base.copyWith(
       colorScheme: colorScheme,
@@ -114,7 +114,7 @@ class AppTheme {
         elevation: 0,
         foregroundColor: colorScheme.primary,
         iconTheme: const IconThemeData(color: Colors.white),
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: GoogleFonts.hindSiliguri(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.white,
@@ -128,7 +128,7 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        contentTextStyle: GoogleFonts.inter(color: Colors.white),
+        contentTextStyle: GoogleFonts.hindSiliguri(color: Colors.white),
         backgroundColor: const Color(0xFF2A2F2D),
       ),
     );

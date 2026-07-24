@@ -15,7 +15,7 @@ class StudentDirectoryController extends Controller
     {
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
-        if (!$schoolId || !$user->isTeacher($schoolId)) {
+        if (!$schoolId || !($user->isTeacher($schoolId) || $user->isPrincipal($schoolId))) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
@@ -106,7 +106,7 @@ class StudentDirectoryController extends Controller
     {
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
-        if (!$schoolId || !$user->isTeacher($schoolId)) {
+        if (!$schoolId || !($user->isTeacher($schoolId) || $user->isPrincipal($schoolId))) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 
@@ -140,7 +140,12 @@ class StudentDirectoryController extends Controller
         }
 
         // Also eager-load primary student relations used by the resource
-        $student->loadMissing(['class', 'optionalSubject']);
+        $student->loadMissing([
+            'class',
+            'optionalSubject',
+            'enrollments' => fn ($q) => $q->orderByDesc('id')->with(['academicYear', 'class', 'section', 'group']),
+            'teams',
+        ]);
 
         return (new StudentProfileResource($student));
     }
@@ -149,7 +154,7 @@ class StudentDirectoryController extends Controller
     {
         $user = $request->user();
         $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
-        if (!$schoolId || !$user->isTeacher($schoolId)) {
+        if (!$schoolId || !($user->isTeacher($schoolId) || $user->isPrincipal($schoolId))) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
 

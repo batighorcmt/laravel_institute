@@ -419,11 +419,11 @@ class _LessonEvaluationStudentProfilePageState
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Row(
               children: const [
-                Expanded(flex: 3, child: Text('বিষয়', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _muted))),
-                Expanded(child: Text('মোট', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _muted))),
-                Expanded(child: Text('সম্পন্ন', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _completed))),
-                Expanded(child: Text('আংশিক', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _partial))),
-                Expanded(child: Text('হয়নি', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _notDone))),
+                Expanded(flex: 5, child: Text('বিষয়', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: _muted))),
+                Expanded(flex: 2, child: Text('মোট', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: _muted))),
+                Expanded(flex: 2, child: Text('সম্পন্ন', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: _completed))),
+                Expanded(flex: 2, child: Text('আংশিক', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: _partial))),
+                Expanded(flex: 2, child: Text('হয়নি', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: _notDone))),
               ],
             ),
           ),
@@ -434,16 +434,18 @@ class _LessonEvaluationStudentProfilePageState
               child: Row(
                 children: [
                   Expanded(
-                    flex: 3,
+                    flex: 5,
                     child: Text(
                       (s['subject_name'] ?? '').toString(),
-                      style: const TextStyle(fontSize: 13, color: _ink),
+                      style: const TextStyle(fontSize: 11.5, color: _ink),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Expanded(child: Text('${s['total'] ?? 0}', textAlign: TextAlign.center)),
-                  Expanded(child: Text('${s['completed'] ?? 0}', textAlign: TextAlign.center, style: const TextStyle(color: _completed, fontWeight: FontWeight.w600))),
-                  Expanded(child: Text('${s['partial'] ?? 0}', textAlign: TextAlign.center, style: const TextStyle(color: _partial, fontWeight: FontWeight.w600))),
-                  Expanded(child: Text('${s['not_done'] ?? 0}', textAlign: TextAlign.center, style: const TextStyle(color: _notDone, fontWeight: FontWeight.w600))),
+                  Expanded(flex: 2, child: Text('${s['total'] ?? 0}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12))),
+                  Expanded(flex: 2, child: Text('${s['completed'] ?? 0}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: _completed, fontWeight: FontWeight.w600))),
+                  Expanded(flex: 2, child: Text('${s['partial'] ?? 0}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: _partial, fontWeight: FontWeight.w600))),
+                  Expanded(flex: 2, child: Text('${s['not_done'] ?? 0}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: _notDone, fontWeight: FontWeight.w600))),
                 ],
               ),
             );

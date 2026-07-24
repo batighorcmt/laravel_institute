@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class StudentProfileResource extends JsonResource
@@ -159,6 +160,53 @@ class StudentProfileResource extends JsonResource
                 'status' => $tm->pivot?->status,
                 'joined_at' => $tm->pivot?->joined_at,
             ]) : [],
+
+            // Subjects mapped to the student's current class, for the current
+            // academic year — used by the ইতিহাস tab's "current session
+            // subjects" block.
+            'current_subjects' => ($en && $en->class_id)
+                ? \App\Models\Subject::where('school_id', $st?->school_id)
+                    ->whereHas('classMappings', function ($q) use ($en) {
+                        $q->where('class_id', $en->class_id)->where('status', 'active');
+                    })
+                    ->orderBy('name')
+                    ->pluck('name')
+                    ->values()
+                : [],
+
+            // Per-subject lesson-evaluation breakdown for the current
+            // academic year (how many days per status, per subject) — used
+            // by the ইতিহাস tab's "lesson evaluation record" block.
+            'lesson_evaluation_summary' => $st
+                ? \App\Models\LessonEvaluationRecord::where('student_id', $st->id)
+                    ->whereHas('lessonEvaluation', function ($q) use ($st, $en) {
+                        $q->where('school_id', $st->school_id);
+                        if ($en?->academicYear) {
+                            $q->whereBetween('evaluation_date', [
+                                $en->academicYear->start_date->toDateString(),
+                                $en->academicYear->end_date->toDateString(),
+                            ]);
+                        }
+                    })
+                    ->join('lesson_evaluations', 'lesson_evaluations.id', '=', 'lesson_evaluation_records.lesson_evaluation_id')
+                    ->join('subjects', 'subjects.id', '=', 'lesson_evaluations.subject_id')
+                    ->select('subjects.name as subject_name', 'lesson_evaluation_records.status', DB::raw('count(*) as cnt'))
+                    ->groupBy('subjects.name', 'lesson_evaluation_records.status')
+                    ->get()
+                    ->groupBy('subject_name')
+                    ->map(function ($rows, $subjectName) {
+                        $counts = $rows->pluck('cnt', 'status');
+                        return [
+                            'subject_name' => $subjectName,
+                            'total' => (int) $counts->sum(),
+                            'completed' => (int) ($counts['completed'] ?? 0),
+                            'partial' => (int) ($counts['partial'] ?? 0),
+                            'not_done' => (int) ($counts['not_done'] ?? 0),
+                            'absent' => (int) ($counts['absent'] ?? 0),
+                        ];
+                    })
+                    ->values()
+                : [],
             
             // Approved leave calendar — every date across all approved leave
             // applications, so the app can render a leave calendar and treat

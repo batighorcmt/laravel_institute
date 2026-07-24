@@ -427,15 +427,23 @@ class _LessonEvaluationDetailsPageState
   String? _getPhotoUrl(dynamic s) {
     if (s is Map) {
       final keys = [
+        'photo_url',
         'photo',
         'image',
         'avatar',
         'profile_photo',
         'student_photo',
-        'photo_url',
       ];
       for (final k in keys) {
-        if (s[k] != null && s[k].toString().isNotEmpty) return s[k].toString();
+        final v = s[k];
+        if (v != null && v.toString().isNotEmpty) {
+          // The backend's default-avatar placeholder is an SVG, which the
+          // network image codec used for the list avatar can't decode —
+          // treat it as "no photo" so the fallback icon renders directly
+          // instead of a failed image load.
+          if (v.toString().toLowerCase().endsWith('.svg')) return null;
+          return v.toString();
+        }
       }
     }
     return null;
