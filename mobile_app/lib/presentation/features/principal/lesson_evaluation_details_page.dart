@@ -453,10 +453,13 @@ class _LessonEvaluationDetailsPageState
 
         int? id;
         try {
+          // Prefer `student_id` over `id`: when there is no nested `student`
+          // map, `person` is the same object as the record `s`, whose `id`
+          // is the lesson_evaluation_records.id, not the student's id.
           final rawId =
-              person['id'] ??
               person['student_id'] ??
               s['student_id'] ??
+              person['id'] ??
               s['id'] ??
               person['user_id'];
           if (rawId is num) id = rawId.toInt();
