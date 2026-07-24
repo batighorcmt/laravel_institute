@@ -205,10 +205,14 @@ class _LessonEvaluationStudentProfilePageState
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'দৈনিক ভিত্তিক তালিকা',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: _ink),
+                      const Expanded(
+                        child: Text(
+                          'দৈনিক ভিত্তিক তালিকা',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: _ink),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       _buildSubjectFilterDropdown(),
                     ],
                   ),
