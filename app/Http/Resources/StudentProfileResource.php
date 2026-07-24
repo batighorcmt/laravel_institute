@@ -54,6 +54,31 @@ class StudentProfileResource extends JsonResource
         $base['dob'] = $base['date_of_birth'] ?? null;
         $base['student_code'] = $base['student_id'] ?? null;
 
+        // Attendance summary, scoped to the current academic year (when
+        // known) so it reflects "this session" rather than all-time history.
+        $attendanceCounts = \App\Models\Attendance::where('student_id', $st?->id)
+            ->when($en?->academicYear, fn ($q) => $q->whereBetween('date', [
+                $en->academicYear->start_date->toDateString(),
+                $en->academicYear->end_date->toDateString(),
+            ]))
+            ->selectRaw('status, count(*) as cnt')
+            ->groupBy('status')
+            ->pluck('cnt', 'status');
+        $leaveDays = \App\Models\StudentLeave::where('student_id', $st?->id)
+            ->where('status', 'approved')
+            ->when($en?->academicYear, fn ($q) => $q->where(function ($qq) use ($en) {
+                $qq->whereBetween('start_date', [$en->academicYear->start_date, $en->academicYear->end_date])
+                    ->orWhereBetween('end_date', [$en->academicYear->start_date, $en->academicYear->end_date]);
+            }))
+            ->get()
+            ->sum(fn ($l) => $l->start_date->diffInDays($l->end_date) + 1);
+        $attendanceStats = [
+            'present' => (int) ($attendanceCounts['present'] ?? 0),
+            'absent' => (int) ($attendanceCounts['absent'] ?? 0),
+            'late' => (int) ($attendanceCounts['late'] ?? 0),
+            'leave' => (int) $leaveDays,
+        ];
+
         return array_merge($base, [
             'photo_url' => $photoUrl,
             'present_address' => $presentAddress,
@@ -143,8 +168,8 @@ class StudentProfileResource extends JsonResource
             'student_status' => $st?->status ?? null,
 
             // New fields for comprehensive profile
-            'attendance_stats' => $st?->attendance_stats,
-            'working_days' => $st?->working_days,
+            'attendance_stats' => $attendanceStats,
+            'working_days' => (int) $attendanceCounts->sum() + (int) $leaveDays,
             'enrollment_history' => $st?->relationLoaded('enrollments') ? $st?->enrollments->map(fn($en) => [
                 'id' => $en->id,
                 'academic_year' => $en->academicYear?->name,

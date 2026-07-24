@@ -516,6 +516,10 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
   static const Color _hueAddress = Color(0xFF0FA3A3);
   static const Color _hueHistory = Color(0xFF8B5CF6);
 
+  static const Color _statusCompleted = Color(0xFF16A34A);
+  static const Color _statusPartial = Color(0xFFD97706);
+  static const Color _statusNotDone = Color(0xFFDC2626);
+
   late final Dio _dio;
   late final TeacherStudentsRepository _repo;
   Map<String, dynamic>? _data;
@@ -891,10 +895,10 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       gender: gender,
                       bloodGroup: bloodGroup,
                       att: att,
-                    ),
-                    _buildFamilyTab(
                       classTeacher: classTeacher,
                       classTeacherPhone: classTeacherPhone,
+                    ),
+                    _buildFamilyTab(
                       fatherName: fatherName,
                       motherName: motherName,
                       fatherPhone: fatherPhone,
@@ -1211,6 +1215,8 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     required String gender,
     required String bloodGroup,
     required Map<String, dynamic>? att,
+    required String classTeacher,
+    required String classTeacherPhone,
   }) {
     final statEntries = <MapEntry<String, String>>[
       MapEntry('স্টুডেন্ট আইডি', studentCode),
@@ -1238,6 +1244,21 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
             child: _statGrid(statEntries, _hueAcademic),
           ),
         if (statEntries.isNotEmpty) const SizedBox(height: 14),
+
+        if (classTeacher.isNotEmpty) ...[
+          _sectionCard(
+            icon: Icons.person_pin_outlined,
+            iconColor: _hueAcademic,
+            title: 'শ্রেণি শিক্ষক',
+            child: _personTile(
+              icon: Icons.person_pin,
+              color: _hueAcademic,
+              name: classTeacher,
+              phone: classTeacherPhone,
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
 
         _sectionCard(
           icon: Icons.badge_outlined,
@@ -1396,8 +1417,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
   // ───────────────────────────── Tab: পরিবার (Family) ─────────────────────────────
 
   Widget _buildFamilyTab({
-    required String classTeacher,
-    required String classTeacherPhone,
     required String fatherName,
     required String motherName,
     required String fatherPhone,
@@ -1407,7 +1426,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     required String guardianRelation,
   }) {
     final hasAny =
-        classTeacher.isNotEmpty ||
         fatherName.isNotEmpty ||
         motherName.isNotEmpty ||
         guardianName.isNotEmpty;
@@ -1417,21 +1435,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        if (classTeacher.isNotEmpty) ...[
-          _sectionCard(
-            icon: Icons.person_pin_outlined,
-            iconColor: _hueFamily,
-            title: 'শ্রেণি শিক্ষক',
-            child: _personTile(
-              icon: Icons.person_pin,
-              color: _hueFamily,
-              name: classTeacher,
-              phone: classTeacherPhone,
-            ),
-          ),
-          const SizedBox(height: 14),
-        ],
-
         _sectionCard(
           icon: Icons.family_restroom_outlined,
           iconColor: _hueFamily,
@@ -1862,12 +1865,39 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                     color: _ink,
                   ),
                   dataTextStyle: const TextStyle(fontSize: 12.5),
-                  columns: const [
-                    DataColumn(label: Text('বিষয়')),
-                    DataColumn(label: Text('মোট')),
-                    DataColumn(label: Text('সম্পন্ন')),
-                    DataColumn(label: Text('আংশিক')),
-                    DataColumn(label: Text('হয়নি')),
+                  columns: [
+                    const DataColumn(label: Text('বিষয়')),
+                    const DataColumn(label: Text('মোট')),
+                    DataColumn(
+                      label: Text(
+                        'সম্পন্ন',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: _statusCompleted,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'আংশিক',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: _statusPartial,
+                        ),
+                      ),
+                    ),
+                    DataColumn(
+                      label: Text(
+                        'হয়নি',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: _statusNotDone,
+                        ),
+                      ),
+                    ),
                   ],
                   rows: lessonEvaluationSummary.map((s) {
                     final Map<String, dynamic> row = s is Map
@@ -1879,9 +1909,33 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                           Text((row['subject_name'] ?? '').toString()),
                         ),
                         DataCell(Text('${row['total'] ?? 0}')),
-                        DataCell(Text('${row['completed'] ?? 0}')),
-                        DataCell(Text('${row['partial'] ?? 0}')),
-                        DataCell(Text('${row['not_done'] ?? 0}')),
+                        DataCell(
+                          Text(
+                            '${row['completed'] ?? 0}',
+                            style: const TextStyle(
+                              color: _statusCompleted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            '${row['partial'] ?? 0}',
+                            style: const TextStyle(
+                              color: _statusPartial,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        DataCell(
+                          Text(
+                            '${row['not_done'] ?? 0}',
+                            style: const TextStyle(
+                              color: _statusNotDone,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ],
                     );
                   }).toList(),
@@ -1913,6 +1967,8 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                     final Map<String, dynamic> row = ev is Map
                         ? Map<String, dynamic>.from(ev)
                         : {};
+                    final status = (row['status'] ?? '').toString();
+                    final statusColor = _lessonStatusColor(status);
                     return ListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
@@ -1924,7 +1980,13 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       title: Text(
                         '${row['subject'] ?? 'Subject'} (Period ${row['period'] ?? ''})',
                       ),
-                      subtitle: Text('Status: ${row['status'] ?? 'Pending'}'),
+                      subtitle: Text(
+                        'Status: ${status.isEmpty ? 'Pending' : status}',
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     );
                   }),
               ],
@@ -2187,6 +2249,20 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
         ),
       ],
     );
+  }
+
+  Color _lessonStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return _statusCompleted;
+      case 'partial':
+        return _statusPartial;
+      case 'not_done':
+      case 'absent':
+        return _statusNotDone;
+      default:
+        return _muted;
+    }
   }
 
   // Title Case helper for ASCII words (keeps non-Latin intact)
