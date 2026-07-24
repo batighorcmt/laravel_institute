@@ -11,10 +11,25 @@ use App\Http\Resources\StudentProfileResource;
 
 class StudentDirectoryController extends Controller
 {
+    /**
+     * Resolve the acting user's school id. firstTeacherSchoolId() only finds
+     * a school via an active 'teacher' role assignment, so it resolves to
+     * null for principal-only accounts — fall back to their primary school
+     * (resolved from any active role) so principals aren't locked out of
+     * these teacher-scoped-but-principal-permitted endpoints.
+     */
+    private function resolveSchoolId(Request $request): ?int
+    {
+        $user = $request->user();
+        return $request->attributes->get('current_school_id')
+            ?? $user->firstTeacherSchoolId()
+            ?? ($user->primarySchool()?->id ?? null);
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        $schoolId = $this->resolveSchoolId($request);
         if (!$schoolId || !($user->isTeacher($schoolId) || $user->isPrincipal($schoolId))) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
@@ -105,7 +120,7 @@ class StudentDirectoryController extends Controller
     public function show(Request $request, Student $student)
     {
         $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        $schoolId = $this->resolveSchoolId($request);
         if (!$schoolId || !($user->isTeacher($schoolId) || $user->isPrincipal($schoolId))) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
@@ -153,7 +168,7 @@ class StudentDirectoryController extends Controller
     public function meta(Request $request)
     {
         $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        $schoolId = $this->resolveSchoolId($request);
         if (!$schoolId || !($user->isTeacher($schoolId) || $user->isPrincipal($schoolId))) {
             return response()->json(['message' => 'অননুমোদিত'], 403);
         }
@@ -225,7 +240,7 @@ class StudentDirectoryController extends Controller
     public function getSections(Request $request)
     {
         $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        $schoolId = $this->resolveSchoolId($request);
         $classId = $request->get('class_id');
 
         if (!$schoolId || !($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
@@ -246,7 +261,7 @@ class StudentDirectoryController extends Controller
     public function getGroups(Request $request)
     {
         $user = $request->user();
-        $schoolId = $request->attributes->get('current_school_id') ?? $user->firstTeacherSchoolId();
+        $schoolId = $this->resolveSchoolId($request);
         $classId = $request->get('class_id');
 
         if (!$schoolId || !($user->isPrincipal($schoolId) || $user->isTeacher($schoolId) || $user->isSuperAdmin())) {
