@@ -663,7 +663,16 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       'avatar_url',
     ]);
     final name = _combine(
-      _tc(_pick(d, const ['name', 'student_name', 'full_name', 'studentName'])),
+      _tc(
+        _pick(d, const [
+          'name_en',
+          'student_name_en',
+          'name',
+          'student_name',
+          'full_name',
+          'studentName',
+        ]),
+      ),
       _pick(d, const [
         'name_bn',
         'student_name_bn',
@@ -821,9 +830,9 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
       'guardian_contact_no',
     ]);
 
-    final hasToday =
-        d.containsKey('today_attendance') ||
-        (d['today_evaluations'] as List? ?? []).isNotEmpty;
+    final feePayments = d['fee_payments'] is List
+        ? d['fee_payments'] as List
+        : [];
 
     return Scaffold(
       backgroundColor: _bg,
@@ -912,7 +921,7 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
                       d: d,
                       history: history,
                       memberships: memberships,
-                      hasToday: hasToday,
+                      feePayments: feePayments,
                       currentSubjects: currentSubjects,
                       lessonEvaluationSummary: lessonEvaluationSummary,
                     ),
@@ -1755,13 +1764,13 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     required Map<String, dynamic> d,
     required List history,
     required List memberships,
-    required bool hasToday,
+    required List feePayments,
     required List currentSubjects,
     required List lessonEvaluationSummary,
   }) {
     if (history.isEmpty &&
         memberships.isEmpty &&
-        !hasToday &&
+        feePayments.isEmpty &&
         currentSubjects.isEmpty &&
         lessonEvaluationSummary.isEmpty) {
       return _emptyTab('ইতিহাস সংক্রান্ত কোনো তথ্য পাওয়া যায়নি');
@@ -1945,51 +1954,54 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
           ),
         if (lessonEvaluationSummary.isNotEmpty) const SizedBox(height: 14),
 
-        if (hasToday) ...[
+        if (feePayments.isNotEmpty) ...[
           _sectionCard(
-            icon: Icons.today_outlined,
+            icon: Icons.receipt_long_outlined,
             iconColor: _hueHistory,
-            title: 'আজকের অবস্থা',
+            title: 'ফি প্রদানের ইতিহাস',
             child: Column(
-              children: [
-                if (d['today_attendance'] != null &&
-                    d['today_attendance']['class'] != null)
-                  _infoRow(
-                    icon: Icons.check_circle_outline,
-                    label: 'আজকের হাজিরা',
-                    value: _tc(
-                      (d['today_attendance']['class']['status'] ?? 'N/A')
-                          .toString(),
+              children: feePayments.map((p) {
+                final Map<String, dynamic> row = p is Map
+                    ? Map<String, dynamic>.from(p)
+                    : {};
+                final amount = row['amount'];
+                final amountText = amount is num
+                    ? amount.toStringAsFixed(
+                        amount == amount.roundToDouble() ? 0 : 2,
+                      )
+                    : (amount ?? '0').toString();
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: _statusCompleted.withValues(alpha: 0.12),
+                    child: const Icon(
+                      Icons.check_circle_outline,
+                      color: _statusCompleted,
                     ),
                   ),
-                if ((d['today_evaluations'] as List? ?? []).isNotEmpty)
-                  ...(d['today_evaluations'] as List).map((ev) {
-                    final Map<String, dynamic> row = ev is Map
-                        ? Map<String, dynamic>.from(ev)
-                        : {};
-                    final status = (row['status'] ?? '').toString();
-                    final statusColor = _lessonStatusColor(status);
-                    return ListTile(
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(
-                        Icons.menu_book_outlined,
-                        color: _hueHistory,
-                        size: 20,
-                      ),
-                      title: Text(
-                        '${row['subject'] ?? 'Subject'} (Period ${row['period'] ?? ''})',
-                      ),
-                      subtitle: Text(
-                        'Status: ${status.isEmpty ? 'Pending' : status}',
-                        style: TextStyle(
-                          color: statusColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    );
-                  }),
-              ],
+                  title: Text(
+                    (row['category'] ?? 'ফি').toString(),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    [
+                      if ((row['payment_number'] ?? '').toString().isNotEmpty)
+                        '#${row['payment_number']}',
+                      if ((row['method'] ?? '').toString().isNotEmpty)
+                        row['method'].toString(),
+                      if ((row['received_at'] ?? '').toString().isNotEmpty)
+                        row['received_at'].toString(),
+                    ].join(' • '),
+                  ),
+                  trailing: Text(
+                    '৳$amountText',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: _statusCompleted,
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ),
           const SizedBox(height: 14),
@@ -2251,20 +2263,6 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     );
   }
 
-  Color _lessonStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return _statusCompleted;
-      case 'partial':
-        return _statusPartial;
-      case 'not_done':
-      case 'absent':
-        return _statusNotDone;
-      default:
-        return _muted;
-    }
-  }
-
   // Title Case helper for ASCII words (keeps non-Latin intact)
   String _tc(String s) {
     final str = s.trim();
@@ -2286,6 +2284,7 @@ class _TeacherStudentProfilePageState extends State<TeacherStudentProfilePage> {
     if (a.isEmpty && b.isEmpty) return '';
     if (a.isEmpty) return b;
     if (b.isEmpty) return a;
+    if (a == b) return a;
     return joinWithNewline ? '$a\n$b' : '$a ($b)';
   }
 }

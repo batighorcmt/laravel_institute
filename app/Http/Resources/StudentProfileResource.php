@@ -79,6 +79,21 @@ class StudentProfileResource extends JsonResource
             'leave' => (int) $leaveDays,
         ];
 
+        // Subjects mapped to the student's current class, in the class's own
+        // subject order (class_subjects.order_no) — keyed by subject_id so
+        // both "current session subjects" and "lesson evaluation record"
+        // blocks in the ইতিহাস tab can share the same class-defined order
+        // instead of sorting A-Z.
+        $classOrderedSubjects = ($en && $en->class_id)
+            ? \App\Models\Subject::where('subjects.school_id', $st?->school_id)
+                ->join('class_subjects', 'class_subjects.subject_id', '=', 'subjects.id')
+                ->where('class_subjects.class_id', $en->class_id)
+                ->where('class_subjects.status', 'active')
+                ->orderByRaw('COALESCE(class_subjects.order_no, 9999)')
+                ->orderBy('subjects.name')
+                ->pluck('subjects.name', 'subjects.id')
+            : collect();
+
         return array_merge($base, [
             'photo_url' => $photoUrl,
             'present_address' => $presentAddress,
@@ -186,18 +201,11 @@ class StudentProfileResource extends JsonResource
                 'joined_at' => $tm->pivot?->joined_at,
             ]) : [],
 
-            // Subjects mapped to the student's current class, for the current
-            // academic year — used by the ইতিহাস tab's "current session
-            // subjects" block.
-            'current_subjects' => ($en && $en->class_id)
-                ? \App\Models\Subject::where('school_id', $st?->school_id)
-                    ->whereHas('classMappings', function ($q) use ($en) {
-                        $q->where('class_id', $en->class_id)->where('status', 'active');
-                    })
-                    ->orderBy('name')
-                    ->pluck('name')
-                    ->values()
-                : [],
+            // Subjects mapped to the student's current class, in the class's
+            // own subject order — used by the ইতিহাস tab's "current session
+            // subjects" block and to order "lesson evaluation record" below
+            // the same way, instead of A-Z.
+            'current_subjects' => $classOrderedSubjects->values(),
 
             // Per-subject lesson-evaluation breakdown for the current
             // academic year (how many days per status, per subject) — used
@@ -214,15 +222,17 @@ class StudentProfileResource extends JsonResource
                         }
                     })
                     ->join('lesson_evaluations', 'lesson_evaluations.id', '=', 'lesson_evaluation_records.lesson_evaluation_id')
-                    ->join('subjects', 'subjects.id', '=', 'lesson_evaluations.subject_id')
-                    ->select('subjects.name as subject_name', 'lesson_evaluation_records.status', DB::raw('count(*) as cnt'))
-                    ->groupBy('subjects.name', 'lesson_evaluation_records.status')
+                    ->select('lesson_evaluations.subject_id', 'lesson_evaluation_records.status', DB::raw('count(*) as cnt'))
+                    ->groupBy('lesson_evaluations.subject_id', 'lesson_evaluation_records.status')
                     ->get()
-                    ->groupBy('subject_name')
-                    ->map(function ($rows, $subjectName) {
+                    ->groupBy('subject_id')
+                    ->sortBy(fn ($rows, $subjectId) => $classOrderedSubjects->keys()->search($subjectId) === false
+                        ? PHP_INT_MAX
+                        : $classOrderedSubjects->keys()->search($subjectId))
+                    ->map(function ($rows, $subjectId) use ($classOrderedSubjects) {
                         $counts = $rows->pluck('cnt', 'status');
                         return [
-                            'subject_name' => $subjectName,
+                            'subject_name' => $classOrderedSubjects[$subjectId] ?? $rows->first()?->subject_id,
                             'total' => (int) $counts->sum(),
                             'completed' => (int) ($counts['completed'] ?? 0),
                             'partial' => (int) ($counts['partial'] ?? 0),
@@ -232,7 +242,27 @@ class StudentProfileResource extends JsonResource
                     })
                     ->values()
                 : [],
-            
+
+            // Fee payment history for the current academic year — replaces
+            // the old "today's status" block in the ইতিহাস tab.
+            'fee_payments' => $st
+                ? \App\Models\Payment::where('student_id', $st->id)
+                    ->where('status', 'settled')
+                    ->when($en?->academicYear, fn ($q) => $q->where('academic_year_id', $en->academicYear->id))
+                    ->with('category')
+                    ->orderByDesc('received_at')
+                    ->get()
+                    ->map(fn ($p) => [
+                        'id' => $p->id,
+                        'payment_number' => $p->payment_number,
+                        'category' => $p->category?->name,
+                        'amount' => (float) $p->amount_paid,
+                        'method' => $p->payment_method,
+                        'received_at' => optional($p->received_at)->toDateString(),
+                    ])
+                    ->values()
+                : [],
+
             // Approved leave calendar — every date across all approved leave
             // applications, so the app can render a leave calendar and treat
             // these dates as leave (not absent) in attendance stats.
